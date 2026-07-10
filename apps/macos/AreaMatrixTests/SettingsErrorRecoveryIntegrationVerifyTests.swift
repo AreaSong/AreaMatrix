@@ -100,10 +100,10 @@ private func verifyClassifierRepositoryAndOverview(_ context: SettingsRecoveryIn
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.generatedOverviewURL.path))
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.rootOverviewURL.path))
     XCTAssertEqual(try String(contentsOf: context.readmeURL), "user readme\n")
-    XCTAssertEqual(
-        generatedRevealer.requests.map(\.relativePath),
-        [RepositorySettingsSummary.generatedOverviewRelativePath]
-    )
+    generatedRevealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+        repoPath: context.repoURL.path,
+        relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
+    )])
 }
 
 @MainActor
@@ -217,9 +217,9 @@ private struct SettingsRecoveryIntegrationContext {
     let bridge: CoreBridge
 
     static func make() async throws -> SettingsRecoveryIntegrationContext {
-        let repoURL = try temporaryDirectory(prefix: "AreaMatrixSettingsRecoveryRepo")
-        let sourceRootURL = try temporaryDirectory(prefix: "AreaMatrixSettingsRecoverySource")
-        let diagnosticsURL = try temporaryDirectory(prefix: "AreaMatrixSettingsRecoveryDiagnostics")
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixSettingsRecoveryRepo")
+        let sourceRootURL = try makeTestTemporaryDirectory(named: "AreaMatrixSettingsRecoverySource")
+        let diagnosticsURL = try makeTestTemporaryDirectory(named: "AreaMatrixSettingsRecoveryDiagnostics")
         let sourceURL = sourceRootURL.appendingPathComponent("Invoice_2026Q1.pdf")
         try Data("settings recovery invoice bytes".utf8).write(to: sourceURL)
 
@@ -246,9 +246,5 @@ private struct SettingsRecoveryIntegrationContext {
 
     func cleanup() {
         removeTestTemporaryItems(repoURL, sourceRootURL, diagnosticsURL)
-    }
-
-    private static func temporaryDirectory(prefix: String) throws -> URL {
-        try makeTestTemporaryDirectory(named: prefix)
     }
 }

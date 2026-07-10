@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
     struct Request: Equatable {
@@ -23,8 +24,27 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
         return try result.get()
     }
 
-    func requests() -> [Request] {
-        requestsStorage
+    func assertRequests(
+        _ expectedRequests: [Request],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+    }
+
+    func assertRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage.count, expectedCount, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage, [], file: file, line: line)
     }
 }
 
@@ -79,6 +99,14 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
 
     func listRequests() -> [String] {
         listRequestsStorage
+    }
+
+    func assertListRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(listRequestsStorage, expectedRequests, file: file, line: line)
     }
 
     func createRequests() -> [CreateRequest] {

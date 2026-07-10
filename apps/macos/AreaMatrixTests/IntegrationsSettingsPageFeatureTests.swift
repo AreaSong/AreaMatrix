@@ -19,8 +19,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        let requestedPaths = await loader.requestedPaths()
-        XCTAssertEqual(requestedPaths, ["/tmp/repo"])
+        await loader.assertRequestedPaths(["/tmp/repo"])
         XCTAssertEqual(model.loadState, .loaded)
         XCTAssertEqual(model.summary?.repositoryLocation, .iCloudDrive)
         XCTAssertEqual(model.summary?.iCloudStatus, .available)
@@ -34,11 +33,10 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         let model = await loadedModel(updater: updater, iCloudWarn: true)
 
         await model.setICloudWarningsEnabled(false)
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/repo"])
-        XCTAssertEqual(requests.map(\.config.iCloudWarn), [false])
-        XCTAssertEqual(requests.map(\.config.repoPath), ["/tmp/repo"])
+        await updater.assertRequestedRepoPaths(["/tmp/repo"])
+        await updater.assertRequestedConfigValues(\.iCloudWarn, [false])
+        await updater.assertRequestedConfigValues(\.repoPath, ["/tmp/repo"])
         XCTAssertEqual(model.summary?.iCloudWarningsEnabled, false)
         XCTAssertNil(model.saveError)
     }
@@ -59,11 +57,9 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
-        let requests = await updater.requests()
-        let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(requests.map(\.config.iCloudWarn), [false, false])
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "locked")])
+        await updater.assertRequestedConfigValues(\.iCloudWarn, [false, false])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "locked")])
         XCTAssertEqual(model.summary?.iCloudWarningsEnabled, false)
         XCTAssertNil(model.saveError)
     }
@@ -85,9 +81,8 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.Config(reason: "invalid repo_config")])
+        await mapper.assertRecordedErrors([CoreError.Config(reason: "invalid repo_config")])
         XCTAssertEqual(model.loadState, .failed(IntegrationsSettingsError(
             message: "配置错误",
             recovery: "Retry status"
@@ -108,11 +103,10 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
         model.openICloudHelp()
         model.revealRepositoryInFinder()
-        let requests = await updater.requests()
 
         XCTAssertEqual(helpOpener.openCount, 1)
-        XCTAssertEqual(finderOpener.repoPaths, ["/tmp/repo"])
-        XCTAssertEqual(requests, [])
+        finderOpener.assertRepoPaths(["/tmp/repo"])
+        await updater.assertNoRequests()
         XCTAssertEqual(model.actionFeedback, .success("Repository folder revealed in Finder."))
     }
 

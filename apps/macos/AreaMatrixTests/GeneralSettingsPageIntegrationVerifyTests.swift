@@ -13,21 +13,21 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
             defaultMode: "Moved"
         )
         let opener = GeneralSettingsRecordingRepositoryOpener(opening: refreshedOpening)
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            emptyRepositoryOpener: opener,
-            accessibilityAnnouncer: NoopAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeShellMainListFixture(
+            opening: initialOpening,
+            model: makeShellOnboardingModel(
+                emptyRepositoryOpener: opener,
+                accessibilityAnnouncer: NoopAccessibilityAnnouncer()
+            )
         )
+        let model = fixture.model
 
-        model.route = .mainList(initialOpening)
         model.showGeneralSettings(opening: initialOpening)
         XCTAssertEqual(model.route, .settingsGeneral(initialOpening))
 
         await model.refreshAfterGeneralSettings(opening: initialOpening)
-        let refreshedPaths = await opener.requestedRepoPaths()
 
-        XCTAssertEqual(refreshedPaths, ["/tmp/repo"])
+        await opener.assertRequestedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.route, .mainList(refreshedOpening))
         model.startImportEntry(
             opening: refreshedOpening,
@@ -73,9 +73,8 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         XCTAssertEqual(model.pendingIgnoreRulesAlert, GeneralSettingsIgnoreRulesAlert.createDefault)
         model.createDefaultIgnoreRulesAndOpen()
 
-        let requestsAfterSuccess = await updater.requestedConfigs()
-        XCTAssertEqual(requestsAfterSuccess.map(\.defaultMode), ["Moved", "Moved"])
-        XCTAssertEqual(requestsAfterSuccess.map(\.overviewOutput), ["GeneratedOnly", "RootAreaMatrixFile"])
+        await updater.assertRequestedConfigValues(\.defaultMode, ["Moved", "Moved"])
+        await updater.assertRequestedConfigValues(\.overviewOutput, ["GeneratedOnly", "RootAreaMatrixFile"])
         XCTAssertEqual(model.draft?.defaultStorageMode, .move)
         XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
         XCTAssertNil(model.saveError)
@@ -88,9 +87,8 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         XCTAssertEqual(model.saveError?.message, "配置错误")
 
         await model.retrySave()
-        let requests = await updater.requestedConfigs()
 
-        XCTAssertEqual(requests.map(\.locale), ["system", "system", "en", "en"])
+        await updater.assertRequestedConfigValues(\.locale, ["system", "system", "en", "en"])
         XCTAssertEqual(model.draft?.locale, .en)
         XCTAssertNil(model.saveError)
     }

@@ -1,33 +1,77 @@
 @testable import AreaMatrix
 import XCTest
 
+struct AIPrivacyRemoteProviderStatusExpectation: Equatable {
+    let providerStatus: String
+    let verifiedStatus: String
+    let enabledStatus: String
+    let featureScope: String
+    let allowsPrivacyGateEnable: Bool
+
+    static let configured = AIPrivacyRemoteProviderStatusExpectation(
+        providerStatus: "Configured",
+        verifiedStatus: "Connection tested",
+        enabledStatus: "Remote provider enabled",
+        featureScope: "Auto summaries, Semantic search",
+        allowsPrivacyGateEnable: true
+    )
+
+    static let needsConnectionTest = AIPrivacyRemoteProviderStatusExpectation(
+        providerStatus: "Remote provider needs connection test.",
+        verifiedStatus: "Connection test required",
+        enabledStatus: "Remote provider enabled",
+        featureScope: "Auto summaries, Semantic search",
+        allowsPrivacyGateEnable: false
+    )
+
+    static let disabled = AIPrivacyRemoteProviderStatusExpectation(
+        providerStatus: "Remote provider is disabled in AI settings.",
+        verifiedStatus: "Connection tested",
+        enabledStatus: "Remote provider disabled",
+        featureScope: "Auto summaries, Semantic search",
+        allowsPrivacyGateEnable: false
+    )
+
+    static let unavailable = AIPrivacyRemoteProviderStatusExpectation(
+        providerStatus: "Remote provider state unavailable",
+        verifiedStatus: "Loading",
+        enabledStatus: "Loading",
+        featureScope: "Loading",
+        allowsPrivacyGateEnable: false
+    )
+}
+
 @MainActor
 func assertRemoteProviderConfigEnabledPageIntegration(
     remoteModel: RemoteProviderConfigModel,
     privacyModel: RemotePrivacyGateModel,
-    providerRequests: RemoteProviderConfigBridge.Requests,
-    privacyRequests: RemotePrivacyRulesBridge.Requests,
+    providerBridge: RemoteProviderConfigBridge,
+    privacyBridge: RemotePrivacyRulesBridge,
     store: RemoteProviderTestCredentialStore,
     file: StaticString = #filePath,
     line: UInt = #line
-) {
+) async {
     let expectedScopes: [AISettingsFeatureKind] = [.classificationSuggestions, .autoSummaries]
     let expectedCoreScopes = expectedScopes.map(AiFeatureKind.init(snapshotFeature:))
-    XCTAssertEqual(providerRequests.loadCount, 1, file: file, line: line)
-    XCTAssertEqual(providerRequests.test?.keyReference, "keychain:openAi-managed", file: file, line: line)
-    XCTAssertEqual(providerRequests.enable?.featureScope, expectedScopes, file: file, line: line)
-    XCTAssertEqual(providerRequests.enable?.dataFlowConfirmed, true, file: file, line: line)
+    await providerBridge.assertLoadCount(1, file: file, line: line)
+    await providerBridge.assertTestRequest(keyReference: "keychain:openAi-managed", file: file, line: line)
+    await providerBridge.assertEnableRequest(
+        featureScope: expectedScopes,
+        dataFlowConfirmed: true,
+        file: file,
+        line: line
+    )
     XCTAssertEqual(remoteModel.snapshot?.providerConfigured, true, file: file, line: line)
     XCTAssertEqual(remoteModel.snapshot?.providerVerified, true, file: file, line: line)
     XCTAssertEqual(remoteModel.snapshot?.remoteProviderEnabled, true, file: file, line: line)
     XCTAssertEqual(remoteModel.snapshot?.credentialConfigured, true, file: file, line: line)
     XCTAssertEqual(remoteModel.snapshot?.featureScope, expectedScopes, file: file, line: line)
     XCTAssertEqual(privacyModel.snapshot?.privacyGateEnabled, true, file: file, line: line)
-    XCTAssertEqual(privacyRequests.updates.first?.privacyGateEnabled, true, file: file, line: line)
-    XCTAssertEqual(privacyRequests.updates.first?.providerScope.remoteProviderEnabled, true, file: file, line: line)
-    XCTAssertEqual(
-        privacyRequests.updates.first?.providerScope.featureScope,
-        expectedCoreScopes,
+    await privacyBridge.assertUpdate(at: 0, privacyGateEnabled: true, file: file, line: line)
+    await privacyBridge.assertProviderScope(
+        at: 0,
+        remoteProviderEnabled: true,
+        featureScope: expectedCoreScopes,
         file: file,
         line: line
     )
@@ -38,33 +82,28 @@ func assertRemoteProviderConfigEnabledPageIntegration(
 func assertRemoteProviderConfigDisabledPageIntegration(
     remoteModel: RemoteProviderConfigModel,
     privacyModel: RemotePrivacyGateModel,
-    providerRequests: RemoteProviderConfigBridge.Requests,
-    privacyRequests: RemotePrivacyRulesBridge.Requests,
+    providerBridge: RemoteProviderConfigBridge,
+    privacyBridge: RemotePrivacyRulesBridge,
     store: RemoteProviderTestCredentialStore,
     file: StaticString = #filePath,
     line: UInt = #line
-) {
+) async {
     let expectedScopes: [AISettingsFeatureKind] = [.classificationSuggestions, .autoSummaries]
-    XCTAssertEqual(providerRequests.disable?.removeStoredCredential, false, file: file, line: line)
+    await providerBridge.assertDisableRequest(removeStoredCredential: false, file: file, line: line)
     XCTAssertEqual(remoteModel.snapshot?.remoteProviderEnabled, false, file: file, line: line)
     XCTAssertEqual(remoteModel.snapshot?.credentialConfigured, true, file: file, line: line)
     XCTAssertEqual(remoteModel.snapshot?.featureScope, expectedScopes, file: file, line: line)
     XCTAssertEqual(privacyModel.snapshot?.privacyGateEnabled, false, file: file, line: line)
-    XCTAssertEqual(privacyRequests.updates.last?.privacyGateEnabled, false, file: file, line: line)
-    XCTAssertEqual(privacyRequests.updates.last?.providerScope.remoteProviderEnabled, false, file: file, line: line)
+    await privacyBridge.assertUpdate(at: 1, privacyGateEnabled: false, file: file, line: line)
+    await privacyBridge.assertProviderScope(at: 1, remoteProviderEnabled: false, file: file, line: line)
     XCTAssertEqual(store.storedKeys(), ["keychain:openAi-managed": "integration-api-key"], file: file, line: line)
     XCTAssertEqual(store.removedReferences(), [], file: file, line: line)
 }
 
 @MainActor
-// swiftlint:disable:next function_parameter_count
 func assertAIPrivacyRemoteProviderStatus(
     _ snapshot: RemoteProviderConfigState,
-    status: String,
-    verified: String,
-    enabled: String,
-    scope: String,
-    allowsGate: Bool,
+    _ expected: AIPrivacyRemoteProviderStatusExpectation,
     file: StaticString = #filePath,
     line: UInt = #line
 ) async {
@@ -76,9 +115,19 @@ func assertAIPrivacyRemoteProviderStatus(
 
     await model.load()
 
-    XCTAssertEqual(model.providerStatusText, status, file: file, line: line)
-    XCTAssertEqual(model.verifiedStatusText, verified, file: file, line: line)
-    XCTAssertEqual(model.enabledStatusText, enabled, file: file, line: line)
-    XCTAssertEqual(model.featureScopeText, scope, file: file, line: line)
-    XCTAssertEqual(model.allowsPrivacyGateEnable, allowsGate, file: file, line: line)
+    assertAIPrivacyRemoteProviderStatus(model, expected, file: file, line: line)
+}
+
+@MainActor
+func assertAIPrivacyRemoteProviderStatus(
+    _ model: AIPrivacyRemoteProviderStateModel,
+    _ expected: AIPrivacyRemoteProviderStatusExpectation,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    XCTAssertEqual(model.providerStatusText, expected.providerStatus, file: file, line: line)
+    XCTAssertEqual(model.verifiedStatusText, expected.verifiedStatus, file: file, line: line)
+    XCTAssertEqual(model.enabledStatusText, expected.enabledStatus, file: file, line: line)
+    XCTAssertEqual(model.featureScopeText, expected.featureScope, file: file, line: line)
+    XCTAssertEqual(model.allowsPrivacyGateEnable, expected.allowsPrivacyGateEnable, file: file, line: line)
 }

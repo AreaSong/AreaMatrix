@@ -4,13 +4,12 @@ import XCTest
 final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
     @MainActor
     func testDetailLogSyncExternalRemovedCoreProductionRelayCreatesCurrentMainWindowRemovedEvent() throws {
-        let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            startupRecoverer: StaticStartupRecoverer(),
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeShellMainListFixture(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
+            model: makeShellOnboardingModel()
         )
-        model.route = .mainList(opening)
+        let opening = fixture.opening
+        let model = fixture.model
 
         AreaMatrixExternalCreatedFileRelay.publish(
             kind: .removed,
@@ -81,11 +80,8 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
 
         await model.selectFiles([removed.id])
         await model.syncExternalCreated(event)
-        let syncRequests = await syncer.recordedRemovedRequests()
-        let listRequests = await fileLister.recordedListRequests()
-        let logRequests = await lister.recordedRequests()
 
-        XCTAssertEqual(syncRequests, [
+        await syncer.assertRecordedRemovedRequests([
             ExternalSyncRequest(
                 kind: .removed,
                 repoPath: "/tmp/repo",
@@ -93,7 +89,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
                 fsEventID: 10001
             )
         ])
-        XCTAssertEqual(listRequests, [DetailLogExternalRemovedListRequest(
+        await fileLister.assertRecordedListRequests([DetailLogExternalRemovedListRequest(
             repoPath: "/tmp/repo",
             filter: .currentCategory(nil)
         )])
@@ -108,7 +104,9 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
             model.detailExternalCreateSyncState,
             .synced(event: event, fileID: removed.id, .detailRemovedFixture())
         )
-        XCTAssertEqual(logRequests, [DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: removed.id))])
+        await lister.assertRecordedRequests([
+            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: removed.id))
+        ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: removed.id, entries: [entry]))
     }
 
@@ -135,12 +133,10 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
 
         await model.selectFiles([selected.id])
         await model.syncExternalCreated(event)
-        let mappedErrors = await mapper.recordedErrors()
-        let logRequests = await lister.recordedRequests()
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "delete log failed")])
-        XCTAssertEqual(logRequests, [])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "delete log failed")])
+        await lister.assertRecordedRequests([])
         XCTAssertEqual(model.detailLogState, .notLoaded)
     }
 
@@ -168,10 +164,9 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         await model.selectFiles([selected.id])
         await model.syncExternalCreated(event)
         let mappedErrors = await mapper.recordedErrors()
-        let logRequests = await lister.recordedRequests()
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        XCTAssertEqual(logRequests, [])
+        await lister.assertRecordedRequests([])
         guard case let .Internal(message) = mappedErrors.first else {
             return XCTFail("expected internal error for missing detected delete")
         }

@@ -42,13 +42,12 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         shell.route = .settingsGeneral(opening)
         shell.settingsGeneralSelectedTab = "advanced"
         shell.openMainRepositoryRepair(repoPath: context.repoURL.path)
-        let recoveryRequests = await recoverer.requestedRepoPaths()
 
-        assertAdvancedSettingsRepairExit(
+        await assertAdvancedSettingsRepairExit(
             shell: shell,
             opening: opening,
             context: context,
-            recoveryRequests: recoveryRequests
+            recoverer: recoverer
         )
     }
 
@@ -120,7 +119,6 @@ private func assertAdvancedSettingsSavedConfig(_ context: AdvancedSettingsIntegr
 
 @MainActor
 private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSettingsIntegrationContext) async throws {
-    let diagnosticsRepoPaths = await context.diagnosticsCollector.requestedRepoPaths()
     let rootOverview = try String(contentsOf: context.rootOverviewURL)
     let generatedOverview = try String(contentsOf: context.generatedOverviewURL)
     XCTAssertEqual(context.model.draft?.overviewOutput, .rootAreaMatrixFile)
@@ -134,7 +132,7 @@ private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSet
     XCTAssertEqual(context.model.versionInfo.repoSchemaVersion, 2)
     XCTAssertNil(context.model.versionError)
     XCTAssertEqual(context.model.diagnosticsState, .collected(context.diagnosticsSnapshot))
-    XCTAssertEqual(diagnosticsRepoPaths, [context.repoURL.path])
+    await context.diagnosticsCollector.assertRequestedRepoPaths([context.repoURL.path])
     XCTAssertEqual(context.logsOpener.openedRepoPaths, [context.repoURL.path])
     assertAdvancedSettingsCopiedSummary(context.summaryCopier.copiedSummaries)
 }
@@ -152,8 +150,8 @@ private func assertAdvancedSettingsRepairExit(
     shell: OnboardingModel,
     opening: RepositoryOpeningResult,
     context: AdvancedSettingsIntegrationContext,
-    recoveryRequests: [String]
-) {
+    recoverer: RecordingCoreStartupRecoverer
+) async {
     XCTAssertEqual(
         shell.route,
         .dbRepairConfirm(DatabaseRepairRouteState(
@@ -164,7 +162,7 @@ private func assertAdvancedSettingsRepairExit(
         ))
     )
     XCTAssertEqual(shell.settingsGeneralSelectedTab, "advanced")
-    XCTAssertEqual(recoveryRequests, [])
+    await recoverer.assertNoRequests()
 }
 
 private struct AdvancedSettingsIntegrationContext {

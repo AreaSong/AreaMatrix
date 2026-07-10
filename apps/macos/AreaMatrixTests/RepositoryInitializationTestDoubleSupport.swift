@@ -99,9 +99,13 @@ actor PausingRepositoryInitializer: CoreRepositoryInitializing {
     }
 
     func waitUntilStarted() async {
-        while !didStart {
-            await Task.yield()
-        }
+        _ = await waitForActorTestValue(
+            on: self,
+            failureMessage: { "Timed out waiting for repository initialization to start" },
+            value: {
+                didStart ? true : nil
+            }
+        )
     }
 
     func createdRepoPaths() -> [String] {

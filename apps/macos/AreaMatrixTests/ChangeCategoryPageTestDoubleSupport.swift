@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 enum ChangeCategoryRequest: Equatable {
     case preview(repoPath: String, fileID: Int64, targetCategory: String)
@@ -57,6 +58,14 @@ actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
 
     func recordedRequests() -> [ChangeCategoryRequest] {
         requests
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [ChangeCategoryRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 }
 

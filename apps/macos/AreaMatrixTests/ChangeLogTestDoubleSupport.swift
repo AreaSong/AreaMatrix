@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct ChangeLogListRequest: Equatable {
     var repoPath: String
@@ -26,5 +27,13 @@ actor RecordingChangeLogLister: CoreChangeLogListing {
 
     func recordedRequests() -> [ChangeLogListRequest] {
         requestsStorage
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [ChangeLogListRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
     }
 }

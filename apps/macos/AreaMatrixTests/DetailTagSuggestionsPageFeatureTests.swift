@@ -67,9 +67,8 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
             await model.loadSelectedFileTagSuggestions()
             await model.loadSelectedFileTags()
 
-            let listRequests = await tagStore.listRequests()
             let applyRequests = await tagStore.applySuggestionRequests()
-            XCTAssertEqual(listRequests, [
+            await tagStore.assertListRequests([
                 DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)
             ])
             XCTAssertEqual(applyRequests, [])
@@ -102,7 +101,6 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
         await model.loadSelectedFileTagSuggestions()
         let undoState = await model.applySelectedFileTagSuggestions()
         let applyRequests = await tagStore.applySuggestionRequests()
-        let undoRequests = await undoStore.listRequests()
 
         XCTAssertEqual(applyRequests, [
             ApplyTagSuggestionsRequestRecord(
@@ -121,7 +119,7 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
         ])
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["finance"])
         XCTAssertEqual(model.detailTagSuggestionState.appliedReport?.undoToken, "undo-tagSuggestions")
-        XCTAssertEqual(undoRequests, ["/tmp/repo"])
+        await undoStore.assertListRequests(["/tmp/repo"])
         XCTAssertEqual(undoState?.action?.actionID, "undo-tagSuggestions")
         XCTAssertNotNil(model.detailLogState.entries)
     }

@@ -22,10 +22,9 @@ final class RenameFilePageFeatureTests: XCTestCase {
         await model.selectFiles([original.id])
         model.beginRename()
         let didRename = await model.submitRename(fileID: original.id, newName: "new.pdf")
-        let requests = await renamer.recordedRequests()
 
         XCTAssertTrue(didRename)
-        XCTAssertEqual(requests, [
+        await renamer.assertRecordedRequests([
             RenameRequest(repoPath: "/tmp/repo", fileID: original.id, newName: "new.pdf")
         ])
         XCTAssertEqual(model.files, [renamed])
@@ -54,14 +53,13 @@ final class RenameFilePageFeatureTests: XCTestCase {
         await model.selectFiles([original.id])
         model.beginRename()
         let didRename = await model.submitRename(fileID: original.id, newName: "new.pdf")
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertFalse(didRename)
         XCTAssertEqual(model.files, [original])
         XCTAssertEqual(model.selectedFileDetail, original)
         XCTAssertEqual(model.pendingActionDestination, .rename(fileID: original.id))
         XCTAssertEqual(model.renameState, .failed(fileID: original.id, mapping))
-        XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "docs/contracts/new.pdf")])
+        await mapper.assertRecordedErrors([CoreError.Conflict(path: "docs/contracts/new.pdf")])
     }
 
     @MainActor
@@ -312,12 +310,10 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
         XCTAssertEqual(loadedPreview.applyReport, preview)
         XCTAssertEqual(applyResult.report, report)
-        let previewRequests = await renamer.previewRequests
-        let applyRequests = await renamer.applyRequests
-        XCTAssertEqual(previewRequests, [
+        await renamer.assertPreviewRequests([
             BatchRenamePreviewRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule)
         ])
-        XCTAssertEqual(applyRequests, [
+        await renamer.assertApplyRequests([
             BatchRenameApplyRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule, token: "preview-token")
         ])
     }
@@ -353,10 +349,12 @@ final class RenameFilePageFeatureTests: XCTestCase {
         )
 
         XCTAssertEqual(loadedPreview.applyReport?.items.map(\.fileID), [30, 10, 20])
-        let previewFileIDs = await renamer.previewRequests.map(\.fileIDs)
-        let applyFileIDs = await renamer.applyRequests.map(\.fileIDs)
-        XCTAssertEqual(previewFileIDs, [[30, 10, 20]])
-        XCTAssertEqual(applyFileIDs, [[30, 10, 20]])
+        await renamer.assertPreviewRequests([
+            BatchRenamePreviewRequest(repoPath: "/repo", fileIDs: [30, 10, 20], rule: rule)
+        ])
+        await renamer.assertApplyRequests([
+            BatchRenameApplyRequest(repoPath: "/repo", fileIDs: [30, 10, 20], rule: rule, token: "preview-token")
+        ])
     }
 
     func testBatchRenameUndoBatchRenamePreviewCoreBatchRenameEntryUsesListOrderInsteadOfIDOrNameOrder() {

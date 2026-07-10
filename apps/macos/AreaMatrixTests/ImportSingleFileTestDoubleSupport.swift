@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 typealias ImportSingleFileStaticICloudDownloader = StaticICloudPlaceholderDownloader
 typealias ImportSingleFilePredictRequest = CategoryPredictionRequest
@@ -43,5 +44,13 @@ actor ImportSingleFileStaticFileLoader: ImportBatchCoreFileLoading {
 
     func recordedRequests() -> [ImportSingleFileFileLoadRequest] {
         requests
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [ImportSingleFileFileLoadRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 }

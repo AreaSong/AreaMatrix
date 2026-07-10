@@ -5,9 +5,7 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testSearchResultsPageIntegrationWiresSearchFiltersResultDetailAndClear() async {
         let tree = RepositoryTreeNodeSnapshot.searchResultsFixtureTree()
-        guard let row = tree.sidebarRow(id: "docs/contracts") else {
-            return XCTFail("expected docs/contracts sidebar row")
-        }
+        guard let row = requireSidebarRow(tree, id: "docs/contracts") else { return }
         let resultFile = FileEntrySnapshot.searchResultsFixture(
             id: 298,
             path: "docs/contracts/customer.pdf",
@@ -51,9 +49,7 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
     // swiftlint:disable:next function_body_length
     func testSearchResultsPageIntegrationRoutesEmptyQueryErrorIndexingSaveAndCommandEntrances() async {
         let tree = RepositoryTreeNodeSnapshot.searchResultsFixtureTree()
-        guard let row = tree.sidebarRow(id: "docs/contracts") else {
-            return XCTFail("expected docs/contracts sidebar row")
-        }
+        guard let row = requireSidebarRow(tree, id: "docs/contracts") else { return }
         let diagnostic = SearchQueryDiagnosticSnapshot.testFixture(
             message: "Unknown field: owner",
             suggestion: "Use category:"

@@ -4,11 +4,7 @@ import XCTest
 final class AreaMatrixShellValidatePathTests: XCTestCase {
     @MainActor
     func testWelcomeLearnMoreFailureIsNonBlockingToast() {
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
-            helpOpener: ShellFailingWelcomeHelpOpener()
-        )
+        let model = makeShellOnboardingModel(helpOpener: ShellFailingWelcomeHelpOpener())
 
         model.openLearnMore()
 
@@ -20,19 +16,13 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
     func testChoosePathContinueShowsValidatePathAndStoresCoreResult() async {
         let validation = RepoPathValidationSnapshot.shellFixture(repoPath: "/tmp/repo")
         let validator = ShellRecordingPathValidator(result: .success(validation))
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
-            pathValidator: validator,
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeShellOnboardingModel(pathValidator: validator)
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        let requestedRepoPaths = await validator.requestedRepoPaths()
 
         XCTAssertEqual(model.route, .validatePath)
-        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
+        await validator.assertRequestedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.repositoryPathValidation, validation)
         XCTAssertTrue(model.canContinueFromValidatePath)
         XCTAssertEqual(model.choosePathAction, .continueRequested(validation))
@@ -40,11 +30,8 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
 
     @MainActor
     func testValidatePathKeepsPermissionFailureOnValidatePage() async {
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
-            pathValidator: ShellRecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo"))),
-            helpOpener: NoopWelcomeHelpOpener()
+        let model = makeShellOnboardingModel(
+            pathValidator: ShellRecordingPathValidator(result: .failure(CoreError.PermissionDenied(path: "/tmp/repo")))
         )
 
         model.updateRepositoryPath("/tmp/repo")
@@ -63,12 +50,9 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
             isICloudPath: true,
             issues: [.iCloudPath]
         )
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+        let model = makeShellOnboardingModel(
             settingsWriter: UserDefaultsAppSettingsReader(repoPathKey: "AreaMatrix.testRepoPath"),
-            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
-            pathValidator: ShellRecordingPathValidator(result: .success(validation)),
-            helpOpener: NoopWelcomeHelpOpener()
+            pathValidator: ShellRecordingPathValidator(result: .success(validation))
         )
 
         model.updateRepositoryPath(validation.repoPath)
@@ -89,12 +73,7 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
             issues: [.notWritable],
             recommendedMode: nil
         )
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
-            pathValidator: ShellRecordingPathValidator(result: .success(validation)),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeShellOnboardingModel(pathValidator: ShellRecordingPathValidator(result: .success(validation)))
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
@@ -116,21 +95,16 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
         let opener = ShellRecordingRepositoryOpener(result: .success(opening))
         let writer = ShellRecordingSettingsWriter()
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+        let model = makeShellOnboardingModel(
             settingsWriter: writer,
-            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: ShellRecordingPathValidator(result: .success(validation)),
             emptyRepositoryOpener: opener,
-            startupRecoverer: StaticStartupRecoverer(),
-            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(schemaVersion: 1),
-            helpOpener: NoopWelcomeHelpOpener()
+            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(schemaVersion: 1)
         )
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
-        let requestedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
         XCTAssertEqual(model.existingRepositoryMetadata?.schemaVersion, 1)
         XCTAssertEqual(model.validatePathPrimaryActionTitle, "Open Repository")
@@ -138,7 +112,7 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
             model.validatePathAction,
             OnboardingModel.ValidatePathAction.openExistingRepositoryRequested(validation)
         )
-        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
+        await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
         XCTAssertEqual(writer.successfulRepoOpens.map(\.repoPath), ["/tmp/repo"])
         XCTAssertEqual(model.route, .mainList(opening))
@@ -155,29 +129,22 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         )
         let opener = ShellRecordingRepositoryOpener(result: .failure(CoreError.Db(message: "open failed")))
         let writer = ShellRecordingSettingsWriter()
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+        let model = makeShellOnboardingModel(
             settingsWriter: writer,
-            configLoader: ShellRecordingConfigLoader(result: .success(.shellFixture(repoPath: "/tmp/repo"))),
             pathValidator: ShellRecordingPathValidator(result: .success(validation)),
             emptyRepositoryOpener: opener,
-            startupRecoverer: StaticStartupRecoverer(),
-            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(schemaVersion: 1),
-            helpOpener: NoopWelcomeHelpOpener()
+            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(schemaVersion: 1)
         )
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
-        let requestedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case let .mainRepoError(repoPath, mapping) = model.route else {
-            return XCTFail("expected main repo error, got \(model.route)")
-        }
+        guard let route = requireMainRepoErrorRoute(model, message: "expected main repo error") else { return }
 
-        XCTAssertEqual(repoPath, "/tmp/repo")
-        XCTAssertEqual(mapping?.kind, .db)
-        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
+        XCTAssertEqual(route.repoPath, "/tmp/repo")
+        XCTAssertEqual(route.mapping?.kind, .db)
+        await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, [])
     }
 
@@ -188,13 +155,11 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         let opener = RecordingRepositoryFileOpener()
         let copier = ShellRecordingPathCopier()
         let announcer = RecordingAccessibilityAnnouncer()
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
+        let model = makeShellOnboardingModel(
             fileRevealer: revealer,
             fileOpener: opener,
             pathCopier: copier,
-            accessibilityAnnouncer: announcer,
-            helpOpener: NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: announcer
         )
 
         model.showMainListFileInFinder(opening: opening, relativePath: "docs/a.pdf")
@@ -202,14 +167,19 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         model.copyMainListPath(opening: opening, relativePath: "docs/a.pdf")
         model.copyMainListPaths(opening: opening, relativePaths: ["docs/a.pdf", "docs/b.pdf"])
 
-        XCTAssertEqual(revealer.requests.map(\.repoPath), ["/tmp/repo"])
-        XCTAssertEqual(revealer.requests.map(\.relativePath), ["docs/a.pdf"])
-        XCTAssertEqual(opener.requests.map(\.repoPath), ["/tmp/repo"])
-        XCTAssertEqual(opener.requests.map(\.relativePath), ["docs/a.pdf.md"])
-        XCTAssertEqual(copier.requests.map(\.repoPath), ["/tmp/repo"])
-        XCTAssertEqual(copier.requests.map(\.relativePath), ["docs/a.pdf"])
-        XCTAssertEqual(copier.multiPathRequests.map(\.repoPath), ["/tmp/repo"])
-        XCTAssertEqual(copier.multiPathRequests.map(\.relativePaths), [["docs/a.pdf", "docs/b.pdf"]])
+        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+            repoPath: "/tmp/repo",
+            relativePath: "docs/a.pdf"
+        )])
+        opener.assertRequests([RecordingRepositoryFileOpener.Request(
+            repoPath: "/tmp/repo",
+            relativePath: "docs/a.pdf.md"
+        )])
+        copier.assertRequests([ShellRecordingPathCopier.Request(repoPath: "/tmp/repo", relativePath: "docs/a.pdf")])
+        copier.assertMultiPathRequests([ShellRecordingPathCopier.MultiPathRequest(
+            repoPath: "/tmp/repo",
+            relativePaths: ["docs/a.pdf", "docs/b.pdf"]
+        )])
         XCTAssertEqual(model.toastMessage, "2 paths copied.")
         XCTAssertEqual(announcer.announcements, ["Path copied.", "2 paths copied."])
     }
@@ -217,16 +187,12 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
     @MainActor
     func testMainRepoErrorRevealLastKnownFolderUsesFinderWithoutMutatingRepoState() {
         let finder = RecordingRepositoryFinderOpener()
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            finderOpener: finder,
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeShellOnboardingModel(finderOpener: finder)
         model.route = .mainRepoError("/tmp/repo", nil)
 
         model.revealMainRepositoryFolder(repoPath: "/tmp/repo")
 
-        XCTAssertEqual(finder.repoPaths, ["/tmp/repo"])
+        finder.assertRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", nil))
         XCTAssertNil(model.toastMessage)
     }

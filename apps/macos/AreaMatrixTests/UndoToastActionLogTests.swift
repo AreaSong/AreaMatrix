@@ -48,8 +48,7 @@ final class UndoToastActionLogTests: XCTestCase {
         )
 
         XCTAssertEqual(result.toastState, .ready(action))
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(listRequests, [importProgressRepoPath()])
+        await undoStore.assertListRequests([importProgressRepoPath()])
         XCTAssertEqual(action.summary, "Moved 3 files to Trash.")
     }
 
@@ -71,8 +70,7 @@ final class UndoToastActionLogTests: XCTestCase {
             )
 
             XCTAssertEqual(state, .ready(action))
-            let listRequests = await undoStore.listRequests()
-            XCTAssertEqual(listRequests, [importProgressRepoPath()])
+            await undoStore.assertListRequests([importProgressRepoPath()])
         }
     }
 
@@ -102,10 +100,8 @@ final class UndoToastActionLogTests: XCTestCase {
         XCTAssertTrue(plan.refreshesCurrentList)
         XCTAssertTrue(plan.refreshesUndoActions)
         XCTAssertEqual(refreshed.action, .undoToastExecutedTrashMove())
-        let undoRequests = await undoStore.undoRequests()
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(undoRequests, ["\(importProgressRepoPath())|\(action.actionID)"])
-        XCTAssertEqual(listRequests, [importProgressRepoPath()])
+        await undoStore.assertUndoRequests(["\(importProgressRepoPath())|\(action.actionID)"])
+        await undoStore.assertListRequests([importProgressRepoPath()])
     }
 
     @MainActor
@@ -119,8 +115,7 @@ final class UndoToastActionLogTests: XCTestCase {
         )
 
         XCTAssertEqual(result.toastState, .disabled(action, reason: "External change prevents undo."))
-        let undoRequests = await undoStore.undoRequests()
-        XCTAssertEqual(undoRequests, [])
+        await undoStore.assertUndoRequests([])
     }
 
     func testUndoToastUndoActionLogCoreViewHistoryCreatesToastScopedRequest() {

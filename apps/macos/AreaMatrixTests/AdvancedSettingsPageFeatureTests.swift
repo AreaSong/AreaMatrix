@@ -17,9 +17,8 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let requestedPaths = await loader.requestedPaths()
 
-        XCTAssertEqual(requestedPaths, ["/tmp/repo"])
+        await loader.assertRequestedPaths(["/tmp/repo"])
         XCTAssertEqual(model.loadState, .loaded)
         XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
         XCTAssertEqual(model.draft?.allowReplaceDuringImport, true)
@@ -46,16 +45,14 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     func testAdvancedSettingsRecoveryToolsEntrypointRoutesToRepairConfirmationWithoutRunningRecovery() async {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
         let recoverer = RecordingCoreStartupRecoverer()
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            startupRecoverer: recoverer,
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeShellSettingsGeneralFixture(
+            opening: opening,
+            selectedTab: "advanced",
+            model: makeShellOnboardingModel(startupRecoverer: recoverer)
         )
+        let model = fixture.model
 
-        model.route = .settingsGeneral(opening)
-        model.settingsGeneralSelectedTab = "advanced"
-        model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
-        let recoveryRequests = await recoverer.requestedRepoPaths()
+        model.openMainRepositoryRepair(repoPath: fixture.opening.config.repoPath)
 
         XCTAssertEqual(
             model.route,
@@ -66,22 +63,21 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
                 returnRoute: .settingsGeneral(opening, selectedTab: "advanced")
             ))
         )
-        XCTAssertEqual(recoveryRequests, [])
+        await recoverer.assertNoRequests()
     }
 
     @MainActor
     func testDatabaseRepairCancelFromAdvancedSettingsReturnsToSourceSettingsPage() {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeShellSettingsGeneralFixture(
+            opening: opening,
+            selectedTab: "advanced",
+            model: makeShellOnboardingModel()
         )
-        model.route = .settingsGeneral(opening)
-        model.settingsGeneralSelectedTab = "advanced"
+        let model = fixture.model
+
         model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
-        guard case let .dbRepairConfirm(repairRoute) = model.route else {
-            return XCTFail("expected db repair route")
-        }
+        guard let repairRoute = requireDatabaseRepairRoute(model, message: "expected db repair route") else { return }
 
         model.returnFromDatabaseRepair(repairRoute)
 
@@ -111,14 +107,12 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         )
 
         await model.requestOverviewOutput(.rootAreaMatrixFile)
-        let requestsBeforeConfirmation = await updater.requests()
         XCTAssertEqual(model.pendingRootOverviewStatus, .userContent)
-        XCTAssertEqual(requestsBeforeConfirmation, [])
+        await updater.assertNoRequests()
 
         await model.confirmRootOverview()
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.map(\.config.overviewOutput), ["RootAreaMatrixFile"])
+        await updater.assertRequestedConfigValues(\.overviewOutput, ["RootAreaMatrixFile"])
         XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
         XCTAssertEqual(try String(contentsOf: repoURL.appendingPathComponent("AREAMATRIX.md")), "user overview\n")
         XCTAssertEqual(try String(contentsOf: repoURL.appendingPathComponent("README.md")), "user readme\n")
@@ -138,9 +132,8 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.map(\.config.overviewOutput), ["RootAreaMatrixFile", "RootAreaMatrixFile"])
+        await updater.assertRequestedConfigValues(\.overviewOutput, ["RootAreaMatrixFile", "RootAreaMatrixFile"])
         XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
         XCTAssertNil(model.saveError)
     }
@@ -161,22 +154,19 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         let model = await loadedAdvancedModel(updater: updater)
 
         await model.requestAllowReplaceDuringImport(true)
-        let requestsBeforeConfirmation = await updater.requests()
         XCTAssertTrue(model.isReplaceConfirmationPending)
-        XCTAssertEqual(requestsBeforeConfirmation, [])
+        await updater.assertNoRequests()
 
         model.cancelAllowReplaceDuringImport()
-        let requestsAfterCancel = await updater.requests()
         XCTAssertFalse(model.isReplaceConfirmationPending)
         XCTAssertEqual(model.draft?.allowReplaceDuringImport, false)
-        XCTAssertEqual(requestsAfterCancel, [])
+        await updater.assertNoRequests()
 
         await model.requestAllowReplaceDuringImport(true)
         await model.confirmAllowReplaceDuringImport()
         await model.requestAllowReplaceDuringImport(false)
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.map(\.config.allowReplaceDuringImport), [true, false])
+        await updater.assertRequestedConfigValues(\.allowReplaceDuringImport, [true, false])
         XCTAssertEqual(model.draft?.allowReplaceDuringImport, false)
     }
 
@@ -194,9 +184,8 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.map(\.config.allowReplaceDuringImport), [true, true])
+        await updater.assertRequestedConfigValues(\.allowReplaceDuringImport, [true, true])
         XCTAssertEqual(model.draft?.allowReplaceDuringImport, true)
         XCTAssertNil(model.saveError)
     }

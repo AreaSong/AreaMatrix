@@ -53,9 +53,7 @@ final class QueryErrorPageFeatureTests: XCTestCase {
     @MainActor
     func testQueryErrorCoreDiagnosticRoutesToQueryErrorAndBlocksSmartListSave() async {
         let tree = RepositoryTreeNodeSnapshot.queryErrorFixtureTree()
-        guard let row = tree.sidebarRow(id: "docs/contracts") else {
-            return XCTFail("expected docs/contracts sidebar row")
-        }
+        guard let row = requireSidebarRow(tree, id: "docs/contracts") else { return }
         let diagnostic = SearchQueryDiagnosticSnapshot.queryErrorUnknownField()
         let searcher = MainListRecordingSearchQuerying(results: [
             .success(.queryErrorQueryErrorPage(query: "kindd:pdf tag:finance", diagnostic: diagnostic))
@@ -80,8 +78,7 @@ final class QueryErrorPageFeatureTests: XCTestCase {
         XCTAssertFalse(model.canSaveCurrentSearch)
         XCTAssertEqual(model.searchState.page?.diagnostics.first, diagnostic)
         XCTAssertEqual(model.files, [])
-        let recordedQueries = await searcher.recordedRequests().map(\.request.query)
-        XCTAssertEqual(recordedQueries, ["kindd:pdf tag:finance"])
+        await searcher.assertRecordedQueries(["kindd:pdf tag:finance"])
     }
 }
 
@@ -253,14 +250,9 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         await model.retrySearch()
 
         let runRequests = await runner.recordedRunRequests()
-        let searchRequests = await runner.recordedSearchRequests()
-        let mappedErrors = await mapper.recordedErrors()
-        XCTAssertEqual(runRequests, [
-            SmartListSmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0),
-            SmartListSmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0)
-        ])
-        XCTAssertEqual(searchRequests, [])
-        XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: "\(saved.id)")])
+        assertSmartListRunRequests(runRequests, savedSearchID: saved.id, count: 2)
+        await runner.assertSearchRequests([])
+        await mapper.assertRecordedErrors([CoreError.FileNotFound(path: "\(saved.id)")])
         XCTAssertEqual(model.searchState.page?.totalCount, 4)
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: saved.id, name: saved.name))
     }

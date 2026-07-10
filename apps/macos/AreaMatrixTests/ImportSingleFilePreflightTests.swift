@@ -19,7 +19,6 @@ final class ImportSingleFilePreflightTests: XCTestCase {
                 category: "docs",
                 targetFilename: "source.pdf"
             ))
-        let loadRequests = await fileLoader.recordedRequests()
 
         XCTAssertEqual(result.sourceSizeBytes, 10)
         XCTAssertEqual(result.hashSha256, "58100dc8fc06562ce3e578231dc948e083520ee49c4b4ee5a5a28bb4b4003feb")
@@ -27,7 +26,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(result.conflict, .none)
         XCTAssertNil(result.keepBothTargetRelativePath)
         XCTAssertNil(result.importBlockingReason())
-        XCTAssertEqual(loadRequests, [ImportSingleFileFileLoadRequest(
+        await fileLoader.assertRecordedRequests([ImportSingleFileFileLoadRequest(
             repoPath: importSingleFileRepoPath(),
             categories: [nil]
         )])

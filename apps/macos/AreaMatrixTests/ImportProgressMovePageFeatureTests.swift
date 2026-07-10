@@ -4,49 +4,33 @@ import XCTest
 final class ImportProgressMovePageFeatureTests: XCTestCase {
     @MainActor
     func testImportProgressImportMoveFileCoreSingleMoveProgressShowsMovingPhase() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportProgressMainListFixture().model
 
-        model.route = .mainList(opening)
         model.beginImportEntryProgress(currentPath: "docs/moved.pdf", storageMode: .move)
 
-        guard case let .importProgress(state) = model.route else {
-            return XCTFail("Expected import-progress import progress route")
-        }
+        guard let state = requireImportProgressRoute(model) else { return }
 
-        XCTAssertEqual(state.titleText, "正在导入 1 个文件")
-        XCTAssertEqual(state.items, [
-            ImportBatchProgressSnapshot.Item(
-                sourcePath: "docs/moved.pdf",
-                targetPath: "docs/moved.pdf",
-                phase: .moving,
-                errorMessage: nil
-            )
-        ])
+        assertSingleImportProgressItem(
+            state,
+            sourcePath: "docs/moved.pdf",
+            targetPath: "docs/moved.pdf",
+            phase: .moving
+        )
     }
 
     @MainActor
     func testImportProgressImportMoveFileCoreMoveFailureRequiresRecoveryCheckBeforeRetry() async {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let context = ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
         let recoverer = RecordingCoreStartupRecoverer(result: .success(.testFixture(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 1,
             warnings: []
         )))
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            startupRecoverer: recoverer,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportProgressMainListFixture(
+            startupRecoverer: recoverer
+        ).model
         let mapping = CoreErrorMappingSnapshot.importProgressFatalImportError(kind: .io)
 
-        model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/moved.pdf",
             retryContext: context
@@ -56,41 +40,28 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
             mapping: mapping
         )
 
-        guard case let .importProgress(failedBeforeCheck) = model.route else {
-            return XCTFail("Expected failed move import progress route")
-        }
-        XCTAssertFalse(failedBeforeCheck.canRetryCurrentItem)
-        XCTAssertEqual(failedBeforeCheck.retryStatusText, "Checking recovery state...")
-
-        await model.checkImportProgressRecoveryIfNeeded()
-        let recovererPaths = await recoverer.requestedRepoPaths()
-
-        guard case let .importProgress(checkedState) = model.route else {
-            return XCTFail("Expected checked move import progress route")
-        }
-        XCTAssertEqual(recovererPaths, [importProgressRepoPath()])
-        XCTAssertTrue(checkedState.canRetryCurrentItem)
-        XCTAssertEqual(checkedState.retryContext, context)
-        XCTAssertEqual(
-            checkedState.retryStatusText,
-            "Recovery checked: cleaned 1, reverted 1."
+        await assertImportProgressRecoveryCheckAllowsRetry(
+            model,
+            recoverer: recoverer,
+            retryContext: context,
+            failedRouteMessage: "Expected failed move import progress route",
+            checkedRouteMessage: "Expected checked move import progress route",
+            checkedStatusText: "Recovery checked: cleaned 1, reverted 1."
         )
     }
 
     @MainActor
     func testImportProgressImportMoveFileCoreRetryCurrentMoveItemUsesRealImporterAndReturnsToRepository() async {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let importer = ImportSingleFileRecordingImporter()
         let announcer = RecordingAccessibilityAnnouncer()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+        let fixture = makeImportProgressMainListFixture(
             importProgressImporter: importer,
             startupRecoverer: StaticStartupRecoverer(),
-            accessibilityAnnouncer: announcer,
-            helpOpener: NoopWelcomeHelpOpener()
+            accessibilityAnnouncer: announcer
         )
+        let opening = fixture.opening
+        let model = fixture.model
 
-        model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/moved.pdf",
             retryContext: ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
@@ -103,9 +74,8 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
         )
 
         await model.retryCurrentImportProgressItem()
-        let requests = await importer.recordedRequests()
 
-        XCTAssertEqual(requests, [
+        await importer.assertRecordedRequests([
             ImportSingleFileImportRequest(
                 mode: .move,
                 overrideCategory: "docs",

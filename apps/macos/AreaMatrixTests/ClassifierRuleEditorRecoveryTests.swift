@@ -29,9 +29,8 @@ final class ClassifierRuleEditorRecoveryTests: XCTestCase {
 
         await model.saveClassifierRuleDraft()
 
-        let lists = await editor.listRequests()
         let updates = await editor.updateRequests()
-        XCTAssertEqual(lists, [repoURL.path])
+        await editor.assertListRequests([repoURL.path])
         XCTAssertEqual(updates.first?.repoPath, repoURL.path)
         XCTAssertEqual(updates.first?.request.ruleID, "finance")
         XCTAssertEqual(updates.first?.request.displayName, "Finance Rules")

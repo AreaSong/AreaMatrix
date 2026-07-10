@@ -4,21 +4,13 @@ import XCTest
 final class ImportResultCopyRetryTests: XCTestCase {
     @MainActor
     func testImportResultImportCopyFileCoreRetryFailedCopyItemUsesCoreBridgeImporterAndUpdatesResult() async {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importResultRepoPath())
         let importer = ImportSingleFileRecordingImporter()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            importProgressImporter: importer,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportResultMainListFixture(importProgressImporter: importer).model
 
-        model.route = .mainList(opening)
-        model.showImportEntryResults(ImportResultFixtures.failedCopyProgress)
+        guard showImportResultRoute(model, progress: ImportResultFixtures.failedCopyProgress) != nil else { return }
         await model.retryImportResultFailedItems()
-        let requests = await importer.recordedRequests()
 
-        XCTAssertEqual(requests, [
+        await importer.assertRecordedRequests([
             ImportSingleFileImportRequest(
                 mode: .copy,
                 overrideCategory: "docs",
@@ -26,35 +18,38 @@ final class ImportResultCopyRetryTests: XCTestCase {
                 duplicateStrategy: .ask
             )
         ])
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
-        XCTAssertEqual(result.resultSummaryText, "Imported 2, failed 0, stopped 0, pending 0.")
-        XCTAssertEqual(result.items.map(\.status), [.imported, .imported])
-        XCTAssertFalse(result.canRetryFailedItems)
-        XCTAssertFalse(result.isRetryingFailedItems)
+        guard let result = requireImportResultRoute(model) else { return }
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 2, failed 0, stopped 0, pending 0.",
+            statuses: [.imported, .imported]
+        )
+        assertImportResultRetryAvailability(
+            result,
+            canRetryFailedItems: false,
+            isRetryingFailedItems: false
+        )
     }
 
     @MainActor
     func testImportResultRetryFailedRoutesThroughImportProgressProgressBeforeReturningResults() async {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importResultRepoPath())
         let gate = ImportSingleFileImportGate()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            importProgressImporter: ImportSingleFileSuspendingImporter(gate: gate),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
+        let model = makeImportResultMainListFixture(
+            importProgressImporter: ImportSingleFileSuspendingImporter(gate: gate)
         )
+        .model
 
-        model.route = .mainList(opening)
-        model.showImportEntryResults(ImportResultFixtures.failedCopyProgress)
+        guard showImportResultRoute(model, progress: ImportResultFixtures.failedCopyProgress) != nil else { return }
         let retryTask = Task { await model.retryImportResultFailedItems() }
         await gate.waitUntilStarted()
 
-        guard case let .importProgress(progress) = model.route else {
+        guard let progress = requireImportProgressRoute(
+            model,
+            message: "Expected import-progress import progress while retrying failed import-result items"
+        ) else {
             await gate.finish()
             await retryTask.value
-            return XCTFail("Expected import-progress import progress while retrying failed import-result items")
+            return
         }
         XCTAssertEqual(progress.resultSummaryText, "Imported 0, failed 0, stopped 0, pending 1.")
         XCTAssertEqual(progress.items.map(\.sourcePath), [importResultFailedSourcePath()])
@@ -62,41 +57,44 @@ final class ImportResultCopyRetryTests: XCTestCase {
 
         await gate.finish()
         await retryTask.value
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result after retry completes")
-        }
-        XCTAssertEqual(result.resultSummaryText, "Imported 2, failed 0, stopped 0, pending 0.")
-        XCTAssertEqual(result.items.map(\.status), [.imported, .imported])
+        guard let result = requireImportResultRoute(
+            model,
+            message: "Expected import-result import result after retry completes"
+        ) else { return }
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 2, failed 0, stopped 0, pending 0.",
+            statuses: [.imported, .imported]
+        )
     }
 
     @MainActor
     func testImportResultImportCopyFileCoreRetryFailedCopyItemMapsErrorAndKeepsRetryableRow() async {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importResultRepoPath())
         let importer = ImportSingleFileFailingImporter(
             error: CoreError.PermissionDenied(path: importResultFailedSourcePath())
         )
         let errorMapper = RecordingCoreErrorMapper.importSingleFile()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+        let model = makeImportResultMainListFixture(
             importProgressImporter: importer,
-            errorMapper: errorMapper,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+            errorMapper: errorMapper
+        ).model
 
-        model.route = .mainList(opening)
-        model.showImportEntryResults(ImportResultFixtures.failedCopyProgress)
+        guard showImportResultRoute(model, progress: ImportResultFixtures.failedCopyProgress) != nil else { return }
         await model.retryImportResultFailedItems()
-        let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: importResultFailedSourcePath())])
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
-        XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 0, pending 0.")
-        XCTAssertEqual(result.items.last?.status, .failed)
-        XCTAssertEqual(result.items.last?.reason, "无访问权限")
-        XCTAssertTrue(result.canRetryFailedItems)
-        XCTAssertFalse(result.isRetryingFailedItems)
+        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: importResultFailedSourcePath())])
+        guard let result = requireImportResultRoute(model) else { return }
+        assertImportResultSummary(result, summaryText: "Imported 1, failed 1, stopped 0, pending 0.")
+        guard let failedItem = requireImportResultItem(
+            result,
+            matching: { $0.status == .failed },
+            message: "Expected failed retry import result item"
+        ) else { return }
+        XCTAssertEqual(failedItem.reason, "无访问权限")
+        assertImportResultRetryAvailability(
+            result,
+            canRetryFailedItems: true,
+            isRetryingFailedItems: false
+        )
     }
 }

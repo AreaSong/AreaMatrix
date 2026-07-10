@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor SemanticSearchPrivacySemanticSearcher: CoreSemanticSearching {
     private var recordedIndexRequests: [SearchQueryRequestSnapshot] = []
@@ -22,7 +23,18 @@ actor SemanticSearchPrivacySemanticSearcher: CoreSemanticSearching {
         )
     }
 
-    func indexRequests() -> [SearchQueryRequestSnapshot] {
-        recordedIndexRequests
+    func assertIndexRequests(
+        _ expectedRequests: [SearchQueryRequestSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedIndexRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertNoIndexRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedIndexRequests, [], file: file, line: line)
     }
 }

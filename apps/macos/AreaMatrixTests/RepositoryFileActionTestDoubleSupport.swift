@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 @MainActor
 final class RecordingRepositoryFinderOpener: RepositoryFinderOpening {
@@ -12,6 +13,14 @@ final class RecordingRepositoryFinderOpener: RepositoryFinderOpening {
     func openRepositoryInFinder(repoPath: String) throws {
         repoPaths.append(repoPath)
         try result.get()
+    }
+
+    func assertRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(repoPaths, expectedRepoPaths, file: file, line: line)
     }
 }
 
@@ -33,6 +42,14 @@ final class RecordingRepositoryFileRevealer: RepositoryFileRevealing {
         requests.append(Request(repoPath: repoPath, relativePath: relativePath))
         try result.get()
     }
+
+    func assertRequests(
+        _ expectedRequests: [Request],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+    }
 }
 
 @MainActor
@@ -52,5 +69,13 @@ final class RecordingRepositoryFileOpener: RepositoryFileOpening {
     func openFile(repoPath: String, relativePath: String) throws {
         requests.append(Request(repoPath: repoPath, relativePath: relativePath))
         try result.get()
+    }
+
+    func assertRequests(
+        _ expectedRequests: [Request],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 }

@@ -29,8 +29,7 @@ final class BatchRenameRedoActionLogTests: XCTestCase {
         }
         XCTAssertEqual(result, .redoActionLogRedoneMove())
         XCTAssertEqual(refreshed.redoActions, [.redoActionLogExecutedMoveRedo()])
-        let redoRequests = await redoStore.redoRequests()
-        XCTAssertEqual(redoRequests, ["\(batchRenameRedoRepoPath())|\(redo.actionID)"])
+        await redoStore.assertRedoRequests(["\(batchRenameRedoRepoPath())|\(redo.actionID)"])
     }
 
     @MainActor
@@ -47,8 +46,7 @@ final class BatchRenameRedoActionLogTests: XCTestCase {
 
         XCTAssertEqual(state.failure?.kind, .conflict)
         XCTAssertEqual(state.failure?.userMessage, "Redo was cleared by the next file operation.")
-        let redoRequests = await redoStore.redoRequests()
-        XCTAssertEqual(redoRequests, [])
+        await redoStore.assertRedoRequests([])
     }
 
     @MainActor
@@ -75,8 +73,7 @@ final class BatchRenameRedoActionLogTests: XCTestCase {
         )
         XCTAssertEqual(applied.result, .redoActionLogRedoneMove())
         XCTAssertNil(applied.failure)
-        let redoRequests = await redoStore.redoRequests()
-        XCTAssertEqual(redoRequests, ["\(batchRenameRedoRepoPath())|\(action.actionID)"])
+        await redoStore.assertRedoRequests(["\(batchRenameRedoRepoPath())|\(action.actionID)"])
     }
 }
 

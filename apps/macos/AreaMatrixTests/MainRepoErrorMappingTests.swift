@@ -116,17 +116,13 @@ final class MainRepoErrorRouteTests: XCTestCase {
 
         await model.bootstrapIfNeeded()
 
-        guard case let .mainRepoError(repoPath, routeMapping) = model.route else {
-            return XCTFail("expected main repo error, got \(model.route)")
-        }
+        guard let route = requireMainRepoErrorRoute(model, message: "expected main repo error") else { return }
 
-        XCTAssertEqual(repoPath, "/tmp/repo")
-        XCTAssertEqual(routeMapping, mapping)
-        let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors.first, error)
-        XCTAssertTrue(mappedErrors.contains(error))
+        XCTAssertEqual(route.repoPath, "/tmp/repo")
+        XCTAssertEqual(route.mapping, mapping)
+        await errorMapper.assertRecordedErrors([error])
         XCTAssertEqual(
-            RepositoryErrorPresentation.mainRepo(mapping: routeMapping).primaryAction,
+            RepositoryErrorPresentation.mainRepo(mapping: route.mapping).primaryAction,
             .reconnectFolder
         )
     }
@@ -174,9 +170,7 @@ final class MainRepoErrorRouteTests: XCTestCase {
         )
         model.route = .mainRepoError("/tmp/repo", mapping)
         model.openMainRepositoryRepair(repoPath: "/tmp/repo")
-        guard case let .dbRepairConfirm(repairRoute) = model.route else {
-            return XCTFail("expected db repair route")
-        }
+        guard let repairRoute = requireDatabaseRepairRoute(model, message: "expected db repair route") else { return }
 
         model.returnFromDatabaseRepair(repairRoute)
 
@@ -229,9 +223,8 @@ final class MainRepoErrorDiagnosticsTests: XCTestCase {
 
         model.requestMainRepositoryDiagnosticsPrivacyConfirmation(repoPath: "/tmp/repo")
         await model.collectMainRepositoryDiagnostics(repoPath: "/tmp/repo")
-        let repoPaths = await collector.requestedRepoPaths()
 
-        XCTAssertEqual(repoPaths, ["/tmp/repo"])
+        await collector.assertRequestedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.mainRepoDiagnostics, .collected(snapshot))
         XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", nil))
     }
@@ -311,12 +304,10 @@ final class MainRepoReconnectFolderTests: XCTestCase {
         )
 
         await model.reconnectMainRepositoryFolder(from: "/tmp/repo")
-        let validatedPaths = await initializedValidator.requestedRepoPaths()
-        let openedPaths = await opener.requestedConfiguredRepoPaths()
 
         XCTAssertEqual(picker.chooseCount, 1)
-        XCTAssertEqual(validatedPaths, [selectedPath])
-        XCTAssertEqual(openedPaths, [selectedPath])
+        await initializedValidator.assertRequestedRepoPaths([selectedPath])
+        await opener.assertRequestedConfiguredRepoPaths([selectedPath])
         XCTAssertEqual(writer.savedRepoPaths, [selectedPath])
         XCTAssertEqual(model.route, OnboardingModel.Route.mainList(opening))
     }
@@ -355,10 +346,9 @@ final class MainRepoReconnectFolderTests: XCTestCase {
         )
 
         await model.reconnectMainRepositoryFolder(from: "/tmp/repo")
-        let openedPaths = await opener.requestedConfiguredRepoPaths()
         let expectedMapping = CoreErrorMappingSnapshot.invalidPath(rawContext: selectedPath)
 
-        XCTAssertEqual(openedPaths, [])
+        await opener.assertNoConfiguredRepoPaths()
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, expectedMapping)
         XCTAssertEqual(
             model.route,
@@ -398,9 +388,8 @@ final class MainRepoReconnectFolderTests: XCTestCase {
         )
 
         await model.reconnectMainRepositoryFolder(from: "/tmp/repo")
-        let openedPaths = await opener.requestedConfiguredRepoPaths()
 
-        XCTAssertEqual(openedPaths, [])
+        await opener.assertNoConfiguredRepoPaths()
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, .invalidPath(rawContext: selectedPath))
         XCTAssertEqual(
             model.route,

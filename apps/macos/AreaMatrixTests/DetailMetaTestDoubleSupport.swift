@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor DetailMetaImmediateDetailer: CoreFileDetailing {
     private let result: Swift.Result<FileEntrySnapshot, Error>
@@ -48,6 +49,14 @@ actor RecordingFileDetailer: CoreFileDetailing {
 
     func recordedRequests() -> [FileDetailRequest] {
         requests
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [FileDetailRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 
     func recordedFileIDs() -> [Int64] {

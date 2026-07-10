@@ -4,28 +4,18 @@ import XCTest
 final class ImportResultChangeLogTests: XCTestCase {
     @MainActor
     func testImportResultListChangeLogCoreLoadsImportChangeLogThroughCoreBridge() async {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importResultRepoPath())
         let lister = ImportResultRecordingChangeLogLister(results: [.success([
             ChangeLogEntrySnapshot.importResultFixture(id: 1, filename: importResultImportedFilename())
         ])])
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            importResultChangeLister: lister,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportResultMainListFixture(importResultChangeLister: lister).model
 
-        model.route = .mainList(opening)
-        model.showImportEntryResults(ImportResultFixtures.importedProgress)
+        guard showImportResultRoute(model, progress: ImportResultFixtures.importedProgress) != nil else { return }
         await model.loadImportResultChangeLog()
-        let requests = await lister.recordedRequests()
 
-        XCTAssertEqual(requests, [
+        await lister.assertRecordedRequests([
             ImportResultChangeLogRequest(repoPath: importResultRepoPath(), filter: .importResultRecent)
         ])
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
+        guard let result = requireImportResultRoute(model) else { return }
         XCTAssertEqual(result.changeLog, .loaded([
             ChangeLogEntrySnapshot.importResultFixture(id: 1, filename: importResultImportedFilename())
         ]))
@@ -33,27 +23,19 @@ final class ImportResultChangeLogTests: XCTestCase {
 
     @MainActor
     func testImportResultListChangeLogCoreMapsListChangesFailureInline() async {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importResultRepoPath())
         let lister =
             ImportResultRecordingChangeLogLister(results: [.failure(CoreError.Db(message: "change log locked"))])
         let errorMapper = RecordingCoreErrorMapper.importSingleFile()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+        let model = makeImportResultMainListFixture(
             importResultChangeLister: lister,
-            errorMapper: errorMapper,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+            errorMapper: errorMapper
+        ).model
 
-        model.route = .mainList(opening)
-        model.showImportEntryResults(ImportResultFixtures.importedProgress)
+        guard showImportResultRoute(model, progress: ImportResultFixtures.importedProgress) != nil else { return }
         await model.loadImportResultChangeLog()
-        let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "change log locked")])
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
+        await errorMapper.assertRecordedErrors([CoreError.Db(message: "change log locked")])
+        guard let result = requireImportResultRoute(model) else { return }
         XCTAssertEqual(result.changeLog, .failed(.importSingleFileError(kind: .db)))
     }
 

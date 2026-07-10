@@ -4,54 +4,46 @@ import XCTest
 final class ImportResultActionsTests: XCTestCase {
     @MainActor
     func testImportResultSkippedDuplicateCanShowExistingFileFromResultSummary() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importResultRepoPath())
         let revealer = RecordingRepositoryFileRevealer()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            fileRevealer: revealer,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportResultMainListFixture(fileRevealer: revealer).model
 
-        model.route = .mainList(opening)
-        model.showImportEntryResults(ImportResultFixtures.skippedDuplicateProgress)
-        guard case let .importResult(result) = model.route,
-              let skippedItem = result.items.first(where: { $0.status == .skipped })
-        else {
-            return XCTFail("Expected skipped duplicate result item")
+        guard let result = showImportResultRoute(model, progress: ImportResultFixtures.skippedDuplicateProgress) else {
+            return
         }
+        guard let skippedItem = requireImportResultItem(
+            result,
+            matching: { $0.status == .skipped },
+            message: "Expected skipped duplicate result item"
+        ) else { return }
 
         model.showImportResultExistingFile(itemID: skippedItem.id)
 
-        XCTAssertEqual(revealer.requests.map(\.repoPath), [importResultRepoPath()])
-        XCTAssertEqual(revealer.requests.map(\.relativePath), [importResultTargetPath(importResultExistingFilename())])
+        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+            repoPath: importResultRepoPath(),
+            relativePath: importResultTargetPath(importResultExistingFilename())
+        )])
         XCTAssertNil(model.toastMessage)
     }
 
     @MainActor
     func testTagSuggestionsTagSuggestionsCoreImportResultQueuesTagSuggestionReviewForImportedFile() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importResultRepoPath())
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportResultMainListFixture().model
 
-        model.route = .mainList(opening)
-        model.showImportEntryResults(ImportResultFixtures.importedProgress)
-        guard case let .importResult(result) = model.route,
-              let importedItem = result.items.first(where: { $0.canReviewTagSuggestions })
-        else {
-            return XCTFail("Expected imported result item with tag-suggestions review action")
-        }
+        guard let result = showImportResultRoute(model, progress: ImportResultFixtures.importedProgress) else { return }
+        guard let importedItem = requireImportResultItem(
+            result,
+            matching: { $0.canReviewTagSuggestions },
+            message: "Expected imported result item with tag-suggestions review action"
+        ) else { return }
 
         model.reviewImportResultTagSuggestions(itemID: importedItem.id)
 
         XCTAssertEqual(model.pendingTagSuggestionFocus?.fileID, 117)
         XCTAssertEqual(model.pendingTagSuggestionFocus?.source, .importResult)
-        guard case let .mainList(mainOpening) = model.route else {
-            return XCTFail("Expected main list route for tag-suggestions tag suggestions")
-        }
+        guard let mainOpening = requireMainListRoute(
+            model,
+            message: "Expected main list route for tag-suggestions tag suggestions"
+        ) else { return }
         XCTAssertTrue(
             mainOpening.currentCategoryFiles.contains {
                 $0.id == 117 && $0.path == importResultTargetPath(importResultImportedFilename())
@@ -61,21 +53,12 @@ final class ImportResultActionsTests: XCTestCase {
 
     @MainActor
     func testImportResultExportDetailsUsesRedactedPathsAndPrivacyState() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importResultRepoPath())
         let exporter = ImportResultExporter()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            importResultExporter: exporter,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportResultMainListFixture(importResultExporter: exporter).model
 
-        model.route = .mainList(opening)
-        model.showImportEntryResults(ImportResultFixtures.failedCopyProgress)
+        guard showImportResultRoute(model, progress: ImportResultFixtures.failedCopyProgress) != nil else { return }
         model.requestImportResultExportPrivacyConfirmation()
-        guard case let .importResult(confirming) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
+        guard let confirming = requireImportResultRoute(model) else { return }
         XCTAssertEqual(confirming.exportState, .confirmingPrivacy)
 
         model.exportImportResultDetails()
@@ -83,9 +66,7 @@ final class ImportResultActionsTests: XCTestCase {
         XCTAssertEqual(exporter.requests.map(\.suggestedFilename), [importResultExportFilename()])
         XCTAssertTrue(exporter.requests.first?.details.contains(".../failed.pdf") == true)
         XCTAssertFalse(exporter.requests.first?.details.contains(importResultFailedSourcePath()) == true)
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
+        guard let result = requireImportResultRoute(model) else { return }
         XCTAssertEqual(result.exportState, .exported(importResultExportPath()))
         XCTAssertEqual(model.toastMessage, "Import result details exported.")
     }

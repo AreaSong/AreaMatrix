@@ -18,10 +18,8 @@ final class UndoHistoryActionLogTests: XCTestCase {
         XCTAssertEqual(state.actions, [latest, older])
         XCTAssertEqual(UndoHistoryActionLog.action(in: state.actions, focusedActionID: older.actionID), older)
         XCTAssertNil(state.failure)
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(listRequests, [importProgressRepoPath()])
-        let redoListRequests = await redoStore.listRequests()
-        XCTAssertEqual(redoListRequests, [importProgressRepoPath()])
+        await undoStore.assertListRequests([importProgressRepoPath()])
+        await redoStore.assertListRequests([importProgressRepoPath()])
     }
 
     @MainActor
@@ -44,10 +42,8 @@ final class UndoHistoryActionLogTests: XCTestCase {
 
         XCTAssertEqual(state.actions, [.undoHistoryExecutedTrashMove(), older])
         XCTAssertEqual(state.snapshot.redoActions, [redo])
-        let undoRequests = await undoStore.undoRequests()
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(undoRequests, ["\(importProgressRepoPath())|\(latest.actionID)"])
-        XCTAssertEqual(listRequests, [importProgressRepoPath()])
+        await undoStore.assertUndoRequests(["\(importProgressRepoPath())|\(latest.actionID)"])
+        await undoStore.assertListRequests([importProgressRepoPath()])
     }
 
     @MainActor
@@ -71,8 +67,7 @@ final class UndoHistoryActionLogTests: XCTestCase {
         }
         XCTAssertEqual(mapping.kind, .db)
         XCTAssertEqual(previous.undoActions, [latest])
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(listRequests, [importProgressRepoPath()])
+        await undoStore.assertListRequests([importProgressRepoPath()])
     }
 
     @MainActor
@@ -90,8 +85,7 @@ final class UndoHistoryActionLogTests: XCTestCase {
 
         XCTAssertEqual(state.actions, [blocked])
         XCTAssertEqual(state.failure?.userMessage, "External change prevents undo.")
-        let undoRequests = await undoStore.undoRequests()
-        XCTAssertEqual(undoRequests, [])
+        await undoStore.assertUndoRequests([])
     }
 
     @MainActor

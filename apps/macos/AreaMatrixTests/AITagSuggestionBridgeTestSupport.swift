@@ -1,6 +1,130 @@
 @testable import AreaMatrix
 import XCTest
 
+private struct AITagSuggestionBridgeRequests {
+    let suggest: [AiTagSuggestionRequest]
+    let apply: [ApplyAiTagSuggestionsRequest]
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(suggest, [], file: file, line: line)
+        XCTAssertEqual(apply, [], file: file, line: line)
+    }
+
+    func assertNoApplyRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(apply, [], file: file, line: line)
+    }
+
+    func assertSuggestFileIDs(
+        _ expectedFileIDs: [Int64],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(suggest.map(\.fileId).sorted(), expectedFileIDs.sorted(), file: file, line: line)
+    }
+
+    func assertApplyFileIDs(
+        _ expectedFileIDs: [Int64],
+        confirmed expectedConfirmed: Bool? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            apply.map(\.fileId).sorted(),
+            expectedFileIDs.sorted(),
+            file: file,
+            line: line
+        )
+        if let expectedConfirmed {
+            XCTAssertEqual(
+                apply.map(\.confirmed),
+                Array(repeating: expectedConfirmed, count: apply.count),
+                file: file,
+                line: line
+            )
+        }
+    }
+
+    @discardableResult
+    func assertSingleSuggestRequest(
+        fileID expectedFileID: Int64? = nil,
+        candidateTags expectedCandidateTags: [String]? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> AiTagSuggestionRequest? {
+        XCTAssertEqual(suggest.count, 1, file: file, line: line)
+        let request = suggest.first
+        if let expectedFileID {
+            XCTAssertEqual(request?.fileId, expectedFileID, file: file, line: line)
+        }
+        if let expectedCandidateTags {
+            XCTAssertEqual(request?.candidateTags, expectedCandidateTags, file: file, line: line)
+        }
+        return request
+    }
+
+    @discardableResult
+    func assertSingleApplyRequest(
+        fileID expectedFileID: Int64? = nil,
+        confirmed expectedConfirmed: Bool? = nil,
+        callLogID expectedCallLogID: Int64? = nil,
+        suggestionIDs expectedSuggestionIDs: [String]? = nil,
+        firstSuggestionDisplayName expectedFirstSuggestionDisplayName: String? = nil,
+        firstSuggestionSlug expectedFirstSuggestionSlug: String? = nil,
+        firstSuggestionEditedByUser expectedFirstSuggestionEditedByUser: Bool? = nil,
+        firstSuggestionMergeTargetSlug expectedFirstSuggestionMergeTargetSlug: String? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(apply.count, 1, file: file, line: line)
+        let request = apply.first
+        if let expectedFileID {
+            XCTAssertEqual(request?.fileId, expectedFileID, file: file, line: line)
+        }
+        if let expectedConfirmed {
+            XCTAssertEqual(request?.confirmed, expectedConfirmed, file: file, line: line)
+        }
+        if let expectedCallLogID {
+            XCTAssertEqual(request?.callLogId, expectedCallLogID, file: file, line: line)
+        }
+        if let expectedSuggestionIDs {
+            XCTAssertEqual(request?.suggestions.map(\.suggestionId), expectedSuggestionIDs, file: file, line: line)
+        }
+        if let expectedFirstSuggestionDisplayName {
+            XCTAssertEqual(
+                request?.suggestions.first?.displayName,
+                expectedFirstSuggestionDisplayName,
+                file: file,
+                line: line
+            )
+        }
+        if let expectedFirstSuggestionSlug {
+            XCTAssertEqual(request?.suggestions.first?.slug, expectedFirstSuggestionSlug, file: file, line: line)
+        }
+        if let expectedFirstSuggestionEditedByUser {
+            XCTAssertEqual(
+                request?.suggestions.first?.editedByUser,
+                expectedFirstSuggestionEditedByUser,
+                file: file,
+                line: line
+            )
+        }
+        if let expectedFirstSuggestionMergeTargetSlug {
+            XCTAssertEqual(
+                request?.suggestions.first?.mergeTargetSlug,
+                expectedFirstSuggestionMergeTargetSlug,
+                file: file,
+                line: line
+            )
+        }
+    }
+}
+
 actor AITagSuggestionAITagBridge: CoreAITagSuggestionManaging {
     private let report: AiTagSuggestionReport
     private var suggestRequests: [AiTagSuggestionRequest] = []
@@ -25,8 +149,79 @@ actor AITagSuggestionAITagBridge: CoreAITagSuggestionManaging {
         return aiTagSuggestionApplyReport(fileID: request.fileId)
     }
 
-    func requests() -> (suggest: [AiTagSuggestionRequest], apply: [ApplyAiTagSuggestionsRequest]) {
-        (suggestRequests, applyRequests)
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertNoRequests(file: file, line: line)
+    }
+
+    func assertNoApplyRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertNoApplyRequests(file: file, line: line)
+    }
+
+    func assertSuggestFileIDs(
+        _ expectedFileIDs: [Int64],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertSuggestFileIDs(expectedFileIDs, file: file, line: line)
+    }
+
+    func assertApplyFileIDs(
+        _ expectedFileIDs: [Int64],
+        confirmed expectedConfirmed: Bool? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertApplyFileIDs(expectedFileIDs, confirmed: expectedConfirmed, file: file, line: line)
+    }
+
+    func assertSingleSuggestRequest(
+        fileID expectedFileID: Int64? = nil,
+        candidateTags expectedCandidateTags: [String]? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertSingleSuggestRequest(
+            fileID: expectedFileID,
+            candidateTags: expectedCandidateTags,
+            file: file,
+            line: line
+        )
+    }
+
+    func assertSingleApplyRequest(
+        fileID expectedFileID: Int64? = nil,
+        confirmed expectedConfirmed: Bool? = nil,
+        callLogID expectedCallLogID: Int64? = nil,
+        suggestionIDs expectedSuggestionIDs: [String]? = nil,
+        firstSuggestionDisplayName expectedFirstSuggestionDisplayName: String? = nil,
+        firstSuggestionSlug expectedFirstSuggestionSlug: String? = nil,
+        firstSuggestionEditedByUser expectedFirstSuggestionEditedByUser: Bool? = nil,
+        firstSuggestionMergeTargetSlug expectedFirstSuggestionMergeTargetSlug: String? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertSingleApplyRequest(
+            fileID: expectedFileID,
+            confirmed: expectedConfirmed,
+            callLogID: expectedCallLogID,
+            suggestionIDs: expectedSuggestionIDs,
+            firstSuggestionDisplayName: expectedFirstSuggestionDisplayName,
+            firstSuggestionSlug: expectedFirstSuggestionSlug,
+            firstSuggestionEditedByUser: expectedFirstSuggestionEditedByUser,
+            firstSuggestionMergeTargetSlug: expectedFirstSuggestionMergeTargetSlug,
+            file: file,
+            line: line
+        )
+    }
+
+    private var requestsSnapshot: AITagSuggestionBridgeRequests {
+        AITagSuggestionBridgeRequests(suggest: suggestRequests, apply: applyRequests)
     }
 }
 
@@ -66,7 +261,78 @@ actor AITagSuggestionBatchAITagBridge: CoreAITagSuggestionManaging {
         )
     }
 
-    func requests() -> (suggest: [AiTagSuggestionRequest], apply: [ApplyAiTagSuggestionsRequest]) {
-        (suggestRequests, applyRequests)
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertNoRequests(file: file, line: line)
+    }
+
+    func assertNoApplyRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertNoApplyRequests(file: file, line: line)
+    }
+
+    func assertSuggestFileIDs(
+        _ expectedFileIDs: [Int64],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertSuggestFileIDs(expectedFileIDs, file: file, line: line)
+    }
+
+    func assertApplyFileIDs(
+        _ expectedFileIDs: [Int64],
+        confirmed expectedConfirmed: Bool? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertApplyFileIDs(expectedFileIDs, confirmed: expectedConfirmed, file: file, line: line)
+    }
+
+    func assertSingleSuggestRequest(
+        fileID expectedFileID: Int64? = nil,
+        candidateTags expectedCandidateTags: [String]? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertSingleSuggestRequest(
+            fileID: expectedFileID,
+            candidateTags: expectedCandidateTags,
+            file: file,
+            line: line
+        )
+    }
+
+    func assertSingleApplyRequest(
+        fileID expectedFileID: Int64? = nil,
+        confirmed expectedConfirmed: Bool? = nil,
+        callLogID expectedCallLogID: Int64? = nil,
+        suggestionIDs expectedSuggestionIDs: [String]? = nil,
+        firstSuggestionDisplayName expectedFirstSuggestionDisplayName: String? = nil,
+        firstSuggestionSlug expectedFirstSuggestionSlug: String? = nil,
+        firstSuggestionEditedByUser expectedFirstSuggestionEditedByUser: Bool? = nil,
+        firstSuggestionMergeTargetSlug expectedFirstSuggestionMergeTargetSlug: String? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsSnapshot.assertSingleApplyRequest(
+            fileID: expectedFileID,
+            confirmed: expectedConfirmed,
+            callLogID: expectedCallLogID,
+            suggestionIDs: expectedSuggestionIDs,
+            firstSuggestionDisplayName: expectedFirstSuggestionDisplayName,
+            firstSuggestionSlug: expectedFirstSuggestionSlug,
+            firstSuggestionEditedByUser: expectedFirstSuggestionEditedByUser,
+            firstSuggestionMergeTargetSlug: expectedFirstSuggestionMergeTargetSlug,
+            file: file,
+            line: line
+        )
+    }
+
+    private var requestsSnapshot: AITagSuggestionBridgeRequests {
+        AITagSuggestionBridgeRequests(suggest: suggestRequests, apply: applyRequests)
     }
 }

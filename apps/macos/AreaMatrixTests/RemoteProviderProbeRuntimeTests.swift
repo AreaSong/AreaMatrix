@@ -92,9 +92,8 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         let model = aiCategorySuggestionSuggestionModel(request: request, bridge: bridge)
 
         await model.askForSuggestion()
-        let recordedRequests = await bridge.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [request])
+        await bridge.assertRequests([request])
         XCTAssertEqual(model.statusText, "AI suggested a category.")
         XCTAssertEqual(model.suggestion?.suggestedCategory, "finance/invoices")
         XCTAssertEqual(model.suggestion?.usedContext, [.fileName, .extension, .repoRelativePath])
@@ -117,13 +116,13 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         )
 
         await model.askForSuggestion()
-        let fallbackRequests = await fallbackBridge.recordedRequests()
 
-        XCTAssertEqual(fallbackRequests.first?.operation, .classificationSuggestion)
-        XCTAssertEqual(fallbackRequests.first?.privacyDecision, .skipped)
-        XCTAssertEqual(fallbackRequests.first?.privacySkippedReason, .privacyRule)
-        XCTAssertEqual(fallbackRequests.first?.categorySkippedReason, .privacyRule)
-        XCTAssertEqual(fallbackRequests.first?.callLogStatus, .skipped)
+        let fallbackRequest = await fallbackBridge.assertSingleRequest()
+        XCTAssertEqual(fallbackRequest?.operation, .classificationSuggestion)
+        XCTAssertEqual(fallbackRequest?.privacyDecision, .skipped)
+        XCTAssertEqual(fallbackRequest?.privacySkippedReason, .privacyRule)
+        XCTAssertEqual(fallbackRequest?.categorySkippedReason, .privacyRule)
+        XCTAssertEqual(fallbackRequest?.callLogStatus, .skipped)
         XCTAssertEqual(model.statusText, "Skipped by privacy rule")
         XCTAssertEqual(model.acceptDisabledReason, "Skipped by privacy rule.")
         XCTAssertEqual(model.suggestion?.privacyRuleID, "rule-confidential")
@@ -179,11 +178,11 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         )
 
         await model.askForSuggestion()
-        let fallbackRequests = await fallbackBridge.recordedRequests()
 
-        XCTAssertEqual(fallbackRequests.first?.providerError, .providerUnavailable)
-        XCTAssertEqual(fallbackRequests.first?.providerErrorCode, "ProviderUnavailable")
-        XCTAssertEqual(fallbackRequests.first?.callLogStatus, .unavailable)
+        let fallbackRequest = await fallbackBridge.assertSingleRequest()
+        XCTAssertEqual(fallbackRequest?.providerError, .providerUnavailable)
+        XCTAssertEqual(fallbackRequest?.providerErrorCode, "ProviderUnavailable")
+        XCTAssertEqual(fallbackRequest?.callLogStatus, .unavailable)
         XCTAssertEqual(model.statusText, "AI provider is unavailable")
         XCTAssertEqual(model.acceptDisabledReason, "Retry before accepting this suggestion.")
         XCTAssertEqual(model.fallbackStatus?.retryable, true)
@@ -209,10 +208,10 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         )
 
         await model.askForSuggestion()
-        let fallbackRequests = await fallbackBridge.recordedRequests()
 
-        XCTAssertEqual(fallbackRequests.first?.operation, .classificationSuggestion)
-        XCTAssertEqual(fallbackRequests.first?.semanticFallbackReason, nil)
+        let fallbackRequest = await fallbackBridge.assertSingleRequest()
+        XCTAssertEqual(fallbackRequest?.operation, .classificationSuggestion)
+        XCTAssertEqual(fallbackRequest?.semanticFallbackReason, nil)
         XCTAssertEqual(model.fallbackStatus?.kind, .providerUnavailable)
         XCTAssertEqual(model.fallbackStatus?.primaryAction, .retry)
         XCTAssertEqual(model.fallbackStatus?.secondaryAction, .viewCallLog)
@@ -311,9 +310,8 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
             fileID: file.id,
             targetCategory: suggestionModel.suggestion?.suggestedCategory
         )
-        let recordedRequests = await bridge.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [request])
+        await bridge.assertRequests([request])
         XCTAssertNil(suggestionModel.acceptDisabledReason)
         XCTAssertEqual(
             model.pendingActionDestination,
@@ -330,9 +328,8 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
 
         await model.load()
         let reference = try XCTUnwrap(model.reference)
-        let requests = await bridge.requests()
 
-        XCTAssertEqual(requests.loadCount, 1)
+        await bridge.assertLoadCount(1)
         XCTAssertEqual(reference.ruleID, "rule-confidential")
         XCTAssertEqual(reference.name, "Block confidential")
         XCTAssertEqual(reference.kind, .keyword)

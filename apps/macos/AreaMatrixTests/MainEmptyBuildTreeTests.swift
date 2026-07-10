@@ -48,13 +48,10 @@ final class MainEmptyBuildTreeTests: XCTestCase {
         )
 
         await model.bootstrapIfNeeded()
-        let requestedPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case let .mainEmpty(routedOpening) = model.route else {
-            return XCTFail("expected main empty route, got \(model.route)")
-        }
+        guard let routedOpening = requireMainEmptyRoute(model) else { return }
 
-        XCTAssertEqual(requestedPaths, ["/tmp/repo"])
+        await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
         XCTAssertEqual(routedOpening.tree.children.map(\.slug), ["inbox", "docs", "code", "design", "finance", "media"])
         XCTAssertEqual(routedOpening.tree.children.first?.displayName, "inbox")
         XCTAssertEqual(routedOpening.tree.children.first?.totalFileCount, 0)

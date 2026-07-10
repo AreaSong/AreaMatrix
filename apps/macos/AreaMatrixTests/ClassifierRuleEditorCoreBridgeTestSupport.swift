@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 extension RecordingCoreErrorMapper {
     static func aiSettings() -> RecordingCoreErrorMapper {
@@ -71,6 +72,22 @@ actor RecordingLocalModelReader: CoreLocalModelStatusReading {
 
     func folderRequests() -> [FolderRequest] {
         recordedFolderRequests
+    }
+
+    func assertStatusRequests(
+        _ expectedRequests: [StatusRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedStatusRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertFolderRequests(
+        _ expectedRequests: [FolderRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedFolderRequests, expectedRequests, file: file, line: line)
     }
 }
 

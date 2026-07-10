@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor RecordingRepositoryOpener: CoreEmptyRepositoryOpening {
     private let result: Swift.Result<RepositoryOpeningResult, Error>
@@ -41,8 +42,38 @@ actor RecordingRepositoryOpener: CoreEmptyRepositoryOpening {
         repoPaths
     }
 
+    func assertRequestedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(repoPaths, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRequestedRepoPaths([], file: file, line: line)
+    }
+
     func requestedConfiguredRepoPaths() -> [String] {
         configuredRepoPaths
+    }
+
+    func assertRequestedConfiguredRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(configuredRepoPaths, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertNoConfiguredRepoPaths(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(configuredRepoPaths, [], file: file, line: line)
     }
 
     func requestedEmptyRepoPaths() -> [String] {

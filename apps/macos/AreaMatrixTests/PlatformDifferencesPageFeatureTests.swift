@@ -6,26 +6,20 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     func testPlatformDifferencesCrossPlatformBindingContractCoreLoadsBindingContractThroughCoreBridgeBoundary() async {
         let inspector = PlatformDifferencesRecordingInspector(result: .success(.fixture()))
         let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
-        let model = PlatformDifferencesModel(
-            appVersion: PlatformDifferencesModel.defaultTestAppVersion,
-            selectedTargetPlatform: .swift,
-            bindingVersion: 1,
+        let model = makePlatformDifferencesModel(
             contractInspector: inspector,
-            capabilityLoader: capabilityLoader,
-            errorMapper: platformDifferencesStaticErrorMapper()
+            capabilityLoader: capabilityLoader
         )
 
         await model.load()
-        let requests = await inspector.requests()
-        let capabilityRequests = await capabilityLoader.requests()
 
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.inspectBindingContract))
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.getPlatformCapabilities))
-        XCTAssertEqual(requests, [PlatformDifferencesInspectRequest(
+        await inspector.assertRequests([PlatformDifferencesInspectRequest(
             targetPlatform: .swift,
             bindingVersion: 1
         )])
-        XCTAssertEqual(capabilityRequests, [PlatformDifferencesCapabilityRequest(
+        await capabilityLoader.assertRequests([PlatformDifferencesCapabilityRequest(
             platform: .macos,
             appVersion: PlatformDifferencesModel.defaultTestAppVersion
         )])
@@ -37,37 +31,29 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     func testChangingTargetRechecksOnlyCrossPlatformBindingContractCoreBindingContract() async {
         let inspector = PlatformDifferencesRecordingInspector(result: .success(.fixture(targetPlatform: .kotlin)))
         let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
-        let model = PlatformDifferencesModel(
-            appVersion: PlatformDifferencesModel.defaultTestAppVersion,
-            selectedTargetPlatform: .swift,
-            bindingVersion: 1,
+        let model = makePlatformDifferencesModel(
             contractInspector: inspector,
-            capabilityLoader: capabilityLoader,
-            errorMapper: platformDifferencesStaticErrorMapper()
+            capabilityLoader: capabilityLoader
         )
 
         model.selectTargetPlatform(.kotlin)
         await model.inspectContract()
-        let requests = await inspector.requests()
-        let capabilityRequests = await capabilityLoader.requests()
 
         XCTAssertEqual(model.selectedTargetPlatform, .kotlin)
-        XCTAssertEqual(requests, [PlatformDifferencesInspectRequest(
+        await inspector.assertRequests([PlatformDifferencesInspectRequest(
             targetPlatform: .kotlin,
             bindingVersion: 1
         )])
-        XCTAssertEqual(capabilityRequests, [])
+        await capabilityLoader.assertNoRequests()
     }
 
     @MainActor
     func testContractFailureUsesCoreErrorMapping() async {
         let inspector = PlatformDifferencesRecordingInspector(result: .failure(CoreError.Config(reason: "bad version")))
         let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
-        let model = PlatformDifferencesModel(
-            appVersion: PlatformDifferencesModel.defaultTestAppVersion,
+        let model = makePlatformDifferencesModel(
             contractInspector: inspector,
-            capabilityLoader: capabilityLoader,
-            errorMapper: platformDifferencesStaticErrorMapper()
+            capabilityLoader: capabilityLoader
         )
 
         await model.load()
@@ -85,12 +71,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         let capabilityLoader = PlatformDiffCapabilityLoader(
             result: .failure(CoreError.Config(reason: "platform Unknown"))
         )
-        let model = PlatformDifferencesModel(
-            appVersion: PlatformDifferencesModel.defaultTestAppVersion,
-            contractInspector: PlatformDifferencesRecordingInspector(result: .success(.fixture())),
-            capabilityLoader: capabilityLoader,
-            errorMapper: platformDifferencesStaticErrorMapper()
-        )
+        let model = makePlatformDifferencesModel(capabilityLoader: capabilityLoader)
 
         await model.loadCapabilities()
 
@@ -108,17 +89,16 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     @MainActor
     func testPlatformDifferencesUsesInjectedAppVersionReaderWhenNoOverrideIsPassed() async {
         let capabilityLoader = PlatformDiffCapabilityLoader(result: .success(.fixture()))
-        let model = PlatformDifferencesModel(
+        let model = makePlatformDifferencesModel(
+            appVersion: nil,
             appVersionReader: StaticAppVersionReader(version: "7.8.9 (10)"),
             contractInspector: PlatformDifferencesRecordingInspector(result: .success(.fixture())),
-            capabilityLoader: capabilityLoader,
-            errorMapper: platformDifferencesStaticErrorMapper()
+            capabilityLoader: capabilityLoader
         )
 
         await model.loadCapabilities()
 
-        let requests = await capabilityLoader.requests()
-        XCTAssertEqual(requests, [PlatformDifferencesCapabilityRequest(
+        await capabilityLoader.assertRequests([PlatformDifferencesCapabilityRequest(
             platform: .macos,
             appVersion: "7.8.9 (10)"
         )])
@@ -174,14 +154,43 @@ private actor PlatformDifferencesRecordingInspector: CoreBindingContractInspecti
         return try result.get()
     }
 
-    func requests() -> [PlatformDifferencesInspectRequest] {
-        capturedRequests
+    func assertRequests(
+        _ expectedRequests: [PlatformDifferencesInspectRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(capturedRequests, expectedRequests, file: file, line: line)
     }
 }
 
 private typealias PlatformDiffCapabilityLoader = RecordingPlatformCapabilityLoader
 
 private typealias PlatformDifferencesStaticErrorMapper = RecordingCoreErrorMapper
+
+@MainActor
+private func makePlatformDifferencesModel(
+    appVersion: String? = PlatformDifferencesModel.defaultTestAppVersion,
+    appVersionReader: any AppVersionReading = StaticAppVersionReader(
+        version: PlatformDifferencesModel.defaultTestAppVersion
+    ),
+    selectedTargetPlatform: BindingTargetPlatformSnapshot = .swift,
+    bindingVersion: Int64 = 1,
+    contractInspector: any CoreBindingContractInspecting = PlatformDifferencesRecordingInspector(
+        result: .success(.fixture())
+    ),
+    capabilityLoader: any CorePlatformCapabilitiesLoading = PlatformDiffCapabilityLoader(result: .success(.fixture())),
+    errorMapper: any CoreErrorMapping = platformDifferencesStaticErrorMapper()
+) -> PlatformDifferencesModel {
+    PlatformDifferencesModel(
+        appVersion: appVersion,
+        appVersionReader: appVersionReader,
+        selectedTargetPlatform: selectedTargetPlatform,
+        bindingVersion: bindingVersion,
+        contractInspector: contractInspector,
+        capabilityLoader: capabilityLoader,
+        errorMapper: errorMapper
+    )
+}
 
 private func platformDifferencesStaticErrorMapper() -> PlatformDifferencesStaticErrorMapper {
     RecordingCoreErrorMapper { error in

@@ -235,7 +235,7 @@ final class BatchFileActionEligibilityTests: XCTestCase {
     }
 
     private func assertBatchRoute(
-        _ route: BatchAddTagsRoute,
+        _ route: some BatchRouteContextProviding,
         matches context: MainFileBatchActionRouteContext,
         file: StaticString = #filePath,
         line: UInt = #line
@@ -243,42 +243,42 @@ final class BatchFileActionEligibilityTests: XCTestCase {
         XCTAssertEqual(route.fileIDs, context.fileIDs, file: file, line: line)
         XCTAssertEqual(route.selectedCount, context.selectedCount, file: file, line: line)
         XCTAssertEqual(route.disabledReason, context.disabledReason, file: file, line: line)
+        if let selectedFiles = route.selectedFilesForAssertion {
+            XCTAssertEqual(selectedFiles, context.selectedFiles, file: file, line: line)
+        }
     }
+}
 
-    private func assertBatchRoute(
-        _ route: BatchChangeCategoryRoute,
-        matches context: MainFileBatchActionRouteContext,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(route.fileIDs, context.fileIDs, file: file, line: line)
-        XCTAssertEqual(route.selectedFiles, context.selectedFiles, file: file, line: line)
-        XCTAssertEqual(route.selectedCount, context.selectedCount, file: file, line: line)
-        XCTAssertEqual(route.disabledReason, context.disabledReason, file: file, line: line)
+private protocol BatchRouteContextProviding {
+    var fileIDs: [Int64] { get }
+    var selectedCount: Int { get }
+    var disabledReason: String? { get }
+    var selectedFilesForAssertion: [FileEntrySnapshot]? { get }
+}
+
+private extension BatchRouteContextProviding {
+    var selectedFilesForAssertion: [FileEntrySnapshot]? {
+        nil
     }
+}
 
-    private func assertBatchRoute(
-        _ route: BatchDeleteRoute,
-        matches context: MainFileBatchActionRouteContext,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(route.fileIDs, context.fileIDs, file: file, line: line)
-        XCTAssertEqual(route.selectedFiles, context.selectedFiles, file: file, line: line)
-        XCTAssertEqual(route.selectedCount, context.selectedCount, file: file, line: line)
-        XCTAssertEqual(route.disabledReason, context.disabledReason, file: file, line: line)
+extension BatchAddTagsRoute: BatchRouteContextProviding {}
+
+extension BatchChangeCategoryRoute: BatchRouteContextProviding {
+    var selectedFilesForAssertion: [FileEntrySnapshot]? {
+        selectedFiles
     }
+}
 
-    private func assertBatchRoute(
-        _ route: BatchRenameRoute,
-        matches context: MainFileBatchActionRouteContext,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(route.fileIDs, context.fileIDs, file: file, line: line)
-        XCTAssertEqual(route.selectedFiles, context.selectedFiles, file: file, line: line)
-        XCTAssertEqual(route.selectedCount, context.selectedCount, file: file, line: line)
-        XCTAssertEqual(route.disabledReason, context.disabledReason, file: file, line: line)
+extension BatchDeleteRoute: BatchRouteContextProviding {
+    var selectedFilesForAssertion: [FileEntrySnapshot]? {
+        selectedFiles
+    }
+}
+
+extension BatchRenameRoute: BatchRouteContextProviding {
+    var selectedFilesForAssertion: [FileEntrySnapshot]? {
+        selectedFiles
     }
 }
 

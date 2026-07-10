@@ -1,11 +1,12 @@
 @testable import AreaMatrix
+import XCTest
 
 actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
     enum TestMode {
         case success, rejected, coreFailure
     }
 
-    struct Requests: Equatable {
+    private struct Requests: Equatable {
         var loadCount = 0
         var test: RemoteProviderTestRequestState?
         var enable: RemoteProviderEnableRequestState?
@@ -116,7 +117,85 @@ actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
         return snapshot
     }
 
-    func requests() -> Requests {
-        recorded
+    func assertLoadCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recorded.loadCount, expectedCount, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recorded, Requests(), file: file, line: line)
+    }
+
+    func assertNoEnableRequest(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertNil(recorded.enable, file: file, line: line)
+    }
+
+    func assertNoDisableRequest(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertNil(recorded.disable, file: file, line: line)
+    }
+
+    func assertTestRequest(
+        keyReference expectedKeyReference: String? = nil,
+        modelID expectedModelID: String? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        if let expectedKeyReference {
+            XCTAssertEqual(recorded.test?.keyReference, expectedKeyReference, file: file, line: line)
+        }
+        if let expectedModelID {
+            XCTAssertEqual(recorded.test?.modelID, expectedModelID, file: file, line: line)
+        }
+    }
+
+    func assertEnableRequest(
+        keyReference expectedKeyReference: String? = nil,
+        verificationToken expectedVerificationToken: String? = nil,
+        featureScope expectedFeatureScope: [AISettingsFeatureKind]? = nil,
+        dataFlowConfirmed expectedDataFlowConfirmed: Bool? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        if let expectedKeyReference {
+            XCTAssertEqual(recorded.enable?.keyReference, expectedKeyReference, file: file, line: line)
+        }
+        if let expectedVerificationToken {
+            XCTAssertEqual(recorded.enable?.verificationToken, expectedVerificationToken, file: file, line: line)
+        }
+        if let expectedFeatureScope {
+            XCTAssertEqual(recorded.enable?.featureScope, expectedFeatureScope, file: file, line: line)
+        }
+        if let expectedDataFlowConfirmed {
+            XCTAssertEqual(recorded.enable?.dataFlowConfirmed, expectedDataFlowConfirmed, file: file, line: line)
+        }
+    }
+
+    func assertDisableRequest(
+        removeStoredCredential expectedRemoveStoredCredential: Bool? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        if let expectedRemoveStoredCredential {
+            XCTAssertEqual(
+                recorded.disable?.removeStoredCredential,
+                expectedRemoveStoredCredential,
+                file: file,
+                line: line
+            )
+        } else {
+            XCTAssertNotNil(recorded.disable, file: file, line: line)
+        }
     }
 }

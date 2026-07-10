@@ -13,13 +13,12 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
 
         await model.load(request: .importSingleFileFixture())
         let skipped = await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
 
         XCTAssertNil(skipped)
         XCTAssertEqual(model.activeConflictPage, .duplicate)
         XCTAssertEqual(model.duplicateResolution, .skip)
         XCTAssertEqual(model.importStatus, .skippedDuplicate("docs/existing.pdf"))
-        XCTAssertEqual(requests, [])
+        await importer.assertRecordedRequests([])
     }
 
     @MainActor
@@ -33,11 +32,15 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         await model.load(request: .importSingleFileFixture())
         model.updateDuplicateResolution(.keepBoth)
         let imported = await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
 
         XCTAssertEqual(imported?.storageMode, "Copied")
         XCTAssertEqual(model.progressCurrentPath, "docs/source_1.pdf")
-        XCTAssertEqual(requests.last?.duplicateStrategy, .keepBoth)
+        await importer.assertLastRecordedRequest(ImportSingleFileImportRequest(
+            mode: .copy,
+            overrideCategory: "docs",
+            overrideFilename: "source.pdf",
+            duplicateStrategy: .keepBoth
+        ))
     }
 
     @MainActor
@@ -76,8 +79,12 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(model.duplicateReplaceConfirmationActionTitle, "Replace confirmed")
 
         _ = await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
-        XCTAssertEqual(requests.last?.duplicateStrategy, .overwrite)
+        await importer.assertLastRecordedRequest(ImportSingleFileImportRequest(
+            mode: .copy,
+            overrideCategory: "docs",
+            overrideFilename: "source.pdf",
+            duplicateStrategy: .overwrite
+        ))
     }
 
     @MainActor
@@ -144,9 +151,8 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
         model.updateDuplicateResolution(.replace)
         model.beginReplaceConfirmation()
         let context = try XCTUnwrap(model.pendingReplaceConfirmation)
-        let requestsBeforeConfirmation = await importer.recordedRequests()
 
-        XCTAssertEqual(requestsBeforeConfirmation, [])
+        await importer.assertRecordedRequests([])
         XCTAssertEqual(context.existingPath, existingFile.path)
         XCTAssertEqual(context.existingSizeBytes, existingFile.sizeBytes)
         XCTAssertEqual(context.existingModifiedAt, existingFile.updatedAt)

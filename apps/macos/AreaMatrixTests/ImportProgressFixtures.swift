@@ -25,7 +25,53 @@ func importProgressBatchSourceURL(_ filename: String) -> URL {
     URL(fileURLWithPath: importProgressBatchSourcePath(filename))
 }
 
+struct ImportBatchSessionTestFixtureOptions {
+    var repoPath = importProgressRepoPath()
+    var storageMode: ImportSingleFileStorageMode = .copy
+    var completed = 1
+    var failed = 0
+    var total = 2
+    var currentPath = "finance/first.pdf"
+    var items: [ImportBatchProgressSnapshot.Item] = []
+}
+
 enum ImportProgressFixtures {
+    static let interruptedCopySessionTwoPending = ImportBatchSessionSnapshot.testFixture {
+        $0.total = 3
+        $0.items = [
+            importProgressInterruptedSessionItem(
+                filename: "first.pdf",
+                targetPath: "finance/first.pdf",
+                phase: .done
+            ),
+            importProgressInterruptedSessionItem(
+                filename: "second.pdf",
+                targetPath: "docs/second.pdf",
+                phase: .copying
+            ),
+            importProgressInterruptedSessionItem(
+                filename: "third.pdf",
+                targetPath: "docs/third.pdf",
+                phase: .pending
+            )
+        ]
+    }
+
+    static let interruptedCopySessionOnePending = ImportBatchSessionSnapshot.testFixture {
+        $0.items = [
+            importProgressInterruptedSessionItem(
+                filename: "first.pdf",
+                targetPath: "finance/first.pdf",
+                phase: .done
+            ),
+            importProgressInterruptedSessionItem(
+                filename: "second.pdf",
+                targetPath: "docs/second.pdf",
+                phase: .pending
+            )
+        ]
+    }
+
     static let runningCopyProgress = importBatchProgress(
         completed: 1,
         total: 3,
@@ -161,6 +207,37 @@ enum ImportProgressFixtures {
             overrideCategory: "docs",
             overrideFilename: overrideFilename,
             duplicateStrategy: duplicateStrategy
+        )
+    }
+
+    private static func importProgressInterruptedSessionItem(
+        filename: String,
+        targetPath: String,
+        phase: ImportBatchProgressSnapshot.Phase
+    ) -> ImportBatchProgressSnapshot.Item {
+        importBatchProgressItem(
+            sourcePath: importProgressQueuedSourcePath(filename),
+            targetPath: targetPath,
+            phase: phase
+        )
+    }
+}
+
+extension ImportBatchSessionSnapshot {
+    static func testFixture(
+        options configure: (inout ImportBatchSessionTestFixtureOptions) -> Void = { _ in }
+    ) -> ImportBatchSessionSnapshot {
+        var options = ImportBatchSessionTestFixtureOptions()
+        configure(&options)
+
+        return ImportBatchSessionSnapshot(
+            repoPath: options.repoPath,
+            storageMode: options.storageMode,
+            completed: options.completed,
+            failed: options.failed,
+            total: options.total,
+            currentPath: options.currentPath,
+            items: options.items
         )
     }
 }

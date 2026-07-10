@@ -155,11 +155,9 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
         )
 
         await model.load()
-        let requests = await lister.requests()
 
         XCTAssertEqual(model.record, record)
-        XCTAssertEqual(requests.first?.filter.feature, .classification)
-        XCTAssertEqual(requests.first?.pagination.limit, 100)
+        await lister.assertFirstRequest(feature: .classification)
     }
 }
 

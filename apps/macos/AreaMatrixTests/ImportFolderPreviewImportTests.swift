@@ -17,11 +17,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             suggestedName: "Invoice_2026Q1.pdf"
         ))])
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
         var progressSnapshots: [ImportBatchProgressSnapshot] = []
@@ -30,21 +28,13 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let outcome = await model.importReadyFiles { progress in
             progressSnapshots.append(progress)
         }
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            )
-        ])
+        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest()])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.failedCount, 0)
         XCTAssertEqual(outcome?.previewErrorCount, 1)
         XCTAssertEqual(outcome?.pendingICloudCount, 1)
-        XCTAssertEqual(model.rows.map(\.status.tag), ["IMPORTED", "ICLOUD", "ERROR"])
+        assertImportRowStatusTags(model.rows, ["IMPORTED", "ICLOUD", "ERROR"])
         XCTAssertEqual(progressSnapshots.last?.completed, 1)
         XCTAssertEqual(progressSnapshots.last?.failed, 0)
         XCTAssertEqual(progressSnapshots.last?.total, 1)
@@ -69,11 +59,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let importer = ImportBatchSequenceBatchImporter(results: [
             .failure(CoreError.PermissionDenied(path: invoiceURL.path))
         ])
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
@@ -127,23 +115,21 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             .failure(CoreError.PermissionDenied(path: invoiceURL.path))
         ])
         let errorMapper = RecordingCoreErrorMapper.importSingleFile()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
             errorMapper: errorMapper,
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
         await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
         let outcome = await model.importReadyFiles()
-        let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: invoiceURL.path)])
+        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: invoiceURL.path)])
         XCTAssertEqual(outcome?.succeededEntries, [])
         XCTAssertEqual(outcome?.failedCount, 1)
-        XCTAssertEqual(model.rows.first?.status.tag, "ERROR")
-        XCTAssertEqual(model.rows.first?.status.detail, "无访问权限")
+        assertImportRowStatusTags(model.rows, ["ERROR"])
+        assertImportRowStatusDetails(model.rows, [0: "无访问权限"])
         XCTAssertEqual(model.lastFailureMapping?.kind, .permissionDenied)
     }
 
@@ -166,11 +152,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             ))
         ])
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
         let request = importFolderFolderRequest(
@@ -180,15 +164,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
 
         await model.load(request: request)
         _ = await model.importReadyFiles()
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .category("docs"),
-                suggestedCategory: "docs",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            )
+        await importer.assertRecordedRequests([
+            importBatchExpectedInvoiceRequest(destination: .category("docs"), suggestedCategory: "docs")
         ])
     }
 
@@ -211,30 +189,24 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             ))
         ])
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
         await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
         model.selectedStorageMode = .indexOnly
         let outcome = await model.importReadyFiles()
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
+        await importer.assertRecordedRequests([
+            importBatchExpectedInvoiceRequest(
                 storageMode: .indexOnly,
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "indexed-reference.pdf",
-                duplicateStrategy: .ask
+                overrideFilename: "indexed-reference.pdf"
             )
         ])
         XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Indexed")
-        XCTAssertEqual(model.rows.first?.status.detail, "已写入索引")
+        assertImportRowStatusDetails(model.rows, [0: "已写入索引"])
     }
 
     @MainActor
@@ -257,28 +229,23 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             ))
         ])
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
         await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
         model.selectedStorageMode = .move
-        XCTAssertNil(model.importDisabledReason)
+        assertImportEnabled(model.importDisabledReason)
         let outcome = await model.importReadyFiles()
-        let recordedRequests = await importer.recordedRequests()
 
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
+        await importer.assertRecordedRequests([
+            importBatchExpectedInvoiceRequest(
                 storageMode: .move,
-                destination: .autoClassify,
                 suggestedCategory: "docs",
-                overrideFilename: "move-later.pdf",
-                duplicateStrategy: .ask
+                overrideFilename: "move-later.pdf"
             )
         ])
     }

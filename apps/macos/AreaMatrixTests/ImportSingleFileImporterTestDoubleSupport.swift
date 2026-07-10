@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import Foundation
+import XCTest
 
 struct ImportSingleFileStaticLocalizedError: LocalizedError {
     let message: String
@@ -93,6 +94,30 @@ actor ImportSingleFileRecordingImporter: CoreFileImporting {
         coreRequests
     }
 
+    func assertRecordedRequests(
+        _ expectedRequests: [ImportSingleFileImportRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportSingleFileRecordedRequests(requests, expectedRequests, file: file, line: line)
+    }
+
+    func assertRecordedCoreRequests(
+        _ expectedRequests: [ImportSingleFileCoreImportRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportSingleFileRecordedCoreRequests(coreRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertLastRecordedRequest(
+        _ expectedRequest: ImportSingleFileImportRequest,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportSingleFileLastRecordedRequest(requests, expectedRequest, file: file, line: line)
+    }
+
     private func record(_ request: ImportSingleFileCoreImportRequest) throws -> FileEntrySnapshot {
         requests.append(ImportSingleFileImportRequest(
             mode: request.mode,
@@ -116,6 +141,33 @@ actor ImportSingleFileRecordingImporter: CoreFileImporting {
             storageMode: request.mode.coreStorageMode
         )
     }
+}
+
+private func assertImportSingleFileRecordedRequests(
+    _ recordedRequests: [ImportSingleFileImportRequest],
+    _ expectedRequests: [ImportSingleFileImportRequest],
+    file: StaticString,
+    line: UInt
+) {
+    XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
+}
+
+private func assertImportSingleFileRecordedCoreRequests(
+    _ recordedRequests: [ImportSingleFileCoreImportRequest],
+    _ expectedRequests: [ImportSingleFileCoreImportRequest],
+    file: StaticString,
+    line: UInt
+) {
+    XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
+}
+
+private func assertImportSingleFileLastRecordedRequest(
+    _ recordedRequests: [ImportSingleFileImportRequest],
+    _ expectedRequest: ImportSingleFileImportRequest,
+    file: StaticString,
+    line: UInt
+) {
+    XCTAssertEqual(recordedRequests.last, expectedRequest, file: file, line: line)
 }
 
 actor ImportSingleFileSuspendingImporter: CoreFileImporting {

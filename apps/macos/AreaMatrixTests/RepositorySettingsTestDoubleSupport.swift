@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor RepoSettingsMetadataReader: ExistingRepositoryMetadataReading {
     private var results: [Result<ExistingRepositoryMetadataSnapshot, Error>]
@@ -21,7 +22,7 @@ typealias RepoSettingsRepositoryOpener = RecordingRepositoryOpener
 typealias RepoSettingsScanSessionReader = RecordingScanSessionReader
 
 final class RecordingRepoMetadataPresenceChecker: RepoMetadataPresenceChecking {
-    private(set) var repoPaths: [String] = []
+    private var repoPaths: [String] = []
     private let presence: RepoMetadataPresence
 
     init(presence: RepoMetadataPresence) {
@@ -31,6 +32,21 @@ final class RecordingRepoMetadataPresenceChecker: RepoMetadataPresenceChecking {
     func metadataPresence(repoPath: String) -> RepoMetadataPresence {
         repoPaths.append(repoPath)
         return presence
+    }
+
+    func assertRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(repoPaths, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRepoPaths([], file: file, line: line)
     }
 }
 

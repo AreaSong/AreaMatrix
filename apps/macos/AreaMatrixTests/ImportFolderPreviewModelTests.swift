@@ -22,12 +22,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 confidence: 0.82
             ))
         ])
-        let model = ImportFolderPreviewModel(
-            predictor: predictor,
-            importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker()
-        )
+        let model = makeImportFolderPreviewModel(predictor: predictor)
 
         await model.load(request: importFolderFolderRequest(rootURL: rootURL))
         let requests = await predictor.recordedRequests()
@@ -42,10 +37,10 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         XCTAssertEqual(rowsByName["合同.pdf"]?.relativePath, "客户A/合同.pdf")
         XCTAssertEqual(rowsByName["合同.pdf"]?.predictedCategory, "docs")
         XCTAssertEqual(rowsByName["合同.pdf"]?.suggestedName, "2026Q1_合同.pdf")
-        XCTAssertEqual(model.rows.map(\.status.tag), ["OK", "OK"])
+        assertImportRowStatusTags(model.rows, ["OK", "OK"])
         XCTAssertEqual(model.folderCount, 1)
-        XCTAssertEqual(model.status.message, "已完成 2 个文件的分类预览")
-        XCTAssertNil(model.importDisabledReason)
+        assertImportStatusMessage(model.status, "已完成 2 个文件的分类预览")
+        assertImportEnabled(model.importDisabledReason)
     }
 
     @MainActor
@@ -65,17 +60,13 @@ final class ImportFolderPreviewModelTests: XCTestCase {
                 confidence: 0.7
             ))
         ])
-        let model = ImportFolderPreviewModel(
-            predictor: predictor,
-            importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker()
-        )
+        let model = makeImportFolderPreviewModel(predictor: predictor)
 
         await model.load(request: importFolderFolderRequest(rootURL: rootURL))
-        let requests = await predictor.recordedRequests()
 
-        XCTAssertEqual(requests, [ImportFolderPredictRequest(repoPath: importBatchRepoPath(), filename: "Report.pdf")])
+        await predictor.assertRecordedRequests([
+            ImportFolderPredictRequest(repoPath: importBatchRepoPath(), filename: "Report.pdf")
+        ])
         XCTAssertEqual(model.rows.map(\.originalName), ["Report.pdf"])
         XCTAssertTrue(model.skippedRules.contains(ImportFolderSkippedRule(label: ".git/", count: 1)))
         XCTAssertTrue(model.skippedRules.contains(ImportFolderSkippedRule(label: ".DS_Store", count: 1)))
@@ -89,19 +80,14 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let predictor = ImportFolderRecordingPredictor(results: [
             .failure(CoreError.Config(reason: "classifier.yaml line 7"))
         ])
-        let model = ImportFolderPreviewModel(
-            predictor: predictor,
-            importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker()
-        )
+        let model = makeImportFolderPreviewModel(predictor: predictor)
 
         await model.load(request: importFolderFolderRequest(rootURL: rootURL))
 
         XCTAssertEqual(model.rows.count, 1)
-        XCTAssertEqual(model.rows.first?.status.tag, "ERROR")
-        XCTAssertEqual(model.rows.first?.status.detail, "分类规则无效：classifier.yaml line 7")
-        XCTAssertEqual(model.status.message, "已完成 0/1 个文件的分类预览，1 个失败")
+        assertImportRowStatusTags(model.rows, ["ERROR"])
+        assertImportRowStatusDetails(model.rows, [0: "分类规则无效：classifier.yaml line 7"])
+        assertImportStatusMessage(model.status, "已完成 0/1 个文件的分类预览，1 个失败")
     }
 
     @MainActor
@@ -117,20 +103,13 @@ final class ImportFolderPreviewModelTests: XCTestCase {
             errors: []
         ))
         let predictor = ImportFolderRecordingPredictor(results: [])
-        let model = ImportFolderPreviewModel(
-            predictor: predictor,
-            importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
-            scanner: scanner
-        )
+        let model = makeImportFolderPreviewModel(predictor: predictor, scanner: scanner)
 
         await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
-        let requests = await predictor.recordedRequests()
 
-        XCTAssertEqual(requests, [])
+        await predictor.assertRecordedRequests([])
         XCTAssertEqual(model.iCloudPlaceholderCount, 1)
-        XCTAssertEqual(model.rows.first?.status.tag, "ICLOUD")
+        assertImportRowStatusTags(model.rows, ["ICLOUD"])
     }
 
     func testDefaultCoreBridgeFolderPreviewPredictsCategoryFromInitializedRepository() async throws {

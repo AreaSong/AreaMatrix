@@ -18,9 +18,7 @@ final class CoreBridgeRepositoryTests: XCTestCase {
 
         let expectedConfig = RepoConfigSnapshot.testFixture(repoPath: repoURL.path)
 
-        guard case let .mainEmpty(opening) = model.route else {
-            return XCTFail("expected main empty route, got \(model.route)")
-        }
+        guard let opening = requireMainEmptyRoute(model) else { return }
         XCTAssertEqual(opening.config, expectedConfig)
         XCTAssertTrue(opening.isEmpty)
         XCTAssertTrue(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent(".areamatrix").path))
@@ -73,9 +71,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     @MainActor
     func testSearchFiltersSearchFiltersDriveSearchFilesAndFacetCountsThroughSearchFiltersCore() async {
         let tree = RepositoryTreeNodeSnapshot.searchFiltersFixtureTree()
-        guard let row = tree.sidebarRow(id: "docs/contracts") else {
-            return XCTFail("expected docs/contracts sidebar row")
-        }
+        guard let row = requireSidebarRow(tree, id: "docs/contracts") else { return }
         let filters = SearchFilterStateSnapshot.testFixture(
             category: "docs",
             fileKind: "pdf",
@@ -105,11 +101,10 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
         await model.loadSearchFacets(query: " 合同 ", scope: .current, sidebarRow: row, filters: filters)
 
         let searchRequests = await searcher.recordedRequests().map(\.request)
-        let facetRequests = await facetLoader.recordedRequests().map(\.request)
         XCTAssertEqual(searchRequests.first?.filters, filters)
         XCTAssertEqual(searchRequests.first?.currentPath, "docs/contracts")
         XCTAssertEqual(searchRequests.first?.category, "docs")
-        XCTAssertEqual(facetRequests, [
+        await facetLoader.assertRequests([
             SearchFacetRequestSnapshot(
                 query: "合同",
                 scope: .current,
@@ -124,9 +119,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
     @MainActor
     func testSearchFiltersSearchFiltersUserControlsProduceNonEmptySearchFiltersCoreRequest() async {
         let tree = RepositoryTreeNodeSnapshot.searchFiltersFixtureTree()
-        guard let row = tree.sidebarRow(id: "docs/contracts") else {
-            return XCTFail("expected docs/contracts sidebar row")
-        }
+        guard let row = requireSidebarRow(tree, id: "docs/contracts") else { return }
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         let editedFilters = SearchFilterEditing.settingIncludeDeleted(
             true,
@@ -198,8 +191,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             filters: .empty
         )
         XCTAssertEqual(model.searchFacetsState.errorMapping, mapping)
-        let mappedErrors = await mapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "facet db locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "facet db locked")])
 
         await model.retrySearchFacets()
         XCTAssertEqual(model.searchFacetsState.facets?.activeFilterCount, 1)

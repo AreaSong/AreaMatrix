@@ -22,11 +22,10 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
-        let requestedRepoPaths = await opener.requestedRepoPaths()
 
         XCTAssertEqual(model.validatePathPrimaryActionTitle, "Open Repository")
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
-        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
+        await opener.assertRequestedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
         XCTAssertEqual(model.route, .mainList(opening))
     }
@@ -52,10 +51,9 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
         await model.beginSettingsRepositoryPathValidation("/tmp/new-repo")
         await model.continueFromValidatePath()
-        let requestedRepoPaths = await opener.requestedRepoPaths()
 
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
-        XCTAssertEqual(requestedRepoPaths, ["/tmp/new-repo"])
+        await opener.assertRequestedRepoPaths(["/tmp/new-repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/new-repo"])
         XCTAssertEqual(model.route, .mainList(opening))
     }
@@ -84,11 +82,10 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         model.updateRepositoryPath("/tmp/second-repo")
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
-        let requestedRepoPaths = await opener.requestedRepoPaths()
 
         XCTAssertTrue(model.validatePathReturnRouteIsSettings)
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
-        XCTAssertEqual(requestedRepoPaths, ["/tmp/second-repo"])
+        await opener.assertRequestedRepoPaths(["/tmp/second-repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/second-repo"])
         XCTAssertEqual(model.route, .mainList(opening))
     }

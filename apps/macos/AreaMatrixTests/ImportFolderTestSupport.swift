@@ -2,6 +2,25 @@
 import Foundation
 
 @MainActor
+func makeImportFolderPreviewModel(
+    predictor: any CoreCategoryPredicting,
+    importer: any CoreBatchCopyImporting = ImportBatchRecordingBatchImporter(),
+    errorMapper: any CoreErrorMapping = RecordingCoreErrorMapper.importSingleFile(),
+    conflictPrechecker: any ImportFolderConflictPrechecking = ImportFolderNoopConflictPrechecker(),
+    scanner: any ImportFolderScanning = ImportPlatformServices.folderScanner,
+    placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
+) -> ImportFolderPreviewModel {
+    ImportFolderPreviewModel(
+        predictor: predictor,
+        importer: importer,
+        errorMapper: errorMapper,
+        conflictPrechecker: conflictPrechecker,
+        scanner: scanner,
+        placeholderDownloader: placeholderDownloader
+    )
+}
+
+@MainActor
 func importFolderReplaceConfirmationModel(
     rootURL: URL,
     sourceURL: URL,
@@ -16,12 +35,11 @@ func importFolderReplaceConfirmationModel(
     let prechecker = ImportFolderStaticConflictPrechecker(results: [
         sourceURL.path: .nameConflict(existingPath: "docs/name.pdf")
     ])
-    return ImportFolderPreviewModel(
+    return makeImportFolderPreviewModel(
         predictor: ImportFolderRecordingPredictor(
             results: [.success(.importFolderPrediction(suggestedName: "name.pdf"))]
         ),
         importer: importer,
-        errorMapper: RecordingCoreErrorMapper.importSingleFile(),
         conflictPrechecker: prechecker,
         scanner: scanner
     )

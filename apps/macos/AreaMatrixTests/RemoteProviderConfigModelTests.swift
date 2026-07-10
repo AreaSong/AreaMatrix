@@ -14,16 +14,16 @@ final class RemoteProviderConfigModelTests: XCTestCase {
         model.dataFlowConfirmed = true
         await model.testConnection()
         let didEnable = await model.enableRemoteAI()
-        let requests = await bridge.requests()
 
         XCTAssertTrue(didEnable)
-        XCTAssertEqual(requests.loadCount, 1)
-        XCTAssertEqual(requests.test?.keyReference, "keychain:openAi-managed")
-        XCTAssertEqual(requests.test?.modelID, "gpt-4.1-mini")
-        XCTAssertEqual(requests.enable?.keyReference, "keychain:openAi-managed")
-        XCTAssertEqual(requests.enable?.verificationToken, "verified-remoteProviderConfig")
-        XCTAssertEqual(requests.enable?.featureScope, [.autoSummaries, .autoTags])
-        XCTAssertEqual(requests.enable?.dataFlowConfirmed, true)
+        await bridge.assertLoadCount(1)
+        await bridge.assertTestRequest(keyReference: "keychain:openAi-managed", modelID: "gpt-4.1-mini")
+        await bridge.assertEnableRequest(
+            keyReference: "keychain:openAi-managed",
+            verificationToken: "verified-remoteProviderConfig",
+            featureScope: [.autoSummaries, .autoTags],
+            dataFlowConfirmed: true
+        )
         XCTAssertEqual(store.storedKeys(), ["keychain:openAi-managed": "dummy-api-key"])
         XCTAssertEqual(model.apiKey, "")
         XCTAssertEqual(model.snapshot?.remoteProviderEnabled, true)

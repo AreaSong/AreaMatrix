@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor NoopUndoActionStore: CoreUndoActionLogging {
     func listUndoActions(repoPath _: String) async throws -> [UndoActionRecordSnapshot] {
@@ -54,6 +55,22 @@ actor UndoActionRecordingTestStore: CoreUndoActionLogging {
 
     func undoRequests() -> [String] {
         recordedUndoRequests
+    }
+
+    func assertListRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedListRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertUndoRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedUndoRequests, expectedRequests, file: file, line: line)
     }
 
     fileprivate func listUndoActionsLenient(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
@@ -127,6 +144,24 @@ actor LenientUndoActionRecordingTestStore: CoreUndoActionLogging {
     func undoRequests() async -> [String] {
         await store.undoRequests()
     }
+
+    func assertListRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        let actualRequests = await store.listRequests()
+        XCTAssertEqual(actualRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertUndoRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        let actualRequests = await store.undoRequests()
+        XCTAssertEqual(actualRequests, expectedRequests, file: file, line: line)
+    }
 }
 
 typealias UndoToastRecordingUndoStore = LenientUndoActionRecordingTestStore
@@ -172,5 +207,21 @@ actor RedoActionLogRecordingRedoStore: CoreRedoActionLogging {
 
     func redoRequests() -> [String] {
         recordedRedoRequests
+    }
+
+    func assertListRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedListRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertRedoRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRedoRequests, expectedRequests, file: file, line: line)
     }
 }

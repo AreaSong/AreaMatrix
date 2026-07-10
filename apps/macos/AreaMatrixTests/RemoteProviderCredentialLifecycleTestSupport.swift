@@ -36,10 +36,9 @@ func assertRemoteProviderConfigDisable(
 
     await model.load()
     let didDisable = await model.disableRemoteAI(removeStoredCredential: removeStoredCredential)
-    let requests = await bridge.requests()
 
     XCTAssertTrue(didDisable, file: file, line: line)
-    XCTAssertEqual(requests.disable?.removeStoredCredential, removeStoredCredential, file: file, line: line)
+    await bridge.assertDisableRequest(removeStoredCredential: removeStoredCredential, file: file, line: line)
     XCTAssertEqual(store.removedReferences(), removed, file: file, line: line)
     XCTAssertEqual(model.snapshot?.remoteProviderEnabled, false, file: file, line: line)
     XCTAssertEqual(model.snapshot?.credentialConfigured, credential, file: file, line: line)

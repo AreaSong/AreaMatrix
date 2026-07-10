@@ -114,8 +114,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
             return
         }
 
-        let treeRequests = await treeLister.requestedRepoPaths()
-        XCTAssertEqual(treeRequests, ["/tmp/saved-repo"])
+        await treeLister.assertRequestedRepoPaths(["/tmp/saved-repo"])
         XCTAssertEqual(state.scanStatusText, "正在扫描资料库 15")
         XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
 

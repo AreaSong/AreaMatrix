@@ -22,9 +22,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         )
 
         await model.load(request: request)
-        let requests = await predictor.recordedRequests()
-
-        XCTAssertEqual(requests, [
+        await predictor.assertRecordedRequests([
             ImportSingleFilePredictRequest(repoPath: importSingleFileRepoPath(), filename: "合同.pdf")
         ])
         XCTAssertEqual(model.source?.fileName, "合同.pdf")
@@ -107,9 +105,8 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         )
 
         await model.load(request: request)
-        let requests = await predictor.recordedRequests()
 
-        XCTAssertEqual(requests, [])
+        await predictor.assertRecordedRequests([])
         XCTAssertNil(model.prediction)
         XCTAssertEqual(model.status, .unsupported("此 sheet 只处理单文件导入"))
     }
@@ -138,9 +135,8 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         model.suggestedName = " contract.pdf "
         await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
-        let requests = await importer.recordedCoreRequests()
 
-        XCTAssertEqual(requests, [
+        await importer.assertRecordedCoreRequests([
             ImportSingleFileCoreImportRequest(
                 repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
@@ -172,9 +168,8 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
         await model.load(request: request)
         await model.importSelectedFile()
-        let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: importSingleFileSourcePath())])
+        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: importSingleFileSourcePath())])
         XCTAssertEqual(
             model.importStatus,
             .failed(CoreErrorMappingSnapshot.importCopyFixture(kind: .permissionDenied))
@@ -192,9 +187,8 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         )
 
         await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
 
-        XCTAssertEqual(requests, [])
+        await importer.assertRecordedRequests([])
         XCTAssertEqual(model.importStatus, .blocked("没有可导入的单文件来源"))
     }
 
@@ -208,7 +202,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         )
 
         await model.load(request: .importSingleFileFixture())
-        XCTAssertNil(model.importDisabledReason)
+        assertImportEnabled(model.importDisabledReason)
 
         model.suggestedName = "renamed.pdf"
 
@@ -228,13 +222,11 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         )
 
         await model.load(request: .importSingleFileFixture())
-        XCTAssertTrue(model.showsICloudActions)
-        XCTAssertEqual(model.importDisabledReason, "iCloud placeholder 需要下载后才能导入")
+        assertImportSingleFileICloudPlaceholderBlocked(model)
 
         let imported = await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
         XCTAssertNil(imported)
-        XCTAssertEqual(requests, [])
+        await importer.assertRecordedRequests([])
     }
 
     @MainActor
@@ -253,14 +245,6 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         await model.load(request: .importSingleFileFixture())
         await model.downloadICloudPlaceholderAndRetry()
 
-        XCTAssertTrue(model.showsICloudActions)
-        XCTAssertFalse(model.showsRetryPreviewAction)
-        XCTAssertNil(model.activeConflictPage)
-        XCTAssertEqual(model.importDisabledReason, "iCloud 下载失败后请重试下载或切换本地资料库")
-        guard case let .iCloudDownloadFailed(path, reason) = model.currentPreflightResult?.conflict else {
-            return XCTFail("Expected iCloud download failure to remain in iCloud recovery state")
-        }
-        XCTAssertEqual(path, importSingleFileSourcePath())
-        XCTAssertEqual(reason, "network offline")
+        assertImportSingleFileICloudDownloadFailure(model, reason: "network offline")
     }
 }

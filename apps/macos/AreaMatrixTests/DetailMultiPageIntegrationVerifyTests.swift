@@ -37,10 +37,8 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(load.action, action)
         XCTAssertEqual(applied.result, .batchAddTagsExecutedBatchAddTags())
         XCTAssertEqual(blockedLoad.unavailableReason, "External change prevents undo.")
-        let listRequests = await undoStore.listRequests()
-        let undoRequests = await undoStore.undoRequests()
-        XCTAssertEqual(listRequests, ["/tmp/repo", "/tmp/repo"])
-        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
+        await undoStore.assertListRequests(["/tmp/repo", "/tmp/repo"])
+        await undoStore.assertUndoRequests(["/tmp/repo|\(action.actionID)"])
     }
 
     @MainActor
@@ -57,8 +55,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertNil(applied.result)
         XCTAssertEqual(applied.failure, .batchAddTagsUndoFailure())
-        let undoRequests = await undoStore.undoRequests()
-        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
+        await undoStore.assertUndoRequests(["/tmp/repo|\(action.actionID)"])
     }
 
     @MainActor
@@ -75,8 +72,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertEqual(completion.undoState, .ready(action))
         XCTAssertTrue(completion.closesSheet)
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(listRequests, ["/tmp/repo"])
+        await undoStore.assertListRequests(["/tmp/repo"])
     }
 
     @MainActor
@@ -107,10 +103,8 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         XCTAssertTrue(plan.refreshesChangeLog)
         XCTAssertTrue(plan.refreshesUndoActions)
         XCTAssertEqual(refreshed.action, .batchAddTagsExecutedActionLogRow())
-        let undoRequests = await undoStore.undoRequests()
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(undoRequests, ["/tmp/repo|\(action.actionID)"])
-        XCTAssertEqual(listRequests, ["/tmp/repo"])
+        await undoStore.assertUndoRequests(["/tmp/repo|\(action.actionID)"])
+        await undoStore.assertListRequests(["/tmp/repo"])
     }
 
     @MainActor
@@ -221,7 +215,10 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.selection, .multiple([available.id, stale.id]))
         XCTAssertEqual(model.detailErrorMapping, mapping)
         XCTAssertEqual(summary.paths, [available.path, stale.path])
-        XCTAssertEqual(copier.multiPathRequests.map(\.relativePaths), [[available.path, stale.path]])
+        copier.assertMultiPathRequests([ShellRecordingPathCopier.MultiPathRequest(
+            repoPath: "/tmp/repo",
+            relativePaths: [available.path, stale.path]
+        )])
         XCTAssertEqual(shell.toastMessage, "2 paths copied.")
         XCTAssertEqual(announcer.announcements, ["2 paths copied."])
     }

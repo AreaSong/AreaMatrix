@@ -47,30 +47,27 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
             tags: ["client-private"]
         ))
 
-        let settingsRequests = await settingsStore.requests()
-        let providerRequests = await providerBridge.requests()
-        let privacyRequests = await privacyBridge.requests()
-
-        XCTAssertEqual(settingsRequests.count, 1)
-        XCTAssertFalse(settingsRequests[0].privacyGateEnabled)
+        await settingsStore.assertUpdateCount(1)
+        await settingsStore.assertUpdatedConfigValue(at: 0, \.privacyGateEnabled, false)
         await settingsModel.load()
         XCTAssertEqual(settingsModel.snapshot?.config.privacyGateEnabled, false)
         XCTAssertEqual(settingsModel.snapshot.map { AIPrivacyRulesAISettingsPrivacySummary(snapshot: $0).label }, "Off")
-        XCTAssertEqual(providerRequests.loadCount, 1)
-        XCTAssertNil(providerRequests.disable)
-        XCTAssertEqual(privacyRequests.loadCount, 1)
-        XCTAssertEqual(privacyRequests.updates.count, 4)
-        XCTAssertFalse(privacyRequests.updates[0].privacyGateEnabled)
-        XCTAssertTrue(privacyRequests.updates[0].providerScope.remoteProviderEnabled)
-        XCTAssertFalse(
-            privacyRequests.updates[1].remoteAllowedFields.first { $0.field == .noteSummary }?.allowRemote ?? true
+        await providerBridge.assertLoadCount(1)
+        await providerBridge.assertNoDisableRequest()
+        await privacyBridge.assertLoadCount(1)
+        await privacyBridge.assertUpdateCount(4)
+        await privacyBridge.assertUpdate(at: 0, privacyGateEnabled: false)
+        await privacyBridge.assertProviderScope(at: 0, remoteProviderEnabled: true)
+        await privacyBridge.assertUpdateFieldPolicy(at: 1, field: .noteSummary, allowRemote: false)
+        await privacyBridge.assertUpdateRule(at: 2, position: .first, pattern: "finance/private/q2/")
+        await privacyBridge.assertUpdateRule(at: 3, position: .last, name: "Confidential keywords")
+        await privacyBridge.assertEvaluationFeatures(AiFeatureKind.aiPrivacyRulesCases)
+        await privacyBridge.assertEvaluation(
+            at: 0,
+            repoRelativePath: "finance/private/q2/report.key",
+            category: "finance",
+            tags: ["client-private"]
         )
-        XCTAssertEqual(privacyRequests.updates[2].rules.first?.pattern, "finance/private/q2/")
-        XCTAssertEqual(privacyRequests.updates[3].rules.last?.name, "Confidential keywords")
-        XCTAssertEqual(privacyRequests.evaluations.map(\.feature), AiFeatureKind.aiPrivacyRulesCases)
-        XCTAssertEqual(privacyRequests.evaluations.first?.context.repoRelativePath, "finance/private/q2/report.key")
-        XCTAssertEqual(privacyRequests.evaluations.first?.context.category, "finance")
-        XCTAssertEqual(privacyRequests.evaluations.first?.context.tags, ["client-private"])
         XCTAssertEqual(privacyModel.evaluation?.providerGateReason, .privacyGateDisabled)
         XCTAssertEqual(privacyModel.evaluation?.sentFields, [])
         XCTAssertEqual(privacyModel.featureEvaluations.count, 4)

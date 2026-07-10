@@ -75,13 +75,11 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
             tagStore: store,
             errorMapper: StaticCoreErrorMapper(mapping: .batchAddTagsTagDb())
         )
-        let requests = await store.batchRequests()
-        let listRequests = await store.listRequests()
 
-        XCTAssertEqual(listRequests, ["31"])
+        await store.assertListRequests(["31"])
         XCTAssertEqual(candidates.map(\.value), ["urgent", "clienta"])
         XCTAssertTrue(candidates.first { $0.value == "urgent" }?.selected == true)
-        XCTAssertEqual(requests, ["/tmp/repo|32,31|urgent,clienta"])
+        await store.assertBatchRequests(["/tmp/repo|32,31|urgent,clienta"])
         XCTAssertEqual(result.report?.addedCount, 3)
         XCTAssertEqual(result.report?.skippedCount, 1)
         XCTAssertEqual(result.report?.undoToken, "undo-batch-tags")
@@ -131,13 +129,11 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
             tagStore: store,
             errorMapper: mapper
         )
-        let requests = await store.batchRequests()
-        let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(requests, ["/tmp/repo|31,32|urgent"])
+        await store.assertBatchRequests(["/tmp/repo|31,32|urgent"])
         XCTAssertNil(result.report)
         XCTAssertEqual(result.failure, mapping)
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "tag metadata locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "tag metadata locked")])
     }
 }
 
@@ -196,5 +192,21 @@ private actor BatchAddTagsRecordingBatchTagStore: CoreTagCRUD {
 
     func listRequests() -> [String] {
         recordedListRequests
+    }
+
+    func assertBatchRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedBatchRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertListRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedListRequests, expectedRequests, file: file, line: line)
     }
 }

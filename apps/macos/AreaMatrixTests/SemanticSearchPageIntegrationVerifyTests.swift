@@ -40,9 +40,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testSemanticSearchLoadMoreSemanticMergesOnlyRequestedGroup() async {
         let tree = RepositoryTreeNodeSnapshot.semanticSearchPageTree()
-        guard let row = tree.sidebarRow(id: "finance/invoices") else {
-            return XCTFail("expected finance invoices sidebar row")
-        }
+        guard let row = requireSidebarRow(tree, id: "finance/invoices") else { return }
         let firstSemantic = FileEntrySnapshot.semanticSearchPageFile(id: 8704, name: "invoice_a.pdf")
         let nextSemantic = FileEntrySnapshot.semanticSearchPageFile(id: 8705, name: "invoice_b.pdf")
         let normalFile = FileEntrySnapshot.semanticSearchPageFile(id: 8706, name: "invoice_notes.txt")
@@ -69,8 +67,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
         )
         await model.loadMoreSemanticMatches(.semantic)
 
-        let requests = await searcher.requests()
-        XCTAssertEqual(requests.map(\.offset), [0, 1])
+        await searcher.assertRequestOffsets([0, 1])
         XCTAssertEqual(model.searchState.page?.semanticPage?.semanticMatches.map(\.result.file.id), [
             firstSemantic.id,
             nextSemantic.id
@@ -82,9 +79,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
     // swiftlint:disable:next function_body_length
     func testSemanticSearchIndexLifecycleCancelsActiveCoreBuildAndKeepsLaterReportOutOfPage() async {
         let tree = RepositoryTreeNodeSnapshot.semanticSearchPageTree()
-        guard let row = tree.sidebarRow(id: "finance/invoices") else {
-            return XCTFail("expected finance invoices sidebar row")
-        }
+        guard let row = requireSidebarRow(tree, id: "finance/invoices") else { return }
         let searcher = SemanticSearchDelayedSemanticSearcher(page: .semanticSearchIndexBuildingPage())
         let model = MainFileListModel(
             opening: .semanticSearchPageOpening(tree: tree),
@@ -92,6 +87,10 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             fileDetailer: SemanticSearchPageDetailer(file: .semanticSearchPageFile(id: 8707)),
             searchQuerying: SemanticSearchPageNormalSearcher(),
             semanticSearching: searcher,
+            aiPrivacyRules: RemotePrivacyRulesBridge(
+                snapshot: .semanticSearchPrivacyRules(),
+                evaluationReport: .semanticSearchAllowed()
+            ),
             errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchPageFailure)
         )
 

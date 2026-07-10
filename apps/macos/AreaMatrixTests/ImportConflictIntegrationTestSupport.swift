@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import Foundation
+import XCTest
 
 func importConflictDuplicatePreflight() -> ImportSingleFilePreflightResult {
     ImportSingleFilePreflightResult(
@@ -103,6 +104,14 @@ actor ImportConflictBatcher: CoreImportConflictBatching {
 
     func applyRequests() -> [ImportConflictApplyRequest] {
         recordedApplyRequests
+    }
+
+    func assertApplyRequests(
+        _ expectedRequests: [ImportConflictApplyRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedApplyRequests, expectedRequests, file: file, line: line)
     }
 }
 

@@ -25,12 +25,10 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         )
 
         await model.runStartupRecoveryCheckIfNeeded()
-        let recoveryRequests = await recoverer.requestedRepoPaths()
-        let repairRequests = await repairer.requests()
 
-        XCTAssertEqual(recoveryRequests, ["/tmp/repo"])
+        await recoverer.assertRequestedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.startupRecoveryState, .completed(report))
-        XCTAssertEqual(repairRequests, [])
+        await repairer.assertNoRequests()
     }
 
     @MainActor
@@ -59,12 +57,10 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.startupRecoveryState, .failed(mapping))
 
         await model.runStartupRecoveryCheckIfNeeded()
-        var recoveryRequests = await recoverer.requestedRepoPaths()
-        XCTAssertEqual(recoveryRequests, ["/tmp/repo"])
+        await recoverer.assertRequestedRepoPaths(["/tmp/repo"])
 
         await model.retryStartupRecovery()
-        recoveryRequests = await recoverer.requestedRepoPaths()
-        XCTAssertEqual(recoveryRequests, ["/tmp/repo", "/tmp/repo"])
+        await recoverer.assertRequestedRepoPaths(["/tmp/repo", "/tmp/repo"])
         XCTAssertEqual(model.startupRecoveryState, .completed(nil))
     }
 
@@ -91,15 +87,13 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         )
 
         await model.runFullRescan()
-        let requestsBeforeConfirmation = await repairer.requests()
-        XCTAssertEqual(requestsBeforeConfirmation, [])
+        await repairer.assertNoRequests()
         XCTAssertEqual(model.repairState, .idle)
 
         model.isMetadataSafetyConfirmed = true
         await model.runFullRescan()
 
-        let requestsAfterConfirmation = await repairer.requests()
-        XCTAssertEqual(requestsAfterConfirmation, [
+        await repairer.assertRequests([
             DatabaseRepairRepairRequest(
                 repoPath: "/tmp/repo",
                 options: .databaseRepairFullRescanFixture()
@@ -158,15 +152,13 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
 
         model.isMetadataSafetyConfirmed = true
         await model.collectDiagnostics()
-        let requestsBeforeConfirmation = await diagnosticsCollector.requestedRepoPaths()
-        XCTAssertEqual(requestsBeforeConfirmation, [])
+        await diagnosticsCollector.assertNoRequests()
         XCTAssertTrue(model.canRunFullRescan)
 
         model.requestDiagnosticsExport()
         await model.collectDiagnostics()
 
-        let requestsAfterConfirmation = await diagnosticsCollector.requestedRepoPaths()
-        XCTAssertEqual(requestsAfterConfirmation, ["/tmp/repo"])
+        await diagnosticsCollector.assertRequestedRepoPaths(["/tmp/repo"])
         guard case let .failed(mapping) = model.diagnosticsState else {
             return XCTFail("expected diagnostics failure")
         }
@@ -300,7 +292,18 @@ actor DatabaseRepairRecordingMetadataRepairer: CoreMetadataRepairing {
         return try result.get()
     }
 
-    func requests() -> [DatabaseRepairRepairRequest] {
-        recordedRequests
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests, [], file: file, line: line)
+    }
+
+    func assertRequests(
+        _ expectedRequests: [DatabaseRepairRepairRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
     }
 }

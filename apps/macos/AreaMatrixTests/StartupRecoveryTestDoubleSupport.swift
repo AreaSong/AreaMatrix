@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 extension RecoveryReportSnapshot {
     static func testFixture(
@@ -51,12 +52,31 @@ actor RecordingCoreStartupRecoverer: CoreStartupRecovering {
     }
 
     func waitUntilRecovered() async {
-        while !didRecover {
-            await Task.yield()
-        }
+        _ = await waitForActorTestValue(
+            on: self,
+            failureMessage: { "Timed out waiting for startup recovery request" },
+            value: {
+                didRecover ? true : nil
+            }
+        )
     }
 
     func requestedRepoPaths() -> [String] {
         paths
+    }
+
+    func assertRequestedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(paths, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(paths, [], file: file, line: line)
     }
 }

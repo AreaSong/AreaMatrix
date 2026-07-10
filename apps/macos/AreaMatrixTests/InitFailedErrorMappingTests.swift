@@ -32,8 +32,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
         )
         let firstAdoptRequests = await initializer.adoptRequests()
         XCTAssertEqual(firstAdoptRequests, ["/tmp/adopt"])
-        let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/adopt")])
+        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/adopt")])
         XCTAssertEqual(model.route, .initializationFailed("/tmp/adopt", mapping, retryDraft))
 
         await model.retryFailedInitialization()
@@ -74,14 +73,13 @@ final class InitFailedErrorMappingTests: XCTestCase {
 
         await model.load()
         let result = await model.blockRemoteAIWithPrivacyGate()
-        let requests = await updater.requests()
 
         XCTAssertEqual(result, .saved)
-        XCTAssertEqual(requests.count, 1)
-        XCTAssertEqual(requests[0].config.privacyGateEnabled, false)
-        XCTAssertEqual(requests[0].config.remoteAIAllowed, true)
-        XCTAssertEqual(requests[0].config.providerPreference, .remoteFirst)
-        XCTAssertEqual(requests[0].config.featureToggles.filter(\.allowRemote).count, 2)
+        await updater.assertRequestCount(1)
+        await updater.assertRequestedConfigValue(at: 0, \.privacyGateEnabled, false)
+        await updater.assertRequestedConfigValue(at: 0, \.remoteAIAllowed, true)
+        await updater.assertRequestedConfigValue(at: 0, \.providerPreference, .remoteFirst)
+        await updater.assertRequestedAllowRemoteFeatureCounts([2])
     }
 
     @MainActor
@@ -99,10 +97,9 @@ final class InitFailedErrorMappingTests: XCTestCase {
 
         await model.load()
         let result = await model.allowRemoteAIAfterProviderConsent()
-        let requests = await updater.requests()
 
         XCTAssertEqual(result, .needsRemoteConfiguration)
-        XCTAssertEqual(requests, [])
+        await updater.assertNoRequests()
         XCTAssertEqual(model.snapshot?.config.privacyGateEnabled, false)
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
             message: "Remote AI requires provider consent.",
@@ -135,9 +132,8 @@ final class InitFailedErrorMappingTests: XCTestCase {
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.map(\.config.privacyGateEnabled), [false, false])
+        await updater.assertRequestedConfigValues(\.privacyGateEnabled, [false, false])
         XCTAssertEqual(model.snapshot?.config.privacyGateEnabled, false)
         XCTAssertNil(model.saveError)
     }
@@ -161,8 +157,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
         model.route = .initializationFailed("/Users/example/private-repo", nil, nil)
         await model.collectInitializationDiagnostics()
 
-        let requestedRepoPaths = await collector.requestedRepoPaths()
-        XCTAssertEqual(requestedRepoPaths, ["/Users/example/private-repo"])
+        await collector.assertRequestedRepoPaths(["/Users/example/private-repo"])
         XCTAssertEqual(model.initializationDiagnostics, .collected(snapshot))
         XCTAssertEqual(writer.savedRepoPaths, [])
         XCTAssertEqual(model.route, .initializationFailed("/Users/example/private-repo", nil, nil))
@@ -185,8 +180,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
         await model.collectInitializationDiagnostics()
 
         XCTAssertEqual(model.initializationDiagnostics, .failed(mapping))
-        let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
+        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.route, .initializationFailed("/tmp/repo", nil, nil))
     }
 }

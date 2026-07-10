@@ -20,12 +20,10 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         model.updateConflictBatchDuplicateStrategy(.replace)
         await model.loadImportConflictBatchPreview()
         _ = await model.applyImportConflictBatch(replaceConfirmed: true)
-        let listRequests = await undoStore.listRequests()
-        let undoRequests = await undoStore.undoRequests()
 
         XCTAssertEqual(model.conflictBatchUndoState, .ready(action))
-        XCTAssertEqual(listRequests, ["/tmp/repo"])
-        XCTAssertEqual(undoRequests, [])
+        await undoStore.assertListRequests(["/tmp/repo"])
+        await undoStore.assertUndoRequests([])
     }
 
     @MainActor
@@ -73,10 +71,9 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         await model.loadImportConflictBatchPreview()
         _ = await model.applyImportConflictBatch(replaceConfirmed: true)
         await model.undoImportConflictBatchAction()
-        let undoRequests = await undoStore.undoRequests()
 
         XCTAssertEqual(model.conflictBatchUndoState, .undone(result))
-        XCTAssertEqual(undoRequests, ["/tmp/repo|undo-import-conflict-batch"])
+        await undoStore.assertUndoRequests(["/tmp/repo|undo-import-conflict-batch"])
     }
 
     func testImportConflictBatchUndoActionLogCoreFallbackUsesAppSemanticFailureSnapshot() {
@@ -123,10 +120,8 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
     @MainActor
     func testImportFolderFolderConflictPrecheckMapsDuplicateNameAndBlockedRows() async {
         let fixture = ImportFolderFolderConflictFixture.make()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: fixture.predictor,
-            importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: fixture.prechecker,
             scanner: fixture.scanner
         )
@@ -135,23 +130,24 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         let requests = await fixture.prechecker.recordedRequests()
 
         XCTAssertEqual(requests.map(\.destination), [.autoClassify])
-        XCTAssertEqual(model.rows.map(\.status.tag), ["DUP", "NAME", "BLOCKED"])
+        assertImportRowStatusTags(model.rows, ["DUP", "NAME", "BLOCKED"])
         XCTAssertEqual(model.duplicateCount, 1)
         XCTAssertEqual(model.nameConflictCount, 1)
         XCTAssertEqual(model.blockedCount, 1)
-        XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
-        XCTAssertEqual(model.rows[0].status.detail, "Skip: docs/existing-dup.pdf")
-        XCTAssertEqual(model.rows[1].status.detail, "Keep both (auto-number): docs/name.pdf")
+        assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
+        assertImportRowStatusDetails(model.rows, [
+            0: "Skip: docs/existing-dup.pdf",
+            1: "Keep both (auto-number): docs/name.pdf"
+        ])
     }
 
     @MainActor
     func testImportFolderFolderConflictStrategiesControlImportQueueAndSummary() async {
         let fixture = ImportFolderFolderConflictFixture.make(includeBlocked: false)
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: fixture.predictor,
             importer: importer,
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: fixture.prechecker,
             scanner: fixture.scanner
         )
@@ -159,9 +155,8 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         await model.load(request: importFolderFolderRequest(rootURL: fixture.rootURL))
         model.renameIncomingFile(for: fixture.nameURL.path, to: "renamed-name.pdf")
         let outcome = await model.importReadyFiles()
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
+        await importer.assertRecordedRequests([
             ImportBatchBatchImportRequest(
                 destination: .autoClassify,
                 suggestedCategory: "docs",
@@ -172,7 +167,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.skippedDuplicateCount, 1)
         XCTAssertEqual(outcome?.total, 1)
-        XCTAssertEqual(model.rows.map(\.status.tag), ["DUP", "IMPORTED"])
+        assertImportRowStatusTags(model.rows, ["DUP", "IMPORTED"])
     }
 
     @MainActor
@@ -183,10 +178,9 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
             duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf")
         ])
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction())]),
             importer: importer,
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
             conflictPrechecker: prechecker,
             scanner: scanner
         )
@@ -200,7 +194,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
             for: duplicateURL.path,
             strategy: ImportBatchDuplicateResolutionStrategy.replace
         )
-        XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
+        assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
         let blockedOutcome = await model.importReadyFiles()
         XCTAssertNil(blockedOutcome)
 
@@ -212,11 +206,10 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
             decision: context.decision(understandsReplace: true)
         )
         let outcome = await model.importReadyFiles()
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [importFolderFolderOverwriteRequest()])
+        await importer.assertRecordedRequests([importFolderFolderOverwriteRequest()])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
-        XCTAssertEqual(model.rows.first?.status.tag, "IMPORTED")
+        assertImportRowStatusTags(model.rows, ["IMPORTED"])
     }
 }
 

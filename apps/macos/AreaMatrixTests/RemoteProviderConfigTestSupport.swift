@@ -53,7 +53,6 @@ func assertRemoteProviderConfigRetestAfterChange(
     XCTAssertFalse(model.canEnable, file: file, line: line)
     XCTAssertEqual(store.removedReferences(), ["keychain:openAi-managed"], file: file, line: line)
     let didEnable = await model.enableRemoteAI()
-    let requests = await bridge.requests()
     XCTAssertFalse(didEnable, file: file, line: line)
-    XCTAssertNil(requests.enable, file: file, line: line)
+    await bridge.assertNoEnableRequest(file: file, line: line)
 }

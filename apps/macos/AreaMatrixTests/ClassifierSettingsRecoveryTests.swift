@@ -24,8 +24,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
         XCTAssertEqual(model.validationState, .passed)
         XCTAssertTrue(model.canRevertToLastValid)
-        let requests = await predictor.requests()
-        XCTAssertEqual(requests, [
+        await predictor.assertRequests([
             ClassifierSettingsSequencePredictor.Request(
                 repoPath: repoURL.path,
                 filename: "AreaMatrixValidationProbe.txt"
@@ -49,8 +48,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: classifierURL(repoURL: repoURL), encoding: .utf8), existing)
         XCTAssertFalse(FileManager.default.fileExists(atPath: lastValidBackupURL(repoURL: repoURL).path))
         XCTAssertEqual(model.fileActionError?.message, "无法创建默认分类规则文件")
-        let requests = await predictor.requests()
-        XCTAssertEqual(requests, [])
+        await predictor.assertNoRequests()
     }
 
     @MainActor
@@ -80,8 +78,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: lastValidBackupURL(repoURL: repoURL), encoding: .utf8), original)
         XCTAssertEqual(model.validationState, .passed)
         XCTAssertTrue(model.canRevertToLastValid)
-        let requests = await predictor.requests()
-        XCTAssertEqual(requests.count, 2)
+        await predictor.assertRequestCount(2)
     }
 
     @MainActor

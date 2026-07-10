@@ -247,7 +247,7 @@ private func assertReplaceConfirmationFailure(
     XCTAssertNil(blockedOutcome)
     XCTAssertEqual(requestsAfterFailure, [])
     XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
-    XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
+    assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
 
     model.collectReplaceConfirmationDiagnostics()
     XCTAssertEqual(

@@ -31,6 +31,7 @@ let snapshotConstructorInventories = [
     snapshotCtorInventory("ImportConflictBatchApplyRequestSnapshot", [("ImportBatchPrecheckFixtures.swift", 1)]),
     snapshotCtorInventory("ImportConflictBatchApplyReportSnapshot", [("ImportBatchPrecheckFixtures.swift", 1)]),
     snapshotCtorInventory("ImportConflictBatchItemResultSnapshot", [("ImportBatchPrecheckFixtures.swift", 1)]),
+    snapshotCtorInventory("ImportBatchSessionSnapshot", [("ImportProgressFixtures.swift", 1)]),
     snapshotCtorInventory("AISettingsConfigSnapshot", [("AISettingsFixtures.swift", 1)]),
     snapshotCtorInventory("AISettingsFeatureConfigSnapshot", [("AISettingsFixtures.swift", 1)]),
     snapshotCtorInventory("AISettingsSnapshot", [("AISettingsFixtures.swift", 1)]),

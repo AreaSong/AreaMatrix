@@ -5,34 +5,9 @@ final class ImportProgressInterruptedSessionTests: XCTestCase {
     @MainActor
     func testInterruptedCopySessionRoutesToImportResultAfterRepositoryOpen() async {
         let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: importProgressRepoPath(), fileCount: 1)
-        let store = StaticImportBatchSessionStore(session: ImportBatchSessionSnapshot(
-            repoPath: importProgressRepoPath(),
-            storageMode: .copy,
-            completed: 1,
-            failed: 0,
-            total: 3,
-            currentPath: "finance/first.pdf",
-            items: [
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: importProgressQueuedSourcePath("first.pdf"),
-                    targetPath: "finance/first.pdf",
-                    phase: .done,
-                    errorMessage: nil
-                ),
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: importProgressQueuedSourcePath("second.pdf"),
-                    targetPath: "docs/second.pdf",
-                    phase: .copying,
-                    errorMessage: nil
-                ),
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: importProgressQueuedSourcePath("third.pdf"),
-                    targetPath: "docs/third.pdf",
-                    phase: .pending,
-                    errorMessage: nil
-                )
-            ]
-        ))
+        let store = StaticImportBatchSessionStore(
+            session: ImportProgressFixtures.interruptedCopySessionTwoPending
+        )
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             startupRecoverer: StaticStartupRecoverer(),
@@ -44,12 +19,11 @@ final class ImportProgressInterruptedSessionTests: XCTestCase {
         model.finishSuccessfulRepositoryOpen(opening)
         guard let result = await waitForImportResultRoute(model) else { return }
 
-        XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 0, stopped 0, pending 2.")
-        XCTAssertEqual(result.items.map(\.status), [
-            ImportResultRouteState.ItemStatus.imported,
-            .pending,
-            .pending
-        ])
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 1, failed 0, stopped 0, pending 2.",
+            statuses: [.imported, .pending, .pending]
+        )
         XCTAssertEqual(result.items.dropFirst().map(\.reason), [
             "Import not completed before AreaMatrix quit",
             "Import not completed before AreaMatrix quit"
@@ -60,28 +34,9 @@ final class ImportProgressInterruptedSessionTests: XCTestCase {
     @MainActor
     func testInterruptedCopySessionIsClearedWhenUserAcknowledgesResults() async {
         let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: importProgressRepoPath(), fileCount: 1)
-        let store = StaticImportBatchSessionStore(session: ImportBatchSessionSnapshot(
-            repoPath: importProgressRepoPath(),
-            storageMode: .copy,
-            completed: 1,
-            failed: 0,
-            total: 2,
-            currentPath: "finance/first.pdf",
-            items: [
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: importProgressQueuedSourcePath("first.pdf"),
-                    targetPath: "finance/first.pdf",
-                    phase: .done,
-                    errorMessage: nil
-                ),
-                ImportBatchProgressSnapshot.Item(
-                    sourcePath: importProgressQueuedSourcePath("second.pdf"),
-                    targetPath: "docs/second.pdf",
-                    phase: .pending,
-                    errorMessage: nil
-                )
-            ]
-        ))
+        let store = StaticImportBatchSessionStore(
+            session: ImportProgressFixtures.interruptedCopySessionOnePending
+        )
         let model = OnboardingModel(
             settingsReader: StaticSettingsReader(repoPath: nil),
             startupRecoverer: StaticStartupRecoverer(),
@@ -93,13 +48,11 @@ final class ImportProgressInterruptedSessionTests: XCTestCase {
         model.finishSuccessfulRepositoryOpen(opening)
         guard await waitForImportResultRoute(model) != nil else { return }
         model.finishImportResult()
-        for _ in 0 ..< 20 {
-            await Task.yield()
-        }
+        let mainListOpening = await waitForMainListRoute(model)
 
-        let clearedRepoPaths = await store.clearedRepoPaths()
+        let clearedRepoPaths = await store.waitForClearedRepoPaths([importProgressRepoPath()])
         XCTAssertEqual(clearedRepoPaths, [importProgressRepoPath()])
-        XCTAssertEqual(model.route, OnboardingModel.Route.mainList(opening))
+        XCTAssertEqual(mainListOpening, opening)
     }
 
     @MainActor
@@ -114,11 +67,9 @@ final class ImportProgressInterruptedSessionTests: XCTestCase {
         )
 
         model.finishSuccessfulRepositoryOpen(opening)
-        for _ in 0 ..< 20 {
-            await Task.yield()
-        }
+        let mainListOpening = await waitForMainListRoute(model)
 
-        XCTAssertEqual(model.route, OnboardingModel.Route.mainList(opening))
+        XCTAssertEqual(mainListOpening, opening)
         XCTAssertNil(model.toastMessage)
     }
 }

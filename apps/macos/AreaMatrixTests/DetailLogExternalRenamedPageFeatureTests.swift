@@ -4,13 +4,12 @@ import XCTest
 final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     @MainActor
     func testDetailLogSyncExternalRenamedCoreProductionRelayCreatesCurrentMainWindowRenamedEvent() throws {
-        let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            startupRecoverer: StaticStartupRecoverer(),
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeShellMainListFixture(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
+            model: makeShellOnboardingModel()
         )
-        model.route = .mainList(opening)
+        let opening = fixture.opening
+        let model = fixture.model
 
         AreaMatrixExternalCreatedFileRelay.publish(
             kind: .renamed,
@@ -82,11 +81,8 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
 
         await model.selectFiles([original.id])
         await model.syncExternalCreated(event)
-        let syncRequests = await syncer.recordedRenamedRequests()
-        let listRequests = await fileLister.recordedListRequests()
-        let logRequests = await lister.recordedRequests()
 
-        XCTAssertEqual(syncRequests, [
+        await syncer.assertRecordedRenamedRequests([
             ExternalSyncRequest(
                 kind: .renamed,
                 repoPath: "/tmp/repo",
@@ -94,7 +90,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
                 fsEventID: 9001
             )
         ])
-        XCTAssertEqual(listRequests, [DetailLogExternalRenamedListRequest(
+        await fileLister.assertRecordedListRequests([DetailLogExternalRenamedListRequest(
             repoPath: "/tmp/repo",
             filter: .currentCategory(nil)
         )])
@@ -106,7 +102,9 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
             model.detailExternalCreateSyncState,
             .synced(event: event, fileID: renamed.id, .detailRenamedFixture())
         )
-        XCTAssertEqual(logRequests, [DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: renamed.id))])
+        await lister.assertRecordedRequests([
+            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: renamed.id))
+        ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: renamed.id, entries: [entry]))
     }
 
@@ -135,12 +133,10 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
 
         await model.selectFiles([existing.id])
         await model.syncExternalCreated(event)
-        let mappedErrors = await mapper.recordedErrors()
-        let logRequests = await lister.recordedRequests()
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: event.relativePath)])
-        XCTAssertEqual(logRequests, [])
+        await mapper.assertRecordedErrors([CoreError.Conflict(path: event.relativePath)])
+        await lister.assertRecordedRequests([])
         XCTAssertEqual(model.detailLogState, .notLoaded)
     }
 
@@ -166,14 +162,12 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         )
 
         await model.syncExternalCreated(event)
-        let mappedErrors = await mapper.recordedErrors()
-        let logRequests = await lister.recordedRequests()
         let rawContext = "renamed event 9003 returned sync errors: \(syncResult.errors.joined(separator: "; "))"
         let mapping = CoreErrorMappingSnapshot.internalFailure(rawContext: rawContext)
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        XCTAssertEqual(mappedErrors, [])
-        XCTAssertEqual(logRequests, [])
+        await mapper.assertRecordedErrors([])
+        await lister.assertRecordedRequests([])
         XCTAssertTrue(mapping.rawContext.contains("renamed event 9003 returned sync errors"))
     }
 

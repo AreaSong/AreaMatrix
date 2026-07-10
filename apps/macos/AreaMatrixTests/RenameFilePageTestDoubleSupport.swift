@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct RenameRequest: Equatable {
     var repoPath: String
@@ -22,6 +23,14 @@ actor RenameRecordingRenamer: CoreFileRenaming {
     func recordedRequests() -> [RenameRequest] {
         requests
     }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [RenameRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+    }
 }
 
 struct BatchRenamePreviewRequest: Equatable {
@@ -40,8 +49,8 @@ struct BatchRenameApplyRequest: Equatable {
 actor BatchRenameRecordingRenamer: CoreBatchRenaming {
     private let previewResult: Result<BatchRenamePreviewReportSnapshot, Error>
     private let applyResult: Result<BatchRenameReportSnapshot, Error>
-    private(set) var previewRequests: [BatchRenamePreviewRequest] = []
-    private(set) var applyRequests: [BatchRenameApplyRequest] = []
+    private var previewRequests: [BatchRenamePreviewRequest] = []
+    private var applyRequests: [BatchRenameApplyRequest] = []
 
     init(preview: Result<BatchRenamePreviewReportSnapshot, Error>, apply: Result<BatchRenameReportSnapshot, Error>) {
         previewResult = preview
@@ -70,5 +79,21 @@ actor BatchRenameRecordingRenamer: CoreBatchRenaming {
             token: previewToken
         ))
         return try applyResult.get()
+    }
+
+    func assertPreviewRequests(
+        _ expectedRequests: [BatchRenamePreviewRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(previewRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertApplyRequests(
+        _ expectedRequests: [BatchRenameApplyRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(applyRequests, expectedRequests, file: file, line: line)
     }
 }

@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor RecordingRepositoryPathValidator: CoreRepositoryPathValidating, CoreInitializedRepositoryPathValidating {
     typealias ValidationResult = Swift.Result<RepoPathValidationSnapshot, Error>
@@ -51,6 +52,29 @@ actor RecordingRepositoryPathValidator: CoreRepositoryPathValidating, CoreInitia
 
     func recordedRequests() -> [String] {
         requestedRepoPaths()
+    }
+
+    func assertRequestedRepoPaths(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestedRepoPaths(), expectedRequests, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestedRepoPaths(), [], file: file, line: line)
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRequestedRepoPaths(expectedRequests, file: file, line: line)
     }
 
     func requestedValidatedRepoPaths() -> [String] {

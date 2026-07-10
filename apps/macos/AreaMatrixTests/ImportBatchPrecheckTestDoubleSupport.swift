@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import Foundation
+import XCTest
 
 actor ImportBatchStaticBatchFileLoader: ImportBatchCoreFileLoading {
     private let pagesByCategory: [String: [[FileEntrySnapshot]]]
@@ -22,6 +23,14 @@ actor ImportBatchStaticBatchFileLoader: ImportBatchCoreFileLoading {
 
     func recordedRequests() -> [FileFilterSnapshot] {
         requests
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [FileFilterSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 }
 
@@ -54,5 +63,13 @@ actor ImportBatchStaticNameConflictPrechecker: ImportBatchNameConflictPrecheckin
 
     func recordedRequests() -> [ImportBatchNameConflictPrecheckRequest] {
         requests
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [ImportBatchNameConflictPrecheckRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 }

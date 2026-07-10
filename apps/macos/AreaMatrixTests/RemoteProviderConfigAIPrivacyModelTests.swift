@@ -12,18 +12,20 @@ final class RemoteProviderConfigAIPrivacyModelTests: XCTestCase {
         )
 
         let didEnable = await model.enablePrivacyGate(providerConfig: .remoteProviderConfigEnabled())
-        let requests = await bridge.requests()
 
         XCTAssertTrue(didEnable)
         XCTAssertEqual(model.snapshot?.privacyGateEnabled, true)
-        XCTAssertEqual(requests.loadCount, 1)
-        XCTAssertEqual(requests.updates.count, 1)
-        XCTAssertEqual(requests.updates.first?.privacyGateEnabled, true)
-        XCTAssertEqual(requests.updates.first?.providerScope.remoteProviderEnabled, true)
-        XCTAssertEqual(requests.updates.first?.providerScope.featureScope, [.autoSummaries])
-        XCTAssertEqual(requests.updates.first?.rules.first?.name, "Block confidential")
-        XCTAssertEqual(requests.updates.first?.remoteAllowedFields[1].field, .extractedTextExcerpt)
-        XCTAssertEqual(requests.updates.first?.remoteAllowedFields[1].allowRemote, false)
+        await bridge.assertLoadCount(1)
+        await bridge.assertUpdateCount(1)
+        await bridge.assertUpdate(at: 0, privacyGateEnabled: true)
+        await bridge.assertProviderScope(at: 0, remoteProviderEnabled: true, featureScope: [.autoSummaries])
+        await bridge.assertUpdateRule(at: 0, position: .first, name: "Block confidential")
+        await bridge.assertUpdateFieldPolicy(
+            at: 0,
+            fieldIndex: 1,
+            field: .extractedTextExcerpt,
+            allowRemote: false
+        )
     }
 
     @MainActor
@@ -38,13 +40,11 @@ final class RemoteProviderConfigAIPrivacyModelTests: XCTestCase {
         disabledProvider.remoteProviderEnabled = false
 
         let didDisableGate = await model.disablePrivacyGate(providerConfig: disabledProvider)
-        let requests = await bridge.requests()
 
         XCTAssertTrue(didDisableGate)
         XCTAssertEqual(model.snapshot?.privacyGateEnabled, false)
-        XCTAssertEqual(requests.updates.first?.privacyGateEnabled, false)
-        XCTAssertEqual(requests.updates.first?.providerScope.providerConfigured, true)
-        XCTAssertEqual(requests.updates.first?.providerScope.remoteProviderEnabled, false)
+        await bridge.assertUpdate(at: 0, privacyGateEnabled: false)
+        await bridge.assertProviderScope(at: 0, providerConfigured: true, remoteProviderEnabled: false)
     }
 
     @MainActor
@@ -88,31 +88,27 @@ final class RemoteProviderConfigAIPrivacyModelTests: XCTestCase {
         await remoteModel.testConnection()
         let didEnable = await remoteModel.enableRemoteAI()
         let didEnableGate = await privacyModel.enablePrivacyGate(providerConfig: remoteModel.snapshot)
-        let providerRequestsAfterEnable = await providerBridge.requests()
-        let privacyRequestsAfterEnable = await privacyBridge.requests()
 
         XCTAssertTrue(didEnable)
         XCTAssertTrue(didEnableGate)
-        assertRemoteProviderConfigEnabledPageIntegration(
+        await assertRemoteProviderConfigEnabledPageIntegration(
             remoteModel: remoteModel,
             privacyModel: privacyModel,
-            providerRequests: providerRequestsAfterEnable,
-            privacyRequests: privacyRequestsAfterEnable,
+            providerBridge: providerBridge,
+            privacyBridge: privacyBridge,
             store: store
         )
 
         let didDisable = await remoteModel.disableRemoteAI(removeStoredCredential: false)
         let didDisableGate = await privacyModel.disablePrivacyGate(providerConfig: remoteModel.snapshot)
-        let providerRequestsAfterDisable = await providerBridge.requests()
-        let privacyRequestsAfterDisable = await privacyBridge.requests()
 
         XCTAssertTrue(didDisable)
         XCTAssertTrue(didDisableGate)
-        assertRemoteProviderConfigDisabledPageIntegration(
+        await assertRemoteProviderConfigDisabledPageIntegration(
             remoteModel: remoteModel,
             privacyModel: privacyModel,
-            providerRequests: providerRequestsAfterDisable,
-            privacyRequests: privacyRequestsAfterDisable,
+            providerBridge: providerBridge,
+            privacyBridge: privacyBridge,
             store: store
         )
     }

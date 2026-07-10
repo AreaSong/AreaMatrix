@@ -8,18 +8,15 @@ final class DetailNotePageFeatureTests: XCTestCase {
         let file = FileEntrySnapshot.detailMetaFixture(id: 114, currentName: "note.pdf")
         let noteStore = DetailNoteRecordingStore(readResults: [.success(nil)], writeResults: [.success(())])
         let tracker = DetailNoteRecordingInFlightTracker()
-        let model = DetailNoteModel(
-            repoPath: "/tmp/repo",
+        let model = makeDetailNoteTestModel(
             noteStore: noteStore,
-            errorMapper: StaticCoreErrorMapper(mapping: .detailNoteIo()),
-            inFlightTracker: tracker,
-            debounceNanoseconds: 1
+            inFlightTracker: tracker
         )
 
         await model.load(file: file, writeBlock: nil)
         model.createNote()
         model.updateDraft("contract notes")
-        await waitForDetailNoteSave(model)
+        await waitForDetailNoteSaveSettled(model)
         let reads = await noteStore.recordedReadRequests()
         let writes = await noteStore.recordedWriteRequests()
         let marks = await tracker.recordedMarks()
@@ -47,16 +44,14 @@ final class DetailNotePageFeatureTests: XCTestCase {
             readResults: [.success("old")],
             writeResults: [.failure(CoreError.Io(message: "disk full")), .success(())]
         )
-        let model = DetailNoteModel(
-            repoPath: "/tmp/repo",
+        let model = makeDetailNoteTestModel(
             noteStore: noteStore,
-            errorMapper: StaticCoreErrorMapper(mapping: mapping),
-            debounceNanoseconds: 1
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
         await model.load(file: file, writeBlock: nil)
         model.updateDraft("new unsaved draft")
-        await waitForDetailNoteSave(model)
+        await waitForDetailNoteSaveSettled(model)
 
         XCTAssertEqual(model.state, .editing(
             fileID: file.id,
@@ -78,11 +73,8 @@ final class DetailNotePageFeatureTests: XCTestCase {
     @MainActor
     func testDetailNoteReadWriteNoteCoreCreateNoteRequestsEditorFocus() async {
         let file = FileEntrySnapshot.detailMetaFixture(id: 119, currentName: "focus.pdf")
-        let model = DetailNoteModel(
-            repoPath: "/tmp/repo",
-            noteStore: DetailNoteRecordingStore(readResults: [.success(nil)]),
-            errorMapper: StaticCoreErrorMapper(mapping: .detailNoteIo()),
-            debounceNanoseconds: 1
+        let model = makeDetailNoteTestModel(
+            noteStore: DetailNoteRecordingStore(readResults: [.success(nil)])
         )
 
         await model.load(file: file, writeBlock: nil)
@@ -103,11 +95,9 @@ final class DetailNotePageFeatureTests: XCTestCase {
             readResults: [.success("old")],
             writeResults: [.failure(CoreError.Io(message: "disk full"))]
         )
-        let noteModel = DetailNoteModel(
-            repoPath: "/tmp/repo",
+        let noteModel = makeDetailNoteTestModel(
             noteStore: noteStore,
-            errorMapper: StaticCoreErrorMapper(mapping: mapping),
-            debounceNanoseconds: 1
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
         let listModel = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
@@ -118,7 +108,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
 
         await noteModel.load(file: file, writeBlock: nil)
         noteModel.updateDraft("unsaved after failure")
-        await waitForDetailNoteSave(noteModel)
+        await waitForDetailNoteSaveSettled(noteModel)
         if let failedFileID = noteModel.failedDraftFileIDLeaving(fileID: file.id) {
             listModel.showUnsavedNoteDraftPreserved(fileID: failedFileID)
         }
@@ -134,12 +124,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
             availability: .missing
         )
         let noteStore = DetailNoteRecordingStore(readResults: [.success("existing note")])
-        let model = DetailNoteModel(
-            repoPath: "/tmp/repo",
-            noteStore: noteStore,
-            errorMapper: StaticCoreErrorMapper(mapping: .detailNoteIo()),
-            debounceNanoseconds: 1
-        )
+        let model = makeDetailNoteTestModel(noteStore: noteStore)
 
         await model.load(file: missingFile, writeBlock: .fileMissing)
         model.updateDraft("should not write")
@@ -283,29 +268,6 @@ private extension FileEntrySnapshot {
         var file = FileEntrySnapshot.detailMetaFixture(id: id, currentName: currentName)
         file.availability = availability
         return file
-    }
-}
-
-extension CoreErrorMappingSnapshot {
-    static func detailNoteIo() -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot.testFixture(
-            kind: .io,
-            userMessage: "无法保存笔记",
-            severity: .medium,
-            suggestedAction: "请确认资料库可写，然后重试。",
-            recoverability: .retryable,
-            rawContext: "detail-note note-sidecar write_note"
-        )
-    }
-}
-
-@MainActor
-private func waitForDetailNoteSave(_ model: DetailNoteModel) async {
-    for _ in 0 ..< 200 {
-        if model.state.saveStatus == .saved || model.state.saveStatus?.failedError != nil {
-            return
-        }
-        await Task.yield()
     }
 }
 

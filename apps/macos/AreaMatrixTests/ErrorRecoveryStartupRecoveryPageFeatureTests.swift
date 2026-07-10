@@ -132,14 +132,13 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
 
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: "/tmp/repo")
         await model.openExistingRepository(validation)
-        let openedBeforeRetry = await opener.requestedConfiguredRepoPaths()
-        let requestsBeforeRetry = await recoverer.requestedRepoPaths()
 
-        XCTAssertEqual(openedBeforeRetry, [])
-        XCTAssertEqual(requestsBeforeRetry, ["/tmp/repo"])
-        guard case let .mainLoading(failedState) = model.route else {
-            return XCTFail("Expected startup-recovery startup recovery to stay in main loading")
-        }
+        await opener.assertNoConfiguredRepoPaths()
+        await recoverer.assertRequestedRepoPaths(["/tmp/repo"])
+        guard let failedState = requireMainLoadingState(
+            model,
+            message: "Expected startup-recovery startup recovery to stay in main loading"
+        ) else { return }
         XCTAssertEqual(failedState.recoveryErrorMapping, mapping)
         XCTAssertEqual(failedState.recoveryStatusText, "启动恢复失败：Startup recovery could not finish")
 
@@ -147,11 +146,9 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             await model.retryMainRepositoryFromError(repoPath: "/tmp/repo")
         }
         await opener.waitUntilStarted()
-        let requestsAfterRetryStarted = await recoverer.requestedRepoPaths()
-        let openedAfterRetryStarted = await opener.requestedConfiguredRepoPaths()
 
-        XCTAssertEqual(requestsAfterRetryStarted, ["/tmp/repo", "/tmp/repo"])
-        XCTAssertEqual(openedAfterRetryStarted, ["/tmp/repo"])
+        await recoverer.assertRequestedRepoPaths(["/tmp/repo", "/tmp/repo"])
+        await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
 
         await opener.finishOpen()
         await retryTask.value

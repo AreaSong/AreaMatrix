@@ -74,12 +74,11 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         await model.load()
         await model.setAIEnabled(true)
         await model.setFeature(.autoSummaries, enabled: true)
-        let requests = await updater.requests()
 
         XCTAssertEqual(model.loadState, .loaded)
-        XCTAssertEqual(requests.count, 2)
-        XCTAssertEqual(requests[0].config.aiEnabled, true)
-        XCTAssertEqual(requests[1].config.featureToggles.first { $0.feature == .autoSummaries }?.enabled, true)
+        await updater.assertRequestCount(2)
+        await updater.assertRequestedConfigValue(at: 0, \.aiEnabled, true)
+        await updater.assertRequestedFeatureValue(at: 1, feature: .autoSummaries, \.enabled, true)
         XCTAssertEqual(model.snapshot?.capabilities.count, 4)
     }
 
@@ -95,9 +94,8 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
         await model.load()
         await model.setProviderPreference(.remoteFirst)
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests, [])
+        await updater.assertNoRequests()
         XCTAssertEqual(model.snapshot?.config.providerPreference, .localFirst)
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
             message: "Remote AI requires explicit setup.",
@@ -127,9 +125,8 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         XCTAssertEqual(model.saveError?.message, "AI could not be paused.")
 
         await model.retryPause()
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.map(\.config.aiEnabled), [false, false])
+        await updater.assertRequestedConfigValues(\.aiEnabled, [false, false])
         XCTAssertEqual(model.snapshot?.config.aiEnabled, false)
         XCTAssertNil(model.saveError)
     }
@@ -182,11 +179,14 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         await model.checkStatus()
         model.showDiagnostics()
         model.copyDiagnosticsSummary()
-        let requests = await reader.statusRequests()
 
-        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/localModelStatus"])
-        XCTAssertEqual(requests.first?.request.modelID, LocalModelStatusModel.defaultModelID)
-        XCTAssertEqual(requests.first?.request.storageLocation, "/tmp/localModelStatus-models")
+        await reader.assertStatusRequests([RecordingLocalModelReader.StatusRequest(
+            repoPath: "/tmp/localModelStatus",
+            request: LocalModelStatusRequestState(
+                modelID: LocalModelStatusModel.defaultModelID,
+                storageLocation: "/tmp/localModelStatus-models"
+            )
+        )])
         XCTAssertEqual(model.snapshot?.availability, .notInstalled)
         XCTAssertEqual(model.statusText, "Status: Not installed")
         XCTAssertEqual(copier.summaries, ["manifest: missing; runtime: unavailable"])
@@ -215,10 +215,14 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
         await model.checkStatus()
         await model.openModelLocation()
-        let folderRequests = await reader.folderRequests()
 
-        XCTAssertEqual(folderRequests.map(\.repoPath), ["/tmp/localModelStatus"])
-        XCTAssertEqual(folderRequests.first?.request.storageLocation, "/tmp/localModelStatus-models")
+        await reader.assertFolderRequests([RecordingLocalModelReader.FolderRequest(
+            repoPath: "/tmp/localModelStatus",
+            request: LocalModelFolderRequestState(
+                modelID: LocalModelStatusModel.defaultModelID,
+                storageLocation: "/tmp/localModelStatus-models"
+            )
+        )])
         XCTAssertEqual(folderOpener.locations.map(\.folderPath), ["/tmp/localModelStatus-models"])
         XCTAssertEqual(model.feedback, .success("Model location opened."))
     }

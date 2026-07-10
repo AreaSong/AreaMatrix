@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 typealias SemanticSearchDetailer = DetailMetaImmediateDetailer
 
@@ -35,12 +36,55 @@ actor SemanticSearchSemanticSearcher: CoreSemanticSearching {
         return .semanticSearchReport()
     }
 
-    func semanticRequests() -> [SearchQueryRequestSnapshot] {
-        semanticSearchRequests
+    func assertSemanticRequest(
+        at index: Int = 0,
+        query expectedQuery: String? = nil,
+        mode expectedMode: SearchModeSnapshot? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard let request = semanticRequest(at: index, file: file, line: line) else { return }
+
+        if let expectedQuery {
+            XCTAssertEqual(request.query, expectedQuery, file: file, line: line)
+        }
+        if let expectedMode {
+            XCTAssertEqual(request.mode, expectedMode, file: file, line: line)
+        }
     }
 
-    func indexRequests() -> [SearchQueryRequestSnapshot] {
-        indexBuildRequests
+    func assertNoIndexRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(indexBuildRequests, [], file: file, line: line)
+    }
+
+    func assertIndexRequests(
+        queries expectedQueries: [String]? = nil,
+        modes expectedModes: [SearchModeSnapshot]? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        if let expectedQueries {
+            XCTAssertEqual(indexBuildRequests.map(\.query), expectedQueries, file: file, line: line)
+        }
+        if let expectedModes {
+            XCTAssertEqual(indexBuildRequests.map(\.mode), expectedModes, file: file, line: line)
+        }
+    }
+
+    private func semanticRequest(
+        at index: Int,
+        file: StaticString,
+        line: UInt
+    ) -> SearchQueryRequestSnapshot? {
+        guard semanticSearchRequests.indices.contains(index) else {
+            XCTFail("Expected semantic search request at index \(index).", file: file, line: line)
+            return nil
+        }
+
+        return semanticSearchRequests[index]
     }
 }
 
@@ -67,8 +111,12 @@ actor SemanticSearchPagedSemanticSearcher: CoreSemanticSearching {
         .semanticSearchReadyReport()
     }
 
-    func requests() -> [SearchQueryRequestSnapshot] {
-        recordedRequests
+    func assertRequestOffsets(
+        _ expectedOffsets: [Int64],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests.map(\.offset), expectedOffsets, file: file, line: line)
     }
 }
 
@@ -104,9 +152,13 @@ actor SemanticSearchDelayedSemanticSearcher: CoreSemanticSearching {
     }
 
     func waitForBuildStart() async {
-        while !buildStarted {
-            await Task.yield()
-        }
+        _ = await waitForActorTestValue(
+            on: self,
+            failureMessage: { "Timed out waiting for semantic index build start" },
+            value: {
+                buildStarted && continuation != nil ? true : nil
+            }
+        )
     }
 
     func finishBuild() {

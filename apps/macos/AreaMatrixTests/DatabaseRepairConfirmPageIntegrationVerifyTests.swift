@@ -34,9 +34,10 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         )
         shell.route = .mainRepoError("/tmp/repo", mapping)
         shell.openMainRepositoryRepair(repoPath: "/tmp/repo")
-        guard case let .dbRepairConfirm(repairRoute) = shell.route else {
-            return XCTFail("Expected database-repair repair route, got \(shell.route)")
-        }
+        guard let repairRoute = requireDatabaseRepairRoute(
+            shell,
+            message: "Expected database-repair repair route"
+        ) else { return }
 
         let repairModel = DatabaseRepairConfirmModel(
             repoPath: repairRoute.repoPath,
@@ -53,9 +54,8 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
 
         repairModel.isMetadataSafetyConfirmed = true
         await repairModel.runFullRescan()
-        let requests = await repairer.requests()
 
-        XCTAssertEqual(requests, [
+        await repairer.assertRequests([
             DatabaseRepairIntegrationRepairRequest(
                 repoPath: "/tmp/repo",
                 options: .databaseRepairFullRescanFixture()
@@ -66,7 +66,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         XCTAssertEqual(shell.route, .dbRepairConfirm(repairRoute))
 
         shell.revealMainRepositoryFolder(repoPath: repairRoute.repoPath)
-        XCTAssertEqual(finder.repoPaths, ["/tmp/repo"])
+        finder.assertRepoPaths(["/tmp/repo"])
 
         shell.returnFromDatabaseRepair(repairRoute)
         XCTAssertEqual(shell.route, .mainRepoError("/tmp/repo", mapping))
@@ -91,8 +91,12 @@ private actor RecordingMetadataRepairer: CoreMetadataRepairing {
         return try result.get()
     }
 
-    func requests() -> [DatabaseRepairIntegrationRepairRequest] {
-        recordedRequests
+    func assertRequests(
+        _ expectedRequests: [DatabaseRepairIntegrationRepairRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
     }
 }
 
@@ -154,7 +158,10 @@ private struct DatabaseRepairIntegrationSuccessContext {
     @MainActor
     func openRepairRoute() throws -> DatabaseRepairRouteState {
         shell.openMainRepositoryRepair(repoPath: repoURL.path)
-        guard case let .dbRepairConfirm(repairRoute) = shell.route else {
+        guard let repairRoute = requireDatabaseRepairRoute(
+            shell,
+            message: "Expected database-repair repair route"
+        ) else {
             throw DatabaseRepairIntegrationFailure
                 .unexpectedRoute("Expected database-repair repair route, got \(shell.route)")
         }
@@ -200,11 +207,10 @@ private struct DatabaseRepairIntegrationSuccessContext {
         await opener.finishOpen()
         await retryTask.value
 
-        let openRequests = await opener.requestedConfiguredRepoPaths()
         guard case let .mainList(opening) = shell.route else {
             throw DatabaseRepairIntegrationFailure.unexpectedRoute("Expected main-list main-list, got \(shell.route)")
         }
-        XCTAssertEqual(openRequests, [repoURL.path])
+        await opener.assertRequestedConfiguredRepoPaths([repoURL.path])
         XCTAssertEqual(opening.config.repoPath, repoURL.path)
         XCTAssertEqual(opening.tree.totalFileCount, 2)
         XCTAssertEqual(writer.savedRepoPaths, [repoURL.path])
@@ -296,8 +302,12 @@ private actor DatabaseRepairPausingRepositoryOpener: CoreEmptyRepositoryOpening 
         finishContinuation = nil
     }
 
-    func requestedConfiguredRepoPaths() -> [String] {
-        configuredPaths
+    func assertRequestedConfiguredRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(configuredPaths, expectedRepoPaths, file: file, line: line)
     }
 
     private func pauseUntilFinished() async {

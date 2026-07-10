@@ -67,11 +67,9 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
         XCTAssertEqual(model.smartListFilterDraft?.filters, filters)
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 42, name: "Tagged"))
         let tagListRequestFileIDs = await tagStore.listRequests().map(\.fileID)
-        let tagAddRequests = await tagStore.addRequests()
-        let tagRemoveRequests = await tagStore.removeRequests()
         XCTAssertEqual(tagListRequestFileIDs, [detail.id, detail.id, detail.id])
-        XCTAssertEqual(tagAddRequests, [])
-        XCTAssertEqual(tagRemoveRequests, [])
+        await tagStore.assertAddRequests([])
+        await tagStore.assertRemoveRequests([])
     }
 
     @MainActor
@@ -97,15 +95,12 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
             model.lastSearchExitContext,
             .sidebar("tag-filters-sidebar-tags-filter")
         )
-        let tagListRequests = await tagStore.listRequests()
-        let tagAddRequests = await tagStore.addRequests()
-        let tagRemoveRequests = await tagStore.removeRequests()
 
-        XCTAssertEqual(tagListRequests, [
+        await tagStore.assertListRequests([
             DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)
         ])
-        XCTAssertEqual(tagAddRequests, [])
-        XCTAssertEqual(tagRemoveRequests, [])
+        await tagStore.assertAddRequests([])
+        await tagStore.assertRemoveRequests([])
     }
 }
 

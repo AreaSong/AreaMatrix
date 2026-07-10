@@ -9,9 +9,7 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         let model = ImportBatchPreviewModel(predictor: predictor)
 
         await model.load(request: fixture.request)
-        let requests = await predictor.recordedRequests()
-
-        XCTAssertEqual(requests, [
+        await predictor.assertRecordedRequests([
             ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf"),
             ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf")
         ])
@@ -19,10 +17,9 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         XCTAssertEqual(model.rows[0].predictedCategory, "finance")
         XCTAssertEqual(model.rows[1].predictedCategory, "docs")
         XCTAssertEqual(model.rows[1].suggestedName, "2026Q1_合同.pdf")
-        XCTAssertEqual(model.rows[0].status.tag, "OK")
-        XCTAssertEqual(model.rows[1].status.tag, "OK")
-        XCTAssertEqual(model.status.message, "已完成 2 个文件的导入预览")
-        XCTAssertNil(model.importDisabledReason)
+        assertImportRowStatusTags(model.rows, ["OK", "OK"])
+        assertImportStatusMessage(model.status, "已完成 2 个文件的导入预览")
+        assertImportEnabled(model.importDisabledReason)
     }
 
     @MainActor
@@ -48,9 +45,7 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         )
 
         await model.load(request: request)
-        let precheckRequests = await duplicatePrechecker.recordedRequests()
-
-        XCTAssertEqual(precheckRequests, [
+        await duplicatePrechecker.assertRecordedRequests([
             ImportBatchDuplicatePrecheckRequest(repoPath: "/tmp/repo", paths: [
                 "/tmp/Invoice_2026Q1.pdf",
                 "/tmp/Duplicate.pdf",
@@ -59,12 +54,12 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         ])
         XCTAssertEqual(model.successfulPreviewCount, 2)
         XCTAssertEqual(model.failedPreviewCount, 1)
-        XCTAssertEqual(model.rows[0].status.tag, "OK")
-        XCTAssertEqual(model.rows[1].status.tag, "DUP")
-        XCTAssertEqual(model.rows[1].status.detail, "Skip: finance/existing.pdf")
-        XCTAssertEqual(model.rows[2].status.tag, "ERROR")
-        XCTAssertEqual(model.rows[2].status.detail, "分类规则无效：classifier.yaml line 7")
-        XCTAssertEqual(model.status.message, "已完成 2/3 个文件的导入预览，1 个失败")
+        assertImportRowStatusTags(model.rows, ["OK", "DUP", "ERROR"])
+        assertImportRowStatusDetails(model.rows, [
+            1: "Skip: finance/existing.pdf",
+            2: "分类规则无效：classifier.yaml line 7"
+        ])
+        assertImportStatusMessage(model.status, "已完成 2/3 个文件的导入预览，1 个失败")
         XCTAssertTrue(model.showsRetryPreview)
     }
 
@@ -91,11 +86,11 @@ final class ImportDropBatchPreviewTests: XCTestCase {
             selectedDestination: previewModel.selectedDestination
         )
 
-        XCTAssertEqual(previewModel.rows.map(\.status.tag), ["DUP", "OK"])
+        assertImportRowStatusTags(previewModel.rows, ["DUP", "OK"])
         XCTAssertEqual(importModel.duplicateCount, 1)
-        XCTAssertEqual(importModel.rows.map(\.status.tag), ["DUP", "OK"])
-        XCTAssertEqual(importModel.rows.first?.status.detail, "Skip: finance/existing-invoice.pdf")
-        XCTAssertNil(importModel.importDisabledReason)
+        assertImportRowStatusTags(importModel.rows, ["DUP", "OK"])
+        assertImportRowStatusDetails(importModel.rows, [0: "Skip: finance/existing-invoice.pdf"])
+        assertImportEnabled(importModel.importDisabledReason)
     }
 
     @MainActor
@@ -124,18 +119,18 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         )
 
         await model.load(request: request)
-        let duplicateRequests = await duplicateFileLoader.recordedRequests()
-        let nameConflictRequests = await nameConflictFileLoader.recordedRequests()
 
-        XCTAssertEqual(model.rows.map(\.status.tag), ["DUP", "NAME"])
-        XCTAssertEqual(model.rows[0].status.detail, "Skip: finance/existing-invoice.pdf")
-        XCTAssertEqual(model.rows[1].status.detail, "Keep both (auto-number): docs/合同.pdf")
+        assertImportRowStatusTags(model.rows, ["DUP", "NAME"])
+        assertImportRowStatusDetails(model.rows, [
+            0: "Skip: finance/existing-invoice.pdf",
+            1: "Keep both (auto-number): docs/合同.pdf"
+        ])
         XCTAssertEqual(model.successfulPreviewCount, 2)
         XCTAssertEqual(model.failedPreviewCount, 0)
-        XCTAssertEqual(duplicateRequests, [
+        await duplicateFileLoader.assertRecordedRequests([
             .testFixture(limit: 200)
         ])
-        XCTAssertEqual(nameConflictRequests, [
+        await nameConflictFileLoader.assertRecordedRequests([
             .testFixture(category: "docs", limit: 200)
         ])
     }
@@ -215,6 +210,14 @@ private actor ImportBatchStaticDuplicatePrechecker: ImportBatchDuplicatePrecheck
 
     func recordedRequests() -> [ImportBatchDuplicatePrecheckRequest] {
         requests
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [ImportBatchDuplicatePrecheckRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 }
 

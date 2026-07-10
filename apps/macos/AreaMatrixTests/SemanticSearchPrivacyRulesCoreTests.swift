@@ -26,17 +26,18 @@ final class SemanticSearchPrivacyRulesCoreTests: XCTestCase {
 
         await model.buildSemanticIndexForCurrentSearch()
 
-        let privacyRequests = await privacy.requests()
-        let indexRequests = await semantic.indexRequests()
-        XCTAssertEqual(privacyRequests.loadCount, 1)
-        XCTAssertEqual(privacyRequests.evaluations.first?.feature, .semanticSearch)
-        XCTAssertEqual(privacyRequests.evaluations.first?.route, .remote)
-        XCTAssertEqual(privacyRequests.evaluations.first?.context.repoRelativePath, "finance/invoices")
-        XCTAssertEqual(privacyRequests.evaluations.first?.context.fileName, "客户合同")
-        XCTAssertEqual(privacyRequests.evaluations.first?.context.category, "finance")
-        XCTAssertEqual(privacyRequests.evaluations.first?.context.extension, "pdf")
-        XCTAssertEqual(privacyRequests.evaluations.first?.context.tags, ["confidential"])
-        XCTAssertEqual(indexRequests, [request])
+        await privacy.assertLoadCount(1)
+        await privacy.assertEvaluation(
+            at: 0,
+            feature: .semanticSearch,
+            route: .remote,
+            repoRelativePath: "finance/invoices",
+            fileName: "客户合同",
+            category: "finance",
+            fileExtension: "pdf",
+            tags: ["confidential"]
+        )
+        await semantic.assertIndexRequests([request])
         XCTAssertTrue(model.semanticPrivacyGateState.allowsIndexBuild)
     }
 
@@ -64,8 +65,7 @@ final class SemanticSearchPrivacyRulesCoreTests: XCTestCase {
 
         await model.buildSemanticIndexForCurrentSearch()
 
-        let indexRequests = await semantic.indexRequests()
-        XCTAssertEqual(indexRequests, [])
+        await semantic.assertNoIndexRequests()
         XCTAssertEqual(model.semanticPrivacyGateState.matchedRuleID, "rule-confidential")
         XCTAssertFalse(model.semanticIndexBuildState.isBuilding)
     }

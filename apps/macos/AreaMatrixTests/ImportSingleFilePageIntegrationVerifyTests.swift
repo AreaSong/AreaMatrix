@@ -5,16 +5,11 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     @MainActor
     func testImportSingleFileEntryCancelAndImportRoutesThroughImportProgressProgress() async {
         let sourceURL = importSingleFileSourceURL()
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importSingleFileRepoPath())
-        let announcer = RecordingAccessibilityAnnouncer()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            emptyRepositoryOpener: ImportSingleFileStaticRepositoryOpener(opening: opening),
-            accessibilityAnnouncer: announcer,
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let fixture = makeImportSingleFileMainEmptyFixture()
+        let opening = fixture.opening
+        let model = fixture.model
+        let announcer = fixture.accessibilityAnnouncer
 
-        model.route = .mainEmpty(opening)
         model.startImportEntry(opening: opening, source: .dropZone, urls: [sourceURL])
         XCTAssertEqual(model.pendingImportEntry?.kind, .singleFile)
 
@@ -47,37 +42,32 @@ final class SingleFileImportIntegrationTests: XCTestCase {
 
     @MainActor
     func testImportSingleFileFailedImportRoutesThroughImportResultResultSummary() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importSingleFileRepoPath())
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let fixture = makeImportSingleFileMainListFixture()
+        let model = fixture.model
 
-        model.route = .mainList(opening)
         model.beginImportEntryProgress(currentPath: "docs/source.pdf")
         model.failImportEntry(currentPath: "docs/source.pdf", mapping: .importSingleFileError(kind: .duplicateFile))
 
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
-        XCTAssertEqual(result.resultSummaryText, "Imported 0, failed 1, stopped 0, pending 0.")
-        XCTAssertEqual(result.items.map(\.status), [.failed])
+        guard let result = requireImportResultRoute(
+            model,
+            message: "Expected import-result import result route"
+        ) else { return }
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 0, failed 1, stopped 0, pending 0.",
+            statuses: [.failed]
+        )
     }
 
     @MainActor
     func testImportSingleFileRetryProgressUsesInjectedRepositoryFinderAvailability() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importSingleFileRepoPath())
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
+        let fixture = makeImportSingleFileMainListFixture(
             systemCapabilityChecker: StaticOnboardingSystemCapabilityChecker(
                 repositoryFinderAvailabilityByPath: [importSingleFileRepoPath(): false]
-            ),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
+            )
         )
+        let model = fixture.model
 
-        model.route = .mainList(opening)
         model.beginImportEntryProgress(
             currentPath: "docs/source.pdf",
             retryContext: ImportProgressRetryContext(
@@ -95,15 +85,10 @@ final class SingleFileImportIntegrationTests: XCTestCase {
 
     @MainActor
     func testImportSingleFileDockOpenFileQueuesSingleFileImportWhenRepositoryIsOpen() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importSingleFileRepoPath())
+        let fixture = makeImportSingleFileMainListFixture()
+        let model = fixture.model
         let sourceURL = importSingleFileSourceURL()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
 
-        model.route = .mainList(opening)
         model.handleDockOpenFiles([sourceURL])
 
         XCTAssertEqual(model.pendingImportEntry?.source, .dockOpenFile)
@@ -114,12 +99,9 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     @MainActor
     func testImportSingleFileSwitchLocalRepoClosesSheetAndEntersChoosePathFlow() {
         let sourceURL = importSingleFileSourceURL()
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importSingleFileRepoPath())
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let fixture = makeImportSingleFileMainEmptyFixture()
+        let opening = fixture.opening
+        let model = fixture.model
 
         model.startImportEntry(opening: opening, source: .filePicker, urls: [sourceURL])
         model.switchImportEntryToLocalRepository()
@@ -130,14 +112,10 @@ final class SingleFileImportIntegrationTests: XCTestCase {
 
     @MainActor
     func testImportSingleFileImportEntryCarriesRealRepositoryCategoriesForEditableSelection() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importSingleFileRepoPath())
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let fixture = makeImportSingleFileMainListFixture()
+        let opening = fixture.opening
+        let model = fixture.model
 
-        model.route = .mainList(opening)
         model.startImportEntry(
             opening: opening,
             source: .filePicker,
@@ -158,8 +136,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         )
 
         await model.load(request: request)
-        let predictRequests = await predictor.recordedRequests()
-        XCTAssertEqual(predictRequests, [
+        await predictor.assertRecordedRequests([
             ImportSingleFilePredictRequest(repoPath: importSingleFileRepoPath(), filename: "合同.pdf")
         ])
         XCTAssertEqual(model.selectedCategory, "docs")
@@ -188,8 +165,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
             storageMode: "Indexed"
         )
 
-        let importRequests = await importer.recordedRequests()
-        XCTAssertEqual(importRequests, importSingleFileCoreCapabilityImportRequests())
+        await importer.assertRecordedRequests(importSingleFileCoreCapabilityImportRequests())
     }
 
     @MainActor
@@ -227,14 +203,13 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         let imported = await model.importSelectedFile()
 
         XCTAssertNil(imported)
-        let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [])
+        await errorMapper.assertRecordedErrors([])
         XCTAssertEqual(model.activeConflictPage, .duplicate)
         XCTAssertEqual(model.importStatus, .idle)
         XCTAssertEqual(model.currentPreflightResult?.conflict, .duplicate(existingPath: "docs/source.pdf"))
         XCTAssertNil(model.currentPreflightResult?.keepBothTargetRelativePath)
         XCTAssertEqual(model.duplicateResolution, .skip)
-        XCTAssertNil(model.importDisabledReason)
+        assertImportEnabled(model.importDisabledReason)
     }
 
     @MainActor
@@ -248,14 +223,13 @@ final class SingleFileImportIntegrationTests: XCTestCase {
 
         await hiddenModel.load(request: .importSingleFileImportRequest())
         let skipped = await hiddenModel.importSelectedFile()
-        let requests = await importer.recordedRequests()
 
         XCTAssertEqual(hiddenModel.activeConflictPage, .duplicate)
         XCTAssertEqual(hiddenModel.duplicateResolution, .skip)
         XCTAssertNil(skipped)
         XCTAssertEqual(hiddenModel.importStatus, .skippedDuplicate("docs/source.pdf"))
         XCTAssertEqual(hiddenModel.importDisabledReason, "重复文件已跳过")
-        XCTAssertEqual(requests, [])
+        await importer.assertRecordedRequests([])
     }
 }
 
@@ -271,13 +245,10 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
 
         await model.load(request: .importSingleFileImportRequest())
         let imported = await model.importSelectedFile()
-        let requests = await importer.recordedRequests()
 
         XCTAssertNil(imported)
-        XCTAssertTrue(model.showsICloudActions)
-        XCTAssertNil(model.activeConflictPage)
-        XCTAssertEqual(model.importDisabledReason, "iCloud placeholder 需要下载后才能导入")
-        XCTAssertEqual(requests, [])
+        assertImportSingleFileICloudPlaceholderBlocked(model)
+        await importer.assertRecordedRequests([])
     }
 
     @MainActor
@@ -293,15 +264,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
         await model.load(request: .importSingleFileImportRequest())
         await model.downloadICloudPlaceholderAndRetry()
 
-        XCTAssertTrue(model.showsICloudActions)
-        XCTAssertFalse(model.showsRetryPreviewAction)
-        XCTAssertNil(model.activeConflictPage)
-        XCTAssertEqual(model.importDisabledReason, "iCloud 下载失败后请重试下载或切换本地资料库")
-        guard case let .iCloudDownloadFailed(path, reason) = model.currentPreflightResult?.conflict else {
-            return XCTFail("Expected iCloud download failure to stay on import-single recovery state")
-        }
-        XCTAssertEqual(path, importSingleFileSourcePath())
-        XCTAssertEqual(reason, "download timed out")
+        assertImportSingleFileICloudDownloadFailure(model, reason: "download timed out")
     }
 
     @MainActor

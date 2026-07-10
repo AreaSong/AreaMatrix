@@ -81,16 +81,15 @@ final class DetailIntegrationVerifyTests: XCTestCase {
         repoURL: URL,
         file: FileEntrySnapshot
     ) async throws {
-        let noteModel = DetailNoteModel(
+        let noteModel = makeDetailNoteTestModel(
             repoPath: repoURL.path,
             noteStore: bridge,
-            errorMapper: bridge,
-            debounceNanoseconds: 1
+            errorMapper: bridge
         )
         await noteModel.load(file: file, writeBlock: nil)
         noteModel.createNote()
         noteModel.updateDraft("# Detail note")
-        await waitForDetailIntegrationNoteSave(noteModel)
+        await waitForDetailNoteSaved(noteModel)
 
         let note = try await bridge.readNote(repoPath: repoURL.path, fileID: file.id)
 
@@ -280,16 +279,6 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             overrideFilename: filename,
             duplicateStrategy: .keepBoth
         )
-    }
-}
-
-@MainActor
-private func waitForDetailIntegrationNoteSave(_ model: DetailNoteModel) async {
-    for _ in 0 ..< 200 {
-        if model.state.saveStatus == .saved {
-            return
-        }
-        try? await Task.sleep(nanoseconds: 5_000_000)
     }
 }
 

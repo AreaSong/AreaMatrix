@@ -150,8 +150,9 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         await model.load()
 
-        let requests = await loader.requests()
-        XCTAssertEqual(requests, [RepositorySettingsCapabilityRequest(platform: .macos, appVersion: "4.3.159")])
+        await loader.assertRequests([
+            RepositorySettingsCapabilityRequest(platform: .macos, appVersion: "4.3.159")
+        ])
         XCTAssertEqual(model.state, .loaded(capabilities))
         XCTAssertEqual(capabilities.repositorySettingsRows.map(\.label), [
             "Watcher",
@@ -174,8 +175,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         await model.load()
 
-        let requests = await loader.requests()
-        XCTAssertEqual(requests, [RepositorySettingsCapabilityRequest(
+        await loader.assertRequests([RepositorySettingsCapabilityRequest(
             platform: .macos,
             appVersion: "5.6.7 (89)"
         )])

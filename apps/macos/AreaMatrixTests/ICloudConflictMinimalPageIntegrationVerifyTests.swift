@@ -87,8 +87,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         )
 
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
-        let recordedErrors = await mapper.recordedErrors()
-        XCTAssertEqual(recordedErrors, [ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError])
+        await mapper.assertRecordedErrors([ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError])
         assertTestMirrorDescription(of: failedBody, contains: [
             "icloud-conflict-minimal-error-mapping-apply-failure",
             "Apply failed: Internal",
@@ -156,8 +155,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             isTrashAvailable: true
         )
 
-        let recordedErrors = await mapper.recordedErrors()
-        XCTAssertEqual(recordedErrors, [CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo")])
+        await mapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo")])
         XCTAssertFalse(failedModel.canApplyKeepBoth)
         assertTestMirrorDescription(of: failedBody, contains: [
             "icloud-conflict-minimal-error-mapping-error-mapping",

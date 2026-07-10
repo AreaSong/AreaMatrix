@@ -17,9 +17,8 @@ final class DetailLogPageFeatureTests: XCTestCase {
 
         await model.selectFiles([detail.id])
         await model.loadSelectedFileChangeLog()
-        let requests = await lister.recordedRequests()
 
-        XCTAssertEqual(requests, [
+        await lister.assertRecordedRequests([
             DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: detail.id))
         ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: detail.id, entries: [entry]))
@@ -40,10 +39,9 @@ final class DetailLogPageFeatureTests: XCTestCase {
 
         await model.selectFiles([detail.id])
         await model.loadSelectedFileChangeLog()
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.detailLogState, .failed(fileID: detail.id, mapping))
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "change log locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "change log locked")])
     }
 
     @MainActor
@@ -94,16 +92,14 @@ final class DetailLogPageFeatureTests: XCTestCase {
         await model.selectFiles([detail.id])
         await model.loadSelectedFileChangeLog()
         await model.collectDetailLogDiagnostics()
-        let preConfirmationPaths = await diagnosticsCollector.requestedRepoPaths()
 
-        XCTAssertEqual(preConfirmationPaths, [])
+        await diagnosticsCollector.assertNoRequests()
         XCTAssertEqual(model.detailLogDiagnosticsState, .idle)
 
         model.requestDetailLogDiagnosticsPrivacyConfirmation()
         await model.collectDetailLogDiagnostics()
-        let collectedPaths = await diagnosticsCollector.requestedRepoPaths()
 
-        XCTAssertEqual(collectedPaths, ["/tmp/repo"])
+        await diagnosticsCollector.assertRequestedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.detailLogDiagnosticsState, .collected(fileID: detail.id, snapshot))
     }
 
@@ -128,10 +124,9 @@ final class DetailLogPageFeatureTests: XCTestCase {
         await model.loadSelectedFileChangeLog()
         model.requestDetailLogDiagnosticsPrivacyConfirmation()
         await model.collectDetailLogDiagnostics()
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.detailLogDiagnosticsState, .failed(fileID: detail.id, mapping))
-        XCTAssertEqual(mappedErrors, [
+        await mapper.assertRecordedErrors([
             CoreError.Db(message: "change log locked"),
             CoreError.PermissionDenied(path: "/tmp/repo")
         ])
@@ -156,9 +151,13 @@ private actor DetailLogSuspendedLister: CoreChangeLogListing {
     }
 
     func waitForRequest() async {
-        while !didReceiveRequest {
-            await Task.yield()
-        }
+        _ = await waitForActorTestValue(
+            on: self,
+            failureMessage: { "Timed out waiting for detail log request" },
+            value: {
+                didReceiveRequest ? true : nil
+            }
+        )
     }
 
     func finish() {

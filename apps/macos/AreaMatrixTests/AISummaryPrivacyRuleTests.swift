@@ -42,11 +42,10 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
         guard case let .failed(error) = model.operation else {
             return XCTFail("Expected save failure to stay visible.")
         }
-        let mappedErrors = await mapper.recordedErrors()
         XCTAssertEqual(model.draftText, "Edited summary")
         XCTAssertEqual(error.message, "Summary could not be saved.")
         XCTAssertEqual(error.detail, "Summary metadata is unavailable.")
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "summary metadata locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "summary metadata locked")])
     }
 
     @MainActor

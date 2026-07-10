@@ -111,8 +111,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(model.name, "Finance")
         XCTAssertEqual(model.resultCountSummary, "Counting results...")
         XCTAssertEqual(model.saveFailure, mapping)
-        let recordedErrors = await mapper.recordedErrors()
-        XCTAssertEqual(recordedErrors, [CoreError.Db(message: "db locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "db locked")])
     }
 
     func testSearchFiltersTagFilterEditingSupportsMultipleTagsAndAllMatchMode() {
@@ -274,16 +273,14 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         )
         await model.confirmMainRepositoryExternalRemoval(repoPath: "/tmp/repo")
         let requests = await syncer.recordedRemovedRequests()
-        let validatedPaths = await initializedValidator.requestedRepoPaths()
-        let openedPaths = await opener.requestedConfiguredRepoPaths()
 
         let request = try? XCTUnwrap(requests.first)
         XCTAssertEqual(request?.kind, .removed)
         XCTAssertEqual(request?.repoPath, "/tmp/repo")
         XCTAssertEqual(request?.relativePath, "docs/gone.pdf")
         XCTAssertGreaterThan(request?.fsEventID ?? 0, 0)
-        XCTAssertEqual(validatedPaths, ["/tmp/repo"])
-        XCTAssertEqual(openedPaths, ["/tmp/repo"])
+        await initializedValidator.assertRequestedRepoPaths(["/tmp/repo"])
+        await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.mainRepoExternalRemoval, .synced(result))
         XCTAssertEqual(model.route, .mainEmpty(.shellFixture(repoPath: "/tmp/repo", fileCount: 0)))
         XCTAssertFalse(model.isRetryingMainRepository)
@@ -330,19 +327,16 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             repoPath: "/tmp/repo"
         )
         await model.confirmMainRepositoryExternalRemoval(repoPath: "/tmp/repo")
-        let openedPaths = await opener.requestedConfiguredRepoPaths()
 
         guard case let .failed(failureMapping) = model.mainRepoExternalRemoval else {
             return XCTFail("expected failed external removal state")
         }
-        guard case let .mainRepoError(repoPath, routeMapping) = model.route else {
-            return XCTFail("expected main repo error, got \(model.route)")
-        }
+        guard let route = requireMainRepoErrorRoute(model, message: "expected main repo error") else { return }
 
-        XCTAssertEqual(openedPaths, [])
-        XCTAssertEqual(repoPath, "/tmp/repo")
+        await opener.assertNoConfiguredRepoPaths()
+        XCTAssertEqual(route.repoPath, "/tmp/repo")
         XCTAssertEqual(failureMapping.kind, .db)
-        XCTAssertEqual(routeMapping?.kind, .db)
+        XCTAssertEqual(route.mapping?.kind, .db)
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping?.kind, .db)
         XCTAssertFalse(model.isRetryingMainRepository)
     }

@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 typealias MainListIntegrationDetailer = RecordingFileDetailer
 
@@ -13,6 +14,21 @@ typealias MainListRecordingSearchQuerying = RecordingSearchQuerying
 typealias MainListSearchRequestRecord = SearchQueryRequestRecord
 
 typealias MainListSmartListRequestRecord = SmartListRunRequestRecord
+
+@MainActor
+func requireSidebarRow(
+    _ tree: RepositoryTreeNodeSnapshot,
+    id: String,
+    message: String? = nil,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) -> RepositorySidebarRowSnapshot? {
+    guard let row = tree.sidebarRow(id: id) else {
+        XCTFail(message ?? "Expected sidebar row \(id)", file: file, line: line)
+        return nil
+    }
+    return row
+}
 
 struct MainListFallbackRequestRecord: Equatable {
     var repoPath: String
@@ -70,9 +86,13 @@ actor MainListIntegrationSuspendedLister: CoreFileListing {
     }
 
     func waitForRequest() async {
-        while !didReceiveRequest {
-            await Task.yield()
-        }
+        _ = await waitForActorTestValue(
+            on: self,
+            failureMessage: { "Timed out waiting for main list request" },
+            value: {
+                didReceiveRequest ? true : nil
+            }
+        )
     }
 
     func finish() {

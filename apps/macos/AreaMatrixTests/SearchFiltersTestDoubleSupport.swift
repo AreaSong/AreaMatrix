@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct MainListSearchFacetRequestRecord: Equatable {
     var repoPath: String
@@ -24,5 +25,13 @@ actor MainListRecordingSearchFiltering: CoreSearchFiltering {
 
     func recordedRequests() -> [MainListSearchFacetRequestRecord] {
         requests
+    }
+
+    func assertRequests(
+        _ expectedRequests: [SearchFacetRequestSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests.map(\.request), expectedRequests, file: file, line: line)
     }
 }

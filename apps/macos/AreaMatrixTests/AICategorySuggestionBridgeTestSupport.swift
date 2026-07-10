@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor AICategorySuggestionSuggestionBridge: CoreAIClassificationSuggesting {
     private let result: Swift.Result<AIClassificationSuggestionState, Error>
@@ -18,6 +19,14 @@ actor AICategorySuggestionSuggestionBridge: CoreAIClassificationSuggesting {
 
     func recordedRequests() -> [AIClassificationSuggestionRequestState] {
         requests
+    }
+
+    func assertRequests(
+        _ expectedRequests: [AIClassificationSuggestionRequestState],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 }
 
@@ -56,5 +65,13 @@ actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusRead
 
     func recordedRequests() -> [AiFallbackStatusRequest] {
         requests
+    }
+
+    func assertSingleRequest(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> AiFallbackStatusRequest? {
+        XCTAssertEqual(requests.count, 1, file: file, line: line)
+        return requests.first
     }
 }

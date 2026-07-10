@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor StaticAISettingsLoader: CoreAISettingsLoading {
     private let snapshot: AISettingsSnapshot
@@ -26,8 +27,12 @@ actor StaticAISettingsLoader: CoreAISettingsLoading {
         return snapshot
     }
 
-    func requests() -> [String] {
-        recordedRepoPaths
+    func assertRequestedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRepoPaths, expectedRepoPaths, file: file, line: line)
     }
 }
 
@@ -70,12 +75,112 @@ actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
         )
     }
 
-    func requests() -> [Request] {
-        recordedRequests
+    func assertRequests(
+        _ expectedRequests: [Request],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
     }
 
-    func requestedConfigs() -> [AISettingsConfigSnapshot] {
-        recordedRequests.map(\.config)
+    func assertRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests.count, expectedCount, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests, [], file: file, line: line)
+    }
+
+    func assertRequestedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests.map(\.repoPath), expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertRequestedConfigValues<Value: Equatable>(
+        _ keyPath: KeyPath<AISettingsConfigSnapshot, Value>,
+        _ expectedValues: [Value],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            recordedRequests.map { $0.config[keyPath: keyPath] },
+            expectedValues,
+            file: file,
+            line: line
+        )
+    }
+
+    func assertRequestedConfigValue<Value: Equatable>(
+        at index: Int,
+        _ keyPath: KeyPath<AISettingsConfigSnapshot, Value>,
+        _ expectedValue: Value,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard recordedRequests.indices.contains(index) else {
+            XCTFail(
+                "Expected AI settings request at index \(index), got \(recordedRequests.count)",
+                file: file,
+                line: line
+            )
+            return
+        }
+
+        XCTAssertEqual(
+            recordedRequests[index].config[keyPath: keyPath],
+            expectedValue,
+            file: file,
+            line: line
+        )
+    }
+
+    func assertRequestedFeatureValue<Value: Equatable>(
+        at index: Int,
+        feature: AISettingsFeatureKind,
+        _ keyPath: KeyPath<AISettingsFeatureConfigSnapshot, Value>,
+        _ expectedValue: Value,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard recordedRequests.indices.contains(index) else {
+            XCTFail(
+                "Expected AI settings request at index \(index), got \(recordedRequests.count)",
+                file: file,
+                line: line
+            )
+            return
+        }
+        guard let toggle = recordedRequests[index].config.featureToggles.first(where: { $0.feature == feature }) else {
+            XCTFail("Expected AI settings request at index \(index) to include \(feature)", file: file, line: line)
+            return
+        }
+
+        XCTAssertEqual(toggle[keyPath: keyPath], expectedValue, file: file, line: line)
+    }
+
+    func assertRequestedAllowRemoteFeatureCounts(
+        _ expectedCounts: [Int],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            recordedRequests.map { request in
+                request.config.featureToggles.filter(\.allowRemote).count
+            },
+            expectedCounts,
+            file: file,
+            line: line
+        )
     }
 
     private func nextResult() -> Swift.Result<Void, Error> {
@@ -112,11 +217,39 @@ actor RecordingAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
         return snapshot
     }
 
-    func requests() -> [AISettingsConfigSnapshot] {
-        recordedRequests
-    }
-
     func loadRequests() -> [String] {
         recordedLoadRepoPaths
+    }
+
+    func assertUpdateCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests.count, expectedCount, file: file, line: line)
+    }
+
+    func assertUpdatedConfigValue<Value: Equatable>(
+        at index: Int,
+        _ keyPath: KeyPath<AISettingsConfigSnapshot, Value>,
+        _ expectedValue: Value,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard recordedRequests.indices.contains(index) else {
+            XCTFail(
+                "Expected AI settings update at index \(index), got \(recordedRequests.count)",
+                file: file,
+                line: line
+            )
+            return
+        }
+
+        XCTAssertEqual(
+            recordedRequests[index][keyPath: keyPath],
+            expectedValue,
+            file: file,
+            line: line
+        )
     }
 }

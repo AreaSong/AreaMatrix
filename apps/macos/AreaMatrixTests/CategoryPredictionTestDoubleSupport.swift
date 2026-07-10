@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct CategoryPredictionRequest: Equatable {
     var repoPath: String
@@ -43,6 +44,14 @@ actor RecordingCategoryPredictor: CoreCategoryPredicting {
         requestsStorage
     }
 
+    func assertRecordedRequests(
+        _ expectedRequests: [CategoryPredictionRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+    }
+
     func requests() -> [CategoryPredictionRequest] {
         requestsStorage
     }
@@ -69,6 +78,14 @@ actor MappedCategoryPredictor: CoreCategoryPredicting {
 
     func recordedRequests() -> [CategoryPredictionRequest] {
         requestsStorage
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [CategoryPredictionRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
     }
 
     func requests() -> [CategoryPredictionRequest] {

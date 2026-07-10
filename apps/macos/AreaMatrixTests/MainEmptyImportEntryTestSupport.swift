@@ -2,12 +2,32 @@
 import Foundation
 
 @MainActor
-final class MainEmptyImportAnnouncer: AccessibilityAnnouncing {
-    private(set) var announcements: [String] = []
+struct MainEmptyImportEntryFixture {
+    let opening: RepositoryOpeningResult
+    let model: OnboardingModel
+    let accessibilityAnnouncer: RecordingAccessibilityAnnouncer
+}
 
-    func announce(_ message: String) {
-        announcements.append(message)
-    }
+@MainActor
+func makeMainEmptyImportEntryFixture(
+    repoPath: String = "/tmp/empty-repo",
+    importURLs: [URL]? = nil,
+    systemCapabilityChecker: any OnboardingSystemCapabilityChecking = StaticOnboardingSystemCapabilityChecker(),
+    accessibilityAnnouncer: RecordingAccessibilityAnnouncer? = nil
+) -> MainEmptyImportEntryFixture {
+    let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: repoPath)
+    let accessibilityAnnouncer = accessibilityAnnouncer ?? RecordingAccessibilityAnnouncer()
+    let model = makeShellOnboardingModel(
+        settingsReader: StaticSettingsReader(repoPath: nil),
+        systemCapabilityChecker: systemCapabilityChecker,
+        accessibilityAnnouncer: accessibilityAnnouncer,
+        importPicker: MainEmptyImportStaticImportPicker(urls: importURLs)
+    )
+    return MainEmptyImportEntryFixture(
+        opening: opening,
+        model: model,
+        accessibilityAnnouncer: accessibilityAnnouncer
+    )
 }
 
 struct MainEmptyCommandPaletteRouteCase {

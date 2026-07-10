@@ -91,24 +91,15 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify) { progress in
             progressSnapshots.append(progress)
         }
-        let recordedRequests = await importer.recordedRequests()
-        let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            )
-        ])
-        XCTAssertEqual(mappedErrors, [])
+        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest()])
+        await errorMapper.assertRecordedErrors([])
         XCTAssertEqual(outcome?.succeededEntries.count, 0)
         XCTAssertEqual(outcome?.failedCount, 0)
         XCTAssertEqual(outcome?.total, 2)
         XCTAssertEqual(outcome?.pendingDuplicateCount, 1)
-        XCTAssertEqual(model.rows.map(\.status.tag), ["DUP", "OK"])
-        XCTAssertEqual(model.rows.first?.status.detail, "Skip: finance/existing-invoice.pdf")
+        assertImportRowStatusTags(model.rows, ["DUP", "OK"])
+        assertImportRowStatusDetails(model.rows, [0: "Skip: finance/existing-invoice.pdf"])
         XCTAssertEqual(model.status, .idle)
         XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 0,
@@ -136,25 +127,14 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         model.updateDuplicateStrategy(for: rows[0].id, strategy: .keepBoth)
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            ),
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .keepBoth
-            )
+        await importer.assertRecordedRequests([
+            importBatchExpectedInvoiceRequest(),
+            importBatchExpectedInvoiceRequest(duplicateStrategy: .keepBoth)
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.pendingDuplicateCount, 0)
-        XCTAssertEqual(model.rows.map(\.status.tag), ["IMPORTED"])
+        assertImportRowStatusTags(model.rows, ["IMPORTED"])
     }
 
     @MainActor
@@ -172,29 +152,15 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            ),
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "docs",
-                overrideFilename: "2026Q1_合同.pdf",
-                duplicateStrategy: .ask
-            )
-        ])
+        await importer.assertRecordedRequests(importBatchExpectedAutoClassifyRequests())
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.total, 1)
         XCTAssertEqual(outcome?.failedCount, 0)
         XCTAssertEqual(outcome?.pendingDuplicateCount, 0)
         XCTAssertEqual(model.skippedDuplicateCount, 1)
-        XCTAssertEqual(model.rows.map(\.status.tag), ["SKIPPED", "IMPORTED"])
-        XCTAssertEqual(model.rows.first?.status.detail, "Duplicate skipped: finance/existing-invoice.pdf")
+        assertImportRowStatusTags(model.rows, ["SKIPPED", "IMPORTED"])
+        assertImportRowStatusDetails(model.rows, [0: "Duplicate skipped: finance/existing-invoice.pdf"])
     }
 
     @MainActor
@@ -215,25 +181,14 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
         model.updateDuplicateStrategy(for: rows[0].id, strategy: .keepBoth)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            ),
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .keepBoth
-            )
+        await importer.assertRecordedRequests([
+            importBatchExpectedInvoiceRequest(),
+            importBatchExpectedInvoiceRequest(duplicateStrategy: .keepBoth)
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.pendingDuplicateCount, 0)
-        XCTAssertEqual(model.rows.map(\.status.tag), ["IMPORTED"])
+        assertImportRowStatusTags(model.rows, ["IMPORTED"])
     }
 
     @MainActor
@@ -249,8 +204,10 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         )
         model.showImportEntryExistingFile(relativePath: "finance/existing-invoice.pdf")
 
-        XCTAssertEqual(revealer.requests.map(\.repoPath), [importBatchRepoPath()])
-        XCTAssertEqual(revealer.requests.map(\.relativePath), ["finance/existing-invoice.pdf"])
+        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+            repoPath: importBatchRepoPath(),
+            relativePath: "finance/existing-invoice.pdf"
+        )])
         XCTAssertNil(model.toastMessage)
     }
 
@@ -268,7 +225,10 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         )
         model.showImportEntryExistingFile(relativePath: "finance/missing.pdf")
 
-        XCTAssertEqual(revealer.requests.map(\.relativePath), ["finance/missing.pdf"])
+        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+            repoPath: importBatchRepoPath(),
+            relativePath: "finance/missing.pdf"
+        )])
         XCTAssertEqual(model.toastMessage, "Existing file cannot be shown in Finder.")
     }
 
@@ -291,25 +251,14 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         model.updateDuplicateStrategy(for: rows[0].id, strategy: .keepBoth)
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            ),
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .keepBoth
-            )
+        await importer.assertRecordedRequests([
+            importBatchExpectedInvoiceRequest(),
+            importBatchExpectedInvoiceRequest(duplicateStrategy: .keepBoth)
         ])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.pendingDuplicateCount, 0)
-        XCTAssertEqual(model.rows.map(\.status.tag), ["IMPORTED"])
+        assertImportRowStatusTags(model.rows, ["IMPORTED"])
     }
 }
 

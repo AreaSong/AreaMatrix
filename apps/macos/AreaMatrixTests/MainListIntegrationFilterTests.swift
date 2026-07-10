@@ -96,9 +96,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0],
             filters: .empty
         )
-        let requests = await searcher.recordedRequests()
-
-        XCTAssertEqual(requests.map(\.request), [
+        await searcher.assertRequests([
             .testFixture(
                 query: "合同",
                 sort: .newestImported
@@ -112,9 +110,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
     @MainActor
     func testMainListSearchCurrentScopeCarriesSidebarContext() async {
         let tree = RepositoryTreeNodeSnapshot.integrationFilterFixtureTree()
-        guard let row = tree.sidebarRow(id: "docs/contracts") else {
-            return XCTFail("expected docs/contracts sidebar row")
-        }
+        guard let row = requireSidebarRow(tree, id: "docs/contracts") else { return }
         let searcher = MainListRecordingSearchQuerying(results: [
             .success(.mainSearchFixture(query: "customer", files: []))
         ])
@@ -163,11 +159,10 @@ final class MainListIntegrationFilterTests: XCTestCase {
             sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0],
             filters: .empty
         )
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.searchState.errorMapping, mapping)
         XCTAssertEqual(model.searchState.request?.query, "合同")
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "search db locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "search db locked")])
         XCTAssertFalse(model.isLoading)
     }
 
@@ -207,9 +202,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
     @MainActor
     func testSemanticSearchSemanticSearchLoadsAIFallbackCoreFallbackStatusFromCore() async {
         let tree = RepositoryTreeNodeSnapshot.integrationFilterFixtureTree()
-        guard let row = tree.sidebarRow(id: "docs/contracts") else {
-            return XCTFail("expected docs/contracts sidebar row")
-        }
+        guard let row = requireSidebarRow(tree, id: "docs/contracts") else { return }
         let fallback = MainListRecordingSemanticFallbackReader(status: .semanticSearchSemanticIndexNotReady())
         let model = MainFileListModel(
             opening: .integrationFilterFixture(repoPath: "/tmp/repo", currentCategoryFiles: []),

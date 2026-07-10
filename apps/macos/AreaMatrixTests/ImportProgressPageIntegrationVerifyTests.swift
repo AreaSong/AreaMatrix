@@ -14,14 +14,8 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testImportProgressFatalImportExitMustRouteThroughImportResultResultSummary() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportProgressMainListFixture().model
 
-        model.route = .mainList(opening)
         model.updateImportEntryProgress(Self.fatalProgress)
         model.failImportEntry(
             progress: Self.fatalProgress,
@@ -31,11 +25,12 @@ final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
         )
         model.stopImportProgressAndViewResults()
 
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
-        XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 2, pending 1.")
-        XCTAssertEqual(result.items.map(\.status), [.imported, .failed, .skipped, .skipped, .pending])
+        guard let result = requireImportResultRoute(model) else { return }
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 1, failed 1, stopped 2, pending 1.",
+            statuses: [.imported, .failed, .skipped, .skipped, .pending]
+        )
         XCTAssertEqual(result.items[1].reason, "Storage write failed")
     }
 }

@@ -21,8 +21,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        let requestedPaths = await loader.requestedPaths()
-        XCTAssertEqual(requestedPaths, ["/tmp/repo"])
+        await loader.assertRequestedPaths(["/tmp/repo"])
         XCTAssertEqual(model.loadState, .loaded)
         XCTAssertEqual(model.classifierConfigPath, "/tmp/repo/.areamatrix/classifier.yaml")
         XCTAssertEqual(model.draft?.enableExtensionRules, false)
@@ -39,11 +38,10 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         await model.requestEnableKeywordRules(false)
         await model.requestFallbackToInbox(false)
 
-        let requests = await updater.requests()
-        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/repo", "/tmp/repo", "/tmp/repo"])
-        XCTAssertEqual(requests.map(\.config.enableExtensionRules), [false, false, false])
-        XCTAssertEqual(requests.map(\.config.enableKeywordRules), [true, false, false])
-        XCTAssertEqual(requests.map(\.config.fallbackToInbox), [true, true, false])
+        await updater.assertRequestedRepoPaths(["/tmp/repo", "/tmp/repo", "/tmp/repo"])
+        await updater.assertRequestedConfigValues(\.enableExtensionRules, [false, false, false])
+        await updater.assertRequestedConfigValues(\.enableKeywordRules, [true, false, false])
+        await updater.assertRequestedConfigValues(\.fallbackToInbox, [true, true, false])
         XCTAssertEqual(model.draft?.enableExtensionRules, false)
         XCTAssertEqual(model.draft?.enableKeywordRules, false)
         XCTAssertEqual(model.draft?.fallbackToInbox, false)
@@ -62,10 +60,8 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.count, 2)
-        XCTAssertEqual(requests.map(\.config.fallbackToInbox), [false, false])
+        await updater.assertRequestedConfigValues(\.fallbackToInbox, [false, false])
         XCTAssertEqual(model.draft?.fallbackToInbox, false)
         XCTAssertNil(model.saveError)
     }
@@ -88,8 +84,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         model.updatePreviewFilename("Invoice_2026Q1.pdf")
         await model.previewClassification()
 
-        let requests = await predictor.requests()
-        XCTAssertEqual(requests, [
+        await predictor.assertRequests([
             ClassifierSettingsSequencePredictor.Request(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf")
         ])
         XCTAssertEqual(model.previewResult?.category, "finance")
@@ -119,8 +114,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         model.updatePreviewFilename("Bad.pdf")
         await model.previewClassification()
 
-        let requests = await predictor.requests()
-        XCTAssertEqual(requests, [
+        await predictor.assertRequests([
             ClassifierSettingsSequencePredictor.Request(repoPath: "/tmp/repo", filename: "Bad.pdf")
         ])
         XCTAssertNil(model.previewResult)
@@ -158,7 +152,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             relativePath: ".areamatrix/classifier.yaml"
         )
-        XCTAssertEqual(opener.requests, [expected])
+        opener.assertRequests([expected])
         XCTAssertNil(model.fileActionError)
     }
 
@@ -178,8 +172,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         XCTAssertFalse(passed)
         XCTAssertEqual(model.validationStatusLabel, "Failed")
         XCTAssertEqual(model.validationError?.message, "分类规则文件不存在")
-        let predictorRequests = await predictor.requests()
-        XCTAssertEqual(predictorRequests, [])
+        await predictor.assertNoRequests()
     }
 
     @MainActor
@@ -209,10 +202,8 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         await model.load()
         await model.revertToLastValid()
 
-        let loaderPaths = await loader.requestedPaths()
-        let predictorRequests = await predictor.requests()
-        XCTAssertEqual(loaderPaths, [repoURL.path])
-        XCTAssertEqual(predictorRequests, [])
+        await loader.assertRequestedPaths([repoURL.path])
+        await predictor.assertNoRequests()
         XCTAssertFalse(model.canRevertToLastValid)
         XCTAssertEqual(model.validationState, .idle)
     }

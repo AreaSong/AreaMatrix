@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor RecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
     typealias SnapshotResult = Swift.Result<DiagnosticsSnapshotSnapshot, Error>
@@ -38,6 +39,29 @@ actor RecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
 
     func recordedRepoPaths() -> [String] {
         repoPaths
+    }
+
+    func assertRequestedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(repoPaths, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertRecordedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRequestedRepoPaths(expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRequestedRepoPaths([], file: file, line: line)
     }
 
     private func nextResult() throws -> DiagnosticsSnapshotSnapshot {

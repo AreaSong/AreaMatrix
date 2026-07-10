@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor StaticCoreErrorMapper: CoreErrorMapping {
     private let mapping: CoreErrorMappingSnapshot
@@ -15,6 +16,14 @@ actor StaticCoreErrorMapper: CoreErrorMapping {
 
     func recordedErrors() -> [CoreError] {
         errors
+    }
+
+    func assertRecordedErrors(
+        _ expectedErrors: [CoreError],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(errors, expectedErrors, file: file, line: line)
     }
 }
 
@@ -33,6 +42,14 @@ actor RecordingCoreErrorMapper: CoreErrorMapping {
 
     func recordedErrors() -> [CoreError] {
         errors
+    }
+
+    func assertRecordedErrors(
+        _ expectedErrors: [CoreError],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(errors, expectedErrors, file: file, line: line)
     }
 }
 

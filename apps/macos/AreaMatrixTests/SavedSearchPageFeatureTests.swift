@@ -52,9 +52,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
         XCTAssertEqual(model.searchState.request, .testFixture(savedSearchQuery: saved.query))
         let recordedRequests = await searcher.recordedSmartListRequests()
-        XCTAssertEqual(recordedRequests, [
-            MainListSmartListRequestRecord(repoPath: "/tmp/repo", savedSearchID: 77, limit: 50, offset: 0)
-        ])
+        assertSmartListRunRequests(recordedRequests, savedSearchID: 77)
         XCTAssertEqual(model.files, [resultFile])
     }
 
@@ -95,9 +93,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         )
         XCTAssertEqual(model.files, [resultFile])
         let recordedRequests = await searcher.recordedSmartListRequests()
-        XCTAssertEqual(recordedRequests, [
-            MainListSmartListRequestRecord(repoPath: "/tmp/repo", savedSearchID: 77, limit: 50, offset: 0)
-        ])
+        assertSmartListRunRequests(recordedRequests, savedSearchID: 77)
     }
 
     @MainActor
@@ -182,11 +178,10 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             }
             let mapped = await mapper.mapCoreError(coreError)
 
-            let recordedErrors = await mapper.recordedErrors()
             XCTAssertEqual(tree.sidebarRows.filter { !$0.isSmartList }.map(\.displayName), ["inbox"])
             XCTAssertEqual(tree.sidebarRows.filter(\.isSmartList), [])
             XCTAssertEqual(mapped, mapping)
-            XCTAssertEqual(recordedErrors, [CoreError.Db(message: "db locked")])
+            await mapper.assertRecordedErrors([CoreError.Db(message: "db locked")])
         }
     }
 

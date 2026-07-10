@@ -27,9 +27,8 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
         model.suggestedName = " moved.pdf "
         await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
-        let requests = await importer.recordedCoreRequests()
 
-        XCTAssertEqual(requests, [
+        await importer.assertRecordedCoreRequests([
             ImportSingleFileCoreImportRequest(
                 repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
@@ -61,9 +60,8 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
         await model.load(request: request)
         model.selectedStorageMode = .move
         await model.importSelectedFile()
-        let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: importSingleFileSourcePath())])
+        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: importSingleFileSourcePath())])
         XCTAssertEqual(
             model.importStatus,
             .failed(CoreErrorMappingSnapshot.importMoveFixture(kind: .permissionDenied))

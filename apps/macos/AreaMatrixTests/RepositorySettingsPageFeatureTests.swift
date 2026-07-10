@@ -30,10 +30,8 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        let paths = await loader.requestedPaths()
-        let updateRequests = await updater.requests()
-        XCTAssertEqual(paths, ["/tmp/AreaMatrixRepo"])
-        XCTAssertEqual(updateRequests, [])
+        await loader.assertRequestedPaths(["/tmp/AreaMatrixRepo"])
+        await updater.assertNoRequests()
         XCTAssertEqual(model.loadedConfig, config)
         XCTAssertEqual(model.summary?.repositoryName, "AreaMatrixRepo")
         XCTAssertEqual(model.summary?.location, "/tmp/AreaMatrixRepo")
@@ -81,11 +79,9 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.summary?.overviewMode, "Generated only")
 
         await model.load()
-        let paths = await loader.requestedPaths()
-        let updateRequests = await updater.requests()
 
-        XCTAssertEqual(paths, ["/tmp/repo", "/tmp/repo"])
-        XCTAssertEqual(updateRequests, [])
+        await loader.assertRequestedPaths(["/tmp/repo", "/tmp/repo"])
+        await updater.assertNoRequests()
         XCTAssertEqual(model.summary?.overviewMode, "Root AREAMATRIX.md enabled")
     }
 
@@ -104,8 +100,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        let mappedErrors = await mapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [CoreError.Config(reason: "invalid repo_config")])
+        await mapper.assertRecordedErrors([CoreError.Config(reason: "invalid repo_config")])
         XCTAssertEqual(model.loadError?.message, "配置错误")
         XCTAssertEqual(model.loadError?.recovery, "Retry status")
         XCTAssertNil(model.loadedConfig)
@@ -151,12 +146,11 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        let requests = await updater.requests()
-        XCTAssertEqual(requests, [RecordingConfigurationUpdater.Request(
+        await updater.assertRequests([RecordingConfigurationUpdater.Request(
             repoPath: repoURL.path,
             config: expected
         )])
-        XCTAssertEqual(metadataPresenceChecker.repoPaths, [repoURL.path])
+        metadataPresenceChecker.assertRepoPaths([repoURL.path])
         XCTAssertEqual(model.loadedConfig, expected)
         XCTAssertEqual(model.summary?.location, repoURL.path)
         XCTAssertEqual(model.summary?.repositoryName, repoURL.lastPathComponent)
@@ -198,10 +192,8 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        let mappedErrors = await mapper.recordedErrors()
-        let requests = await updater.requests()
-        XCTAssertEqual(requests.count, 1)
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "locked")])
+        await updater.assertRequestCount(1)
+        await mapper.assertRecordedErrors([CoreError.Db(message: "locked")])
         XCTAssertEqual(model.loadedConfig?.repoPath, repoURL.path)
         XCTAssertEqual(model.summary?.location, repoURL.path)
         XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
@@ -263,7 +255,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         model.revealGeneratedOverviewInFinder()
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: generatedURL.path))
-        XCTAssertEqual(revealer.requests, [RecordingRepositoryFileRevealer.Request(
+        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
             repoPath: repoURL.path,
             relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
         )])
@@ -291,7 +283,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
         model.revealGeneratedOverviewInFinder()
 
-        XCTAssertEqual(revealer.requests, [RecordingRepositoryFileRevealer.Request(
+        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
             repoPath: "/tmp/repo",
             relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
         )])

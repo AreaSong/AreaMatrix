@@ -25,16 +25,8 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             selectedDestination: .autoClassify
         )
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            )
-        ])
+        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest()])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.failedCount, 0)
         XCTAssertEqual(outcome?.previewErrorCount, 1)

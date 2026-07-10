@@ -39,13 +39,10 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         )
 
         await model.bootstrapIfNeeded()
-        let openedRepoPaths = await opener.requestedConfiguredRepoPaths()
 
-        guard case let .mainLoading(state) = model.route else {
-            return XCTFail("expected main-loading main-loading, got \(model.route)")
-        }
+        guard let state = requireMainLoadingState(model, message: "expected main-loading route") else { return }
 
-        XCTAssertEqual(openedRepoPaths, ["/tmp/repo"])
+        await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
         XCTAssertEqual(writer.savedRepoPaths, [])
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
         XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])

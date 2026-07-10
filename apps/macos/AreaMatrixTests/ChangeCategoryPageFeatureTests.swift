@@ -13,9 +13,8 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         await model.selectFiles([original.id])
         model.beginChangeCategory()
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
-        let requests = await mover.recordedRequests()
 
-        XCTAssertEqual(requests, [changeCategoryPreviewRequest(fileID: original.id)])
+        await mover.assertRecordedRequests([changeCategoryPreviewRequest(fileID: original.id)])
         XCTAssertEqual(model.files, [original])
         XCTAssertEqual(model.selectedFileDetail, original)
         XCTAssertEqual(model.pendingActionDestination, .changeCategory(fileID: original.id))
@@ -39,10 +38,9 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         model.beginChangeCategory()
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
         let didMove = await model.submitMoveToCategory(fileID: original.id, targetCategory: "finance")
-        let requests = await mover.recordedRequests()
 
         XCTAssertTrue(didMove)
-        XCTAssertEqual(requests, [
+        await mover.assertRecordedRequests([
             changeCategoryPreviewRequest(fileID: original.id),
             changeCategoryMoveRequest(fileID: original.id)
         ])
@@ -74,11 +72,10 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             movedCallback = movedFile
         }
         await model.loadCurrentCategory(moved.category, focusingOn: moved.id)
-        let listRequests = await lister.recordedRequests()
 
         XCTAssertTrue(didMove)
         XCTAssertEqual(movedCallback, moved)
-        XCTAssertEqual(listRequests, [
+        await lister.assertRecordedRequests([
             FileFilterSnapshot.currentCategory("docs"),
             FileFilterSnapshot.currentCategory("finance")
         ])
@@ -123,7 +120,6 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         await model.selectFiles([original.id])
         model.beginChangeCategory()
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.files, [original])
         XCTAssertEqual(model.selectedFileDetail, original)
@@ -132,7 +128,7 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
             model.changeCategoryState,
             .failed(.init(fileID: original.id, targetCategory: "finance"), operation: .preview, mapping)
         )
-        XCTAssertEqual(mappedErrors, [CoreError.Classify(reason: "unknown category")])
+        await mapper.assertRecordedErrors([CoreError.Classify(reason: "unknown category")])
     }
 
     @MainActor
@@ -150,9 +146,8 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         await model.selectFiles([original.id])
         model.beginChangeCategory()
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
-        let requests = await mover.recordedRequests()
 
-        XCTAssertEqual(requests, [changeCategoryPreviewRequest(fileID: original.id)])
+        await mover.assertRecordedRequests([changeCategoryPreviewRequest(fileID: original.id)])
         XCTAssertEqual(model.files, [original])
         XCTAssertEqual(
             model.changeCategoryState.preview(for: .init(fileID: original.id, targetCategory: "finance")),
@@ -185,13 +180,11 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
         model.beginClassifierCorrection()
         await model.loadClassifierCorrectionContext(fileID: original.id, filename: original.currentName)
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
-        let predictionRequests = await predictor.recordedRequests()
-        let moveRequests = await mover.recordedRequests()
 
-        XCTAssertEqual(predictionRequests, [
+        await predictor.assertRecordedRequests([
             ChangeCategoryPredictionRequest(repoPath: "/tmp/repo", filename: "contract.pdf")
         ])
-        XCTAssertEqual(moveRequests, [
+        await mover.assertRecordedRequests([
             changeCategoryPreviewRequest(fileID: original.id)
         ])
         XCTAssertEqual(model.classifierCorrectionContextState.result(for: original.id), reason)
@@ -248,10 +241,9 @@ final class ChangeCategoryPageFeatureTests: XCTestCase {
                 remember: true
             )
         )
-        let requests = await mover.recordedRequests()
 
         XCTAssertTrue(didCorrect)
-        XCTAssertEqual(requests, [
+        await mover.assertRecordedRequests([
             changeCategoryPreviewRequest(fileID: original.id),
             .correction(
                 repoPath: "/tmp/repo",

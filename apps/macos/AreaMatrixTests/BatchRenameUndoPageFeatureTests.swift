@@ -19,10 +19,8 @@ final class BatchRenameUndoPageFeatureTests: XCTestCase {
         )
 
         XCTAssertEqual(state, .ready(action))
-        let listRequests = await undoStore.listRequests()
-        let undoRequests = await undoStore.undoRequests()
-        XCTAssertEqual(listRequests, [batchRenameUndoRepoPath()])
-        XCTAssertEqual(undoRequests, [])
+        await undoStore.assertListRequests([batchRenameUndoRepoPath()])
+        await undoStore.assertUndoRequests([])
     }
 
     @MainActor
@@ -37,8 +35,7 @@ final class BatchRenameUndoPageFeatureTests: XCTestCase {
         )
 
         XCTAssertEqual(state, .unavailable(reason: "Undo is unavailable for this rename result."))
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(listRequests, [])
+        await undoStore.assertListRequests([])
     }
 
     @MainActor
@@ -53,8 +50,7 @@ final class BatchRenameUndoPageFeatureTests: XCTestCase {
         )
 
         XCTAssertNil(state)
-        let listRequests = await undoStore.listRequests()
-        XCTAssertEqual(listRequests, [])
+        await undoStore.assertListRequests([])
     }
 }
 

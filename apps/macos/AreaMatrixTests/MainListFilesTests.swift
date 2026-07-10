@@ -19,9 +19,10 @@ final class MainListFilesTests: XCTestCase {
         )
 
         await model.loadCurrentCategory("docs")
-        let requests = await lister.recordedRequests()
 
-        XCTAssertEqual(requests, [FileFilterSnapshot.currentCategory("docs")])
+        await lister.assertRecordedListRequests([
+            FileListRequest(repoPath: "/tmp/repo", filter: .currentCategory("docs"))
+        ])
         XCTAssertEqual(model.files, [docsFile])
         XCTAssertNil(model.errorMapping)
         XCTAssertFalse(model.isLoading)
@@ -49,11 +50,10 @@ final class MainListFilesTests: XCTestCase {
 
         await model.loadCurrentCategory("docs")
         await model.retryCurrentCategory()
-        let requests = await lister.recordedRequests()
 
-        XCTAssertEqual(requests, [
-            FileFilterSnapshot.currentCategory("docs"),
-            FileFilterSnapshot.currentCategory("docs")
+        await lister.assertRecordedListRequests([
+            FileListRequest(repoPath: "/tmp/repo", filter: .currentCategory("docs")),
+            FileListRequest(repoPath: "/tmp/repo", filter: .currentCategory("docs"))
         ])
         XCTAssertEqual(model.files, [docsFile])
         XCTAssertNil(model.errorMapping)
@@ -79,11 +79,10 @@ final class MainListFilesTests: XCTestCase {
         )
 
         await model.loadCurrentCategory("docs")
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.files, [])
         XCTAssertEqual(model.errorMapping, mapping)
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "list db locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "list db locked")])
         XCTAssertFalse(model.isLoading)
     }
 
@@ -104,9 +103,10 @@ final class MainListFilesTests: XCTestCase {
         )
 
         await model.selectFile(id: detail.id)
-        let requests = await detailer.recordedRequests()
 
-        XCTAssertEqual(requests, [FileDetailRequest(repoPath: "/tmp/repo", fileID: detail.id)])
+        await detailer.assertRecordedRequests([
+            FileDetailRequest(repoPath: "/tmp/repo", fileID: detail.id)
+        ])
         XCTAssertEqual(model.selection, .single(detail.id))
         XCTAssertEqual(model.selectedFileDetail, detail)
         XCTAssertNil(model.detailErrorMapping)
@@ -133,13 +133,12 @@ final class MainListFilesTests: XCTestCase {
         )
 
         await model.selectFile(id: 404)
-        let mappedErrors = await mapper.recordedErrors()
 
         var missingCached = cached
         missingCached.availability = .missing
         XCTAssertEqual(model.selectedFileDetail, missingCached)
         XCTAssertEqual(model.detailErrorMapping, mapping)
-        XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: "docs/missing.pdf")])
+        await mapper.assertRecordedErrors([CoreError.FileNotFound(path: "docs/missing.pdf")])
         XCTAssertFalse(model.isDetailLoading)
     }
 

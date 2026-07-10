@@ -27,10 +27,8 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         }
 
         await startupRecoverer.waitUntilStarted()
-        let openRequestsBeforeRecoveryFinishes = await opener.requestedConfiguredRepoPaths()
-        let recoveryRequests = await startupRecoverer.requestedRepoPaths()
-        XCTAssertEqual(openRequestsBeforeRecoveryFinishes, [])
-        XCTAssertEqual(recoveryRequests, [mainLoadingRepoPath()])
+        await opener.assertNoConfiguredRepoPaths()
+        await startupRecoverer.assertRequestedRepoPaths([mainLoadingRepoPath()])
 
         await startupRecoverer.finishRecovery()
         guard let recoveredState = await waitForMainLoadingState(model, matching: {
@@ -73,14 +71,10 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: mainLoadingRepoPath())
         await model.openExistingRepository(validation)
 
-        let openRequests = await opener.requestedConfiguredRepoPaths()
-        let recoveryRequests = await startupRecoverer.requestedRepoPaths()
-        XCTAssertEqual(openRequests, [])
+        await opener.assertNoConfiguredRepoPaths()
         XCTAssertEqual(writer.savedRepoPaths, [])
-        XCTAssertEqual(recoveryRequests, [mainLoadingRepoPath()])
-        guard case let .mainLoading(state) = model.route else {
-            return XCTFail("expected inline main loading error, got \(model.route)")
-        }
+        await startupRecoverer.assertRequestedRepoPaths([mainLoadingRepoPath()])
+        guard let state = requireMainLoadingState(model, message: "expected inline main loading error") else { return }
         XCTAssertEqual(state.recoveryErrorMapping, mapping)
         XCTAssertEqual(state.treeLoading, .failed(mapping))
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
@@ -105,13 +99,10 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         let validation = RepoPathValidationSnapshot.mainLoadingInitializedFixture(repoPath: mainLoadingRepoPath())
         await model.openExistingRepository(validation)
 
-        let openRequests = await opener.requestedConfiguredRepoPaths()
-        XCTAssertEqual(openRequests, [mainLoadingRepoPath()])
+        await opener.assertRequestedConfiguredRepoPaths([mainLoadingRepoPath()])
         XCTAssertEqual(writer.savedRepoPaths, [])
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
-        guard case let .mainLoading(state) = model.route else {
-            return XCTFail("expected inline main loading error, got \(model.route)")
-        }
+        guard let state = requireMainLoadingState(model, message: "expected inline main loading error") else { return }
         XCTAssertEqual(state.repoPath, mainLoadingRepoPath())
         XCTAssertEqual(state.treeLoading, .failed(mapping))
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
@@ -134,12 +125,9 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
 
         await model.bootstrapIfNeeded()
 
-        let openRequests = await opener.requestedConfiguredRepoPaths()
-        XCTAssertEqual(openRequests, [mainLoadingRepoPath()])
+        await opener.assertRequestedConfiguredRepoPaths([mainLoadingRepoPath()])
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
-        guard case let .mainLoading(state) = model.route else {
-            return XCTFail("expected inline main loading error, got \(model.route)")
-        }
+        guard let state = requireMainLoadingState(model, message: "expected inline main loading error") else { return }
         XCTAssertEqual(state.repoPath, mainLoadingRepoPath())
         XCTAssertEqual(state.recoveryStatusText, "启动恢复检查完成")
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
@@ -175,8 +163,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             return
         }
 
-        let treeRequests = await treeLister.requestedRepoPaths()
-        XCTAssertEqual(treeRequests, [mainLoadingRepoPath()])
+        await treeLister.assertRequestedRepoPaths([mainLoadingRepoPath()])
         XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
         XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
 
@@ -223,14 +210,13 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
 
         await model.retryMainLoadingTree()
 
-        guard case let .mainLoading(retriedState) = model.route else {
+        guard let retriedState = requireMainLoadingState(model, message: "expected main loading after retry") else {
             await opener.finishOpen()
             await openTask.value
-            return XCTFail("expected main loading after retry, got \(model.route)")
+            return
         }
 
-        let treeRequests = await treeLister.requestedRepoPaths()
-        XCTAssertEqual(treeRequests, [mainLoadingRepoPath(), mainLoadingRepoPath()])
+        await treeLister.assertRequestedRepoPaths([mainLoadingRepoPath(), mainLoadingRepoPath()])
         XCTAssertEqual(retriedState.treeRows.map(\.id), ["docs", "docs/contracts"])
 
         await opener.finishOpen()

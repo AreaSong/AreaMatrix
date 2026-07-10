@@ -6,13 +6,9 @@ final class MainEmptyImportEntryTests: XCTestCase {
     @MainActor
     func testMainEmptyImportButtonCreatesImportEntryFromPicker() {
         let importURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: MainEmptyImportAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener(),
-            importPicker: MainEmptyImportStaticImportPicker(urls: [importURL])
-        )
+        let fixture = makeMainEmptyImportEntryFixture(importURLs: [importURL])
+        let opening = fixture.opening
+        let model = fixture.model
 
         model.chooseImportSources(opening: opening)
 
@@ -26,12 +22,9 @@ final class MainEmptyImportEntryTests: XCTestCase {
     @MainActor
     func testMainEmptyDropEntryKeepsSidebarDestination() {
         let importURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: MainEmptyImportAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let fixture = makeMainEmptyImportEntryFixture()
+        let opening = fixture.opening
+        let model = fixture.model
 
         model.startImportEntry(
             opening: opening,
@@ -48,12 +41,9 @@ final class MainEmptyImportEntryTests: XCTestCase {
     func testMainEmptyMultipleDropEntryCreatesBatchRequestForImportBatch() {
         let firstURL = URL(fileURLWithPath: "/tmp/a.pdf")
         let secondURL = URL(fileURLWithPath: "/tmp/b.pdf")
-        let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: MainEmptyImportAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let fixture = makeMainEmptyImportEntryFixture()
+        let opening = fixture.opening
+        let model = fixture.model
 
         model.startImportEntry(
             opening: opening,
@@ -70,13 +60,11 @@ final class MainEmptyImportEntryTests: XCTestCase {
     @MainActor
     func testMainEmptyImportEntryUsesInjectedTrashAvailability() {
         let importURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            systemCapabilityChecker: StaticOnboardingSystemCapabilityChecker(isTrashAvailableValue: false),
-            accessibilityAnnouncer: MainEmptyImportAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeMainEmptyImportEntryFixture(
+            systemCapabilityChecker: StaticOnboardingSystemCapabilityChecker(isTrashAvailableValue: false)
         )
+        let opening = fixture.opening
+        let model = fixture.model
 
         model.startImportEntry(opening: opening, source: .dropZone, urls: [importURL])
 
@@ -85,14 +73,11 @@ final class MainEmptyImportEntryTests: XCTestCase {
 
     @MainActor
     func testMainEmptyDropEntryRejectsInvalidItemsWithAccessibleToast() throws {
-        let opening = RepositoryOpeningResult.mainEmptyImportFixture(repoPath: "/tmp/empty-repo")
-        let accessibilityAnnouncer = MainEmptyImportAnnouncer()
+        let fixture = makeMainEmptyImportEntryFixture()
+        let opening = fixture.opening
+        let model = fixture.model
+        let accessibilityAnnouncer = fixture.accessibilityAnnouncer
         let remoteURL = try XCTUnwrap(URL(string: "https://example.com/a"))
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: accessibilityAnnouncer,
-            helpOpener: NoopWelcomeHelpOpener()
-        )
 
         model.startImportEntry(opening: opening, source: .dropZone, urls: [remoteURL])
 

@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import Foundation
+import XCTest
 
 struct ImportBatchBatchImportRequest: Equatable {
     var storageMode: ImportSingleFileStorageMode = .copy
@@ -52,6 +53,22 @@ actor ImportBatchRecordingBatchImporter: CoreBatchCopyImporting {
     func recordedRequests() -> [ImportBatchBatchImportRequest] {
         requests
     }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [ImportBatchBatchImportRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchRecordedRequests(requests, expectedRequests, file: file, line: line)
+    }
+
+    func assertLastRecordedRequest(
+        _ expectedRequest: ImportBatchBatchImportRequest,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchLastRecordedRequest(requests, expectedRequest, file: file, line: line)
+    }
 }
 
 actor ImportBatchSequenceBatchImporter: CoreBatchCopyImporting {
@@ -93,4 +110,38 @@ actor ImportBatchSequenceBatchImporter: CoreBatchCopyImporting {
     func recordedRequests() -> [ImportBatchBatchImportRequest] {
         requests
     }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [ImportBatchBatchImportRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchRecordedRequests(requests, expectedRequests, file: file, line: line)
+    }
+
+    func assertLastRecordedRequest(
+        _ expectedRequest: ImportBatchBatchImportRequest,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchLastRecordedRequest(requests, expectedRequest, file: file, line: line)
+    }
+}
+
+private func assertImportBatchRecordedRequests(
+    _ recordedRequests: [ImportBatchBatchImportRequest],
+    _ expectedRequests: [ImportBatchBatchImportRequest],
+    file: StaticString,
+    line: UInt
+) {
+    XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
+}
+
+private func assertImportBatchLastRecordedRequest(
+    _ recordedRequests: [ImportBatchBatchImportRequest],
+    _ expectedRequest: ImportBatchBatchImportRequest,
+    file: StaticString,
+    line: UInt
+) {
+    XCTAssertEqual(recordedRequests.last, expectedRequest, file: file, line: line)
 }

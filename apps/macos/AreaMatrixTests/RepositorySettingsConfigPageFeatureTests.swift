@@ -20,10 +20,9 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
         draft.fallbackToInbox = false
 
         let didSave = await model.save(draft: draft, currentConfig: current)
-        let requests = await updater.requests()
 
         XCTAssertTrue(didSave)
-        XCTAssertEqual(requests, [RecordingConfigurationUpdater.Request(
+        await updater.assertRequests([RecordingConfigurationUpdater.Request(
             repoPath: "/tmp/repo",
             config: current
                 .withRepositorySettingsRepositorySettingsCoreOverviewOutput("RootAreaMatrixFile")
@@ -53,12 +52,10 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
         draft.locale = .zhCN
 
         let didSave = await model.save(draft: draft, currentConfig: current)
-        let requests = await updater.requests()
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertFalse(didSave)
-        XCTAssertEqual(requests.map(\.config.locale), ["zh-CN"])
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
+        await updater.assertRequestedConfigValues(\.locale, ["zh-CN"])
+        await mapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.saveState, .failed(RepositorySettingsConfigError(
             message: "权限错误",
             recovery: "Retry status"

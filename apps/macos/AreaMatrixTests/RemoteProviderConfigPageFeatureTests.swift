@@ -12,15 +12,10 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let requests = await bridge.requests()
 
-        XCTAssertEqual(requests.loadCount, 1)
+        await bridge.assertLoadCount(1)
         XCTAssertEqual(model.loadState, .loaded)
-        XCTAssertEqual(model.providerStatusText, "Configured")
-        XCTAssertEqual(model.verifiedStatusText, "Connection tested")
-        XCTAssertEqual(model.enabledStatusText, "Remote provider enabled")
-        XCTAssertEqual(model.featureScopeText, "Auto summaries, Semantic search")
-        XCTAssertTrue(model.allowsPrivacyGateEnable)
+        assertAIPrivacyRemoteProviderStatus(model, .configured)
     }
 
     @MainActor
@@ -29,22 +24,14 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
         unverified.providerVerified = false
         await assertAIPrivacyRemoteProviderStatus(
             unverified,
-            status: "Remote provider needs connection test.",
-            verified: "Connection test required",
-            enabled: "Remote provider enabled",
-            scope: "Auto summaries, Semantic search",
-            allowsGate: false
+            .needsConnectionTest
         )
 
         var disabled = RemoteProviderConfigState.remoteProviderConfigAIPrivacyRemoteProviderConfigured()
         disabled.remoteProviderEnabled = false
         await assertAIPrivacyRemoteProviderStatus(
             disabled,
-            status: "Remote provider is disabled in AI settings.",
-            verified: "Connection tested",
-            enabled: "Remote provider disabled",
-            scope: "Auto summaries, Semantic search",
-            allowsGate: false
+            .disabled
         )
     }
 
@@ -68,8 +55,7 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
             ))
         )
         XCTAssertNil(model.snapshot)
-        XCTAssertEqual(model.providerStatusText, "Remote provider state unavailable")
-        XCTAssertFalse(model.allowsPrivacyGateEnable)
+        assertAIPrivacyRemoteProviderStatus(model, .unavailable)
     }
 
     @MainActor
@@ -95,16 +81,14 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
         await model.load()
         await providerModel.load()
         let result = await model.blockRemoteAIWithPrivacyGate()
-        let settingsRequests = await updater.requestedConfigs()
-        let providerRequests = await providerBridge.requests()
 
         XCTAssertEqual(result, .saved)
-        XCTAssertEqual(settingsRequests.count, 1)
-        XCTAssertEqual(settingsRequests[0].privacyGateEnabled, false)
-        XCTAssertEqual(settingsRequests[0].remoteAIAllowed, true)
-        XCTAssertEqual(providerRequests.loadCount, 1)
-        XCTAssertNil(providerRequests.disable)
-        XCTAssertTrue(providerModel.allowsPrivacyGateEnable)
+        await updater.assertRequestCount(1)
+        await updater.assertRequestedConfigValue(at: 0, \.privacyGateEnabled, false)
+        await updater.assertRequestedConfigValue(at: 0, \.remoteAIAllowed, true)
+        await providerBridge.assertLoadCount(1)
+        await providerBridge.assertNoDisableRequest()
+        assertAIPrivacyRemoteProviderStatus(providerModel, .configured)
     }
 
     @MainActor
@@ -120,9 +104,8 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let requests = await bridge.requests()
 
-        XCTAssertEqual(requests.loadCount, 1)
+        await bridge.assertLoadCount(1)
         XCTAssertEqual(model.loadState, .loaded)
         XCTAssertEqual(model.rules.first?.pattern, "finance/private/")
         XCTAssertTrue(model.canEditRemoteFields)
@@ -143,13 +126,11 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
         await model.load()
         await model.setPrivacyGate(false)
         await model.setField(.fileName, allowRemote: false)
-        let requests = await bridge.requests()
 
-        XCTAssertEqual(requests.updates.count, 2)
-        XCTAssertFalse(requests.updates[0].privacyGateEnabled)
-        XCTAssertTrue(requests.updates[0].confirmed)
-        XCTAssertEqual(requests.updates[0].providerScope.providerConfigured, true)
-        XCTAssertFalse(requests.updates[1].remoteAllowedFields.first { $0.field == .fileName }?.allowRemote ?? true)
+        await bridge.assertUpdateCount(2)
+        await bridge.assertUpdate(at: 0, privacyGateEnabled: false, confirmed: true)
+        await bridge.assertProviderScope(at: 0, providerConfigured: true)
+        await bridge.assertUpdateFieldPolicy(at: 1, field: .fileName, allowRemote: false)
     }
 
     @MainActor
@@ -167,13 +148,15 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
 
         await model.load()
         await model.evaluate(repoRelativePath: "finance/private/q1.pdf")
-        let requests = await bridge.requests()
 
-        XCTAssertEqual(requests.evaluations.count, 4)
-        XCTAssertEqual(requests.evaluations.map(\.feature), AiFeatureKind.aiPrivacyRulesCases)
-        XCTAssertEqual(requests.evaluations[0].route, .remote)
-        XCTAssertEqual(requests.evaluations[0].context.repoRelativePath, "finance/private/q1.pdf")
-        XCTAssertEqual(requests.evaluations[0].requestedFields, [.fileName, .repoRelativePath, .extension])
+        await bridge.assertEvaluationCount(4)
+        await bridge.assertEvaluationFeatures(AiFeatureKind.aiPrivacyRulesCases)
+        await bridge.assertEvaluation(
+            at: 0,
+            route: .remote,
+            repoRelativePath: "finance/private/q1.pdf",
+            requestedFields: [.fileName, .repoRelativePath, .extension]
+        )
         XCTAssertEqual(model.evaluation?.decision, .skipped)
         XCTAssertEqual(model.evaluation?.matchedRules.first?.ruleId, "rule-finance-folder")
     }

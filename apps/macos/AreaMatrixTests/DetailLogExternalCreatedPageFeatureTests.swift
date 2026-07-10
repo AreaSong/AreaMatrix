@@ -4,13 +4,12 @@ import XCTest
 final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     @MainActor
     func testDetailLogSyncExternalCreatedCoreProductionRelayCreatesCurrentMainWindowEvent() throws {
-        let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            startupRecoverer: StaticStartupRecoverer(),
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeShellMainListFixture(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
+            model: makeShellOnboardingModel()
         )
-        model.route = .mainList(opening)
+        let opening = fixture.opening
+        let model = fixture.model
 
         AreaMatrixExternalCreatedFileRelay.publish(
             repoPath: "/tmp/repo",
@@ -30,13 +29,12 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
 
     @MainActor
     func testDetailLogSyncExternalCreatedCoreProductionRelayIgnoresInvalidOrOtherRepositoryEvents() {
-        let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: "/tmp/repo", files: [])
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            startupRecoverer: StaticStartupRecoverer(),
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeShellMainListFixture(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
+            model: makeShellOnboardingModel()
         )
-        model.route = .mainList(opening)
+        let opening = fixture.opening
+        let model = fixture.model
 
         AreaMatrixExternalCreatedFileRelay.publish(repoPath: "/tmp/repo", relativePath: "../bad.pdf", fsEventID: 7101)
         AreaMatrixExternalCreatedFileRelay.publish(
@@ -107,11 +105,8 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
 
         await model.selectFiles([existing.id])
         await model.syncExternalCreated(event)
-        let syncRequests = await syncer.recordedCreatedRequests()
-        let listRequests = await fileLister.recordedListRequests()
-        let logRequests = await lister.recordedRequests()
 
-        XCTAssertEqual(syncRequests, [
+        await syncer.assertRecordedCreatedRequests([
             ExternalSyncRequest(
                 kind: .created,
                 repoPath: "/tmp/repo",
@@ -119,7 +114,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
                 fsEventID: 7001
             )
         ])
-        XCTAssertEqual(listRequests, [DetailLogExternalCreatedListRequest(
+        await fileLister.assertRecordedListRequests([DetailLogExternalCreatedListRequest(
             repoPath: "/tmp/repo",
             filter: .currentCategory(nil)
         )])
@@ -129,7 +124,9 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
             model.detailExternalCreateSyncState,
             .synced(event: event, fileID: created.id, .detailCreatedFixture())
         )
-        XCTAssertEqual(logRequests, [DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: created.id))])
+        await lister.assertRecordedRequests([
+            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: created.id))
+        ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: created.id, entries: [entry]))
     }
 
@@ -157,12 +154,10 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
 
         await model.selectFiles([existing.id])
         await model.syncExternalCreated(event)
-        let mappedErrors = await mapper.recordedErrors()
-        let logRequests = await lister.recordedRequests()
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        XCTAssertEqual(mappedErrors, [CoreError.ICloudPlaceholder(path: event.relativePath)])
-        XCTAssertEqual(logRequests, [])
+        await mapper.assertRecordedErrors([CoreError.ICloudPlaceholder(path: event.relativePath)])
+        await lister.assertRecordedRequests([])
         XCTAssertEqual(model.detailLogState, .notLoaded)
     }
 
@@ -184,14 +179,12 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         )
 
         await model.syncExternalCreated(event)
-        let mappedErrors = await mapper.recordedErrors()
-        let logRequests = await lister.recordedRequests()
         let rawContext = "created event 7003 returned sync errors: \(syncResult.errors.joined(separator: "; "))"
         let mapping = CoreErrorMappingSnapshot.internalFailure(rawContext: rawContext)
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        XCTAssertEqual(mappedErrors, [])
-        XCTAssertEqual(logRequests, [])
+        await mapper.assertRecordedErrors([])
+        await lister.assertRecordedRequests([])
         XCTAssertTrue(mapping.rawContext.contains("created event 7003 returned sync errors"))
     }
 

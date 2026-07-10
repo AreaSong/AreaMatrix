@@ -36,9 +36,8 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let requests = await detector.recordedRequests()
 
-        XCTAssertEqual(requests, ["/tmp/syncConflictReview-repo"])
+        await detector.assertRecordedRequests(["/tmp/syncConflictReview-repo"])
         XCTAssertEqual(model.state, .loaded(expected))
         XCTAssertEqual(model.conflict, expected)
         XCTAssertFalse(model.isLoading)
@@ -153,9 +152,8 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
             onBackToNeedsReview: {},
             onClose: {}
         ).body
-        let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "stale conflict id")])
+        await mapper.assertRecordedErrors([CoreError.Conflict(path: "stale conflict id")])
         assertTestMirrorDescription(of: body, contains: [
             SyncConflictReviewAccessibilityID.error,
             SyncConflictReviewCopy.errorTitle,

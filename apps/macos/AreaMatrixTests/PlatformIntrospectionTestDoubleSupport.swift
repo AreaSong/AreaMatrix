@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct PlatformCapabilityRequest: Equatable {
     var platform: PlatformIdSnapshot
@@ -21,8 +22,19 @@ actor RecordingPlatformCapabilityLoader: CorePlatformCapabilitiesLoading {
         return try result.get()
     }
 
-    func requests() -> [PlatformCapabilityRequest] {
-        capturedRequests
+    func assertRequests(
+        _ expectedRequests: [PlatformCapabilityRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(capturedRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRequests([], file: file, line: line)
     }
 }
 

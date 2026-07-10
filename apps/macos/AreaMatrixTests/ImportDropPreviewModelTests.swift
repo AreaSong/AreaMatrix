@@ -9,9 +9,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
         let model = ImportDropPreviewModel(repoPath: "/tmp/repo", predictor: predictor)
 
         await model.preview(target: .autoClassify, urls: [sourceURL])
-        let requests = await predictor.recordedRequests()
-
-        XCTAssertEqual(requests, [
+        await predictor.assertRecordedRequests([
             ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf")
         ])
         XCTAssertEqual(model.presentation?.destinationLabel, "finance")
@@ -43,9 +41,8 @@ final class ImportDropPreviewModelTests: XCTestCase {
         let model = ImportDropPreviewModel(repoPath: "/tmp/repo", predictor: predictor)
 
         await model.preview(target: .category("docs"), urls: [sourceURL])
-        let requests = await predictor.recordedRequests()
 
-        XCTAssertEqual(requests, [])
+        await predictor.assertRecordedRequests([])
         XCTAssertEqual(model.presentation?.destinationLabel, "docs")
         XCTAssertNil(model.presentation?.prediction)
         XCTAssertFalse(model.presentation?.isPredicting ?? true)
@@ -73,9 +70,8 @@ final class ImportDropPreviewModelTests: XCTestCase {
         let model = ImportDropPreviewModel(repoPath: "/tmp/repo", predictor: predictor)
 
         await model.preview(target: .autoClassify, urls: [remoteURL])
-        let requests = await predictor.recordedRequests()
 
-        XCTAssertEqual(requests, [])
+        await predictor.assertRecordedRequests([])
         XCTAssertEqual(model.presentation?.warning, "Cannot import this item")
         XCTAssertEqual(model.presentation?.destinationLabel, "Auto classify")
         XCTAssertFalse(model.presentation?.isPredicting ?? true)

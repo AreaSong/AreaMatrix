@@ -66,8 +66,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
-        let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/adopt")])
+        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/adopt")])
         XCTAssertEqual(model.route, .initializationFailed(
             "/tmp/adopt",
             mapping,
@@ -103,8 +102,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         }
         await startupRecoverer.waitUntilRecovered()
         await initializer.waitUntilStarted()
-        let recoveredPaths = await startupRecoverer.requestedRepoPaths()
-        XCTAssertEqual(recoveredPaths, ["/tmp/adopt"])
+        await startupRecoverer.assertRequestedRepoPaths(["/tmp/adopt"])
         XCTAssertEqual(model.initializationRecoveryReport, report)
         XCTAssertEqual(model.route, .initializing(RepositoryInitializationDraft(
             validation: validation,
@@ -136,10 +134,9 @@ final class InitializingStepIntegrationTests: XCTestCase {
         await model.continueFromValidatePath()
 
         await model.adoptExistingRepositoryFromConfirmInit()
-        let recoveredPaths = await startupRecoverer.requestedRepoPaths()
         let adoptedPaths = await initializer.adoptedRepoPaths()
 
-        XCTAssertEqual(recoveredPaths, ["/tmp/adopt"])
+        await startupRecoverer.assertRequestedRepoPaths(["/tmp/adopt"])
         XCTAssertEqual(adoptedPaths, ["/tmp/adopt"])
         XCTAssertNil(model.initializationRecoveryReport)
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/adopt"])
@@ -171,8 +168,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
-        let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "recovery db")])
+        await errorMapper.assertRecordedErrors([CoreError.Db(message: "recovery db")])
         XCTAssertEqual(model.route, .initializationFailed(
             "/tmp/adopt",
             mapping,
@@ -222,9 +218,13 @@ final class InitializingStepIntegrationTests: XCTestCase {
 
     @MainActor
     private func waitForInitializationScanSession(on model: OnboardingModel) async {
-        for _ in 0 ..< 100 where model.initializationScanSession == nil {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
+        _ = await waitForMainActorTestValue(
+            delayNanoseconds: 10_000_000,
+            failureMessage: { "Timed out waiting for initialization scan session" },
+            value: {
+                model.initializationScanSession
+            }
+        )
     }
 }
 
@@ -287,8 +287,7 @@ final class InterruptedInitializationRecoveryTests: XCTestCase {
             helpOpener: NoopWelcomeHelpOpener()
         )
         await model.cleanUpInterruptedInitialization(repoPath: "/tmp/adopt")
-        let recoveredPaths = await startupRecoverer.requestedRepoPaths()
-        XCTAssertEqual(recoveredPaths, ["/tmp/adopt"])
+        await startupRecoverer.assertRequestedRepoPaths(["/tmp/adopt"])
         XCTAssertEqual(model.initializationRecoveryReport, .testFixture(
             cleanedStagingFiles: 1,
             revertedStagingDbRows: 1,

@@ -17,8 +17,7 @@ final class ValidatePathErrorMappingTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [CoreError.PermissionDenied(path: "/tmp/repo")])
+        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.repositoryPathError, "无访问权限")
         XCTAssertEqual(model.repositoryPathErrorMapping, mapping)
         XCTAssertFalse(model.canContinueFromValidatePath)
@@ -42,12 +41,11 @@ final class ValidatePathErrorMappingTests: XCTestCase {
 
         let mappedError = await errorMapper.mapError(error)
         let knownMapping = await errorMapper.mapKnownErrorIfPresent(error)
-        let recordedErrors = await errorMapper.recordedErrors()
 
         XCTAssertEqual(mappedError, mapping)
         XCTAssertEqual(knownMapping, mapping)
         XCTAssertEqual(error.localizedDescription, "app-semantic-path")
-        XCTAssertEqual(recordedErrors, [])
+        await errorMapper.assertRecordedErrors([])
         XCTAssertNil(CoreErrorRawContextSnapshot(error))
     }
 
@@ -187,16 +185,15 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         await model.loadSelectedFileTags()
         await model.loadSelectedFileAITagSuggestions()
         let undoState = await model.applySelectedFileAITagSuggestions()
-        let requests = await bridge.requests()
-        let privacyRequests = await privacy.requests()
 
-        XCTAssertEqual(requests.suggest.first?.fileId, file.id)
-        XCTAssertEqual(requests.suggest.first?.candidateTags, ["client"])
-        XCTAssertEqual(privacyRequests.evaluations.first?.feature, .autoTags)
-        XCTAssertEqual(requests.apply.first?.fileId, file.id)
-        XCTAssertEqual(requests.apply.first?.confirmed, true)
-        XCTAssertEqual(requests.apply.first?.callLogId, 7707)
-        XCTAssertEqual(requests.apply.first?.suggestions.map(\.suggestionId), ["ai-tag-finance"])
+        await bridge.assertSingleSuggestRequest(fileID: file.id, candidateTags: ["client"])
+        await privacy.assertEvaluation(at: 0, feature: .autoTags)
+        await bridge.assertSingleApplyRequest(
+            fileID: file.id,
+            confirmed: true,
+            callLogID: 7707,
+            suggestionIDs: ["ai-tag-finance"]
+        )
         XCTAssertEqual(model.aiTagSuggestionState.appliedReport?.appliedCount, 1)
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["finance"])
         XCTAssertNil(undoState)
@@ -231,13 +228,9 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         await model.selectFiles([file.id])
         await model.loadSelectedFileAITagSuggestions()
         let undoState = await model.applySelectedFileAITagSuggestion("ai-tag-finance")
-        let requests = await bridge.requests()
 
         XCTAssertEqual(model.aiTagSuggestionState.selectedIDs, [])
-        XCTAssertEqual(requests.apply.count, 1)
-        XCTAssertEqual(requests.apply.first?.fileId, file.id)
-        XCTAssertEqual(requests.apply.first?.confirmed, true)
-        XCTAssertEqual(requests.apply.first?.suggestions.map(\.suggestionId), ["ai-tag-finance"])
+        await bridge.assertSingleApplyRequest(fileID: file.id, confirmed: true, suggestionIDs: ["ai-tag-finance"])
         XCTAssertEqual(model.aiTagSuggestionState.appliedReport?.appliedCount, 1)
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["finance"])
         XCTAssertNil(undoState)
@@ -267,7 +260,6 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         await model.loadSelectedFileTags()
         await model.loadSelectedFileAITagSuggestions()
         model.clearSelectedFileAITagSuggestions()
-        let requests = await bridge.requests()
 
         XCTAssertEqual(model.aiTagSuggestionState.report?.suggestions, [])
         XCTAssertEqual(model.aiTagSuggestionState.selectedIDs, [])
@@ -276,7 +268,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
             model.aiTagSuggestionState.rejectedFeedback?.message,
             "2 suggestions rejected. Feedback recorded for this review."
         )
-        XCTAssertEqual(requests.apply, [])
+        await bridge.assertNoApplyRequests()
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), [])
     }
 
@@ -298,15 +290,11 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
 
         await model.selectFiles([file.id])
         await model.loadSelectedFileAITagSuggestions()
-        let bridgeRequests = await bridge.requests()
-        let privacyRequests = await privacy.requests()
-        let settingsRequests = await settings.requests()
 
-        XCTAssertEqual(settingsRequests, ["/tmp/repo"])
-        XCTAssertEqual(bridgeRequests.suggest, [])
-        XCTAssertEqual(bridgeRequests.apply, [])
-        XCTAssertEqual(privacyRequests.loadCount, 0)
-        XCTAssertEqual(privacyRequests.evaluations, [])
+        await settings.assertRequestedRepoPaths(["/tmp/repo"])
+        await bridge.assertNoRequests()
+        await privacy.assertLoadCount(0)
+        await privacy.assertNoEvaluations()
         XCTAssertEqual(model.aiTagSuggestionState.report?.status, .skipped)
         XCTAssertEqual(model.aiTagSuggestionState.report?.skippedReason, .aiDisabled)
         XCTAssertEqual(model.aiTagSuggestionState.report?.contentsRead, false)
@@ -331,13 +319,10 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
 
         await model.selectFiles([file.id])
         await model.loadSelectedFileAITagSuggestions()
-        let bridgeRequests = await bridge.requests()
-        let privacyRequests = await privacy.requests()
 
-        XCTAssertEqual(bridgeRequests.suggest, [])
-        XCTAssertEqual(bridgeRequests.apply, [])
-        XCTAssertEqual(privacyRequests.loadCount, 0)
-        XCTAssertEqual(privacyRequests.evaluations, [])
+        await bridge.assertNoRequests()
+        await privacy.assertLoadCount(0)
+        await privacy.assertNoEvaluations()
         XCTAssertEqual(model.aiTagSuggestionState.report?.status, .skipped)
         XCTAssertEqual(model.aiTagSuggestionState.report?.skippedReason, .featureDisabled)
         XCTAssertEqual(model.aiTagSuggestionState.report?.contentsRead, false)

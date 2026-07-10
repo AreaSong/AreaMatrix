@@ -27,9 +27,8 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         model.suggestedName = " indexed.pdf "
         await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
-        let requests = await importer.recordedCoreRequests()
 
-        XCTAssertEqual(requests, [
+        await importer.assertRecordedCoreRequests([
             ImportSingleFileCoreImportRequest(
                 repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
@@ -61,9 +60,8 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         await model.load(request: request)
         model.selectedStorageMode = .indexOnly
         await model.importSelectedFile()
-        let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.ICloudPlaceholder(path: importSingleFileSourcePath())])
+        await errorMapper.assertRecordedErrors([CoreError.ICloudPlaceholder(path: importSingleFileSourcePath())])
         XCTAssertEqual(
             model.importStatus,
             .failed(CoreErrorMappingSnapshot.importIndexFixture(kind: .iCloudPlaceholder))

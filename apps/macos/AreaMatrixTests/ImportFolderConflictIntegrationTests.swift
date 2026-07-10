@@ -9,21 +9,19 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
 
         await model.load(request: fixture.request)
 
-        XCTAssertEqual(model.rows.map(\.status.tag), ["DUP", "NAME", "BLOCKED"])
-        XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
-        let initialRequests = await fixture.importer.recordedRequests()
-        XCTAssertEqual(initialRequests, [])
+        assertImportRowStatusTags(model.rows, ["DUP", "NAME", "BLOCKED"])
+        assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
+        await fixture.importer.assertRecordedRequests([])
 
         applyImportFolderInitialConflictResolutions(model: model, fixture: fixture)
-        XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
+        assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
         try confirmImportFolderReplace(model: model, rowID: fixture.nameURL.path)
-        XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
+        assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
 
         try confirmImportFolderReplace(model: model, rowID: fixture.blockedURL.path)
         let outcome = await model.importReadyFiles()
-        let recordedRequests = await fixture.importer.recordedRequests()
 
-        assertImportFolderConflictImportResult(outcome: outcome, recordedRequests: recordedRequests, model: model)
+        await assertImportFolderConflictImportResult(outcome: outcome, importer: fixture.importer, model: model)
     }
 
     @MainActor
@@ -75,7 +73,7 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
         XCTAssertEqual(downloadedURLs, [cloudURL])
         XCTAssertEqual(model.selectedStorageMode, .indexOnly)
         XCTAssertEqual(model.selectedDestination, .category("docs"))
-        XCTAssertEqual(model.rows.map(\.status.tag), ["OK"])
+        assertImportRowStatusTags(model.rows, ["OK"])
     }
 
     @MainActor
@@ -84,14 +82,14 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
 
         await scenario.importModel
             .load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a")))
-        scenario.model.route = .mainList(scenario.opening)
         let outcome = await scenario.importModel.importReadyFiles(controlState: scenario.controlState) { progress in
             scenario.model.updateImportEntryProgress(progress)
         }
 
-        guard case let .importProgress(progress) = scenario.model.route else {
-            return XCTFail("Expected import-progress progress route")
-        }
+        guard let progress = requireImportProgressRoute(
+            scenario.model,
+            message: "Expected import-progress progress route"
+        ) else { return }
         scenario.model.failImportEntry(
             progress: progress.progressSnapshot,
             mapping: .importProgressFatalFolderError,
@@ -103,20 +101,16 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
 
         XCTAssertEqual(requests.map(\.overrideFilename), ["first.pdf", "second.pdf"])
         XCTAssertEqual(outcome?.fatalRetryContext, importFolderFatalRetryContext(sourcePath: scenario.secondURL.path))
-        guard case let .importProgress(pausedState) = scenario.model.route else {
-            return XCTFail("Expected import-progress fatal pause route")
-        }
+        guard let pausedState = requireImportProgressRoute(
+            scenario.model,
+            message: "Expected import-progress fatal pause route"
+        ) else { return }
         assertImportFolderFatalPause(pausedState)
     }
 
     @MainActor
     func testImportFolderFailedImportRoutesToImportResultResultInsteadOfFatalPause() {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportResultMainListFixture().model
         let progress = importBatchProgress(
             completed: 1,
             failed: 1,
@@ -125,16 +119,18 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
         )
         let mapping = CoreErrorMappingSnapshot.importSingleFileError(kind: .permissionDenied)
 
-        model.route = .mainList(opening)
         model.updateImportEntryProgress(progress)
         model.failImportEntry(progress: progress, mapping: mapping)
 
-        if case let .importResult(result) = model.route {
-            XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 0, pending 0.")
-            XCTAssertEqual(result.items.map(\.status), [.failed])
-        } else {
-            XCTFail("Expected import-result import result route")
-        }
+        guard let result = requireImportResultRoute(
+            model,
+            message: "Expected import-result import result route"
+        ) else { return }
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 1, failed 1, stopped 0, pending 0.",
+            statuses: [.failed]
+        )
     }
 }
 
@@ -213,10 +209,10 @@ private func confirmImportFolderReplace(model: ImportFolderPreviewModel, rowID: 
 @MainActor
 private func assertImportFolderConflictImportResult(
     outcome: ImportBatchImportResult?,
-    recordedRequests: [ImportBatchBatchImportRequest],
+    importer: ImportBatchRecordingBatchImporter,
     model: ImportFolderPreviewModel
-) {
-    XCTAssertEqual(recordedRequests, [
+) async {
+    await importer.assertRecordedRequests([
         ImportBatchBatchImportRequest(
             destination: .autoClassify,
             suggestedCategory: "docs",
@@ -232,7 +228,7 @@ private func assertImportFolderConflictImportResult(
     ])
     XCTAssertEqual(outcome?.succeededEntries.count, 2)
     XCTAssertEqual(outcome?.skippedDuplicateCount, 1)
-    XCTAssertEqual(model.rows.map(\.status.tag), ["SKIPPED", "IMPORTED", "IMPORTED"])
+    assertImportRowStatusTags(model.rows, ["SKIPPED", "IMPORTED", "IMPORTED"])
 }
 
 @MainActor
@@ -240,7 +236,6 @@ private struct ImportFolderFatalFolderImportScenario {
     let secondURL: URL
     let importer: ImportBatchSequenceBatchImporter
     let importModel: ImportFolderPreviewModel
-    let opening: RepositoryOpeningResult
     let controlState: ImportProgressControlState
     let model: OnboardingModel
 }
@@ -265,19 +260,13 @@ private func makeImportFolderFatalFolderImportScenario() -> ImportFolderFatalFol
         scanner: importFolderStaticScanner(urls: urls)
     )
     let controlState = ImportProgressControlState()
-    let model = OnboardingModel(
-        settingsReader: StaticSettingsReader(repoPath: nil),
-        importProgressControlState: controlState,
-        accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-        helpOpener: NoopWelcomeHelpOpener()
-    )
+    let fixture = makeImportProgressMainListFixture(importProgressControlState: controlState)
     return ImportFolderFatalFolderImportScenario(
         secondURL: urls[1],
         importer: importer,
         importModel: importModel,
-        opening: .importSingleFileFixture(repoPath: "/tmp/repo"),
         controlState: controlState,
-        model: model
+        model: fixture.model
     )
 }
 
@@ -303,8 +292,7 @@ private func importFolderFatalRetryContext(sourcePath: String) -> ImportProgress
 private func assertImportFolderFatalPause(_ pausedState: ImportProgressRouteState) {
     XCTAssertEqual(pausedState.titleText, "导入已暂停")
     XCTAssertEqual(pausedState.items.map(\.phase), [.done, .failed, .pending])
-    XCTAssertFalse(pausedState.canRetryCurrentItem)
-    XCTAssertEqual(pausedState.retryStatusText, "Checking recovery state...")
+    assertImportProgressRecoveryCheckPending(pausedState)
 }
 
 private extension CoreErrorMappingSnapshot {

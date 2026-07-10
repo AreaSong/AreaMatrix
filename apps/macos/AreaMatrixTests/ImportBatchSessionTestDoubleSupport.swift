@@ -22,6 +22,17 @@ actor StaticImportBatchSessionStore: ImportBatchSessionPersisting {
     func clearedRepoPaths() -> [String] {
         cleared
     }
+
+    func waitForClearedRepoPaths(_ expected: [String], attempts: Int = 1000) async -> [String] {
+        await waitForActorTestValue(
+            on: self,
+            attempts: attempts,
+            failureMessage: { "Timed out waiting for cleared import batch session repo paths, got \(cleared)" },
+            value: {
+                cleared == expected ? cleared : nil
+            }
+        ) ?? cleared
+    }
 }
 
 actor RecordingImportBatchSessionStore: ImportBatchSessionPersisting {

@@ -259,9 +259,8 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
 
         await model.selectResolution(.useExisting)
         await model.applyResolution()
-        let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [
+        await mapper.assertRecordedErrors([
             CoreError.Db(message: "preview locked"),
             CoreError.Conflict(path: "stale sync conflict")
         ])
@@ -339,13 +338,12 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
 
         await model.load()
         await view.applySelectedResolution()
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertTrue(resolvedReports.isEmpty)
         guard case .failed(.keepBoth, _) = model.applyState else {
             return XCTFail("Expected apply failure to remain in sync-conflict-review")
         }
-        XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "stale sync conflict")])
+        await mapper.assertRecordedErrors([CoreError.Conflict(path: "stale sync conflict")])
     }
 
     @MainActor

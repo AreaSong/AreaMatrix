@@ -84,10 +84,9 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([first.id, second.id])
-        let requests = await detailer.recordedRequests()
         let summary = MultiSelectionDetailSummary(selection: model.selection, files: model.files)
 
-        XCTAssertEqual(requests, [
+        await detailer.assertRecordedRequests([
             FileDetailRequest(repoPath: "/tmp/repo", fileID: first.id),
             FileDetailRequest(repoPath: "/tmp/repo", fileID: second.id)
         ])
@@ -119,12 +118,11 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([first.id, second.id])
-        let mappedErrors = await mapper.recordedErrors()
         let summary = MultiSelectionDetailSummary(selection: model.selection, files: model.files)
 
         XCTAssertEqual(model.selection, .multiple([first.id, second.id]))
         XCTAssertEqual(model.detailErrorMapping, mapping)
-        XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: second.path)])
+        await mapper.assertRecordedErrors([CoreError.FileNotFound(path: second.path)])
         XCTAssertEqual(summary.selectedCount, 2)
         XCTAssertEqual(summary.paths, [first.path, second.path])
         XCTAssertFalse(model.isDetailLoading)

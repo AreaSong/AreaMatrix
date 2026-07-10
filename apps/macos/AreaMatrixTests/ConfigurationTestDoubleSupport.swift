@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct NoopConfigurationUpdater: CoreConfigurationUpdating {
     func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
@@ -38,8 +39,59 @@ actor RecordingConfigurationUpdater: CoreConfigurationUpdating {
         recordedRequests
     }
 
-    func requestedConfigs() -> [RepoConfigSnapshot] {
-        recordedRequests.map(\.config)
+    func assertRequests(
+        _ expectedRequests: [Request],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests.count, expectedCount, file: file, line: line)
+    }
+
+    func assertRequestedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests.map(\.repoPath), expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertRequestedConfigValues<Value: Equatable>(
+        _ keyPath: KeyPath<RepoConfigSnapshot, Value>,
+        _ expectedValues: [Value],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests.map { $0.config[keyPath: keyPath] }, expectedValues, file: file, line: line)
+    }
+
+    func assertRequestedConfigValue<Value: Equatable>(
+        at index: Int,
+        _ keyPath: KeyPath<RepoConfigSnapshot, Value>,
+        _ expectedValue: Value,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard recordedRequests.indices.contains(index) else {
+            XCTFail("Expected config request at index \(index), got \(recordedRequests.count)", file: file, line: line)
+            return
+        }
+
+        XCTAssertEqual(recordedRequests[index].config[keyPath: keyPath], expectedValue, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests, [], file: file, line: line)
     }
 
     private func nextResult() -> Swift.Result<Void, Error> {
@@ -87,6 +139,14 @@ actor RecordingConfigurationLoader: CoreConfigurationLoading {
 
     func requestedPaths() -> [String] {
         paths
+    }
+
+    func assertRequestedPaths(
+        _ expectedPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(paths, expectedPaths, file: file, line: line)
     }
 
     private func nextResult() -> Result<RepoConfigSnapshot, Error>? {

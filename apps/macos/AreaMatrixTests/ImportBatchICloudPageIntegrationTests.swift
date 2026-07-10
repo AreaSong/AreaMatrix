@@ -90,13 +90,12 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         XCTAssertEqual(model.iCloudPlaceholderCount, 1)
-        XCTAssertNil(model.importDisabledReason)
+        assertImportEnabled(model.importDisabledReason)
 
         model.markICloudPlaceholderPending(rowID: rows[1].id)
-        XCTAssertNil(model.importDisabledReason)
+        assertImportEnabled(model.importDisabledReason)
 
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let recordedRequests = await importer.recordedRequests()
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Copied")
         XCTAssertEqual(outcome?.pendingICloudCount, 1)
@@ -116,14 +115,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
                 )
             ]
         ))
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            )
-        ])
+        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest()])
     }
 
     @MainActor

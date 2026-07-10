@@ -37,9 +37,8 @@ final class BatchChangeCategoryActionTests: XCTestCase {
         )
         let createdCategories = BatchChangeCategoryCreatedCategoryReturn
             .updatedCategories(["finance"], savedCategory: "tax")
-        let requests = await changer.recordedRequests()
 
-        XCTAssertEqual(requests, [
+        await changer.assertRecordedRequests([
             "preview|\(batchChangeCategoryRepoPath())|2,1|finance|true",
             "apply|\(batchChangeCategoryRepoPath())|2,1|finance|true|preview-current"
         ])
@@ -65,9 +64,8 @@ final class BatchChangeCategoryActionTests: XCTestCase {
             changer: changer,
             errorMapper: RecordingCoreErrorMapper.batchChangeCategory()
         )
-        let requests = await changer.recordedRequests()
 
-        XCTAssertEqual(requests, ["preview|\(batchChangeCategoryRepoPath())|1,2|finance|true"])
+        await changer.assertRecordedRequests(["preview|\(batchChangeCategoryRepoPath())|1,2|finance|true"])
         XCTAssertEqual(previewState.failure?.kind, .permissionDenied)
         XCTAssertNil(previewState.report)
         XCTAssertFalse(BatchChangeCategoryPreviewDisclosure.shouldShowDetails(

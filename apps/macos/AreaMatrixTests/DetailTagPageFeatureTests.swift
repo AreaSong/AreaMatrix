@@ -23,10 +23,8 @@ final class DetailTagPageFeatureTests: XCTestCase {
         await model.selectFiles([detail.id])
         await model.loadSelectedFileTags()
         await model.addSelectedFileTag("bad/tag")
-        let addRequests = await tagStore.addRequests()
-        let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(addRequests, [
+        await tagStore.assertAddRequests([
             DetailTagMutationRequest(repoPath: "/tmp/repo", fileID: detail.id, tag: "bad/tag")
         ])
         XCTAssertEqual(model.detailTagEditorState, .failed(
@@ -37,7 +35,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         ))
         XCTAssertEqual(model.detailTagEditorState.tagSet, initialTags)
         XCTAssertNil(model.detailTagUndoToast)
-        XCTAssertEqual(mappedErrors, [CoreError.InvalidPath(path: "bad/tag")])
+        await mapper.assertRecordedErrors([CoreError.InvalidPath(path: "bad/tag")])
         XCTAssertFalse(DetailTagInputCommitPolicy.shouldClearSubmittedQuery(
             submittedTag: "bad/tag",
             state: model.detailTagEditorState
@@ -64,9 +62,8 @@ final class DetailTagPageFeatureTests: XCTestCase {
         await model.selectFiles([detail.id])
         await model.loadSelectedFileTags()
         await model.removeSelectedFileTag("clienta")
-        let removeRequests = await tagStore.removeRequests()
 
-        XCTAssertEqual(removeRequests, [
+        await tagStore.assertRemoveRequests([
             DetailTagMutationRequest(repoPath: "/tmp/repo", fileID: detail.id, tag: "clienta")
         ])
         XCTAssertEqual(model.detailTagEditorState, .failed(
@@ -106,8 +103,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertNil(model.detailTagUndoToast)
 
         await model.undoLastDetailTagChange()
-        let removeRequests = await tagStore.removeRequests()
-        XCTAssertEqual(removeRequests, [])
+        await tagStore.assertRemoveRequests([])
     }
 
     @MainActor
@@ -127,11 +123,9 @@ final class DetailTagPageFeatureTests: XCTestCase {
         await model.selectFiles([detail.id])
         await model.addSelectedFileTag("clienta")
         await model.removeSelectedFileTag("clienta")
-        let addRequests = await tagStore.addRequests()
-        let removeRequests = await tagStore.removeRequests()
 
-        XCTAssertEqual(addRequests, [])
-        XCTAssertEqual(removeRequests, [])
+        await tagStore.assertAddRequests([])
+        await tagStore.assertRemoveRequests([])
         XCTAssertEqual(model.writeActionDisabledReason(fileID: detail.id), .importLocked)
     }
 
@@ -223,16 +217,13 @@ final class DetailTagPageFeatureTests: XCTestCase {
             registryState: model.tagFilterRegistryState,
             facetsState: model.searchFacetsState
         )
-        let listRequests = await tagStore.listRequests()
 
-        XCTAssertEqual(listRequests, [DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)])
+        await tagStore.assertListRequests([DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)])
         XCTAssertEqual(options.map(\.value), ["finance", "tax", "archive", "legal"])
         XCTAssertEqual(options.first { $0.value == "legal" }?.countDisplayText, "--")
         XCTAssertEqual(options.first { $0.value == "legal" }?.disabled, false)
-        let addRequests = await tagStore.addRequests()
-        let removeRequests = await tagStore.removeRequests()
-        XCTAssertEqual(addRequests, [])
-        XCTAssertEqual(removeRequests, [])
+        await tagStore.assertAddRequests([])
+        await tagStore.assertRemoveRequests([])
     }
 
     @MainActor
@@ -254,11 +245,10 @@ final class DetailTagPageFeatureTests: XCTestCase {
 
         await model.loadTagFilterRegistry(activeFileID: detail.id)
         await model.loadTagFilterRegistry(activeFileID: detail.id)
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.tagFilterRegistryState, .failed(fileID: detail.id, mapping, previous: registry))
         XCTAssertEqual(model.tagFilterRegistryState.tagSet, registry)
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "tag registry locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "tag registry locked")])
     }
 
     @MainActor

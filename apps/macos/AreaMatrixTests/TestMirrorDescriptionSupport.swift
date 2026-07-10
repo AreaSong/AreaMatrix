@@ -194,6 +194,56 @@ func assertTestDescription(
     }
 }
 
+@MainActor
+func waitForMainActorTestValue<Value>(
+    attempts: Int = 100,
+    delayNanoseconds: UInt64? = nil,
+    failureMessage: () -> String,
+    file: StaticString = #filePath,
+    line: UInt = #line,
+    value: () -> Value?
+) async -> Value? {
+    for _ in 0 ..< attempts {
+        if let value = value() {
+            return value
+        }
+
+        if let delayNanoseconds {
+            try? await Task.sleep(nanoseconds: delayNanoseconds)
+        } else {
+            await Task.yield()
+        }
+    }
+
+    XCTFail(failureMessage(), file: file, line: line)
+    return nil
+}
+
+func waitForActorTestValue<Value>(
+    on _: isolated some Actor,
+    attempts: Int = 1000,
+    delayNanoseconds: UInt64? = nil,
+    failureMessage: () -> String,
+    file: StaticString = #filePath,
+    line: UInt = #line,
+    value: () -> Value?
+) async -> Value? {
+    for _ in 0 ..< attempts {
+        if let value = value() {
+            return value
+        }
+
+        if let delayNanoseconds {
+            try? await Task.sleep(nanoseconds: delayNanoseconds)
+        } else {
+            await Task.yield()
+        }
+    }
+
+    XCTFail(failureMessage(), file: file, line: line)
+    return nil
+}
+
 private func appendTestMirrorDescription(
     of value: Any,
     to lines: inout [String],

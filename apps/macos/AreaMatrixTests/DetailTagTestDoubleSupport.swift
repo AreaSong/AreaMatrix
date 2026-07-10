@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct DetailTagMutationRequest: Equatable {
     var repoPath: String
@@ -94,6 +95,30 @@ actor DetailTagRecordingStore: CoreTagCRUD {
 
     func listRequests() -> [DetailTagListRequest] {
         recordedListRequests
+    }
+
+    func assertAddRequests(
+        _ expectedRequests: [DetailTagMutationRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedAddRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertRemoveRequests(
+        _ expectedRequests: [DetailTagMutationRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRemoveRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertListRequests(
+        _ expectedRequests: [DetailTagListRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedListRequests, expectedRequests, file: file, line: line)
     }
 
     func suggestionRequests() -> [TagSuggestionRequestRecord] {

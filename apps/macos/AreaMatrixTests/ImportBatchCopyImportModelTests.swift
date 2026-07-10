@@ -121,30 +121,16 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         let outcome = await importModel.importReadyFiles(selectedDestination: .autoClassify) { progress in
             progressSnapshots.append(progress)
         }
-        let recordedRequests = await importer.recordedRequests()
 
         guard let result = outcome else {
             return XCTFail("Expected successful batch copy import")
         }
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            ),
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "docs",
-                overrideFilename: "2026Q1_合同.pdf",
-                duplicateStrategy: .ask
-            )
-        ])
+        await importer.assertRecordedRequests(importBatchExpectedAutoClassifyRequests())
         XCTAssertEqual(result.succeededEntries.count, 2)
         XCTAssertEqual(result.total, 2)
         XCTAssertEqual(result.failedCount, 0)
-        XCTAssertEqual(importModel.rows.map(\.status.tag), ["IMPORTED", "IMPORTED"])
-        XCTAssertEqual(importModel.status.message, "批量导入完成：成功 2，失败 0")
+        assertImportRowStatusTags(importModel.rows, ["IMPORTED", "IMPORTED"])
+        assertImportStatusMessage(importModel.status, "批量导入完成：成功 2，失败 0")
         XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 2,
             total: 2,
@@ -170,22 +156,20 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         let outcome = await model.importReadyFiles(selectedDestination: .category("finance")) { progress in
             progressSnapshots.append(progress)
         }
-        let recordedRequests = await importer.recordedRequests()
-        let mappedErrors = await errorMapper.recordedErrors()
 
         guard let result = outcome else {
             return XCTFail("Expected batch copy import result")
         }
-        XCTAssertEqual(recordedRequests, importBatchExpectedCategoryRequests())
-        XCTAssertEqual(mappedErrors, [
+        await importer.assertRecordedRequests(importBatchExpectedCategoryRequests())
+        await errorMapper.assertRecordedErrors([
             CoreError.PermissionDenied(path: "/tmp/Invoice_2026Q1.pdf")
         ])
         XCTAssertEqual(result.succeededEntries.count, 1)
         XCTAssertEqual(result.failedCount, 1)
         XCTAssertEqual(result.total, 2)
-        XCTAssertEqual(model.rows.map(\.status.tag), ["ERROR", "IMPORTED"])
-        XCTAssertEqual(model.rows.first?.status.detail, "无访问权限")
-        XCTAssertEqual(model.status.message, "批量导入完成：成功 1，失败 1")
+        assertImportRowStatusTags(model.rows, ["ERROR", "IMPORTED"])
+        assertImportRowStatusDetails(model.rows, [0: "无访问权限"])
+        assertImportStatusMessage(model.status, "批量导入完成：成功 1，失败 1")
         XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 1,
             failed: 1,
@@ -292,32 +276,19 @@ final class ImportBatchStorageModeTests: XCTestCase {
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         model.selectedStorageMode = .move
         XCTAssertEqual(model.storageModeRiskMessage, "Move 模式会移走源文件；请确认批量队列只包含要移入资料库的文件。")
-        XCTAssertNil(model.importDisabledReason)
+        assertImportEnabled(model.importDisabledReason)
         let moved = await model.importReadyFiles(selectedDestination: .autoClassify)
         XCTAssertEqual(moved?.succeededEntries.count, 1)
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         model.selectedStorageMode = .indexOnly
         XCTAssertEqual(model.storageModeRiskMessage, "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。")
-        XCTAssertNil(model.importDisabledReason)
+        assertImportEnabled(model.importDisabledReason)
         let indexed = await model.importReadyFiles(selectedDestination: .autoClassify)
         XCTAssertEqual(indexed?.succeededEntries.count, 1)
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                storageMode: .move,
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            ),
-            ImportBatchBatchImportRequest(
-                storageMode: .indexOnly,
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            )
+        await importer.assertRecordedRequests([
+            importBatchExpectedInvoiceRequest(storageMode: .move),
+            importBatchExpectedInvoiceRequest(storageMode: .indexOnly)
         ])
     }
 
@@ -336,21 +307,10 @@ final class ImportBatchStorageModeTests: XCTestCase {
         XCTAssertEqual(model.targetRelativePath(for: model.rows[1], destination: .autoClassify), "media/2026Q1_合同.pdf")
 
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let recordedRequests = await importer.recordedRequests()
 
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .autoClassify,
-                suggestedCategory: "finance",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            ),
-            ImportBatchBatchImportRequest(
-                destination: .category("media"),
-                suggestedCategory: "media",
-                overrideFilename: "2026Q1_合同.pdf",
-                duplicateStrategy: .ask
-            )
+        await importer.assertRecordedRequests([
+            importBatchExpectedInvoiceRequest(),
+            importBatchExpectedContractRequest(destination: .category("media"), suggestedCategory: "media")
         ])
     }
 
@@ -372,16 +332,10 @@ final class ImportBatchStorageModeTests: XCTestCase {
         model.updateCategoryOverride(for: rows[0].id, category: "docs")
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let recordedRequests = await importer.recordedRequests()
 
         XCTAssertEqual(model.rows.first?.displayCategory(for: .autoClassify), "docs")
-        XCTAssertEqual(recordedRequests, [
-            ImportBatchBatchImportRequest(
-                destination: .category("docs"),
-                suggestedCategory: "docs",
-                overrideFilename: "Invoice_2026Q1.pdf",
-                duplicateStrategy: .ask
-            )
+        await importer.assertRecordedRequests([
+            importBatchExpectedInvoiceRequest(destination: .category("docs"), suggestedCategory: "docs")
         ])
     }
 }

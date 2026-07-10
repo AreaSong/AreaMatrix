@@ -14,27 +14,25 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
         context.model.copyRepositoryPath()
         context.model.requestDiagnosticsExport()
         await context.model.collectDiagnostics()
-        let diagnosticsRepoPaths = await context.diagnostics.requestedRepoPaths()
 
-        assertRepositorySettingsIntegrationState(
-            context: context,
-            diagnosticsRepoPaths: diagnosticsRepoPaths
-        )
+        await assertRepositorySettingsIntegrationState(context: context)
     }
 
     @MainActor
     func testRepositorySettingsChangeRepositoryCancelReturnsToRepositorySettingsWithoutSavingCandidate() {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/current-repo", fileCount: 1)
         let writer = ShellRecordingSettingsWriter()
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            settingsWriter: writer,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeShellSettingsGeneralFixture(
+            opening: opening,
+            selectedTab: "repository",
+            model: makeShellOnboardingModel(
+                settingsReader: ShellStaticSettingsReader(repoPath: nil),
+                settingsWriter: writer,
+                accessibilityAnnouncer: RecordingAccessibilityAnnouncer()
+            )
         )
+        let model = fixture.model
 
-        model.route = .settingsGeneral(opening)
-        model.settingsGeneralSelectedTab = "repository"
         model.beginSettingsRepositoryChange(from: opening)
         model.updateRepositoryPath("/tmp/candidate-repo")
         model.returnFromChoosePath()
@@ -58,32 +56,31 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
         let validator = ShellRecordingPathValidator(result: .success(validation))
         let opener = ShellRecordingRepositoryOpener(result: .success(newOpening))
         let writer = ShellRecordingSettingsWriter()
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/current-repo"),
-            settingsWriter: writer,
-            pathValidator: validator,
-            emptyRepositoryOpener: opener,
-            startupRecoverer: StaticStartupRecoverer(),
-            existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(
-                schemaVersion: 1,
-                configuredRepoPath: "/tmp/new-repo"
-            ),
-            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
+        let fixture = makeShellSettingsGeneralFixture(
+            opening: currentOpening,
+            selectedTab: "repository",
+            model: makeShellOnboardingModel(
+                settingsReader: ShellStaticSettingsReader(repoPath: "/tmp/current-repo"),
+                settingsWriter: writer,
+                pathValidator: validator,
+                emptyRepositoryOpener: opener,
+                existingRepositoryMetadataReader: ShellExistingRepoMetadataReader(
+                    schemaVersion: 1,
+                    configuredRepoPath: "/tmp/new-repo"
+                ),
+                scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
+                accessibilityAnnouncer: RecordingAccessibilityAnnouncer()
+            )
         )
+        let model = fixture.model
 
-        model.route = .settingsGeneral(currentOpening)
-        model.settingsGeneralSelectedTab = "repository"
         model.beginSettingsRepositoryChange(from: currentOpening)
         model.updateRepositoryPath("/tmp/new-repo")
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
-        let validatedPaths = await validator.requestedRepoPaths()
-        let openedPaths = await opener.requestedConfiguredRepoPaths()
 
-        XCTAssertEqual(validatedPaths, ["/tmp/new-repo"])
-        XCTAssertEqual(openedPaths, ["/tmp/new-repo"])
+        await validator.assertRequestedRepoPaths(["/tmp/new-repo"])
+        await opener.assertRequestedConfiguredRepoPaths(["/tmp/new-repo"])
         XCTAssertEqual(writer.savedRepoPaths, ["/tmp/new-repo"])
         XCTAssertEqual(model.route, .mainList(newOpening))
     }
@@ -212,16 +209,11 @@ private func makeRepositorySettingsModel(
 }
 
 @MainActor
-private func assertRepositorySettingsIntegrationState(
-    context: RepositorySettingsIntegrationContext,
-    diagnosticsRepoPaths: [String]
-) {
+private func assertRepositorySettingsIntegrationState(context: RepositorySettingsIntegrationContext) async {
     let summary = context.model.summary
     let healthSummary = context.model.healthSummary
     let repositoryActionError = context.model.repositoryActionError
     let diagnosticsState = context.model.diagnosticsState
-    let openedRepoPaths = context.finder.repoPaths
-    let copyRequests = context.copier.requests
     let announcements = context.announcer.announcements
 
     XCTAssertEqual(context.imported.storageMode, "Indexed")
@@ -242,9 +234,11 @@ private func assertRepositorySettingsIntegrationState(
     XCTAssertEqual(healthSummary?.filesIndexed, 1)
     XCTAssertNil(repositoryActionError)
     XCTAssertEqual(diagnosticsState, .collected(context.diagnosticsSnapshot))
-    XCTAssertEqual(openedRepoPaths, [context.repoURL.path])
-    XCTAssertEqual(copyRequests.map(\.repoPath), [context.repoURL.path])
-    XCTAssertEqual(copyRequests.map(\.relativePath), [""])
-    XCTAssertEqual(diagnosticsRepoPaths, [context.repoURL.path])
+    context.finder.assertRepoPaths([context.repoURL.path])
+    context.copier.assertRequests([ShellRecordingPathCopier.Request(
+        repoPath: context.repoURL.path,
+        relativePath: ""
+    )])
+    await context.diagnostics.assertRequestedRepoPaths([context.repoURL.path])
     XCTAssertEqual(announcements, ["Repository path copied."])
 }

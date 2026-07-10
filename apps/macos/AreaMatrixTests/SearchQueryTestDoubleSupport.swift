@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct SearchQueryRequestRecord: Equatable {
     var repoPath: String
@@ -10,6 +11,45 @@ struct SmartListRunRequestRecord: Equatable {
     var savedSearchID: Int64
     var limit: Int64
     var offset: Int64
+}
+
+extension SmartListRunRequestRecord {
+    static func testFixture(
+        repoPath: String = "/tmp/repo",
+        savedSearchID: Int64,
+        limit: Int64 = 50,
+        offset: Int64 = 0
+    ) -> SmartListRunRequestRecord {
+        SmartListRunRequestRecord(
+            repoPath: repoPath,
+            savedSearchID: savedSearchID,
+            limit: limit,
+            offset: offset
+        )
+    }
+}
+
+func assertSmartListRunRequests(
+    _ requests: [SmartListRunRequestRecord],
+    repoPath: String = "/tmp/repo",
+    savedSearchID: Int64,
+    count: Int = 1,
+    limit: Int64 = 50,
+    offset: Int64 = 0,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    XCTAssertEqual(
+        requests,
+        Array(repeating: .testFixture(
+            repoPath: repoPath,
+            savedSearchID: savedSearchID,
+            limit: limit,
+            offset: offset
+        ), count: count),
+        file: file,
+        line: line
+    )
 }
 
 actor RecordingSearchQuerying: CoreSearchQuerying {
@@ -60,6 +100,22 @@ actor RecordingSearchQuerying: CoreSearchQuerying {
     func requests() -> [SearchQueryRequestSnapshot] {
         requestsStorage.map(\.request)
     }
+
+    func assertRequests(
+        _ expectedRequests: [SearchQueryRequestSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage.map(\.request), expectedRequests, file: file, line: line)
+    }
+
+    func assertRecordedQueries(
+        _ expectedQueries: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage.map(\.request.query), expectedQueries, file: file, line: line)
+    }
 }
 
 actor SmartListOnlyRecordingSearchQuerying: CoreSearchQuerying {
@@ -101,6 +157,14 @@ actor SmartListOnlyRecordingSearchQuerying: CoreSearchQuerying {
 
     func recordedSearchRequests() -> [SearchQueryRequestSnapshot] {
         searchRequestsStorage
+    }
+
+    func assertSearchRequests(
+        _ expectedRequests: [SearchQueryRequestSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(searchRequestsStorage, expectedRequests, file: file, line: line)
     }
 }
 

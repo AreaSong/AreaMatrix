@@ -38,22 +38,15 @@ private extension ImportConflictIntegrationVerifyTests {
         let dropModel = ImportDropPreviewModel(repoPath: "/tmp/repo", predictor: predictor)
 
         await dropModel.preview(target: .autoClassify, urls: [sourceURL])
-        let requests = await predictor.recordedRequests()
-
-        XCTAssertEqual(
-            requests,
-            [ImportSingleFilePredictRequest(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf")]
-        )
+        await predictor.assertRecordedRequests([
+            ImportSingleFilePredictRequest(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf")
+        ])
         XCTAssertEqual(dropModel.presentation?.destinationLabel, "finance")
         XCTAssertEqual(dropModel.presentation?.headline, "Drop files to import")
 
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
-        model.route = .mainList(opening)
+        let fixture = makeImportSingleFileMainListFixture()
+        let opening = fixture.opening
+        let model = fixture.model
         model.startImportEntry(opening: opening, source: .dropZone, urls: [sourceURL])
 
         XCTAssertEqual(model.pendingImportEntry?.kind, .singleFile)
@@ -118,7 +111,7 @@ private extension ImportConflictIntegrationVerifyTests {
         await duplicateModel.load(request: .importSingleFileFixture())
         duplicateModel.updateDuplicateResolution(.replace)
         XCTAssertEqual(duplicateModel.activeConflictPage, .duplicate)
-        XCTAssertEqual(duplicateModel.importDisabledReason, nil)
+        assertImportEnabled(duplicateModel.importDisabledReason)
         let blockedImport = await duplicateModel.importSelectedFile()
         let requestsBeforeConfirmation = await importer.recordedRequests()
 
@@ -131,8 +124,7 @@ private extension ImportConflictIntegrationVerifyTests {
         duplicateModel.applyReplaceConfirmation(duplicateContext.decision(understandsReplace: true))
         _ = await duplicateModel.importSelectedFile()
 
-        let requests = await importer.recordedRequests()
-        XCTAssertEqual(requests, [
+        await importer.assertRecordedRequests([
             ImportSingleFileImportRequest(
                 mode: .copy,
                 overrideCategory: "docs",
@@ -152,7 +144,7 @@ private extension ImportConflictIntegrationVerifyTests {
 
         XCTAssertEqual(nameModel.activeConflictPage, .name)
         XCTAssertEqual(nameModel.resolvedImportRelativePath, "docs/renamed.pdf")
-        XCTAssertNil(nameModel.importDisabledReason)
+        assertImportEnabled(nameModel.importDisabledReason)
     }
 
     @MainActor
@@ -189,7 +181,7 @@ private extension ImportConflictIntegrationVerifyTests {
             selectedDestination: .autoClassify
         )
         model.updateDuplicateStrategy(for: rows[0].id, strategy: .replace)
-        XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
+        assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
         let blockedOutcome = await model.importReadyFiles(selectedDestination: .autoClassify)
         let requestsBeforeConfirmation = await importer.recordedRequests()
 
@@ -203,10 +195,9 @@ private extension ImportConflictIntegrationVerifyTests {
         ))
         model.renameIncomingFile(for: rows[1].id, to: "contract-renamed.pdf")
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let requests = await importer.recordedRequests()
 
         XCTAssertEqual(outcome?.succeededEntries.count, 2)
-        XCTAssertEqual(requests, importConflictExpectedBatchRequests())
+        await importer.assertRecordedRequests(importConflictExpectedBatchRequests())
     }
 
     @MainActor
@@ -232,7 +223,7 @@ private extension ImportConflictIntegrationVerifyTests {
 
         await model.load(request: importFolderFolderRequest(rootURL: rootURL, allowReplaceDuringImport: true))
         model.updateDuplicateStrategy(for: duplicateURL.path, strategy: .replace)
-        XCTAssertEqual(model.importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理")
+        assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
         let blockedOutcome = await model.importReadyFiles()
         XCTAssertNil(blockedOutcome)
 
@@ -246,21 +237,15 @@ private extension ImportConflictIntegrationVerifyTests {
 
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(requests.map(\.duplicateStrategy), [.overwrite])
-        XCTAssertEqual(model.rows.first?.status.tag, "IMPORTED")
+        assertImportRowStatusTags(model.rows, ["IMPORTED"])
     }
 
     @MainActor
     func verifyProgressResultAndChangeLogRoutes() async throws {
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let lister = ImportConflictChangeLogLister(results: [.success([
             ChangeLogEntrySnapshot.importConflictFixture(filename: "Invoice_2026Q1.pdf")
         ])])
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            importResultChangeLister: lister,
-            accessibilityAnnouncer: RecordingAccessibilityAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeImportResultMainListFixture(importResultChangeLister: lister).model
         let progress = importBatchProgress(
             completed: 1,
             failed: 1,
@@ -271,23 +256,28 @@ private extension ImportConflictIntegrationVerifyTests {
             items: importConflictProgressItems()
         )
 
-        model.route = .mainList(opening)
         model.updateImportEntryProgress(progress)
-        guard case let .importProgress(route) = model.route else {
-            return XCTFail("Expected import-progress import progress route")
-        }
+        guard let route = requireImportProgressRoute(
+            model,
+            message: "Expected import-progress import progress route"
+        ) else { return }
         XCTAssertEqual(route.resultSummaryText, "Imported 1, failed 1, stopped 1, pending 0.")
 
         model.showImportEntryResults(progress)
         await model.loadImportResultChangeLog()
-        let requests = await lister.recordedRequests()
 
-        XCTAssertEqual(requests, [ImportConflictChangeLogRequest(repoPath: "/tmp/repo", filter: .importResultRecent)])
-        guard case let .importResult(result) = model.route else {
-            return XCTFail("Expected import-result import result route")
-        }
-        XCTAssertEqual(result.resultSummaryText, "Imported 1, failed 1, stopped 1, pending 0.")
-        XCTAssertEqual(result.items.map(\.status), [.imported, .failed, .skipped])
+        await lister.assertRecordedRequests([
+            ImportConflictChangeLogRequest(repoPath: "/tmp/repo", filter: .importResultRecent)
+        ])
+        guard let result = requireImportResultRoute(
+            model,
+            message: "Expected import-result import result route"
+        ) else { return }
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 1, failed 1, stopped 1, pending 0.",
+            statuses: [.imported, .failed, .skipped]
+        )
         XCTAssertEqual(result.items[2].existingRelativePath, "finance/Invoice_2026Q1.pdf")
         XCTAssertEqual(result.changeLog, .loaded([
             ChangeLogEntrySnapshot.importConflictFixture(filename: "Invoice_2026Q1.pdf")
@@ -361,23 +351,20 @@ private extension ImportConflictIntegrationVerifyTests {
         let applied = await model.applyImportConflictBatch(replaceConfirmed: true)
         await model.undoImportConflictBatchAction()
         let previewStrategies = await batcher.previewRequests().map(\.request.duplicateStrategy)
-        let applyRequests = await batcher.applyRequests()
-        let listRequests = await undoStore.listRequests()
-        let undoRequests = await undoStore.undoRequests()
 
         XCTAssertEqual(applied?.report?.replacedCount, 1)
         XCTAssertEqual(model.conflictBatchUndoState, .undone(undoResult))
         XCTAssertEqual(previewStrategies, [.replace, .replace])
         let previewScopes = await batcher.previewRequests().map(\.request.applyToAllSimilarConflicts)
         XCTAssertEqual(previewScopes, [true, false])
-        XCTAssertEqual(applyRequests, [
+        await batcher.assertApplyRequests([
             ImportConflictApplyRequest(
                 repoPath: "/tmp/repo",
                 request: .testFixture(applyToAllSimilarConflicts: false),
                 previewToken: "token-replace"
             )
         ])
-        XCTAssertEqual(listRequests, ["/tmp/repo"])
-        XCTAssertEqual(undoRequests, ["/tmp/repo|undo-import-conflict-batch"])
+        await undoStore.assertListRequests(["/tmp/repo"])
+        await undoStore.assertUndoRequests(["/tmp/repo|undo-import-conflict-batch"])
     }
 }

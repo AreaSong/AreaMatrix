@@ -7,11 +7,12 @@ func waitForImportSingleFilePreflightToSettle(
     file: StaticString = #filePath,
     line: UInt = #line
 ) async {
-    for _ in 0 ..< 100 {
-        if !model.preflightStatus.isChecking {
-            return
+    _ = await waitForMainActorTestValue(
+        failureMessage: { "Timed out waiting for import preflight to settle" },
+        file: file,
+        line: line,
+        value: {
+            model.preflightStatus.isChecking ? nil : true
         }
-        await Task.yield()
-    }
-    XCTFail("Timed out waiting for import preflight to settle", file: file, line: line)
+    )
 }

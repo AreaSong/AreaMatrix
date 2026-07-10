@@ -70,6 +70,14 @@ actor SyncConflictReviewDetector: CoreSyncConflictDetecting {
     func recordedRequests() -> [String] {
         requests
     }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+    }
 }
 
 struct SyncConflictReplaceContext {

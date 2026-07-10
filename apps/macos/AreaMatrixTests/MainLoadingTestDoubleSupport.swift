@@ -1,12 +1,10 @@
 @testable import AreaMatrix
+import XCTest
 
 actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering {
     private let result: Result<RecoveryReportSnapshot, Error>
+    private let pauseGate = MainLoadingPauseGate()
     private var paths: [String] = []
-    private var didStart = false
-    private var didFinish = false
-    private var startContinuations: [CheckedContinuation<Void, Never>] = []
-    private var finishContinuation: CheckedContinuation<Void, Never>?
 
     init(result: Result<RecoveryReportSnapshot, Error>) {
         self.result = result
@@ -14,36 +12,28 @@ actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering {
 
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
         paths.append(repoPath)
-        await pauseUntilFinished()
+        await pauseGate.pauseUntilFinished()
         return try result.get()
     }
 
     func waitUntilStarted() async {
-        guard !didStart else { return }
-        await withCheckedContinuation { startContinuations.append($0) }
+        await pauseGate.waitUntilStarted()
     }
 
-    func finishRecovery() {
-        didFinish = true
-        finishContinuation?.resume()
-        finishContinuation = nil
+    func finishRecovery() async {
+        await pauseGate.finish()
     }
 
     func requestedRepoPaths() -> [String] {
         paths
     }
 
-    private func pauseUntilFinished() async {
-        didStart = true
-        resumeStartContinuations()
-        guard !didFinish else { return }
-        await withCheckedContinuation { finishContinuation = $0 }
-    }
-
-    private func resumeStartContinuations() {
-        let waiting = startContinuations
-        startContinuations.removeAll()
-        waiting.forEach { $0.resume() }
+    func assertRequestedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(paths, expectedRepoPaths, file: file, line: line)
     }
 }
 
@@ -69,6 +59,14 @@ actor MainLoadingRecordingTreeLister: CoreRepositoryTreeListing {
     func requestedRepoPaths() -> [String] {
         requests
     }
+
+    func assertRequestedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRepoPaths, file: file, line: line)
+    }
 }
 
 actor MainLoadingInitializedPathValidator: CoreRepositoryPathValidating, CoreInitializedRepositoryPathValidating {
@@ -83,11 +81,8 @@ actor MainLoadingInitializedPathValidator: CoreRepositoryPathValidating, CoreIni
 
 actor MainLoadingPausingRepositoryOpener: CoreEmptyRepositoryOpening {
     private let opening: RepositoryOpeningResult
-    private var didStart = false
-    private var didFinish = false
+    private let pauseGate = MainLoadingPauseGate()
     private var configuredPaths: [String] = []
-    private var startContinuations: [CheckedContinuation<Void, Never>] = []
-    private var finishContinuation: CheckedContinuation<Void, Never>?
 
     init(opening: RepositoryOpeningResult) {
         self.opening = opening
@@ -95,7 +90,7 @@ actor MainLoadingPausingRepositoryOpener: CoreEmptyRepositoryOpening {
 
     func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
         configuredPaths.append(repoPath)
-        await pauseUntilFinished()
+        await pauseGate.pauseUntilFinished()
         return opening
     }
 
@@ -108,21 +103,51 @@ actor MainLoadingPausingRepositoryOpener: CoreEmptyRepositoryOpening {
     }
 
     func waitUntilStarted() async {
-        guard !didStart else { return }
-        await withCheckedContinuation { startContinuations.append($0) }
+        await pauseGate.waitUntilStarted()
     }
 
-    func finishOpen() {
-        didFinish = true
-        finishContinuation?.resume()
-        finishContinuation = nil
+    func finishOpen() async {
+        await pauseGate.finish()
     }
 
     func requestedConfiguredRepoPaths() -> [String] {
         configuredPaths
     }
 
-    private func pauseUntilFinished() async {
+    func assertRequestedConfiguredRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(configuredPaths, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertNoConfiguredRepoPaths(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRequestedConfiguredRepoPaths([], file: file, line: line)
+    }
+}
+
+private actor MainLoadingPauseGate {
+    private var didStart = false
+    private var didFinish = false
+    private var startContinuations: [CheckedContinuation<Void, Never>] = []
+    private var finishContinuation: CheckedContinuation<Void, Never>?
+
+    func waitUntilStarted() async {
+        guard !didStart else { return }
+        await withCheckedContinuation { startContinuations.append($0) }
+    }
+
+    func finish() {
+        didFinish = true
+        finishContinuation?.resume()
+        finishContinuation = nil
+    }
+
+    func pauseUntilFinished() async {
         didStart = true
         resumeStartContinuations()
         guard !didFinish else { return }

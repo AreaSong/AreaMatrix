@@ -6,16 +6,11 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
     func testImportFolderEntryCancelAndImportRoutesThroughImportProgressProgressAndResult() async throws {
         let folderURL = try makeImportFolderTemporaryDirectory()
         defer { removeTestTemporaryItems(folderURL) }
-        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo")
         let announcer = RecordingAccessibilityAnnouncer()
-        let model = OnboardingModel(
-            settingsReader: StaticSettingsReader(repoPath: nil),
-            emptyRepositoryOpener: ImportSingleFileStaticRepositoryOpener(opening: opening),
-            accessibilityAnnouncer: announcer,
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let fixture = makeImportSingleFileMainListFixture(repoPath: "/tmp/repo", accessibilityAnnouncer: announcer)
+        let opening = fixture.opening
+        let model = fixture.model
 
-        model.route = .mainList(opening)
         model.startImportEntry(
             opening: opening,
             source: .dropZone,
@@ -66,11 +61,9 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
             "reference.pdf": .success(.importFolderPrediction(category: "docs", suggestedName: "reference-index.pdf"))
         ])
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
         let request = importFolderFolderRequest(
@@ -88,10 +81,9 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         _ = await model.importReadyFiles()
 
         let predictRequests = await predictor.recordedRequests()
-        let importRequests = await importer.recordedRequests()
 
         XCTAssertEqual(Set(predictRequests.map(\.filename)), ["invoice.pdf", "reference.pdf"])
-        XCTAssertEqual(importRequests, importFolderExpectedCopyAndIndexRequests())
+        await importer.assertRecordedRequests(importFolderExpectedCopyAndIndexRequests())
     }
 
     @MainActor
@@ -101,27 +93,22 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         let scanner = importFolderScanErrorScanner(readyURL: readyURL, cloudURL: cloudURL)
         let predictor = ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction())])
         let importer = ImportBatchRecordingBatchImporter()
-        let model = ImportFolderPreviewModel(
+        let model = makeImportFolderPreviewModel(
             predictor: predictor,
             importer: importer,
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: scanner
         )
 
         await model.load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a")))
         XCTAssertEqual(model.importDisabledReason, "预扫描存在错误，请先 Retry scan 或 Cancel")
         let blockedOutcome = await model.importReadyFiles()
-        let blockedRequests = await importer.recordedRequests()
         XCTAssertNil(blockedOutcome)
-        XCTAssertEqual(blockedRequests, [])
+        await importer.assertRecordedRequests([])
 
         let cleanScanner = importFolderCleanPlaceholderScanner(readyURL: readyURL, cloudURL: cloudURL)
-        let cleanModel = ImportFolderPreviewModel(
+        let cleanModel = makeImportFolderPreviewModel(
             predictor: ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction())]),
             importer: ImportBatchRecordingBatchImporter(),
-            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
-            conflictPrechecker: ImportFolderNoopConflictPrechecker(),
             scanner: cleanScanner
         )
 

@@ -28,17 +28,13 @@ final class AITagBatchPageFeatureTests: XCTestCase {
 
         await model.selectFiles(Set(files.map(\.id)))
         await model.loadBatchAITagSuggestions(files: files)
-        let beforeConfirm = await bridge.requests()
+        await bridge.assertSuggestFileIDs([707, 708])
+        await bridge.assertNoApplyRequests()
         model.confirmBatchAITagSuggestions()
-        let afterConfirm = await bridge.requests()
+        await bridge.assertNoApplyRequests()
         await model.applyBatchAITagSuggestions()
-        let afterApply = await bridge.requests()
 
-        XCTAssertEqual(beforeConfirm.suggest.map(\.fileId).sorted(), [707, 708])
-        XCTAssertEqual(beforeConfirm.apply, [])
-        XCTAssertEqual(afterConfirm.apply, [])
-        XCTAssertEqual(afterApply.apply.map(\.fileId).sorted(), [707, 708])
-        XCTAssertTrue(afterApply.apply.allSatisfy(\.confirmed))
+        await bridge.assertApplyFileIDs([707, 708], confirmed: true)
         XCTAssertEqual(model.aiTagBatchSuggestionState.review?.appliedFileCount, 2)
         XCTAssertEqual(model.aiTagBatchSuggestionState.review?.selectedTagCount, 0)
     }
@@ -157,14 +153,13 @@ final class AITagBatchPageFeatureTests: XCTestCase {
         await model.selectFiles(Set(files.map(\.id)))
         await model.loadBatchAITagSuggestions(files: files)
         model.clearBatchAITagSuggestions()
-        let requests = await bridge.requests()
         let review = model.aiTagBatchSuggestionState.review
 
         XCTAssertEqual(review?.selectedTagCount, 0)
         XCTAssertEqual(review?.reports[files[0].id]?.suggestions, [])
         XCTAssertEqual(review?.reports[files[1].id]?.suggestions, [])
         XCTAssertEqual(review?.rejectedFeedback.count, 2)
-        XCTAssertEqual(requests.apply, [])
+        await bridge.assertNoApplyRequests()
     }
 
     @MainActor
@@ -202,12 +197,9 @@ final class AITagBatchPageFeatureTests: XCTestCase {
 
             await model.selectFiles([file.id])
             await model.loadSelectedFileAITagSuggestions()
-            let aiRequests = await bridge.requests()
-            let privacyRequests = await privacy.requests()
 
-            XCTAssertEqual(aiRequests.suggest, [])
-            XCTAssertEqual(aiRequests.apply, [])
-            XCTAssertEqual(privacyRequests.evaluations.map(\.feature), [.autoTags])
+            await bridge.assertNoRequests()
+            await privacy.assertEvaluationFeatures([.autoTags])
             XCTAssertEqual(model.aiTagSuggestionState.report?.status, .skipped)
             XCTAssertEqual(model.aiTagSuggestionState.report?.skippedReason, .providerUnavailable)
         }
@@ -235,16 +227,16 @@ final class AITagBatchPageFeatureTests: XCTestCase {
         )
         model.confirmBatchAITagSuggestions()
         await model.applyBatchAITagSuggestions()
-        let requests = await bridge.requests()
 
-        XCTAssertEqual(requests.suggest.map(\.fileId).sorted(), [file.id, unchangedFile.id])
-        XCTAssertEqual(requests.apply.count, 1)
-        XCTAssertEqual(requests.apply.first?.fileId, file.id)
-        XCTAssertEqual(requests.apply.first?.confirmed, true)
-        XCTAssertEqual(requests.apply.first?.suggestions.first?.suggestionId, "ai-tag-merge")
-        XCTAssertEqual(requests.apply.first?.suggestions.first?.displayName, "Finance Review")
-        XCTAssertEqual(requests.apply.first?.suggestions.first?.slug, "finance-review")
-        XCTAssertEqual(requests.apply.first?.suggestions.first?.editedByUser, true)
-        XCTAssertEqual(requests.apply.first?.suggestions.first?.mergeTargetSlug, "finance")
+        await bridge.assertSuggestFileIDs([file.id, unchangedFile.id])
+        await bridge.assertSingleApplyRequest(
+            fileID: file.id,
+            confirmed: true,
+            suggestionIDs: ["ai-tag-merge"],
+            firstSuggestionDisplayName: "Finance Review",
+            firstSuggestionSlug: "finance-review",
+            firstSuggestionEditedByUser: true,
+            firstSuggestionMergeTargetSlug: "finance"
+        )
     }
 }

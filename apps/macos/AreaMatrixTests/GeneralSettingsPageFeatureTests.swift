@@ -20,8 +20,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        let requestedPaths = await loader.requestedPaths()
-        XCTAssertEqual(requestedPaths, ["/tmp/repo"])
+        await loader.assertRequestedPaths(["/tmp/repo"])
         XCTAssertEqual(model.loadState, .loaded)
         XCTAssertEqual(model.draft?.defaultStorageMode, .indexOnly)
         XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
@@ -41,12 +40,11 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         await model.requestStorageMode(.copy)
         await model.updateLocale(.zhCN)
         await model.updateLocale(.system)
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/repo", "/tmp/repo", "/tmp/repo"])
-        XCTAssertEqual(requests[0].config.defaultMode, "Copied")
-        XCTAssertEqual(requests[1].config.locale, "zh-CN")
-        XCTAssertEqual(requests[2].config.locale, "system")
+        await updater.assertRequestedRepoPaths(["/tmp/repo", "/tmp/repo", "/tmp/repo"])
+        await updater.assertRequestedConfigValue(at: 0, \.defaultMode, "Copied")
+        await updater.assertRequestedConfigValue(at: 1, \.locale, "zh-CN")
+        await updater.assertRequestedConfigValue(at: 2, \.locale, "system")
         XCTAssertEqual(model.draft?.defaultStorageMode, .copy)
         XCTAssertEqual(model.draft?.locale, .system)
     }
@@ -68,21 +66,18 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         let model = await loadedModel(updater: updater)
 
         await model.requestStorageMode(.move)
-        let requestsBeforeConfirmation = await updater.requests()
         XCTAssertEqual(model.pendingStorageConfirmation, .move)
-        XCTAssertEqual(requestsBeforeConfirmation, [])
+        await updater.assertNoRequests()
 
         model.cancelPendingStorageMode()
-        let requestsAfterCancel = await updater.requests()
         XCTAssertNil(model.pendingStorageConfirmation)
         XCTAssertEqual(model.draft?.defaultStorageMode, .copy)
-        XCTAssertEqual(requestsAfterCancel, [])
+        await updater.assertNoRequests()
 
         await model.requestStorageMode(.indexOnly)
         await model.confirmPendingStorageMode()
 
-        let requests = await updater.requests()
-        XCTAssertEqual(requests.map(\.config.defaultMode), ["Indexed"])
+        await updater.assertRequestedConfigValues(\.defaultMode, ["Indexed"])
         XCTAssertEqual(model.draft?.defaultStorageMode, .indexOnly)
     }
 
@@ -92,16 +87,14 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         let model = await loadedModel(updater: updater)
 
         await model.requestStorageMode(.move)
-        let requestsBeforeConfirmation = await updater.requests()
         XCTAssertEqual(model.pendingStorageConfirmation, .move)
-        XCTAssertEqual(requestsBeforeConfirmation, [])
+        await updater.assertNoRequests()
 
         await model.confirmPendingStorageMode()
-        let requests = await updater.requests()
 
         XCTAssertNil(model.pendingStorageConfirmation)
-        XCTAssertEqual(requests.map(\.repoPath), ["/tmp/repo"])
-        XCTAssertEqual(requests.map(\.config.defaultMode), ["Moved"])
+        await updater.assertRequestedRepoPaths(["/tmp/repo"])
+        await updater.assertRequestedConfigValues(\.defaultMode, ["Moved"])
         XCTAssertEqual(model.draft?.defaultStorageMode, .move)
     }
 
@@ -127,14 +120,12 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         )
 
         await model.requestOverviewOutput(.rootAreaMatrixFile)
-        let requestsBeforeRootConfirmation = await updater.requests()
         XCTAssertEqual(model.pendingRootOverviewStatus, .userContent)
-        XCTAssertEqual(requestsBeforeRootConfirmation, [])
+        await updater.assertNoRequests()
 
         await model.confirmRootOverview()
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.map(\.config.overviewOutput), ["RootAreaMatrixFile"])
+        await updater.assertRequestedConfigValues(\.overviewOutput, ["RootAreaMatrixFile"])
         XCTAssertEqual(try String(contentsOf: repoURL.appendingPathComponent("AREAMATRIX.md")), "user overview\n")
         XCTAssertEqual(try String(contentsOf: repoURL.appendingPathComponent("README.md")), "user readme\n")
     }
@@ -155,15 +146,14 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
         await model.requestOverviewOutput(.rootAreaMatrixFile)
         model.revealRootOverviewInFinder()
-        let requests = await updater.requests()
 
         // swiftformat:disable:next spaceAroundParens
         XCTAssertEqual(model.pendingRootOverviewStatus, RootOverviewFileStatus.unsafe(unsafeReason))
-        XCTAssertEqual(revealer.requests, [RecordingRepositoryFileRevealer.Request(
+        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
             repoPath: "/tmp/repo",
             relativePath: "AREAMATRIX.md"
         )])
-        XCTAssertEqual(requests, [])
+        await updater.assertNoRequests()
     }
 
     @MainActor
@@ -178,10 +168,8 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
-        let requests = await updater.requests()
 
-        XCTAssertEqual(requests.count, 2)
-        XCTAssertEqual(requests.map(\.config.locale), ["en", "en"])
+        await updater.assertRequestedConfigValues(\.locale, ["en", "en"])
         XCTAssertEqual(model.draft?.locale, .en)
         XCTAssertNil(model.saveError)
     }
@@ -239,7 +227,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testOnboardingRoutesSettingsEntryToGeneralSettingsGeneralSettingsWithoutRepositoryPathFlow() {
         let opening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/repo", fileCount: 1)
-        let model = OnboardingModel(settingsReader: ShellStaticSettingsReader(repoPath: nil))
+        let model = makeShellOnboardingModel(settingsReader: ShellStaticSettingsReader(repoPath: nil))
 
         model.showGeneralSettings(opening: opening)
 

@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct NoopFileLister: CoreFileListing {
     func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
@@ -46,7 +47,23 @@ actor RecordingFileLister: CoreFileListing {
         requestsStorage.map(\.filter)
     }
 
+    func assertRecordedRequests(
+        _ expectedRequests: [FileFilterSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage.map(\.filter), expectedRequests, file: file, line: line)
+    }
+
     func recordedListRequests() -> [FileListRequest] {
         requestsStorage
+    }
+
+    func assertRecordedListRequests(
+        _ expectedRequests: [FileListRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
     }
 }

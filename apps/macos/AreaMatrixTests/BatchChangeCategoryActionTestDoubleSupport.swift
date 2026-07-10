@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 typealias BatchChangeCategoryRecordingUndoStore = LenientUndoActionRecordingTestStore
 
@@ -57,6 +58,14 @@ actor BatchCategoryChanger: CoreBatchCategoryChanging {
 
     func recordedRequests() -> [String] {
         requests
+    }
+
+    func assertRecordedRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 
     private func requestLabel(

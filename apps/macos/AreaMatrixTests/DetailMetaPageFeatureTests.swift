@@ -43,13 +43,12 @@ final class DetailMetaPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([cached.id])
-        let mappedErrors = await mapper.recordedErrors()
 
         var missingCached = cached
         missingCached.availability = .missing
         XCTAssertEqual(model.selectedFileDetail, missingCached)
         XCTAssertEqual(model.detailErrorMapping, mapping)
-        XCTAssertEqual(mappedErrors, [CoreError.FileNotFound(path: cached.path)])
+        await mapper.assertRecordedErrors([CoreError.FileNotFound(path: cached.path)])
         XCTAssertFalse(model.isDetailLoading)
     }
 
@@ -92,9 +91,13 @@ private actor DetailMetaSuspendedDetailer: CoreFileDetailing {
     }
 
     func waitForRequest() async {
-        while !didReceiveRequest {
-            await Task.yield()
-        }
+        _ = await waitForActorTestValue(
+            on: self,
+            failureMessage: { "Timed out waiting for detail metadata request" },
+            value: {
+                didReceiveRequest ? true : nil
+            }
+        )
     }
 
     func finish() {

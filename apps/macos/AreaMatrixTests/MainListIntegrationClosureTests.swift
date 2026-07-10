@@ -7,11 +7,9 @@ final class MainListIntegrationClosureTests: XCTestCase {
         let docsFile = FileEntrySnapshot.integrationClosureFixture(id: 1, currentName: "a.pdf")
         let financeFile = FileEntrySnapshot.integrationClosureFixture(id: 2, currentName: "b.pdf")
         let detailer = MainListIntegrationDetailer(results: [.success(docsFile), .success(financeFile)])
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [docsFile, financeFile]),
-            fileLister: NoopFileLister(),
-            fileDetailer: detailer,
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
+        let model = makeMainListIntegrationModel(
+            files: [docsFile, financeFile],
+            fileDetailer: detailer
         )
 
         await model.selectFiles([docsFile.id, financeFile.id])
@@ -26,11 +24,9 @@ final class MainListIntegrationClosureTests: XCTestCase {
     @MainActor
     func testSingleFileContextActionsRouteToSheetsWithoutCallingControlMapOutOfScopeCore() async {
         let docsFile = FileEntrySnapshot.integrationClosureFixture(id: 7, currentName: "a.pdf")
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [docsFile]),
-            fileLister: NoopFileLister(),
-            fileDetailer: MainListIntegrationDetailer(results: [.success(docsFile)]),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
+        let model = makeMainListIntegrationModel(
+            files: [docsFile],
+            fileDetailer: MainListIntegrationDetailer(results: [.success(docsFile)])
         )
 
         await model.selectFiles([docsFile.id])
@@ -91,11 +87,9 @@ final class MainListIntegrationClosureTests: XCTestCase {
     func testWritableActionFileIDUsesSelectionExplicitFileIDAndWriteBlocks() async {
         let first = FileEntrySnapshot.integrationClosureFixture(id: 11, currentName: "first.pdf")
         let second = FileEntrySnapshot.integrationClosureFixture(id: 12, currentName: "second.pdf")
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [first, second]),
-            fileLister: NoopFileLister(),
-            fileDetailer: MainListIntegrationDetailer(results: [.success(first)]),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
+        let model = makeMainListIntegrationModel(
+            files: [first, second],
+            fileDetailer: MainListIntegrationDetailer(results: [.success(first)])
         )
 
         XCTAssertEqual(
@@ -111,11 +105,10 @@ final class MainListIntegrationClosureTests: XCTestCase {
         XCTAssertEqual(model.writableActionFileID(), first.id)
         XCTAssertEqual(model.writableActionFileID(second.id), second.id)
 
-        let readOnlyModel = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [first], isReadOnly: true),
-            fileLister: NoopFileLister(),
-            fileDetailer: MainListIntegrationDetailer(results: [.success(first)]),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
+        let readOnlyModel = makeMainListIntegrationModel(
+            files: [first],
+            isReadOnly: true,
+            fileDetailer: MainListIntegrationDetailer(results: [.success(first)])
         )
 
         await readOnlyModel.selectFiles([first.id])
@@ -136,12 +129,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
     func testMultiSelectionHidesSingleFileActionDestinations() async {
         let first = FileEntrySnapshot.integrationClosureFixture(id: 1, currentName: "a.pdf")
         let second = FileEntrySnapshot.integrationClosureFixture(id: 2, currentName: "b.pdf")
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [first, second]),
-            fileLister: NoopFileLister(),
-            fileDetailer: MainListIntegrationNoopDetailer(),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
-        )
+        let model = makeMainListIntegrationModel(files: [first, second])
 
         await model.selectFiles([first.id, second.id])
         model.beginRename()
@@ -154,11 +142,10 @@ final class MainListIntegrationClosureTests: XCTestCase {
     @MainActor
     func testWriteActionsAreDisabledForReadOnlyRepository() async {
         let file = FileEntrySnapshot.integrationClosureFixture(id: 3, currentName: "readonly.pdf")
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [file], isReadOnly: true),
-            fileLister: NoopFileLister(),
-            fileDetailer: MainListIntegrationDetailer(results: [.success(file)]),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
+        let model = makeMainListIntegrationModel(
+            files: [file],
+            isReadOnly: true,
+            fileDetailer: MainListIntegrationDetailer(results: [.success(file)])
         )
 
         await model.selectFiles([file.id])
@@ -176,12 +163,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
     func testWriteActionsAreDisabledWhileListIsLoading() async {
         let file = FileEntrySnapshot.integrationClosureFixture(id: 4, currentName: "loading.pdf")
         let lister = MainListIntegrationSuspendedLister()
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: lister,
-            fileDetailer: MainListIntegrationNoopDetailer(),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
-        )
+        let model = makeMainListIntegrationModel(files: [file], fileLister: lister)
 
         let loadingTask = Task {
             await model.loadCurrentCategory("docs")
@@ -197,15 +179,10 @@ final class MainListIntegrationClosureTests: XCTestCase {
     @MainActor
     func testWriteActionsAreDisabledForImportLockedFile() async {
         let file = FileEntrySnapshot.integrationClosureFixture(id: 8, currentName: "locked.pdf")
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(
-                repoPath: "/tmp/repo",
-                files: [file],
-                writeLockedFileIDs: [file.id]
-            ),
-            fileLister: NoopFileLister(),
-            fileDetailer: MainListIntegrationDetailer(results: [.success(file)]),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
+        let model = makeMainListIntegrationModel(
+            files: [file],
+            writeLockedFileIDs: [file.id],
+            fileDetailer: MainListIntegrationDetailer(results: [.success(file)])
         )
 
         await model.selectFiles([file.id])
@@ -227,30 +204,24 @@ final class MainListIntegrationClosureTests: XCTestCase {
             createdAt: 1_700_000_200
         )
         let collector = MainListIntegrationDiagnosticsCollector(result: .success(snapshot))
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: []),
-            fileLister: NoopFileLister(),
-            fileDetailer: MainListIntegrationNoopDetailer(),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture()),
+        let model = makeMainListIntegrationModel(
+            files: [],
             diagnosticsCollector: collector
         )
 
         await model.collectCurrentListDiagnostics()
-        let repoPaths = await collector.recordedRepoPaths()
 
         XCTAssertEqual(model.diagnosticsState, .collected(snapshot))
-        XCTAssertEqual(repoPaths, ["/tmp/repo"])
+        await collector.assertRecordedRepoPaths(["/tmp/repo"])
     }
 
     @MainActor
     func testExternalRenameKeepsSelectionByFileIDAndRefreshesDetail() async {
         let original = FileEntrySnapshot.integrationClosureFixture(id: 5, currentName: "old.pdf")
         let renamed = FileEntrySnapshot.integrationClosureFixture(id: 5, currentName: "new.pdf")
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [original]),
-            fileLister: NoopFileLister(),
-            fileDetailer: MainListIntegrationDetailer(results: [.success(original)]),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
+        let model = makeMainListIntegrationModel(
+            files: [original],
+            fileDetailer: MainListIntegrationDetailer(results: [.success(original)])
         )
 
         await model.selectFiles([original.id])
@@ -265,11 +236,9 @@ final class MainListIntegrationClosureTests: XCTestCase {
     @MainActor
     func testExternalRemovalShowsMissingDetailRecoveryInsteadOfFullRepoError() async {
         let selected = FileEntrySnapshot.integrationClosureFixture(id: 9, currentName: "gone.pdf")
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [selected]),
-            fileLister: NoopFileLister(),
-            fileDetailer: MainListIntegrationDetailer(results: [.success(selected)]),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
+        let model = makeMainListIntegrationModel(
+            files: [selected],
+            fileDetailer: MainListIntegrationDetailer(results: [.success(selected)])
         )
 
         await model.selectFiles([selected.id])
@@ -323,12 +292,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
     func testListLoadingExposesCurrentCategoryStatusText() async {
         let file = FileEntrySnapshot.integrationClosureFixture(id: 12, currentName: "loading.pdf")
         let lister = MainListIntegrationSuspendedLister()
-        let model = MainFileListModel(
-            opening: .integrationClosureFixture(repoPath: "/tmp/repo", files: [file]),
-            fileLister: lister,
-            fileDetailer: MainListIntegrationNoopDetailer(),
-            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture())
-        )
+        let model = makeMainListIntegrationModel(files: [file], fileLister: lister)
 
         let loadingTask = Task { await model.loadCurrentCategory("docs") }
         await lister.waitForRequest()
@@ -336,5 +300,30 @@ final class MainListIntegrationClosureTests: XCTestCase {
         XCTAssertEqual(model.loadingAccessibilityText, "Loading files. 正在加载 docs...")
         await lister.finish()
         await loadingTask.value
+    }
+
+    @MainActor
+    private func makeMainListIntegrationModel(
+        files: [FileEntrySnapshot],
+        isReadOnly: Bool = false,
+        writeLockedFileIDs: Set<Int64> = [],
+        fileLister: any CoreFileListing = NoopFileLister(),
+        fileDetailer: any CoreFileDetailing = MainListIntegrationNoopDetailer(),
+        diagnosticsCollector: any CoreDiagnosticsCollecting = MainListIntegrationDiagnosticsCollector(
+            result: .failure(CoreError.Internal(message: "unexpected diagnostics request"))
+        )
+    ) -> MainFileListModel {
+        MainFileListModel(
+            opening: .integrationClosureFixture(
+                repoPath: "/tmp/repo",
+                files: files,
+                isReadOnly: isReadOnly,
+                writeLockedFileIDs: writeLockedFileIDs
+            ),
+            fileLister: fileLister,
+            fileDetailer: fileDetailer,
+            errorMapper: StaticCoreErrorMapper(mapping: .integrationClosureDbFixture()),
+            diagnosticsCollector: diagnosticsCollector
+        )
     }
 }

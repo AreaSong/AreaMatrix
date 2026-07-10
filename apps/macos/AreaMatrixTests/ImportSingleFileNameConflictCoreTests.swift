@@ -18,10 +18,9 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
             selectedDestination: .autoClassify
         )
         await model.loadImportConflictBatchPreview()
-        let previewRequests = await conflictBatcher.previewRequests()
 
         XCTAssertTrue(model.showsCoreConflictBatchReview)
-        XCTAssertEqual(previewRequests, [
+        await conflictBatcher.assertPreviewRequests([
             ImportConflictBatchPreviewRequest(
                 repoPath: importSingleFileRepoPath(),
                 request: ImportConflictBatchPreviewRequestSnapshot(
@@ -57,10 +56,9 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         let blockedResult = await model.applyImportConflictBatch(replaceConfirmed: false)
         model.confirmConflictBatchReplace()
         let confirmedResult = await model.applyImportConflictBatch(replaceConfirmed: true)
-        let applyRequests = await conflictBatcher.applyRequests()
 
         XCTAssertNil(blockedResult)
-        XCTAssertEqual(applyRequests, [
+        await conflictBatcher.assertApplyRequests([
             ImportConflictBatchApplyRequest(
                 repoPath: importSingleFileRepoPath(),
                 request: .testFixture(),
@@ -219,6 +217,22 @@ private actor RecordingConflictBatcher: CoreImportConflictBatching {
 
     func applyRequests() -> [ImportConflictBatchApplyRequest] {
         recordedApplyRequests
+    }
+
+    func assertPreviewRequests(
+        _ expectedRequests: [ImportConflictBatchPreviewRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedPreviewRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertApplyRequests(
+        _ expectedRequests: [ImportConflictBatchApplyRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedApplyRequests, expectedRequests, file: file, line: line)
     }
 }
 

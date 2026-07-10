@@ -16,9 +16,8 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         let model = ICloudConflictMinimalModel.fixture(repoPath: "/tmp/repo", validator: validator)
 
         await model.validateRepositoryPath()
-        let requestedPaths = await validator.requestedRepoPaths()
 
-        XCTAssertEqual(requestedPaths, ["/tmp/repo"])
+        await validator.assertRequestedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(
             model.repositoryValidationState,
             .ready(validation, warnings: ["Repository is in iCloud Drive; validation does not download placeholders."])
@@ -72,13 +71,14 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         )
 
         await model.validateRepositoryPath()
-        let mappedErrors = await errorMapper.recordedErrors()
 
         guard case let .failed(failure) = model.repositoryValidationState else {
             return XCTFail("expected failed repository validation")
         }
 
-        XCTAssertEqual(mappedErrors, [CoreError.ICloudPlaceholder(path: "/tmp/repo/docs/report.pdf.icloud")])
+        await errorMapper.assertRecordedErrors([
+            CoreError.ICloudPlaceholder(path: "/tmp/repo/docs/report.pdf.icloud")
+        ])
         XCTAssertEqual(failure, mapping)
         XCTAssertFalse(model.canApplyKeepBoth)
     }
@@ -98,9 +98,8 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         )
 
         await model.validateRepositoryPath()
-        let mappedErrors = await errorMapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.Internal(message: "stale conflict context")])
+        await errorMapper.assertRecordedErrors([CoreError.Internal(message: "stale conflict context")])
         guard case let .failed(failure) = model.repositoryValidationState else {
             return XCTFail("expected failed repository validation")
         }
@@ -212,14 +211,13 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         ])
         let previewRequests = await reviewer.recordedPreviewRequests()
         let resolveRequests = await reviewer.recordedResolveRequests()
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(previewRequests, [ICloudConflictReviewer.PreviewRequest(
             repoPath: "/tmp/repo",
             conflictID: "stale"
         )])
         XCTAssertEqual(resolveRequests, [])
-        XCTAssertEqual(mappedErrors, [CoreError.Conflict(path: "stale conflict id")])
+        await mapper.assertRecordedErrors([CoreError.Conflict(path: "stale conflict id")])
         XCTAssertFalse(model.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
     }
 

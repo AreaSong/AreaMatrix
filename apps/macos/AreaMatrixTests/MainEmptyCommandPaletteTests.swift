@@ -33,9 +33,8 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
 
         await model.loadCommandIndex(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
         let requests = await indexer.recordedRequests()
-        let searchRequests = await searcher.recordedRequests()
 
-        XCTAssertEqual(searchRequests, [])
+        await searcher.assertRequests([])
         XCTAssertEqual(requests.map(\.context.query), ["delete"])
         XCTAssertEqual(requests.map(\.context.selectedFileIds), [[10, 20]])
         XCTAssertEqual(model.commandPaletteState.snapshot?.sections[0].targets.first?.title, "Delete selected files...")
@@ -55,10 +54,9 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         )
 
         await model.loadCommandIndex(query: "", selectedFileIDs: Set<Int64>(), currentPath: String?.none)
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.commandPaletteState.errorMapping, mapping)
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "command db locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "command db locked")])
     }
 
     func testCommandPaletteCommandIndexCoreCommandPaletteRowsAreExecutableAndShowDangerBoundary() {
@@ -210,7 +208,6 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         await model.restoreSavedSearch(saved)
         let indexRequests = await indexer.recordedRequests()
         let runRequests = await smartListRunner.recordedRunRequests()
-        let searchRequests = await smartListRunner.recordedSearchRequests()
         let indexSnapshot = CommandTargetSnapshot.testFixture(coreTarget: indexTarget)
 
         XCTAssertEqual(indexSnapshot.executionRoute, .runSmartList(saved.id))
@@ -218,10 +215,8 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         XCTAssertEqual(indexRequests.map(\.context.selectedFileIds), [[10, 20]])
         XCTAssertEqual(indexRequests.map(\.context.currentPath), ["docs"])
         XCTAssertEqual(indexRequests.map(\.context.query), ["finance"])
-        XCTAssertEqual(runRequests, [
-            CommandPaletteSmartListRunRequest(repoPath: "/tmp/repo", savedSearchID: saved.id, limit: 50, offset: 0)
-        ])
-        XCTAssertEqual(searchRequests, [])
+        assertSmartListRunRequests(runRequests, savedSearchID: saved.id)
+        await smartListRunner.assertSearchRequests([])
         XCTAssertEqual(model.files, [resultFile])
         XCTAssertEqual(model.commandPaletteState, .idle)
         XCTAssertEqual(model.commandPaletteQuery, "")
@@ -335,10 +330,8 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
         }
         XCTAssertEqual(result, .redoActionLogRedoneMove())
         XCTAssertEqual(refreshed.redoActions, [.redoActionLogExecutedMoveRedo()])
-        let redoRequests = await redoStore.redoRequests()
-        XCTAssertEqual(redoRequests, ["/tmp/repo|redo-move-3"])
-        let listRequests = await redoStore.listRequests()
-        XCTAssertEqual(listRequests, ["/tmp/repo", "/tmp/repo"])
+        await redoStore.assertRedoRequests(["/tmp/repo|redo-move-3"])
+        await redoStore.assertListRequests(["/tmp/repo", "/tmp/repo"])
     }
 
     @MainActor
@@ -368,8 +361,7 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
         guard case .redone = state else {
             return XCTFail("expected redone state, got \(state)")
         }
-        let redoRequests = await redoStore.redoRequests()
-        XCTAssertEqual(redoRequests, ["/tmp/repo|redo-move-3"])
+        await redoStore.assertRedoRequests(["/tmp/repo|redo-move-3"])
     }
 
     @MainActor
@@ -399,7 +391,6 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
         XCTAssertEqual(state, .loaded(.empty))
         XCTAssertEqual(request.source, .viewHistory)
         XCTAssertEqual(request.failureMapping?.rawContext, "redo-action-log redo-action-log-core redo-action-log")
-        let redoRequests = await redoStore.redoRequests()
-        XCTAssertEqual(redoRequests, [])
+        await redoStore.assertRedoRequests([])
     }
 }

@@ -17,14 +17,14 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         model.statusFilter = .success
         model.searchQuery = "OpenAI"
         await model.load()
-        let requests = await lister.requests()
 
         XCTAssertEqual(model.records, page.records)
         XCTAssertEqual(model.page?.retentionDays, 90)
-        XCTAssertEqual(requests.first?.filter.route, .remote)
-        XCTAssertEqual(requests.first?.filter.status, .success)
-        XCTAssertEqual(requests.first?.filter.searchQuery, "OpenAI")
-        XCTAssertEqual(requests.first?.pagination.limit, 100)
+        await lister.assertFirstRequest(
+            route: .remote,
+            status: .success,
+            searchQuery: "OpenAI"
+        )
     }
 
     @MainActor
@@ -43,15 +43,11 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         let expectedAfter = Int64(Calendar.current.date(byAdding: .day, value: -7, to: now)?.timeIntervalSince1970 ?? 0)
 
         await model.applyDatePreset(.last7Days, now: now)
-        let filteredRequest = await lister.requests().first
         await model.clearFilters()
-        let clearRequest = await lister.requests().last
 
-        XCTAssertEqual(filteredRequest?.filter.occurredAfter, expectedAfter)
-        XCTAssertNil(filteredRequest?.filter.occurredBefore)
+        await lister.assertFirstRequest(occurredAfter: expectedAfter)
         XCTAssertFalse(model.hasActiveFilters)
-        XCTAssertNil(clearRequest?.filter.occurredAfter)
-        XCTAssertNil(clearRequest?.filter.occurredBefore)
+        await lister.assertLastRequest()
     }
 
     @MainActor
@@ -88,10 +84,8 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
 
         await model.load()
         await model.clearAll()
-        let clearRequests = await clearer.requests()
 
-        XCTAssertEqual(clearRequests.first?.scope, .all)
-        XCTAssertEqual(clearRequests.first?.entryIds, [])
+        await clearer.assertFirstRequest(scope: .all, entryIDs: [])
         XCTAssertEqual(model.records, [])
         XCTAssertEqual(model.toastMessage, "AI call log cleared.")
     }
@@ -113,10 +107,8 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         await model.load()
         model.selectedRecordIDs = [605]
         await model.deleteSelected()
-        let clearRequests = await clearer.requests()
 
-        XCTAssertEqual(clearRequests.first?.scope, .selectedEntries)
-        XCTAssertEqual(clearRequests.first?.entryIds, [605])
+        await clearer.assertFirstRequest(scope: .selectedEntries, entryIDs: [605])
         XCTAssertEqual(model.records.map(\.id), [604])
         XCTAssertEqual(model.toastMessage, "AI log entries deleted.")
     }
@@ -171,11 +163,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
     func testGeneralSettingsMoveDefaultFeedsLaterImportSheetDefaults() async throws {
         let opening = RepositoryOpeningResult.generalSettingsImportFixture(defaultMode: "Moved")
         let sourceURL = URL(fileURLWithPath: "/tmp/source.pdf")
-        let model = OnboardingModel(
-            settingsReader: ShellStaticSettingsReader(repoPath: nil),
-            accessibilityAnnouncer: GeneralSettingsImportDefaultAnnouncer(),
-            helpOpener: NoopWelcomeHelpOpener()
-        )
+        let model = makeShellOnboardingModel(settingsReader: ShellStaticSettingsReader(repoPath: nil))
 
         model.startImportEntry(opening: opening, source: .filePicker, urls: [sourceURL])
         let request = try XCTUnwrap(model.pendingImportEntry)
@@ -254,11 +242,6 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
 
 private typealias AICallLogCallLogLister = RecordingAICallLogLister
 private typealias AICallLogCallLogClearer = RecordingAICallLogClearer
-
-@MainActor
-private final class GeneralSettingsImportDefaultAnnouncer: AccessibilityAnnouncing {
-    func announce(_: String) {}
-}
 
 private func generalSettingsImportDefaultErrorMapper() -> StaticCoreErrorMapper {
     StaticCoreErrorMapper(mapping: CoreErrorMappingSnapshot.testFixture(

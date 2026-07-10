@@ -53,8 +53,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         XCTAssertEqual(model.route, .initializationDone(result))
         XCTAssertEqual(model.initializationOpenErrorMapping, mapping)
-        let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [error])
+        await errorMapper.assertRecordedErrors([error])
     }
 
     @MainActor
@@ -158,8 +157,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         XCTAssertEqual(model.route, .initializationDone(result))
         XCTAssertEqual(model.initializationOpenErrorMapping, mapping)
-        let mappedErrors = await errorMapper.recordedErrors()
-        XCTAssertEqual(mappedErrors, [error])
+        await errorMapper.assertRecordedErrors([error])
     }
 
     @MainActor
@@ -187,7 +185,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
             return XCTFail("expected Finder failure toast")
         }
 
-        XCTAssertEqual(finderOpener.repoPaths, ["/tmp/adopted-repo"])
+        finderOpener.assertRepoPaths(["/tmp/adopted-repo"])
         XCTAssertEqual(model.route, .initializationDone(result))
         XCTAssertTrue(message.contains("无法在 Finder 中打开资料库"))
         XCTAssertEqual(accessibilityAnnouncer.announcements, [message])

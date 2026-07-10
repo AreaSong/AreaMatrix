@@ -26,9 +26,8 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         )
 
         await model.loadIfNeeded()
-        let requests = await detector.recordedRequests()
 
-        XCTAssertEqual(requests, ["/tmp/syncConflictEntry-repo"])
+        await detector.assertRecordedRequests(["/tmp/syncConflictEntry-repo"])
         XCTAssertEqual(model.snapshot?.conflicts, [reviewable])
         XCTAssertEqual(model.snapshot?.count, 1)
         XCTAssertTrue(model.isBannerVisible)
@@ -106,9 +105,8 @@ final class SyncConflictEntryPageFeatureTests: XCTestCase {
         )
 
         await model.loadIfNeeded()
-        let mappedErrors = await mapper.recordedErrors()
 
-        XCTAssertEqual(mappedErrors, [CoreError.Db(message: "conflict state locked")])
+        await mapper.assertRecordedErrors([CoreError.Db(message: "conflict state locked")])
         assertTestMirrorDescription(of: SyncConflictEntryPanel(model: model, onReview: { _ in
         }).body, contains: [
             SyncConflictEntryAccessibilityID.error,

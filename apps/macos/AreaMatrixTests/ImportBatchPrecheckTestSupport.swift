@@ -52,34 +52,46 @@ func importBatchExpectedAutoClassifyRequests(
     duplicateStrategy: DuplicateStrategy = .ask
 ) -> [ImportBatchBatchImportRequest] {
     [
-        ImportBatchBatchImportRequest(
-            destination: .autoClassify,
-            suggestedCategory: "finance",
-            overrideFilename: "Invoice_2026Q1.pdf",
-            duplicateStrategy: duplicateStrategy
-        ),
-        ImportBatchBatchImportRequest(
-            destination: .autoClassify,
-            suggestedCategory: "docs",
-            overrideFilename: "2026Q1_合同.pdf",
-            duplicateStrategy: duplicateStrategy
-        )
+        importBatchExpectedInvoiceRequest(duplicateStrategy: duplicateStrategy),
+        importBatchExpectedContractRequest(duplicateStrategy: duplicateStrategy)
     ]
 }
 
 func importBatchExpectedCategoryRequests() -> [ImportBatchBatchImportRequest] {
     [
-        ImportBatchBatchImportRequest(
-            destination: .category("finance"),
-            suggestedCategory: "finance",
-            overrideFilename: "Invoice_2026Q1.pdf",
-            duplicateStrategy: .ask
-        ),
-        ImportBatchBatchImportRequest(
-            destination: .category("finance"),
-            suggestedCategory: "docs",
-            overrideFilename: "2026Q1_合同.pdf",
-            duplicateStrategy: .ask
-        )
+        importBatchExpectedInvoiceRequest(destination: .category("finance")),
+        importBatchExpectedContractRequest(destination: .category("finance"))
     ]
+}
+
+func importBatchExpectedInvoiceRequest(
+    storageMode: ImportSingleFileStorageMode = .copy,
+    destination: ImportEntryDestination = .autoClassify,
+    suggestedCategory: String = "finance",
+    overrideFilename: String = "Invoice_2026Q1.pdf",
+    duplicateStrategy: DuplicateStrategy = .ask
+) -> ImportBatchBatchImportRequest {
+    ImportBatchBatchImportRequest(
+        storageMode: storageMode,
+        destination: destination,
+        suggestedCategory: suggestedCategory,
+        overrideFilename: overrideFilename,
+        duplicateStrategy: duplicateStrategy
+    )
+}
+
+func importBatchExpectedContractRequest(
+    storageMode: ImportSingleFileStorageMode = .copy,
+    destination: ImportEntryDestination = .autoClassify,
+    suggestedCategory: String = "docs",
+    overrideFilename: String = "2026Q1_合同.pdf",
+    duplicateStrategy: DuplicateStrategy = .ask
+) -> ImportBatchBatchImportRequest {
+    ImportBatchBatchImportRequest(
+        storageMode: storageMode,
+        destination: destination,
+        suggestedCategory: suggestedCategory,
+        overrideFilename: overrideFilename,
+        duplicateStrategy: duplicateStrategy
+    )
 }

@@ -61,3 +61,91 @@ actor RecordingNoteStore: CoreNoteReadingWriting {
 typealias DetailNoteReadRequest = NoteReadRequest
 typealias DetailNoteWriteRequest = NoteWriteRequest
 typealias DetailNoteRecordingStore = RecordingNoteStore
+
+@MainActor
+func makeDetailNoteTestModel(
+    repoPath: String = "/tmp/repo",
+    noteStore: any CoreNoteReadingWriting,
+    errorMapper: (any CoreErrorMapping)? = nil,
+    inFlightTracker: (any InFlightFileChangeTracking)? = nil,
+    debounceNanoseconds: UInt64 = 1
+) -> DetailNoteModel {
+    DetailNoteModel(
+        repoPath: repoPath,
+        noteStore: noteStore,
+        errorMapper: errorMapper ?? StaticCoreErrorMapper(mapping: .detailNoteIo()),
+        inFlightTracker: inFlightTracker ?? InFlightFileChangeTracker.shared,
+        debounceNanoseconds: debounceNanoseconds
+    )
+}
+
+@discardableResult
+@MainActor
+func waitForDetailNoteSaveStatus(
+    _ model: DetailNoteModel,
+    matching predicate: (MainDetailNoteSaveStatus?) -> Bool,
+    attempts: Int = 200,
+    delayNanoseconds: UInt64? = nil,
+    failureMessage: @escaping () -> String,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async -> MainDetailNoteSaveStatus? {
+    await waitForMainActorTestValue(
+        attempts: attempts,
+        delayNanoseconds: delayNanoseconds,
+        failureMessage: failureMessage,
+        file: file,
+        line: line,
+        value: {
+            let status = model.state.saveStatus
+            return predicate(status) ? status : nil
+        }
+    )
+}
+
+@discardableResult
+@MainActor
+func waitForDetailNoteSaveSettled(
+    _ model: DetailNoteModel,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async -> MainDetailNoteSaveStatus? {
+    await waitForDetailNoteSaveStatus(
+        model,
+        matching: { $0 == .saved || $0?.failedError != nil },
+        failureMessage: { "Timed out waiting for detail note save to finish" },
+        file: file,
+        line: line
+    )
+}
+
+@discardableResult
+@MainActor
+func waitForDetailNoteSaved(
+    _ model: DetailNoteModel,
+    delayNanoseconds: UInt64? = 5_000_000,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) async -> MainDetailNoteSaveStatus? {
+    await waitForDetailNoteSaveStatus(
+        model,
+        matching: { $0 == .saved },
+        delayNanoseconds: delayNanoseconds,
+        failureMessage: { "Timed out waiting for detail note save" },
+        file: file,
+        line: line
+    )
+}
+
+extension CoreErrorMappingSnapshot {
+    static func detailNoteIo() -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot.testFixture(
+            kind: .io,
+            userMessage: "无法保存笔记",
+            severity: .medium,
+            suggestedAction: "请确认资料库可写，然后重试。",
+            recoverability: .retryable,
+            rawContext: "detail-note note-sidecar write_note"
+        )
+    }
+}

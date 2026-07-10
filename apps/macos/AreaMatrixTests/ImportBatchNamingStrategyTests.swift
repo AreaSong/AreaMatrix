@@ -35,8 +35,7 @@ final class ImportBatchNamingStrategyTests: XCTestCase {
         XCTAssertEqual(model.rows.first?.suggestedName, "Batch-Quarter-Plan-.pdf")
 
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let recordedRequests = await importer.recordedRequests()
-        XCTAssertEqual(recordedRequests, [
+        await importer.assertRecordedRequests([
             ImportBatchBatchImportRequest(
                 destination: .autoClassify,
                 suggestedCategory: "docs",
