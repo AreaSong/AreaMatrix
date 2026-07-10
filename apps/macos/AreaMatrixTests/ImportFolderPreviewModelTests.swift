@@ -25,10 +25,12 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         let model = makeImportFolderPreviewModel(predictor: predictor)
 
         await model.load(request: importFolderFolderRequest(rootURL: rootURL))
-        let requests = await predictor.recordedRequests()
 
-        XCTAssertEqual(requests.map(\.repoPath), [importBatchRepoPath(), importBatchRepoPath()])
-        XCTAssertEqual(Set(requests.map(\.filename)), ["Invoice_2026Q1.pdf", "合同.pdf"])
+        await predictor.assertRecordedRequestFilenames(
+            ["Invoice_2026Q1.pdf", "合同.pdf"],
+            repoPath: importBatchRepoPath(),
+            requestCount: 2
+        )
         let rowsByName = Dictionary(uniqueKeysWithValues: model.rows.map { ($0.originalName, $0) })
 
         XCTAssertEqual(rowsByName["Invoice_2026Q1.pdf"]?.relativePath, "Invoice_2026Q1.pdf")

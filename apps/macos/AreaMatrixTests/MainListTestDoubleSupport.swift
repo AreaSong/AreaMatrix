@@ -35,6 +35,28 @@ struct MainListFallbackRequestRecord: Equatable {
     var request: AiFallbackStatusRequest
 }
 
+extension MainListFallbackRequestRecord {
+    static func semanticSearchIndexNotReady(repoPath: String, callLogID: Int64) -> MainListFallbackRequestRecord {
+        MainListFallbackRequestRecord(
+            repoPath: repoPath,
+            request: AiFallbackStatusRequest(
+                operation: .semanticSearch,
+                route: .remote,
+                providerError: nil,
+                providerErrorCode: nil,
+                privacyDecision: nil,
+                privacySkippedReason: nil,
+                categorySkippedReason: nil,
+                semanticFallbackReason: .semanticIndexNotReady,
+                callLogStatus: .failed,
+                callLogId: callLogID,
+                privacyRuleId: nil,
+                retryAfter: nil
+            )
+        )
+    }
+}
+
 actor MainListRecordingSemanticSearcher: CoreSemanticSearching {
     private let page: SearchResultPageSnapshot
 
@@ -68,8 +90,12 @@ actor MainListRecordingSemanticFallbackReader: CoreSemanticFallbackStatusReading
         return status
     }
 
-    func recordedRequests() -> [MainListFallbackRequestRecord] {
-        requests
+    func assertRecordedSemanticFallbackRequests(
+        _ expectedRequests: [MainListFallbackRequestRecord],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 }
 

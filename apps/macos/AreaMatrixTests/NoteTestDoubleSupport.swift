@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct NoopNoteStore: CoreNoteReadingWriting {
     func readNote(repoPath _: String, fileID _: Int64) async throws -> String? {
@@ -49,12 +50,32 @@ actor RecordingNoteStore: CoreNoteReadingWriting {
         try writeResults.removeFirst().get()
     }
 
-    func recordedReadRequests() -> [NoteReadRequest] {
-        reads
+    func assertReadRequests(
+        _ expectedRequests: [NoteReadRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(reads, expectedRequests, file: file, line: line)
     }
 
-    func recordedWriteRequests() -> [NoteWriteRequest] {
-        writes
+    func assertWriteRequests(
+        _ expectedRequests: [NoteWriteRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(writes, expectedRequests, file: file, line: line)
+    }
+
+    func assertWriteContents(
+        _ expectedContents: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(writes.map(\.contentMarkdown), expectedContents, file: file, line: line)
+    }
+
+    func assertNoWriteRequests(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(writes, [], file: file, line: line)
     }
 }
 

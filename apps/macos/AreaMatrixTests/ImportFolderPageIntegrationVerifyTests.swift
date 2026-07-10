@@ -80,9 +80,11 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         model.selectedStorageMode = .indexOnly
         _ = await model.importReadyFiles()
 
-        let predictRequests = await predictor.recordedRequests()
-
-        XCTAssertEqual(Set(predictRequests.map(\.filename)), ["invoice.pdf", "reference.pdf"])
+        await predictor.assertRecordedRequestFilenames(
+            ["invoice.pdf", "reference.pdf"],
+            repoPath: importBatchRepoPath(),
+            requestCount: 4
+        )
         await importer.assertRecordedRequests(importFolderExpectedCopyAndIndexRequests())
     }
 

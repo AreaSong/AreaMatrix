@@ -127,9 +127,8 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         )
 
         await model.load(request: importFolderFolderRequest(rootURL: fixture.rootURL))
-        let requests = await fixture.prechecker.recordedRequests()
 
-        XCTAssertEqual(requests.map(\.destination), [.autoClassify])
+        await fixture.prechecker.assertRecordedPrecheckDestinations([.autoClassify])
         assertImportRowStatusTags(model.rows, ["DUP", "NAME", "BLOCKED"])
         XCTAssertEqual(model.duplicateCount, 1)
         XCTAssertEqual(model.nameConflictCount, 1)

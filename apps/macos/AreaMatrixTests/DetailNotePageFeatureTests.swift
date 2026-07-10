@@ -17,13 +17,9 @@ final class DetailNotePageFeatureTests: XCTestCase {
         model.createNote()
         model.updateDraft("contract notes")
         await waitForDetailNoteSaveSettled(model)
-        let reads = await noteStore.recordedReadRequests()
-        let writes = await noteStore.recordedWriteRequests()
-        let marks = await tracker.recordedMarks()
-        let unmarks = await tracker.recordedUnmarks()
 
-        XCTAssertEqual(reads, [DetailNoteReadRequest(repoPath: "/tmp/repo", fileID: file.id)])
-        XCTAssertEqual(writes, [DetailNoteWriteRequest(
+        await noteStore.assertReadRequests([DetailNoteReadRequest(repoPath: "/tmp/repo", fileID: file.id)])
+        await noteStore.assertWriteRequests([DetailNoteWriteRequest(
             repoPath: "/tmp/repo",
             fileID: file.id,
             contentMarkdown: "contract notes"
@@ -32,8 +28,9 @@ final class DetailNotePageFeatureTests: XCTestCase {
             model.state,
             .editing(fileID: file.id, content: "contract notes", saveStatus: .saved, writeBlock: nil)
         )
-        XCTAssertEqual(marks, [DetailNoteInFlightRequest(repoPath: "/tmp/repo", relativePath: "\(file.path).md")])
-        XCTAssertEqual(unmarks, marks)
+        await tracker.assertBalancedRequests([
+            DetailNoteInFlightRequest(repoPath: "/tmp/repo", relativePath: "\(file.path).md")
+        ])
     }
 
     @MainActor
@@ -61,9 +58,8 @@ final class DetailNotePageFeatureTests: XCTestCase {
         ))
 
         await model.retrySave()
-        let writes = await noteStore.recordedWriteRequests()
 
-        XCTAssertEqual(writes.map(\.contentMarkdown), ["new unsaved draft", "new unsaved draft"])
+        await noteStore.assertWriteContents(["new unsaved draft", "new unsaved draft"])
         XCTAssertEqual(
             model.state,
             .editing(fileID: file.id, content: "new unsaved draft", saveStatus: .saved, writeBlock: nil)
@@ -128,7 +124,6 @@ final class DetailNotePageFeatureTests: XCTestCase {
 
         await model.load(file: missingFile, writeBlock: .fileMissing)
         model.updateDraft("should not write")
-        let writes = await noteStore.recordedWriteRequests()
 
         XCTAssertEqual(model.state, .editing(
             fileID: missingFile.id,
@@ -136,7 +131,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
             saveStatus: .saved,
             writeBlock: .fileMissing
         ))
-        XCTAssertEqual(writes, [])
+        await noteStore.assertNoWriteRequests()
     }
 
     @MainActor
@@ -238,12 +233,13 @@ private actor DetailNoteRecordingInFlightTracker: InFlightFileChangeTracking {
         marks.contains(DetailNoteInFlightRequest(repoPath: repoPath, relativePath: relativePath))
     }
 
-    func recordedMarks() -> [DetailNoteInFlightRequest] {
-        marks
-    }
-
-    func recordedUnmarks() -> [DetailNoteInFlightRequest] {
-        unmarks
+    func assertBalancedRequests(
+        _ expectedRequests: [DetailNoteInFlightRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(marks, expectedRequests, file: file, line: line)
+        XCTAssertEqual(unmarks, expectedRequests, file: file, line: line)
     }
 }
 

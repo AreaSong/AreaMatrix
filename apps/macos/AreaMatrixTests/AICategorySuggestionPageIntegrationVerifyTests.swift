@@ -28,10 +28,9 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
             suggestion: suggestion,
             preview: preview
         ))
-        let requests = await mover.requests()
 
         XCTAssertTrue(didApply)
-        XCTAssertEqual(requests, [
+        await mover.assertRequests([
             .preview(fileID: original.id, targetCategory: "finance/invoices"),
             .correction(fileID: original.id, targetCategory: "finance/invoices", moveFile: true, remember: false)
         ])
@@ -208,8 +207,12 @@ private actor AICategorySuggestionMover: CoreFileCategoryMoving {
         return try correctionResult.get()
     }
 
-    func requests() -> [AICategorySuggestionCategoryMoveRequest] {
-        recordedRequests
+    func assertRequests(
+        _ expectedRequests: [AICategorySuggestionCategoryMoveRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
     }
 }
 

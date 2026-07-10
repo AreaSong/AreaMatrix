@@ -113,8 +113,8 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
             OnboardingModel.ValidatePathAction.openExistingRepositoryRequested(validation)
         )
         await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
-        XCTAssertEqual(writer.successfulRepoOpens.map(\.repoPath), ["/tmp/repo"])
+        writer.assertSavedRepoPaths(["/tmp/repo"])
+        writer.assertSuccessfulRepoOpenPaths(["/tmp/repo"])
         XCTAssertEqual(model.route, .mainList(opening))
     }
 

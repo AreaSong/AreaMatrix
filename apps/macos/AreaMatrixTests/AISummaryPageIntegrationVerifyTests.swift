@@ -14,8 +14,7 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.gateState, .allowed)
         XCTAssertTrue(model.canGenerate)
         XCTAssertFalse(model.canRegenerate)
-        let events = await summary.events()
-        XCTAssertEqual(events, [.load])
+        await summary.assertEvents([.load])
     }
 
     @MainActor
@@ -37,8 +36,7 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertTrue(model.canRegenerate)
         XCTAssertTrue(model.canClear)
         XCTAssertFalse(model.canSave)
-        let events = await summary.events()
-        XCTAssertEqual(events, [.load])
+        await summary.assertEvents([.load])
     }
 
     @MainActor
@@ -68,9 +66,8 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         await model.clear()
 
         let routes = await privacy.routes()
-        let events = await summary.events()
         XCTAssertEqual(routes, [.remote, .remote])
-        XCTAssertEqual(events, [
+        await summary.assertEvents([
             .generate(regenerate: false, privacyPolicyRef: nil),
             .save(text: "Initial AI summary.", edited: false, callLogID: 1706),
             .generate(regenerate: true, privacyPolicyRef: nil),
@@ -111,8 +108,7 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(blocked.status, .skipped(.privacyRule))
         XCTAssertEqual(blocked.privacySkip?.sentFields, [])
         XCTAssertEqual(blocked.provenance?.callLogID, 9712)
-        let events = await summary.events()
-        XCTAssertEqual(events, [
+        await summary.assertEvents([
             .generate(regenerate: false, privacyPolicyRef: nil),
             .generate(regenerate: true, privacyPolicyRef: "block:rule-confidential")
         ])
@@ -133,8 +129,7 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(notice.title, "AI call log is unavailable")
         XCTAssertEqual(notice.reason, .callLogUnavailable)
         XCTAssertEqual(model.draftText, "")
-        let events = await summary.events()
-        XCTAssertEqual(events, [.generate(regenerate: false, privacyPolicyRef: nil)])
+        await summary.assertEvents([.generate(regenerate: false, privacyPolicyRef: nil)])
     }
 
     func testDefaultCoreBridgeLoadsSavedAISummaryFromSQLiteMetadata() async throws {
@@ -189,8 +184,7 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertTrue(exitController.needsConfirmation)
         XCTAssertEqual(model.status, .dirty)
-        let eventsBeforeSave = await summary.events()
-        XCTAssertEqual(eventsBeforeSave, [
+        await summary.assertEvents([
             .generate(regenerate: false, privacyPolicyRef: nil),
             .save(text: "Saved AI summary.", edited: false, callLogID: 1707)
         ])
@@ -211,8 +205,7 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertFalse(exitController.needsConfirmation)
         XCTAssertEqual(model.status, .saved)
         XCTAssertEqual(model.draftText, "Dirty exit draft.")
-        let eventsAfterDiscard = await summary.events()
-        XCTAssertEqual(eventsAfterDiscard, [
+        await summary.assertEvents([
             .generate(regenerate: false, privacyPolicyRef: nil),
             .save(text: "Saved AI summary.", edited: false, callLogID: 1707),
             .save(text: "Dirty exit draft.", edited: true, callLogID: 1707)

@@ -191,8 +191,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.searchState.request?.filters.tags, ["finance", "Tax"])
         XCTAssertEqual(model.searchFacetsState.facets?.tags.map(\.label), ["Finance", "Tax", "Archive"])
-        let tagStoreCalls = await tagStore.recordedCalls()
-        XCTAssertEqual(tagStoreCalls, [])
+        await tagStore.assertNoCalls()
     }
 
     @MainActor

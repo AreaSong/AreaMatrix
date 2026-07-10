@@ -42,10 +42,6 @@ actor ImportSingleFileStaticFileLoader: ImportBatchCoreFileLoading {
         return files
     }
 
-    func recordedRequests() -> [ImportSingleFileFileLoadRequest] {
-        requests
-    }
-
     func assertRecordedRequests(
         _ expectedRequests: [ImportSingleFileFileLoadRequest],
         file: StaticString = #filePath,

@@ -229,8 +229,6 @@ extension ImportProgressCopyQueueRecoveryTests {
 
     @MainActor
     static func assertFatalCopyRetryCompleted(_ scenario: ImportProgressFatalCopyRetryScenario) async {
-        let batchRequests = await scenario.importer.recordedRequests()
-
         await scenario.retryImporter.assertRecordedRequests([
             ImportSingleFileImportRequest(
                 mode: .copy,
@@ -239,7 +237,7 @@ extension ImportProgressCopyQueueRecoveryTests {
                 duplicateStrategy: .ask
             )
         ])
-        XCTAssertEqual(batchRequests.map(\.overrideFilename), fatalCopyRetryFilenames)
+        await scenario.importer.assertRecordedOverrideFilenames(fatalCopyRetryFilenames)
         XCTAssertEqual(scenario.model.route, .mainEmpty(scenario.opening))
         XCTAssertEqual(scenario.model.toastMessage, "已导入：third.pdf")
     }

@@ -14,16 +14,31 @@ actor StaticCoreErrorMapper: CoreErrorMapping {
         return mapping
     }
 
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
-
     func assertRecordedErrors(
         _ expectedErrors: [CoreError],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(errors, expectedErrors, file: file, line: line)
+    }
+
+    func assertRecordedErrorCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(errors.count, expectedCount, file: file, line: line)
+    }
+
+    func assertFirstRecordedInternalErrorContains(
+        _ expectedMessage: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard case let .Internal(message)? = errors.first else {
+            return XCTFail("expected first recorded error to be CoreError.Internal", file: file, line: line)
+        }
+        XCTAssertTrue(message.contains(expectedMessage), file: file, line: line)
     }
 }
 
@@ -40,16 +55,20 @@ actor RecordingCoreErrorMapper: CoreErrorMapping {
         return mapping(error)
     }
 
-    func recordedErrors() -> [CoreError] {
-        errors
-    }
-
     func assertRecordedErrors(
         _ expectedErrors: [CoreError],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(errors, expectedErrors, file: file, line: line)
+    }
+
+    func assertRecordedErrorCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(errors.count, expectedCount, file: file, line: line)
     }
 }
 

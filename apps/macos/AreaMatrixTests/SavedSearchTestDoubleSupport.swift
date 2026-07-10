@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 typealias SmartListRecordingSavedSearchStore = RecordingSavedSearchStore
 
@@ -118,8 +119,12 @@ actor RecordingSavedSearchStore: CoreSavedSearchCRUD {
         deleteRecords
     }
 
-    func recordedListRepoPaths() -> [String] {
-        listRepoPathsStorage
+    func assertRecordedListRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(listRepoPathsStorage, expectedRepoPaths, file: file, line: line)
     }
 
     private func consumeStep() -> Step? {

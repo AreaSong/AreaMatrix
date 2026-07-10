@@ -121,6 +121,19 @@ final class LocalModelStatusRecordingFolderOpener: LocalModelFolderOpening {
     func openLocalModelFolder(_ location: LocalModelFolderLocationState) throws {
         locations.append(location)
     }
+
+    func assertOpenedFolderPaths(
+        _ expectedFolderPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            locations.map(\.folderPath),
+            expectedFolderPaths,
+            file: file,
+            line: line
+        )
+    }
 }
 
 @MainActor

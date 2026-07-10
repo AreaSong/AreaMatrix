@@ -140,8 +140,8 @@ final class AreaMatrixShellTests: XCTestCase {
         XCTAssertEqual(model.mainRepoRecoveryValidation, validation)
         XCTAssertNil(model.mainRepoRecoveryErrorMapping)
         XCTAssertFalse(model.isRetryingMainRepository)
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
-        XCTAssertEqual(writer.successfulRepoOpens.map(\.repoPath), ["/tmp/repo"])
+        writer.assertSavedRepoPaths(["/tmp/repo"])
+        writer.assertSuccessfulRepoOpenPaths(["/tmp/repo"])
         XCTAssertNotNil(model.mainRepoLastOpenedAt)
         XCTAssertEqual(model.route, .mainList(opening))
     }

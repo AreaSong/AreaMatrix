@@ -93,10 +93,6 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         recordedRemoveRequests
     }
 
-    func listRequests() -> [DetailTagListRequest] {
-        recordedListRequests
-    }
-
     func assertAddRequests(
         _ expectedRequests: [DetailTagMutationRequest],
         file: StaticString = #filePath,
@@ -121,12 +117,48 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         XCTAssertEqual(recordedListRequests, expectedRequests, file: file, line: line)
     }
 
-    func suggestionRequests() -> [TagSuggestionRequestRecord] {
-        recordedSuggestionRequests
+    func assertListRequestFileIDs(
+        _ expectedFileIDs: [Int64],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedListRequests.map(\.fileID), expectedFileIDs, file: file, line: line)
     }
 
-    func applySuggestionRequests() -> [ApplyTagSuggestionsRequestRecord] {
-        recordedApplySuggestionRequests
+    func assertSuggestionRequests(
+        _ expectedRequests: [TagSuggestionRequestRecord],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedSuggestionRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertApplySuggestionRequests(
+        _ expectedRequests: [ApplyTagSuggestionsRequestRecord],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedApplySuggestionRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertNoApplySuggestionRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertApplySuggestionRequests([], file: file, line: line)
+    }
+
+    func assertLastApplySuggestionRequestSuggestions(
+        _ expectedSuggestions: [ApplyTagSuggestionItemSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            recordedApplySuggestionRequests.last?.request.suggestions,
+            expectedSuggestions,
+            file: file,
+            line: line
+        )
     }
 
     private func consume(_ results: inout [Result], fallbackFileID: Int64) throws -> TagSetSnapshot {
@@ -153,7 +185,10 @@ actor TagFilterForbiddenTagStore: CoreTagCRUD {
         throw CoreError.Internal(message: "tag-filters search-filters must not remove tags")
     }
 
-    func recordedCalls() -> [String] {
-        calls
+    func assertNoCalls(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(calls, [], file: file, line: line)
     }
 }

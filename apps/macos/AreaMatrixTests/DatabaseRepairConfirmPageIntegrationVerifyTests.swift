@@ -213,8 +213,8 @@ private struct DatabaseRepairIntegrationSuccessContext {
         await opener.assertRequestedConfiguredRepoPaths([repoURL.path])
         XCTAssertEqual(opening.config.repoPath, repoURL.path)
         XCTAssertEqual(opening.tree.totalFileCount, 2)
-        XCTAssertEqual(writer.savedRepoPaths, [repoURL.path])
-        XCTAssertEqual(writer.successfulRepoOpens.map(\.repoPath), [repoURL.path])
+        writer.assertSavedRepoPaths([repoURL.path])
+        writer.assertSuccessfulRepoOpenPaths([repoURL.path])
     }
 
     func cleanup() {

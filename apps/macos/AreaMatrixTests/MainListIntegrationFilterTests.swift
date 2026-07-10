@@ -129,12 +129,14 @@ final class MainListIntegrationFilterTests: XCTestCase {
             sidebarRow: row,
             filters: .empty
         )
-        let requests = await searcher.recordedRequests()
-
-        XCTAssertEqual(requests.map(\.request.currentPath), ["docs/contracts"])
-        XCTAssertEqual(requests.map(\.request.category), ["docs"])
-        XCTAssertEqual(requests.map(\.request.scope), [.current])
-        XCTAssertEqual(requests.map(\.request.sort), [.relevance])
+        await searcher.assertRequests([
+            .testFixture(
+                query: "customer",
+                scope: .current,
+                currentPath: "docs/contracts",
+                category: "docs"
+            )
+        ])
     }
 
     @MainActor
@@ -221,16 +223,9 @@ final class MainListIntegrationFilterTests: XCTestCase {
             filters: .empty,
             mode: .semantic
         )
-        let requests = await fallback.recordedRequests()
-
-        XCTAssertEqual(requests.first?.repoPath, "/tmp/repo")
-        XCTAssertEqual(requests.first?.request.operation, .semanticSearch)
-        XCTAssertEqual(requests.first?.request.route, .remote)
-        XCTAssertNil(requests.first?.request.providerError)
-        XCTAssertNil(requests.first?.request.providerErrorCode)
-        XCTAssertEqual(requests.first?.request.semanticFallbackReason, .semanticIndexNotReady)
-        XCTAssertEqual(requests.first?.request.callLogStatus, .failed)
-        XCTAssertEqual(requests.first?.request.callLogId, 308)
+        await fallback.assertRecordedSemanticFallbackRequests([
+            .semanticSearchIndexNotReady(repoPath: "/tmp/repo", callLogID: 308)
+        ])
         XCTAssertEqual(model.semanticFallbackState.status?.primaryAction, .buildSemanticIndex)
         XCTAssertEqual(model.semanticFallbackState.status?.nonAiFallbackAction, .useNormalSearch)
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.getAiFallbackStatus))

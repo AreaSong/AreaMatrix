@@ -35,10 +35,6 @@ actor RecordingConfigurationUpdater: CoreConfigurationUpdating {
         try nextResult().get()
     }
 
-    func requests() -> [Request] {
-        recordedRequests
-    }
-
     func assertRequests(
         _ expectedRequests: [Request],
         file: StaticString = #filePath,

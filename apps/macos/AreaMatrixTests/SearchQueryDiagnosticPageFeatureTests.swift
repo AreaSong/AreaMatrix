@@ -249,8 +249,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.searchState.errorMapping, mapping)
         await model.retrySearch()
 
-        let runRequests = await runner.recordedRunRequests()
-        assertSmartListRunRequests(runRequests, savedSearchID: saved.id, count: 2)
+        await runner.assertSmartListRunRequests(savedSearchID: saved.id, count: 2)
         await runner.assertSearchRequests([])
         await mapper.assertRecordedErrors([CoreError.FileNotFound(path: "\(saved.id)")])
         XCTAssertEqual(model.searchState.page?.totalCount, 4)

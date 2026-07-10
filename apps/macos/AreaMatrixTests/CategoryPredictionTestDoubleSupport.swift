@@ -40,10 +40,6 @@ actor RecordingCategoryPredictor: CoreCategoryPredicting {
         return try queuedResults.removeFirst().get()
     }
 
-    func recordedRequests() -> [CategoryPredictionRequest] {
-        requestsStorage
-    }
-
     func assertRecordedRequests(
         _ expectedRequests: [CategoryPredictionRequest],
         file: StaticString = #filePath,
@@ -52,8 +48,20 @@ actor RecordingCategoryPredictor: CoreCategoryPredicting {
         XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
     }
 
-    func requests() -> [CategoryPredictionRequest] {
-        requestsStorage
+    func assertRecordedRequestFilenames(
+        _ expectedFilenames: Set<String>,
+        repoPath expectedRepoPath: String? = nil,
+        requestCount expectedRequestCount: Int? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsStorage.assertCategoryPredictionRequestFilenames(
+            expectedFilenames,
+            repoPath: expectedRepoPath,
+            requestCount: expectedRequestCount,
+            file: file,
+            line: line
+        )
     }
 }
 
@@ -76,10 +84,6 @@ actor MappedCategoryPredictor: CoreCategoryPredicting {
         return try result.get()
     }
 
-    func recordedRequests() -> [CategoryPredictionRequest] {
-        requestsStorage
-    }
-
     func assertRecordedRequests(
         _ expectedRequests: [CategoryPredictionRequest],
         file: StaticString = #filePath,
@@ -88,7 +92,42 @@ actor MappedCategoryPredictor: CoreCategoryPredicting {
         XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
     }
 
-    func requests() -> [CategoryPredictionRequest] {
-        requestsStorage
+    func assertRecordedRequestFilenames(
+        _ expectedFilenames: Set<String>,
+        repoPath expectedRepoPath: String? = nil,
+        requestCount expectedRequestCount: Int? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestsStorage.assertCategoryPredictionRequestFilenames(
+            expectedFilenames,
+            repoPath: expectedRepoPath,
+            requestCount: expectedRequestCount,
+            file: file,
+            line: line
+        )
+    }
+}
+
+private extension [CategoryPredictionRequest] {
+    func assertCategoryPredictionRequestFilenames(
+        _ expectedFilenames: Set<String>,
+        repoPath expectedRepoPath: String?,
+        requestCount expectedRequestCount: Int?,
+        file: StaticString,
+        line: UInt
+    ) {
+        XCTAssertEqual(Set(map(\.filename)), expectedFilenames, file: file, line: line)
+        if let expectedRepoPath {
+            XCTAssertTrue(
+                allSatisfy { $0.repoPath == expectedRepoPath },
+                "Expected all category prediction requests to use repoPath \(expectedRepoPath)",
+                file: file,
+                line: line
+            )
+        }
+        if let expectedRequestCount {
+            XCTAssertEqual(count, expectedRequestCount, file: file, line: line)
+        }
     }
 }

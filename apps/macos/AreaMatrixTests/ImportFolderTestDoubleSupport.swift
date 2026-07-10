@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import Foundation
+import XCTest
 
 typealias ImportFolderPredictRequest = CategoryPredictionRequest
 typealias ImportFolderRecordingPredictor = RecordingCategoryPredictor
@@ -60,6 +61,14 @@ actor ImportFolderStaticConflictPrechecker: ImportFolderConflictPrechecking {
 
     func recordedRequests() -> [ImportFolderConflictPrecheckRequest] {
         requests
+    }
+
+    func assertRecordedPrecheckDestinations(
+        _ expectedDestinations: [ImportBatchDestinationOption],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests.map(\.destination), expectedDestinations, file: file, line: line)
     }
 }
 

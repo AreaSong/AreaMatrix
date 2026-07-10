@@ -145,10 +145,8 @@ final class ImportSingleFilePreflightTests: XCTestCase {
                 targetFilename: "source.pdf"
             ))
 
-        let loadRequests = await fileLoader.recordedRequests()
-
         XCTAssertEqual(result.conflict, .iCloudPlaceholder(path: sourceURL.path))
         XCTAssertEqual(result.importBlockingReason(), "iCloud placeholder 需要下载后才能导入")
-        XCTAssertEqual(loadRequests, [])
+        await fileLoader.assertRecordedRequests([])
     }
 }

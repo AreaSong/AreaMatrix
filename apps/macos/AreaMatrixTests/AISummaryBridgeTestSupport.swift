@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 enum AISummaryIntegrationSummaryEvent: Equatable {
     case load
@@ -53,8 +54,19 @@ actor AISummaryIntegrationSummaryBridge: CoreAISummaryManaging {
         return AiSummaryClearReport(fileId: request.fileId, cleared: true, clearedAt: 1_700_000_200)
     }
 
-    func events() -> [AISummaryIntegrationSummaryEvent] {
-        recorded
+    func assertEvents(
+        _ expectedEvents: [AISummaryIntegrationSummaryEvent],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recorded, expectedEvents, file: file, line: line)
+    }
+
+    func assertNoEvents(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertEvents([], file: file, line: line)
     }
 }
 

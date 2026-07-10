@@ -400,7 +400,6 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
         XCTAssertEqual(previewState.failure, .batchRenameConflict)
         XCTAssertEqual(applyResult.failure, .batchRenameConflict)
-        let mappedErrorCount = await mapper.recordedErrors().count
-        XCTAssertEqual(mappedErrorCount, 2)
+        await mapper.assertRecordedErrorCount(2)
     }
 }

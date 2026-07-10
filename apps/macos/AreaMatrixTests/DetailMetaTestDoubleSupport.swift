@@ -59,8 +59,12 @@ actor RecordingFileDetailer: CoreFileDetailing {
         XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 
-    func recordedFileIDs() -> [Int64] {
-        requests.map(\.fileID)
+    func assertRecordedFileIDs(
+        _ expectedFileIDs: [Int64],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests.map(\.fileID), expectedFileIDs, file: file, line: line)
     }
 }
 

@@ -163,14 +163,10 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
 
         await model.selectFiles([selected.id])
         await model.syncExternalCreated(event)
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
         await lister.assertRecordedRequests([])
-        guard case let .Internal(message) = mappedErrors.first else {
-            return XCTFail("expected internal error for missing detected delete")
-        }
-        XCTAssertTrue(message.contains("removed event 10003 did not report a detected delete"))
+        await mapper.assertFirstRecordedInternalErrorContains("removed event 10003 did not report a detected delete")
     }
 
     func testDetailLogSyncExternalRemovedCoreRejectsInvalidExternalRemovedEventsBeforeCoreBridge() {

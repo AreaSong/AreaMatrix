@@ -34,4 +34,12 @@ actor MainListRecordingSearchFiltering: CoreSearchFiltering {
     ) {
         XCTAssertEqual(requests.map(\.request), expectedRequests, file: file, line: line)
     }
+
+    func assertRequestFilters(
+        _ expectedFilters: [SearchFilterStateSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests.map(\.request.filters), expectedFilters, file: file, line: line)
+    }
 }

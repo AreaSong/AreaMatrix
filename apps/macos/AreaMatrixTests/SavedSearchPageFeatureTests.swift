@@ -51,8 +51,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         )
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
         XCTAssertEqual(model.searchState.request, .testFixture(savedSearchQuery: saved.query))
-        let recordedRequests = await searcher.recordedSmartListRequests()
-        assertSmartListRunRequests(recordedRequests, savedSearchID: 77)
+        await searcher.assertSmartListRunRequests(savedSearchID: 77)
         XCTAssertEqual(model.files, [resultFile])
     }
 
@@ -92,8 +91,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             .testFixture(savedSearchQuery: saved.query)
         )
         XCTAssertEqual(model.files, [resultFile])
-        let recordedRequests = await searcher.recordedSmartListRequests()
-        assertSmartListRunRequests(recordedRequests, savedSearchID: 77)
+        await searcher.assertSmartListRunRequests(savedSearchID: 77)
     }
 
     @MainActor
@@ -155,8 +153,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             .savedSearchSavedSearchFixtureTree()
             .appendingSortedSavedSearches(saved ?? [])
 
-        let recordedRepoPaths = await store.recordedListRepoPaths()
-        XCTAssertEqual(recordedRepoPaths, ["/tmp/repo"])
+        await store.assertRecordedListRepoPaths(["/tmp/repo"])
         XCTAssertEqual(rows.sidebarRows.filter { !$0.isSmartList }.map(\.displayName), ["inbox"])
         XCTAssertEqual(rows.sidebarRows.filter(\.isSmartList).map(\.displayName), ["Pinned New", "Pinned Old", "Alpha"])
         XCTAssertEqual(rows.sidebarRows.filter(\.isSmartList).compactMap(\.savedSearchID), [2, 1, 3])

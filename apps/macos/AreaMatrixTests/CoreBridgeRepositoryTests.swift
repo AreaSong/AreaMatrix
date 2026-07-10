@@ -67,6 +67,27 @@ private func makeTemporaryRepoURL() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixCoreBridgeRepositoryTests")
 }
 
+private func makeSearchFiltersUserControlsEditedFilters(now: Date) -> SearchFilterStateSnapshot {
+    SearchFilterEditing.settingIncludeDeleted(
+        true,
+        in: SearchFilterEditing.settingStorage(
+            SearchStorageModeSnapshot.indexed.rawValue,
+            in: SearchFilterEditing.settingDatePreset(
+                .last30Days,
+                field: .modified,
+                in: SearchFilterEditing.settingSingleTag(
+                    "finance",
+                    in: SearchFilterStateSnapshot.testFixture(
+                        category: SearchFilterEditing.optionalFacetValue("docs"),
+                        fileKind: SearchFilterEditing.optionalFacetValue("pdf")
+                    )
+                ),
+                now: now
+            )
+        )
+    )
+}
+
 final class MainSearchFiltersPageFeatureTests: XCTestCase {
     @MainActor
     func testSearchFiltersSearchFiltersDriveSearchFilesAndFacetCountsThroughSearchFiltersCore() async {
@@ -100,10 +121,16 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
         )
         await model.loadSearchFacets(query: " 合同 ", scope: .current, sidebarRow: row, filters: filters)
 
-        let searchRequests = await searcher.recordedRequests().map(\.request)
-        XCTAssertEqual(searchRequests.first?.filters, filters)
-        XCTAssertEqual(searchRequests.first?.currentPath, "docs/contracts")
-        XCTAssertEqual(searchRequests.first?.category, "docs")
+        await searcher.assertRequests([
+            .testFixture(
+                query: "合同",
+                scope: .current,
+                currentPath: "docs/contracts",
+                category: "docs",
+                filters: filters,
+                sort: .relevance
+            )
+        ])
         await facetLoader.assertRequests([
             SearchFacetRequestSnapshot(
                 query: "合同",
@@ -121,23 +148,14 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
         let tree = RepositoryTreeNodeSnapshot.searchFiltersFixtureTree()
         guard let row = requireSidebarRow(tree, id: "docs/contracts") else { return }
         let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let editedFilters = SearchFilterEditing.settingIncludeDeleted(
-            true,
-            in: SearchFilterEditing.settingStorage(
-                SearchStorageModeSnapshot.indexed.rawValue,
-                in: SearchFilterEditing.settingDatePreset(
-                    .last30Days,
-                    field: .modified,
-                    in: SearchFilterEditing.settingSingleTag(
-                        "finance",
-                        in: SearchFilterStateSnapshot.testFixture(
-                            category: SearchFilterEditing.optionalFacetValue("docs"),
-                            fileKind: SearchFilterEditing.optionalFacetValue("pdf")
-                        )
-                    ),
-                    now: now
-                )
-            )
+        let editedFilters = makeSearchFiltersUserControlsEditedFilters(now: now)
+        let expectedFilters = SearchFilterStateSnapshot.testFixture(
+            category: "docs",
+            fileKind: "pdf",
+            tags: ["finance"],
+            modifiedAfter: 1_797_408_000,
+            storageMode: .indexed,
+            includeDeleted: true
         )
         let searcher = MainListRecordingSearchQuerying(results: [.success(.searchFiltersSearchFixture(query: "合同"))])
         let model = MainFileListModel(
@@ -157,13 +175,17 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             filters: editedFilters
         )
 
-        let request = await searcher.recordedRequests().first?.request
-        XCTAssertEqual(request?.filters.category, "docs")
-        XCTAssertEqual(request?.filters.fileKind, "pdf")
-        XCTAssertEqual(request?.filters.tags, ["finance"])
-        XCTAssertEqual(request?.filters.modifiedAfter, 1_797_408_000)
-        XCTAssertEqual(request?.filters.storageMode, .indexed)
-        XCTAssertEqual(request?.filters.includeDeleted, true)
+        await searcher.assertRequests([
+            .testFixture(
+                query: "合同",
+                scope: .current,
+                currentPath: "docs/contracts",
+                category: "docs",
+                filters: expectedFilters,
+                sort: .newestImported
+            )
+        ])
+        XCTAssertEqual(editedFilters, expectedFilters)
         XCTAssertGreaterThan(editedFilters.activeFilterCount, 0)
     }
 

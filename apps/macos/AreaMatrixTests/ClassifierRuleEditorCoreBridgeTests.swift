@@ -223,7 +223,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
                 storageLocation: "/tmp/localModelStatus-models"
             )
         )])
-        XCTAssertEqual(folderOpener.locations.map(\.folderPath), ["/tmp/localModelStatus-models"])
+        folderOpener.assertOpenedFolderPaths(["/tmp/localModelStatus-models"])
         XCTAssertEqual(model.feedback, .success("Model location opened."))
     }
 

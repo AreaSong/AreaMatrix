@@ -17,9 +17,8 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
 
         await model.selectFiles([detail.id])
         await model.loadSelectedFileTagSuggestions()
-        let requests = await tagStore.suggestionRequests()
 
-        XCTAssertEqual(requests, [
+        await tagStore.assertSuggestionRequests([
             TagSuggestionRequestRecord(repoPath: "/tmp/repo", request: .tagSuggestions(fileID: detail.id))
         ])
         XCTAssertEqual(model.detailTagSuggestionState.report?.suggestions.map(\.slug), ["finance", "tax"])
@@ -67,11 +66,10 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
             await model.loadSelectedFileTagSuggestions()
             await model.loadSelectedFileTags()
 
-            let applyRequests = await tagStore.applySuggestionRequests()
             await tagStore.assertListRequests([
                 DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)
             ])
-            XCTAssertEqual(applyRequests, [])
+            await tagStore.assertNoApplySuggestionRequests()
             XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), [scenario.2])
         }
     }
@@ -100,9 +98,8 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
         await model.selectFiles([detail.id])
         await model.loadSelectedFileTagSuggestions()
         let undoState = await model.applySelectedFileTagSuggestions()
-        let applyRequests = await tagStore.applySuggestionRequests()
 
-        XCTAssertEqual(applyRequests, [
+        await tagStore.assertApplySuggestionRequests([
             ApplyTagSuggestionsRequestRecord(
                 repoPath: "/tmp/repo",
                 request: ApplyTagSuggestionsRequestSnapshot(
@@ -203,17 +200,16 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
         model.updateSelectedFileTagSuggestionSlug(suggestionID: "tagSuggestions-tax", slug: "tax-review")
 
         _ = await model.applyEditedSelectedFileTagSuggestions()
-        let firstApply = await tagStore.applySuggestionRequests()
-        model.startEditingSelectedFileTagSuggestions()
-        _ = await model.applyEditedSelectedFileTagSuggestions()
-
-        XCTAssertEqual(firstApply.last?.request.suggestions, [
+        await tagStore.assertLastApplySuggestionRequestSuggestions([
             .testFixture(
                 suggestionID: "tagSuggestions-tax",
                 slug: "tax-review",
                 displayName: "tax-review"
             )
         ])
+        model.startEditingSelectedFileTagSuggestions()
+        _ = await model.applyEditedSelectedFileTagSuggestions()
+
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["tax-review"])
         XCTAssertNotNil(model.detailTagSuggestionState.editSession)
         XCTAssertNotNil(model.detailTagEditorState.failure)
@@ -254,9 +250,8 @@ final class DetailTagSuggestionsPageFeatureTests: XCTestCase {
         ])
 
         _ = await model.retryFailedSelectedFileTagSuggestions()
-        let applyRequests = await tagStore.applySuggestionRequests()
 
-        XCTAssertEqual(applyRequests.last?.request.suggestions, [
+        await tagStore.assertLastApplySuggestionRequestSuggestions([
             .testFixture(
                 suggestionID: "tagSuggestions-tax",
                 slug: "tax-review",

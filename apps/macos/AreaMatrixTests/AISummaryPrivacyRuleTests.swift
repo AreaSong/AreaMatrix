@@ -12,15 +12,13 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
         XCTAssertEqual(model.draftText, "Quarterly invoice with payment status and vendor context.")
         XCTAssertEqual(model.provenance?.route, .local)
         XCTAssertTrue(model.canSave)
-        let eventsBeforeSave = await summary.events()
-        XCTAssertEqual(eventsBeforeSave, [.generate(fileID: 606, regenerate: false)])
+        await summary.assertEvents([.generate(fileID: 606, regenerate: false)])
 
         await model.save()
 
         XCTAssertEqual(model.status, .saved)
         XCTAssertEqual(model.draftText, "Quarterly invoice with payment status and vendor context.")
-        let eventsAfterSave = await summary.events()
-        XCTAssertEqual(eventsAfterSave, [
+        await summary.assertEvents([
             .generate(fileID: 606, regenerate: false),
             .save(fileID: 606, text: "Quarterly invoice with payment status and vendor context.", edited: false)
         ])
@@ -58,8 +56,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
         XCTAssertEqual(model.status, .empty)
         XCTAssertEqual(model.draftText, "")
         XCTAssertNil(model.provenance)
-        let events = await summary.events()
-        XCTAssertEqual(events, [
+        await summary.assertEvents([
             .generate(fileID: 608, regenerate: false),
             .clear(fileID: 608, confirmed: true)
         ])
@@ -87,8 +84,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
         let requestContext = request?.context
         XCTAssertEqual(request?.feature, .autoSummaries)
         XCTAssertEqual(request?.route, .remote)
-        let events = await summary.events()
-        XCTAssertEqual(events, [.generate(fileID: 622, regenerate: false)])
+        await summary.assertEvents([.generate(fileID: 622, regenerate: false)])
         XCTAssertEqual(model.status, .draft)
         XCTAssertEqual(requestContext?.fileId, 622)
         XCTAssertEqual(requestContext?.repoRelativePath, "finance/confidential-invoice.PDF")
@@ -115,8 +111,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
 
             await model.generate(regenerate: false)
 
-            let events = await summary.events()
-            XCTAssertEqual(events, [
+            await summary.assertEvents([
                 .generateSkipped(fileID: item.0, regenerate: false, privacyPolicyRef: item.2)
             ])
             XCTAssertEqual(model.status, item.3)
@@ -139,8 +134,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
 
             await model.generate(regenerate: false)
 
-            let events = await summary.events()
-            XCTAssertEqual(events, [])
+            await summary.assertNoEvents()
             XCTAssertEqual(model.status, item.2)
             XCTAssertEqual(model.privacySkip?.skippedReason, item.3)
             XCTAssertNil(model.provenance?.callLogID)
@@ -234,8 +228,19 @@ private actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
         return AiSummaryClearReport(fileId: request.fileId, cleared: request.confirmed, clearedAt: 1_700_000_200)
     }
 
-    func events() -> [AISummaryPrivacySummaryEvent] {
-        recordedEvents
+    func assertEvents(
+        _ expectedEvents: [AISummaryPrivacySummaryEvent],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedEvents, expectedEvents, file: file, line: line)
+    }
+
+    func assertNoEvents(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertEvents([], file: file, line: line)
     }
 }
 

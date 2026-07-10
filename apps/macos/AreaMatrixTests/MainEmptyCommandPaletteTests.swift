@@ -32,11 +32,11 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         )
 
         await model.loadCommandIndex(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
-        let requests = await indexer.recordedRequests()
 
         await searcher.assertRequests([])
-        XCTAssertEqual(requests.map(\.context.query), ["delete"])
-        XCTAssertEqual(requests.map(\.context.selectedFileIds), [[10, 20]])
+        await indexer.assertRequestContexts([
+            .commandPalette(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
+        ])
         XCTAssertEqual(model.commandPaletteState.snapshot?.sections[0].targets.first?.title, "Delete selected files...")
     }
 
@@ -206,16 +206,14 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         model.commandPaletteQuery = ""
         model.clearPendingSearchDestination()
         await model.restoreSavedSearch(saved)
-        let indexRequests = await indexer.recordedRequests()
-        let runRequests = await smartListRunner.recordedRunRequests()
         let indexSnapshot = CommandTargetSnapshot.testFixture(coreTarget: indexTarget)
 
         XCTAssertEqual(indexSnapshot.executionRoute, .runSmartList(saved.id))
         XCTAssertNil(model.pendingSearchDestination)
-        XCTAssertEqual(indexRequests.map(\.context.selectedFileIds), [[10, 20]])
-        XCTAssertEqual(indexRequests.map(\.context.currentPath), ["docs"])
-        XCTAssertEqual(indexRequests.map(\.context.query), ["finance"])
-        assertSmartListRunRequests(runRequests, savedSearchID: saved.id)
+        await indexer.assertRequestContexts([
+            .commandPalette(query: " finance ", selectedFileIDs: [20, 10], currentPath: "docs")
+        ])
+        await smartListRunner.assertSmartListRunRequests(savedSearchID: saved.id)
         await smartListRunner.assertSearchRequests([])
         XCTAssertEqual(model.files, [resultFile])
         XCTAssertEqual(model.commandPaletteState, .idle)

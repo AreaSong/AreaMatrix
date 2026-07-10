@@ -97,9 +97,7 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
             recoveryCheck: .checking
         )
         scenario.controlState.registerQueueContinuation(scenario.importModel)
-        let requests = await scenario.importer.recordedRequests()
-
-        XCTAssertEqual(requests.map(\.overrideFilename), ["first.pdf", "second.pdf"])
+        await scenario.importer.assertRecordedOverrideFilenames(["first.pdf", "second.pdf"])
         XCTAssertEqual(outcome?.fatalRetryContext, importFolderFatalRetryContext(sourcePath: scenario.secondURL.path))
         guard let pausedState = requireImportProgressRoute(
             scenario.model,

@@ -66,11 +66,10 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         )
 
         await model.bootstrapIfNeeded()
-        let mappedErrors = await mapper.recordedErrors()
 
         XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", mapping))
         XCTAssertEqual(writer.savedRepoPaths, [])
-        XCTAssertTrue(mappedErrors.contains(CoreError.PermissionDenied(path: "/tmp/repo")))
+        await mapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(RepositoryErrorPresentation.mainRepo(mapping: mapping).primaryAction, .reconnectFolder)
     }
 
@@ -113,7 +112,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
             route: model.route,
             openedRepoPaths: opener.requestedConfiguredRepoPaths(),
             savedRepoPaths: writer.savedRepoPaths,
-            successfulRepoOpenPaths: writer.successfulRepoOpens.map(\.repoPath)
+            successfulRepoOpenPaths: writer.successfulRepoOpenPaths
         )
     }
 

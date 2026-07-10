@@ -69,6 +69,14 @@ actor ImportBatchRecordingBatchImporter: CoreBatchCopyImporting {
     ) {
         assertImportBatchLastRecordedRequest(requests, expectedRequest, file: file, line: line)
     }
+
+    func assertRecordedOverrideFilenames(
+        _ expectedFilenames: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchRecordedOverrideFilenames(requests, expectedFilenames, file: file, line: line)
+    }
 }
 
 actor ImportBatchSequenceBatchImporter: CoreBatchCopyImporting {
@@ -126,6 +134,14 @@ actor ImportBatchSequenceBatchImporter: CoreBatchCopyImporting {
     ) {
         assertImportBatchLastRecordedRequest(requests, expectedRequest, file: file, line: line)
     }
+
+    func assertRecordedOverrideFilenames(
+        _ expectedFilenames: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchRecordedOverrideFilenames(requests, expectedFilenames, file: file, line: line)
+    }
 }
 
 private func assertImportBatchRecordedRequests(
@@ -144,4 +160,13 @@ private func assertImportBatchLastRecordedRequest(
     line: UInt
 ) {
     XCTAssertEqual(recordedRequests.last, expectedRequest, file: file, line: line)
+}
+
+private func assertImportBatchRecordedOverrideFilenames(
+    _ recordedRequests: [ImportBatchBatchImportRequest],
+    _ expectedFilenames: [String],
+    file: StaticString,
+    line: UInt
+) {
+    XCTAssertEqual(recordedRequests.map(\.overrideFilename), expectedFilenames, file: file, line: line)
 }

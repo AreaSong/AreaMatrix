@@ -29,27 +29,19 @@ extension SmartListRunRequestRecord {
     }
 }
 
-func assertSmartListRunRequests(
-    _ requests: [SmartListRunRequestRecord],
+private func expectedSmartListRunRequests(
     repoPath: String = "/tmp/repo",
     savedSearchID: Int64,
     count: Int = 1,
     limit: Int64 = 50,
-    offset: Int64 = 0,
-    file: StaticString = #filePath,
-    line: UInt = #line
-) {
-    XCTAssertEqual(
-        requests,
-        Array(repeating: .testFixture(
-            repoPath: repoPath,
-            savedSearchID: savedSearchID,
-            limit: limit,
-            offset: offset
-        ), count: count),
-        file: file,
-        line: line
-    )
+    offset: Int64 = 0
+) -> [SmartListRunRequestRecord] {
+    Array(repeating: .testFixture(
+        repoPath: repoPath,
+        savedSearchID: savedSearchID,
+        limit: limit,
+        offset: offset
+    ), count: count)
 }
 
 actor RecordingSearchQuerying: CoreSearchQuerying {
@@ -89,24 +81,43 @@ actor RecordingSearchQuerying: CoreSearchQuerying {
         return try results.removeFirst().get()
     }
 
-    func recordedRequests() -> [SearchQueryRequestRecord] {
-        requestsStorage
-    }
-
-    func recordedSmartListRequests() -> [SmartListRunRequestRecord] {
-        smartListRequestsStorage
-    }
-
-    func requests() -> [SearchQueryRequestSnapshot] {
-        requestsStorage.map(\.request)
-    }
-
     func assertRequests(
         _ expectedRequests: [SearchQueryRequestSnapshot],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(requestsStorage.map(\.request), expectedRequests, file: file, line: line)
+    }
+
+    func assertSmartListRunRequests(
+        repoPath: String = "/tmp/repo",
+        savedSearchID: Int64,
+        count: Int = 1,
+        limit: Int64 = 50,
+        offset: Int64 = 0,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            smartListRequestsStorage,
+            expectedSmartListRunRequests(
+                repoPath: repoPath,
+                savedSearchID: savedSearchID,
+                count: count,
+                limit: limit,
+                offset: offset
+            ),
+            file: file,
+            line: line
+        )
+    }
+
+    func assertRequestFilters(
+        _ expectedFilters: [SearchFilterStateSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage.map(\.request.filters), expectedFilters, file: file, line: line)
     }
 
     func assertRecordedQueries(
@@ -151,20 +162,35 @@ actor SmartListOnlyRecordingSearchQuerying: CoreSearchQuerying {
         return try results.removeFirst().get()
     }
 
-    func recordedRunRequests() -> [SmartListRunRequestRecord] {
-        runRequestsStorage
-    }
-
-    func recordedSearchRequests() -> [SearchQueryRequestSnapshot] {
-        searchRequestsStorage
-    }
-
     func assertSearchRequests(
         _ expectedRequests: [SearchQueryRequestSnapshot],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(searchRequestsStorage, expectedRequests, file: file, line: line)
+    }
+
+    func assertSmartListRunRequests(
+        repoPath: String = "/tmp/repo",
+        savedSearchID: Int64,
+        count: Int = 1,
+        limit: Int64 = 50,
+        offset: Int64 = 0,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            runRequestsStorage,
+            expectedSmartListRunRequests(
+                repoPath: repoPath,
+                savedSearchID: savedSearchID,
+                count: count,
+                limit: limit,
+                offset: offset
+            ),
+            file: file,
+            line: line
+        )
     }
 }
 

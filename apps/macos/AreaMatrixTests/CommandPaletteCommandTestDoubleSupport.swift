@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct CommandPaletteCommandIndexRequest: Equatable {
     var repoPath: String
@@ -19,8 +20,12 @@ actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
         return try results.removeFirst().get()
     }
 
-    func recordedRequests() -> [CommandPaletteCommandIndexRequest] {
-        requests
+    func assertRequestContexts(
+        _ expectedContexts: [CommandIndexContext],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests.map(\.context), expectedContexts, file: file, line: line)
     }
 }
 

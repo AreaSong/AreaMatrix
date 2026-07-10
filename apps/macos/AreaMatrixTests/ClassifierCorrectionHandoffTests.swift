@@ -45,8 +45,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         XCTAssertEqual(model.selectedFileDetail, file)
         XCTAssertEqual(model.files, [file])
         XCTAssertNil(model.classifierCorrectionResult)
-        let recordedRequests = await mover.recordedRequests()
-        XCTAssertEqual(recordedRequests, [])
+        await mover.assertNoMutationRequests()
     }
 
     @MainActor
@@ -268,8 +267,8 @@ private actor ClassifierCorrectionNoopCategoryMover: CoreFileCategoryMoving {
         throw CoreError.Internal(message: "unexpected correction")
     }
 
-    func recordedRequests() -> [String] {
-        requests
+    func assertNoMutationRequests(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(requests, [], file: file, line: line)
     }
 }
 
