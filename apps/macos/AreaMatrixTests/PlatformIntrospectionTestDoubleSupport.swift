@@ -6,9 +6,42 @@ struct PlatformCapabilityRequest: Equatable {
     var appVersion: String
 }
 
+struct PlatformDifferencesInspectRequest: Equatable {
+    var targetPlatform: BindingTargetPlatformSnapshot
+    var bindingVersion: Int64
+}
+
+actor PlatformDifferencesRecordingInspector: CoreBindingContractInspecting {
+    private let result: Result<BindingContractReportSnapshot, Error>
+    private var requestLog = TestRequestLog<PlatformDifferencesInspectRequest>()
+
+    init(result: Result<BindingContractReportSnapshot, Error>) {
+        self.result = result
+    }
+
+    func inspectBindingContract(
+        targetPlatform: BindingTargetPlatformSnapshot,
+        bindingVersion: Int64
+    ) async throws -> BindingContractReportSnapshot {
+        requestLog.append(PlatformDifferencesInspectRequest(
+            targetPlatform: targetPlatform,
+            bindingVersion: bindingVersion
+        ))
+        return try result.get()
+    }
+
+    func assertBindingContractInspectionRequests(
+        _ expectedRequests: [PlatformDifferencesInspectRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
+    }
+}
+
 actor RecordingPlatformCapabilityLoader: CorePlatformCapabilitiesLoading {
     private let result: Swift.Result<PlatformCapabilitiesSnapshot, Error>
-    private var capturedRequests: [PlatformCapabilityRequest] = []
+    private var requestLog = TestRequestLog<PlatformCapabilityRequest>()
 
     init(result: Swift.Result<PlatformCapabilitiesSnapshot, Error>) {
         self.result = result
@@ -18,7 +51,7 @@ actor RecordingPlatformCapabilityLoader: CorePlatformCapabilitiesLoading {
         platform: PlatformIdSnapshot,
         appVersion: String
     ) async throws -> PlatformCapabilitiesSnapshot {
-        capturedRequests.append(PlatformCapabilityRequest(platform: platform, appVersion: appVersion))
+        requestLog.append(PlatformCapabilityRequest(platform: platform, appVersion: appVersion))
         return try result.get()
     }
 
@@ -27,7 +60,7 @@ actor RecordingPlatformCapabilityLoader: CorePlatformCapabilitiesLoading {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(capturedRequests, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertNoPlatformCapabilityRequests(

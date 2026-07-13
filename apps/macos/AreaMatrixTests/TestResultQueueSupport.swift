@@ -1,3 +1,32 @@
+import XCTest
+
+struct TestRequestLog<Request: Equatable> {
+    private var requestsStorage: [Request] = []
+
+    var requests: [Request] {
+        requestsStorage
+    }
+
+    mutating func append(_ request: Request) {
+        requestsStorage.append(request)
+    }
+
+    func assertRequests(
+        _ expectedRequests: [Request],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+    }
+
+    func assertNoRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRequests([], file: file, line: line)
+    }
+}
+
 struct TestValueQueue<Value> {
     private var queuedValues: [Value]
     private let missingValue: () -> Value

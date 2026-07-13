@@ -2,18 +2,47 @@
 
 from __future__ import annotations
 
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 from unittest.mock import patch
 
 from scripts.dev_tools import build, checks
+from scripts.dev_tools.common import ToolError
 from scripts.dev_tools.wording import audit_wording
 from scripts.task_loop import console
 from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
+    def _write_bindings_fixture(self, root: Path) -> tuple[Path, Path, Path]:
+        core_dir = root / "core"
+        core_dir.mkdir(parents=True)
+        (core_dir / "Cargo.toml").write_text(
+            '[package]\nname = "area_matrix_core"\nversion = "0.1.0"\n',
+            encoding="utf-8",
+        )
+        udl = core_dir / "area_matrix.udl"
+        udl.write_text("namespace area_matrix {}\n", encoding="utf-8")
+        bindgen_library = core_dir / "target/aarch64-apple-darwin/release/libarea_matrix_core.dylib"
+        bindgen_library.parent.mkdir(parents=True)
+        bindgen_library.write_bytes(b"host dylib")
+        tracked_dir = root / build.DEFAULT_TRACKED_BINDINGS_DIR
+        tracked_dir.mkdir(parents=True)
+        return udl, bindgen_library, tracked_dir
+
+    @staticmethod
+    def _fake_bindgen_run(argv: list[str | Path], **_: object) -> object:
+        args = [str(value) for value in argv]
+        out_dir = Path(args[args.index("--out-dir") + 1])
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "area_matrix.swift").write_bytes(b"swift binding\n")
+        (out_dir / "area_matrixFFI.h").write_bytes(b"ffi header\n")
+        (out_dir / "area_matrixFFI.modulemap").write_bytes(b"module map\n")
+        return type("Completed", (), {"returncode": 0})()
+
     def test_locked_uniffi_bindgen_version_reads_core_lockfile(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             core_dir = Path(tmp)
@@ -40,6 +69,14 @@ class BuildToolsTest(unittest.TestCase):
                 build._uniffi_bindgen_command(Path("/tmp/core")),
                 ["/tmp/custom-uniffi-bindgen"],
             )
+
+    def test_uniffi_command_uses_locked_fallback_instead_of_arbitrary_path_binary(self) -> None:
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch("scripts.dev_tools.build.shutil.which", return_value="/tmp/unpinned-uniffi-bindgen"),
+            patch("scripts.dev_tools.build._build_cached_uniffi_bindgen", return_value=["/tmp/locked-bindgen"]),
+        ):
+            self.assertEqual(build._uniffi_bindgen_command(Path("/tmp/core")), ["/tmp/locked-bindgen"])
 
     def test_wrapper_crate_calls_uniffi_cli_entrypoint(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -80,6 +117,96 @@ class BuildToolsTest(unittest.TestCase):
             self.assertEqual(bindgen_udl.readlink(), udl)
             manifest = (tool_root / "udl-crate/Cargo.toml").read_text(encoding="utf-8")
             self.assertIn('name = "area_matrix_core"', manifest)
+
+    def test_bindings_update_passes_host_dylib_and_writes_tracked_artifact_names(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            udl, bindgen_library, tracked_dir = self._write_bindings_fixture(root)
+            commands: list[list[str]] = []
+
+            def fake_run(argv: list[str | Path], **kwargs: object) -> object:
+                commands.append([str(value) for value in argv])
+                return self._fake_bindgen_run(argv, **kwargs)
+
+            with (
+                patch("scripts.dev_tools.build._host_triple", return_value="aarch64-apple-darwin"),
+                patch("scripts.dev_tools.build._uniffi_bindgen_command", return_value=["uniffi-bindgen"]),
+                patch("scripts.dev_tools.build._bindgen_udl_path", return_value=udl),
+                patch("scripts.dev_tools.build.run_step", side_effect=fake_run),
+            ):
+                result = build.run_bindings_update(root, udl, tracked_dir)
+
+            self.assertEqual(result, 0)
+            self.assertEqual(len(commands), 1)
+            self.assertIn("--lib-file", commands[0])
+            actual_library = Path(commands[0][commands[0].index("--lib-file") + 1])
+            self.assertEqual(actual_library.resolve(), bindgen_library.resolve())
+            self.assertEqual((tracked_dir / "area_matrix.swift").read_bytes(), b"swift binding\n")
+            self.assertEqual((tracked_dir / "area_matrixFFI.h").read_bytes(), b"ffi header\n")
+            self.assertEqual((tracked_dir / "module.modulemap").read_bytes(), b"module map\n")
+            self.assertFalse((tracked_dir / "area_matrixFFI.modulemap").exists())
+
+    def test_binding_artifact_normalization_removes_trailing_whitespace(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            generated_dir = Path(tmp)
+            for generated_name, _ in build.BINDING_ARTIFACTS:
+                (generated_dir / generated_name).write_text("first  \nsecond\t\n\n", encoding="utf-8")
+
+            build._normalize_binding_artifacts(generated_dir)
+
+            for generated_name, _ in build.BINDING_ARTIFACTS:
+                self.assertEqual((generated_dir / generated_name).read_text(encoding="utf-8"), "first\nsecond\n")
+
+    def test_bindings_verify_passes_when_tracked_artifacts_match(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            udl, _, tracked_dir = self._write_bindings_fixture(root)
+            (tracked_dir / "area_matrix.swift").write_bytes(b"swift binding\n")
+            (tracked_dir / "area_matrixFFI.h").write_bytes(b"ffi header\n")
+            (tracked_dir / "module.modulemap").write_bytes(b"module map\n")
+
+            with (
+                patch("scripts.dev_tools.build._host_triple", return_value="aarch64-apple-darwin"),
+                patch("scripts.dev_tools.build._uniffi_bindgen_command", return_value=["uniffi-bindgen"]),
+                patch("scripts.dev_tools.build._bindgen_udl_path", return_value=udl),
+                patch("scripts.dev_tools.build.run_step", side_effect=self._fake_bindgen_run),
+            ):
+                self.assertEqual(build.run_bindings_verify(root), 0)
+
+    def test_bindings_verify_reports_drift_without_writing_tracked_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            udl, _, tracked_dir = self._write_bindings_fixture(root)
+            tracked_swift = tracked_dir / "area_matrix.swift"
+            tracked_swift.write_bytes(b"stale swift binding\n")
+            (tracked_dir / "area_matrixFFI.h").write_bytes(b"ffi header\n")
+            (tracked_dir / "module.modulemap").write_bytes(b"module map\n")
+
+            with (
+                patch("scripts.dev_tools.build._host_triple", return_value="aarch64-apple-darwin"),
+                patch("scripts.dev_tools.build._uniffi_bindgen_command", return_value=["uniffi-bindgen"]),
+                patch("scripts.dev_tools.build._bindgen_udl_path", return_value=udl),
+                patch("scripts.dev_tools.build.run_step", side_effect=self._fake_bindgen_run),
+                redirect_stderr(io.StringIO()),
+            ):
+                self.assertEqual(build.run_bindings_verify(root), 1)
+
+            self.assertEqual(tracked_swift.read_bytes(), b"stale swift binding\n")
+
+    def test_bindings_verify_requires_host_dylib_from_core_build(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_bindings_fixture(root)
+            bindgen_library = root / "core/target/aarch64-apple-darwin/release/libarea_matrix_core.dylib"
+            bindgen_library.unlink()
+
+            with (
+                patch("scripts.dev_tools.build._host_triple", return_value="aarch64-apple-darwin"),
+                patch("scripts.dev_tools.build._uniffi_bindgen_command", return_value=["uniffi-bindgen"]),
+                patch("scripts.dev_tools.build._bindgen_udl_path", side_effect=lambda path, _: path),
+                self.assertRaisesRegex(ToolError, "Run `./dev build core` first"),
+            ):
+                build.run_bindings_verify(root)
 
     def test_check_all_core_build_uses_temp_generated_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

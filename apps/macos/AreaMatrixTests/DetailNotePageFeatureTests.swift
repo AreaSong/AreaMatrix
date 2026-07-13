@@ -212,37 +212,6 @@ final class DetailNotePageFeatureTests: XCTestCase {
     }
 }
 
-private struct DetailNoteInFlightRequest: Equatable {
-    var repoPath: String
-    var relativePath: String
-}
-
-private actor DetailNoteRecordingInFlightTracker: InFlightFileChangeTracking {
-    private var marks: [DetailNoteInFlightRequest] = []
-    private var unmarks: [DetailNoteInFlightRequest] = []
-
-    func mark(repoPath: String, relativePath: String) async {
-        marks.append(DetailNoteInFlightRequest(repoPath: repoPath, relativePath: relativePath))
-    }
-
-    func unmark(repoPath: String, relativePath: String) async {
-        unmarks.append(DetailNoteInFlightRequest(repoPath: repoPath, relativePath: relativePath))
-    }
-
-    func contains(repoPath: String, relativePath: String) async -> Bool {
-        marks.contains(DetailNoteInFlightRequest(repoPath: repoPath, relativePath: relativePath))
-    }
-
-    func assertBalancedRequests(
-        _ expectedRequests: [DetailNoteInFlightRequest],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(marks, expectedRequests, file: file, line: line)
-        XCTAssertEqual(unmarks, expectedRequests, file: file, line: line)
-    }
-}
-
 private extension RepositoryOpeningResult {
     static func detailMetaFixture(
         repoPath: String,

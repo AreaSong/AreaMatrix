@@ -42,8 +42,8 @@ actor RecordingLocalModelReader: CoreLocalModelStatusReading {
 
     private let status: LocalModelStatusState
     private let location: LocalModelFolderLocationState
-    private var recordedStatusRequests: [StatusRequest] = []
-    private var recordedFolderRequests: [FolderRequest] = []
+    private var statusRequestLog = TestRequestLog<StatusRequest>()
+    private var folderRequestLog = TestRequestLog<FolderRequest>()
 
     init(status: LocalModelStatusState, location: LocalModelFolderLocationState) {
         self.status = status
@@ -54,7 +54,7 @@ actor RecordingLocalModelReader: CoreLocalModelStatusReading {
         repoPath: String,
         request: LocalModelStatusRequestState
     ) async throws -> LocalModelStatusState {
-        recordedStatusRequests.append(StatusRequest(repoPath: repoPath, request: request))
+        statusRequestLog.append(StatusRequest(repoPath: repoPath, request: request))
         return status
     }
 
@@ -62,7 +62,7 @@ actor RecordingLocalModelReader: CoreLocalModelStatusReading {
         repoPath: String,
         request: LocalModelFolderRequestState
     ) async throws -> LocalModelFolderLocationState {
-        recordedFolderRequests.append(FolderRequest(repoPath: repoPath, request: request))
+        folderRequestLog.append(FolderRequest(repoPath: repoPath, request: request))
         return location
     }
 
@@ -71,7 +71,7 @@ actor RecordingLocalModelReader: CoreLocalModelStatusReading {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedStatusRequests, expectedRequests, file: file, line: line)
+        statusRequestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertFolderRequests(
@@ -79,7 +79,7 @@ actor RecordingLocalModelReader: CoreLocalModelStatusReading {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedFolderRequests, expectedRequests, file: file, line: line)
+        folderRequestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 }
 

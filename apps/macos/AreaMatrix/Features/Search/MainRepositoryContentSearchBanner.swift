@@ -30,7 +30,7 @@ extension MainRepositoryContentView {
             .opacity(mainRepositorySearchRetryOpacity)
             .disabled(mainRepositorySearchRetryDisabled)
             Button(searchFiltersButtonTitle) {
-                isSearchFiltersPresented.toggle()
+                searchRoutingState.isToolbarFiltersPresented.toggle()
             }
             Button("Save...", action: fileListModel.openSavedSearchSheet)
                 .disabled(!fileListModel.canSaveCurrentSearch)

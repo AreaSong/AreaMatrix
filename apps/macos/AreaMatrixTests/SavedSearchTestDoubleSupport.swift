@@ -27,18 +27,22 @@ actor RecordingSavedSearchStore: CoreSavedSearchCRUD {
         case delete(Swift.Result<Void, Error>)
     }
 
-    private var steps: [Step]
+    private var stepQueue: TestStepQueue<Step>
     private var listRepoPathsStorage: [String] = []
     private var createRecords: [SavedSearchCreateRequestRecord] = []
     private var updateRecords: [SavedSearchUpdateRequestRecord] = []
     private var deleteRecords: [SavedSearchDeleteRequestRecord] = []
 
     init(results: [Step]) {
-        steps = results
+        stepQueue = TestStepQueue(steps: results) {
+            throw RecordingSavedSearchStoreError.missingStep
+        }
     }
 
     init(listResults: [Swift.Result<[SavedSearchSnapshot], Error>]) {
-        steps = listResults.map(Step.listResult)
+        stepQueue = TestStepQueue(steps: listResults.map(Step.listResult)) {
+            throw RecordingSavedSearchStoreError.missingStep
+        }
     }
 
     func createSavedSearch(
@@ -46,7 +50,7 @@ actor RecordingSavedSearchStore: CoreSavedSearchCRUD {
         request: CreateSavedSearchRequestSnapshot
     ) async throws -> SavedSearchSnapshot {
         createRecords.append(SavedSearchCreateRequestRecord(repoPath: repoPath, request: request))
-        guard let step = consumeStep() else {
+        let step = try stepQueue.next {
             throw CoreError.Db(message: "missing saved search create result")
         }
 
@@ -63,7 +67,7 @@ actor RecordingSavedSearchStore: CoreSavedSearchCRUD {
         request: UpdateSavedSearchRequestSnapshot
     ) async throws -> SavedSearchSnapshot {
         updateRecords.append(SavedSearchUpdateRequestRecord(repoPath: repoPath, request: request))
-        guard let step = consumeStep() else {
+        let step = try stepQueue.next {
             throw CoreError.Db(message: "missing saved search update result")
         }
 
@@ -77,7 +81,7 @@ actor RecordingSavedSearchStore: CoreSavedSearchCRUD {
 
     func deleteSavedSearch(repoPath: String, savedSearchID: Int64) async throws {
         deleteRecords.append(SavedSearchDeleteRequestRecord(repoPath: repoPath, savedSearchID: savedSearchID))
-        guard let step = consumeStep() else {
+        let step = try stepQueue.next {
             throw CoreError.Db(message: "missing saved search delete result")
         }
 
@@ -91,7 +95,12 @@ actor RecordingSavedSearchStore: CoreSavedSearchCRUD {
 
     func listSavedSearches(repoPath: String) async throws -> [SavedSearchSnapshot] {
         listRepoPathsStorage.append(repoPath)
-        guard let step = consumeStep() else { return [] }
+        let step: Step
+        do {
+            step = try stepQueue.next()
+        } catch RecordingSavedSearchStoreError.missingStep {
+            return []
+        }
 
         switch step {
         case let .list(saved):
@@ -134,9 +143,8 @@ actor RecordingSavedSearchStore: CoreSavedSearchCRUD {
     ) {
         XCTAssertEqual(deleteRecords, expectedRequests, file: file, line: line)
     }
+}
 
-    private func consumeStep() -> Step? {
-        guard !steps.isEmpty else { return nil }
-        return steps.removeFirst()
-    }
+private enum RecordingSavedSearchStoreError: Error {
+    case missingStep
 }

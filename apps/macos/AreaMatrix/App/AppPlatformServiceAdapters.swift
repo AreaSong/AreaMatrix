@@ -71,7 +71,7 @@ protocol LocalFileURLOpening: Sendable {
     func revealExisting(_ url: URL) throws
 }
 
-protocol PasteboardStringWriting {
+protocol PasteboardStringWriting: Sendable {
     @MainActor
     @discardableResult
     func write(_ value: String) -> Bool
@@ -90,6 +90,59 @@ protocol AccessibilityAnnouncing {
 protocol WindowClosing {
     @MainActor
     func closeKeyWindow()
+}
+
+enum AppAppearancePreference {
+    case system
+    case light
+    case dark
+}
+
+enum AppHapticFeedback {
+    case alignment
+    case levelChange
+}
+
+protocol AppInteractionFeedbackPerforming {
+    @MainActor
+    func applyAppearance(_ preference: AppAppearancePreference)
+    @MainActor
+    func setPointingCursor(active: Bool)
+    @MainActor
+    func performHaptic(_ feedback: AppHapticFeedback)
+}
+
+struct AppKitInteractionFeedbackPerformer: AppInteractionFeedbackPerforming {
+    @MainActor
+    func applyAppearance(_ preference: AppAppearancePreference) {
+        switch preference {
+        case .system:
+            NSApplication.shared.appearance = nil
+        case .light:
+            NSApplication.shared.appearance = NSAppearance(named: .aqua)
+        case .dark:
+            NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+        }
+    }
+
+    @MainActor
+    func setPointingCursor(active: Bool) {
+        if active {
+            NSCursor.pointingHand.push()
+        } else {
+            NSCursor.pop()
+        }
+    }
+
+    @MainActor
+    func performHaptic(_ feedback: AppHapticFeedback) {
+        switch feedback {
+        case .alignment:
+            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+        case .levelChange:
+            NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+        }
+    }
 }
 
 struct LocalWelcomeHelpOpener: WelcomeHelpOpening {

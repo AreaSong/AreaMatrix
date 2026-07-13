@@ -32,14 +32,14 @@ final class RecordingRepositoryFileRevealer: RepositoryFileRevealing {
     }
 
     private let result: Result<Void, Error>
-    private var requests: [Request] = []
+    private var requestLog = TestRequestLog<Request>()
 
     init(result: Result<Void, Error> = .success(())) {
         self.result = result
     }
 
     func revealFile(repoPath: String, relativePath: String) throws {
-        requests.append(Request(repoPath: repoPath, relativePath: relativePath))
+        requestLog.append(Request(repoPath: repoPath, relativePath: relativePath))
         try result.get()
     }
 
@@ -48,7 +48,7 @@ final class RecordingRepositoryFileRevealer: RepositoryFileRevealing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 }
 
@@ -60,14 +60,14 @@ final class RecordingRepositoryFileOpener: RepositoryFileOpening {
     }
 
     private let result: Result<Void, Error>
-    private var requests: [Request] = []
+    private var requestLog = TestRequestLog<Request>()
 
     init(result: Result<Void, Error> = .success(())) {
         self.result = result
     }
 
     func openFile(repoPath: String, relativePath: String) throws {
-        requests.append(Request(repoPath: repoPath, relativePath: relativePath))
+        requestLog.append(Request(repoPath: repoPath, relativePath: relativePath))
         try result.get()
     }
 
@@ -76,6 +76,6 @@ final class RecordingRepositoryFileOpener: RepositoryFileOpening {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 }

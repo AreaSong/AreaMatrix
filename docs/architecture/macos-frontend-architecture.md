@@ -109,6 +109,15 @@ inventory。保留项必须落入下列专项之一，并在收口时补充对�
 
 平台服务应通过小接口注入到 model 或 app shell，便于测试替身复用。不要为了一个调用点过度抽象；当能力跨 feature 复用或涉及用户文件安全边界时，再抽到稳定服务。
 
+受控平台例外必须按真实副作用审计，不能只按 Swift API 名称判断：
+
+- `ImportBatchCopyImportSession.swift` 只写 app-owned `.areamatrix/import-sessions/current.json`，真实临时目录的
+  save / load / missing / corrupt / clear / permission 测试已固定其行为；它是下一项结构迁移候选，迁移时仍需按
+  Import 高风险边界单独确认写入路径、失败降级和回滚证据。
+- `RemoteProviderProbeRuntime.swift` 涉及临时脚本、权限、全局环境变量、Keychain 读取、网络请求以及 Rust Core `Command` 执行。它是独立高风险安全边界，不能通过单纯移动到 `PlatformServices/` 宣称收口；退出条件至少包括 runtime 路径可信性、owner / symlink / mode 校验、避免全局环境状态、凭据脱敏和进程 / 网络边界验证。
+- 平台能力 inventory 已覆盖 `FileManager` 默认实例、`FileHandle`、`URL.resourceValues`、Data 读写、
+  脚本写入与环境变量访问；后续新增同类 feature 例外会直接触发治理测试。
+
 ## 渐进迁移顺序
 
 1. 规则与路线图先固定：`apps/macos/AGENTS.md`、本文和
@@ -118,6 +127,13 @@ inventory。保留项必须落入下列专项之一，并在收口时补充对�
 3. 下一批优先治理高风险或高膨胀 owner：Settings、Onboarding。
 4. 触达平台副作用时收敛到 `PlatformServices/` 或保留明确退出条件。
 5. 当多个 feature 跑通同一种 state / action / routing / validation 模式后，再抽共享支撑。
+
+## 文件规模治理
+
+- 手写 Swift 文件达到 450 行后进入 `SwiftFileSizeGovernanceTests` 精确清单，必须记录 owner、继续保留的理由和下一次增长前的拆分触发条件。
+- 清单记录当前行数上界；已进入清单的文件不能继续增长，优先按完整职责族拆分，而不是拆散同一语义。
+- 500 行是手写 Swift 文件硬上限。`Bridge/Generated/` 与 `Bridge/UniFFI/` 的 UniFFI 生成绑定不适用手写文件阈值，但由生成产物与 bindings drift 门禁单独约束。
+- 当前清单只保留 `AppPlatformServiceAdapters.swift` 与 `ConfigurationFixtures.swift`；架构治理测试的共享扫描能力已提取到 `MacOSGovernanceFileSystemTestSupport.swift`，文件名显式暴露测试文件系统边界。
 
 ## 不做
 

@@ -1,7 +1,69 @@
 @testable import AreaMatrix
+import Foundation
 import XCTest
 
 final class ImportProgressInterruptedSessionTests: XCTestCase {
+    func testFileSessionStoreSavesAndLoadsSnapshotFromRepositoryMetadata() async throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixImportSessionStore")
+        defer { removeTestTemporaryItems(repoURL) }
+        let store = FileImportBatchSessionStore()
+        let session = importSessionFixture(repoURL: repoURL)
+
+        await store.saveSession(session)
+        let loaded = await store.loadSession(repoPath: repoURL.path)
+
+        XCTAssertEqual(loaded, session)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: importSessionURL(repoURL: repoURL).path))
+    }
+
+    func testFileSessionStoreReturnsNilForMissingOrCorruptedMetadata() async throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixImportSessionStore")
+        defer { removeTestTemporaryItems(repoURL) }
+        let store = FileImportBatchSessionStore()
+
+        let missingSession = await store.loadSession(repoPath: repoURL.path)
+        XCTAssertNil(missingSession)
+
+        let sessionURL = importSessionURL(repoURL: repoURL)
+        try FileManager.default.createDirectory(
+            at: sessionURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data("not-json".utf8).write(to: sessionURL)
+
+        let corruptedSession = await store.loadSession(repoPath: repoURL.path)
+        XCTAssertNil(corruptedSession)
+    }
+
+    func testFileSessionStoreClearRemovesPersistedMetadataAndToleratesRepeatedClear() async throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixImportSessionStore")
+        defer { removeTestTemporaryItems(repoURL) }
+        let store = FileImportBatchSessionStore()
+        await store.saveSession(importSessionFixture(repoURL: repoURL))
+
+        await store.clearSession(repoPath: repoURL.path)
+        await store.clearSession(repoPath: repoURL.path)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: importSessionURL(repoURL: repoURL).path))
+        let clearedSession = await store.loadSession(repoPath: repoURL.path)
+        XCTAssertNil(clearedSession)
+    }
+
+    func testFileSessionStoreWriteFailureDoesNotCreateMetadataOrEscapeRepository() async throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixImportSessionStore")
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: repoURL.path)
+            removeTestTemporaryItems(repoURL)
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: repoURL.path)
+        let store = FileImportBatchSessionStore()
+
+        await store.saveSession(importSessionFixture(repoURL: repoURL))
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: importSessionURL(repoURL: repoURL).path))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: repoURL.path), [])
+    }
+
     @MainActor
     func testInterruptedCopySessionRoutesToImportResultAfterRepositoryOpen() async {
         let opening = RepositoryOpeningResult.mainLoadingFixture(repoPath: importProgressRepoPath(), fileCount: 1)
@@ -71,5 +133,20 @@ final class ImportProgressInterruptedSessionTests: XCTestCase {
 
         XCTAssertEqual(mainListOpening, opening)
         XCTAssertNil(model.toastMessage)
+    }
+
+    private func importSessionFixture(repoURL: URL) -> ImportBatchSessionSnapshot {
+        ImportBatchSessionSnapshot.testFixture {
+            $0.repoPath = repoURL.path
+            $0.total = 3
+            $0.items = ImportProgressFixtures.interruptedCopySessionTwoPending.items
+        }
+    }
+
+    private func importSessionURL(repoURL: URL) -> URL {
+        repoURL
+            .appendingPathComponent(".areamatrix", isDirectory: true)
+            .appendingPathComponent("import-sessions", isDirectory: true)
+            .appendingPathComponent("current.json")
     }
 }

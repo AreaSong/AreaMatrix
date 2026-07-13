@@ -155,7 +155,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         let mover = ChangeCategoryRecordingMover(
             previewResult: .failure(CoreError.Conflict(path: "finance/contract.pdf"))
         )
-        let renamer = ChangeCategoryRecordingRenamer(result: .success(renamed))
+        let renamer = RenameRecordingRenamer(result: .success(renamed))
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
             fileLister: NoopFileLister(),
@@ -257,12 +257,12 @@ private func assertChangeCategoryPermissionRecovery(
 @MainActor
 private func assertChangeCategoryReturnedToChangeCategory(
     model: MainFileListModel,
-    renamer: ChangeCategoryRecordingRenamer,
+    renamer: RenameRecordingRenamer,
     original: FileEntrySnapshot,
     renamed: FileEntrySnapshot
 ) async {
     await renamer.assertRenamedFiles([
-        ChangeCategoryRenameRequest(
+        RenameRequest(
             repoPath: "/tmp/repo",
             fileID: original.id,
             newName: "contract-renamed.pdf"
@@ -291,41 +291,6 @@ private struct ChangeCategoryIntegrationContext {
 
     func cleanUp() {
         removeTestTemporaryItems(repoURL, sourceRootURL)
-    }
-}
-
-private struct ChangeCategoryRenameRequest: Equatable {
-    var repoPath: String
-    var fileID: Int64
-    var newName: String
-}
-
-private actor ChangeCategoryRecordingRenamer: CoreFileRenaming {
-    private let result: Result<FileEntrySnapshot, Error>
-    private var requests: [ChangeCategoryRenameRequest] = []
-
-    init(result: Result<FileEntrySnapshot, Error>) {
-        self.result = result
-    }
-
-    func renameFile(repoPath: String, fileID: Int64, newName: String) async throws -> FileEntrySnapshot {
-        requests.append(ChangeCategoryRenameRequest(repoPath: repoPath, fileID: fileID, newName: newName))
-        return try result.get()
-    }
-
-    func assertRenamedFiles(
-        _ expectedRenames: [ChangeCategoryRenameRequest],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(requests, expectedRenames, file: file, line: line)
-    }
-
-    func assertNoRenamedFiles(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        assertRenamedFiles([], file: file, line: line)
     }
 }
 

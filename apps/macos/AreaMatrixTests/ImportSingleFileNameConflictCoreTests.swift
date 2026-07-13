@@ -5,7 +5,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     @MainActor
     func testImportConflictBatchLoadsCoreConflictBatchPreviewWithDefaultSafeStrategies() async {
         let invoiceURL = importBatchInvoiceURL()
-        let conflictBatcher = RecordingConflictBatcher()
+        let conflictBatcher = ImportConflictBatcher(previews: [.importConflictBatchDefaultPreview])
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
             errorMapper: RecordingCoreErrorMapper.importSingleFile(),
@@ -21,7 +21,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
 
         XCTAssertTrue(model.showsCoreConflictBatchReview)
         await conflictBatcher.assertImportConflictBatchPreviewRequests([
-            ImportConflictBatchPreviewRequest(
+            ImportConflictPreviewRequest(
                 repoPath: importSingleFileRepoPath(),
                 request: ImportConflictBatchPreviewRequestSnapshot(
                     importSessionID: "session-221",
@@ -39,7 +39,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
     @MainActor
     func testImportConflictBatchApplyRequiresReplaceConfirmationBeforeCallingCore() async {
         let invoiceURL = importBatchInvoiceURL()
-        let conflictBatcher = RecordingConflictBatcher(preview: .importConflictBatchReplacePreview)
+        let conflictBatcher = ImportConflictBatcher(previews: [.importConflictBatchReplacePreview])
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
             errorMapper: RecordingCoreErrorMapper.importSingleFile(),
@@ -59,7 +59,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
 
         XCTAssertNil(blockedResult)
         await conflictBatcher.assertImportConflictBatchApplyRequests([
-            ImportConflictBatchApplyRequest(
+            ImportConflictApplyRequest(
                 repoPath: importSingleFileRepoPath(),
                 request: .testFixture(),
                 previewToken: "token-replace"
@@ -73,7 +73,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         let invoiceURL = importBatchInvoiceURL()
         let blockedPreview = ImportConflictBatchPreviewReportSnapshot.importConflictBatchDefaultPreview
             .withBlockedSameNameRow()
-        let conflictBatcher = RecordingConflictBatcher(preview: blockedPreview)
+        let conflictBatcher = ImportConflictBatcher(previews: [blockedPreview, blockedPreview])
         let model = ImportBatchCopyImportModel(
             importer: ImportBatchRecordingBatchImporter(),
             errorMapper: RecordingCoreErrorMapper.importSingleFile(),
@@ -88,6 +88,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         await model.loadImportConflictBatchPreview()
         XCTAssertNil(model.conflictBatchApplyDisabledReason)
         XCTAssertNil(model.conflictBatchAskPerItemDisabledReason)
+        XCTAssertEqual(model.conflictBatchPreviewReport?.items.last?.status, .blocked)
 
         let applyResult = await model.applyImportConflictBatch()
         _ = await model.askConflictBatchPerItem()
@@ -169,80 +170,6 @@ private func importConflictBatchBatchRequest(urls: [URL], conflictIDs: [String])
     )
 }
 
-private struct ImportConflictBatchPreviewRequest: Equatable {
-    var repoPath: String
-    var request: ImportConflictBatchPreviewRequestSnapshot
-}
-
-private struct ImportConflictBatchApplyRequest: Equatable {
-    var repoPath: String
-    var request: ImportConflictBatchApplyRequestSnapshot
-    var previewToken: String
-}
-
-private actor RecordingConflictBatcher: CoreImportConflictBatching {
-    private let preview: ImportConflictBatchPreviewReportSnapshot
-    private var recordedPreviewRequests: [ImportConflictBatchPreviewRequest] = []
-    private var recordedApplyRequests: [ImportConflictBatchApplyRequest] = []
-
-    init(preview: ImportConflictBatchPreviewReportSnapshot = .importConflictBatchDefaultPreview) {
-        self.preview = preview
-    }
-
-    func previewImportConflictBatch(
-        repoPath: String,
-        request: ImportConflictBatchPreviewRequestSnapshot
-    ) async throws -> ImportConflictBatchPreviewReportSnapshot {
-        recordedPreviewRequests.append(ImportConflictBatchPreviewRequest(repoPath: repoPath, request: request))
-        return preview.withRequest(request)
-    }
-
-    func applyImportConflictBatch(
-        repoPath: String,
-        request: ImportConflictBatchApplyRequestSnapshot,
-        previewToken: String
-    ) async throws -> ImportConflictBatchApplyReportSnapshot {
-        recordedApplyRequests.append(ImportConflictBatchApplyRequest(
-            repoPath: repoPath,
-            request: request,
-            previewToken: previewToken
-        ))
-        return .importConflictBatchReport(for: request)
-    }
-
-    func assertImportConflictBatchPreviewRequests(
-        _ expectedRequests: [ImportConflictBatchPreviewRequest],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedPreviewRequests, expectedRequests, file: file, line: line)
-    }
-
-    func assertImportConflictBatchApplyRequests(
-        _ expectedRequests: [ImportConflictBatchApplyRequest],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedApplyRequests, expectedRequests, file: file, line: line)
-    }
-
-    func assertFirstApplyRequestConflictIDs(
-        _ expectedConflictIDs: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedApplyRequests.first?.request.conflictIDs, expectedConflictIDs, file: file, line: line)
-    }
-
-    func assertLastApplyRequestDuplicateStrategy(
-        _ expectedStrategy: ImportConflictBatchStrategySnapshot,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedApplyRequests.last?.request.duplicateStrategy, expectedStrategy, file: file, line: line)
-    }
-}
-
 private extension ImportConflictBatchPreviewReportSnapshot {
     static var importConflictBatchDefaultPreview: ImportConflictBatchPreviewReportSnapshot {
         .testFixture(
@@ -279,25 +206,6 @@ private extension ImportConflictBatchPreviewReportSnapshot {
         ]
         return copy
     }
-
-    func withRequest(
-        _ request: ImportConflictBatchPreviewRequestSnapshot
-    ) -> ImportConflictBatchPreviewReportSnapshot {
-        var copy = self
-        copy.importSessionID = request.importSessionID
-        copy.applyToAllSimilarConflicts = request.applyToAllSimilarConflicts
-        copy.requestedConflictCount = Int64(request.conflictIDs.count)
-        copy.includedCount = Int64(request.conflictIDs.count)
-        copy.items = request.conflictIDs.map { conflictID in
-            let source = items
-                .first { $0.conflictID == conflictID } ?? .importConflictBatchDuplicate(conflictID: conflictID)
-            return source.withStrategies(
-                duplicateStrategy: request.duplicateStrategy,
-                sameNameStrategy: request.sameNameStrategy
-            )
-        }
-        return copy
-    }
 }
 
 private extension ImportConflictBatchPreviewItemSnapshot {
@@ -331,74 +239,5 @@ private extension ImportConflictBatchPreviewItemSnapshot {
         item.willAskPerItem = false
         item.reason = "Index-only target cannot be replaced."
         return item
-    }
-
-    func withStrategies(
-        duplicateStrategy: ImportConflictBatchStrategySnapshot,
-        sameNameStrategy: ImportConflictBatchStrategySnapshot
-    ) -> ImportConflictBatchPreviewItemSnapshot {
-        switch conflictType {
-        case .duplicateHash:
-            .importConflictBatchDuplicate(conflictID: conflictID, strategy: duplicateStrategy)
-        case .sameNameDifferentContent:
-            .importConflictBatchSameName(conflictID: conflictID, strategy: sameNameStrategy)
-        }
-    }
-}
-
-private extension ImportConflictBatchApplyReportSnapshot {
-    static func importConflictBatchReport(
-        for request: ImportConflictBatchApplyRequestSnapshot
-    ) -> ImportConflictBatchApplyReportSnapshot {
-        let isAskPerItem = request.duplicateStrategy == .askPerItem && request.sameNameStrategy == .askPerItem
-        let isReplace = request.duplicateStrategy == .replace || request.sameNameStrategy == .replace
-        let count = Int64(request.conflictIDs.count)
-        return .testFixture(
-            importSessionID: request.importSessionID,
-            requestedConflictCount: count,
-            resolvedCount: count,
-            skippedCount: request.duplicateStrategy == .skip ? count : 0,
-            keptBothCount: request.sameNameStrategy == .keepBoth ? count : 0,
-            replacedCount: isReplace ? count : 0,
-            queuedForPerItemCount: isAskPerItem ? count : 0,
-            itemResults: request.conflictIDs.map { conflictID in
-                .importConflictBatchResult(conflictID: conflictID, request: request)
-            },
-            affectedFileIDs: isAskPerItem ? [] : [42],
-            undoToken: isReplace ? "undo-replace" : nil,
-            changeLogActions: isAskPerItem ? [] : ["import_conflict_batch"]
-        )
-    }
-}
-
-private extension ImportConflictBatchItemResultSnapshot {
-    static func importConflictBatchResult(
-        conflictID: String,
-        request: ImportConflictBatchApplyRequestSnapshot
-    ) -> ImportConflictBatchItemResultSnapshot {
-        let strategy = conflictID.hasPrefix("dup") ? request.duplicateStrategy : request.sameNameStrategy
-        return .testFixture(
-            conflictID: conflictID,
-            conflictType: conflictID.hasPrefix("dup") ? .duplicateHash : .sameNameDifferentContent,
-            appliedStrategy: strategy,
-            status: resultStatus(for: strategy),
-            fileID: strategy == .askPerItem ? nil : 42,
-            finalPath: "finance/Invoice_2026Q1.pdf"
-        )
-    }
-
-    private static func resultStatus(
-        for strategy: ImportConflictBatchStrategySnapshot
-    ) -> ImportConflictBatchResultStatusSnapshot {
-        switch strategy {
-        case .skip:
-            .skipped
-        case .keepBoth:
-            .keptBoth
-        case .replace:
-            .replaced
-        case .askPerItem:
-            .queuedForPerItem
-        }
     }
 }

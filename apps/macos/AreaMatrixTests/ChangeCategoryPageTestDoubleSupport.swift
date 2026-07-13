@@ -11,7 +11,7 @@ actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
     private let previewResult: Result<MoveToCategoryPreviewSnapshot, Error>
     private let moveResult: Result<FileEntrySnapshot, Error>
     private let correctionResult: Result<ClassifierCorrectionResultSnapshot, Error>
-    private var requests: [ChangeCategoryRequest] = []
+    private var requestLog = TestRequestLog<ChangeCategoryRequest>()
 
     init(
         previewResult: Result<MoveToCategoryPreviewSnapshot, Error>,
@@ -30,12 +30,12 @@ actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
         fileID: Int64,
         newCategory: String
     ) async throws -> MoveToCategoryPreviewSnapshot {
-        requests.append(.preview(repoPath: repoPath, fileID: fileID, targetCategory: newCategory))
+        requestLog.append(.preview(repoPath: repoPath, fileID: fileID, targetCategory: newCategory))
         return try previewResult.get()
     }
 
     func moveToCategory(repoPath: String, fileID: Int64, newCategory: String) async throws -> FileEntrySnapshot {
-        requests.append(.move(repoPath: repoPath, fileID: fileID, targetCategory: newCategory))
+        requestLog.append(.move(repoPath: repoPath, fileID: fileID, targetCategory: newCategory))
         return try moveResult.get()
     }
 
@@ -46,7 +46,7 @@ actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
         moveFile: Bool,
         remember: Bool
     ) async throws -> ClassifierCorrectionResultSnapshot {
-        requests.append(.correction(
+        requestLog.append(.correction(
             repoPath: repoPath,
             fileID: fileID,
             targetCategory: targetCategory,
@@ -61,14 +61,14 @@ actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedActions, file: file, line: line)
+        requestLog.assertRequests(expectedActions, file: file, line: line)
     }
 
     func assertNoCategoryChangeActions(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertCategoryChangeActions([], file: file, line: line)
+        requestLog.assertNoRequests(file: file, line: line)
     }
 }
 

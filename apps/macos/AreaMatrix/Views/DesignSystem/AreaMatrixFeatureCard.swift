@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct AreaMatrixFeatureCardSpec<ID: Hashable>: Identifiable {
@@ -80,7 +79,7 @@ struct AreaMatrixFeatureCard: View {
             .focusEffectDisabled()
             .onChange(of: isFocused) { _, focused in
                 if focused {
-                    NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+                    AppPlatformServices.interactionFeedback.performHaptic(.alignment)
                 }
                 onHoverChanged(focused)
             }
@@ -229,7 +228,7 @@ struct AreaMatrixFeatureCard: View {
                 y: max(0, min(1, location.y / max(size.height, 1)))
             )
             if !isHovered {
-                NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+                AppPlatformServices.interactionFeedback.performHaptic(.levelChange)
                 onHoverChanged(true)
             }
         case .ended:

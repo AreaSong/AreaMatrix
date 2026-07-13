@@ -65,6 +65,10 @@ enum AppPlatformServices {
         NSSavePanelImportResultDetailsExporter()
     }
 
+    static var interactionFeedback: any AppInteractionFeedbackPerforming {
+        AppKitInteractionFeedbackPerformer()
+    }
+
     static var importBatchSessionStore: any ImportBatchSessionPersisting {
         FileImportBatchSessionStore()
     }

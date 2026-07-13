@@ -8,7 +8,7 @@ struct MainListSearchFacetRequestRecord: Equatable {
 
 actor MainListRecordingSearchFiltering: CoreSearchFiltering {
     private var resultQueue: TestResultQueue<SearchFacetsSnapshot>
-    private var requests: [MainListSearchFacetRequestRecord] = []
+    private var requestLog = TestRequestLog<MainListSearchFacetRequestRecord>()
 
     init(results: [Swift.Result<SearchFacetsSnapshot, Error>]) {
         resultQueue = TestResultQueue(results: results) {
@@ -17,7 +17,7 @@ actor MainListRecordingSearchFiltering: CoreSearchFiltering {
     }
 
     func listFilterFacets(repoPath: String, request: SearchFacetRequestSnapshot) async throws -> SearchFacetsSnapshot {
-        requests.append(MainListSearchFacetRequestRecord(repoPath: repoPath, request: request))
+        requestLog.append(MainListSearchFacetRequestRecord(repoPath: repoPath, request: request))
         return try resultQueue.next {
             .success(.searchFiltersFixture(active: request.filters.activeFilterCount))
         }
@@ -28,7 +28,7 @@ actor MainListRecordingSearchFiltering: CoreSearchFiltering {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests.map(\.request), expectedRequests, file: file, line: line)
+        XCTAssertEqual(requestLog.requests.map(\.request), expectedRequests, file: file, line: line)
     }
 
     func assertRequestFilters(
@@ -36,6 +36,6 @@ actor MainListRecordingSearchFiltering: CoreSearchFiltering {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests.map(\.request.filters), expectedFilters, file: file, line: line)
+        XCTAssertEqual(requestLog.requests.map(\.request.filters), expectedFilters, file: file, line: line)
     }
 }

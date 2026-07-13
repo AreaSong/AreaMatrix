@@ -317,6 +317,7 @@ private extension MainWindowRouteContent {
         return MainRepositoryContentView(
             opening: displayOpening,
             state: state,
+            assembly: .live(opening: displayOpening),
             onImport: isImportProgressReadOnly ? {} : { model.chooseImportSources(opening: opening) },
             onDropImport: { urls, destination in
                 guard !isImportProgressReadOnly else { return }

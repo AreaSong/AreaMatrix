@@ -1,5 +1,24 @@
 import SwiftUI
 
+extension MainRepositoryContentView {
+    func applyMainRepositorySyncConflictSheet(to content: some View) -> some View {
+        content.sheet(item: $pendingSyncConflictReviewRoute, content: syncConflictReviewSheet)
+    }
+
+    func syncConflictReviewSheet(_ route: SyncConflictReviewRoute) -> some View {
+        SyncConflictReviewView(
+            model: SyncConflictReviewModel(
+                repoPath: route.repoPath,
+                conflictID: route.conflictID,
+                primaryPath: route.primaryPath
+            ),
+            onBackToNeedsReview: { pendingSyncConflictReviewRoute = nil },
+            onClose: { pendingSyncConflictReviewRoute = nil },
+            onResolved: handleSyncConflictResolved
+        )
+    }
+}
+
 struct SyncConflictReviewSummarySection: View {
     var conflict: SyncConflictSnapshot
 

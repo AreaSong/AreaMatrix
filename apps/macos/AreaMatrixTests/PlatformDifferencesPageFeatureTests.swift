@@ -128,40 +128,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
     }
 }
 
-private struct PlatformDifferencesInspectRequest: Equatable {
-    var targetPlatform: BindingTargetPlatformSnapshot
-    var bindingVersion: Int64
-}
-
 private typealias PlatformDifferencesCapabilityRequest = PlatformCapabilityRequest
-
-private actor PlatformDifferencesRecordingInspector: CoreBindingContractInspecting {
-    private let result: Result<BindingContractReportSnapshot, Error>
-    private var capturedRequests: [PlatformDifferencesInspectRequest] = []
-
-    init(result: Result<BindingContractReportSnapshot, Error>) {
-        self.result = result
-    }
-
-    func inspectBindingContract(
-        targetPlatform: BindingTargetPlatformSnapshot,
-        bindingVersion: Int64
-    ) async throws -> BindingContractReportSnapshot {
-        capturedRequests.append(PlatformDifferencesInspectRequest(
-            targetPlatform: targetPlatform,
-            bindingVersion: bindingVersion
-        ))
-        return try result.get()
-    }
-
-    func assertBindingContractInspectionRequests(
-        _ expectedRequests: [PlatformDifferencesInspectRequest],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(capturedRequests, expectedRequests, file: file, line: line)
-    }
-}
 
 private typealias PlatformDiffCapabilityLoader = RecordingPlatformCapabilityLoader
 

@@ -110,9 +110,10 @@ file core/target/aarch64-apple-darwin/release/libarea_matrix_core.a
 1. 重新生成 Core 静态库与 Swift bindings：`./dev build core`
 2. 若 UDL 公开接口变化，更新 Xcode 消费的 tracked bindings：
    `./dev bindings update --udl core/area_matrix.udl --out-dir apps/macos/AreaMatrix/Bridge/UniFFI`
-3. 确认 Xcode target 引用了 `Bridge/UniFFI/area_matrix.swift`、`Bridge/UniFFI/area_matrixFFI.h`
+3. 运行 `./dev bindings verify`，确认 tracked bindings 与当前 UDL 一致。
+4. 确认 Xcode target 引用了 `Bridge/UniFFI/area_matrix.swift`、`Bridge/UniFFI/area_matrixFFI.h`
    和 `core/target/.../libarea_matrix_core.a`
-4. Clean Build Folder（⇧⌘K）后重试
+5. Clean Build Folder（⇧⌘K）后重试
 
 ---
 
@@ -179,7 +180,9 @@ cat apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift | head -30
 **解决**：
 
 ```bash
+./dev build core
 ./dev bindings update --udl core/area_matrix.udl --out-dir apps/macos/AreaMatrix/Bridge/UniFFI
+./dev bindings verify
 ```
 
 确保 build script（`core/build.rs`）在 udl 改动时触发：

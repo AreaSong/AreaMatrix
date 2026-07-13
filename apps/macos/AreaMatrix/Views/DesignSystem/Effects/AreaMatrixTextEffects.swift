@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct AreaMatrixDecodedText: View {
@@ -40,7 +39,7 @@ struct AreaMatrixDecodedText: View {
                 displayText = String(currentCharacters)
             }
 
-            NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+            AppPlatformServices.interactionFeedback.performHaptic(.levelChange)
         }
     }
 

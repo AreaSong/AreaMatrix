@@ -15,7 +15,7 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 | Workflow | 目的 | 触发 |
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
-| `macos-ci.yml` | Xcode build/test、SwiftLint、SwiftFormat | 所有 PR、main push |
+| `macos-ci.yml` | Core build、tracked Swift bindings drift、Xcode build/test、SwiftLint、SwiftFormat | 所有 PR、main push |
 | `governance-ci.yml` | governance files、skills、quality smoke、Codex OS、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 
 macOS app 工程尚未存在时，`macos-ci.yml` 可以按现有保护逻辑跳过 app build/test，但 workflow 本身必须运行。
@@ -34,6 +34,8 @@ macOS app 工程尚未存在时，`macos-ci.yml` 可以按现有保护逻辑跳�
 ./dev check prompts
 ./dev check diff
 ./dev check secrets          # 默认 diff 模式：未提交变更 + 领先 origin/main 的 commit
+./dev build core
+./dev bindings verify        # 只读比较当前 UDL 与 Xcode tracked Swift bindings
 ```
 
 `./dev release status --json --remote` 和 `./dev release evidence-audit --json` 是 release owner

@@ -8,7 +8,7 @@ struct CommandPaletteCommandIndexRequest: Equatable {
 
 actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
     private var resultQueue: TestResultQueue<CommandIndex>
-    private var requests: [CommandPaletteCommandIndexRequest] = []
+    private var requestLog = TestRequestLog<CommandPaletteCommandIndexRequest>()
 
     init(results: [Swift.Result<CommandIndex, Error>]) {
         resultQueue = TestResultQueue(results: results) {
@@ -17,7 +17,7 @@ actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
     }
 
     func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
-        requests.append(.init(repoPath: repoPath, context: context))
+        requestLog.append(.init(repoPath: repoPath, context: context))
         return try resultQueue.next()
     }
 
@@ -26,7 +26,7 @@ actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests.map(\.context), expectedContexts, file: file, line: line)
+        XCTAssertEqual(requestLog.requests.map(\.context), expectedContexts, file: file, line: line)
     }
 }
 

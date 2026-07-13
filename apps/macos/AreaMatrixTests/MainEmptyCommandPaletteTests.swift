@@ -263,23 +263,25 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         XCTAssertEqual(model.files, [file])
     }
 
-    @MainActor
     func testCommandPaletteCommandPaletteToggleRestoresPreviousSearchFocus() {
-        let model = MainFileListModel(
-            opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: RecordingFileDetailer(results: []),
-            errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
-        )
+        var routingState = CommandPaletteFocusRoutingState()
 
-        model.openCommandPaletteForSearch()
-        XCTAssertEqual(model.pendingSearchDestination, .commandPalette)
-        XCTAssertEqual(model.lastSearchExitContext, .toolbar)
+        routingState.prepareForPresentation(searchFieldWasFocused: true)
 
-        model.clearCommandPaletteState()
-        model.clearPendingSearchDestination()
-        XCTAssertNil(model.pendingSearchDestination)
-        XCTAssertEqual(model.commandPaletteState, .idle)
+        XCTAssertTrue(routingState.shouldRestoreSearchFieldFocus)
+        XCTAssertTrue(routingState.consumeSearchFieldFocusRestoration())
+        XCTAssertFalse(routingState.shouldRestoreSearchFieldFocus)
+        XCTAssertFalse(routingState.consumeSearchFieldFocusRestoration())
+    }
+
+    func testCommandPaletteCommandPaletteRepeatedToggleCapturesCurrentFocusEachTime() {
+        var routingState = CommandPaletteFocusRoutingState()
+
+        routingState.prepareForPresentation(searchFieldWasFocused: false)
+        XCTAssertFalse(routingState.consumeSearchFieldFocusRestoration())
+
+        routingState.prepareForPresentation(searchFieldWasFocused: true)
+        XCTAssertTrue(routingState.consumeSearchFieldFocusRestoration())
     }
 }
 

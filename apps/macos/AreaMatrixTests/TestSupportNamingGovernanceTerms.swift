@@ -1,6 +1,11 @@
 let featureLocalDoubleDeclarations = [
+    "struct DatabaseRepairMetadataRepairRequest", "actor DatabaseRepairRecordingMetadataRepairer",
     "enum ChangeCategoryRequest", "actor ChangeCategoryRecordingMover",
     "typealias ChangeCategoryRecordingPredictor", "typealias ChangeCategoryRecordingLister",
+    "enum DeleteRequest", "actor DeleteRecordingDeleter",
+    "final class RecordingExternalURLPlatformOpener", "final class RecordingExternalURLStringOpener",
+    "final class RecordingLocalFileURLResourceReader", "final class RecordingLocalFileURLPlatformOpener",
+    "final class RecordingLocalFileURLOpener",
     "typealias DetailLogRecordingLister", "struct RenameRequest",
     "actor RenameRecordingRenamer", "struct BatchRenamePreviewRequest",
     "struct BatchRenameApplyRequest", "actor BatchRenameRecordingRenamer",
@@ -43,6 +48,7 @@ let featureLocalDoubleDeclarations = [
     "typealias ImportConflictChangeLogLister",
     "struct ImportConflictPreviewRequest",
     "struct ImportConflictApplyRequest",
+    "actor ImportConflictBatcher",
     "typealias ImportResultChangeLogRequest",
     "typealias ImportResultRecordingChangeLogLister",
     "final class ImportResultExporter",
@@ -112,11 +118,11 @@ let bridgeBoundaryDeclarations = [
 let semanticRequestAssertionFileNames = [
     "AICallLogTestDoubleSupport.swift",
     "AICategorySuggestionPageIntegrationVerifyTests.swift",
-    "DatabaseRepairConfirmPageFeatureTests.swift",
-    "DatabaseRepairConfirmPageIntegrationVerifyTests.swift",
-    "DeleteFilePageFeatureTests.swift",
+    "DatabaseRepairConfirmPageTestDoubleSupport.swift",
+    "DeleteFilePageTestDoubleSupport.swift",
     "DiagnosticsTestDoubleSupport.swift",
-    "PlatformDifferencesPageFeatureTests.swift",
+    "ExternalURLPolicyTestDoubleSupport.swift",
+    "LocalFileURLOpenerTestDoubleSupport.swift",
     "PlatformIntrospectionTestDoubleSupport.swift",
     "RepositoryFileActionTestDoubleSupport.swift",
     "RepositoryOpeningTestDoubleSupport.swift",
@@ -135,8 +141,8 @@ let semanticRequestAssertionFileNames = [
     "RenameFilePageTestDoubleSupport.swift",
     "ClassifierSettingsBridgeTestSupport.swift",
     "UndoRedoActionSnapshotTestDoubleSupport.swift",
-    "DetailBatchAddTagsPageFeatureTests.swift",
-    "ImportSingleFileNameConflictCoreTests.swift",
+    "BatchAddTagsTestDoubleSupport.swift",
+    "ImportConflictIntegrationTestDoubleSupport.swift",
     "NoteTestDoubleSupport.swift"
 ]
 
@@ -201,8 +207,12 @@ let rawRecordExposureTerms = [
 ]
 
 let rawRecordLocalFileNames = [
-    "ExternalURLPolicyTests.swift",
     "ICloudConflictListPageFeatureTests.swift",
-    "LocalFileURLOpenerTests.swift",
     "MainEmptyBuildTreeTests.swift"
 ]
+
+let inlineTestDoubleNameMarkers = [
+    "Recording", "Recorder", "Noop", "TestDouble", "Stub", "Spy"
+]
+
+let inlineTestDoubleInventory: [String] = []

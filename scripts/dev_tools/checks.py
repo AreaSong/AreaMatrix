@@ -235,6 +235,13 @@ def run_governance_check(root: Path | None = None) -> int:
     )
     _check_workflow_has_no_paths_filter(root, failures, ".github/workflows/core-ci.yml")
     _check_workflow_has_no_paths_filter(root, failures, ".github/workflows/macos-ci.yml")
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"\./dev bindings verify",
+        "tracked Swift bindings drift gate",
+    )
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check governance", "governance check")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check skills", "skill health")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check quality", "quality smoke")
@@ -247,6 +254,13 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(root, failures, "scripts/check-secrets.sh", r"AREAMATRIX_GITLEAKS_MODE", "local secret scan diff/history modes")
     _require_text(root, failures, "docs/development/ci-governance.md", "./dev check secrets", "local secret scan docs")
     _require_text(root, failures, "docs/development/ci-governance.md", "./dev check codex-os", "Codex OS local check docs")
+    _require_text(
+        root,
+        failures,
+        "docs/development/ci-governance.md",
+        r"\./dev bindings verify",
+        "local tracked bindings drift docs",
+    )
 
     if failures.count:
         print(f"governance health: FAILED ({failures.count} issue(s))", file=os.sys.stderr)

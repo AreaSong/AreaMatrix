@@ -24,7 +24,7 @@ struct FileDetailRequest: Equatable {
 
 actor RecordingFileDetailer: CoreFileDetailing {
     private var resultQueue: TestResultQueue<FileEntrySnapshot>
-    private var requests: [FileDetailRequest] = []
+    private var requestLog = TestRequestLog<FileDetailRequest>()
 
     init() {
         resultQueue = TestResultQueue(results: []) {
@@ -45,7 +45,7 @@ actor RecordingFileDetailer: CoreFileDetailing {
     }
 
     func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
-        requests.append(FileDetailRequest(repoPath: repoPath, fileID: fileID))
+        requestLog.append(FileDetailRequest(repoPath: repoPath, fileID: fileID))
         return try resultQueue.next {
             .failure(CoreError.FileNotFound(path: "\(fileID)"))
         }
@@ -56,7 +56,7 @@ actor RecordingFileDetailer: CoreFileDetailing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertNoFileDetailRequests(
@@ -71,7 +71,7 @@ actor RecordingFileDetailer: CoreFileDetailing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests.count, expectedCount, file: file, line: line)
+        XCTAssertEqual(requestLog.requests.count, expectedCount, file: file, line: line)
     }
 
     func assertRequestedFileIDs(
@@ -79,7 +79,7 @@ actor RecordingFileDetailer: CoreFileDetailing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests.map(\.fileID), expectedFileIDs, file: file, line: line)
+        XCTAssertEqual(requestLog.requests.map(\.fileID), expectedFileIDs, file: file, line: line)
     }
 }
 

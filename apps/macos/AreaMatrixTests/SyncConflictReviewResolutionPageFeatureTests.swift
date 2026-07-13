@@ -343,14 +343,17 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
             currentName: "report.pdf"
         )
         let lister = MainListRecordingFileLister(results: [.success([docsFile]), .success([])])
-        var content = MainRepositoryContentView(
+        let content = MainRepositoryContentView(
             opening: .syncConflictReviewFixture(repoPath: "/tmp/syncConflictReview-repo", files: [docsFile]),
             state: .list,
+            assembly: .make(
+                opening: .syncConflictReviewFixture(repoPath: "/tmp/syncConflictReview-repo", files: [docsFile]),
+                fileLister: lister,
+                fileDetailer: RecordingFileDetailer(results: [.success(docsFile)]),
+                errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
+            ),
             onImport: {},
-            onDropImport: { _, _ in },
-            fileLister: lister,
-            fileDetailer: RecordingFileDetailer(results: [.success(docsFile)]),
-            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
+            onDropImport: { _, _ in }
         )
 
         await content.fileListModel.loadCurrentCategory("docs")

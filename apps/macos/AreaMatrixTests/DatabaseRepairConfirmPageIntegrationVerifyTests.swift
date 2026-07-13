@@ -23,7 +23,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
             recoverability: .userActionRequired,
             rawContext: "/tmp/repo/.areamatrix/index.db"
         )
-        let repairer = RecordingMetadataRepairer(
+        let repairer = DatabaseRepairRecordingMetadataRepairer(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/repo/.areamatrix/index.db"))
         )
         let finder = RecordingRepositoryFinderOpener()
@@ -56,7 +56,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         await repairModel.runFullRescan()
 
         await repairer.assertMetadataRepairRequests([
-            DatabaseRepairIntegrationRepairRequest(
+            DatabaseRepairMetadataRepairRequest(
                 repoPath: "/tmp/repo",
                 options: .databaseRepairFullRescanFixture()
             )
@@ -70,33 +70,6 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
 
         shell.returnFromDatabaseRepair(repairRoute)
         XCTAssertEqual(shell.route, .mainRepoError("/tmp/repo", mapping))
-    }
-}
-
-private struct DatabaseRepairIntegrationRepairRequest: Equatable {
-    var repoPath: String
-    var options: RepairOptionsSnapshot
-}
-
-private actor RecordingMetadataRepairer: CoreMetadataRepairing {
-    private let result: Result<RepairReportSnapshot, Error>
-    private var recordedRequests: [DatabaseRepairIntegrationRepairRequest] = []
-
-    init(result: Result<RepairReportSnapshot, Error>) {
-        self.result = result
-    }
-
-    func repairMetadata(repoPath: String, options: RepairOptionsSnapshot) async throws -> RepairReportSnapshot {
-        recordedRequests.append(DatabaseRepairIntegrationRepairRequest(repoPath: repoPath, options: options))
-        return try result.get()
-    }
-
-    func assertMetadataRepairRequests(
-        _ expectedRequests: [DatabaseRepairIntegrationRepairRequest],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
     }
 }
 

@@ -8,7 +8,7 @@ struct CategoryPredictionRequest: Equatable {
 
 actor RecordingCategoryPredictor: CoreCategoryPredicting {
     private var resultQueue: TestResultQueue<ClassifyResultSnapshot>
-    private var requestsStorage: [CategoryPredictionRequest] = []
+    private var requestLog = TestRequestLog<CategoryPredictionRequest>()
 
     init(result: ClassifyResultSnapshot) {
         resultQueue = TestResultQueue(result: .success(result), missingResult: Self.missingResult)
@@ -23,7 +23,7 @@ actor RecordingCategoryPredictor: CoreCategoryPredicting {
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requestsStorage.append(CategoryPredictionRequest(repoPath: repoPath, filename: filename))
+        requestLog.append(CategoryPredictionRequest(repoPath: repoPath, filename: filename))
         return try resultQueue.next()
     }
 
@@ -32,14 +32,14 @@ actor RecordingCategoryPredictor: CoreCategoryPredicting {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertNoCategoryPredictionRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertCategoryPredictionRequests([], file: file, line: line)
+        requestLog.assertNoRequests(file: file, line: line)
     }
 
     func assertCategoryPredictionFilenames(
@@ -49,7 +49,7 @@ actor RecordingCategoryPredictor: CoreCategoryPredicting {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        requestsStorage.assertCategoryPredictionFilenames(
+        requestLog.requests.assertCategoryPredictionFilenames(
             expectedFilenames,
             repoPath: expectedRepoPath,
             requestCount: expectedRequestCount,
@@ -65,14 +65,14 @@ actor RecordingCategoryPredictor: CoreCategoryPredicting {
 
 actor MappedCategoryPredictor: CoreCategoryPredicting {
     private let resultsByFilename: [String: Swift.Result<ClassifyResultSnapshot, Error>]
-    private var requestsStorage: [CategoryPredictionRequest] = []
+    private var requestLog = TestRequestLog<CategoryPredictionRequest>()
 
     init(resultsByFilename: [String: Swift.Result<ClassifyResultSnapshot, Error>]) {
         self.resultsByFilename = resultsByFilename
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requestsStorage.append(CategoryPredictionRequest(repoPath: repoPath, filename: filename))
+        requestLog.append(CategoryPredictionRequest(repoPath: repoPath, filename: filename))
         guard let result = resultsByFilename[filename] else {
             throw CoreError.Classify(reason: "missing test result")
         }
@@ -85,14 +85,14 @@ actor MappedCategoryPredictor: CoreCategoryPredicting {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertNoCategoryPredictionRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertCategoryPredictionRequests([], file: file, line: line)
+        requestLog.assertNoRequests(file: file, line: line)
     }
 
     func assertCategoryPredictionFilenames(
@@ -102,7 +102,7 @@ actor MappedCategoryPredictor: CoreCategoryPredicting {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        requestsStorage.assertCategoryPredictionFilenames(
+        requestLog.requests.assertCategoryPredictionFilenames(
             expectedFilenames,
             repoPath: expectedRepoPath,
             requestCount: expectedRequestCount,

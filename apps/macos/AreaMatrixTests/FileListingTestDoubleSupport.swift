@@ -26,7 +26,7 @@ struct FileListRequest: Equatable {
 
 actor RecordingFileLister: CoreFileListing {
     private var resultQueue: TestResultQueue<[FileEntrySnapshot]>
-    private var requestsStorage: [FileListRequest] = []
+    private var requestLog = TestRequestLog<FileListRequest>()
 
     init(results: [Swift.Result<[FileEntrySnapshot], Error>]) {
         resultQueue = TestResultQueue(results: results) {
@@ -41,7 +41,7 @@ actor RecordingFileLister: CoreFileListing {
     }
 
     func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
-        requestsStorage.append(FileListRequest(repoPath: repoPath, filter: filter))
+        requestLog.append(FileListRequest(repoPath: repoPath, filter: filter))
         return try resultQueue.next()
     }
 
@@ -50,7 +50,7 @@ actor RecordingFileLister: CoreFileListing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertNoFileListRequests(
@@ -65,7 +65,7 @@ actor RecordingFileLister: CoreFileListing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requestsStorage.count, expectedCount, file: file, line: line)
+        XCTAssertEqual(requestLog.requests.count, expectedCount, file: file, line: line)
     }
 
     func assertLastFileListRequest(
@@ -73,7 +73,7 @@ actor RecordingFileLister: CoreFileListing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requestsStorage.last, expectedRequest, file: file, line: line)
+        XCTAssertEqual(requestLog.requests.last, expectedRequest, file: file, line: line)
     }
 
     func assertFileListFilters(
@@ -81,6 +81,6 @@ actor RecordingFileLister: CoreFileListing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requestsStorage.map(\.filter), expectedFilters, file: file, line: line)
+        XCTAssertEqual(requestLog.requests.map(\.filter), expectedFilters, file: file, line: line)
     }
 }

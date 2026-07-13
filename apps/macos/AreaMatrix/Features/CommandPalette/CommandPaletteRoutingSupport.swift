@@ -30,7 +30,9 @@ extension MainRepositoryContentView {
     }
 
     func openCommandPalette() {
-        restoreSearchFocusAfterPalette = isSearchFieldFocused
+        commandPaletteFocusRoutingState.prepareForPresentation(
+            searchFieldWasFocused: isSearchFieldFocused
+        )
         isSearchFieldFocused = false
         fileListModel.commandPaletteQuery = ""
         if state == .list {
@@ -53,8 +55,7 @@ extension MainRepositoryContentView {
         fileListModel.commandPaletteQuery = ""
         fileListModel.clearCommandPaletteState()
         fileListModel.clearPendingSearchDestination()
-        isSearchFieldFocused = restoreSearchFocusAfterPalette
-        restoreSearchFocusAfterPalette = false
+        isSearchFieldFocused = commandPaletteFocusRoutingState.consumeSearchFieldFocusRestoration()
     }
 
     // swiftlint:disable:next cyclomatic_complexity
@@ -115,7 +116,7 @@ extension MainRepositoryContentView {
                 )
                 return false
             }
-            pendingImportConflictBatchRoute = route
+            importConflictBatchRelayState.enqueue(route)
             return true
         case .classifierImpactPreview:
             fileListModel.commandPaletteState = .failed(
@@ -180,6 +181,19 @@ extension MainRepositoryContentView {
             in: sortedSavedSearches
         ) else { return }
         openCommandPaletteSmartList(saved)
+    }
+}
+
+struct CommandPaletteFocusRoutingState: Equatable {
+    private(set) var shouldRestoreSearchFieldFocus = false
+
+    mutating func prepareForPresentation(searchFieldWasFocused: Bool) {
+        shouldRestoreSearchFieldFocus = searchFieldWasFocused
+    }
+
+    mutating func consumeSearchFieldFocusRestoration() -> Bool {
+        defer { shouldRestoreSearchFieldFocus = false }
+        return shouldRestoreSearchFieldFocus
     }
 }
 

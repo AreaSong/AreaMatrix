@@ -15,7 +15,7 @@ actor RecordingConfigurationUpdater:
     }
 
     private var resultQueue: VoidResultQueue
-    private var recordedRequests: [Request] = []
+    private var requestLog = TestRequestLog<Request>()
 
     init(result: Swift.Result<Void, Error> = .success(())) {
         resultQueue = VoidResultQueue(result: result)
@@ -30,7 +30,7 @@ actor RecordingConfigurationUpdater:
     }
 
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
-        recordedRequests.append(Request(repoPath: repoPath, config: newConfig))
+        requestLog.append(Request(repoPath: repoPath, config: newConfig))
         try resultQueue.next().get()
     }
 
@@ -39,7 +39,7 @@ actor RecordingConfigurationUpdater:
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertNoConfigurationUpdateRequests(
@@ -50,11 +50,11 @@ actor RecordingConfigurationUpdater:
     }
 
     var repoPathsForAssertions: [String] {
-        recordedRequests.map(\.repoPath)
+        requestLog.requests.map(\.repoPath)
     }
 
     var updatedConfigsForAssertions: [RepoConfigSnapshot] {
-        recordedRequests.map(\.config)
+        requestLog.requests.map(\.config)
     }
 
     func assertRequestCount(
@@ -156,7 +156,7 @@ actor StaticConfigurationLoader: CoreConfigurationLoading {
 
 actor RecordingConfigurationLoader: CoreConfigurationLoading {
     private var resultQueue: TestResultQueue<RepoConfigSnapshot>
-    private var paths: [String] = []
+    private var pathLog = TestRequestLog<String>()
 
     init(result: Result<RepoConfigSnapshot, Error>) {
         resultQueue = TestResultQueue(result: result) {
@@ -171,7 +171,7 @@ actor RecordingConfigurationLoader: CoreConfigurationLoading {
     }
 
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        paths.append(repoPath)
+        pathLog.append(repoPath)
         return try resultQueue.next()
     }
 
@@ -180,6 +180,6 @@ actor RecordingConfigurationLoader: CoreConfigurationLoading {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(paths, expectedPaths, file: file, line: line)
+        pathLog.assertRequests(expectedPaths, file: file, line: line)
     }
 }

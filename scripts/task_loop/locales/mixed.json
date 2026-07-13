@@ -254,6 +254,7 @@
     "  ./dev build core",
     "  ./dev test macos",
     "  ./dev bindings update --udl <path> --out-dir <path>",
+    "  ./dev bindings verify",
     "  ./dev release preflight",
     "  ./dev codex-os status",
     "  ./dev processes",

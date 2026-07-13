@@ -83,6 +83,37 @@ typealias DetailNoteReadRequest = NoteReadRequest
 typealias DetailNoteWriteRequest = NoteWriteRequest
 typealias DetailNoteRecordingStore = RecordingNoteStore
 
+struct DetailNoteInFlightRequest: Equatable {
+    var repoPath: String
+    var relativePath: String
+}
+
+actor DetailNoteRecordingInFlightTracker: InFlightFileChangeTracking {
+    private var markRequests = TestRequestLog<DetailNoteInFlightRequest>()
+    private var unmarkRequests = TestRequestLog<DetailNoteInFlightRequest>()
+
+    func mark(repoPath: String, relativePath: String) async {
+        markRequests.append(DetailNoteInFlightRequest(repoPath: repoPath, relativePath: relativePath))
+    }
+
+    func unmark(repoPath: String, relativePath: String) async {
+        unmarkRequests.append(DetailNoteInFlightRequest(repoPath: repoPath, relativePath: relativePath))
+    }
+
+    func contains(repoPath: String, relativePath: String) async -> Bool {
+        markRequests.requests.contains(DetailNoteInFlightRequest(repoPath: repoPath, relativePath: relativePath))
+    }
+
+    func assertBalancedRequests(
+        _ expectedRequests: [DetailNoteInFlightRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        markRequests.assertRequests(expectedRequests, file: file, line: line)
+        unmarkRequests.assertRequests(expectedRequests, file: file, line: line)
+    }
+}
+
 @MainActor
 func makeDetailNoteTestModel(
     repoPath: String = "/tmp/repo",

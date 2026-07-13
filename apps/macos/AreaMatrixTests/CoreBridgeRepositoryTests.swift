@@ -61,6 +61,28 @@ final class CoreBridgeRepositoryTests: XCTestCase {
             }
         }
     }
+
+    func testReindexReportSnapshotMapsAppVisibleFields() {
+        let snapshot = ReindexReportSnapshot(coreReport: ReindexReport(
+            scanSessionId: 42,
+            inserted: 3,
+            updated: 5,
+            missing: 7,
+            conflicts: 11,
+            unreadable: 13,
+            unknown: 17,
+            skipped: 19,
+            errors: ["resume warning"]
+        ))
+
+        XCTAssertEqual(snapshot, ReindexReportSnapshot(
+            scanSessionId: 42,
+            inserted: 3,
+            updated: 5,
+            skipped: 19,
+            errors: ["resume warning"]
+        ))
+    }
 }
 
 private func makeTemporaryRepoURL() throws -> URL {

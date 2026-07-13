@@ -7,7 +7,7 @@ actor RecordingRepositoryPathValidator: CoreRepositoryPathValidating,
     typealias ValidationResult = Swift.Result<RepoPathValidationSnapshot, Error>
 
     private var resultQueue: TestResultQueue<RepoPathValidationSnapshot>
-    private var allRequests: [String] = []
+    private var requestLog = TestRequestLog<String>()
 
     init(result: ValidationResult) {
         resultQueue = TestResultQueue(result: result, missingResult: Self.missingResult)
@@ -26,17 +26,17 @@ actor RecordingRepositoryPathValidator: CoreRepositoryPathValidating,
     }
 
     func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        allRequests.append(repoPath)
+        requestLog.append(repoPath)
         return try nextResult()
     }
 
     func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot {
-        allRequests.append(repoPath)
+        requestLog.append(repoPath)
         return try nextResult()
     }
 
     var repoPathsForAssertions: [String] {
-        allRequests
+        requestLog.requests
     }
 
     private func nextResult() throws -> RepoPathValidationSnapshot {

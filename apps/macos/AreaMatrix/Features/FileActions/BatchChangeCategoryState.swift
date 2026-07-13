@@ -191,37 +191,6 @@ enum BatchChangeCategoryClassifierReturn {
         }
         return context.routeSelectingCreatedCategory(normalized)
     }
-
-    static func acceptedRoute(
-        notification: Notification,
-        context: BatchChangeCategoryReturnContext
-    ) -> BatchChangeCategoryRoute? {
-        guard let category = ClassifierRuleEditorSaveEvents.savedCategory(from: notification) else {
-            return nil
-        }
-        return acceptedRoute(category: category, context: context)
-    }
-}
-
-enum ClassifierRuleEditorSaveEvents {
-    static let savedCategoryNotification = Notification.Name(
-        "AreaMatrixClassifierRuleEditorSavedCategory"
-    )
-    static let categoryUserInfoKey = "savedCategory"
-
-    static func savedCategory(from notification: Notification) -> String? {
-        BatchChangeCategoryCreatedCategoryReturn.normalizedCategory(
-            notification.userInfo?[categoryUserInfoKey] as? String
-        )
-    }
-
-    static func notification(savedCategory: String) -> Notification {
-        Notification(
-            name: savedCategoryNotification,
-            object: nil,
-            userInfo: [categoryUserInfoKey: savedCategory]
-        )
-    }
 }
 
 enum BatchChangeCategoryPreviewState: Equatable {

@@ -9,9 +9,12 @@ final class UndoToastActionLogTests: XCTestCase {
         let content = MainRepositoryContentView(
             opening: .importSingleFileFixture(repoPath: importProgressRepoPath()),
             state: .list,
+            assembly: .make(
+                opening: .importSingleFileFixture(repoPath: importProgressRepoPath()),
+                errorMapper: StaticCoreErrorMapper(mapping: .undoActionLogHistoryFailure)
+            ),
             onImport: {},
-            onDropImport: { _, _ in },
-            errorMapper: StaticCoreErrorMapper(mapping: .undoActionLogHistoryFailure)
+            onDropImport: { _, _ in }
         )
 
         assertTestMirrorDescription(

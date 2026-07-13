@@ -174,59 +174,19 @@ extension MainRepositoryContentView {
     }
 
     func applyMainRepositoryContentSheets(to content: some View) -> some View {
-        content
-            .sheet(item: actionDestinationBinding, content: actionRoutingSheet)
-            .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
-            .sheet(item: $semanticPrivacyRuleRoute, content: semanticPrivacyRuleSheet)
-            .sheet(item: $semanticCallLogRoute, content: semanticCallLogSheet)
-            .sheet(item: $pendingBatchAddTagsRoute, content: batchAddTagsRoutingSheet)
-            .sheet(item: $pendingBatchChangeCategoryRoute, content: batchChangeCategoryRoutingSheet)
-            .sheet(item: $pendingBatchDeleteRoute, content: batchDeleteRoutingSheet)
-            .sheet(item: $pendingBatchRenameRoute, content: batchRenameRoutingSheet)
-            .sheet(item: $pendingUndoHistoryRequest, content: undoHistorySheet)
-            .sheet(item: $smartListManagementRoute, content: smartListManagementSheet)
-            .sheet(item: $pendingSyncConflictReviewRoute, content: syncConflictReviewSheet)
-            .onChange(of: pendingImportConflictBatchRoute) { _, route in
-                guard let route else { return }
-                pendingImportConflictBatchRoute = nil
-                onOpenImportConflictBatch(route)
-            }
-            .onChange(of: isSearchFiltersPresented) { _, presented in
-                guard !presented else { return }
-                reopenSmartListEditorFromDraftIfNeeded()
-            }
+        let primaryActionHost = applyMainRepositoryPrimaryFileActionSheet(to: content)
+        let searchHost = applyMainRepositorySearchSheets(to: primaryActionHost)
+        let batchActionHost = applyMainRepositoryBatchFileActionSheets(to: searchHost)
+        let smartListHost = applyMainRepositorySmartListSheet(to: batchActionHost)
+        let syncConflictHost = applyMainRepositorySyncConflictSheet(to: smartListHost)
+        let importRelay = applyMainRepositoryImportConflictBatchRelay(to: syncConflictHost)
+        return applyMainRepositorySearchFilterDismissRelay(to: importRelay)
     }
 
     func applyMainRepositoryContentCommands(to content: some View) -> some View {
-        content
-            .onReceive(NotificationCenter.default.publisher(for: AreaMatrixUndoHistoryCommandRelay.notification)) { _ in
-                openUndoHistoryFromMenu()
-            }
-            .onReceive(NotificationCenter.default.publisher(
-                for: AreaMatrixCommandPaletteCommandRelay.notification
-            )) { _ in
-                toggleCommandPalette()
-            }
-            .onKeyPress("z", phases: .down) { event in
-                guard event.modifiers.contains(.command) else { return .ignored }
-                if event.modifiers.contains(.shift) {
-                    openUndoHistoryFromRedoShortcut()
-                    return .handled
-                }
-                openUndoHistoryFromShortcut()
-                return .handled
-            }
-    }
-
-    func reopenSmartListEditorFromDraftIfNeeded() {
-        guard let draft = fileListModel.smartListFilterDraft else { return }
-        let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(draft.id)
-        guard let saved = savedSearchesBySidebarID[sidebarID] else { return }
-        smartListManagementRoute = SmartListManagementRoute(
-            mode: .editQuery,
-            savedSearch: saved,
-            draftFilters: draft.filters
-        )
+        let undoMenuHost = applyMainRepositoryUndoHistoryMenuCommandRelay(to: content)
+        let commandPaletteMenuHost = applyMainRepositoryCommandPaletteMenuCommandRelay(to: undoMenuHost)
+        return applyMainRepositoryUndoRedoKeyCommands(to: commandPaletteMenuHost)
     }
 
     private func applyPendingTagSuggestionFocus() async {

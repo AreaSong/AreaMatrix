@@ -1,6 +1,10 @@
 import SwiftUI
 
 extension MainRepositoryContentView {
+    func applyMainRepositoryPrimaryFileActionSheet(to content: some View) -> some View {
+        content.sheet(item: actionDestinationBinding, content: actionRoutingSheet)
+    }
+
     var actionDestinationBinding: Binding<MainFileActionDestination?> {
         Binding(
             get: { fileListModel.pendingActionDestination },

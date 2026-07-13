@@ -84,8 +84,8 @@ extension MainRepositoryContentView {
     }
 
     func handleSearchEscape() {
-        if isSearchFiltersPresented {
-            isSearchFiltersPresented = false
+        if searchRoutingState.isToolbarFiltersPresented {
+            searchRoutingState.isToolbarFiltersPresented = false
             return
         }
         if filterText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -125,11 +125,11 @@ extension MainRepositoryContentView {
 
     var searchFiltersButton: some View {
         Button {
-            isSearchFiltersPresented.toggle()
+            searchRoutingState.isToolbarFiltersPresented.toggle()
         } label: {
             Label(searchFiltersButtonTitle, systemImage: "line.3.horizontal.decrease.circle")
         }
-        .popover(isPresented: $isSearchFiltersPresented) {
+        .popover(isPresented: $searchRoutingState.isToolbarFiltersPresented) {
             SearchFiltersPopover(
                 filters: searchFiltersBinding,
                 facetsState: fileListModel.searchFacetsState,
@@ -151,7 +151,7 @@ extension MainRepositoryContentView {
                     Task { await fileListModel.retryTagFilterRegistry() }
                 },
                 onSaveAsSmartList: {
-                    isSearchFiltersPresented = false
+                    searchRoutingState.isToolbarFiltersPresented = false
                     fileListModel.openSavedSearchSheet()
                 }
             )

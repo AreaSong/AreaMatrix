@@ -9,7 +9,13 @@ from typing import Sequence
 
 import scripts.areaflow_shim as areaflow_shim
 from .backlog import run_backlog_command
-from .build import run_bindings_update, run_core_build
+from .build import (
+    DEFAULT_BINDINGS_UDL,
+    DEFAULT_TRACKED_BINDINGS_DIR,
+    run_bindings_update,
+    run_bindings_verify,
+    run_core_build,
+)
 from .changes import run_changes_doctor, run_changes_generate, run_changes_preview
 from .checks import (
     run_all_check,
@@ -157,6 +163,13 @@ def _build_parser() -> argparse.ArgumentParser:
     update = bindings_sub.add_parser("update", help="Regenerate Swift bindings from an explicit UDL")
     update.add_argument("--udl", required=True, help="UDL file path")
     update.add_argument("--out-dir", "--output-dir", dest="out_dir", required=True, help="Output directory")
+    verify = bindings_sub.add_parser("verify", help="Verify tracked Swift bindings match the current UDL")
+    verify.add_argument("--udl", default=DEFAULT_BINDINGS_UDL, help="UDL file path")
+    verify.add_argument(
+        "--tracked-dir",
+        default=DEFAULT_TRACKED_BINDINGS_DIR,
+        help="Tracked Swift bindings directory",
+    )
 
     release = subparsers.add_parser("release", help="Run release distribution checks")
     release_sub = release.add_subparsers(dest="release_command", required=True)
@@ -832,6 +845,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         if args.command == "bindings" and args.bindings_command == "update":
             return run_bindings_update(root, args.udl, args.out_dir)
+        if args.command == "bindings" and args.bindings_command == "verify":
+            return run_bindings_verify(root, args.udl, args.tracked_dir)
         if args.command == "release" and args.release_command == "preflight":
             return run_release_preflight(root, notary_profile=args.notary_profile, json_output=args.json)
         if args.command == "release" and args.release_command == "status":

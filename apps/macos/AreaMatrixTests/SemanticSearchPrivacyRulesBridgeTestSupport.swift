@@ -2,7 +2,7 @@
 import XCTest
 
 actor SemanticSearchPrivacySemanticSearcher: CoreSemanticSearching {
-    private var recordedIndexRequests: [SearchQueryRequestSnapshot] = []
+    private var indexRequestLog = TestRequestLog<SearchQueryRequestSnapshot>()
 
     func semanticSearch(
         repoPath _: String,
@@ -15,7 +15,7 @@ actor SemanticSearchPrivacySemanticSearcher: CoreSemanticSearching {
         repoPath _: String,
         request: SearchQueryRequestSnapshot
     ) async throws -> SemanticIndexBuildReportSnapshot {
-        recordedIndexRequests.append(request)
+        indexRequestLog.append(request)
         return .testFixture(
             route: .remote,
             providerName: "OpenAI",
@@ -28,13 +28,13 @@ actor SemanticSearchPrivacySemanticSearcher: CoreSemanticSearching {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedIndexRequests, expectedRequests, file: file, line: line)
+        indexRequestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertNoIndexRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedIndexRequests, [], file: file, line: line)
+        indexRequestLog.assertNoRequests(file: file, line: line)
     }
 }

@@ -62,7 +62,8 @@ Code review 不是只看代码风格。评审必须确认：
 3. **实现**：数据流、控制流、错误流是否清晰；复杂逻辑是否拆分。
 4. **安全**：路径、权限、隐私、日志、外部输入、依赖和本地文件安全是否可证明。
 5. **测试**：单测、集成、E2E、手工证据是否覆盖风险。
-6. **文档**：Core API、UDL、README、ADR、CHANGELOG 和 prompt manifest 是否需要同步。
+6. **文档**：Core API、UDL、README、ADR、CHANGELOG 和 prompt manifest 是否需要同步；UDL 变化后
+   `./dev bindings verify` 是否通过。
 7. **CI**：必须通过相关 workflow；失败不能用“本地可以”替代。
 
 ## Task-loop PASS 后评审

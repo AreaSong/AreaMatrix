@@ -1,6 +1,20 @@
 import SwiftUI
 
 extension MainRepositoryContentView {
+    func applyMainRepositorySearchSheets(to content: some View) -> some View {
+        content
+            .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
+            .sheet(item: $semanticPrivacyRuleRoute, content: semanticPrivacyRuleSheet)
+            .sheet(item: $semanticCallLogRoute, content: semanticCallLogSheet)
+    }
+
+    func applyMainRepositorySearchFilterDismissRelay(to content: some View) -> some View {
+        content.onChange(of: searchRoutingState.isToolbarFiltersPresented) { _, presented in
+            guard !presented else { return }
+            reopenSmartListEditorFromDraftIfNeeded()
+        }
+    }
+
     var searchDestinationBinding: Binding<MainSearchDestination?> {
         Binding(
             get: {
@@ -29,7 +43,7 @@ extension MainRepositoryContentView {
                 onSaved: saveAndCloseSearchSheet,
                 onEditFilters: {
                     fileListModel.clearPendingSearchDestination()
-                    isSearchFiltersPresented = true
+                    searchRoutingState.isToolbarFiltersPresented = true
                 }
             )
         case let .indexingStatus(request):
@@ -57,6 +71,23 @@ extension MainRepositoryContentView {
         selectSavedSearch(saved)
         fileListModel.clearPendingSearchDestination()
     }
+
+    private func reopenSmartListEditorFromDraftIfNeeded() {
+        guard let draft = fileListModel.smartListFilterDraft else { return }
+        let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(draft.id)
+        guard let saved = savedSearchesBySidebarID[sidebarID] else { return }
+        searchRoutingState.smartListManagementRoute = SmartListManagementRoute(
+            mode: .editQuery,
+            savedSearch: saved,
+            draftFilters: draft.filters
+        )
+    }
+}
+
+struct MainRepositorySearchRoutingState: Equatable {
+    var isToolbarFiltersPresented = false
+    var isSidebarTagsFilterPresented = false
+    var smartListManagementRoute: SmartListManagementRoute?
 }
 
 extension MainRepositoryContentView {

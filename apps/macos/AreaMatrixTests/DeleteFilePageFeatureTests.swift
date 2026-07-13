@@ -178,43 +178,6 @@ final class DeleteFilePageFeatureTests: XCTestCase {
     }
 }
 
-private enum DeleteRequest: Equatable {
-    case delete(repoPath: String, fileID: Int64)
-    case removeIndex(repoPath: String, fileID: Int64)
-}
-
-private actor DeleteRecordingDeleter: CoreFileDeleting {
-    private let deleteResult: Result<Void, Error>
-    private let removeIndexResult: Result<Void, Error>
-    private var requests: [DeleteRequest] = []
-
-    init(
-        deleteResult: Result<Void, Error> = .success(()),
-        removeIndexResult: Result<Void, Error> = .success(())
-    ) {
-        self.deleteResult = deleteResult
-        self.removeIndexResult = removeIndexResult
-    }
-
-    func deleteFile(repoPath: String, fileID: Int64) async throws {
-        requests.append(.delete(repoPath: repoPath, fileID: fileID))
-        try deleteResult.get()
-    }
-
-    func removeIndexEntry(repoPath: String, fileID: Int64) async throws {
-        requests.append(.removeIndex(repoPath: repoPath, fileID: fileID))
-        try removeIndexResult.get()
-    }
-
-    func assertFileDeletionRequests(
-        _ expectedRequests: [DeleteRequest],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
-    }
-}
-
 extension FileEntrySnapshot {
     static func deleteFixture(
         id: Int64,

@@ -80,12 +80,11 @@ final class BatchChangeCategoryVerifyTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: context.repoOwnedDocsURL.path))
     }
 
-    func testBatchChangeCategoryCreateNewCategorySaveNotificationReturnsToSheetWithCreatedCategoryPreviewContext() {
+    func testBatchChangeCategoryCreateNewCategorySaveReturnsToSheetWithCreatedCategoryPreviewContext() {
         let context = BatchChangeCategoryReturnContext.batchChangeCategoryFixture()
-        let notification = ClassifierRuleEditorSaveEvents.notification(savedCategory: " tax ")
 
         let acceptedRoute = BatchChangeCategoryClassifierReturn.acceptedRoute(
-            notification: notification,
+            category: " tax ",
             context: context
         )
 
@@ -106,12 +105,11 @@ final class BatchChangeCategoryVerifyTests: XCTestCase {
         XCTAssertEqual(cancelledRoute, context.routeRestoringOriginalTarget())
     }
 
-    func testBatchChangeCategoryCreateNewCategoryBlankSaveNotificationDoesNotSelectCreatedCategory() {
+    func testBatchChangeCategoryCreateNewCategoryBlankSaveDoesNotSelectCreatedCategory() {
         let context = BatchChangeCategoryReturnContext.batchChangeCategoryFixture()
-        let notification = ClassifierRuleEditorSaveEvents.notification(savedCategory: "   ")
 
         let acceptedRoute = BatchChangeCategoryClassifierReturn.acceptedRoute(
-            notification: notification,
+            category: "   ",
             context: context
         )
 

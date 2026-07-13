@@ -36,28 +36,20 @@ struct MainRepositoryContentView: View {
     @State var selectedFileIDs: Set<Int64> = []
     @State var pendingMovedFileFocusID: Int64?
     @State var selectedImportProgressIDs: Set<String> = []
-    @State var pendingBatchAddTagsRoute: BatchAddTagsRoute?
-    @State var pendingBatchChangeCategoryRoute: BatchChangeCategoryRoute?
-    @State var pendingBatchDeleteRoute: BatchDeleteRoute?
-    @State var pendingBatchRenameRoute: BatchRenameRoute?
-    @State var pendingImportConflictBatchRoute: ImportConflictBatchRoute?
-    @State var pendingUndoHistoryRequest: UndoToastHistoryRequest?
-    @State var batchTagUndoState: BatchTagUndoState = .idle
-    @State var batchTagActionLogRefreshFailure: CoreErrorMappingSnapshot?
-    @State var restoreSearchFocusAfterPalette = false
+    @State var fileActionRoutingState = MainFileActionRoutingState()
+    @State var importConflictBatchRelayState = ImportConflictBatchRelayState()
+    @State var commandPaletteFocusRoutingState = CommandPaletteFocusRoutingState()
     @State var filterText: String = ""
     @State var searchScope: SearchScopeSnapshot = .all
     @State var searchMode: SearchModeSnapshot = .normal
     @State var searchSort: SearchSortSnapshot = .newestImported
     @State var searchFilters: SearchFilterStateSnapshot = .empty
-    @State var isSearchFiltersPresented = false
-    @State var isSidebarTagsFilterPresented = false
+    @State var searchRoutingState = MainRepositorySearchRoutingState()
     @State var isSemanticIndexConfirmationPresented = false
     @State var semanticPrivacyRuleRoute: AIClassificationPrivacyRuleRoute?
     @State var semanticCallLogRoute: SemanticSearchCallLogRoute?
     @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
     @State var smartListLoadError: CoreErrorMappingSnapshot?
-    @State var smartListManagementRoute: SmartListManagementRoute?
     @State var pendingSyncConflictReviewRoute: SyncConflictReviewRoute?
     @FocusState var isSearchFieldFocused: Bool
     @StateObject var dropPreviewModel: ImportDropPreviewModel
@@ -68,10 +60,10 @@ struct MainRepositoryContentView: View {
     ]
     @State var summarySelectionExitState = AISummarySelectionExitState()
 
-    // swiftlint:disable:next function_body_length
     init(
         opening: RepositoryOpeningResult,
         state: MainRepositoryContentState,
+        assembly: MainRepositoryContentAssembly,
         onImport: @escaping () -> Void,
         onDropImport: @escaping ([URL], ImportEntryDestination) -> Void,
         onOpenSettings: @escaping () -> Void = {},
@@ -86,37 +78,11 @@ struct MainRepositoryContentView: View {
         onCopyPaths: @escaping ([String]) -> Void = { _ in },
         onOpenNoteFile: @escaping (String) -> Void = { _ in },
         onOpenChangeCategoryPermissionRecovery: @escaping () -> Void = {},
-        treeLister: any CoreRepositoryTreeListing = AppCoreServices.treeLister,
-        savedSearchStore: any CoreSavedSearchCRUD = AppCoreServices.savedSearchStore,
         externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
         onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
         pendingTagSuggestionFocus: TagSuggestionPresentationRequest? = nil,
         onPendingTagSuggestionFocusConsumed: @escaping (TagSuggestionPresentationRequest) -> Void = { _ in },
-        importProgressItems: [ImportBatchProgressSnapshot.Item] = [],
-        fileLister: any CoreFileListing = AppCoreServices.fileLister,
-        fileDetailer: any CoreFileDetailing = AppCoreServices.fileDetailer,
-        searchQuerying: any CoreSearchQuerying = AppCoreServices.searchQuerying,
-        semanticSearching: any CoreSemanticSearching = AppCoreServices.semanticSearching,
-        searchFiltering: any CoreSearchFiltering = AppCoreServices.searchFiltering,
-        commandIndexer: any CoreCommandIndexing = AppCoreServices.commandIndexer,
-        fileCategoryMover: any CoreFileCategoryMoving = AppCoreServices.fileCategoryMover,
-        batchDeleter: any CoreBatchDeleting = AppCoreServices.batchDeleter,
-        batchCategoryChanger: any CoreBatchCategoryChanging = AppCoreServices.batchCategoryChanger,
-        batchRenamer: any CoreBatchRenaming = AppCoreServices.batchRenamer,
-        systemCapabilityChecker: any OnboardingSystemCapabilityChecking =
-            AppPlatformServices.systemCapabilityChecker,
-        syncConflictDetector: any CoreSyncConflictDetecting = AppCoreServices.syncConflictDetector,
-        iCloudConflictResolver: any ICloudConflictResolving = AppCoreServices.iCloudConflictResolver,
-        tagStore: any CoreTagCRUD = AppCoreServices.tagStore,
-        aiPrivacyRules: any CoreAIPrivacyEvaluating = AppCoreServices.aiPrivacyRules,
-        undoActionStore: any CoreUndoActionLogging = AppCoreServices.undoActionStore,
-        redoActionStore: any CoreRedoActionLogging = AppCoreServices.redoActionStore,
-        changeLogLister: any CoreChangeLogListing = AppCoreServices.changeLogLister,
-        externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer,
-        noteStore: any CoreNoteReadingWriting = AppCoreServices.noteStore,
-        categoryPredictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector
+        importProgressItems: [ImportBatchProgressSnapshot.Item] = []
     ) {
         self.opening = opening; self.state = state
         self.onImport = onImport; self.onDropImport = onDropImport
@@ -127,49 +93,21 @@ struct MainRepositoryContentView: View {
         self.onShowInFinder = onShowInFinder; self.onCopyPath = onCopyPath; self.onCopyPaths = onCopyPaths
         self.onOpenNoteFile = onOpenNoteFile
         self.onOpenChangeCategoryPermissionRecovery = onOpenChangeCategoryPermissionRecovery
-        self.treeLister = treeLister; self.savedSearchStore = savedSearchStore; self.batchRenamer = batchRenamer
-        self.systemCapabilityChecker = systemCapabilityChecker
-        self.errorMapper = errorMapper; self.externalCreatedEvent = externalCreatedEvent
+        treeLister = assembly.treeLister
+        savedSearchStore = assembly.savedSearchStore
+        batchRenamer = assembly.batchRenamer
+        systemCapabilityChecker = assembly.systemCapabilityChecker
+        errorMapper = assembly.errorMapper
+        self.externalCreatedEvent = externalCreatedEvent
         self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
         self.pendingTagSuggestionFocus = pendingTagSuggestionFocus
         self.onPendingTagSuggestionFocusConsumed = onPendingTagSuggestionFocusConsumed
         self.importProgressItems = importProgressItems
-        _dropPreviewModel = StateObject(wrappedValue: ImportDropPreviewModel(
-            repoPath: opening.config.repoPath,
-            predictor: categoryPredictor
-        ))
-        _detailNoteModel = StateObject(wrappedValue: DetailNoteModel(
-            repoPath: opening.config.repoPath,
-            noteStore: noteStore,
-            errorMapper: errorMapper
-        ))
-        _summaryExitController = StateObject(wrappedValue: AISummaryEditorExitController())
-        _fileListModel = StateObject(wrappedValue: MainFileListModel(
-            opening: opening,
-            fileLister: fileLister,
-            fileDetailer: fileDetailer,
-            searchQuerying: searchQuerying,
-            semanticSearching: semanticSearching,
-            searchFiltering: searchFiltering,
-            commandIndexer: commandIndexer,
-            fileCategoryMover: fileCategoryMover,
-            batchDeleter: batchDeleter,
-            batchCategoryChanger: batchCategoryChanger,
-            iCloudConflictResolver: iCloudConflictResolver,
-            tagStore: tagStore,
-            aiPrivacyRules: aiPrivacyRules,
-            undoActionStore: undoActionStore,
-            redoActionStore: redoActionStore,
-            changeLogLister: changeLogLister,
-            externalChangesSyncer: externalChangesSyncer,
-            errorMapper: errorMapper,
-            diagnosticsCollector: diagnosticsCollector
-        ))
-        _syncConflictEntryModel = StateObject(wrappedValue: SyncConflictEntryModel(
-            repoPath: opening.config.repoPath,
-            conflictDetector: syncConflictDetector,
-            errorMapper: errorMapper
-        ))
+        _dropPreviewModel = StateObject(wrappedValue: assembly.makeDropPreviewModel())
+        _detailNoteModel = StateObject(wrappedValue: assembly.makeDetailNoteModel())
+        _summaryExitController = StateObject(wrappedValue: assembly.makeSummaryExitController())
+        _fileListModel = StateObject(wrappedValue: assembly.makeFileListModel())
+        _syncConflictEntryModel = StateObject(wrappedValue: assembly.makeSyncConflictEntryModel())
         _repositoryTree = State(initialValue: opening.tree)
         _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
         let defaultSidebarID = Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows)

@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -202,11 +201,10 @@ private extension WelcomeStepView {
             }
             .onHover { hovering in
                 isLearnMoreHovered = hovering
+                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
                 if hovering {
-                    NSCursor.pointingHand.push()
                     activateHoverScene(.feat4)
                 } else {
-                    NSCursor.pop()
                     scheduleHoverReset(for: .feat4)
                 }
             }
@@ -245,11 +243,10 @@ private extension WelcomeStepView {
             }
             .onHover { hovering in
                 isCtaHovered = hovering
+                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
                 if hovering {
-                    NSCursor.pointingHand.push()
                     activateHoverScene(.feat5)
                 } else {
-                    NSCursor.pop()
                     scheduleHoverReset(for: .feat5)
                 }
             }
@@ -283,7 +280,7 @@ private extension WelcomeStepView {
             max(0, min(scenes.count - 1, current + direction))
         }
         guard scenes[next] != activeScene else { return }
-        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+        AppPlatformServices.interactionFeedback.performHaptic(.alignment)
         withAnimation(.areaMatrixSceneEnterExit) {
             activeScene = scenes[next]
         }

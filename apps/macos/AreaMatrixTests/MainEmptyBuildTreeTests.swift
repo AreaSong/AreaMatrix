@@ -62,12 +62,15 @@ final class MainEmptyBuildTreeTests: XCTestCase {
         let content = MainRepositoryContentView(
             opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
             state: .empty,
+            assembly: .make(
+                opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
+                fileLister: MainListRecordingFileLister(results: []),
+                fileDetailer: RecordingFileDetailer(results: []),
+                errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+            ),
             onImport: {},
             onDropImport: { _, _ in },
-            onOpenSettings: {},
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: RecordingFileDetailer(results: []),
-            errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+            onOpenSettings: {}
         )
 
         XCTAssertEqual(content.visibleCommandPaletteState.snapshot?.targetTitles, [
@@ -144,6 +147,27 @@ final class MainEmptyBuildTreeTests: XCTestCase {
 
         XCTAssertNil(route)
         XCTAssertEqual(mapping.rawContext, "import-conflict-batch")
+    }
+
+    func testImportConflictBatchRelayConsumesOnceAndKeepsLatestEnqueuedRoute() {
+        let first = ImportConflictBatchRoute(
+            importSessionID: "session-first",
+            conflictIDs: ["dup-1"],
+            source: .importConflictBatch
+        )
+        let latest = ImportConflictBatchRoute(
+            importSessionID: "session-latest",
+            conflictIDs: ["name-1"],
+            source: .importConflictBatch
+        )
+        var state = ImportConflictBatchRelayState()
+
+        state.enqueue(first)
+        state.enqueue(latest)
+
+        XCTAssertEqual(state.consumePendingRoute(), latest)
+        XCTAssertNil(state.consumePendingRoute())
+        XCTAssertNil(state.pendingRoute)
     }
 
     @MainActor

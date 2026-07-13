@@ -17,12 +17,14 @@ actor UndoActionRecordingTestStore: CoreUndoActionLogging, UndoActionRequestReco
         case undo(Swift.Result<UndoActionResultSnapshot, Error>)
     }
 
-    private var results: [Step]
+    private var stepQueue: TestStepQueue<Step>
     private var recordedListRequests: [String] = []
     private var recordedUndoRequests: [String] = []
 
     init(results: [Step]) {
-        self.results = results
+        stepQueue = TestStepQueue(steps: results) {
+            throw UndoActionRecordingTestStoreError.missingResult
+        }
     }
 
     func listUndoActions(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
@@ -74,8 +76,7 @@ actor UndoActionRecordingTestStore: CoreUndoActionLogging, UndoActionRequestReco
     }
 
     private func consumeResult() throws -> Step {
-        guard !results.isEmpty else { throw UndoActionRecordingTestStoreError.missingResult }
-        return results.removeFirst()
+        try stepQueue.next()
     }
 }
 
@@ -147,18 +148,25 @@ actor RedoActionLogRecordingRedoStore: CoreRedoActionLogging, RedoActionRequestR
         case redo(Swift.Result<RedoActionResultSnapshot, Error>)
     }
 
-    private var results: [Step]
+    private var stepQueue: TestStepQueue<Step>
     private var recordedListRequests: [String] = []
     private var recordedRedoRequests: [String] = []
 
     init(results: [Step]) {
-        self.results = results
+        stepQueue = TestStepQueue(steps: results) {
+            throw RedoActionLogRecordingRedoStoreError.missingListResult
+        }
     }
 
     func listRedoActions(repoPath: String) async throws -> [RedoActionRecordSnapshot] {
         recordedListRequests.append(repoPath)
-        guard !results.isEmpty else { return [] }
-        guard case let .list(result) = results.removeFirst() else {
+        let step: Step
+        do {
+            step = try stepQueue.next()
+        } catch RedoActionLogRecordingRedoStoreError.missingListResult {
+            return []
+        }
+        guard case let .list(result) = step else {
             throw CoreError.Internal(message: "Expected listRedoActions")
         }
         return try result.get()
@@ -166,10 +174,10 @@ actor RedoActionLogRecordingRedoStore: CoreRedoActionLogging, RedoActionRequestR
 
     func redoAction(repoPath: String, actionID: String) async throws -> RedoActionResultSnapshot {
         recordedRedoRequests.append("\(repoPath)|\(actionID)")
-        guard !results.isEmpty else {
+        let step = try stepQueue.next {
             throw CoreError.FileNotFound(path: actionID)
         }
-        guard case let .redo(result) = results.removeFirst() else {
+        guard case let .redo(result) = step else {
             throw CoreError.Internal(message: "Expected redoAction")
         }
         return try result.get()
@@ -182,6 +190,10 @@ actor RedoActionLogRecordingRedoStore: CoreRedoActionLogging, RedoActionRequestR
     var redoActionRequestsForAssertions: [String] {
         recordedRedoRequests
     }
+}
+
+private enum RedoActionLogRecordingRedoStoreError: Error {
+    case missingListResult
 }
 
 protocol UndoActionListRequestRecording: Actor {

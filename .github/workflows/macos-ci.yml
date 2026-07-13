@@ -49,6 +49,10 @@ jobs:
         if: steps.macos_project.outputs.present == 'true'
         run: ./dev build core
 
+      - name: Verify tracked Swift bindings
+        if: steps.macos_project.outputs.present == 'true'
+        run: ./dev bindings verify
+
       - name: Resolve Swift package dependencies
         if: steps.macos_project.outputs.present == 'true'
         run: |

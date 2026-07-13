@@ -90,6 +90,9 @@ extension ImportConflictBatchPreviewReportSnapshot {
         copy.includedCount = Int64(request.conflictIDs.count)
         copy.items = request.conflictIDs.map { conflictID in
             let source = items.first { $0.conflictID == conflictID }
+            if let source, source.status == .blocked {
+                return source
+            }
             let type = source?.conflictType ?? .duplicateHash
             let strategy = type == .duplicateHash ? request.duplicateStrategy : request.sameNameStrategy
             let status = copy.previewStatusForImportConflictBatchRequest(strategy: strategy)
@@ -213,31 +216,54 @@ extension ImportConflictBatchApplyReportSnapshot {
     static func importConflictBatchIntegrationReport(
         for request: ImportConflictBatchApplyRequestSnapshot
     ) -> ImportConflictBatchApplyReportSnapshot {
-        let isAskPerItem = request.duplicateStrategy == .askPerItem && request.sameNameStrategy == .askPerItem
+        let itemResults = request.conflictIDs.map { conflictID in
+            let type: ImportConflictBatchConflictTypeSnapshot = conflictID.hasPrefix("name")
+                ? .sameNameDifferentContent
+                : .duplicateHash
+            let strategy = type == .duplicateHash ? request.duplicateStrategy : request.sameNameStrategy
+            return ImportConflictBatchItemResultSnapshot.testFixture(
+                conflictID: conflictID,
+                conflictType: type,
+                appliedStrategy: strategy,
+                status: importConflictBatchResultStatus(for: strategy),
+                fileID: strategy == .askPerItem ? nil : 42,
+                finalPath: "finance/Invoice_2026Q1.pdf"
+            )
+        }
+        let skippedCount = Int64(itemResults.filter { $0.status == .skipped }.count)
+        let keptBothCount = Int64(itemResults.filter { $0.status == .keptBoth }.count)
+        let replacedCount = Int64(itemResults.filter { $0.status == .replaced }.count)
+        let queuedCount = Int64(itemResults.filter { $0.status == .queuedForPerItem }.count)
+        let resolvedCount = skippedCount + keptBothCount + replacedCount
         let count = Int64(request.conflictIDs.count)
         return .testFixture(
             importSessionID: request.importSessionID,
             requestedConflictCount: count,
-            resolvedCount: isAskPerItem ? 0 : count,
-            replacedCount: isAskPerItem ? 0 : count,
-            queuedForPerItemCount: isAskPerItem ? count : 0,
-            itemResults: request.conflictIDs.map { conflictID in
-                let type: ImportConflictBatchConflictTypeSnapshot = conflictID.hasPrefix("name")
-                    ? .sameNameDifferentContent
-                    : .duplicateHash
-                return .testFixture(
-                    conflictID: conflictID,
-                    conflictType: type,
-                    appliedStrategy: request.duplicateStrategy,
-                    status: isAskPerItem ? .queuedForPerItem : .replaced,
-                    fileID: isAskPerItem ? nil : 42,
-                    finalPath: "finance/Invoice_2026Q1.pdf"
-                )
-            },
-            affectedFileIDs: isAskPerItem ? [] : [42],
-            undoToken: isAskPerItem ? nil : "undo-import-conflict-batch",
-            changeLogActions: isAskPerItem ? [] : ["import_conflict_batch"]
+            resolvedCount: resolvedCount,
+            skippedCount: skippedCount,
+            keptBothCount: keptBothCount,
+            replacedCount: replacedCount,
+            queuedForPerItemCount: queuedCount,
+            itemResults: itemResults,
+            affectedFileIDs: resolvedCount == 0 ? [] : [42],
+            undoToken: replacedCount == 0 ? nil : "undo-import-conflict-batch",
+            changeLogActions: resolvedCount == 0 ? [] : ["import_conflict_batch"]
         )
+    }
+
+    private static func importConflictBatchResultStatus(
+        for strategy: ImportConflictBatchStrategySnapshot
+    ) -> ImportConflictBatchResultStatusSnapshot {
+        switch strategy {
+        case .skip:
+            .skipped
+        case .keepBoth:
+            .keptBoth
+        case .replace:
+            .replaced
+        case .askPerItem:
+            .queuedForPerItem
+        }
     }
 }
 

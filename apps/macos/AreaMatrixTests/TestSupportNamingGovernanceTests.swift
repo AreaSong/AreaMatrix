@@ -317,6 +317,19 @@ final class TestSupportNamingGovernanceTests: XCTestCase {
 }
 
 extension TestSupportNamingGovernanceTests {
+    func testInlineFeatureLocalDoublesStayInventoried() throws {
+        let actual = try testSupportSwiftFiles()
+            .filter { $0.lastPathComponent.hasSuffix("Tests.swift") }
+            .flatMap(inlineTestDoubleDeclarations)
+            .sorted()
+
+        XCTAssertEqual(
+            actual,
+            inlineTestDoubleInventory,
+            "Inline test doubles must be inventoried and should move to feature-local *TestDoubleSupport.swift."
+        )
+    }
+
     func testSelectedFeatureLocalRecordingDoublesExposeSemanticRequestAssertions() throws {
         let violations = try testSupportSwiftFiles()
             .filter { semanticRequestAssertionFileNames.contains($0.lastPathComponent) }
@@ -332,5 +345,22 @@ extension TestSupportNamingGovernanceTests {
             .flatMap { try sourceTermViolations(in: $0, terms: rawRecordExposureTerms) }
             .sorted()
         XCTAssertEqual(violations, [], "Recording support should expose semantic assertions, not raw record getters.")
+    }
+
+    private func inlineTestDoubleDeclarations(in fileURL: URL) throws -> [String] {
+        let contents = try String(contentsOf: fileURL, encoding: .utf8)
+
+        return contents.split(separator: "\n").compactMap { line in
+            let tokens = line.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+            guard let kindIndex = tokens.firstIndex(where: { ["actor", "class", "struct"].contains($0) }),
+                  tokens.indices.contains(kindIndex + 1)
+            else {
+                return nil
+            }
+
+            let typeName = tokens[kindIndex + 1].trimmingCharacters(in: CharacterSet(charactersIn: ":{"))
+            guard inlineTestDoubleNameMarkers.contains(where: typeName.contains) else { return nil }
+            return "\(fileURL.lastPathComponent):\(typeName)"
+        }
     }
 }

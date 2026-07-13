@@ -55,6 +55,24 @@ private extension ClassifyReasonSnapshot {
     }
 }
 
+struct ReindexReportSnapshot: Equatable {
+    var scanSessionId: Int64?
+    var inserted: Int64
+    var updated: Int64
+    var skipped: Int64
+    var errors: [String]
+}
+
+extension ReindexReportSnapshot {
+    init(coreReport: ReindexReport) {
+        scanSessionId = coreReport.scanSessionId
+        inserted = coreReport.inserted
+        updated = coreReport.updated
+        skipped = coreReport.skipped
+        errors = coreReport.errors
+    }
+}
+
 extension ScanSessionSnapshot {
     init(coreSession: ScanSession) {
         id = coreSession.id

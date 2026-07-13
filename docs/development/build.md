@@ -131,11 +131,18 @@ fn main() {
 ### 更新 tracked bindings
 
 如果 `core/area_matrix.udl` 的公开接口变更，并且需要提交 Xcode 工程实际消费的 Swift bindings，
-将 bindings 显式生成到 `Bridge/UniFFI/`：
+先构建包含当前 UniFFI metadata 的 host dylib，再将 bindings 显式生成到 `Bridge/UniFFI/`：
 
 ```bash
+./dev build core
 ./dev bindings update --udl core/area_matrix.udl --out-dir apps/macos/AreaMatrix/Bridge/UniFFI
+./dev bindings verify
 ```
+
+`./dev bindings verify` 只在临时目录生成并比较 `area_matrix.swift`、`area_matrixFFI.h` 与
+`module.modulemap`，不会改写 tracked bindings。CI 在 Core build 后运行该命令，阻止 UDL、生成器
+输出与 Xcode 实际消费的 bindings 漂移。默认生成器固定为 `core/Cargo.lock` 中的 UniFFI 版本；
+只有显式设置 `UNIFFI_BINDGEN` 或 `AREAMATRIX_UNIFFI_BINDGEN` 时才覆盖该版本。
 
 ### Bridging Header 配置
 

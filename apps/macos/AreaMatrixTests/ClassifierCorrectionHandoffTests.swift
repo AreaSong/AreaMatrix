@@ -5,7 +5,9 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
     @MainActor
     func testClassifierCorrectionRememberRuleRoutesToSaveAndPreviewHandoffsWithoutCallingMutationCore() async {
         let file = classifierCorrectionFile(id: 260, name: "contract.pdf")
-        let mover = ClassifierCorrectionNoopCategoryMover()
+        let mover = ChangeCategoryRecordingMover(
+            previewResult: .failure(CoreError.Internal(message: "unexpected classifier correction mutation"))
+        )
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [file]),
             fileLister: NoopFileLister(),
@@ -45,7 +47,7 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         XCTAssertEqual(model.selectedFileDetail, file)
         XCTAssertEqual(model.files, [file])
         XCTAssertNil(model.classifierCorrectionResult)
-        await mover.assertNoMutationRequests()
+        await mover.assertNoCategoryChangeActions()
     }
 
     @MainActor
@@ -236,39 +238,6 @@ final class ClassifierCorrectionHandoffTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(
             atPath: repoURL.appendingPathComponent("docs/contract-classifierImpactPreview.txt").path
         ))
-    }
-}
-
-private actor ClassifierCorrectionNoopCategoryMover: CoreFileCategoryMoving {
-    private var requests: [String] = []
-
-    func previewMoveToCategory(
-        repoPath _: String,
-        fileID _: Int64,
-        newCategory _: String
-    ) async throws -> MoveToCategoryPreviewSnapshot {
-        requests.append("preview")
-        throw CoreError.Internal(message: "unexpected preview")
-    }
-
-    func moveToCategory(repoPath _: String, fileID _: Int64, newCategory _: String) async throws -> FileEntrySnapshot {
-        requests.append("move")
-        throw CoreError.Internal(message: "unexpected move")
-    }
-
-    func correctFileCategory(
-        repoPath _: String,
-        fileID _: Int64,
-        targetCategory _: String,
-        moveFile _: Bool,
-        remember _: Bool
-    ) async throws -> ClassifierCorrectionResultSnapshot {
-        requests.append("correction")
-        throw CoreError.Internal(message: "unexpected correction")
-    }
-
-    func assertNoMutationRequests(file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertEqual(requests, [], file: file, line: line)
     }
 }
 

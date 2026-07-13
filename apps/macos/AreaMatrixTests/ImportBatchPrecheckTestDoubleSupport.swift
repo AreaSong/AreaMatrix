@@ -4,7 +4,7 @@ import XCTest
 
 actor ImportBatchStaticBatchFileLoader: ImportBatchCoreFileLoading {
     private let pagesByCategory: [String: [[FileEntrySnapshot]]]
-    private var requests: [FileFilterSnapshot] = []
+    private var requestLog = TestRequestLog<FileFilterSnapshot>()
 
     init(pagesByCategory: [String: [[FileEntrySnapshot]]]) {
         self.pagesByCategory = pagesByCategory
@@ -12,7 +12,7 @@ actor ImportBatchStaticBatchFileLoader: ImportBatchCoreFileLoading {
 
     func loadImportPreviewFiles(repoPath: String, categories: Set<String?>) async throws -> [FileEntrySnapshot] {
         try await ImportBatchCoreFileLoader.load(repoPath: repoPath, categories: categories) { _, filter in
-            requests.append(filter)
+            requestLog.append(filter)
             let categoryKey = filter.category ?? "__all__"
             let pages = pagesByCategory[categoryKey] ?? []
             let pageIndex = Int(filter.offset / max(filter.limit, 1))
@@ -26,7 +26,7 @@ actor ImportBatchStaticBatchFileLoader: ImportBatchCoreFileLoading {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, [.testFixture(limit: limit)], file: file, line: line)
+        requestLog.assertRequests([.testFixture(limit: limit)], file: file, line: line)
     }
 
     func assertLoadedFilesForNameConflictPrecheck(
@@ -36,7 +36,7 @@ actor ImportBatchStaticBatchFileLoader: ImportBatchCoreFileLoading {
         line: UInt = #line
     ) {
         XCTAssertEqual(
-            requests,
+            requestLog.requests,
             expectedCategories.map { .testFixture(category: $0, limit: limit) },
             file: file,
             line: line
@@ -47,7 +47,7 @@ actor ImportBatchStaticBatchFileLoader: ImportBatchCoreFileLoading {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, [], file: file, line: line)
+        requestLog.assertNoRequests(file: file, line: line)
     }
 }
 
@@ -61,7 +61,7 @@ typealias ImportBatchNameConflictPrecheckRequest = ImportPrecheckRowsRequest
 
 actor ImportBatchStaticNameConflictPrechecker: ImportBatchNameConflictPrechecking {
     private let results: [String: ImportBatchNameConflictPrecheckResult]
-    private var requests: [ImportBatchNameConflictPrecheckRequest] = []
+    private var requestLog = TestRequestLog<ImportBatchNameConflictPrecheckRequest>()
 
     init(results: [String: ImportBatchNameConflictPrecheckResult]) {
         self.results = results
@@ -72,7 +72,7 @@ actor ImportBatchStaticNameConflictPrechecker: ImportBatchNameConflictPrecheckin
         rows: [ImportBatchPreviewRow],
         destination: ImportBatchDestinationOption
     ) async -> [String: ImportBatchNameConflictPrecheckResult] {
-        requests.append(ImportBatchNameConflictPrecheckRequest(
+        requestLog.append(ImportBatchNameConflictPrecheckRequest(
             repoPath: repoPath,
             rowIDs: rows.map(\.id),
             destination: destination
@@ -87,8 +87,7 @@ actor ImportBatchStaticNameConflictPrechecker: ImportBatchNameConflictPrecheckin
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(
-            requests,
+        requestLog.assertRequests(
             [ImportBatchNameConflictPrecheckRequest(
                 repoPath: repoPath,
                 rowIDs: rowIDs,
@@ -103,6 +102,6 @@ actor ImportBatchStaticNameConflictPrechecker: ImportBatchNameConflictPrecheckin
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, [], file: file, line: line)
+        requestLog.assertNoRequests(file: file, line: line)
     }
 }

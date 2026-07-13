@@ -23,6 +23,10 @@
 
 - 新增 macOS 默认 Core 服务优先集中到 `App/AppCoreServices.swift`，feature model / view
   通过协议注入接收默认能力；测试继续显式注入 test double。
+- 跨 feature content shell 的生产装配由 `App/` 层的轻量 assembly / factory 负责；SwiftUI View
+  initializer 只接收显式装配结果，不直接解析 `AppCoreServices` 或 `AppPlatformServices` 默认值。
+- `@StateObject` identity 继续由对应 SwiftUI View 持有；assembly 只提供构造闭包，不持有全局 model
+  单例，也不改变现有 CoreBridge 实例生命周期。
 - 初始化、导入、DB 修复、同步冲突、iCloud conflict、AI 隐私 / 远程 provider
   等高风险专项路径允许受控保留直接 `CoreBridge()` 默认构造。
 - 保留的直接 `CoreBridge()` 默认构造必须有治理测试登记；新增或删除登记项时，要说明风险归属和收口条件。
@@ -33,6 +37,7 @@
 - 新功能先判断 feature owner，再写代码；没有 owner 时先补规则或创建 feature 目录。
 - 触达旧文件时只做与当前需求相关的归位，不为了目录完整一次性搬迁全仓库。
 - 文件拆分按职责边界，不按行数凑数字；超过或接近 500 行时优先寻找 route、state、action、platform adapter、support 的自然边界。
+- 手写 Swift 文件达到 450 行后必须进入 `SwiftFileSizeGovernanceTests` 精确清单，登记 owner、保留理由和拆分触发条件；清单文件不得继续增长，500 行仍是硬上限。UniFFI 生成绑定单独治理。
 - 只有一个实现、一个调用点、一个场景时，谨慎引入协议、工厂、策略等额外层次。
 - 大规模目录迁移必须单独计划、单独验证，不与产品功能混在同一改动里。
 

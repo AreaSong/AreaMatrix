@@ -276,17 +276,12 @@ struct ClassifierRuleEditorRouteView: View {
         VStack(spacing: 0) {
             ClassifierSettingsPane(
                 repoPath: repoPath,
-                onSavedCategory: postSavedCategory
+                onSavedCategory: acceptSavedCategory
             )
             if let context {
                 Divider()
                 createBar(context)
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(
-            for: ClassifierRuleEditorSaveEvents.savedCategoryNotification
-        )) { notification in
-            handleClassifierSave(notification)
         }
     }
 
@@ -306,18 +301,8 @@ struct ClassifierRuleEditorRouteView: View {
         .accessibilityIdentifier("batch-change-category-classifier-editor-return-context")
     }
 
-    private func handleClassifierSave(_ notification: Notification) {
-        guard let context,
-              let savedCategory = ClassifierRuleEditorSaveEvents.savedCategory(from: notification)
-        else {
-            return
-        }
-        onAcceptedCategoryFromBatchCategory(savedCategory, context)
-    }
-
-    private func postSavedCategory(_ category: String) {
-        NotificationCenter.default.post(
-            ClassifierRuleEditorSaveEvents.notification(savedCategory: category)
-        )
+    private func acceptSavedCategory(_ category: String) {
+        guard let context else { return }
+        onAcceptedCategoryFromBatchCategory(category, context)
     }
 }

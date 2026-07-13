@@ -2,6 +2,20 @@
 import XCTest
 
 final class DetailTagFilterIntegrationTests: XCTestCase {
+    func testSearchRoutingStateKeepsToolbarSidebarAndSmartListRoutesIndependent() {
+        var routingState = MainRepositorySearchRoutingState()
+
+        routingState.isSidebarTagsFilterPresented = true
+        XCTAssertTrue(routingState.isSidebarTagsFilterPresented)
+        XCTAssertFalse(routingState.isToolbarFiltersPresented)
+        XCTAssertNil(routingState.smartListManagementRoute)
+
+        routingState.isToolbarFiltersPresented = true
+        routingState.isSidebarTagsFilterPresented = false
+        XCTAssertTrue(routingState.isToolbarFiltersPresented)
+        XCTAssertFalse(routingState.isSidebarTagsFilterPresented)
+    }
+
     @MainActor
     // swiftlint:disable:next function_body_length
     func testTagFilterPageIntegrationVerifyConnectsEntryExitErrorsAndDeclaredCoreOnly() async {

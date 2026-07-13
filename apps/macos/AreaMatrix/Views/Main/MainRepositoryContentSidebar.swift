@@ -63,7 +63,7 @@ extension MainRepositoryContentView {
         .accessibilityIdentifier(MainSidebarTagFilterEntry.id)
         .accessibilityLabel(MainSidebarTagFilterEntry.accessibilityLabel)
         .accessibilityHint(MainSidebarTagFilterEntry.accessibilityHint)
-        .popover(isPresented: $isSidebarTagsFilterPresented) {
+        .popover(isPresented: $searchRoutingState.isSidebarTagsFilterPresented) {
             SearchFiltersPopover(
                 filters: searchFiltersBinding,
                 facetsState: fileListModel.searchFacetsState,
@@ -85,7 +85,7 @@ extension MainRepositoryContentView {
                     Task { await fileListModel.retryTagFilterRegistry() }
                 },
                 onSaveAsSmartList: {
-                    isSidebarTagsFilterPresented = false
+                    searchRoutingState.isSidebarTagsFilterPresented = false
                     fileListModel.openSavedSearchSheet()
                 }
             )
@@ -95,7 +95,7 @@ extension MainRepositoryContentView {
     func openSidebarTagFilter() {
         searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
         fileListModel.enterSearch(context: .sidebar(MainSidebarTagFilterEntry.id))
-        isSidebarTagsFilterPresented = true
+        searchRoutingState.isSidebarTagsFilterPresented = true
     }
 
     private func sidebarRow(_ row: RepositorySidebarRowSnapshot) -> some View {

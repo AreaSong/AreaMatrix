@@ -13,6 +13,7 @@ private let expectedAppPlatformServiceSurface = [
     "App/AppPlatformServices.swift:static var importBatchSessionStore",
     "App/AppPlatformServices.swift:static var importPicker",
     "App/AppPlatformServices.swift:static var importResultExporter",
+    "App/AppPlatformServices.swift:static var interactionFeedback",
     "App/AppPlatformServices.swift:static var localFileURLOpener",
     "App/AppPlatformServices.swift:static var pasteboardStringWriter",
     "App/AppPlatformServices.swift:static var pathCopier",

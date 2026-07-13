@@ -100,4 +100,60 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
             "The CoreBridge factory should stay private to AppCoreServices."
         )
     }
+
+    func testMainRepositoryContentDefaultsAreAssembledInAppLayer() throws {
+        let appServicesFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "App/AppCoreServices.swift"
+        })
+        let contentViewFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "Views/Main/MainRepositoryContentView.swift"
+        })
+        let routeContentFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "Views/MainWindowRouteContent.swift"
+        })
+        let appServicesSource = try String(contentsOf: appServicesFile, encoding: .utf8)
+        let contentViewSource = try String(contentsOf: contentViewFile, encoding: .utf8)
+        let routeContentSource = try String(contentsOf: routeContentFile, encoding: .utf8)
+
+        XCTAssertTrue(appServicesSource.contains("struct MainRepositoryContentAssembly"))
+        XCTAssertTrue(appServicesSource.contains("static func live(opening: RepositoryOpeningResult)"))
+        XCTAssertTrue(routeContentSource.contains("assembly: .live(opening: displayOpening)"))
+        XCTAssertTrue(contentViewSource.contains("assembly: MainRepositoryContentAssembly"))
+        for dependency in [
+            "semanticFallbackReader: semanticFallbackReader",
+            "fileRenamer: fileRenamer",
+            "fileDeleter: fileDeleter",
+            "categoryPredictor: fileListCategoryPredictor",
+            "aiSettingsLoader: aiSettingsLoader",
+            "aiTagSuggestionStore: aiTagSuggestionStore"
+        ] {
+            XCTAssertTrue(
+                appServicesSource.contains(dependency),
+                "MainRepositoryContentAssembly must resolve the nested MainFileListModel default: \(dependency)."
+            )
+        }
+        XCTAssertFalse(contentViewSource.contains("AppCoreServices."))
+        XCTAssertFalse(contentViewSource.contains("AppPlatformServices."))
+    }
+
+    func testMainRepositoryContentStateObjectsKeepViewOwnedIdentity() throws {
+        let contentViewFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "Views/Main/MainRepositoryContentView.swift"
+        })
+        let source = try String(contentsOf: contentViewFile, encoding: .utf8)
+        let expectedStateObjectInitializers = [
+            "_dropPreviewModel = StateObject(wrappedValue: assembly.makeDropPreviewModel())",
+            "_detailNoteModel = StateObject(wrappedValue: assembly.makeDetailNoteModel())",
+            "_summaryExitController = StateObject(wrappedValue: assembly.makeSummaryExitController())",
+            "_fileListModel = StateObject(wrappedValue: assembly.makeFileListModel())",
+            "_syncConflictEntryModel = StateObject(wrappedValue: assembly.makeSyncConflictEntryModel())"
+        ]
+
+        for initializer in expectedStateObjectInitializers {
+            XCTAssertTrue(
+                source.contains(initializer),
+                "MainRepositoryContentView must continue to own StateObject identity: \(initializer)."
+            )
+        }
+    }
 }

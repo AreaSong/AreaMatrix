@@ -77,19 +77,6 @@ extension MainRepositoryContentView {
         pendingSyncConflictReviewRoute = .fileDetail(repoPath: opening.config.repoPath, file: file)
     }
 
-    func syncConflictReviewSheet(_ route: SyncConflictReviewRoute) -> some View {
-        SyncConflictReviewView(
-            model: SyncConflictReviewModel(
-                repoPath: route.repoPath,
-                conflictID: route.conflictID,
-                primaryPath: route.primaryPath
-            ),
-            onBackToNeedsReview: { pendingSyncConflictReviewRoute = nil },
-            onClose: { pendingSyncConflictReviewRoute = nil },
-            onResolved: handleSyncConflictResolved
-        )
-    }
-
     func handleSyncConflictResolved(_: SyncConflictResolveReportSnapshot) async {
         pendingSyncConflictReviewRoute = nil
         await syncConflictEntryModel.refresh()

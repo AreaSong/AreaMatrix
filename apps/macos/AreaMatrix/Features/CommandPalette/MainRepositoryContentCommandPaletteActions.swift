@@ -1,6 +1,14 @@
 import SwiftUI
 
 extension MainRepositoryContentView {
+    func applyMainRepositoryCommandPaletteMenuCommandRelay(to content: some View) -> some View {
+        content.onReceive(NotificationCenter.default.publisher(
+            for: AreaMatrixCommandPaletteCommandRelay.notification
+        )) { _ in
+            toggleCommandPalette()
+        }
+    }
+
     func openImportFromCommandPalette() {
         closeCommandPalette()
         onImport()
@@ -18,23 +26,23 @@ extension MainRepositoryContentView {
 
     func openBatchAddTagsFromCommandPalette() {
         let route = commandPaletteBatchAddTagsRoute()
-        pendingBatchAddTagsRoute = route
+        fileActionRoutingState.batchAddTagsRoute = route
         closeCommandPalette()
     }
 
     func openBatchChangeCategoryFromCommandPalette() {
         let route = commandPaletteBatchChangeCategoryRoute()
-        pendingBatchChangeCategoryRoute = route
+        fileActionRoutingState.batchChangeCategoryRoute = route
         closeCommandPalette()
     }
 
     func openBatchDeleteFromCommandPalette() {
-        pendingBatchDeleteRoute = commandPaletteBatchDeleteRoute()
+        fileActionRoutingState.batchDeleteRoute = commandPaletteBatchDeleteRoute()
         closeCommandPalette()
     }
 
     func openBatchRenameFromCommandPalette() {
-        pendingBatchRenameRoute = commandPaletteBatchRenameRoute()
+        fileActionRoutingState.batchRenameRoute = commandPaletteBatchRenameRoute()
         closeCommandPalette()
     }
 

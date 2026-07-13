@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct AreaMatrixThemeToggleButton: View {
@@ -27,11 +26,7 @@ struct AreaMatrixThemeToggleButton: View {
         .animation(.areaMatrixQuickFade, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
-            if hovering {
-                NSCursor.pointingHand.push()
-            } else {
-                NSCursor.pop()
-            }
+            AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
         }
     }
 
@@ -41,7 +36,7 @@ struct AreaMatrixThemeToggleButton: View {
 
     private func toggleTheme() {
         withAnimation(.easeInOut(duration: 0.3)) {
-            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+            AppPlatformServices.interactionFeedback.performHaptic(.alignment)
             if themeOverride == nil {
                 themeOverride = colorScheme == .dark ? .light : .dark
             } else {
@@ -56,13 +51,12 @@ struct AreaMatrixThemeToggleButton: View {
     }
 
     private func applyAppAppearance() {
-        if themeOverride == .dark {
-            NSApp.appearance = NSAppearance(named: .darkAqua)
-        } else if themeOverride == .light {
-            NSApp.appearance = NSAppearance(named: .aqua)
-        } else {
-            NSApp.appearance = nil
+        let preference: AppAppearancePreference = switch themeOverride {
+        case .dark: .dark
+        case .light: .light
+        default: .system
         }
+        AppPlatformServices.interactionFeedback.applyAppearance(preference)
     }
 }
 
@@ -213,11 +207,7 @@ struct AreaMatrixPrimaryButtonStyle: ButtonStyle {
             .animation(.easeOut(duration: 0.2), value: isHovered)
             .onHover { hovering in
                 isHovered = hovering
-                if hovering {
-                    NSCursor.pointingHand.push()
-                } else {
-                    NSCursor.pop()
-                }
+                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
             }
     }
 }
@@ -238,11 +228,7 @@ struct AreaMatrixSecondaryButtonStyle: ButtonStyle {
             .animation(.easeOut(duration: 0.2), value: isHovered)
             .onHover { hovering in
                 isHovered = hovering
-                if hovering {
-                    NSCursor.pointingHand.push()
-                } else {
-                    NSCursor.pop()
-                }
+                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
             }
     }
 }

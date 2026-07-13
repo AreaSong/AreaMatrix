@@ -40,9 +40,16 @@
 | E. 自动化守边界 | 75%-90% | 关键边界可被本地检查、CI 或 review checklist 发现漂移 | 非 Bridge 直接 UniFFI、SwiftUI 平台副作用、生成绑定手写逻辑、Core API / UDL drift 有检查或明确 review gate |
 | F. 长期演进稳定 | 90%-100% | 新功能默认局部落地，跨层改动有证据，稳定公共能力可按需模块化 | 连续多个 feature 在不扩大旧迁移区的情况下完成；可考虑稳定能力 Swift Package 化或更强 CI 门禁 |
 
-当前成熟度约为 C 后段，接近 D 入口：主架构与 feature owner 已基本归位，MainList、
-FileActions、Import、Settings、Onboarding、AI、SyncConflicts 等主要功能域已有稳定落点，
-接下来要把 TestSupport、PlatformServices、跨 feature routing 和自动化守边界继续做实。
+当前成熟度已进入 D 前段，并开始建立 E 的自动化基础：主架构与 feature owner 已基本归位，
+MainList、FileActions、Import、Settings、Onboarding、AI、SyncConflicts 等主要功能域已有稳定落点；
+TestSupport 请求日志与结果队列已在多个 feature 复用，Bridge、生成绑定、平台能力和默认服务也已有治理测试。
+FileActions、Search、SmartList 与 SyncConflicts 的 sheet host 已归回各自 feature，通用 lifecycle 只保留顺序组合。
+`MainRepositoryContentView` 的生产默认服务装配也已归入 App 层轻量 assembly，并保留 View-owned `@StateObject` identity。
+App appearance、cursor 与 haptic 已由共享 interaction feedback adapter 承接，View-like 文件的全局平台写入也已有门禁。
+Command Palette 搜索焦点恢复、Search presentation routing、FileActions batch / undo presentation state 和
+Import conflict batch relay state 也已归回各自 feature，shell 只持有 feature-owned 值类型。手写 Swift 文件
+已建立 450 行近阈值精确清单与 500 行硬限制；接下来要继续收口剩余 semantic / sync route state、
+PlatformServices 高风险例外和清单中的自然拆分边界。
 
 ## 当前进度口径
 
@@ -60,14 +67,23 @@ FileActions、Import、Settings、Onboarding、AI、SyncConflicts 等主要功�
   主要剩通用 scaffold 组件。
 - 执行层复用：MainList、FileActions、Import、Settings、Onboarding、AI 和
   SyncConflicts 的 View / State / Actions / Support 边界已明显成型；TestSupport
-  已形成 shared shell、error mapper、temp cleanup、mirror assertion、naming governance
-  底座，并有大量 feature-local support / fixtures / test double。
-- 当前治理重点：从“owner 归位和样板形成”继续推进到“PlatformServices、TestSupport、
-  async / error / routing 模式和自动化边界检查成为默认复用主干”。
+  已形成 shared shell、error mapper、temp cleanup、mirror assertion、request log、result / step queue、
+  naming governance 底座，并有大量 feature-local support / fixtures / test double。
+- 自动化边界：非 Bridge Core 调用、生成绑定目录、SwiftUI 平台 IO / 全局 AppKit 写入、Feature
+  平台能力、默认服务构造、SQLite 与 CoreError 例外已有治理测试；Feature 平台能力盘点已覆盖
+  `FileManager` 默认实例、`FileHandle`、`URL.resourceValues`、Data 读写、脚本写入和环境变量访问；
+  tracked Swift bindings 已有本地与 CI
+  exact drift gate；手写 Swift 文件达到 450 行后必须登记 owner、理由与拆分触发条件，且不得继续增长，
+  500 行仍是硬上限，UniFFI 生成绑定由独立清单与 drift gate 管理。
+- 当前治理重点：继续收口 content shell 剩余 route state / relay、Import / AI 平台高风险例外、
+  当前近阈值清单中的 `AppPlatformServiceAdapters.swift`、`ConfigurationFixtures.swift` 和更强 CI 门禁，
+  使复用与自动化检查成为新增功能的默认路径。
+- Import session persistence 已有真实临时目录的 save / load / missing / corrupt / clear / permission
+  回归证据；后续迁移到 `PlatformServices/` 时不得改变 app-owned metadata 路径或失败不阻断导入的语义。
 - 分发证据、外部冒烟或决策类 residual 仍以 residual ledger 为准；它们不改变本文的工程成熟度百分比，
   但会阻止把项目表述为正式分发状态已完全闭合。
 
-因此当前工程成熟度按本文口径约为 55%-60%。这不是功能完成度，也不是分发状态，
+因此当前工程成熟度按本文口径约为 65%-70%。这不是功能完成度，也不是分发状态，
 而是 macOS 前端与跨层工程治理成熟度。
 
 最近同步依据：
@@ -77,6 +93,51 @@ FileActions、Import、Settings、Onboarding、AI、SyncConflicts 等主要功�
 - `AreaMatrixTests` 当前已有 shared shell / error / temp / mirror / naming-governance 底座，
   Import、Settings、Onboarding、AI、SyncConflicts、Detail、FileActions、MainList 均已有
   feature-local support / fixtures / test double。
+- `TestRequestLog`、`TestResultQueue`、`TestStepQueue` 和 `VoidResultQueue` 已替代多组重复请求数组与
+  手写结果队列；Rename、ChangeCategory 与 CommandPalette recorder 也已复用 request log，分类预测
+  recorder 已服务 ChangeCategory、single-file Import、folder Import 和 drop Import。
+- Database Repair 的 feature 与 integration 套件已共享
+  `DatabaseRepairConfirmPageTestDoubleSupport.swift` 中的 metadata repair recorder 和语义请求断言，
+  不再各自维护重复 `CoreMetadataRepairing` 实现；命名治理固定该 double 继续留在 TestDoubleSupport。
+- TestSupport 命名治理已将 `*Tests.swift` 中 Recording / Recorder / Noop / TestDouble / Stub / Spy
+  内联声明清零；精确 inventory 当前为空，任何新增内联 double 都会使测试失败。
+- Batch Add Tags、Detail Note 与 Platform Differences 的 recorder 已分别归入 feature-local
+  `BatchAddTagsTestDoubleSupport.swift`、`NoteTestDoubleSupport.swift` 和
+  `PlatformIntrospectionTestDoubleSupport.swift`，并统一复用请求日志与语义断言。
+- Change Category、Classifier Correction、Delete、External URL、Local File URL 与 Import Conflict
+  的最后 9 个内联 double 已复用现有 owner 或归入 feature-local `*TestDoubleSupport.swift`；
+  Import Conflict 的共享 preview fixture 现在保留 blocked item，apply report 也按实际策略统计。
+- `SwiftFileSizeGovernanceTests` 已精确盘点所有达到 450 行的手写 Swift 文件，并冻结其当前行数上界；
+  `MacOSArchitectureBoundaryGovernanceTests.swift` 的通用文件扫描 helper 已提取到
+  `MacOSGovernanceFileSystemTestSupport.swift`，自身从 500 行降至 388 行且不改变治理语义；支撑文件名
+  明确暴露 `FileManager` 扫描边界并通过 TestSupport 命名治理。
+- 架构治理测试已固定生成 `ReindexReport` 只在 Bridge 转换，并显式盘点 Import session persistence、
+  iCloud placeholder download、AI Keychain 与 probe runtime 等仍待 PlatformServices 收口的例外。
+- `MainRepositoryContentLifecycle` 已改为按原 modifier 顺序组合 FileActions、Search、SmartList、
+  SyncConflicts 和 Import 的 feature-owned route host / relay；治理测试禁止具体 sheet builder 与
+  Import conflict relay 回流，并固定对应实现留在各自 feature。
+- FileActions 的四个 batch route、undo history route、undo toast state 与 action-log failure 已统一收敛为
+  `MainFileActionRoutingState`；Import conflict command route 已统一经 `ImportConflictBatchRelayState`
+  enqueue 并一次性消费。治理测试禁止这些裸 `@State` 回流 content shell。
+- Undo History 菜单 relay、Command Palette 菜单 relay 与 undo / redo 快捷键 modifier 已分别归回
+  FileActions 和 CommandPalette；lifecycle 只按既有 modifier 顺序组合 feature-owned command host，
+  独立治理测试同时固定所有权与顺序。
+- Command Palette 打开前搜索焦点记录、关闭后一次性恢复与重复切换状态已归入
+  `CommandPaletteFocusRoutingState`，行为测试与治理测试不再用 shell 裸布尔值表达该 feature 状态。
+- Search toolbar filter、sidebar tag filter 与 Smart List management route 已由
+  `MainRepositorySearchRoutingState` 独立承载；两个 popover 仍保持不同状态，Smart List 编辑往返只监听
+  toolbar filter dismiss，治理测试禁止对应裸 route state 回流 content shell。
+- `MainRepositoryContentAssembly` 已在 App 层显式装配 content shell 的 Core / Platform 默认服务，
+  包括 `MainFileListModel` 先前隐藏的六项默认依赖；View initializer 不再解析生产默认值，
+  仍通过惰性 factory 创建并持有五个 `@StateObject` identity。
+- `AppKitInteractionFeedbackPerformer` 已统一承接 appearance、cursor 与 haptic；架构测试禁止
+  View-like 文件直接使用这些 AppKit API 或发布 `NotificationCenter.default.post`。
+- classifier rule editor 保存结果已从进程级通知广播改为当前 route 的直接闭包回传，移除了多实例
+  同时存活时误响应同一次保存事件的路径。
+- `./dev bindings verify` 已使用 `Cargo.lock` 锁定的 UniFFI 生成器，在临时目录规范化并精确比较
+  Xcode tracked Swift/header/module map；macOS CI 与 governance check 已固定该门禁，现存 tracked
+  bindings 漂移也已同步消除。
+- 最近一次完整 `./dev test macos`、SwiftFormat、SwiftLint、定向 feature tests 和架构治理 tests 均通过。
 - 当前未以本文更新关闭任何 residual；分发证据与分发决策仍以 `workflow/residuals/` 和
   对应 version residual 为准。
 
@@ -123,7 +184,7 @@ FileActions、Import、Settings、Onboarding、AI、SyncConflicts 等主要功�
 | 3 | FileActions 执行模式沉淀 | `Features/FileActions/` 已承载 rename / delete / category move / batch / tag sheets、state 与 routing support；相关 sheets 已归入 feature | 单文件、多选、批量动作共享 action state、confirmation、error mapping、refresh 和 undo pattern | macOS build、`./dev test macos`，高风险动作保留确认证据 |
 | 4 | Import 高风险模板收口 | `Features/Import/` 已覆盖 single file、folder、batch、progress、result、conflict、iCloud placeholder；Import TestSupport 已明显成型 | 固化高风险 feature 的 View / State / Actions / Platform adapter / TestSupport 模板，平台副作用只在明确服务或受控例外内 | macOS build、`./dev test macos`，用户文件安全验证按任务风险补充 |
 | 5 | Settings / Onboarding owner 稳定化 | `Features/Settings/` 与 `Features/Onboarding/` 已建立；`Views/Settings` 只剩通用 scaffold，`Views/Onboarding` 当前无 Swift 文件 | 继续收口 App shell 初始化 / recovery 编排、危险设置验证口径和平台能力边界 | docs / diff 检查；进入代码迁移后跑 macOS build/test |
-| 6 | TestSupport 复用主干整理 | `AreaMatrixTests` 已形成 shared shell / error / temp / mirror / naming-governance 底座，并有 feature-local support / fixtures / test double | 控制 shared builder 膨胀，抽出剩余内联 recorder，按 feature 继续拆近 500 行 fixture / governance 文件 | macOS test；必要时补 feature-local verification |
+| 6 | TestSupport 复用主干整理 | `AreaMatrixTests` 已形成 shared shell / error / temp / mirror / naming-governance 底座，内联 double inventory 已清零，并有 feature-local support / fixtures / test double | 保持内联 inventory 为零，控制 shared builder 膨胀，按 feature 继续拆近 500 行 fixture / governance 文件 | macOS test；必要时补 feature-local verification |
 
 这些治理项是长期边界参考，不是 live execution queue。进入正式代码实施前，若需要版本化推进，应按 `workflow/` discussion / changes / plans / drafts / queue / promotion 规则生成 copy-ready 与 verify-ready；小型局部改动也必须保留目标、非目标、落点、验证和回滚口径。
 
@@ -132,17 +193,17 @@ MainList 当前边界记录：
 | 边界 | 当前状态 | 收口口径 |
 |---|---|---|
 | MainList 已归位部分 | `Features/MainList/` 已承载 list pane、state、selection、presentation support、file table、loading、current list error、detail actions 和 external sync actions | 保持为 MainList 样板基础，后续主列表展示、选择、loading、error、empty 继续优先落在这里 |
-| Content shell 迁移区 | `Views/Main/MainRepositoryContentView.swift`、`MainRepositoryContentLifecycle.swift`、sidebar 和 toolbar 仍承担组合入口、默认服务注入与跨 feature route wiring | 继续拆 shell 注入与 route state，但不把 Search、Detail、FileActions、Import 全部实现混入 MainList |
+| Content shell 迁移区 | App 层 `MainRepositoryContentAssembly` 已承担生产默认服务装配；`MainRepositoryContentView.swift` 仍持有跨 feature route state，`MainRepositoryContentLifecycle.swift` 已只按原顺序组合 feature-owned route host；Import conflict relay、FileActions batch / undo routing、Command Palette focus routing 与 Search presentation routing 已归回各自 feature，shell 只持有 feature-owned state | 继续拆 semantic / sync 等剩余 route state / dialog owner，但不把 Search、Detail、FileActions、Import 全部实现混入 MainList |
 | Detail 交界 | Detail view、note、tag、log、multi-selection summary 已归入 `Features/Detail/`，MainList 通过 detail entry / selected file contract 接入 | 只明确 MainList 到 Detail 的 entry contract；Detail 自身作为独立样板继续治理 |
 | FileActions 交界 | `Features/FileActions/` 已有 rename / delete / category move / batch / tag sheets、state 与 routing support；MainList 仍触发 action route | 只保留 MainList 调起动作的 route contract；执行模式、refresh 和 undo policy 留给 FileActions 收口 |
-| Search 交界 | `Features/Search/` 已承载搜索 UI、route、semantic search、saved search 和 smart list 支撑；toolbar / content shell 仍组合 route | 不重构 Search 语义，只隔离 MainList 对 search results / visible files 的消费边界 |
+| Search 交界 | `Features/Search/` 已承载搜索 UI、route、semantic search、saved search、smart list 支撑与 presentation routing state；toolbar / content shell 仍组合 feature entry | 不重构 Search 语义，只隔离 MainList 对 search results / visible files 的消费边界 |
 | Import 交界 | Main list 支持空状态导入、drop target、import progress rows 和 import progress detail；Import 具体实现已在 `Features/Import/` | 保留导入入口与 progress row contract；Import 高风险模板留给 Import 收口 |
-| 膨胀风险 | MainList feature 文件当前未超过 500 行；风险转为 content shell 继续聚合 batch route、sync conflict route、import progress 和默认服务注入 | 优先拆 natural boundary：content shell、route wiring、service injection、diagnostics / undo support；不以单纯降行数为目标 |
+| 膨胀风险 | MainList feature 文件当前未超过 500 行；具体 sheet host、Import conflict relay、FileActions batch / undo state、Command Palette focus state、Search presentation state 和默认服务装配已退出 lifecycle / View initializer，风险转为 content shell 继续持有 semantic / sync route state 与 import progress | 优先拆 natural boundary：content shell、semantic / sync route state、diagnostics support；不以单纯降行数为目标 |
 
 MainList 收口建议：
 
-1. 继续从 `MainRepositoryContentView` / lifecycle shell 中提取 service injection 和 route wiring，降低 content shell
-   对 list/detail/search/action/import progress 的直接耦合。
+1. 继续从 `MainRepositoryContentView` / lifecycle shell 中提取剩余 route state / relay，降低 content shell
+   对 list/detail/search/action/import progress 的直接耦合；生产默认服务继续由 App assembly 统一装配。
 2. 保持 `MainFileListModel` 作为当前 MainList owner 内聚 model，避免过早拆出多个 store 导致 Search / Detail /
    FileActions 行为漂移。
 3. 以 `Features/MainList/MainListPresentationSupport.swift`、`MainRepositoryContentFileTable.swift`
@@ -168,7 +229,7 @@ FileActions 当前边界记录：
 |---|---|---|
 | 已归位动作 model | `Features/FileActions/` 已承载 rename、delete、category move、batch delete、batch change category、batch rename、batch tag、confirmation sheet、route / state 的主要业务状态与动作入口 | 保持为 FileActions 样板基础，后续新增文件动作优先放入该 feature |
 | Sheet 已归位部分 | `RenameFileSheet.swift`、`DeleteFileConfirmSheet.swift`、`ChangeCategorySheet.swift`、`BatchDeleteConfirmSheet.swift`、`BatchChangeCategorySheet.swift`、`MainFileActionRoutingSheet.swift` 已在 `Features/FileActions/` | 后续不再把文件动作 sheet 回流到 `Views/Main`；sheet 细分按单文件 / batch / tag / undo 自然边界推进 |
-| Content glue 迁移区 | `Views/Main/MainRepositoryContentView.swift` 仍持有 batch route state、默认 services 与跨 feature composition；FileActions 内部已有 route support、refresh / undo 支撑 | 优先提炼 FileActions refresh / undo policy，不把 Search、SmartList、SyncConflicts 一起迁入 FileActions |
+| Content glue 迁移区 | `MainFileActionRoutingState` 已统一承载四个 batch route、undo history route、undo toast state 与 action-log failure；默认 services 已由 App assembly 装配，primary / batch sheet host 已由 `Features/FileActions/` 持有，lifecycle 只组合 host | 继续提炼 FileActions refresh / undo policy；content shell 只持有一个 feature-owned 值，不把 Search、SmartList、SyncConflicts 一起迁入 FileActions |
 | 高风险动作 | delete、remove from index、move category、rename、batch delete、batch rename 和 iCloud conflict resolution 都可能影响用户文件、metadata 或 undo / change log | 任何代码实施必须保留确认弹窗、disabled reason、undo token、error mapping 和 refresh 证据；触碰真实文件操作时按 file-safety 规则升级风险 |
 | 测试支撑 | 已有 `RenameFilePageFeatureTests`、`DeleteFilePageFeatureTests`、`ChangeCategoryPageFeatureTests`、`FileActionsIntegrationVerifyTests`、`BatchDeletePageIntegrationVerifyTests`、`BatchChangeCategoryPageIntegrationVerifyTests`、`BatchRenameUndoPageFeatureTests` | FileActions 收口应复用这些测试作为回归证明；如迁移 route host，则补充 routing / sheet smoke 覆盖 |
 | 膨胀风险 | FileActions 当前多个文件处于 300-400 行区间，尚未超过 500 行；风险集中在 route host、refresh / undo policy 和 batch action support 继续增长 | 拆分应以 action route、batch route、refresh / undo policy、state support 为自然边界，不以单纯降行数为目标 |
@@ -199,7 +260,7 @@ Import 当前边界记录：
 
 | 边界 | 当前状态 | 收口口径 |
 |---|---|---|
-| 已归位 feature owner | `Features/Import/` 已承载 single file、folder、batch copy、progress、result、drop target、duplicate / name conflict、iCloud placeholder 和 session recovery 的主要 UI / state / actions | 保持 Import 为高风险 feature 样板；后续导入能力不回流到 `Views/Main` 或顶层 `Models` |
+| 已归位 feature owner | `Features/Import/` 已承载 single file、folder、batch copy、progress、result、drop target、duplicate / name conflict、iCloud placeholder、session recovery 和 conflict batch relay state 的主要 UI / state / actions | 保持 Import 为高风险 feature 样板；后续导入能力不回流到 `Views/Main` 或顶层 `Models` |
 | 受控平台副作用 | `ImportPlatformServices.swift` 已承载 folder scan、source inspection 和 iCloud placeholder detection；`ImportSingleFilePreflightSupport.swift` 仍可触发 placeholder 下载；`ImportBatchCopyImportSession.swift` 保留 feature-local session persistence | 这些属于 Import 高风险模板的一部分，后续应显式保留 preflight、placeholder policy、session recovery 和 no-user-file-touch 证据 |
 | Core 写入边界 | single / batch / folder import 通过 CoreBridge import 能力进入 Core，Swift 层负责预检、选择、progress、retry、result route 和 recoverability 展示 | 不在 Import 收口中重写 Core 导入事务；只收口 Swift presentation、preflight、progress、retry 和测试支撑 |
 | TestSupport 成型 | `ImportSingleFileTestSupport.swift`、`ImportBatchImportTestSupport.swift`、`ImportProgressTestSupport.swift`、`ImportResultTestSupport.swift`、`ImportFolderTestSupport.swift` 与配套 test double / fixtures 已覆盖 single、folder、batch、progress、result | 继续保持 Import feature-local support，避免新增导入测试复制 temp repo、mock bridge、fixture factory |
@@ -211,7 +272,7 @@ Import 收口建议：
 1. 继续维护 Import 高风险模板边界：preflight、source inspection、iCloud placeholder policy、duplicate / name
    conflict、progress / retry、result summary、session recovery、forbidden touches。
 2. 继续收口测试支撑：保持 single / folder / batch / progress / result 的 feature-local support，
-   对剩余内联 recorder 和 duplicate precheck helper 做局部抽取。
+   保持内联 double inventory 为零，并对 duplicate precheck helper 做局部抽取。
 3. 将 `ImportBatchCopyImportSession`、`ImportProgressRouteState`、`ImportResultRouteActions`
    作为恢复 / progress / result 样板，不在同一轮重写 Core import transaction。
 4. 对平台副作用保持显式：folder scan 和 iCloud placeholder 下载应继续是受控服务 / adapter，不藏入 SwiftUI View。
@@ -268,15 +329,15 @@ TestSupport 当前边界记录：
 | 共享底座 | `AreaMatrixShellTestDoubleSupport.swift` 已承担 shell 级 fixture、route requirement、settings/general/main-list/onboarding builder；`CoreErrorMappingTestDoubleSupport.swift`、`TestTemporaryDirectoryFileSystemTestSupport.swift`、`TestMirrorDescriptionSupport.swift` 已形成 error / temp / mirror shared support | 保持为 shared support 基线，只放跨多个 feature 共用且不携带业务语义的录制器、fixture builder、temp repo helper |
 | feature-local 导入支撑 | `ImportSingleFileTestSupport.swift`、`ImportBatchImportTestSupport.swift`、`ImportProgressTestSupport.swift`、`ImportResultTestSupport.swift`、`ImportFolderTestSupport.swift` 与配套 fixtures / test double 已表达 single / folder / batch / progress / result 局部支撑 | 归入 Import feature-local support，避免复制 temp repo / downloader / preflight / scanner helper |
 | feature-local settings / onboarding 支撑 | `RepositorySettingsTestSupport.swift`、`ConfigurationTestDoubleSupport.swift`、`RemoteProviderConfigTestSupport.swift`、`RepositoryInitializationTestDoubleSupport.swift`、`RepositoryPathValidationTestDoubleSupport.swift`、`StartupRecoveryTestDoubleSupport.swift` 等已分别对应 settings、remote provider、init / validate path / startup recovery 场景 | 这些应作为 feature-local support 或子域 support，继续按 Settings / Onboarding owner 归位 |
-| 过大测试文件 | 当前 `AreaMatrixTests` 下没有超过 500 行的 XCTest 文件；最大风险集中在 `MacOSArchitectureBoundaryGovernanceTests.swift`、`ConfigurationFixtures.swift`、`TestSupportNamingGovernanceTests.swift` 等接近 500 行文件 | 不以压行数为唯一目标，但应明确共享 support / fixture / helper 的边界，减少重复 setup 和 fixture 复制 |
-| 剩余重复 | 少量 page / integration tests 仍有内联 recorder 或局部 file-system helper，例如 delete、iCloud conflict list、AI category suggestion、import drop batch preview、detail external change 场景 | 把真正跨 feature 可复用的 builder / recorder 抽到 shared support，其余只保留 feature-local helpers |
+| 过大测试文件 | 当前 `AreaMatrixTests` 下没有超过 500 行的 XCTest 文件；`MacOSArchitectureBoundaryGovernanceTests.swift` 的共享扫描 helper 已提取，测试文件降至 388 行；测试侧近阈值清单只剩 479 行的 `ConfigurationFixtures.swift` | 保持 450 行精确清单和冻结上界；下一次扩展前按完整 snapshot fixture family 迁出，不拆散同一 fixture 语义 |
+| 剩余重复 | 内联 recorder inventory 已清零；少量局部 file-system helper 和近阈值 fixture 仍需按触达场景治理 | 把真正跨 feature 可复用的 builder 抽到 shared support，其余只保留 feature-local helpers，不为目录整齐扩大迁移面 |
 | 风险边界 | test support 会影响用户文件安全、temp repo 行为、import/recovery 证据、settings write / repair、startup recovery、iCloud / placeholder 相关验证 | 任何收口都不能删除必要的高风险验证；共享 support 只能复用构造，不得模糊风险证据或替代真实路径验证 |
 
 TestSupport 收口建议：
 
 1. 继续把 shared support 的边界写明：`AreaMatrixShellTestDoubleSupport` 仅收跨 feature 通用的 shell builder 和 route requirement，不能继续承载 feature-specific helper。
 2. Import / Settings / Onboarding / SyncConflict / Validation 这几类高风险 feature 的 test support 保持 feature-local，必要时再抽子域 shared support，不直接回到顶层。
-3. 对接近 500 行的测试 / fixture / governance 文件优先减少重复 setup、fixture 复制和 per-file builder，而不是为了行数把断言拆散。
+3. 维持 `SwiftFileSizeGovernanceTests` 的 450 行精确清单；`ConfigurationFixtures.swift` 下一次增长前按完整 snapshot fixture family 迁出，而不是为了行数把断言拆散。
 4. 新增测试默认先找 feature-local support；只有多个 feature 真正共享且不携带业务语义时，才提升到 shared support。
 
 TestSupport 拆分边界模板：
@@ -317,8 +378,12 @@ TestSupport 拆分边界模板：
 - 非 `Bridge/` 区域不得直接调用 UniFFI 生成函数。
 - `Bridge/Generated/` 与 `Bridge/UniFFI/` 不得出现手写业务逻辑。
 - SwiftUI View 中新增 FileManager、iCloud、watcher、NSWorkspace、NSPasteboard 等平台副作用需被检查或 review gate 捕获。
-- 接近或超过 500 行的 Swift 文件必须说明职责边界和拆分计划。
+- 手写 Swift 文件达到 450 行后必须通过精确清单说明 owner、职责边界和拆分触发条件，且不得继续增长；500 行是硬上限。
 - Core API / UDL / docs drift 继续保持可见。
+
+当前证据：`./dev bindings verify` 已覆盖 UDL 到 Xcode tracked Swift bindings 的内容漂移，
+`macos-ci.yml` 在 Core build 后执行该只读门禁，`./dev check governance` 防止 CI 步骤被静默移除；
+`SwiftFileSizeGovernanceTests` 已覆盖手写 Swift 近阈值 inventory、冻结上界和 500 行硬限制，生成绑定明确排除并由独立门禁治理。
 
 稳定证据：
 
@@ -413,9 +478,9 @@ reason 复用模式。
 目标：把 iCloud conflict / sync conflict 的 review、preview、resolve、entry banner 与 routing
 收敛到独立 feature，同时保持 Bridge 和用户文件安全边界清晰。
 
-状态：owner 已归位。iCloud conflict / sync conflict 的主要 View、Model、State、Apply context 和
-routing actions 已归入 `Features/SyncConflicts/`；Bridge 封装仍保持在 `Bridge/`，Main shell
-保留入口 route integration。
+状态：owner 已归位。iCloud conflict / sync conflict 的主要 View、Model、State、Apply context、
+routing actions 与 review sheet host 已归入 `Features/SyncConflicts/`；Bridge 封装仍保持在
+`Bridge/`，Main shell 只保留入口 route state 与 feature host composition。
 
 范围：
 
@@ -438,7 +503,7 @@ routing actions 已归入 `Features/SyncConflicts/`；Bridge 封装仍保持在 
 状态：高风险模板基本成型。single file、folder、batch、progress、result、duplicate /
 naming conflict、iCloud placeholder 相关 View / Model / State / Actions 已归入
 `Features/Import/`；`Bridge/CoreImporting.swift` 仍保持在 `Bridge/`。后续重点是继续明确
-FileManager / iCloud / session persistence 等平台副作用边界，并抽出剩余内联 test recorder。
+FileManager / iCloud / session persistence 等平台副作用边界，并保持 Import TestSupport 内联 double 为零。
 
 范围：
 
@@ -486,7 +551,9 @@ PlatformDifferences 已归入 `Features/Settings/`；`Views/Settings` 当前只�
 
 状态：owner 稳定。provider config、privacy rules、summary、classification suggestion、tag
 suggestion、local model status 和 remote probe 等能力已有 `Features/AI/` 落点；后续重点是继续
-收敛 credential / probe runtime 边界、隐私验证和少量直接 bridge 受控例外。
+收敛 credential / probe runtime 边界、隐私验证和少量直接 bridge 受控例外。Probe runtime 还涉及
+临时脚本、权限、全局环境变量、Keychain、网络请求和 Rust Core 进程执行，必须作为高风险安全专项设计，
+不能用普通目录迁移替代路径可信性、脱敏和进程 / 网络边界验证。
 
 范围：
 
@@ -508,9 +575,10 @@ suggestion、local model status 和 remote probe 等能力已有 `Features/AI/` 
 目标：统一平台副作用落点。
 
 状态：复用主干在建。`PlatformServices/` 已覆盖 Import scan、FSEvents watcher、iCloud status、
-NSWorkspace、Pasteboard、settings / onboarding capability probing 等能力；Import placeholder
-下载、Import session persistence、AI Keychain / probe runtime 等仍是需要显式 owner 和退出条件的
-受控例外。
+NSWorkspace、Pasteboard、settings / onboarding capability probing 等能力；App 层 interaction feedback
+adapter 已统一 appearance、cursor 与 haptic。Import placeholder 下载、Import session persistence、
+AI Keychain / probe runtime 等仍是需要显式 owner 和退出条件的受控例外；现有平台 capability inventory
+还需扩展到 `FileHandle`、`URL.resourceValues`、session persistence、脚本和环境变量等真实 IO。
 
 范围：
 
@@ -535,7 +603,7 @@ NSWorkspace、Pasteboard、settings / onboarding capability probing 等能力；
 状态：复用主干已明显成型。shared shell / error / temp / mirror / naming-governance 支撑已存在，
 多个 feature 已有 feature-local support / fixtures / test double；后续重点是控制
 `AreaMatrixShellTestDoubleSupport.swift`、`ConfigurationFixtures.swift`、`TestSupportNamingGovernanceTests.swift`
-继续膨胀，并抽出剩余内联 recorder。
+继续膨胀，并保持内联 double inventory 为零。
 
 范围：
 

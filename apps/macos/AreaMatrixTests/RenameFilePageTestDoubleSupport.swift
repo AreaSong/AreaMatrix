@@ -9,14 +9,14 @@ struct RenameRequest: Equatable {
 
 actor RenameRecordingRenamer: CoreFileRenaming {
     private let result: Result<FileEntrySnapshot, Error>
-    private var requests: [RenameRequest] = []
+    private var requestLog = TestRequestLog<RenameRequest>()
 
     init(result: Result<FileEntrySnapshot, Error>) {
         self.result = result
     }
 
     func renameFile(repoPath: String, fileID: Int64, newName: String) async throws -> FileEntrySnapshot {
-        requests.append(RenameRequest(repoPath: repoPath, fileID: fileID, newName: newName))
+        requestLog.append(RenameRequest(repoPath: repoPath, fileID: fileID, newName: newName))
         return try result.get()
     }
 
@@ -25,14 +25,14 @@ actor RenameRecordingRenamer: CoreFileRenaming {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRenames, file: file, line: line)
+        requestLog.assertRequests(expectedRenames, file: file, line: line)
     }
 
     func assertNoRenamedFiles(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertRenamedFiles([], file: file, line: line)
+        requestLog.assertNoRequests(file: file, line: line)
     }
 }
 
@@ -52,8 +52,8 @@ struct BatchRenameApplyRequest: Equatable {
 actor BatchRenameRecordingRenamer: CoreBatchRenaming {
     private let previewResult: Result<BatchRenamePreviewReportSnapshot, Error>
     private let applyResult: Result<BatchRenameReportSnapshot, Error>
-    private var previewRequests: [BatchRenamePreviewRequest] = []
-    private var applyRequests: [BatchRenameApplyRequest] = []
+    private var previewRequestLog = TestRequestLog<BatchRenamePreviewRequest>()
+    private var applyRequestLog = TestRequestLog<BatchRenameApplyRequest>()
 
     init(preview: Result<BatchRenamePreviewReportSnapshot, Error>, apply: Result<BatchRenameReportSnapshot, Error>) {
         previewResult = preview
@@ -65,7 +65,7 @@ actor BatchRenameRecordingRenamer: CoreBatchRenaming {
         fileIDs: [Int64],
         rule: BatchRenameRuleSnapshot
     ) async throws -> BatchRenamePreviewReportSnapshot {
-        previewRequests.append(BatchRenamePreviewRequest(repoPath: repoPath, fileIDs: fileIDs, rule: rule))
+        previewRequestLog.append(BatchRenamePreviewRequest(repoPath: repoPath, fileIDs: fileIDs, rule: rule))
         return try previewResult.get()
     }
 
@@ -75,7 +75,7 @@ actor BatchRenameRecordingRenamer: CoreBatchRenaming {
         rule: BatchRenameRuleSnapshot,
         previewToken: String
     ) async throws -> BatchRenameReportSnapshot {
-        applyRequests.append(BatchRenameApplyRequest(
+        applyRequestLog.append(BatchRenameApplyRequest(
             repoPath: repoPath,
             fileIDs: fileIDs,
             rule: rule,
@@ -89,7 +89,7 @@ actor BatchRenameRecordingRenamer: CoreBatchRenaming {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(previewRequests, expectedRequests, file: file, line: line)
+        previewRequestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertBatchRenameApplyRequests(
@@ -97,6 +97,6 @@ actor BatchRenameRecordingRenamer: CoreBatchRenaming {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(applyRequests, expectedRequests, file: file, line: line)
+        applyRequestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 }

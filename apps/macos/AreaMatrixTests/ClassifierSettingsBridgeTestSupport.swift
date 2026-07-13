@@ -8,7 +8,7 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
     }
 
     private var resultQueue: TestResultQueue<ClassifyResultSnapshot>
-    private var requestsStorage: [Request] = []
+    private var requestLog = TestRequestLog<Request>()
 
     init(
         results: [Swift.Result<ClassifyResultSnapshot, Error>] = [
@@ -21,7 +21,7 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
-        requestsStorage.append(Request(repoPath: repoPath, filename: filename))
+        requestLog.append(Request(repoPath: repoPath, filename: filename))
         return try resultQueue.next()
     }
 
@@ -30,7 +30,7 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertNoCategoryPredictionRequests(
@@ -45,7 +45,7 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requestsStorage.count, expectedCount, file: file, line: line)
+        XCTAssertEqual(requestLog.requests.count, expectedCount, file: file, line: line)
     }
 }
 

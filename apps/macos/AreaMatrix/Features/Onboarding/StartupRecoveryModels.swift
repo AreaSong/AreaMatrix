@@ -18,27 +18,9 @@ struct RecoveryReportSnapshot: Equatable {
     }
 }
 
-struct ReindexReportSnapshot: Equatable {
-    var scanSessionId: Int64?
-    var inserted: Int64
-    var updated: Int64
-    var skipped: Int64
-    var errors: [String]
-}
-
 struct RepositoryInitializationResult: Equatable {
     var repoPath: String
     var mode: RepoInitModeSnapshot
     var scanSession: ScanSessionSnapshot?
     var recoveryReport: RecoveryReportSnapshot?
-}
-
-extension ReindexReportSnapshot {
-    init(coreReport: ReindexReport) {
-        scanSessionId = coreReport.scanSessionId
-        inserted = coreReport.inserted
-        updated = coreReport.updated
-        skipped = coreReport.skipped
-        errors = coreReport.errors
-    }
 }

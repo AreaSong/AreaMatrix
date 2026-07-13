@@ -94,7 +94,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         await model.runFullRescan()
 
         await repairer.assertMetadataRepairRequests([
-            DatabaseRepairRepairRequest(
+            DatabaseRepairMetadataRepairRequest(
                 repoPath: "/tmp/repo",
                 options: .databaseRepairFullRescanFixture()
             )
@@ -271,39 +271,5 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
 
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.recoverOnStartup))
         XCTAssertTrue(declaredBoundaries.contains(.recoverOnStartup))
-    }
-}
-
-struct DatabaseRepairRepairRequest: Equatable {
-    var repoPath: String
-    var options: RepairOptionsSnapshot
-}
-
-actor DatabaseRepairRecordingMetadataRepairer: CoreMetadataRepairing {
-    private let result: Result<RepairReportSnapshot, Error>
-    private var recordedRequests: [DatabaseRepairRepairRequest] = []
-
-    init(result: Result<RepairReportSnapshot, Error>) {
-        self.result = result
-    }
-
-    func repairMetadata(repoPath: String, options: RepairOptionsSnapshot) async throws -> RepairReportSnapshot {
-        recordedRequests.append(DatabaseRepairRepairRequest(repoPath: repoPath, options: options))
-        return try result.get()
-    }
-
-    func assertNoMetadataRepairRequests(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedRequests, [], file: file, line: line)
-    }
-
-    func assertMetadataRepairRequests(
-        _ expectedRequests: [DatabaseRepairRepairRequest],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
     }
 }

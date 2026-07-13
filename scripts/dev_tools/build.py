@@ -5,12 +5,20 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 from .common import fail, project_root, require_command, require_file, resolve_project_path, run_step
 
 UNIFFI_BINDGEN_WRAPPER = "areamatrix_uniffi_bindgen_wrapper"
 UNIFFI_BINDGEN_CRATE = "uniffi_bindgen"
+DEFAULT_BINDINGS_UDL = "core/area_matrix.udl"
+DEFAULT_TRACKED_BINDINGS_DIR = "apps/macos/AreaMatrix/Bridge/UniFFI"
+BINDING_ARTIFACTS = (
+    ("area_matrix.swift", "area_matrix.swift"),
+    ("area_matrixFFI.h", "area_matrixFFI.h"),
+    ("area_matrixFFI.modulemap", "module.modulemap"),
+)
 
 
 def _host_triple() -> str:
@@ -261,9 +269,6 @@ def _uniffi_bindgen_command(core_dir: Path) -> list[str]:
     configured = os.environ.get("UNIFFI_BINDGEN") or os.environ.get("AREAMATRIX_UNIFFI_BINDGEN")
     if configured:
         return [configured]
-    found = shutil.which("uniffi-bindgen")
-    if found:
-        return [found]
     return _build_cached_uniffi_bindgen(core_dir)
 
 
@@ -376,11 +381,75 @@ def _generate_swift_bindings(bindgen_cmd: list[str], core_dir: Path, bindgen_lib
 
     print()
     print("==> Generating Swift bindings")
+    return _run_swift_bindgen(bindgen_cmd, udl_file, bindgen_library, out_path)
+
+
+def _run_swift_bindgen(
+    bindgen_cmd: list[str],
+    udl_file: Path,
+    bindgen_library: Path,
+    out_path: Path,
+) -> int:
+    require_file(bindgen_library, "host dylib for UniFFI binding generation")
     proc = run_step(
-        [*bindgen_cmd, "generate", udl_file, "--language", "swift", "--out-dir", out_path, "--lib-file", bindgen_library],
+        [
+            *bindgen_cmd,
+            "generate",
+            udl_file,
+            "--language",
+            "swift",
+            "--out-dir",
+            out_path,
+            "--lib-file",
+            bindgen_library,
+        ],
         check=False,
     )
     return proc.returncode
+
+
+def _bindings_bindgen_library(core_dir: Path, profile: str | None = None) -> Path:
+    build_profile = profile or os.environ.get("BUILD_PROFILE", "release")
+    _, target_profile = _cargo_profile_args(build_profile)
+    host_triple = _macos_rust_host()
+    if host_triple is None:
+        fail("Swift binding generation requires a macOS Rust host.")
+    _, _, bindgen_library = _generated_artifacts(core_dir, host_triple, target_profile)
+    if not bindgen_library.is_file():
+        fail(
+            f"host dylib for UniFFI binding generation not found at {bindgen_library}. "
+            "Run `./dev build core` first."
+        )
+    return bindgen_library
+
+
+def _copy_binding_artifacts(generated_dir: Path, tracked_dir: Path) -> None:
+    tracked_dir.mkdir(parents=True, exist_ok=True)
+    for generated_name, tracked_name in BINDING_ARTIFACTS:
+        source = generated_dir / generated_name
+        require_file(source, f"generated Swift binding artifact '{generated_name}'")
+        shutil.copy2(source, tracked_dir / tracked_name)
+
+
+def _normalize_binding_artifacts(generated_dir: Path) -> None:
+    for generated_name, _ in BINDING_ARTIFACTS:
+        path = generated_dir / generated_name
+        require_file(path, f"generated Swift binding artifact '{generated_name}'")
+        lines = path.read_text(encoding="utf-8").splitlines()
+        while lines and not lines[-1].strip():
+            lines.pop()
+        path.write_text("\n".join(line.rstrip() for line in lines) + "\n", encoding="utf-8")
+
+
+def _binding_drift(generated_dir: Path, tracked_dir: Path) -> list[str]:
+    drift: list[str] = []
+    for generated_name, tracked_name in BINDING_ARTIFACTS:
+        generated = generated_dir / generated_name
+        tracked = tracked_dir / tracked_name
+        require_file(generated, f"generated Swift binding artifact '{generated_name}'")
+        if not tracked.is_file() or generated.read_bytes() != tracked.read_bytes():
+            drift.append(tracked_name)
+    return drift
 
 
 def run_core_build(
@@ -440,14 +509,59 @@ def run_bindings_update(root: Path | None, udl: str | Path, out_dir: str | Path)
 
     bindgen_cmd = _uniffi_bindgen_command(root / "core")
     bindgen_udl = _bindgen_udl_path(udl_path, root / "core")
-    out_path.mkdir(parents=True, exist_ok=True)
+    bindgen_library = _bindings_bindgen_library(root / "core")
 
     print("==> Regenerating Swift bindings")
-    proc = run_step([*bindgen_cmd, "generate", bindgen_udl, "--language", "swift", "--out-dir", out_path], check=False)
-    if proc.returncode != 0:
-        return proc.returncode
+    with tempfile.TemporaryDirectory(prefix="areamatrix-bindings-update-") as temp_dir:
+        generated_dir = Path(temp_dir)
+        rc = _run_swift_bindgen(bindgen_cmd, bindgen_udl, bindgen_library, generated_dir)
+        if rc != 0:
+            return rc
+        _normalize_binding_artifacts(generated_dir)
+        _copy_binding_artifacts(generated_dir, out_path)
     print("==> Done")
     print(f"    udl:    {udl_path}")
     print(f"    swift:  {out_path / 'area_matrix.swift'}")
     print(f"    header: {out_path / 'area_matrixFFI.h'}")
+    print(f"    module: {out_path / 'module.modulemap'}")
+    return 0
+
+
+def run_bindings_verify(
+    root: Path | None = None,
+    udl: str | Path = DEFAULT_BINDINGS_UDL,
+    tracked_dir: str | Path = DEFAULT_TRACKED_BINDINGS_DIR,
+) -> int:
+    root = (root or project_root()).resolve()
+    udl_path = resolve_project_path(root, udl)
+    tracked_path = resolve_project_path(root, tracked_dir)
+    require_file(udl_path, "Core UniFFI UDL")
+    if not tracked_path.is_dir():
+        fail(f"tracked bindings directory not found at {tracked_path}.")
+
+    core_dir = root / "core"
+    bindgen_cmd = _uniffi_bindgen_command(core_dir)
+    bindgen_udl = _bindgen_udl_path(udl_path, core_dir)
+    bindgen_library = _bindings_bindgen_library(core_dir)
+
+    with tempfile.TemporaryDirectory(prefix="areamatrix-bindings-verify-") as temp_dir:
+        generated_dir = Path(temp_dir)
+        rc = _run_swift_bindgen(bindgen_cmd, bindgen_udl, bindgen_library, generated_dir)
+        if rc != 0:
+            return rc
+        _normalize_binding_artifacts(generated_dir)
+        drift = _binding_drift(generated_dir, tracked_path)
+
+    if drift:
+        print("bindings verify: FAILED", file=os.sys.stderr)
+        for name in drift:
+            print(f"- tracked binding differs: {tracked_path / name}", file=os.sys.stderr)
+        print(
+            "Run `./dev bindings update --udl core/area_matrix.udl "
+            "--out-dir apps/macos/AreaMatrix/Bridge/UniFFI` after reviewing the Core API / UDL change.",
+            file=os.sys.stderr,
+        )
+        return 1
+
+    print("bindings verify: PASS")
     return 0

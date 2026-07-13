@@ -8,7 +8,7 @@ struct ChangeLogListRequest: Equatable {
 
 actor RecordingChangeLogLister: CoreChangeLogListing {
     private var resultQueue: TestResultQueue<[ChangeLogEntrySnapshot]>
-    private var requestsStorage: [ChangeLogListRequest] = []
+    private var requestLog = TestRequestLog<ChangeLogListRequest>()
 
     init(results: [Swift.Result<[ChangeLogEntrySnapshot], Error>]) {
         resultQueue = TestResultQueue(results: results) {
@@ -23,7 +23,7 @@ actor RecordingChangeLogLister: CoreChangeLogListing {
     }
 
     func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
-        requestsStorage.append(ChangeLogListRequest(repoPath: repoPath, filter: filter))
+        requestLog.append(ChangeLogListRequest(repoPath: repoPath, filter: filter))
         return try resultQueue.next()
     }
 
@@ -32,7 +32,7 @@ actor RecordingChangeLogLister: CoreChangeLogListing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+        requestLog.assertRequests(expectedRequests, file: file, line: line)
     }
 
     func assertNoChangeLogListRequests(

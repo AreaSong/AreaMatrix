@@ -115,6 +115,7 @@
 		0A0000000000000000001024 /* MainFileListInteractionActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001025 /* MainFileListInteractionActions.swift */; };
 		0A0000000000000000001026 /* MainFileActionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001027 /* MainFileActionState.swift */; };
 		0A0000000000000000001040 /* MainFileBatchActionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001041 /* MainFileBatchActionState.swift */; };
+		7F1A2B3C4D5E6F708192A014 /* MainFileActionRoutingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A015 /* MainFileActionRoutingState.swift */; };
 		0A0000000000000000001030 /* BatchFileActionEligibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001031 /* BatchFileActionEligibilityTests.swift */; };
 		0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */; };
 		0A00000000000000000000FC /* AreaMatrixShellTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FD /* AreaMatrixShellTestDoubleSupport.swift */; };
@@ -125,13 +126,19 @@
 		0A00000000000000000019A0 /* SnapshotConstructorInventoryFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000019A1 /* SnapshotConstructorInventoryFixtures.swift */; };
 		0A00000000000000000019A2 /* PlatformCapabilityFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000019A3 /* PlatformCapabilityFixtures.swift */; };
 		0A0000000000000000001980 /* MacOSArchitectureBoundaryGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001981 /* MacOSArchitectureBoundaryGovernanceTests.swift */; };
+		7F1A2B3C4D5E6F708192A010 /* MacOSGovernanceFileSystemTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A011 /* MacOSGovernanceFileSystemTestSupport.swift */; };
+		7F1A2B3C4D5E6F708192A012 /* SwiftFileSizeGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A013 /* SwiftFileSizeGovernanceTests.swift */; };
 		0A0000000000000000001982 /* MacOSDefaultCoreServicesGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001983 /* MacOSDefaultCoreServicesGovernanceTests.swift */; };
+		7F1A2B3C4D5E6F708192A003 /* MainRepositoryRouteHostGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A004 /* MainRepositoryRouteHostGovernanceTests.swift */; };
 		0A0000000000000000001984 /* AppCoreServicesGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001985 /* AppCoreServicesGovernanceTests.swift */; };
 		0A0000000000000000001986 /* AppPlatformServicesGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001987 /* AppPlatformServicesGovernanceTests.swift */; };
 		0A0000000000000000001988 /* AppPlatformServiceAdapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001989 /* AppPlatformServiceAdapters.swift */; };
 		0A0000000000000000001990 /* ExternalURLPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001991 /* ExternalURLPolicy.swift */; };
 		0A0000000000000000001992 /* ExternalURLPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001993 /* ExternalURLPolicyTests.swift */; };
 		0A0000000000000000001994 /* LocalFileURLOpenerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001995 /* LocalFileURLOpenerTests.swift */; };
+		7F1A2B3C4D5E6F708192A00A /* DeleteFilePageTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A00B /* DeleteFilePageTestDoubleSupport.swift */; };
+		7F1A2B3C4D5E6F708192A00C /* ExternalURLPolicyTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A00D /* ExternalURLPolicyTestDoubleSupport.swift */; };
+		7F1A2B3C4D5E6F708192A00E /* LocalFileURLOpenerTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A00F /* LocalFileURLOpenerTestDoubleSupport.swift */; };
 		0A0000000000000000001996 /* RepositoryRealCoreTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001997 /* RepositoryRealCoreTestSupport.swift */; };
 		0A00000000000000000000FE /* ValidatePathRepairTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FF /* ValidatePathRepairTestDoubleSupport.swift */; };
 		0A0000000000000000001944 /* ValidatePathRepairFileSystemTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001945 /* ValidatePathRepairFileSystemTestSupport.swift */; };
@@ -282,6 +289,7 @@
 		0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */; };
 		0A00000000000000000002F9 /* DatabaseRepairConfirmPageFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002FA /* DatabaseRepairConfirmPageFixtures.swift */; };
 		0A00000000000000000002F7 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002F8 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift */; };
+		7F1A2B3C4D5E6F708192A006 /* DatabaseRepairConfirmPageTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A007 /* DatabaseRepairConfirmPageTestDoubleSupport.swift */; };
 		0A00000000000000000008A2 /* TestTemporaryDirectoryFileSystemTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008A3 /* TestTemporaryDirectoryFileSystemTestSupport.swift */; };
 		0A00000000000000000008BC /* TestMirrorDescriptionSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008BD /* TestMirrorDescriptionSupport.swift */; };
 		0A00000000000000000008BE /* UndoRedoActionSnapshotTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008BF /* UndoRedoActionSnapshotTestDoubleSupport.swift */; };
@@ -354,6 +362,7 @@
 		0A00000000000000000008EA /* DetailBatchAddTagsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008EB /* DetailBatchAddTagsPageFeatureTests.swift */; };
 		0A00000000000000000008F2 /* DetailTagSuggestionsPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008F3 /* DetailTagSuggestionsPageFeatureTests.swift */; };
 		0A00000000000000000008EC /* BatchAddTagsFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008ED /* BatchAddTagsFixtures.swift */; };
+		7F1A2B3C4D5E6F708192A008 /* BatchAddTagsTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A009 /* BatchAddTagsTestDoubleSupport.swift */; };
 		0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */; };
 		0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */; };
 		0A00000000000000000008EE /* DetailTagFilterIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008EF /* DetailTagFilterIntegrationTests.swift */; };
@@ -392,6 +401,7 @@
 		0A00000000000000000002D0 /* MainRepositoryContentCategoryMoveRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */; };
 		0A0000000000000000000FAB /* MainRepositoryContentDetailTagActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FAC /* MainRepositoryContentDetailTagActions.swift */; };
 		0A00000000000000000002D2 /* MainRepositoryContentSearchRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000002D3 /* MainRepositoryContentSearchRouting.swift */; };
+		7F1A2B3C4D5E6F708192A002 /* MainRepositoryContentImportRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A001 /* MainRepositoryContentImportRouting.swift */; };
 		0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000013F /* MainFileActionRoutingSheet.swift */; };
 		0A0000000000000000000140 /* RenameFileSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000141 /* RenameFileSheet.swift */; };
 		0A0000000000000000000142 /* ChangeCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000143 /* ChangeCategorySheet.swift */; };
@@ -839,13 +849,19 @@
 		0A00000000000000000019A1 /* SnapshotConstructorInventoryFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SnapshotConstructorInventoryFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000019A3 /* PlatformCapabilityFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/PlatformCapabilityFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001981 /* MacOSArchitectureBoundaryGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSArchitectureBoundaryGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A011 /* MacOSGovernanceFileSystemTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSGovernanceFileSystemTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A013 /* SwiftFileSizeGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SwiftFileSizeGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001983 /* MacOSDefaultCoreServicesGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSDefaultCoreServicesGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A004 /* MainRepositoryRouteHostGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepositoryRouteHostGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001985 /* AppCoreServicesGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AppCoreServicesGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001987 /* AppPlatformServicesGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AppPlatformServicesGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001989 /* AppPlatformServiceAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppPlatformServiceAdapters.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001991 /* ExternalURLPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/ExternalURLPolicy.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001993 /* ExternalURLPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ExternalURLPolicyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001995 /* LocalFileURLOpenerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/LocalFileURLOpenerTests.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A00B /* DeleteFilePageTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DeleteFilePageTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A00D /* ExternalURLPolicyTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ExternalURLPolicyTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A00F /* LocalFileURLOpenerTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/LocalFileURLOpenerTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001997 /* RepositoryRealCoreTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositoryRealCoreTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000FF /* ValidatePathRepairTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ValidatePathRepairTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001945 /* ValidatePathRepairFileSystemTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ValidatePathRepairFileSystemTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -884,6 +900,7 @@
 		0A0000000000000000001025 /* MainFileListInteractionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainFileListInteractionActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001027 /* MainFileActionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileActionState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001041 /* MainFileBatchActionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileBatchActionState.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A015 /* MainFileActionRoutingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileActionRoutingState.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BB /* CoreFileRenaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreFileRenaming.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002BD /* MainFileRenameActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileRenameActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FB4 /* BatchRenameSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/BatchRenameSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -1096,6 +1113,7 @@
 		0A00000000000000000008EB /* DetailBatchAddTagsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailBatchAddTagsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008F3 /* DetailTagSuggestionsPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailTagSuggestionsPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008ED /* BatchAddTagsFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/BatchAddTagsFixtures.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A009 /* BatchAddTagsTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/BatchAddTagsTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailMultiPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008EF /* DetailTagFilterIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailTagFilterIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
@@ -1136,6 +1154,7 @@
 		0A00000000000000000002D1 /* MainRepositoryContentCategoryMoveRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainRepositoryContentCategoryMoveRefresh.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FAC /* MainRepositoryContentDetailTagActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/MainRepositoryContentDetailTagActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002D3 /* MainRepositoryContentSearchRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/MainRepositoryContentSearchRouting.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A001 /* MainRepositoryContentImportRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/MainRepositoryContentImportRouting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000271 /* GeneralSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/GeneralSettingsModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000273 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/GeneralSettingsView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000949 /* SettingsPageScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/Settings/SettingsPageScaffold.swift; sourceTree = SOURCE_ROOT; };
@@ -1245,6 +1264,7 @@
 		0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DatabaseRepairConfirmPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002FA /* DatabaseRepairConfirmPageFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DatabaseRepairConfirmPageFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002F8 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DatabaseRepairConfirmPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A007 /* DatabaseRepairConfirmPageTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DatabaseRepairConfirmPageTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000014F /* OnboardingRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/OnboardingRoute.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000002F6 /* OnboardingDatabaseRepairRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/OnboardingDatabaseRepairRouting.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000151 /* MainLoadingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainLoadingTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -1748,6 +1768,7 @@
 					0A00000000000000000002BD /* MainFileRenameActions.swift */,
 					0A0000000000000000001027 /* MainFileActionState.swift */,
 					0A0000000000000000001041 /* MainFileBatchActionState.swift */,
+					7F1A2B3C4D5E6F708192A015 /* MainFileActionRoutingState.swift */,
 					0A0000000000000000001009 /* BatchRenameSnapshots.swift */,
 					0A0000000000000000000FB4 /* BatchRenameSupport.swift */,
 					0A000000000000000000041B /* BatchRenameUndoAction.swift */,
@@ -1799,6 +1820,7 @@
 					0A0000000000000000000F65 /* FileDropAdapter.swift */,
 					0A0000000000000000000169 /* ImportDropTargetView.swift */,
 					0A0000000000000000000FB2 /* MainRepositoryContentDropOverlay.swift */,
+					7F1A2B3C4D5E6F708192A001 /* MainRepositoryContentImportRouting.swift */,
 					0A0000000000000000000129 /* ImportEntrySheetView.swift */,
 					0A0000000000000000000F53 /* ImportEntrySingleFilePreviewSection.swift */,
 					0A00000000000000000001A5 /* ImportEntrySheetHelpers.swift */,
@@ -2086,6 +2108,7 @@
 				0A00000000000000000002F4 /* DatabaseRepairConfirmPageFeatureTests.swift */,
 				0A00000000000000000002FA /* DatabaseRepairConfirmPageFixtures.swift */,
 				0A00000000000000000002F8 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift */,
+				7F1A2B3C4D5E6F708192A007 /* DatabaseRepairConfirmPageTestDoubleSupport.swift */,
 				0A0000000000000000000020 /* ValidatePathIntegrationTests.swift */,
 				0A00000000000000000000A1 /* InitializingStepIntegrationTests.swift */,
 				0A00000000000000000000B3 /* InitFailedErrorMappingTests.swift */,
@@ -2249,6 +2272,7 @@
 					0A00000000000000000008EB /* DetailBatchAddTagsPageFeatureTests.swift */,
 					0A00000000000000000008F3 /* DetailTagSuggestionsPageFeatureTests.swift */,
 					0A00000000000000000008ED /* BatchAddTagsFixtures.swift */,
+					7F1A2B3C4D5E6F708192A009 /* BatchAddTagsTestDoubleSupport.swift */,
 					0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */,
 					0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */,
 					0A00000000000000000008EF /* DetailTagFilterIntegrationTests.swift */,
@@ -2364,11 +2388,17 @@
 					0A00000000000000000019A1 /* SnapshotConstructorInventoryFixtures.swift */,
 					0A00000000000000000019A3 /* PlatformCapabilityFixtures.swift */,
 					0A0000000000000000001981 /* MacOSArchitectureBoundaryGovernanceTests.swift */,
+					7F1A2B3C4D5E6F708192A011 /* MacOSGovernanceFileSystemTestSupport.swift */,
+					7F1A2B3C4D5E6F708192A013 /* SwiftFileSizeGovernanceTests.swift */,
 					0A0000000000000000001983 /* MacOSDefaultCoreServicesGovernanceTests.swift */,
+					7F1A2B3C4D5E6F708192A004 /* MainRepositoryRouteHostGovernanceTests.swift */,
 					0A0000000000000000001985 /* AppCoreServicesGovernanceTests.swift */,
 					0A0000000000000000001987 /* AppPlatformServicesGovernanceTests.swift */,
 					0A0000000000000000001993 /* ExternalURLPolicyTests.swift */,
 					0A0000000000000000001995 /* LocalFileURLOpenerTests.swift */,
+					7F1A2B3C4D5E6F708192A00B /* DeleteFilePageTestDoubleSupport.swift */,
+					7F1A2B3C4D5E6F708192A00D /* ExternalURLPolicyTestDoubleSupport.swift */,
+					7F1A2B3C4D5E6F708192A00F /* LocalFileURLOpenerTestDoubleSupport.swift */,
 					0A0000000000000000001997 /* RepositoryRealCoreTestSupport.swift */,
 					0A00000000000000000000FF /* ValidatePathRepairTestDoubleSupport.swift */,
 					0A0000000000000000001945 /* ValidatePathRepairFileSystemTestSupport.swift */,
@@ -2524,6 +2554,7 @@
 				0A0000000000000000001024 /* MainFileListInteractionActions.swift in Sources */,
 				0A0000000000000000001026 /* MainFileActionState.swift in Sources */,
 				0A0000000000000000001040 /* MainFileBatchActionState.swift in Sources */,
+				7F1A2B3C4D5E6F708192A014 /* MainFileActionRoutingState.swift in Sources */,
 				0A00000000000000000002BC /* MainFileRenameActions.swift in Sources */,
 				0A0000000000000000001008 /* BatchRenameSnapshots.swift in Sources */,
 				0A0000000000000000000FB3 /* BatchRenameSupport.swift in Sources */,
@@ -2760,6 +2791,7 @@
 				0A0000000000000000000854 /* SemanticSearchMainContentSupport.swift in Sources */,
 				0A00000000000000000002D0 /* MainRepositoryContentCategoryMoveRefresh.swift in Sources */,
 				0A00000000000000000002D2 /* MainRepositoryContentSearchRouting.swift in Sources */,
+				7F1A2B3C4D5E6F708192A002 /* MainRepositoryContentImportRouting.swift in Sources */,
 				0A0000000000000000000336 /* MainRepositoryMultiSelectionActions.swift in Sources */,
 				0A000000000000000000013E /* MainFileActionRoutingSheet.swift in Sources */,
 				0A0000000000000000000140 /* RenameFileSheet.swift in Sources */,
@@ -3100,6 +3132,7 @@
 					0A00000000000000000002F3 /* DatabaseRepairConfirmPageFeatureTests.swift in Sources */,
 					0A00000000000000000002F9 /* DatabaseRepairConfirmPageFixtures.swift in Sources */,
 					0A00000000000000000002F7 /* DatabaseRepairConfirmPageIntegrationVerifyTests.swift in Sources */,
+					7F1A2B3C4D5E6F708192A006 /* DatabaseRepairConfirmPageTestDoubleSupport.swift in Sources */,
 					0A0000000000000000000200 /* DetailMetaPageFeatureTests.swift in Sources */,
 					0A0000000000000000000920 /* DetailLogPageFeatureTests.swift in Sources */,
 					0A0000000000000000000922 /* DetailMetaTestSupport.swift in Sources */,
@@ -3112,6 +3145,7 @@
 					0A00000000000000000008EA /* DetailBatchAddTagsPageFeatureTests.swift in Sources */,
 					0A00000000000000000008F2 /* DetailTagSuggestionsPageFeatureTests.swift in Sources */,
 					0A00000000000000000008EC /* BatchAddTagsFixtures.swift in Sources */,
+					7F1A2B3C4D5E6F708192A008 /* BatchAddTagsTestDoubleSupport.swift in Sources */,
 					0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000008EE /* DetailTagFilterIntegrationTests.swift in Sources */,
@@ -3203,11 +3237,17 @@
 					0A00000000000000000019A0 /* SnapshotConstructorInventoryFixtures.swift in Sources */,
 					0A00000000000000000019A2 /* PlatformCapabilityFixtures.swift in Sources */,
 					0A0000000000000000001980 /* MacOSArchitectureBoundaryGovernanceTests.swift in Sources */,
+					7F1A2B3C4D5E6F708192A010 /* MacOSGovernanceFileSystemTestSupport.swift in Sources */,
+					7F1A2B3C4D5E6F708192A012 /* SwiftFileSizeGovernanceTests.swift in Sources */,
 					0A0000000000000000001982 /* MacOSDefaultCoreServicesGovernanceTests.swift in Sources */,
+					7F1A2B3C4D5E6F708192A003 /* MainRepositoryRouteHostGovernanceTests.swift in Sources */,
 					0A0000000000000000001984 /* AppCoreServicesGovernanceTests.swift in Sources */,
 					0A0000000000000000001986 /* AppPlatformServicesGovernanceTests.swift in Sources */,
 					0A0000000000000000001992 /* ExternalURLPolicyTests.swift in Sources */,
 					0A0000000000000000001994 /* LocalFileURLOpenerTests.swift in Sources */,
+					7F1A2B3C4D5E6F708192A00A /* DeleteFilePageTestDoubleSupport.swift in Sources */,
+					7F1A2B3C4D5E6F708192A00C /* ExternalURLPolicyTestDoubleSupport.swift in Sources */,
+					7F1A2B3C4D5E6F708192A00E /* LocalFileURLOpenerTestDoubleSupport.swift in Sources */,
 					0A0000000000000000001996 /* RepositoryRealCoreTestSupport.swift in Sources */,
 					0A00000000000000000000FE /* ValidatePathRepairTestDoubleSupport.swift in Sources */,
 					0A0000000000000000001944 /* ValidatePathRepairFileSystemTestSupport.swift in Sources */,
