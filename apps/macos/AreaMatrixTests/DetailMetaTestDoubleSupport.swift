@@ -23,35 +23,35 @@ struct FileDetailRequest: Equatable {
 }
 
 actor RecordingFileDetailer: CoreFileDetailing {
-    private var results: [Swift.Result<FileEntrySnapshot, Error>]
+    private var resultQueue: TestResultQueue<FileEntrySnapshot>
     private var requests: [FileDetailRequest] = []
 
     init() {
-        results = []
+        resultQueue = TestResultQueue(results: []) {
+            .failure(CoreError.FileNotFound(path: ""))
+        }
     }
 
     init(results: [Swift.Result<FileEntrySnapshot, Error>]) {
-        self.results = results
+        resultQueue = TestResultQueue(results: results) {
+            .failure(CoreError.FileNotFound(path: ""))
+        }
     }
 
     init(result: Swift.Result<FileEntrySnapshot, Error>) {
-        results = [result]
+        resultQueue = TestResultQueue(results: [result]) {
+            .failure(CoreError.FileNotFound(path: ""))
+        }
     }
 
     func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot {
         requests.append(FileDetailRequest(repoPath: repoPath, fileID: fileID))
-        guard !results.isEmpty else {
-            throw CoreError.FileNotFound(path: "\(fileID)")
+        return try resultQueue.next {
+            .failure(CoreError.FileNotFound(path: "\(fileID)"))
         }
-
-        return try results.removeFirst().get()
     }
 
-    func recordedRequests() -> [FileDetailRequest] {
-        requests
-    }
-
-    func assertRecordedRequests(
+    func assertFileDetailRequests(
         _ expectedRequests: [FileDetailRequest],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -59,7 +59,22 @@ actor RecordingFileDetailer: CoreFileDetailing {
         XCTAssertEqual(requests, expectedRequests, file: file, line: line)
     }
 
-    func assertRecordedFileIDs(
+    func assertNoFileDetailRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertFileDetailRequests([], file: file, line: line)
+    }
+
+    func assertFileDetailRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests.count, expectedCount, file: file, line: line)
+    }
+
+    func assertRequestedFileIDs(
         _ expectedFileIDs: [Int64],
         file: StaticString = #filePath,
         line: UInt = #line

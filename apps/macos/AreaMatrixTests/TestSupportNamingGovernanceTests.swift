@@ -1,131 +1,5 @@
 import XCTest
 
-private let featureLocalDoubleDeclarations = [
-    "enum ChangeCategoryRequest",
-    "actor ChangeCategoryRecordingMover",
-    "typealias ChangeCategoryRecordingPredictor",
-    "typealias ChangeCategoryRecordingLister",
-    "typealias DetailLogRecordingLister",
-    "struct RenameRequest",
-    "actor RenameRecordingRenamer",
-    "struct BatchRenamePreviewRequest",
-    "struct BatchRenameApplyRequest",
-    "actor BatchRenameRecordingRenamer",
-    "struct ImportBatchBatchImportRequest",
-    "actor ImportBatchRecordingBatchImporter",
-    "actor ImportBatchSequenceBatchImporter",
-    "actor ImportBatchStaticBatchFileLoader",
-    "struct ImportBatchNameConflictPrecheckRequest",
-    "actor ImportBatchStaticNameConflictPrechecker",
-    "struct ImportSingleFileStaticLocalizedError",
-    "struct ImportSingleFileImportRequest",
-    "struct ImportSingleFileCoreImportRequest",
-    "typealias ImportSingleFileStaticICloudDownloader",
-    "typealias ImportSingleFilePredictRequest",
-    "typealias ImportSingleFileRecordingPredictor",
-    "typealias ImportSingleFileStaticRepositoryOpener",
-    "struct ImportSingleFileStaticPreflight",
-    "struct ImportSingleFileFileLoadRequest",
-    "actor ImportSingleFileStaticFileLoader",
-    "actor ImportSingleFileRecordingImporter",
-    "actor ImportSingleFileSuspendingImporter",
-    "actor ImportSingleFileImportGate",
-    "actor ImportSingleFileFailingImporter",
-    "typealias ImportFolderPredictRequest",
-    "typealias ImportFolderRecordingPredictor",
-    "typealias ImportFolderMappedPredictor",
-    "typealias ImportFolderRecordingICloudDownloader",
-    "struct ImportFolderStaticFolderScanner",
-    "actor ImportFolderSequenceFolderScanner",
-    "struct ImportFolderConflictPrecheckRequest",
-    "actor ImportFolderStaticConflictPrechecker",
-    "actor ImportFolderNoopConflictPrechecker",
-    "typealias ShellStaticSettingsReader",
-    "typealias ShellRecordingSettingsWriter",
-    "typealias ShellRecordingConfigLoader",
-    "typealias ShellRecordingRepositoryOpener",
-    "typealias ShellRecordingPathValidator",
-    "typealias ShellRecordingInitializedPathValidator",
-    "typealias ShellRecordingExternalChangesSyncer",
-    "typealias ShellRecordingDiagnosticsCollector",
-    "typealias ShellRecordingRepositoryInitializer",
-    "typealias ShellStaticScanSessionReader",
-    "typealias ShellStaticImportBatchSessionStore",
-    "struct ShellFailingWelcomeHelpOpener",
-    "final class ShellRecordingPathCopier",
-    "typealias ShellExistingRepoMetadataReader",
-    "final class ShellRecordingDirectoryPicker",
-    "struct ShellStaticImportPicker",
-    "typealias ImportConflictChangeLogRequest",
-    "typealias ImportConflictChangeLogLister",
-    "struct ImportConflictPreviewRequest",
-    "struct ImportConflictApplyRequest",
-    "typealias ImportResultChangeLogRequest",
-    "typealias ImportResultRecordingChangeLogLister",
-    "final class ImportResultExporter",
-    "actor DetailMetaImmediateDetailer",
-    "struct FileDetailRequest",
-    "actor RecordingFileDetailer",
-    "actor RepoSettingsMetadataReader",
-    "typealias RepoSettingsRepositoryOpener",
-    "typealias RepoSettingsScanSessionReader",
-    "final class RecordingRepoMetadataPresenceChecker",
-    "typealias RepoSettingsCapabilityLoader",
-    "typealias AITagSuggestionAISettingsLoader",
-    "typealias SmartListRecordingSmartListRunner",
-    "typealias SmokeStaticSettingsReader",
-    "typealias SmokeRecordingSettingsWriter",
-    "typealias SmokeRecordingConfigLoader",
-    "typealias SmokeRecordingPathValidator",
-    "typealias SmokeRecordingRepositoryOpener",
-    "typealias SmokeRecordingScanSessionReader",
-    "typealias SmokeNoopWelcomeHelpOpener",
-    "typealias SmokeExistingRepoMetadataReader",
-    "typealias ImportDropPredictRequest",
-    "typealias ImportDropRecordingPredictor",
-    "struct MainEmptyImportStaticImportPicker",
-    "actor MainLoadingPausingStartupRecoverer",
-    "actor MainLoadingRecordingTreeLister",
-    "actor MainLoadingInitializedPathValidator",
-    "actor MainLoadingPausingRepositoryOpener",
-    "typealias MainLoadingFailingRepositoryOpener",
-    "typealias MainLoadingRecordingSettingsWriter",
-    "typealias MainListIntegrationDetailer",
-    "typealias MainListIntegrationDiagnosticsCollector",
-    "typealias MainListIntegrationNoopDetailer",
-    "typealias MainListRecordingFileLister",
-    "typealias MainListRecordingSearchQuerying",
-    "typealias MainListSearchRequestRecord",
-    "typealias MainListSmartListRequestRecord",
-    "struct MainListFallbackRequestRecord",
-    "actor MainListRecordingSemanticSearcher",
-    "actor MainListRecordingSemanticFallbackReader",
-    "actor MainListIntegrationSuspendedLister",
-    "typealias SemanticSearchDetailer",
-    "typealias SemanticSearchLister",
-    "typealias SemanticSearchNormalSearcher",
-    "typealias SemanticSearchPageDetailer",
-    "typealias SemanticSearchPageLister",
-    "typealias SemanticSearchPageNormalSearcher",
-    "actor SemanticSearchSemanticSearcher",
-    "actor SemanticSearchPagedSemanticSearcher",
-    "actor SemanticSearchDelayedSemanticSearcher",
-    "typealias SmartListSmartListRunRequest",
-    "typealias SyncConflictReviewRecordingFileDetailer",
-    "struct SyncConflictPreviewRequest",
-    "struct SyncConflictResolveRequest",
-    "typealias ICloudPathValidator"
-]
-
-private let bridgeBoundaryDeclarations = [
-    "actor AIPrivacyRulesFailingBridge",
-    "actor FileActionsRecordingCore",
-    "actor ICloudConflictMinimalRecordingMainCore",
-    "actor ICloudConflictResolver",
-    "actor ICloudConflictReviewer",
-    "actor RemotePrivacyRulesBridge"
-]
-
 final class TestSupportNamingGovernanceTests: XCTestCase {
     func testFixtureDataUsesFixturesFileSuffix() throws {
         let fixtureSupportSuffix = "Fixture" + "Support.swift"
@@ -428,19 +302,35 @@ final class TestSupportNamingGovernanceTests: XCTestCase {
     }
 
     private func isNamedCoreBridgeBoundarySupport(_ fileName: String) -> Bool {
-        fileName.hasSuffix("BridgeTestSupport.swift") ||
-            fileName.hasSuffix("CoreBridgeTestSupport.swift") ||
+        fileName.hasSuffix("BridgeTestSupport.swift") || fileName.hasSuffix("CoreBridgeTestSupport.swift") ||
             fileName.hasSuffix("RealCoreTestSupport.swift")
     }
 
     private func isNamedBridgeBoundarySupport(_ fileName: String) -> Bool {
-        fileName.hasSuffix("BridgeTestSupport.swift") ||
-            fileName.hasSuffix("CoreBridgeTestSupport.swift")
+        fileName.hasSuffix("BridgeTestSupport.swift") || fileName.hasSuffix("CoreBridgeTestSupport.swift")
     }
 
     private func isNamedFileSystemBoundarySupport(_ fileName: String) -> Bool {
         fileName.hasSuffix("FileSystemTestSupport.swift") ||
-            fileName.hasSuffix("RealCoreTestSupport.swift") ||
-            fileName.hasSuffix("RuntimeTestSupport.swift")
+            fileName.hasSuffix("RealCoreTestSupport.swift") || fileName.hasSuffix("RuntimeTestSupport.swift")
+    }
+}
+
+extension TestSupportNamingGovernanceTests {
+    func testSelectedFeatureLocalRecordingDoublesExposeSemanticRequestAssertions() throws {
+        let violations = try testSupportSwiftFiles()
+            .filter { semanticRequestAssertionFileNames.contains($0.lastPathComponent) }
+            .flatMap { try sourceTermViolations(in: $0, terms: genericRequestAssertionTerms) }
+            .sorted()
+        XCTAssertEqual(violations, [], "Feature-local recording doubles should expose semantic request assertions.")
+    }
+
+    func testRecordingSupportExposesSemanticAssertionsInsteadOfRawRecordGetters() throws {
+        let localRecordingFiles = try testSupportSwiftFiles()
+            .filter { rawRecordLocalFileNames.contains($0.lastPathComponent) }
+        let violations = try (supportSwiftFiles() + localRecordingFiles)
+            .flatMap { try sourceTermViolations(in: $0, terms: rawRecordExposureTerms) }
+            .sorted()
+        XCTAssertEqual(violations, [], "Recording support should expose semantic assertions, not raw record getters.")
     }
 }

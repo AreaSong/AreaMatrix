@@ -93,7 +93,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
 
         await model.askForSuggestion()
 
-        await bridge.assertRequests([request])
+        await bridge.assertAIClassificationSuggestionRequests([request])
         XCTAssertEqual(model.statusText, "AI suggested a category.")
         XCTAssertEqual(model.suggestion?.suggestedCategory, "finance/invoices")
         XCTAssertEqual(model.suggestion?.usedContext, [.fileName, .extension, .repoRelativePath])
@@ -117,7 +117,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
 
         await model.askForSuggestion()
 
-        let fallbackRequest = await fallbackBridge.assertSingleRequest()
+        let fallbackRequest = await fallbackBridge.assertSingleAIFallbackStatusRequest()
         XCTAssertEqual(fallbackRequest?.operation, .classificationSuggestion)
         XCTAssertEqual(fallbackRequest?.privacyDecision, .skipped)
         XCTAssertEqual(fallbackRequest?.privacySkippedReason, .privacyRule)
@@ -179,7 +179,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
 
         await model.askForSuggestion()
 
-        let fallbackRequest = await fallbackBridge.assertSingleRequest()
+        let fallbackRequest = await fallbackBridge.assertSingleAIFallbackStatusRequest()
         XCTAssertEqual(fallbackRequest?.providerError, .providerUnavailable)
         XCTAssertEqual(fallbackRequest?.providerErrorCode, "ProviderUnavailable")
         XCTAssertEqual(fallbackRequest?.callLogStatus, .unavailable)
@@ -209,7 +209,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
 
         await model.askForSuggestion()
 
-        let fallbackRequest = await fallbackBridge.assertSingleRequest()
+        let fallbackRequest = await fallbackBridge.assertSingleAIFallbackStatusRequest()
         XCTAssertEqual(fallbackRequest?.operation, .classificationSuggestion)
         XCTAssertEqual(fallbackRequest?.semanticFallbackReason, nil)
         XCTAssertEqual(model.fallbackStatus?.kind, .providerUnavailable)
@@ -311,7 +311,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
             targetCategory: suggestionModel.suggestion?.suggestedCategory
         )
 
-        await bridge.assertRequests([request])
+        await bridge.assertAIClassificationSuggestionRequests([request])
         XCTAssertNil(suggestionModel.acceptDisabledReason)
         XCTAssertEqual(
             model.pendingActionDestination,

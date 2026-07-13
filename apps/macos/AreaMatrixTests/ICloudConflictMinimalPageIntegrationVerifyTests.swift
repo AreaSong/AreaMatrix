@@ -41,14 +41,12 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             resolutionCapability: blockedCapability,
             isTrashAvailable: true
         )
-        let outOfScopeActions = await core.recordedOutOfScopeActions()
-
         assertTestMirrorDescription(of: body, contains: [
             "icloud-conflict-minimal-core-resolution-blocked",
             "Core resolution unavailable",
             "Missing Core API: resolve_icloud_conflict or mark_icloud_conflict_resolved"
         ])
-        XCTAssertEqual(outOfScopeActions, [])
+        await core.assertOutOfScopeActions([])
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
         XCTAssertNil(model.statusBanner)
         XCTAssertNil(model.detailLogState.iCloudConflictMinimalLoadedFileID)
@@ -87,7 +85,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         )
 
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
-        await mapper.assertRecordedErrors([ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError])
+        await mapper.assertMappedCoreErrors([ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError])
         assertTestMirrorDescription(of: failedBody, contains: [
             "icloud-conflict-minimal-error-mapping-apply-failure",
             "Apply failed: Internal",
@@ -95,8 +93,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             "Cancel",
             "Collect Diagnostics..."
         ])
-        let outOfScopeActions = await core.recordedOutOfScopeActions()
-        XCTAssertEqual(outOfScopeActions, [])
+        await core.assertOutOfScopeActions([])
         XCTAssertNil(model.statusBanner)
     }
 
@@ -155,7 +152,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             isTrashAvailable: true
         )
 
-        await mapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo")])
+        await mapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/iCloudConflictMinimal-repo")])
         XCTAssertFalse(failedModel.canApplyKeepBoth)
         assertTestMirrorDescription(of: failedBody, contains: [
             "icloud-conflict-minimal-error-mapping-error-mapping",
@@ -190,10 +187,10 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         model.beginICloudConflictResolution(fileID: conflictFile.id)
         await model.applyKeepBothICloudConflict(fileID: conflictFile.id)
 
-        let requests = await resolver.recordedRequests()
-        XCTAssertEqual(requests.map(\.strategy), [.keepBoth])
-        XCTAssertEqual(requests.first?.repoPath, "/tmp/iCloudConflictMinimal-repo")
-        XCTAssertEqual(requests.first?.fileID, conflictFile.id)
+        await resolver.assertKeepBothResolutionRequest(
+            repoPath: "/tmp/iCloudConflictMinimal-repo",
+            fileID: conflictFile.id
+        )
         XCTAssertNil(model.pendingActionDestination)
         XCTAssertEqual(model.iCloudConflictResolutionState, .idle)
         XCTAssertEqual(model.statusBanner, .resolvedICloudConflict(fileID: conflictFile.id, strategy: .keepBoth))

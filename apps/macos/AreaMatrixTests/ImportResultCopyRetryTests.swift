@@ -10,7 +10,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         guard showImportResultRoute(model, progress: ImportResultFixtures.failedCopyProgress) != nil else { return }
         await model.retryImportResultFailedItems()
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedFiles([
             ImportSingleFileImportRequest(
                 mode: .copy,
                 overrideCategory: "docs",
@@ -82,7 +82,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
         guard showImportResultRoute(model, progress: ImportResultFixtures.failedCopyProgress) != nil else { return }
         await model.retryImportResultFailedItems()
 
-        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: importResultFailedSourcePath())])
+        await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: importResultFailedSourcePath())])
         guard let result = requireImportResultRoute(model) else { return }
         assertImportResultSummary(result, summaryText: "Imported 1, failed 1, stopped 0, pending 0.")
         guard let failedItem = requireImportResultItem(

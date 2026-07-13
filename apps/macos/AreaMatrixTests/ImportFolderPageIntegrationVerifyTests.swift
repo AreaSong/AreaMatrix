@@ -47,7 +47,7 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertEqual(model.route, .mainEmpty(opening))
         XCTAssertEqual(model.toastMessage, "已导入：invoice.pdf")
-        XCTAssertEqual(announcer.announcements, ["已导入：invoice.pdf"])
+        announcer.assertAnnouncements(["已导入：invoice.pdf"])
     }
 
     @MainActor
@@ -80,12 +80,12 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         model.selectedStorageMode = .indexOnly
         _ = await model.importReadyFiles()
 
-        await predictor.assertRecordedRequestFilenames(
+        await predictor.assertCategoryPredictionFilenames(
             ["invoice.pdf", "reference.pdf"],
             repoPath: importBatchRepoPath(),
             requestCount: 4
         )
-        await importer.assertRecordedRequests(importFolderExpectedCopyAndIndexRequests())
+        await importer.assertImportedBatchFiles(importFolderExpectedCopyAndIndexRequests())
     }
 
     @MainActor
@@ -105,7 +105,7 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(model.importDisabledReason, "预扫描存在错误，请先 Retry scan 或 Cancel")
         let blockedOutcome = await model.importReadyFiles()
         XCTAssertNil(blockedOutcome)
-        await importer.assertRecordedRequests([])
+        await importer.assertImportedBatchFiles([])
 
         let cleanScanner = importFolderCleanPlaceholderScanner(readyURL: readyURL, cloudURL: cloudURL)
         let cleanModel = makeImportFolderPreviewModel(

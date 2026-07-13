@@ -11,7 +11,7 @@ actor NoopUndoActionStore: CoreUndoActionLogging {
     }
 }
 
-actor UndoActionRecordingTestStore: CoreUndoActionLogging {
+actor UndoActionRecordingTestStore: CoreUndoActionLogging, UndoActionRequestRecording {
     enum Step {
         case list(Swift.Result<[UndoActionRecordSnapshot], Error>)
         case undo(Swift.Result<UndoActionResultSnapshot, Error>)
@@ -49,28 +49,12 @@ actor UndoActionRecordingTestStore: CoreUndoActionLogging {
         }
     }
 
-    func listRequests() -> [String] {
+    var undoActionListRequestsForAssertions: [String] {
         recordedListRequests
     }
 
-    func undoRequests() -> [String] {
+    var undoActionRequestsForAssertions: [String] {
         recordedUndoRequests
-    }
-
-    func assertListRequests(
-        _ expectedRequests: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedListRequests, expectedRequests, file: file, line: line)
-    }
-
-    func assertUndoRequests(
-        _ expectedRequests: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedUndoRequests, expectedRequests, file: file, line: line)
     }
 
     fileprivate func listUndoActionsLenient(repoPath: String) async throws -> [UndoActionRecordSnapshot] {
@@ -137,37 +121,27 @@ actor LenientUndoActionRecordingTestStore: CoreUndoActionLogging {
         }
     }
 
-    func listRequests() async -> [String] {
-        await store.listRequests()
-    }
-
-    func undoRequests() async -> [String] {
-        await store.undoRequests()
-    }
-
-    func assertListRequests(
+    func assertUndoActionListRequests(
         _ expectedRequests: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) async {
-        let actualRequests = await store.listRequests()
-        XCTAssertEqual(actualRequests, expectedRequests, file: file, line: line)
+        await store.assertUndoActionListRequests(expectedRequests, file: file, line: line)
     }
 
-    func assertUndoRequests(
+    func assertUndoActionRequests(
         _ expectedRequests: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) async {
-        let actualRequests = await store.undoRequests()
-        XCTAssertEqual(actualRequests, expectedRequests, file: file, line: line)
+        await store.assertUndoActionRequests(expectedRequests, file: file, line: line)
     }
 }
 
 typealias UndoToastRecordingUndoStore = LenientUndoActionRecordingTestStore
 typealias BatchAddTagsRecordingUndoStore = UndoActionRecordingTestStore
 
-actor RedoActionLogRecordingRedoStore: CoreRedoActionLogging {
+actor RedoActionLogRecordingRedoStore: CoreRedoActionLogging, RedoActionRequestRecording {
     enum Step {
         case list(Swift.Result<[RedoActionRecordSnapshot], Error>)
         case redo(Swift.Result<RedoActionResultSnapshot, Error>)
@@ -201,27 +175,67 @@ actor RedoActionLogRecordingRedoStore: CoreRedoActionLogging {
         return try result.get()
     }
 
-    func listRequests() -> [String] {
+    var redoActionListRequestsForAssertions: [String] {
         recordedListRequests
     }
 
-    func redoRequests() -> [String] {
+    var redoActionRequestsForAssertions: [String] {
         recordedRedoRequests
     }
+}
 
-    func assertListRequests(
+protocol UndoActionListRequestRecording: Actor {
+    var undoActionListRequestsForAssertions: [String] { get }
+}
+
+extension UndoActionListRequestRecording {
+    func assertUndoActionListRequests(
         _ expectedRequests: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedListRequests, expectedRequests, file: file, line: line)
+        XCTAssertEqual(undoActionListRequestsForAssertions, expectedRequests, file: file, line: line)
     }
+}
 
-    func assertRedoRequests(
+protocol UndoActionRequestRecording: UndoActionListRequestRecording {
+    var undoActionRequestsForAssertions: [String] { get }
+}
+
+extension UndoActionRequestRecording {
+    func assertUndoActionRequests(
         _ expectedRequests: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedRedoRequests, expectedRequests, file: file, line: line)
+        XCTAssertEqual(undoActionRequestsForAssertions, expectedRequests, file: file, line: line)
+    }
+}
+
+protocol RedoActionListRequestRecording: Actor {
+    var redoActionListRequestsForAssertions: [String] { get }
+}
+
+extension RedoActionListRequestRecording {
+    func assertRedoActionListRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(redoActionListRequestsForAssertions, expectedRequests, file: file, line: line)
+    }
+}
+
+protocol RedoActionRequestRecording: RedoActionListRequestRecording {
+    var redoActionRequestsForAssertions: [String] { get }
+}
+
+extension RedoActionRequestRecording {
+    func assertRedoActionRequests(
+        _ expectedRequests: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(redoActionRequestsForAssertions, expectedRequests, file: file, line: line)
     }
 }

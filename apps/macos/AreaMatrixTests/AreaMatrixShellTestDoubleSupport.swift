@@ -41,8 +41,8 @@ final class ShellRecordingPathCopier: RepositoryPathCopying {
         var relativePaths: [String]
     }
 
-    private(set) var requests: [Request] = []
-    private(set) var multiPathRequests: [MultiPathRequest] = []
+    private var requests: [Request] = []
+    private var multiPathRequests: [MultiPathRequest] = []
 
     func copyPath(repoPath: String, relativePath: String) throws {
         requests.append(Request(repoPath: repoPath, relativePath: relativePath))
@@ -52,7 +52,7 @@ final class ShellRecordingPathCopier: RepositoryPathCopying {
         multiPathRequests.append(MultiPathRequest(repoPath: repoPath, relativePaths: relativePaths))
     }
 
-    func assertRequests(
+    func assertCopiedPathRequests(
         _ expectedRequests: [Request],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -327,7 +327,7 @@ func requireDatabaseRepairRoute(
 @MainActor
 final class ShellRecordingDirectoryPicker: RepositoryDirectoryPicking {
     private let selectedURL: URL?
-    private(set) var chooseCount = 0
+    private var chooseCount = 0
 
     init(selectedURL: URL?) {
         self.selectedURL = selectedURL
@@ -336,6 +336,14 @@ final class ShellRecordingDirectoryPicker: RepositoryDirectoryPicking {
     func chooseDirectory() -> URL? {
         chooseCount += 1
         return selectedURL
+    }
+
+    func assertChooseCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(chooseCount, expectedCount, file: file, line: line)
     }
 }
 

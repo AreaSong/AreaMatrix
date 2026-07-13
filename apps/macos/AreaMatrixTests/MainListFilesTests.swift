@@ -20,7 +20,7 @@ final class MainListFilesTests: XCTestCase {
 
         await model.loadCurrentCategory("docs")
 
-        await lister.assertRecordedListRequests([
+        await lister.assertFileListRequests([
             FileListRequest(repoPath: "/tmp/repo", filter: .currentCategory("docs"))
         ])
         XCTAssertEqual(model.files, [docsFile])
@@ -51,7 +51,7 @@ final class MainListFilesTests: XCTestCase {
         await model.loadCurrentCategory("docs")
         await model.retryCurrentCategory()
 
-        await lister.assertRecordedListRequests([
+        await lister.assertFileListRequests([
             FileListRequest(repoPath: "/tmp/repo", filter: .currentCategory("docs")),
             FileListRequest(repoPath: "/tmp/repo", filter: .currentCategory("docs"))
         ])
@@ -82,7 +82,7 @@ final class MainListFilesTests: XCTestCase {
 
         XCTAssertEqual(model.files, [])
         XCTAssertEqual(model.errorMapping, mapping)
-        await mapper.assertRecordedErrors([CoreError.Db(message: "list db locked")])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "list db locked")])
         XCTAssertFalse(model.isLoading)
     }
 
@@ -104,7 +104,7 @@ final class MainListFilesTests: XCTestCase {
 
         await model.selectFile(id: detail.id)
 
-        await detailer.assertRecordedRequests([
+        await detailer.assertFileDetailRequests([
             FileDetailRequest(repoPath: "/tmp/repo", fileID: detail.id)
         ])
         XCTAssertEqual(model.selection, .single(detail.id))
@@ -138,7 +138,7 @@ final class MainListFilesTests: XCTestCase {
         missingCached.availability = .missing
         XCTAssertEqual(model.selectedFileDetail, missingCached)
         XCTAssertEqual(model.detailErrorMapping, mapping)
-        await mapper.assertRecordedErrors([CoreError.FileNotFound(path: "docs/missing.pdf")])
+        await mapper.assertMappedCoreErrors([CoreError.FileNotFound(path: "docs/missing.pdf")])
         XCTAssertFalse(model.isDetailLoading)
     }
 

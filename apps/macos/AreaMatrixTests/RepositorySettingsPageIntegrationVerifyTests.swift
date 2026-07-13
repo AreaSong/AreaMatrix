@@ -39,7 +39,7 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
 
         XCTAssertEqual(model.route, .settingsGeneral(opening))
         XCTAssertEqual(model.settingsGeneralSelectedTab, "repository")
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        writer.assertNoSavedRepoPaths()
     }
 
     @MainActor
@@ -81,7 +81,7 @@ final class RepoSettingsPageIntegrationTests: XCTestCase {
 
         await validator.assertRequestedRepoPaths(["/tmp/new-repo"])
         await opener.assertRequestedConfiguredRepoPaths(["/tmp/new-repo"])
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/new-repo"])
+        writer.assertSavedRepoPaths(["/tmp/new-repo"])
         XCTAssertEqual(model.route, .mainList(newOpening))
     }
 }
@@ -214,7 +214,6 @@ private func assertRepositorySettingsIntegrationState(context: RepositorySetting
     let healthSummary = context.model.healthSummary
     let repositoryActionError = context.model.repositoryActionError
     let diagnosticsState = context.model.diagnosticsState
-    let announcements = context.announcer.announcements
 
     XCTAssertEqual(context.imported.storageMode, "Indexed")
     XCTAssertEqual(context.imported.sourcePath, context.sourceURL.path)
@@ -235,10 +234,10 @@ private func assertRepositorySettingsIntegrationState(context: RepositorySetting
     XCTAssertNil(repositoryActionError)
     XCTAssertEqual(diagnosticsState, .collected(context.diagnosticsSnapshot))
     context.finder.assertRepoPaths([context.repoURL.path])
-    context.copier.assertRequests([ShellRecordingPathCopier.Request(
+    context.copier.assertCopiedPathRequests([ShellRecordingPathCopier.Request(
         repoPath: context.repoURL.path,
         relativePath: ""
     )])
     await context.diagnostics.assertRequestedRepoPaths([context.repoURL.path])
-    XCTAssertEqual(announcements, ["Repository path copied."])
+    context.announcer.assertAnnouncements(["Repository path copied."])
 }

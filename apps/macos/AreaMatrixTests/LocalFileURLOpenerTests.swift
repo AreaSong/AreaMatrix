@@ -12,9 +12,9 @@ final class LocalFileURLOpenerTests: XCTestCase {
 
         try opener.openExisting(url, requiresDirectory: false)
 
-        XCTAssertEqual(resourceReader.requestedURLs.map(\.path), [url.path])
-        XCTAssertEqual(platformOpener.openedURLs.map(\.path), [url.path])
-        XCTAssertEqual(platformOpener.revealedURLs, [])
+        resourceReader.assertRequestedPaths([url.path])
+        platformOpener.assertOpenedPaths([url.path])
+        platformOpener.assertNoRevealedURLs()
     }
 
     @MainActor
@@ -27,8 +27,8 @@ final class LocalFileURLOpenerTests: XCTestCase {
         XCTAssertThrowsError(try opener.openExisting(url, requiresDirectory: false)) { error in
             XCTAssertEqual(error as? LocalFileURLOpenError, .missing(url.path))
         }
-        XCTAssertEqual(platformOpener.openedURLs, [])
-        XCTAssertEqual(platformOpener.revealedURLs, [])
+        platformOpener.assertNoOpenedURLs()
+        platformOpener.assertNoRevealedURLs()
     }
 
     @MainActor
@@ -41,8 +41,8 @@ final class LocalFileURLOpenerTests: XCTestCase {
         XCTAssertThrowsError(try opener.openExisting(url, requiresDirectory: true)) { error in
             XCTAssertEqual(error as? LocalFileURLOpenError, .notDirectory(url.path))
         }
-        XCTAssertEqual(platformOpener.openedURLs, [])
-        XCTAssertEqual(platformOpener.revealedURLs, [])
+        platformOpener.assertNoOpenedURLs()
+        platformOpener.assertNoRevealedURLs()
     }
 
     @MainActor
@@ -55,8 +55,8 @@ final class LocalFileURLOpenerTests: XCTestCase {
         XCTAssertThrowsError(try opener.openExisting(url, requiresDirectory: false)) { error in
             XCTAssertEqual(error as? LocalFileURLOpenError, .openRejected(url.path))
         }
-        XCTAssertEqual(platformOpener.openedURLs.map(\.path), [url.path])
-        XCTAssertEqual(platformOpener.revealedURLs, [])
+        platformOpener.assertOpenedPaths([url.path])
+        platformOpener.assertNoRevealedURLs()
     }
 
     @MainActor
@@ -68,9 +68,9 @@ final class LocalFileURLOpenerTests: XCTestCase {
 
         try opener.revealExisting(url)
 
-        XCTAssertEqual(resourceReader.requestedURLs.map(\.path), [url.path])
-        XCTAssertEqual(platformOpener.openedURLs, [])
-        XCTAssertEqual(platformOpener.revealedURLs.map { $0.map(\.path) }, [[url.path]])
+        resourceReader.assertRequestedPaths([url.path])
+        platformOpener.assertNoOpenedURLs()
+        platformOpener.assertRevealedPathGroups([[url.path]])
     }
 
     @MainActor
@@ -92,13 +92,12 @@ final class LocalFileURLOpenerTests: XCTestCase {
         let fileOpener = RecordingLocalFileURLOpener()
         try NSWorkspaceRepositoryFileOpener(localURLOpener: fileOpener)
             .openFile(repoPath: repoPath, relativePath: "docs/a.pdf")
-        XCTAssertEqual(fileOpener.openExistingRequests.map(\.url.path), ["/tmp/repo/docs/a.pdf"])
-        XCTAssertEqual(fileOpener.openExistingRequests.map(\.requiresDirectory), [false])
+        fileOpener.assertOpenExistingRequests([(path: "/tmp/repo/docs/a.pdf", requiresDirectory: false)])
 
         let revealer = RecordingLocalFileURLOpener()
         try NSWorkspaceRepositoryFileRevealer(localURLOpener: revealer)
             .revealFile(repoPath: repoPath, relativePath: "docs/a.pdf")
-        XCTAssertEqual(revealer.revealExistingURLs.map(\.path), ["/tmp/repo/docs/a.pdf"])
+        revealer.assertRevealExistingPaths(["/tmp/repo/docs/a.pdf"])
     }
 
     @MainActor
@@ -110,8 +109,7 @@ final class LocalFileURLOpenerTests: XCTestCase {
         let openedAboutLogsPath = try NSWorkspaceAboutLogsOpener(localURLOpener: aboutLogsOpener)
             .openLogs(repoPath: repoPath)
         XCTAssertEqual(openedAboutLogsPath, logsPath)
-        XCTAssertEqual(aboutLogsOpener.openExistingRequests.map(\.url.path), [logsPath])
-        XCTAssertEqual(aboutLogsOpener.openExistingRequests.map(\.requiresDirectory), [true])
+        aboutLogsOpener.assertOpenExistingRequests([(path: logsPath, requiresDirectory: true)])
 
         XCTAssertThrowsError(try NSWorkspaceAboutLogsOpener(
             localURLOpener: RecordingLocalFileURLOpener(result: .failure(LocalFileURLOpenError.openRejected(logsPath)))
@@ -128,7 +126,7 @@ final class LocalFileURLOpenerTests: XCTestCase {
         let diagnosticsRevealer = RecordingLocalFileURLOpener()
         try NSWorkspaceAboutDiagnosticsRevealer(localURLOpener: diagnosticsRevealer)
             .revealDiagnostics(at: "/tmp/diagnostics")
-        XCTAssertEqual(diagnosticsRevealer.revealExistingURLs.map(\.path), ["/tmp/diagnostics"])
+        diagnosticsRevealer.assertRevealExistingPaths(["/tmp/diagnostics"])
 
         XCTAssertThrowsError(try NSWorkspaceLocalModelFolderOpener(
             localURLOpener: RecordingLocalFileURLOpener(result: .failure(LocalFileURLOpenError.missing("/tmp/models")))
@@ -144,8 +142,7 @@ final class LocalFileURLOpenerTests: XCTestCase {
 
         let welcomeHelpOpener = RecordingLocalFileURLOpener()
         try LocalWelcomeHelpOpener(localURLOpener: welcomeHelpOpener).openWelcomeHelp()
-        XCTAssertEqual(welcomeHelpOpener.openExistingRequests.map(\.url.path), [helpURL.path])
-        XCTAssertEqual(welcomeHelpOpener.openExistingRequests.map(\.requiresDirectory), [false])
+        welcomeHelpOpener.assertOpenExistingRequests([(path: helpURL.path, requiresDirectory: false)])
 
         XCTAssertThrowsError(try LocalWelcomeHelpOpener(
             localURLOpener: RecordingLocalFileURLOpener(
@@ -171,9 +168,9 @@ final class LocalFileURLOpenerTests: XCTestCase {
         try NSWorkspaceRepositoryIgnoreRulesManager(localURLOpener: localURLOpener)
             .openIgnoreRules(repoPath: fixture.repoURL.path)
 
-        XCTAssertEqual(localURLOpener.openURLs.map(\.path), [fixture.ignoreRulesURL.path])
-        XCTAssertTrue(localURLOpener.openExistingRequests.isEmpty)
-        XCTAssertEqual(localURLOpener.revealExistingURLs, [])
+        localURLOpener.assertOpenedPaths([fixture.ignoreRulesURL.path])
+        localURLOpener.assertNoOpenExistingRequests()
+        localURLOpener.assertNoRevealExistingURLs()
     }
 
     @MainActor
@@ -189,7 +186,7 @@ final class LocalFileURLOpenerTests: XCTestCase {
             .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
                 XCTAssertEqual(error as? RepositoryIgnoreRulesError, .openRejected)
             }
-        XCTAssertEqual(localURLOpener.openURLs.map(\.path), [fixture.ignoreRulesURL.path])
+        localURLOpener.assertOpenedPaths([fixture.ignoreRulesURL.path])
     }
 
     @MainActor
@@ -203,7 +200,7 @@ final class LocalFileURLOpenerTests: XCTestCase {
             .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
                 XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesMissing)
             }
-        XCTAssertEqual(localURLOpener.openURLs, [])
+        localURLOpener.assertNoOpenedURLs()
     }
 
     @MainActor
@@ -218,14 +215,14 @@ final class LocalFileURLOpenerTests: XCTestCase {
             .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
                 XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesNotRegularFile)
             }
-        XCTAssertEqual(localURLOpener.openURLs, [])
+        localURLOpener.assertNoOpenedURLs()
     }
 }
 
 @MainActor
 private final class RecordingLocalFileURLResourceReader: LocalFileURLResourceReading {
     private let snapshot: LocalFileURLResourceSnapshot
-    private(set) var requestedURLs: [URL] = []
+    private var requestedURLs: [URL] = []
 
     init(snapshot: LocalFileURLResourceSnapshot) {
         self.snapshot = snapshot
@@ -235,13 +232,21 @@ private final class RecordingLocalFileURLResourceReader: LocalFileURLResourceRea
         requestedURLs.append(url)
         return snapshot
     }
+
+    func assertRequestedPaths(
+        _ expectedPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestedURLs.map(\.path), expectedPaths, file: file, line: line)
+    }
 }
 
 @MainActor
 private final class RecordingLocalFileURLPlatformOpener: LocalFileURLPlatformOpening {
     private let openResult: Bool
-    private(set) var openedURLs: [URL] = []
-    private(set) var revealedURLs: [[URL]] = []
+    private var openedURLs: [URL] = []
+    private var revealedURLs: [[URL]] = []
 
     init(openResult: Bool = true) {
         self.openResult = openResult
@@ -255,14 +260,44 @@ private final class RecordingLocalFileURLPlatformOpener: LocalFileURLPlatformOpe
     func reveal(_ urls: [URL]) {
         revealedURLs.append(urls)
     }
+
+    func assertOpenedPaths(
+        _ expectedPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(openedURLs.map(\.path), expectedPaths, file: file, line: line)
+    }
+
+    func assertNoOpenedURLs(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertOpenedPaths([], file: file, line: line)
+    }
+
+    func assertRevealedPathGroups(
+        _ expectedPathGroups: [[String]],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(revealedURLs.map { $0.map(\.path) }, expectedPathGroups, file: file, line: line)
+    }
+
+    func assertNoRevealedURLs(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRevealedPathGroups([], file: file, line: line)
+    }
 }
 
 @MainActor
 private final class RecordingLocalFileURLOpener: LocalFileURLOpening {
     private let result: Result<Void, Error>
-    private(set) var openURLs: [URL] = []
-    private(set) var openExistingRequests: [(url: URL, requiresDirectory: Bool)] = []
-    private(set) var revealExistingURLs: [URL] = []
+    private var openURLs: [URL] = []
+    private var openExistingRequests: [(url: URL, requiresDirectory: Bool)] = []
+    private var revealExistingURLs: [URL] = []
 
     init(result: Result<Void, Error> = .success(())) {
         self.result = result
@@ -281,6 +316,57 @@ private final class RecordingLocalFileURLOpener: LocalFileURLOpening {
     func revealExisting(_ url: URL) throws {
         revealExistingURLs.append(url)
         try result.get()
+    }
+
+    func assertOpenedPaths(
+        _ expectedPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(openURLs.map(\.path), expectedPaths, file: file, line: line)
+    }
+
+    func assertNoOpenedURLs(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertOpenedPaths([], file: file, line: line)
+    }
+
+    func assertOpenExistingRequests(
+        _ expectedRequests: [(path: String, requiresDirectory: Bool)],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(openExistingRequests.map(\.url.path), expectedRequests.map(\.path), file: file, line: line)
+        XCTAssertEqual(
+            openExistingRequests.map(\.requiresDirectory),
+            expectedRequests.map(\.requiresDirectory),
+            file: file,
+            line: line
+        )
+    }
+
+    func assertNoOpenExistingRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertOpenExistingRequests([], file: file, line: line)
+    }
+
+    func assertRevealExistingPaths(
+        _ expectedPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(revealExistingURLs.map(\.path), expectedPaths, file: file, line: line)
+    }
+
+    func assertNoRevealExistingURLs(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRevealExistingPaths([], file: file, line: line)
     }
 }
 

@@ -17,11 +17,7 @@ actor AICategorySuggestionSuggestionBridge: CoreAIClassificationSuggesting {
         return try result.get()
     }
 
-    func recordedRequests() -> [AIClassificationSuggestionRequestState] {
-        requests
-    }
-
-    func assertRequests(
+    func assertAIClassificationSuggestionRequests(
         _ expectedRequests: [AIClassificationSuggestionRequestState],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -63,11 +59,7 @@ actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusRead
         }
     }
 
-    func recordedRequests() -> [AiFallbackStatusRequest] {
-        requests
-    }
-
-    func assertSingleRequest(
+    func assertSingleAIFallbackStatusRequest(
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> AiFallbackStatusRequest? {

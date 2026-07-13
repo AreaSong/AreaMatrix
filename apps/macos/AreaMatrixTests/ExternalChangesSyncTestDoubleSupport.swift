@@ -1,7 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
-struct ExternalSyncRequest: Equatable {
+private struct ExternalSyncCall: Equatable {
     var kind: MainExternalSyncEventKind
     var repoPath: String
     var relativePath: String
@@ -10,7 +10,7 @@ struct ExternalSyncRequest: Equatable {
 
 actor RecordingExternalChangesSyncer: CoreExternalChangesSyncing {
     private let result: Swift.Result<SyncResultSnapshot, Error>
-    private var requestsStorage: [ExternalSyncRequest] = []
+    private var calls: [ExternalSyncCall] = []
 
     init(result: Swift.Result<SyncResultSnapshot, Error>) {
         self.result = result
@@ -46,67 +46,98 @@ actor RecordingExternalChangesSyncer: CoreExternalChangesSyncing {
 
     func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
 
-    func recordedRequests() -> [ExternalSyncRequest] {
-        requestsStorage
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [ExternalSyncRequest],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
-    }
-
-    func recordedCreatedRequests() -> [ExternalSyncRequest] {
-        requestsStorage.filter { $0.kind == .created }
-    }
-
-    func assertRecordedCreatedRequests(
-        _ expectedRequests: [ExternalSyncRequest],
+    func assertSyncedExternalEvent(
+        kind: MainExternalSyncEventKind,
+        repoPath: String,
+        relativePath: String,
+        fsEventID: Int64,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(
-            requestsStorage.filter { $0.kind == .created },
-            expectedRequests,
+            calls,
+            [ExternalSyncCall(
+                kind: kind,
+                repoPath: repoPath,
+                relativePath: relativePath,
+                fsEventID: fsEventID
+            )],
             file: file,
             line: line
         )
     }
 
-    func recordedRenamedRequests() -> [ExternalSyncRequest] {
-        requestsStorage.filter { $0.kind == .renamed }
-    }
-
-    func assertRecordedRenamedRequests(
-        _ expectedRequests: [ExternalSyncRequest],
+    func assertSyncedCreated(
+        repoPath: String,
+        relativePath: String,
+        fsEventID: Int64,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(
-            requestsStorage.filter { $0.kind == .renamed },
-            expectedRequests,
+        assertSyncedExternalEvent(
+            kind: .created,
+            repoPath: repoPath,
+            relativePath: relativePath,
+            fsEventID: fsEventID,
             file: file,
             line: line
         )
     }
 
-    func recordedRemovedRequests() -> [ExternalSyncRequest] {
-        requestsStorage.filter { $0.kind == .removed }
-    }
-
-    func assertRecordedRemovedRequests(
-        _ expectedRequests: [ExternalSyncRequest],
+    func assertSyncedRenamed(
+        repoPath: String,
+        relativePath: String,
+        fsEventID: Int64,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(
-            requestsStorage.filter { $0.kind == .removed },
-            expectedRequests,
+        assertSyncedExternalEvent(
+            kind: .renamed,
+            repoPath: repoPath,
+            relativePath: relativePath,
+            fsEventID: fsEventID,
             file: file,
             line: line
         )
+    }
+
+    func assertSyncedRemoved(
+        repoPath: String,
+        relativePath: String,
+        fsEventID: Int64,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertSyncedExternalEvent(
+            kind: .removed,
+            repoPath: repoPath,
+            relativePath: relativePath,
+            fsEventID: fsEventID,
+            file: file,
+            line: line
+        )
+    }
+
+    func assertSyncedRemoved(
+        repoPath: String,
+        relativePath: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(calls.count, 1, file: file, line: line)
+        guard let call = calls.first else { return }
+
+        XCTAssertEqual(call.kind, .removed, file: file, line: line)
+        XCTAssertEqual(call.repoPath, repoPath, file: file, line: line)
+        XCTAssertEqual(call.relativePath, relativePath, file: file, line: line)
+        XCTAssertGreaterThan(call.fsEventID, 0, file: file, line: line)
+    }
+
+    func assertNoExternalSyncRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(calls, [], file: file, line: line)
     }
 
     private func recordAndResolve(
@@ -115,7 +146,7 @@ actor RecordingExternalChangesSyncer: CoreExternalChangesSyncing {
         relativePath: String,
         fsEventID: Int64
     ) throws -> SyncResultSnapshot {
-        requestsStorage.append(ExternalSyncRequest(
+        calls.append(ExternalSyncCall(
             kind: kind,
             repoPath: repoPath,
             relativePath: relativePath,

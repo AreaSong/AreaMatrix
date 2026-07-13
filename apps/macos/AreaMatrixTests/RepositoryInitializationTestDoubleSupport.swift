@@ -1,82 +1,54 @@
 @testable import AreaMatrix
+import XCTest
 
-struct RepositoryInitializationRequest: Equatable {
-    var repoPath: String
-    var mode: RepoInitModeSnapshot
-}
-
-actor RecordingRepositoryInitializer: CoreRepositoryInitializing {
+actor RecordingRepositoryInitializer: CoreRepositoryInitializing, RepositoryInitializationPathRecording {
     typealias InitializationResult = Swift.Result<Void, Error>
 
-    private var createResults: [InitializationResult]
-    private var adoptResults: [InitializationResult]
-    private let repeatsSingleResult: Bool
+    private var createQueue: VoidResultQueue
+    private var adoptQueue: VoidResultQueue
     private var createdPaths: [String] = []
     private var adoptedPaths: [String] = []
-    private var requests: [RepositoryInitializationRequest] = []
 
     init(result: InitializationResult = .success(())) {
-        createResults = [result]
-        adoptResults = [result]
-        repeatsSingleResult = true
+        createQueue = VoidResultQueue(result: result)
+        adoptQueue = VoidResultQueue(result: result)
     }
 
     init(error: Error) {
-        createResults = [.failure(error)]
-        adoptResults = [.failure(error)]
-        repeatsSingleResult = true
+        createQueue = VoidResultQueue(result: .failure(error))
+        adoptQueue = VoidResultQueue(result: .failure(error))
     }
 
     init(firstError: Error) {
-        createResults = [.failure(firstError), .success(())]
-        adoptResults = [.failure(firstError), .success(())]
-        repeatsSingleResult = false
+        createQueue = VoidResultQueue(failureThenSuccess: firstError)
+        adoptQueue = VoidResultQueue(failureThenSuccess: firstError)
     }
 
     init(createResults: [InitializationResult], adoptResults: [InitializationResult]) {
-        self.createResults = createResults
-        self.adoptResults = adoptResults
-        repeatsSingleResult = false
+        createQueue = VoidResultQueue(results: createResults)
+        adoptQueue = VoidResultQueue(results: adoptResults)
     }
 
     func initializeEmptyRepository(repoPath: String) async throws {
         createdPaths.append(repoPath)
-        requests.append(RepositoryInitializationRequest(repoPath: repoPath, mode: .createEmpty))
-        try nextResult(from: &createResults).get()
+        try createQueue.next().get()
     }
 
     func adoptExistingRepository(repoPath: String) async throws {
         adoptedPaths.append(repoPath)
-        requests.append(RepositoryInitializationRequest(repoPath: repoPath, mode: .adoptExisting))
-        try nextResult(from: &adoptResults).get()
+        try adoptQueue.next().get()
     }
 
-    func createdRepoPaths() -> [String] {
+    var createdRepoPathsForAssertions: [String] {
         createdPaths
     }
 
-    func adoptedRepoPaths() -> [String] {
+    var adoptedRepoPathsForAssertions: [String] {
         adoptedPaths
-    }
-
-    func adoptRequests() -> [String] {
-        adoptedPaths
-    }
-
-    func recordedRequests() -> [RepositoryInitializationRequest] {
-        requests
-    }
-
-    private func nextResult(from results: inout [InitializationResult]) -> InitializationResult {
-        if repeatsSingleResult {
-            return results.first ?? .success(())
-        }
-
-        return results.isEmpty ? .success(()) : results.removeFirst()
     }
 }
 
-actor PausingRepositoryInitializer: CoreRepositoryInitializing {
+actor PausingRepositoryInitializer: CoreRepositoryInitializing, RepositoryInitializationPathRecording {
     private let delayNanoseconds: UInt64
     private var createdPaths: [String] = []
     private var adoptedPaths: [String] = []
@@ -108,11 +80,34 @@ actor PausingRepositoryInitializer: CoreRepositoryInitializing {
         )
     }
 
-    func createdRepoPaths() -> [String] {
+    var createdRepoPathsForAssertions: [String] {
         createdPaths
     }
 
-    func adoptedRepoPaths() -> [String] {
+    var adoptedRepoPathsForAssertions: [String] {
         adoptedPaths
+    }
+}
+
+protocol RepositoryInitializationPathRecording: Actor {
+    var createdRepoPathsForAssertions: [String] { get }
+    var adoptedRepoPathsForAssertions: [String] { get }
+}
+
+extension RepositoryInitializationPathRecording {
+    func assertCreatedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(createdRepoPathsForAssertions, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertAdoptedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(adoptedRepoPathsForAssertions, expectedRepoPaths, file: file, line: line)
     }
 }

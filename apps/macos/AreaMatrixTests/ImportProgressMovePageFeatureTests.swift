@@ -75,7 +75,7 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
 
         await model.retryCurrentImportProgressItem()
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedFiles([
             ImportSingleFileImportRequest(
                 mode: .move,
                 overrideCategory: "docs",
@@ -85,6 +85,6 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
         ])
         XCTAssertEqual(model.route, .mainEmpty(opening))
         XCTAssertEqual(model.toastMessage, "已导入：moved.pdf")
-        XCTAssertEqual(announcer.announcements, ["已导入：moved.pdf"])
+        announcer.assertAnnouncements(["已导入：moved.pdf"])
     }
 }

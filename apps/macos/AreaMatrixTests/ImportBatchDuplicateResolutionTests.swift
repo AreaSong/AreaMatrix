@@ -31,10 +31,8 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(model.coreConflictBatchRows.map(\.status), [.pending, .pending])
         XCTAssertNil(applyResult)
         XCTAssertNil(askResult)
-        let previewRequests = await batcher.previewRequests()
-        let applyRequests = await batcher.applyRequests()
-        XCTAssertEqual(previewRequests.count, 1)
-        XCTAssertEqual(applyRequests, [])
+        await batcher.assertImportConflictPreviewRequestCount(1)
+        await batcher.assertNoImportConflictApplyRequests()
     }
 
     @MainActor
@@ -68,9 +66,10 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         XCTAssertEqual(model.conflictBatchPerItemQueue?.routes.map(\.replaceConfirmationRouteLabel), [
             "replace-confirm replace-confirm"
         ])
-        let applyRequests = await batcher.applyRequests()
-        XCTAssertEqual(applyRequests.last?.request.duplicateStrategy, .askPerItem)
-        XCTAssertEqual(applyRequests.last?.request.conflictIDs, ["name-1"])
+        await batcher.assertLastImportConflictApplyRequest(
+            duplicateStrategy: .askPerItem,
+            conflictIDs: ["name-1"]
+        )
     }
 
     @MainActor
@@ -92,8 +91,8 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             progressSnapshots.append(progress)
         }
 
-        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest()])
-        await errorMapper.assertRecordedErrors([])
+        await importer.assertImportedBatchFiles([importBatchExpectedInvoiceRequest()])
+        await errorMapper.assertMappedCoreErrors([])
         XCTAssertEqual(outcome?.succeededEntries.count, 0)
         XCTAssertEqual(outcome?.failedCount, 0)
         XCTAssertEqual(outcome?.total, 2)
@@ -128,7 +127,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             importBatchExpectedInvoiceRequest(),
             importBatchExpectedInvoiceRequest(duplicateStrategy: .keepBoth)
         ])
@@ -153,7 +152,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
 
-        await importer.assertRecordedRequests(importBatchExpectedAutoClassifyRequests())
+        await importer.assertImportedBatchFiles(importBatchExpectedAutoClassifyRequests())
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.total, 1)
         XCTAssertEqual(outcome?.failedCount, 0)
@@ -182,7 +181,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         model.updateDuplicateStrategy(for: rows[0].id, strategy: .keepBoth)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             importBatchExpectedInvoiceRequest(),
             importBatchExpectedInvoiceRequest(duplicateStrategy: .keepBoth)
         ])
@@ -204,7 +203,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         )
         model.showImportEntryExistingFile(relativePath: "finance/existing-invoice.pdf")
 
-        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+        revealer.assertRevealRequests([RecordingRepositoryFileRevealer.Request(
             repoPath: importBatchRepoPath(),
             relativePath: "finance/existing-invoice.pdf"
         )])
@@ -225,7 +224,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         )
         model.showImportEntryExistingFile(relativePath: "finance/missing.pdf")
 
-        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+        revealer.assertRevealRequests([RecordingRepositoryFileRevealer.Request(
             repoPath: importBatchRepoPath(),
             relativePath: "finance/missing.pdf"
         )])
@@ -252,7 +251,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             importBatchExpectedInvoiceRequest(),
             importBatchExpectedInvoiceRequest(duplicateStrategy: .keepBoth)
         ])

@@ -2,7 +2,6 @@
 import SwiftUI
 import XCTest
 
-// swiftlint:disable:next type_body_length
 final class MainRepoExternalRemovalTests: XCTestCase {
     func testSearchResultsPageIntegrationRendersSearchRouteViews() {
         let request = SearchQueryRequestSnapshot.mainRepoSearchResultsRouteFixture(query: "合同")
@@ -70,8 +69,9 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(model.createRequest.query.sort, .relevance)
         XCTAssertEqual(model.createRequest.pinned, true)
         XCTAssertEqual(model.emptyResultWarning, "This Smart List is currently empty.")
-        let createdRequests = await store.createdRequests().map(\.request)
-        XCTAssertEqual(createdRequests, [model.createRequest])
+        await store.assertSavedSearchCreateRequests([
+            SavedSearchCreateRequestRecord(repoPath: "/tmp/repo", request: model.createRequest)
+        ])
     }
 
     @MainActor
@@ -87,8 +87,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(model.validationMessage, "A Smart List named \"Finance\" already exists.")
         XCTAssertFalse(model.canSave)
         XCTAssertEqual(model.resultCountSummary, "12 files")
-        let createdRequests = await store.createdRequests()
-        XCTAssertEqual(createdRequests, [])
+        await store.assertSavedSearchCreateRequests([])
     }
 
     @MainActor
@@ -111,7 +110,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         XCTAssertEqual(model.name, "Finance")
         XCTAssertEqual(model.resultCountSummary, "Counting results...")
         XCTAssertEqual(model.saveFailure, mapping)
-        await mapper.assertRecordedErrors([CoreError.Db(message: "db locked")])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "db locked")])
     }
 
     func testSearchFiltersTagFilterEditingSupportsMultipleTagsAndAllMatchMode() {
@@ -272,13 +271,8 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             repoPath: "/tmp/repo"
         )
         await model.confirmMainRepositoryExternalRemoval(repoPath: "/tmp/repo")
-        let requests = await syncer.recordedRemovedRequests()
 
-        let request = try? XCTUnwrap(requests.first)
-        XCTAssertEqual(request?.kind, .removed)
-        XCTAssertEqual(request?.repoPath, "/tmp/repo")
-        XCTAssertEqual(request?.relativePath, "docs/gone.pdf")
-        XCTAssertGreaterThan(request?.fsEventID ?? 0, 0)
+        await syncer.assertSyncedRemoved(repoPath: "/tmp/repo", relativePath: "docs/gone.pdf")
         await initializedValidator.assertRequestedRepoPaths(["/tmp/repo"])
         await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.mainRepoExternalRemoval, .synced(result))
@@ -301,9 +295,8 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             repoPath: "/tmp/repo"
         )
         await model.confirmMainRepositoryExternalRemoval(repoPath: "/tmp/repo")
-        let requests = await syncer.recordedRemovedRequests()
 
-        XCTAssertEqual(requests, [])
+        await syncer.assertNoExternalSyncRequests()
         XCTAssertEqual(model.mainRepoExternalRemoval, .unavailable)
         XCTAssertFalse(model.isRetryingMainRepository)
     }

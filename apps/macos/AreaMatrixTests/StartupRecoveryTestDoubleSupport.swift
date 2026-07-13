@@ -27,28 +27,33 @@ actor StaticStartupRecoverer: CoreStartupRecovering {
     }
 }
 
-actor RecordingCoreStartupRecoverer: CoreStartupRecovering {
-    private var results: [Result<RecoveryReportSnapshot, Error>]
+actor RecordingCoreStartupRecoverer: CoreStartupRecovering, RepoPathRequestRecording {
+    private var resultQueue: TestResultQueue<RecoveryReportSnapshot>
     private var paths: [String] = []
     private var didRecover = false
 
     init(report: RecoveryReportSnapshot = .testFixture()) {
-        results = [.success(report)]
+        resultQueue = TestResultQueue(results: [.success(report)]) {
+            .success(.testFixture())
+        }
     }
 
     init(result: Result<RecoveryReportSnapshot, Error>) {
-        results = [result]
+        resultQueue = TestResultQueue(results: [result]) {
+            .success(.testFixture())
+        }
     }
 
     init(results: [Result<RecoveryReportSnapshot, Error>]) {
-        self.results = results
+        resultQueue = TestResultQueue(results: results) {
+            .success(.testFixture())
+        }
     }
 
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
         paths.append(repoPath)
         didRecover = true
-        let result = results.isEmpty ? Result.success(.testFixture()) : results.removeFirst()
-        return try result.get()
+        return try resultQueue.next()
     }
 
     func waitUntilRecovered() async {
@@ -61,22 +66,7 @@ actor RecordingCoreStartupRecoverer: CoreStartupRecovering {
         )
     }
 
-    func requestedRepoPaths() -> [String] {
+    var repoPathsForAssertions: [String] {
         paths
-    }
-
-    func assertRequestedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(paths, expectedRepoPaths, file: file, line: line)
-    }
-
-    func assertNoRequests(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(paths, [], file: file, line: line)
     }
 }

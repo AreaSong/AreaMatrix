@@ -121,7 +121,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
         )
         await model.loadSearchFacets(query: " 合同 ", scope: .current, sidebarRow: row, filters: filters)
 
-        await searcher.assertRequests([
+        await searcher.assertSearchRequests([
             .testFixture(
                 query: "合同",
                 scope: .current,
@@ -131,7 +131,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
                 sort: .relevance
             )
         ])
-        await facetLoader.assertRequests([
+        await facetLoader.assertSearchFacetRequests([
             SearchFacetRequestSnapshot(
                 query: "合同",
                 scope: .current,
@@ -175,7 +175,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             filters: editedFilters
         )
 
-        await searcher.assertRequests([
+        await searcher.assertSearchRequests([
             .testFixture(
                 query: "合同",
                 scope: .current,
@@ -213,7 +213,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             filters: .empty
         )
         XCTAssertEqual(model.searchFacetsState.errorMapping, mapping)
-        await mapper.assertRecordedErrors([CoreError.Db(message: "facet db locked")])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "facet db locked")])
 
         await model.retrySearchFacets()
         XCTAssertEqual(model.searchFacetsState.facets?.activeFilterCount, 1)

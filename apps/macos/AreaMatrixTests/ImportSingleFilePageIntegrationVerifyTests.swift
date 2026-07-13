@@ -37,7 +37,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         XCTAssertNil(model.pendingImportEntry)
         XCTAssertEqual(model.route, .mainEmpty(opening))
         XCTAssertEqual(model.toastMessage, "已导入：source.pdf")
-        XCTAssertEqual(announcer.announcements, ["已导入：source.pdf"])
+        announcer.assertAnnouncements(["已导入：source.pdf"])
     }
 
     @MainActor
@@ -136,7 +136,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         )
 
         await model.load(request: request)
-        await predictor.assertRecordedRequests([
+        await predictor.assertCategoryPredictionRequests([
             ImportSingleFilePredictRequest(repoPath: importSingleFileRepoPath(), filename: "合同.pdf")
         ])
         XCTAssertEqual(model.selectedCategory, "docs")
@@ -165,7 +165,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
             storageMode: "Indexed"
         )
 
-        await importer.assertRecordedRequests(importSingleFileCoreCapabilityImportRequests())
+        await importer.assertImportedFiles(importSingleFileCoreCapabilityImportRequests())
     }
 
     @MainActor
@@ -203,7 +203,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         let imported = await model.importSelectedFile()
 
         XCTAssertNil(imported)
-        await errorMapper.assertRecordedErrors([])
+        await errorMapper.assertMappedCoreErrors([])
         XCTAssertEqual(model.activeConflictPage, .duplicate)
         XCTAssertEqual(model.importStatus, .idle)
         XCTAssertEqual(model.currentPreflightResult?.conflict, .duplicate(existingPath: "docs/source.pdf"))
@@ -229,7 +229,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         XCTAssertNil(skipped)
         XCTAssertEqual(hiddenModel.importStatus, .skippedDuplicate("docs/source.pdf"))
         XCTAssertEqual(hiddenModel.importDisabledReason, "重复文件已跳过")
-        await importer.assertRecordedRequests([])
+        await importer.assertNoImportedFiles()
     }
 }
 
@@ -248,7 +248,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
 
         XCTAssertNil(imported)
         assertImportSingleFileICloudPlaceholderBlocked(model)
-        await importer.assertRecordedRequests([])
+        await importer.assertNoImportedFiles()
     }
 
     @MainActor

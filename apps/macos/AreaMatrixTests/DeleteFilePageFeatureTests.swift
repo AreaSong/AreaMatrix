@@ -20,7 +20,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         let didDelete = await model.submitDelete(fileID: file.id, operation: .moveToTrash)
 
         XCTAssertTrue(didDelete)
-        await deleter.assertRequests([.delete(repoPath: "/tmp/repo", fileID: file.id)])
+        await deleter.assertFileDeletionRequests([.delete(repoPath: "/tmp/repo", fileID: file.id)])
         XCTAssertEqual(model.files, [])
         XCTAssertEqual(model.selection, .none)
         XCTAssertNil(model.selectedFileDetail)
@@ -58,7 +58,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         let didDelete = await model.submitDelete(fileID: indexed.id, operation: .removeFromIndex)
 
         XCTAssertTrue(didDelete)
-        await deleter.assertRequests([.removeIndex(repoPath: "/tmp/repo", fileID: indexed.id)])
+        await deleter.assertFileDeletionRequests([.removeIndex(repoPath: "/tmp/repo", fileID: indexed.id)])
         XCTAssertEqual(model.files, [missing, external])
         XCTAssertEqual(model.statusBanner, .removedFileFromIndex(fileID: indexed.id))
     }
@@ -86,7 +86,7 @@ final class DeleteFilePageFeatureTests: XCTestCase {
         XCTAssertEqual(model.selectedFileDetail, file)
         XCTAssertEqual(model.pendingActionDestination, .delete(fileID: file.id))
         XCTAssertEqual(model.deleteState, .failed(fileID: file.id, operation: .moveToTrash, mapping))
-        await mapper.assertRecordedErrors([CoreError.PermissionDenied(path: file.path)])
+        await mapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: file.path)])
     }
 
     @MainActor
@@ -206,11 +206,7 @@ private actor DeleteRecordingDeleter: CoreFileDeleting {
         try removeIndexResult.get()
     }
 
-    func recordedRequests() -> [DeleteRequest] {
-        requests
-    }
-
-    func assertRequests(
+    func assertFileDeletionRequests(
         _ expectedRequests: [DeleteRequest],
         file: StaticString = #filePath,
         line: UInt = #line

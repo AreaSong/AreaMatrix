@@ -168,10 +168,10 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
         await model.selectFiles([original.id])
         model.beginChangeCategory()
         await model.loadMoveToCategoryPreview(fileID: original.id, targetCategory: "finance")
-        await mover.assertRecordedRequests([
+        await mover.assertCategoryChangeActions([
             .preview(repoPath: "/tmp/repo", fileID: original.id, targetCategory: "finance")
         ])
-        await mapper.assertRecordedErrors([CoreError.Conflict(path: "finance/contract.pdf")])
+        await mapper.assertMappedCoreErrors([CoreError.Conflict(path: "finance/contract.pdf")])
         XCTAssertEqual(
             model.changeCategoryState.unresolvedNameConflict(for: original.id, targetCategory: "finance"),
             mapping
@@ -261,7 +261,7 @@ private func assertChangeCategoryReturnedToChangeCategory(
     original: FileEntrySnapshot,
     renamed: FileEntrySnapshot
 ) async {
-    await renamer.assertRecordedRequests([
+    await renamer.assertRenamedFiles([
         ChangeCategoryRenameRequest(
             repoPath: "/tmp/repo",
             fileID: original.id,
@@ -313,16 +313,19 @@ private actor ChangeCategoryRecordingRenamer: CoreFileRenaming {
         return try result.get()
     }
 
-    func recordedRequests() -> [ChangeCategoryRenameRequest] {
-        requests
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [ChangeCategoryRenameRequest],
+    func assertRenamedFiles(
+        _ expectedRenames: [ChangeCategoryRenameRequest],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+        XCTAssertEqual(requests, expectedRenames, file: file, line: line)
+    }
+
+    func assertNoRenamedFiles(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRenamedFiles([], file: file, line: line)
     }
 }
 

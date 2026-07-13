@@ -106,15 +106,8 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         await model.selectFiles([existing.id])
         await model.syncExternalCreated(event)
 
-        await syncer.assertRecordedCreatedRequests([
-            ExternalSyncRequest(
-                kind: .created,
-                repoPath: "/tmp/repo",
-                relativePath: created.path,
-                fsEventID: 7001
-            )
-        ])
-        await fileLister.assertRecordedListRequests([DetailLogExternalCreatedListRequest(
+        await syncer.assertSyncedCreated(repoPath: "/tmp/repo", relativePath: created.path, fsEventID: 7001)
+        await fileLister.assertFileListRequests([DetailLogExternalCreatedListRequest(
             repoPath: "/tmp/repo",
             filter: .currentCategory(nil)
         )])
@@ -124,7 +117,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
             model.detailExternalCreateSyncState,
             .synced(event: event, fileID: created.id, .detailCreatedFixture())
         )
-        await lister.assertRecordedRequests([
+        await lister.assertChangeLogListRequests([
             DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: created.id))
         ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: created.id, entries: [entry]))
@@ -156,8 +149,8 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         await model.syncExternalCreated(event)
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        await mapper.assertRecordedErrors([CoreError.ICloudPlaceholder(path: event.relativePath)])
-        await lister.assertRecordedRequests([])
+        await mapper.assertMappedCoreErrors([CoreError.ICloudPlaceholder(path: event.relativePath)])
+        await lister.assertChangeLogListRequests([])
         XCTAssertEqual(model.detailLogState, .notLoaded)
     }
 
@@ -183,8 +176,8 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         let mapping = CoreErrorMappingSnapshot.internalFailure(rawContext: rawContext)
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        await mapper.assertRecordedErrors([])
-        await lister.assertRecordedRequests([])
+        await mapper.assertMappedCoreErrors([])
+        await lister.assertChangeLogListRequests([])
         XCTAssertTrue(mapping.rawContext.contains("created event 7003 returned sync errors"))
     }
 

@@ -9,7 +9,6 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         await context.model.load()
         await context.model.selectResolution(.useIncoming)
         await context.model.applyResolution()
-        let unresolvedRequests = await context.resolver.recordedResolveRequests()
         let preview = try XCTUnwrap(context.model.previewState.preview)
         let panelBody = SyncConflictReplaceConfirmationPanel(
             preview: preview,
@@ -18,23 +17,20 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
             onConfirm: { _ in }
         ).body
 
+        await context.resolver.assertResolutionApplyRequests([])
         assertSyncConflictReplaceResolutionBlocksUnconfirmedApply(
             model: context.model,
-            unresolvedRequests: unresolvedRequests,
             panelBody: panelBody
         )
 
         context.model.confirmReplacePlan(understandsReplace: true)
         await context.view.applySelectedResolution()
-        let detectRequests = await context.detector.recordedRequests()
-        let previewRequests = await context.resolver.recordedPreviewRequests()
-        let resolveRequests = await context.resolver.recordedResolveRequests()
 
+        await context.detector.assertDetectedSyncConflictRepos(["/tmp/syncConflictReview-repo"])
+        await context.resolver.assertPreviewedResolutionStrategies([.keepBoth, .useIncoming])
+        await context.resolver.assertResolutionApplyRequests([.useIncomingConfirmedRequest])
         assertSyncConflictReplaceResolutionApplyExit(
             model: context.model,
-            detectRequests: detectRequests,
-            previewRequests: previewRequests,
-            resolveRequests: resolveRequests,
             resolvedReports: context.resolvedReports.reports
         )
     }
@@ -72,9 +68,8 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
 
         model.confirmReplacePlan(understandsReplace: true)
         await model.applyResolution()
-        let resolveRequests = await resolver.recordedResolveRequests()
 
-        XCTAssertEqual(resolveRequests, [.useIncomingConfirmedRequest])
+        await resolver.assertResolutionApplyRequests([.useIncomingConfirmedRequest])
     }
 
     @MainActor
@@ -116,7 +111,6 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         nameModel.updateNameConflictResolution(.replace)
         nameModel.beginReplaceConfirmation()
         let nameContext = try XCTUnwrap(nameModel.pendingReplaceConfirmation)
-        let requestsBeforeConfirmation = await importer.recordedRequests()
 
         XCTAssertEqual(duplicateModel.activeConflictPage, .duplicate)
         XCTAssertEqual(duplicateContext.existingPath, "docs/existing-duplicate.pdf")
@@ -124,7 +118,7 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(nameModel.activeConflictPage, .name)
         XCTAssertEqual(nameContext.existingPath, "docs/source.pdf")
         XCTAssertEqual(nameContext.targetRelativePath, "docs/source.pdf")
-        XCTAssertEqual(requestsBeforeConfirmation, [])
+        await importer.assertNoImportedFiles()
 
         duplicateModel.applyReplaceConfirmation(duplicateContext.decision(understandsReplace: true))
         nameModel.applyReplaceConfirmation(nameContext.decision(understandsReplace: true))
@@ -165,12 +159,11 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
             decision: staleContext.decision(understandsReplace: true)
         )
         let blockedOutcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let requestsAfterFailure = await importer.recordedRequests()
 
+        await importer.assertNoImportedBatchFiles()
         assertReplaceConfirmationFailure(
             acceptedStale: acceptedStale,
             blockedOutcome: blockedOutcome,
-            requestsAfterFailure: requestsAfterFailure,
             model: model
         )
 
@@ -179,10 +172,9 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
             decision: context.decision(understandsReplace: true)
         ))
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let requestsAfterSuccess = await importer.recordedRequests()
 
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
-        XCTAssertEqual(requestsAfterSuccess.map(\.duplicateStrategy), [.overwrite])
+        await importer.assertImportedDuplicateStrategies([.overwrite])
     }
 
     @MainActor
@@ -215,12 +207,11 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
             decision: staleContext.decision(understandsReplace: true)
         )
         let blockedOutcome = await model.importReadyFiles()
-        let requestsAfterFailure = await importer.recordedRequests()
 
+        await importer.assertNoImportedBatchFiles()
         assertReplaceConfirmationFailure(
             acceptedStale: acceptedStale,
             blockedOutcome: blockedOutcome,
-            requestsAfterFailure: requestsAfterFailure,
             model: model
         )
 
@@ -229,10 +220,9 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
             decision: context.decision(understandsReplace: true)
         ))
         let outcome = await model.importReadyFiles()
-        let requestsAfterSuccess = await importer.recordedRequests()
 
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
-        XCTAssertEqual(requestsAfterSuccess.map(\.duplicateStrategy), [.overwrite])
+        await importer.assertImportedDuplicateStrategies([.overwrite])
     }
 }
 
@@ -240,12 +230,10 @@ final class ReplaceConfirmPageIntegrationVerifyTests: XCTestCase {
 private func assertReplaceConfirmationFailure(
     acceptedStale: Bool,
     blockedOutcome: ImportBatchImportResult?,
-    requestsAfterFailure: [ImportBatchBatchImportRequest],
     model: some ReplaceConfirmationRecoverableModel
 ) {
     XCTAssertFalse(acceptedStale)
     XCTAssertNil(blockedOutcome)
-    XCTAssertEqual(requestsAfterFailure, [])
     XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
     assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
 

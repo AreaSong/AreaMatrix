@@ -103,28 +103,36 @@ actor RecordingSavedSearchStore: CoreSavedSearchCRUD {
         }
     }
 
-    func createdRequests() -> [SavedSearchCreateRequestRecord] {
-        createRecords
-    }
-
-    func recordedCreateRequests() -> [SavedSearchCreateRequestRecord] {
-        createRecords
-    }
-
-    func recordedUpdateRequests() -> [SavedSearchUpdateRequestRecord] {
-        updateRecords
-    }
-
-    func recordedDeleteRequests() -> [SavedSearchDeleteRequestRecord] {
-        deleteRecords
-    }
-
-    func assertRecordedListRepoPaths(
+    func assertSavedSearchListRepoPaths(
         _ expectedRepoPaths: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(listRepoPathsStorage, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertSavedSearchCreateRequests(
+        _ expectedRequests: [SavedSearchCreateRequestRecord],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(createRecords, expectedRequests, file: file, line: line)
+    }
+
+    func assertSavedSearchUpdateRequests(
+        _ expectedRequests: [SavedSearchUpdateRequestRecord],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(updateRecords, expectedRequests, file: file, line: line)
+    }
+
+    func assertSavedSearchDeleteRequests(
+        _ expectedRequests: [SavedSearchDeleteRequestRecord],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(deleteRecords, expectedRequests, file: file, line: line)
     }
 
     private func consumeStep() -> Step? {

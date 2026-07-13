@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 enum FileActionsCoreCall: Equatable {
     case rename(fileID: Int64, newName: String)
@@ -107,7 +108,12 @@ actor FileActionsRecordingCore: CoreFileListing,
         )
     }
 
-    func recordedActionCalls() -> [FileActionsCoreCall] {
-        calls
+    func assertFileActionCalls(
+        _ expectedCalls: [FileActionsCoreCall],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(calls, expectedCalls, file: file, line: line)
+        XCTAssertTrue(calls.allSatisfy(\.isDeclaredFileActionCapability), file: file, line: line)
     }
 }

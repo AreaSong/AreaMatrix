@@ -21,24 +21,43 @@ actor ImportBatchStaticBatchFileLoader: ImportBatchCoreFileLoading {
         }
     }
 
-    func recordedRequests() -> [FileFilterSnapshot] {
-        requests
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [FileFilterSnapshot],
+    func assertLoadedAllFilesForDuplicatePrecheck(
+        limit: Int64 = 200,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+        XCTAssertEqual(requests, [.testFixture(limit: limit)], file: file, line: line)
+    }
+
+    func assertLoadedFilesForNameConflictPrecheck(
+        categories expectedCategories: [String],
+        limit: Int64 = 200,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            requests,
+            expectedCategories.map { .testFixture(category: $0, limit: limit) },
+            file: file,
+            line: line
+        )
+    }
+
+    func assertNoPreviewFileLoads(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, [], file: file, line: line)
     }
 }
 
-struct ImportBatchNameConflictPrecheckRequest: Equatable {
+struct ImportPrecheckRowsRequest: Equatable {
     var repoPath: String
     var rowIDs: [String]
     var destination: ImportBatchDestinationOption
 }
+
+typealias ImportBatchNameConflictPrecheckRequest = ImportPrecheckRowsRequest
 
 actor ImportBatchStaticNameConflictPrechecker: ImportBatchNameConflictPrechecking {
     private let results: [String: ImportBatchNameConflictPrecheckResult]
@@ -61,15 +80,29 @@ actor ImportBatchStaticNameConflictPrechecker: ImportBatchNameConflictPrecheckin
         return results
     }
 
-    func recordedRequests() -> [ImportBatchNameConflictPrecheckRequest] {
-        requests
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [ImportBatchNameConflictPrecheckRequest],
+    func assertPrecheckedNameConflictRows(
+        repoPath: String,
+        rowIDs: [String],
+        destination: ImportBatchDestinationOption,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+        XCTAssertEqual(
+            requests,
+            [ImportBatchNameConflictPrecheckRequest(
+                repoPath: repoPath,
+                rowIDs: rowIDs,
+                destination: destination
+            )],
+            file: file,
+            line: line
+        )
+    }
+
+    func assertNoNameConflictPrechecks(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, [], file: file, line: line)
     }
 }

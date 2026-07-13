@@ -28,7 +28,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
 
         await recoverer.assertRequestedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.startupRecoveryState, .completed(report))
-        await repairer.assertNoRequests()
+        await repairer.assertNoMetadataRepairRequests()
     }
 
     @MainActor
@@ -87,13 +87,13 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         )
 
         await model.runFullRescan()
-        await repairer.assertNoRequests()
+        await repairer.assertNoMetadataRepairRequests()
         XCTAssertEqual(model.repairState, .idle)
 
         model.isMetadataSafetyConfirmed = true
         await model.runFullRescan()
 
-        await repairer.assertRequests([
+        await repairer.assertMetadataRepairRequests([
             DatabaseRepairRepairRequest(
                 repoPath: "/tmp/repo",
                 options: .databaseRepairFullRescanFixture()
@@ -152,7 +152,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
 
         model.isMetadataSafetyConfirmed = true
         await model.collectDiagnostics()
-        await diagnosticsCollector.assertNoRequests()
+        await diagnosticsCollector.assertNoRepoPathRequests()
         XCTAssertTrue(model.canRunFullRescan)
 
         model.requestDiagnosticsExport()
@@ -292,14 +292,14 @@ actor DatabaseRepairRecordingMetadataRepairer: CoreMetadataRepairing {
         return try result.get()
     }
 
-    func assertNoRequests(
+    func assertNoMetadataRepairRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(recordedRequests, [], file: file, line: line)
     }
 
-    func assertRequests(
+    func assertMetadataRepairRequests(
         _ expectedRequests: [DatabaseRepairRepairRequest],
         file: StaticString = #filePath,
         line: UInt = #line

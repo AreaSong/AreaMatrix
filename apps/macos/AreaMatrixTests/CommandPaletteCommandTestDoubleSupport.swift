@@ -7,17 +7,18 @@ struct CommandPaletteCommandIndexRequest: Equatable {
 }
 
 actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
-    private var results: [Swift.Result<CommandIndex, Error>]
+    private var resultQueue: TestResultQueue<CommandIndex>
     private var requests: [CommandPaletteCommandIndexRequest] = []
 
     init(results: [Swift.Result<CommandIndex, Error>]) {
-        self.results = results
+        resultQueue = TestResultQueue(results: results) {
+            .success(.commandPaletteFixture())
+        }
     }
 
     func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
         requests.append(.init(repoPath: repoPath, context: context))
-        guard !results.isEmpty else { return .commandPaletteFixture() }
-        return try results.removeFirst().get()
+        return try resultQueue.next()
     }
 
     func assertRequestContexts(

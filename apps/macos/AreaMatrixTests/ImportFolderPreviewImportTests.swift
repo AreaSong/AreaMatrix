@@ -29,7 +29,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             progressSnapshots.append(progress)
         }
 
-        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest()])
+        await importer.assertImportedBatchFiles([importBatchExpectedInvoiceRequest()])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.failedCount, 0)
         XCTAssertEqual(outcome?.previewErrorCount, 1)
@@ -125,7 +125,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
         let outcome = await model.importReadyFiles()
 
-        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: invoiceURL.path)])
+        await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: invoiceURL.path)])
         XCTAssertEqual(outcome?.succeededEntries, [])
         XCTAssertEqual(outcome?.failedCount, 1)
         assertImportRowStatusTags(model.rows, ["ERROR"])
@@ -165,7 +165,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         await model.load(request: request)
         _ = await model.importReadyFiles()
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             importBatchExpectedInvoiceRequest(destination: .category("docs"), suggestedCategory: "docs")
         ])
     }
@@ -199,7 +199,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         model.selectedStorageMode = .indexOnly
         let outcome = await model.importReadyFiles()
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             importBatchExpectedInvoiceRequest(
                 storageMode: .indexOnly,
                 overrideFilename: "indexed-reference.pdf"
@@ -241,7 +241,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let outcome = await model.importReadyFiles()
 
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             importBatchExpectedInvoiceRequest(
                 storageMode: .move,
                 suggestedCategory: "docs",

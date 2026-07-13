@@ -36,7 +36,7 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
 
         await searcher.assertRequestFilters([filters])
         await facetLoader.assertRequestFilters([filters])
-        await detailer.assertRecordedRequests([FileDetailRequest(repoPath: "/tmp/repo", fileID: resultFile.id)])
+        await detailer.assertFileDetailRequests([FileDetailRequest(repoPath: "/tmp/repo", fileID: resultFile.id)])
         XCTAssertEqual(model.searchState, .idle)
         XCTAssertEqual(model.searchFacetsState, .idle)
         XCTAssertEqual(model.selection, .none)
@@ -74,7 +74,7 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
         )
         XCTAssertEqual(model.searchPageDestination?.pageID, "search-empty")
         XCTAssertEqual(model.files, [])
-        await searcher.assertRecordedQueries(["missing"])
+        await searcher.assertSearchRequestQueries(["missing"])
         model.openSavedSearchSheet()
         XCTAssertEqual(model.pendingSearchDestination?.pageID, "saved-search")
         model.clearPendingSearchDestination()

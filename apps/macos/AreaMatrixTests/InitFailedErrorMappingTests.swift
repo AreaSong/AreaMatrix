@@ -30,16 +30,14 @@ final class InitFailedErrorMappingTests: XCTestCase {
             mode: .adoptExisting,
             scanSession: nil
         )
-        let firstAdoptRequests = await initializer.adoptRequests()
-        XCTAssertEqual(firstAdoptRequests, ["/tmp/adopt"])
-        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/adopt")])
+        await initializer.assertAdoptedRepoPaths(["/tmp/adopt"])
+        await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/adopt")])
         XCTAssertEqual(model.route, .initializationFailed("/tmp/adopt", mapping, retryDraft))
 
         await model.retryFailedInitialization()
 
-        let retriedAdoptRequests = await initializer.adoptRequests()
-        XCTAssertEqual(retriedAdoptRequests, ["/tmp/adopt", "/tmp/adopt"])
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/adopt"])
+        await initializer.assertAdoptedRepoPaths(["/tmp/adopt", "/tmp/adopt"])
+        writer.assertSavedRepoPaths(["/tmp/adopt"])
         XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
             repoPath: "/tmp/adopt",
             mode: .adoptExisting,
@@ -99,7 +97,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
         let result = await model.allowRemoteAIAfterProviderConsent()
 
         XCTAssertEqual(result, .needsRemoteConfiguration)
-        await updater.assertNoRequests()
+        await updater.assertNoAISettingsUpdateRequests()
         XCTAssertEqual(model.snapshot?.config.privacyGateEnabled, false)
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
             message: "Remote AI requires provider consent.",
@@ -159,7 +157,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
 
         await collector.assertRequestedRepoPaths(["/Users/example/private-repo"])
         XCTAssertEqual(model.initializationDiagnostics, .collected(snapshot))
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        writer.assertNoSavedRepoPaths()
         XCTAssertEqual(model.route, .initializationFailed("/Users/example/private-repo", nil, nil))
     }
 
@@ -180,7 +178,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
         await model.collectInitializationDiagnostics()
 
         XCTAssertEqual(model.initializationDiagnostics, .failed(mapping))
-        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
+        await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.route, .initializationFailed("/tmp/repo", nil, nil))
     }
 }

@@ -76,10 +76,10 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .batchAddTagsTagDb())
         )
 
-        await store.assertListRequests(["31"])
+        await store.assertBatchAddTagsCatalogRequests(["31"])
         XCTAssertEqual(candidates.map(\.value), ["urgent", "clienta"])
         XCTAssertTrue(candidates.first { $0.value == "urgent" }?.selected == true)
-        await store.assertBatchRequests(["/tmp/repo|32,31|urgent,clienta"])
+        await store.assertBatchAddTagsApplyRequests(["/tmp/repo|32,31|urgent,clienta"])
         XCTAssertEqual(result.report?.addedCount, 3)
         XCTAssertEqual(result.report?.skippedCount, 1)
         XCTAssertEqual(result.report?.undoToken, "undo-batch-tags")
@@ -130,10 +130,10 @@ final class DetailBatchAddTagsPageFeatureTests: XCTestCase {
             errorMapper: mapper
         )
 
-        await store.assertBatchRequests(["/tmp/repo|31,32|urgent"])
+        await store.assertBatchAddTagsApplyRequests(["/tmp/repo|31,32|urgent"])
         XCTAssertNil(result.report)
         XCTAssertEqual(result.failure, mapping)
-        await mapper.assertRecordedErrors([CoreError.Db(message: "tag metadata locked")])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "tag metadata locked")])
     }
 }
 
@@ -186,15 +186,7 @@ private actor BatchAddTagsRecordingBatchTagStore: CoreTagCRUD {
         }
     }
 
-    func batchRequests() -> [String] {
-        recordedBatchRequests
-    }
-
-    func listRequests() -> [String] {
-        recordedListRequests
-    }
-
-    func assertBatchRequests(
+    func assertBatchAddTagsApplyRequests(
         _ expectedRequests: [String],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -202,7 +194,7 @@ private actor BatchAddTagsRecordingBatchTagStore: CoreTagCRUD {
         XCTAssertEqual(recordedBatchRequests, expectedRequests, file: file, line: line)
     }
 
-    func assertListRequests(
+    func assertBatchAddTagsCatalogRequests(
         _ expectedRequests: [String],
         file: StaticString = #filePath,
         line: UInt = #line

@@ -1,7 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
-actor StaticAISettingsLoader: CoreAISettingsLoading {
+actor StaticAISettingsLoader: CoreAISettingsLoading, RepoPathRequestRecording {
     private let snapshot: AISettingsSnapshot
     private var recordedRepoPaths: [String] = []
 
@@ -27,55 +27,47 @@ actor StaticAISettingsLoader: CoreAISettingsLoading {
         return snapshot
     }
 
-    func assertRequestedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedRepoPaths, expectedRepoPaths, file: file, line: line)
+    var repoPathsForAssertions: [String] {
+        recordedRepoPaths
     }
 }
 
-actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
+actor RecordingAISettingsUpdater: CoreAISettingsUpdating, RepoPathRequestRecording, ConfigUpdateRecording {
     struct Request: Equatable {
         var repoPath: String
         var config: AISettingsConfigSnapshot
     }
 
-    private var results: [Swift.Result<Void, Error>]
-    private let repeatsSingleResult: Bool
+    private var resultQueue: VoidResultQueue
     private let updatedAt: Int64?
     private var recordedRequests: [Request] = []
 
     init(result: Swift.Result<Void, Error> = .success(()), updatedAt: Int64? = 1_778_000_000) {
-        results = [result]
-        repeatsSingleResult = true
+        resultQueue = VoidResultQueue(result: result)
         self.updatedAt = updatedAt
     }
 
     init(results: [Swift.Result<Void, Error>], updatedAt: Int64? = 1_778_000_000) {
-        self.results = results
-        repeatsSingleResult = false
+        resultQueue = VoidResultQueue(results: results)
         self.updatedAt = updatedAt
     }
 
     init(failureThenSuccess error: Error, updatedAt: Int64? = 1_778_000_000) {
-        results = [.failure(error), .success(())]
-        repeatsSingleResult = false
+        resultQueue = VoidResultQueue(failureThenSuccess: error)
         self.updatedAt = updatedAt
     }
 
     func updateAISettings(repoPath: String, newConfig: AISettingsConfigSnapshot) async throws -> AISettingsSnapshot {
         let normalized = newConfig.normalized()
         recordedRequests.append(Request(repoPath: repoPath, config: normalized))
-        try nextResult().get()
+        try resultQueue.next().get()
         return AISettingsSnapshot.aiSettingsSnapshot(
             config: normalized,
             updatedAt: updatedAt
         )
     }
 
-    func assertRequests(
+    func assertAISettingsUpdateRequests(
         _ expectedRequests: [Request],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -83,27 +75,27 @@ actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
         XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
     }
 
+    func assertNoAISettingsUpdateRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertAISettingsUpdateRequests([], file: file, line: line)
+    }
+
+    var repoPathsForAssertions: [String] {
+        recordedRequests.map(\.repoPath)
+    }
+
+    var updatedConfigsForAssertions: [AISettingsConfigSnapshot] {
+        recordedRequests.map(\.config)
+    }
+
     func assertRequestCount(
         _ expectedCount: Int,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedRequests.count, expectedCount, file: file, line: line)
-    }
-
-    func assertNoRequests(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedRequests, [], file: file, line: line)
-    }
-
-    func assertRequestedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedRequests.map(\.repoPath), expectedRepoPaths, file: file, line: line)
+        assertConfigUpdateCount(expectedCount, file: file, line: line)
     }
 
     func assertRequestedConfigValues<Value: Equatable>(
@@ -112,12 +104,7 @@ actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(
-            recordedRequests.map { $0.config[keyPath: keyPath] },
-            expectedValues,
-            file: file,
-            line: line
-        )
+        assertConfigUpdateValues(keyPath, expectedValues, file: file, line: line)
     }
 
     func assertRequestedConfigValue<Value: Equatable>(
@@ -127,18 +114,11 @@ actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        guard recordedRequests.indices.contains(index) else {
-            XCTFail(
-                "Expected AI settings request at index \(index), got \(recordedRequests.count)",
-                file: file,
-                line: line
-            )
-            return
-        }
-
-        XCTAssertEqual(
-            recordedRequests[index].config[keyPath: keyPath],
+        assertConfigUpdateValue(
+            at: index,
+            keyPath,
             expectedValue,
+            failureSubject: "AI settings request",
             file: file,
             line: line
         )
@@ -152,15 +132,18 @@ actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        guard recordedRequests.indices.contains(index) else {
+        guard updatedConfigsForAssertions.indices.contains(index) else {
             XCTFail(
-                "Expected AI settings request at index \(index), got \(recordedRequests.count)",
+                "Expected AI settings request at index \(index), got \(updatedConfigsForAssertions.count)",
                 file: file,
                 line: line
             )
             return
         }
-        guard let toggle = recordedRequests[index].config.featureToggles.first(where: { $0.feature == feature }) else {
+        let toggle = updatedConfigsForAssertions[index]
+            .featureToggles
+            .first(where: { $0.feature == feature })
+        guard let toggle else {
             XCTFail("Expected AI settings request at index \(index) to include \(feature)", file: file, line: line)
             return
         }
@@ -174,24 +157,17 @@ actor RecordingAISettingsUpdater: CoreAISettingsUpdating {
         line: UInt = #line
     ) {
         XCTAssertEqual(
-            recordedRequests.map { request in
-                request.config.featureToggles.filter(\.allowRemote).count
+            updatedConfigsForAssertions.map { config in
+                config.featureToggles.filter(\.allowRemote).count
             },
             expectedCounts,
             file: file,
             line: line
         )
     }
-
-    private func nextResult() -> Swift.Result<Void, Error> {
-        if repeatsSingleResult {
-            return results.first ?? .success(())
-        }
-        return results.isEmpty ? .success(()) : results.removeFirst()
-    }
 }
 
-actor RecordingAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
+actor RecordingAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating, ConfigUpdateRecording {
     private var snapshot: AISettingsSnapshot
     private let updatedAt: Int64
     private var recordedLoadRepoPaths: [String] = []
@@ -217,8 +193,8 @@ actor RecordingAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
         return snapshot
     }
 
-    func loadRequests() -> [String] {
-        recordedLoadRepoPaths
+    var updatedConfigsForAssertions: [AISettingsConfigSnapshot] {
+        recordedRequests
     }
 
     func assertUpdateCount(
@@ -226,7 +202,7 @@ actor RecordingAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedRequests.count, expectedCount, file: file, line: line)
+        assertConfigUpdateCount(expectedCount, file: file, line: line)
     }
 
     func assertUpdatedConfigValue<Value: Equatable>(
@@ -236,18 +212,11 @@ actor RecordingAISettingsStore: CoreAISettingsLoading, CoreAISettingsUpdating {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        guard recordedRequests.indices.contains(index) else {
-            XCTFail(
-                "Expected AI settings update at index \(index), got \(recordedRequests.count)",
-                file: file,
-                line: line
-            )
-            return
-        }
-
-        XCTAssertEqual(
-            recordedRequests[index][keyPath: keyPath],
+        assertConfigUpdateValue(
+            at: index,
+            keyPath,
             expectedValue,
+            failureSubject: "AI settings update",
             file: file,
             line: line
         )

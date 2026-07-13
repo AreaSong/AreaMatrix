@@ -105,13 +105,13 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
         await model.selectFiles([selected.id])
         await model.syncExternalCreated(event)
 
-        await syncer.assertRecordedRequests([DetailLogIntegrationSyncRequest(
+        await syncer.assertSyncedExternalEvent(
             kind: kind,
             repoPath: "/tmp/repo",
             relativePath: event.relativePath,
             fsEventID: event.fsEventID
-        )])
-        await lister.assertRecordedRequests([
+        )
+        await lister.assertChangeLogListRequests([
             DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: logFileID))
         ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: entry.fileID ?? -1, entries: [entry]))
@@ -194,7 +194,6 @@ private enum DetailLogIntegrationSyncScenario {
     }
 }
 
-private typealias DetailLogIntegrationSyncRequest = ExternalSyncRequest
 private typealias DetailLogIntegrationSyncer = RecordingExternalChangesSyncer
 
 private typealias DetailLogIntegrationLister = StaticFileLister

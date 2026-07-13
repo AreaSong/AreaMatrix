@@ -22,7 +22,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         )
 
         await model.load(request: request)
-        await predictor.assertRecordedRequests([
+        await predictor.assertCategoryPredictionRequests([
             ImportSingleFilePredictRequest(repoPath: importSingleFileRepoPath(), filename: "合同.pdf")
         ])
         XCTAssertEqual(model.source?.fileName, "合同.pdf")
@@ -106,7 +106,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
         await model.load(request: request)
 
-        await predictor.assertRecordedRequests([])
+        await predictor.assertCategoryPredictionRequests([])
         XCTAssertNil(model.prediction)
         XCTAssertEqual(model.status, .unsupported("此 sheet 只处理单文件导入"))
     }
@@ -136,7 +136,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
 
-        await importer.assertRecordedCoreRequests([
+        await importer.assertCoreImportRequests([
             ImportSingleFileCoreImportRequest(
                 repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
@@ -169,7 +169,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         await model.load(request: request)
         await model.importSelectedFile()
 
-        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: importSingleFileSourcePath())])
+        await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: importSingleFileSourcePath())])
         XCTAssertEqual(
             model.importStatus,
             .failed(CoreErrorMappingSnapshot.importCopyFixture(kind: .permissionDenied))
@@ -188,7 +188,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
         await model.importSelectedFile()
 
-        await importer.assertRecordedRequests([])
+        await importer.assertNoImportedFiles()
         XCTAssertEqual(model.importStatus, .blocked("没有可导入的单文件来源"))
     }
 
@@ -226,7 +226,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
         let imported = await model.importSelectedFile()
         XCTAssertNil(imported)
-        await importer.assertRecordedRequests([])
+        await importer.assertNoImportedFiles()
     }
 
     @MainActor

@@ -41,7 +41,7 @@ final class ExternalURLPolicyTests: XCTestCase {
 
         try opener.openHTTPSURLString("https://example.com/path?q=1")
 
-        XCTAssertEqual(platformOpener.openedURLs.map(\.absoluteString), ["https://example.com/path?q=1"])
+        platformOpener.assertOpenedURLStrings(["https://example.com/path?q=1"])
     }
 
     @MainActor
@@ -52,7 +52,7 @@ final class ExternalURLPolicyTests: XCTestCase {
         XCTAssertThrowsError(try opener.openHTTPSURLString("http://example.com")) { error in
             XCTAssertEqual(error as? ExternalURLOpenError, .invalidURL("http://example.com"))
         }
-        XCTAssertEqual(platformOpener.openedURLs, [])
+        platformOpener.assertNoOpenedURLs()
     }
 
     @MainActor
@@ -63,7 +63,7 @@ final class ExternalURLPolicyTests: XCTestCase {
         XCTAssertThrowsError(try opener.openHTTPSURLString("https://example.com")) { error in
             XCTAssertEqual(error as? ExternalURLOpenError, .openRejected("https://example.com"))
         }
-        XCTAssertEqual(platformOpener.openedURLs.map(\.absoluteString), ["https://example.com"])
+        platformOpener.assertOpenedURLStrings(["https://example.com"])
     }
 
     @MainActor
@@ -73,20 +73,19 @@ final class ExternalURLPolicyTests: XCTestCase {
             externalURLOpener: aboutExternalURLOpener
         ).open(link: .github)
         XCTAssertEqual(openedURL, AboutExternalLink.github.urlString)
-        XCTAssertEqual(aboutExternalURLOpener.openedValues, [AboutExternalLink.github.urlString])
+        aboutExternalURLOpener.assertOpenedValues([AboutExternalLink.github.urlString])
 
         let iCloudExternalURLOpener = RecordingExternalURLStringOpener()
         try NSWorkspaceICloudHelpOpener(externalURLOpener: iCloudExternalURLOpener).openICloudHelp()
-        XCTAssertEqual(
-            iCloudExternalURLOpener.openedValues,
-            ["https://support.apple.com/guide/mac-help/use-icloud-drive-mchl1a02d711/mac"]
-        )
+        iCloudExternalURLOpener.assertOpenedValues([
+            "https://support.apple.com/guide/mac-help/use-icloud-drive-mchl1a02d711/mac"
+        ])
 
         let localModelExternalURLOpener = RecordingExternalURLStringOpener()
         try NSWorkspaceLocalModelInstallHelpOpener(
             externalURLOpener: localModelExternalURLOpener
         ).openLocalModelInstallHelp()
-        XCTAssertEqual(localModelExternalURLOpener.openedValues, ["https://github.com/AreaSong/AreaMatrix"])
+        localModelExternalURLOpener.assertOpenedValues(["https://github.com/AreaSong/AreaMatrix"])
     }
 
     @MainActor
@@ -139,7 +138,7 @@ final class ExternalURLPolicyTests: XCTestCase {
 @MainActor
 private final class RecordingExternalURLPlatformOpener: ExternalURLPlatformOpening {
     private let result: Bool
-    private(set) var openedURLs: [URL] = []
+    private var openedURLs: [URL] = []
 
     init(result: Bool = true) {
         self.result = result
@@ -149,12 +148,27 @@ private final class RecordingExternalURLPlatformOpener: ExternalURLPlatformOpeni
         openedURLs.append(url)
         return result
     }
+
+    func assertOpenedURLStrings(
+        _ expectedURLStrings: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(openedURLs.map(\.absoluteString), expectedURLStrings, file: file, line: line)
+    }
+
+    func assertNoOpenedURLs(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertOpenedURLStrings([], file: file, line: line)
+    }
 }
 
 @MainActor
 private final class RecordingExternalURLStringOpener: ExternalURLStringOpening {
     private let result: Result<Void, Error>
-    private(set) var openedValues: [String] = []
+    private var openedValues: [String] = []
 
     init(result: Result<Void, Error> = .success(())) {
         self.result = result
@@ -163,5 +177,13 @@ private final class RecordingExternalURLStringOpener: ExternalURLStringOpening {
     func openHTTPSURLString(_ value: String) throws {
         openedValues.append(value)
         try result.get()
+    }
+
+    func assertOpenedValues(
+        _ expectedValues: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(openedValues, expectedValues, file: file, line: line)
     }
 }

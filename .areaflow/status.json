@@ -1,33 +1,34 @@
 {
-  "version": 1,
-  "generated_at": "2026-06-29T07:07:04Z",
-  "project": "areamatrix",
-  "source": "areaflow-import-snapshot",
-  "source_hash": "41f8b2410446939026b8de6025e8c3b267c75f8a32dd5602c5562def7f79b3bb",
-  "summary": {
-    "project": "areamatrix",
-    "residual_count": 10,
-    "tasks": {
-      "active": 0,
-      "backlog_closed": 5,
-      "backlog_open": 0,
-      "backlog_packages": 5,
-      "done": 1
-    },
-    "v1_execution": {
-      "done": 637,
-      "status": {
-        "completed": 637
-      },
-      "total": 637
-    },
-    "version_count": 2
-  },
+  "schema_version": 1,
+  "project_id": "areamatrix",
+  "project_name": "AreaMatrix",
+  "area_flow_url": "http://127.0.0.1:3847/projects/areamatrix",
+  "cutover_phase": "import_mirror",
+  "active_versions": [
+    {
+      "display_label": "v1-mvp",
+      "version_kind": "workflow_version",
+      "lifecycle_status": "mixed-blocked",
+      "rough_progress": {
+        "percent": 100,
+        "label": "637/637 v1 execution tasks completed",
+        "blocked": true
+      }
+    }
+  ],
+  "last_synced_at": "2026-07-10T08:56:27Z",
+  "source_snapshot_hash": "35f51913af9834e7e21540c866e06f87150eb2cdd109e5f6457e8e659a363a3a",
   "compatibility": {
-    "status": "fallback_status",
+    "shim_lifecycle_state": "read_only_shim",
     "offline_source": ".areaflow/status.json",
-    "blocked": [
+    "blocked_commands": [
       "./task-loop run",
+      "./task-loop resume-stale",
+      "./task-loop resume-failed",
+      "./task-loop reset-progress",
+      "./task-loop clear-stale",
+      "./task-loop drain",
+      "changes generate --write",
       "promotion apply",
       "write execution"
     ]

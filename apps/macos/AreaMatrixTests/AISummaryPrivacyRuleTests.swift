@@ -43,7 +43,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
         XCTAssertEqual(model.draftText, "Edited summary")
         XCTAssertEqual(error.message, "Summary could not be saved.")
         XCTAssertEqual(error.detail, "Summary metadata is unavailable.")
-        await mapper.assertRecordedErrors([CoreError.Db(message: "summary metadata locked")])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "summary metadata locked")])
     }
 
     @MainActor

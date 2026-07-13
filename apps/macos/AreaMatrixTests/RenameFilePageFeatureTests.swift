@@ -24,7 +24,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
         let didRename = await model.submitRename(fileID: original.id, newName: "new.pdf")
 
         XCTAssertTrue(didRename)
-        await renamer.assertRecordedRequests([
+        await renamer.assertRenamedFiles([
             RenameRequest(repoPath: "/tmp/repo", fileID: original.id, newName: "new.pdf")
         ])
         XCTAssertEqual(model.files, [renamed])
@@ -59,7 +59,7 @@ final class RenameFilePageFeatureTests: XCTestCase {
         XCTAssertEqual(model.selectedFileDetail, original)
         XCTAssertEqual(model.pendingActionDestination, .rename(fileID: original.id))
         XCTAssertEqual(model.renameState, .failed(fileID: original.id, mapping))
-        await mapper.assertRecordedErrors([CoreError.Conflict(path: "docs/contracts/new.pdf")])
+        await mapper.assertMappedCoreErrors([CoreError.Conflict(path: "docs/contracts/new.pdf")])
     }
 
     @MainActor
@@ -310,10 +310,10 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
         XCTAssertEqual(loadedPreview.applyReport, preview)
         XCTAssertEqual(applyResult.report, report)
-        await renamer.assertPreviewRequests([
+        await renamer.assertBatchRenamePreviewRequests([
             BatchRenamePreviewRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule)
         ])
-        await renamer.assertApplyRequests([
+        await renamer.assertBatchRenameApplyRequests([
             BatchRenameApplyRequest(repoPath: "/repo", fileIDs: [11, 12], rule: rule, token: "preview-token")
         ])
     }
@@ -349,10 +349,10 @@ final class RenameFilePageFeatureTests: XCTestCase {
         )
 
         XCTAssertEqual(loadedPreview.applyReport?.items.map(\.fileID), [30, 10, 20])
-        await renamer.assertPreviewRequests([
+        await renamer.assertBatchRenamePreviewRequests([
             BatchRenamePreviewRequest(repoPath: "/repo", fileIDs: [30, 10, 20], rule: rule)
         ])
-        await renamer.assertApplyRequests([
+        await renamer.assertBatchRenameApplyRequests([
             BatchRenameApplyRequest(repoPath: "/repo", fileIDs: [30, 10, 20], rule: rule, token: "preview-token")
         ])
     }
@@ -400,6 +400,6 @@ final class RenameFilePageFeatureTests: XCTestCase {
 
         XCTAssertEqual(previewState.failure, .batchRenameConflict)
         XCTAssertEqual(applyResult.failure, .batchRenameConflict)
-        await mapper.assertRecordedErrorCount(2)
+        await mapper.assertMappedCoreErrorCount(2)
     }
 }

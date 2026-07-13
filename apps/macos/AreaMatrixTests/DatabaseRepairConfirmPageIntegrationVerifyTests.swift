@@ -55,7 +55,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         repairModel.isMetadataSafetyConfirmed = true
         await repairModel.runFullRescan()
 
-        await repairer.assertRequests([
+        await repairer.assertMetadataRepairRequests([
             DatabaseRepairIntegrationRepairRequest(
                 repoPath: "/tmp/repo",
                 options: .databaseRepairFullRescanFixture()
@@ -91,7 +91,7 @@ private actor RecordingMetadataRepairer: CoreMetadataRepairing {
         return try result.get()
     }
 
-    func assertRequests(
+    func assertMetadataRepairRequests(
         _ expectedRequests: [DatabaseRepairIntegrationRepairRequest],
         file: StaticString = #filePath,
         line: UInt = #line

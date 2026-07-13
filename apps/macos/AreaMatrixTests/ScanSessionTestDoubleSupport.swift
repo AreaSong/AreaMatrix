@@ -1,47 +1,50 @@
 @testable import AreaMatrix
+import XCTest
 
 struct ScanSessionResumeRequest: Equatable {
     var repoPath: String
     var scanSessionId: Int64
 }
 
-actor RecordingScanSessionReader: CoreScanSessionReading {
+actor RecordingScanSessionReader: CoreScanSessionReading, RepoPathRequestRecording {
     typealias ScanSessionResult = Swift.Result<ScanSessionSnapshot?, Error>
     typealias ResumeResult = Swift.Result<ReindexReportSnapshot, Error>
 
-    private let repeatingResult: ScanSessionResult?
-    private var queuedResults: [ScanSessionResult]
-    private let repeatingResumeResult: ResumeResult?
-    private var queuedResumeResults: [ResumeResult]
+    private var scanSessionQueue: TestResultQueue<ScanSessionSnapshot?>
+    private var resumeQueue: TestResultQueue<ReindexReportSnapshot>
     private var repoPaths: [String] = []
     private var resumeRequests: [ScanSessionResumeRequest] = []
 
     init(session: ScanSessionSnapshot? = nil, resumeReport: ReindexReportSnapshot? = nil) {
-        repeatingResult = .success(session)
-        queuedResults = []
-        repeatingResumeResult = resumeReport.map { .success($0) }
-        queuedResumeResults = []
+        scanSessionQueue = TestResultQueue(result: .success(session), missingResult: Self.missingScanSessionResult)
+        resumeQueue = TestResultQueue(
+            result: resumeReport.map { .success($0) } ?? Self.missingResumeResult(),
+            missingResult: Self.missingResumeResult
+        )
     }
 
     init(result: ScanSessionResult, resumeResult: ResumeResult? = nil) {
-        repeatingResult = result
-        queuedResults = []
-        repeatingResumeResult = resumeResult
-        queuedResumeResults = []
+        scanSessionQueue = TestResultQueue(result: result, missingResult: Self.missingScanSessionResult)
+        resumeQueue = TestResultQueue(
+            result: resumeResult ?? Self.missingResumeResult(),
+            missingResult: Self.missingResumeResult
+        )
     }
 
     init(sessions: [ScanSessionSnapshot?], resumeReports: [ReindexReportSnapshot] = []) {
-        repeatingResult = nil
-        queuedResults = sessions.map { .success($0) }
-        repeatingResumeResult = nil
-        queuedResumeResults = resumeReports.map { .success($0) }
+        scanSessionQueue = TestResultQueue(
+            results: sessions.map { .success($0) },
+            missingResult: Self.missingScanSessionResult
+        )
+        resumeQueue = TestResultQueue(
+            results: resumeReports.map { .success($0) },
+            missingResult: Self.missingResumeResult
+        )
     }
 
     init(results: [ScanSessionResult], resumeResults: [ResumeResult] = []) {
-        repeatingResult = nil
-        queuedResults = results
-        repeatingResumeResult = nil
-        queuedResumeResults = resumeResults
+        scanSessionQueue = TestResultQueue(results: results, missingResult: Self.missingScanSessionResult)
+        resumeQueue = TestResultQueue(results: resumeResults, missingResult: Self.missingResumeResult)
     }
 
     func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot? {
@@ -54,38 +57,32 @@ actor RecordingScanSessionReader: CoreScanSessionReading {
         return try nextResumeResult()
     }
 
-    func requestedRepoPaths() -> [String] {
+    var repoPathsForAssertions: [String] {
         repoPaths
     }
 
-    func recordedRepoPaths() -> [String] {
-        repoPaths
-    }
-
-    func recordedResumeRequests() -> [ScanSessionResumeRequest] {
-        resumeRequests
+    func assertScanSessionResumeRequests(
+        _ expectedRequests: [ScanSessionResumeRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(resumeRequests, expectedRequests, file: file, line: line)
     }
 
     private func nextResult() throws -> ScanSessionSnapshot? {
-        if let repeatingResult {
-            return try repeatingResult.get()
-        }
-        guard !queuedResults.isEmpty else {
-            throw CoreError.Internal(message: "missing scan session fixture")
-        }
-
-        return try queuedResults.removeFirst().get()
+        try scanSessionQueue.next()
     }
 
     private func nextResumeResult() throws -> ReindexReportSnapshot {
-        if let repeatingResumeResult {
-            return try repeatingResumeResult.get()
-        }
-        guard !queuedResumeResults.isEmpty else {
-            throw CoreError.Internal(message: "missing scan session resume fixture")
-        }
+        try resumeQueue.next()
+    }
 
-        return try queuedResumeResults.removeFirst().get()
+    private static func missingScanSessionResult() -> ScanSessionResult {
+        .failure(CoreError.Internal(message: "missing scan session fixture"))
+    }
+
+    private static func missingResumeResult() -> ResumeResult {
+        .failure(CoreError.Internal(message: "missing scan session resume fixture"))
     }
 }
 

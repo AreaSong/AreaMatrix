@@ -2,18 +2,16 @@
 import XCTest
 
 actor RepoSettingsMetadataReader: ExistingRepositoryMetadataReading {
-    private var results: [Result<ExistingRepositoryMetadataSnapshot, Error>]
+    private var resultQueue: TestResultQueue<ExistingRepositoryMetadataSnapshot>
 
-    init(results: [Result<ExistingRepositoryMetadataSnapshot, Error>]) {
-        self.results = results
+    init(results: [Swift.Result<ExistingRepositoryMetadataSnapshot, Error>]) {
+        resultQueue = TestResultQueue(results: results) {
+            .failure(CoreError.Internal(message: "missing metadata test result"))
+        }
     }
 
     func metadata(repoPath _: String) async throws -> ExistingRepositoryMetadataSnapshot {
-        guard !results.isEmpty else {
-            throw CoreError.Internal(message: "missing metadata test result")
-        }
-
-        return try results.removeFirst().get()
+        try resultQueue.next()
     }
 }
 
@@ -42,7 +40,7 @@ final class RecordingRepoMetadataPresenceChecker: RepoMetadataPresenceChecking {
         XCTAssertEqual(repoPaths, expectedRepoPaths, file: file, line: line)
     }
 
-    func assertNoRequests(
+    func assertNoRepoMetadataPresenceRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {

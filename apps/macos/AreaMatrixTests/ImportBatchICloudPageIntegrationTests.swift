@@ -115,7 +115,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
                 )
             ]
         ))
-        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest()])
+        await importer.assertImportedBatchFiles([importBatchExpectedInvoiceRequest()])
     }
 
     @MainActor

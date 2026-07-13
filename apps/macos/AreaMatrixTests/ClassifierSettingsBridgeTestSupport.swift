@@ -7,7 +7,7 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
         var filename: String
     }
 
-    private var results: [Swift.Result<ClassifyResultSnapshot, Error>]
+    private var resultQueue: TestResultQueue<ClassifyResultSnapshot>
     private var requestsStorage: [Request] = []
 
     init(
@@ -15,16 +15,17 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
             .success(classifierSettingsValidationProbeResult())
         ]
     ) {
-        self.results = results
+        resultQueue = TestResultQueue(results: results) {
+            .success(classifierSettingsValidationProbeResult())
+        }
     }
 
     func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot {
         requestsStorage.append(Request(repoPath: repoPath, filename: filename))
-        let result = results.isEmpty ? .success(classifierSettingsValidationProbeResult()) : results.removeFirst()
-        return try result.get()
+        return try resultQueue.next()
     }
 
-    func assertRequests(
+    func assertCategoryPredictionRequests(
         _ expectedRequests: [Request],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -32,19 +33,19 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
         XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
     }
 
-    func assertRequestCount(
+    func assertNoCategoryPredictionRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertCategoryPredictionRequests([], file: file, line: line)
+    }
+
+    func assertCategoryPredictionRequestCount(
         _ expectedCount: Int,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(requestsStorage.count, expectedCount, file: file, line: line)
-    }
-
-    func assertNoRequests(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(requestsStorage, [], file: file, line: line)
     }
 }
 
@@ -52,6 +53,15 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
     typealias CreateRequest = (repoPath: String, request: ClassifierRuleCreateRequestSnapshot)
     typealias UpdateRequest = (repoPath: String, request: ClassifierRuleUpdateSnapshot)
     typealias DeleteRequest = (repoPath: String, request: ClassifierRuleDeleteRequestSnapshot)
+
+    struct UpdateRequestExpectation {
+        var repoPath: String
+        var ruleID: String
+        var displayName: String
+        var extensions: [String]
+        var keywords: [String]
+        var previewConfirmed: Bool
+    }
 
     private let listResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error>
     private let mutationResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error>
@@ -97,11 +107,7 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
         return try resolve(mutationResult)
     }
 
-    func listRequests() -> [String] {
-        listRequestsStorage
-    }
-
-    func assertListRequests(
+    func assertClassifierRuleListRequests(
         _ expectedRequests: [String],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -109,16 +115,60 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
         XCTAssertEqual(listRequestsStorage, expectedRequests, file: file, line: line)
     }
 
-    func createRequests() -> [CreateRequest] {
-        createRequestsStorage
+    func assertSingleClassifierRuleCreateRequest(
+        repoPath: String,
+        slug: String,
+        displayName: String,
+        extensions: [String],
+        namingTemplate: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(createRequestsStorage.count, 1, file: file, line: line)
+        let request = createRequestsStorage.first
+        XCTAssertEqual(request?.repoPath, repoPath, file: file, line: line)
+        XCTAssertEqual(request?.request.slug, slug, file: file, line: line)
+        XCTAssertEqual(request?.request.displayName, displayName, file: file, line: line)
+        XCTAssertEqual(request?.request.extensions, extensions, file: file, line: line)
+        XCTAssertEqual(request?.request.namingTemplate, namingTemplate, file: file, line: line)
     }
 
-    func updateRequests() -> [UpdateRequest] {
-        updateRequestsStorage
+    func assertSingleClassifierRuleUpdateRequest(
+        _ expected: UpdateRequestExpectation,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(updateRequestsStorage.count, 1, file: file, line: line)
+        let request = updateRequestsStorage.first
+        XCTAssertEqual(request?.repoPath, expected.repoPath, file: file, line: line)
+        XCTAssertEqual(request?.request.ruleID, expected.ruleID, file: file, line: line)
+        XCTAssertEqual(request?.request.displayName, expected.displayName, file: file, line: line)
+        XCTAssertEqual(request?.request.extensions, expected.extensions, file: file, line: line)
+        XCTAssertEqual(request?.request.keywords, expected.keywords, file: file, line: line)
+        XCTAssertEqual(request?.request.previewConfirmed, expected.previewConfirmed, file: file, line: line)
     }
 
-    func deleteRequests() -> [DeleteRequest] {
-        deleteRequestsStorage
+    func assertNoClassifierRuleDeleteRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(deleteRequestsStorage.count, 0, file: file, line: line)
+    }
+
+    func assertSingleClassifierRuleDeleteRequest(
+        repoPath: String,
+        ruleID: String,
+        replacementCategory: String,
+        previewConfirmed: Bool,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(deleteRequestsStorage.count, 1, file: file, line: line)
+        let request = deleteRequestsStorage.first
+        XCTAssertEqual(request?.repoPath, repoPath, file: file, line: line)
+        XCTAssertEqual(request?.request.ruleID, ruleID, file: file, line: line)
+        XCTAssertEqual(request?.request.replacementCategory, replacementCategory, file: file, line: line)
+        XCTAssertEqual(request?.request.previewConfirmed, previewConfirmed, file: file, line: line)
     }
 
     private func resolve(_ result: Swift.Result<ClassifierRuleEditorSnapshotState, Error>)

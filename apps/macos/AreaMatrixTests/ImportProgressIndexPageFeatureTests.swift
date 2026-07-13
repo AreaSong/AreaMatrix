@@ -68,7 +68,7 @@ final class ImportProgressIndexPageFeatureTests: XCTestCase {
 
         await model.retryCurrentImportProgressItem()
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedFiles([
             ImportSingleFileImportRequest(
                 mode: .indexOnly,
                 overrideCategory: "docs",

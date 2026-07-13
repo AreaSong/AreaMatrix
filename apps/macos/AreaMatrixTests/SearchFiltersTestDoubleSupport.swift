@@ -7,27 +7,23 @@ struct MainListSearchFacetRequestRecord: Equatable {
 }
 
 actor MainListRecordingSearchFiltering: CoreSearchFiltering {
-    private var results: [Swift.Result<SearchFacetsSnapshot, Error>]
+    private var resultQueue: TestResultQueue<SearchFacetsSnapshot>
     private var requests: [MainListSearchFacetRequestRecord] = []
 
     init(results: [Swift.Result<SearchFacetsSnapshot, Error>]) {
-        self.results = results
+        resultQueue = TestResultQueue(results: results) {
+            .success(.searchFiltersFixture(active: 0))
+        }
     }
 
     func listFilterFacets(repoPath: String, request: SearchFacetRequestSnapshot) async throws -> SearchFacetsSnapshot {
         requests.append(MainListSearchFacetRequestRecord(repoPath: repoPath, request: request))
-        guard !results.isEmpty else {
-            return .searchFiltersFixture(active: request.filters.activeFilterCount)
+        return try resultQueue.next {
+            .success(.searchFiltersFixture(active: request.filters.activeFilterCount))
         }
-
-        return try results.removeFirst().get()
     }
 
-    func recordedRequests() -> [MainListSearchFacetRequestRecord] {
-        requests
-    }
-
-    func assertRequests(
+    func assertSearchFacetRequests(
         _ expectedRequests: [SearchFacetRequestSnapshot],
         file: StaticString = #filePath,
         line: UInt = #line

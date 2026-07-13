@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import Foundation
+import XCTest
 
 struct StaticICloudStatusDetector: ICloudStatusDetecting {
     let snapshot: IntegrationsICloudSnapshot
@@ -33,7 +34,7 @@ struct NoopICloudHelpOpener: ICloudHelpOpening {
 @MainActor
 final class RecordingICloudHelpOpener: ICloudHelpOpening {
     private let result: Result<Void, Error>
-    private(set) var openCount = 0
+    private var openCount = 0
 
     init(result: Result<Void, Error> = .success(())) {
         self.result = result
@@ -42,5 +43,13 @@ final class RecordingICloudHelpOpener: ICloudHelpOpening {
     func openICloudHelp() throws {
         openCount += 1
         try result.get()
+    }
+
+    func assertOpenCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(openCount, expectedCount, file: file, line: line)
     }
 }

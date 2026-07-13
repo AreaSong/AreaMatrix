@@ -22,6 +22,29 @@ For the pre-discussion question and routing entry, see
 `tasks/prompts/**` into version-local execution, see
 [`references/execution-hard-migration-plan.md`](references/execution-hard-migration-plan.md).
 
+## AreaFlow Read-Only Shim
+
+This repository has a Package B read-only AreaFlow compatibility shim. The shim
+keeps local entry points available while AreaFlow owns the broader workflow
+cutover path.
+
+- `./dev workflow status`, `./dev workflow doctor`, `./dev workflow init
+  --version <version>`, and `./dev workflow open` use the read-only shim and
+  fall back to `.areaflow/status.json` when AreaFlow is unavailable.
+- `./task-loop status` is read-only and reports the shim state from AreaFlow or
+  the local status projection.
+- `./task-loop run` and runner recovery/write commands remain blocked before
+  the legacy runner or Dev Console wrapper can create logs, pid files,
+  progress, summaries, or checkpoints.
+- `./dev workflow` write-mode commands, including version skeleton writes,
+  discussion / middle-layer writes, plan / queue writes, promotion apply, and
+  projection / closeout writes, remain blocked until a separate authoring or
+  execution cutover approval exists.
+- `./dev changes generate --write` is also blocked because it writes
+  `workflow/versions/**` draft artifacts.
+- The shim does not write `workflow/versions/**`, progress, logs, checkpoints,
+  release evidence, source files, or user files.
+
 ## Standard Flow
 
 ```text

@@ -21,8 +21,6 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
         )
 
         await model.load()
-        let coreVersionRequestCount = await coreReader.requestCount()
-        let metadataRequestedPaths = await metadataReader.requestedPaths()
 
         XCTAssertEqual(model.versionInfo, AboutSettingsVersionInfo(
             appVersion: "1.2.3 (45)",
@@ -30,8 +28,8 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
             schemaVersion: "v1"
         ))
         XCTAssertNil(model.versionError)
-        XCTAssertEqual(coreVersionRequestCount, 1)
-        XCTAssertEqual(metadataRequestedPaths, ["/tmp/repo"])
+        await coreReader.assertRequestCount(1)
+        await metadataReader.assertRequestedPaths(["/tmp/repo"])
     }
 
     @MainActor
@@ -162,8 +160,8 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
 
         model.openLogs()
 
-        XCTAssertEqual(copier.values, [AboutExternalLink.github.urlString])
-        XCTAssertEqual(announcer.messages, ["GitHub link could not be opened", "Open logs failed"])
+        copier.assertCopiedValues([AboutExternalLink.github.urlString])
+        announcer.assertAnnouncements(["GitHub link could not be opened", "Open logs failed"])
         if case let .failed(error) = model.actionFeedback {
             XCTAssertEqual(error.message, "Open logs failed")
             XCTAssertEqual(error.copyableDetail, "/tmp/repo/.areamatrix/logs")

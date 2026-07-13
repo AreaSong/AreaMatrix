@@ -22,7 +22,7 @@ actor RecordingPlatformCapabilityLoader: CorePlatformCapabilitiesLoading {
         return try result.get()
     }
 
-    func assertRequests(
+    func assertPlatformCapabilityRequests(
         _ expectedRequests: [PlatformCapabilityRequest],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -30,11 +30,11 @@ actor RecordingPlatformCapabilityLoader: CorePlatformCapabilitiesLoading {
         XCTAssertEqual(capturedRequests, expectedRequests, file: file, line: line)
     }
 
-    func assertNoRequests(
+    func assertNoPlatformCapabilityRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertRequests([], file: file, line: line)
+        assertPlatformCapabilityRequests([], file: file, line: line)
     }
 }
 
@@ -55,7 +55,11 @@ actor StaticCoreVersionReader: CoreVersionReading {
         return try result.get()
     }
 
-    func requestCount() -> Int {
-        count
+    func assertRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(count, expectedCount, file: file, line: line)
     }
 }

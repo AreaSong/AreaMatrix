@@ -22,7 +22,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
         let didSave = await model.save(draft: draft, currentConfig: current)
 
         XCTAssertTrue(didSave)
-        await updater.assertRequests([RecordingConfigurationUpdater.Request(
+        await updater.assertConfigurationUpdateRequests([RecordingConfigurationUpdater.Request(
             repoPath: "/tmp/repo",
             config: current
                 .withRepositorySettingsRepositorySettingsCoreOverviewOutput("RootAreaMatrixFile")
@@ -31,7 +31,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
                 .withRepositorySettingsRepositorySettingsCoreFallbackToInbox(false)
         )])
         XCTAssertEqual(model.saveState, .saved("Repository settings saved."))
-        XCTAssertEqual(announcer.announcements, ["Repository settings saved."])
+        announcer.assertAnnouncements(["Repository settings saved."])
     }
 
     @MainActor
@@ -55,12 +55,12 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
 
         XCTAssertFalse(didSave)
         await updater.assertRequestedConfigValues(\.locale, ["zh-CN"])
-        await mapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
+        await mapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.saveState, .failed(RepositorySettingsConfigError(
             message: "权限错误",
             recovery: "Retry status"
         )))
-        XCTAssertEqual(announcer.announcements, ["Repository settings could not be saved."])
+        announcer.assertAnnouncements(["Repository settings could not be saved."])
     }
 }
 

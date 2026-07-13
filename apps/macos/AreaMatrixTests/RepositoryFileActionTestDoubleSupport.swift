@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class RecordingRepositoryFinderOpener: RepositoryFinderOpening {
     private let result: Result<Void, Error>
-    private(set) var repoPaths: [String] = []
+    private var repoPaths: [String] = []
 
     init(result: Result<Void, Error> = .success(())) {
         self.result = result
@@ -32,7 +32,7 @@ final class RecordingRepositoryFileRevealer: RepositoryFileRevealing {
     }
 
     private let result: Result<Void, Error>
-    private(set) var requests: [Request] = []
+    private var requests: [Request] = []
 
     init(result: Result<Void, Error> = .success(())) {
         self.result = result
@@ -43,7 +43,7 @@ final class RecordingRepositoryFileRevealer: RepositoryFileRevealing {
         try result.get()
     }
 
-    func assertRequests(
+    func assertRevealRequests(
         _ expectedRequests: [Request],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -60,7 +60,7 @@ final class RecordingRepositoryFileOpener: RepositoryFileOpening {
     }
 
     private let result: Result<Void, Error>
-    private(set) var requests: [Request] = []
+    private var requests: [Request] = []
 
     init(result: Result<Void, Error> = .success(())) {
         self.result = result
@@ -71,7 +71,7 @@ final class RecordingRepositoryFileOpener: RepositoryFileOpening {
         try result.get()
     }
 
-    func assertRequests(
+    func assertOpenFileRequests(
         _ expectedRequests: [Request],
         file: StaticString = #filePath,
         line: UInt = #line

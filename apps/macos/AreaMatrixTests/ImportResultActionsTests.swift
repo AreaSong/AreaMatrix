@@ -18,7 +18,7 @@ final class ImportResultActionsTests: XCTestCase {
 
         model.showImportResultExistingFile(itemID: skippedItem.id)
 
-        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+        revealer.assertRevealRequests([RecordingRepositoryFileRevealer.Request(
             repoPath: importResultRepoPath(),
             relativePath: importResultTargetPath(importResultExistingFilename())
         )])
@@ -63,9 +63,11 @@ final class ImportResultActionsTests: XCTestCase {
 
         model.exportImportResultDetails()
 
-        XCTAssertEqual(exporter.requests.map(\.suggestedFilename), [importResultExportFilename()])
-        XCTAssertTrue(exporter.requests.first?.details.contains(".../failed.pdf") == true)
-        XCTAssertFalse(exporter.requests.first?.details.contains(importResultFailedSourcePath()) == true)
+        exporter.assertLastExportRequest(
+            suggestedFilename: importResultExportFilename(),
+            detailsContains: [".../failed.pdf"],
+            detailsExcludes: [importResultFailedSourcePath()]
+        )
         guard let result = requireImportResultRoute(model) else { return }
         XCTAssertEqual(result.exportState, .exported(importResultExportPath()))
         XCTAssertEqual(model.toastMessage, "Import result details exported.")

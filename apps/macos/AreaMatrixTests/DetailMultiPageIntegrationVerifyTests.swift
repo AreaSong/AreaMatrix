@@ -37,8 +37,8 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(load.action, action)
         XCTAssertEqual(applied.result, .batchAddTagsExecutedBatchAddTags())
         XCTAssertEqual(blockedLoad.unavailableReason, "External change prevents undo.")
-        await undoStore.assertListRequests(["/tmp/repo", "/tmp/repo"])
-        await undoStore.assertUndoRequests(["/tmp/repo|\(action.actionID)"])
+        await undoStore.assertUndoActionListRequests(["/tmp/repo", "/tmp/repo"])
+        await undoStore.assertUndoActionRequests(["/tmp/repo|\(action.actionID)"])
     }
 
     @MainActor
@@ -55,7 +55,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertNil(applied.result)
         XCTAssertEqual(applied.failure, .batchAddTagsUndoFailure())
-        await undoStore.assertUndoRequests(["/tmp/repo|\(action.actionID)"])
+        await undoStore.assertUndoActionRequests(["/tmp/repo|\(action.actionID)"])
     }
 
     @MainActor
@@ -72,7 +72,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
 
         XCTAssertEqual(completion.undoState, .ready(action))
         XCTAssertTrue(completion.closesSheet)
-        await undoStore.assertListRequests(["/tmp/repo"])
+        await undoStore.assertUndoActionListRequests(["/tmp/repo"])
     }
 
     @MainActor
@@ -103,8 +103,8 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
         XCTAssertTrue(plan.refreshesChangeLog)
         XCTAssertTrue(plan.refreshesUndoActions)
         XCTAssertEqual(refreshed.action, .batchAddTagsExecutedActionLogRow())
-        await undoStore.assertUndoRequests(["/tmp/repo|\(action.actionID)"])
-        await undoStore.assertListRequests(["/tmp/repo"])
+        await undoStore.assertUndoActionRequests(["/tmp/repo|\(action.actionID)"])
+        await undoStore.assertUndoActionListRequests(["/tmp/repo"])
     }
 
     @MainActor
@@ -220,6 +220,6 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             relativePaths: [available.path, stale.path]
         )])
         XCTAssertEqual(shell.toastMessage, "2 paths copied.")
-        XCTAssertEqual(announcer.announcements, ["2 paths copied."])
+        announcer.assertAnnouncements(["2 paths copied."])
     }
 }

@@ -17,7 +17,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         XCTAssertEqual(model.selection, .multiple([docsFile.id, financeFile.id]))
         XCTAssertNil(model.selectedFileDetail)
         XCTAssertNil(model.detailErrorMapping)
-        await detailer.assertRecordedFileIDs([docsFile.id, financeFile.id])
+        await detailer.assertRequestedFileIDs([docsFile.id, financeFile.id])
     }
 
     @MainActor
@@ -211,7 +211,7 @@ final class MainListIntegrationClosureTests: XCTestCase {
         await model.collectCurrentListDiagnostics()
 
         XCTAssertEqual(model.diagnosticsState, .collected(snapshot))
-        await collector.assertRecordedRepoPaths(["/tmp/repo"])
+        await collector.assertRequestedRepoPaths(["/tmp/repo"])
     }
 
     @MainActor

@@ -29,14 +29,15 @@ final class ClassifierRuleEditorRecoveryTests: XCTestCase {
 
         await model.saveClassifierRuleDraft()
 
-        let updates = await editor.updateRequests()
-        await editor.assertListRequests([repoURL.path])
-        XCTAssertEqual(updates.first?.repoPath, repoURL.path)
-        XCTAssertEqual(updates.first?.request.ruleID, "finance")
-        XCTAssertEqual(updates.first?.request.displayName, "Finance Rules")
-        XCTAssertEqual(updates.first?.request.extensions, ["pdf"])
-        XCTAssertEqual(updates.first?.request.keywords, ["invoice"])
-        XCTAssertTrue(updates.first?.request.previewConfirmed ?? false)
+        await editor.assertClassifierRuleListRequests([repoURL.path])
+        await editor.assertSingleClassifierRuleUpdateRequest(.init(
+            repoPath: repoURL.path,
+            ruleID: "finance",
+            displayName: "Finance Rules",
+            extensions: ["pdf"],
+            keywords: ["invoice"],
+            previewConfirmed: true
+        ))
         XCTAssertEqual(model.classifierRuleEditor.saveState, .saved("finance"))
     }
 
@@ -68,11 +69,13 @@ final class ClassifierRuleEditorRecoveryTests: XCTestCase {
         model.validateClassifierRuleDraft()
         await model.saveClassifierRuleDraft()
 
-        let creates = await editor.createRequests()
-        XCTAssertEqual(creates.first?.request.slug, "tax")
-        XCTAssertEqual(creates.first?.request.displayName, "Tax")
-        XCTAssertEqual(creates.first?.request.extensions, ["pdf"])
-        XCTAssertEqual(creates.first?.request.namingTemplate, "{stem}-{date}")
+        await editor.assertSingleClassifierRuleCreateRequest(
+            repoPath: repoURL.path,
+            slug: "tax",
+            displayName: "Tax",
+            extensions: ["pdf"],
+            namingTemplate: "{stem}-{date}"
+        )
     }
 
     @MainActor
@@ -91,16 +94,16 @@ final class ClassifierRuleEditorRecoveryTests: XCTestCase {
 
         model.selectClassifierRule(ruleID: "finance")
         model.requestDeleteSelectedClassifierRule()
-        var deletes = await editor.deleteRequests()
-        XCTAssertTrue(deletes.isEmpty)
+        await editor.assertNoClassifierRuleDeleteRequests()
 
         await model.confirmDeleteSelectedClassifierRule()
 
-        deletes = await editor.deleteRequests()
-        XCTAssertEqual(deletes.first?.repoPath, repoURL.path)
-        XCTAssertEqual(deletes.first?.request.ruleID, "finance")
-        XCTAssertEqual(deletes.first?.request.replacementCategory, "docs")
-        XCTAssertTrue(deletes.first?.request.previewConfirmed ?? false)
+        await editor.assertSingleClassifierRuleDeleteRequest(
+            repoPath: repoURL.path,
+            ruleID: "finance",
+            replacementCategory: "docs",
+            previewConfirmed: true
+        )
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
     }

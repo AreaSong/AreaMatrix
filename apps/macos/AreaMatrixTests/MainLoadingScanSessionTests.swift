@@ -165,7 +165,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
         await opener.finishOpen()
         await openTask.value
 
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        writer.assertNoSavedRepoPaths()
         XCTAssertEqual(model.route, .validatePath)
         XCTAssertEqual(model.repositoryPathText, mainLoadingRepoPath())
         XCTAssertEqual(

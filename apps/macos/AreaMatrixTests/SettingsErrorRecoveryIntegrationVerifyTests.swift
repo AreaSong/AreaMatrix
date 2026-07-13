@@ -100,7 +100,7 @@ private func verifyClassifierRepositoryAndOverview(_ context: SettingsRecoveryIn
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.generatedOverviewURL.path))
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.rootOverviewURL.path))
     XCTAssertEqual(try String(contentsOf: context.readmeURL), "user readme\n")
-    generatedRevealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+    generatedRevealer.assertRevealRequests([RecordingRepositoryFileRevealer.Request(
         repoPath: context.repoURL.path,
         relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
     )])

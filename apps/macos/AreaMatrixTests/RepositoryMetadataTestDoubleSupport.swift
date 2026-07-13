@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 actor StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
     private let result: Result<ExistingRepositoryMetadataSnapshot, Error>
@@ -21,7 +22,11 @@ actor StaticExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading 
         return try result.get()
     }
 
-    func requestedPaths() -> [String] {
-        paths
+    func assertRequestedPaths(
+        _ expectedPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(paths, expectedPaths, file: file, line: line)
     }
 }

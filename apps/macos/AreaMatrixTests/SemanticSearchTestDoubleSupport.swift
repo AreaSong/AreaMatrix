@@ -89,11 +89,13 @@ actor SemanticSearchSemanticSearcher: CoreSemanticSearching {
 }
 
 actor SemanticSearchPagedSemanticSearcher: CoreSemanticSearching {
-    private var pages: [SearchResultPageSnapshot]
+    private var pageQueue: TestResultQueue<SearchResultPageSnapshot>
     private var recordedRequests: [SearchQueryRequestSnapshot] = []
 
     init(pages: [SearchResultPageSnapshot]) {
-        self.pages = pages
+        pageQueue = TestResultQueue(results: pages.map { .success($0) }) {
+            .failure(CoreError.Internal(message: "missing semantic search page"))
+        }
     }
 
     func semanticSearch(
@@ -101,7 +103,7 @@ actor SemanticSearchPagedSemanticSearcher: CoreSemanticSearching {
         request: SearchQueryRequestSnapshot
     ) async throws -> SearchResultPageSnapshot {
         recordedRequests.append(request)
-        return pages.removeFirst()
+        return try pageQueue.next()
     }
 
     func buildEmbeddingIndex(
@@ -166,8 +168,12 @@ actor SemanticSearchDelayedSemanticSearcher: CoreSemanticSearching {
         continuation = nil
     }
 
-    func observedCancellationCount() -> Int {
-        cancellationCount
+    func assertObservedCancellationCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(cancellationCount, expectedCount, file: file, line: line)
     }
 
     private func recordCancellation() {

@@ -125,7 +125,7 @@ actor RemoteProviderConfigBridge: CoreRemoteProviderConfiguring {
         XCTAssertEqual(recorded.loadCount, expectedCount, file: file, line: line)
     }
 
-    func assertNoRequests(
+    func assertNoRemoteProviderConfigRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {

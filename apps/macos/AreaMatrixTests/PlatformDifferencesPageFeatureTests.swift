@@ -15,11 +15,11 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
 
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.inspectBindingContract))
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.getPlatformCapabilities))
-        await inspector.assertRequests([PlatformDifferencesInspectRequest(
+        await inspector.assertBindingContractInspectionRequests([PlatformDifferencesInspectRequest(
             targetPlatform: .swift,
             bindingVersion: 1
         )])
-        await capabilityLoader.assertRequests([PlatformDifferencesCapabilityRequest(
+        await capabilityLoader.assertPlatformCapabilityRequests([PlatformDifferencesCapabilityRequest(
             platform: .macos,
             appVersion: PlatformDifferencesModel.defaultTestAppVersion
         )])
@@ -40,11 +40,11 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         await model.inspectContract()
 
         XCTAssertEqual(model.selectedTargetPlatform, .kotlin)
-        await inspector.assertRequests([PlatformDifferencesInspectRequest(
+        await inspector.assertBindingContractInspectionRequests([PlatformDifferencesInspectRequest(
             targetPlatform: .kotlin,
             bindingVersion: 1
         )])
-        await capabilityLoader.assertNoRequests()
+        await capabilityLoader.assertNoPlatformCapabilityRequests()
     }
 
     @MainActor
@@ -98,7 +98,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
 
         await model.loadCapabilities()
 
-        await capabilityLoader.assertRequests([PlatformDifferencesCapabilityRequest(
+        await capabilityLoader.assertPlatformCapabilityRequests([PlatformDifferencesCapabilityRequest(
             platform: .macos,
             appVersion: "7.8.9 (10)"
         )])
@@ -154,7 +154,7 @@ private actor PlatformDifferencesRecordingInspector: CoreBindingContractInspecti
         return try result.get()
     }
 
-    func assertRequests(
+    func assertBindingContractInspectionRequests(
         _ expectedRequests: [PlatformDifferencesInspectRequest],
         file: StaticString = #filePath,
         line: UInt = #line

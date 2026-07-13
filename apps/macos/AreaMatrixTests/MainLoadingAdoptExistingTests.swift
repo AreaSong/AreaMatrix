@@ -72,7 +72,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         await model.openExistingRepository(validation)
 
         await opener.assertNoConfiguredRepoPaths()
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        writer.assertNoSavedRepoPaths()
         await startupRecoverer.assertRequestedRepoPaths([mainLoadingRepoPath()])
         guard let state = requireMainLoadingState(model, message: "expected inline main loading error") else { return }
         XCTAssertEqual(state.recoveryErrorMapping, mapping)
@@ -100,7 +100,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         await model.openExistingRepository(validation)
 
         await opener.assertRequestedConfiguredRepoPaths([mainLoadingRepoPath()])
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        writer.assertNoSavedRepoPaths()
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
         guard let state = requireMainLoadingState(model, message: "expected inline main loading error") else { return }
         XCTAssertEqual(state.repoPath, mainLoadingRepoPath())

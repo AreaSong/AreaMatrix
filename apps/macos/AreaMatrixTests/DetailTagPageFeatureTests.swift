@@ -24,7 +24,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         await model.loadSelectedFileTags()
         await model.addSelectedFileTag("bad/tag")
 
-        await tagStore.assertAddRequests([
+        await tagStore.assertDetailTagAddRequests([
             DetailTagMutationRequest(repoPath: "/tmp/repo", fileID: detail.id, tag: "bad/tag")
         ])
         XCTAssertEqual(model.detailTagEditorState, .failed(
@@ -35,7 +35,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         ))
         XCTAssertEqual(model.detailTagEditorState.tagSet, initialTags)
         XCTAssertNil(model.detailTagUndoToast)
-        await mapper.assertRecordedErrors([CoreError.InvalidPath(path: "bad/tag")])
+        await mapper.assertMappedCoreErrors([CoreError.InvalidPath(path: "bad/tag")])
         XCTAssertFalse(DetailTagInputCommitPolicy.shouldClearSubmittedQuery(
             submittedTag: "bad/tag",
             state: model.detailTagEditorState
@@ -63,7 +63,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         await model.loadSelectedFileTags()
         await model.removeSelectedFileTag("clienta")
 
-        await tagStore.assertRemoveRequests([
+        await tagStore.assertDetailTagRemoveRequests([
             DetailTagMutationRequest(repoPath: "/tmp/repo", fileID: detail.id, tag: "clienta")
         ])
         XCTAssertEqual(model.detailTagEditorState, .failed(
@@ -103,7 +103,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
         XCTAssertNil(model.detailTagUndoToast)
 
         await model.undoLastDetailTagChange()
-        await tagStore.assertRemoveRequests([])
+        await tagStore.assertDetailTagRemoveRequests([])
     }
 
     @MainActor
@@ -124,8 +124,8 @@ final class DetailTagPageFeatureTests: XCTestCase {
         await model.addSelectedFileTag("clienta")
         await model.removeSelectedFileTag("clienta")
 
-        await tagStore.assertAddRequests([])
-        await tagStore.assertRemoveRequests([])
+        await tagStore.assertDetailTagAddRequests([])
+        await tagStore.assertDetailTagRemoveRequests([])
         XCTAssertEqual(model.writeActionDisabledReason(fileID: detail.id), .importLocked)
     }
 
@@ -217,12 +217,12 @@ final class DetailTagPageFeatureTests: XCTestCase {
             facetsState: model.searchFacetsState
         )
 
-        await tagStore.assertListRequests([DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)])
+        await tagStore.assertDetailTagListRequests([DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)])
         XCTAssertEqual(options.map(\.value), ["finance", "tax", "archive", "legal"])
         XCTAssertEqual(options.first { $0.value == "legal" }?.countDisplayText, "--")
         XCTAssertEqual(options.first { $0.value == "legal" }?.disabled, false)
-        await tagStore.assertAddRequests([])
-        await tagStore.assertRemoveRequests([])
+        await tagStore.assertDetailTagAddRequests([])
+        await tagStore.assertDetailTagRemoveRequests([])
     }
 
     @MainActor
@@ -247,7 +247,7 @@ final class DetailTagPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.tagFilterRegistryState, .failed(fileID: detail.id, mapping, previous: registry))
         XCTAssertEqual(model.tagFilterRegistryState.tagSet, registry)
-        await mapper.assertRecordedErrors([CoreError.Db(message: "tag registry locked")])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "tag registry locked")])
     }
 
     @MainActor

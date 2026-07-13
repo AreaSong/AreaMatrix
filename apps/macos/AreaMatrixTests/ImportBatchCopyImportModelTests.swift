@@ -125,7 +125,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         guard let result = outcome else {
             return XCTFail("Expected successful batch copy import")
         }
-        await importer.assertRecordedRequests(importBatchExpectedAutoClassifyRequests())
+        await importer.assertImportedBatchFiles(importBatchExpectedAutoClassifyRequests())
         XCTAssertEqual(result.succeededEntries.count, 2)
         XCTAssertEqual(result.total, 2)
         XCTAssertEqual(result.failedCount, 0)
@@ -160,8 +160,8 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         guard let result = outcome else {
             return XCTFail("Expected batch copy import result")
         }
-        await importer.assertRecordedRequests(importBatchExpectedCategoryRequests())
-        await errorMapper.assertRecordedErrors([
+        await importer.assertImportedBatchFiles(importBatchExpectedCategoryRequests())
+        await errorMapper.assertMappedCoreErrors([
             CoreError.PermissionDenied(path: "/tmp/Invoice_2026Q1.pdf")
         ])
         XCTAssertEqual(result.succeededEntries.count, 1)
@@ -191,15 +191,17 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
         model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let savedSessions = await store.savedSessions()
-        let clearedRepoPaths = await store.clearedRepoPaths()
 
-        XCTAssertEqual(savedSessions.first?.repoPath, importBatchRepoPath())
-        XCTAssertEqual(savedSessions.first?.completed, 0)
-        XCTAssertEqual(savedSessions.first?.total, 2)
-        XCTAssertEqual(savedSessions.last?.completed, 2)
-        XCTAssertEqual(savedSessions.last?.items.map(\.phase), [.done, .done])
-        XCTAssertEqual(clearedRepoPaths, [importBatchRepoPath()])
+        await store.assertFirstSavedSession(.init(
+            repoPath: importBatchRepoPath(),
+            completed: 0,
+            total: 2
+        ))
+        await store.assertLastSavedSession(.init(
+            completed: 2,
+            itemPhases: [.done, .done]
+        ))
+        await store.assertClearedRepoPaths([importBatchRepoPath()])
     }
 
     @MainActor
@@ -222,15 +224,15 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let savedSessions = await store.savedSessions()
-        let clearedRepoPaths = await store.clearedRepoPaths()
 
         XCTAssertEqual(outcome?.fatalRetryContext?.sourcePath, fixture.contractURL.path)
-        XCTAssertEqual(savedSessions.last?.completed, 1)
-        XCTAssertEqual(savedSessions.last?.failed, 1)
-        XCTAssertEqual(savedSessions.last?.total, 3)
-        XCTAssertEqual(savedSessions.last?.items.map(\.phase), [.done, .failed, .pending])
-        XCTAssertEqual(clearedRepoPaths, [])
+        await store.assertLastSavedSession(.init(
+            completed: 1,
+            failed: 1,
+            total: 3,
+            itemPhases: [.done, .failed, .pending]
+        ))
+        await store.assertClearedRepoPaths([])
     }
 
     @MainActor
@@ -250,14 +252,14 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
 
         model.applyPreviewRows([row], request: request, selectedDestination: .autoClassify)
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
-        let savedSessions = await store.savedSessions()
-        let clearedRepoPaths = await store.clearedRepoPaths()
 
         XCTAssertEqual(outcome?.fatalRetryContext?.sourcePath, sourceURL.path)
-        XCTAssertEqual(savedSessions.last?.completed, 0)
-        XCTAssertEqual(savedSessions.last?.failed, 1)
-        XCTAssertEqual(savedSessions.last?.items.map(\.phase), [.failed])
-        XCTAssertEqual(clearedRepoPaths, [importBatchRepoPath()])
+        await store.assertLastSavedSession(.init(
+            completed: 0,
+            failed: 1,
+            itemPhases: [.failed]
+        ))
+        await store.assertClearedRepoPaths([importBatchRepoPath()])
     }
 }
 
@@ -286,7 +288,7 @@ final class ImportBatchStorageModeTests: XCTestCase {
         let indexed = await model.importReadyFiles(selectedDestination: .autoClassify)
         XCTAssertEqual(indexed?.succeededEntries.count, 1)
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             importBatchExpectedInvoiceRequest(storageMode: .move),
             importBatchExpectedInvoiceRequest(storageMode: .indexOnly)
         ])
@@ -308,7 +310,7 @@ final class ImportBatchStorageModeTests: XCTestCase {
 
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             importBatchExpectedInvoiceRequest(),
             importBatchExpectedContractRequest(destination: .category("media"), suggestedCategory: "media")
         ])
@@ -334,7 +336,7 @@ final class ImportBatchStorageModeTests: XCTestCase {
         _ = await model.importReadyFiles(selectedDestination: .autoClassify)
 
         XCTAssertEqual(model.rows.first?.displayCategory(for: .autoClassify), "docs")
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             importBatchExpectedInvoiceRequest(destination: .category("docs"), suggestedCategory: "docs")
         ])
     }

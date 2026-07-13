@@ -81,15 +81,8 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         await model.selectFiles([removed.id])
         await model.syncExternalCreated(event)
 
-        await syncer.assertRecordedRemovedRequests([
-            ExternalSyncRequest(
-                kind: .removed,
-                repoPath: "/tmp/repo",
-                relativePath: removed.path,
-                fsEventID: 10001
-            )
-        ])
-        await fileLister.assertRecordedListRequests([DetailLogExternalRemovedListRequest(
+        await syncer.assertSyncedRemoved(repoPath: "/tmp/repo", relativePath: removed.path, fsEventID: 10001)
+        await fileLister.assertFileListRequests([DetailLogExternalRemovedListRequest(
             repoPath: "/tmp/repo",
             filter: .currentCategory(nil)
         )])
@@ -104,7 +97,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
             model.detailExternalCreateSyncState,
             .synced(event: event, fileID: removed.id, .detailRemovedFixture())
         )
-        await lister.assertRecordedRequests([
+        await lister.assertChangeLogListRequests([
             DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: removed.id))
         ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: removed.id, entries: [entry]))
@@ -135,8 +128,8 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         await model.syncExternalCreated(event)
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        await mapper.assertRecordedErrors([CoreError.Db(message: "delete log failed")])
-        await lister.assertRecordedRequests([])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "delete log failed")])
+        await lister.assertChangeLogListRequests([])
         XCTAssertEqual(model.detailLogState, .notLoaded)
     }
 
@@ -165,8 +158,8 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         await model.syncExternalCreated(event)
 
         XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
-        await lister.assertRecordedRequests([])
-        await mapper.assertFirstRecordedInternalErrorContains("removed event 10003 did not report a detected delete")
+        await lister.assertChangeLogListRequests([])
+        await mapper.assertFirstMappedInternalErrorContains("removed event 10003 did not report a detected delete")
     }
 
     func testDetailLogSyncExternalRemovedCoreRejectsInvalidExternalRemovedEventsBeforeCoreBridge() {

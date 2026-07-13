@@ -139,8 +139,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             return XCTFail("Late Core build report must not replace the canceled UI state.")
         }
         XCTAssertEqual(model.searchState.page?.semanticPage?.indexStatus, .canceled)
-        let cancellationCount = await searcher.observedCancellationCount()
-        XCTAssertEqual(cancellationCount, 1)
+        await searcher.assertObservedCancellationCount(1)
     }
 
     @MainActor

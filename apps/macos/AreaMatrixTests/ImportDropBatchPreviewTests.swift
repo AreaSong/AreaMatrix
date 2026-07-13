@@ -9,7 +9,7 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         let model = ImportBatchPreviewModel(predictor: predictor)
 
         await model.load(request: fixture.request)
-        await predictor.assertRecordedRequests([
+        await predictor.assertCategoryPredictionRequests([
             ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf"),
             ImportDropPredictRequest(repoPath: "/tmp/repo", filename: "合同.pdf")
         ])
@@ -45,12 +45,10 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         )
 
         await model.load(request: request)
-        await duplicatePrechecker.assertRecordedRequests([
-            ImportBatchDuplicatePrecheckRequest(repoPath: "/tmp/repo", paths: [
-                "/tmp/Invoice_2026Q1.pdf",
-                "/tmp/Duplicate.pdf",
-                "/tmp/Bad.pdf"
-            ])
+        await duplicatePrechecker.assertPrecheckedDuplicateSources(repoPath: "/tmp/repo", paths: [
+            "/tmp/Invoice_2026Q1.pdf",
+            "/tmp/Duplicate.pdf",
+            "/tmp/Bad.pdf"
         ])
         XCTAssertEqual(model.successfulPreviewCount, 2)
         XCTAssertEqual(model.failedPreviewCount, 1)
@@ -127,12 +125,8 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         ])
         XCTAssertEqual(model.successfulPreviewCount, 2)
         XCTAssertEqual(model.failedPreviewCount, 0)
-        await duplicateFileLoader.assertRecordedRequests([
-            .testFixture(limit: 200)
-        ])
-        await nameConflictFileLoader.assertRecordedRequests([
-            .testFixture(category: "docs", limit: 200)
-        ])
+        await duplicateFileLoader.assertLoadedAllFilesForDuplicatePrecheck()
+        await nameConflictFileLoader.assertLoadedFilesForNameConflictPrecheck(categories: ["docs"])
     }
 
     func testDefaultCoreBridgeBatchDuplicateDetectionUsesImportFileDuplicateError() async throws {
@@ -208,16 +202,25 @@ private actor ImportBatchStaticDuplicatePrechecker: ImportBatchDuplicatePrecheck
         return results
     }
 
-    func recordedRequests() -> [ImportBatchDuplicatePrecheckRequest] {
-        requests
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [ImportBatchDuplicatePrecheckRequest],
+    func assertPrecheckedDuplicateSources(
+        repoPath: String,
+        paths: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+        XCTAssertEqual(
+            requests,
+            [ImportBatchDuplicatePrecheckRequest(repoPath: repoPath, paths: paths)],
+            file: file,
+            line: line
+        )
+    }
+
+    func assertNoDuplicatePrechecks(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests, [], file: file, line: line)
     }
 }
 

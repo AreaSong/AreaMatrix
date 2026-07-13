@@ -120,6 +120,8 @@
 		0A00000000000000000000FC /* AreaMatrixShellTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FD /* AreaMatrixShellTestDoubleSupport.swift */; };
 		0A00000000000000000008DC /* AreaMatrixShellFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008DD /* AreaMatrixShellFixtures.swift */; };
 		0A0000000000000000001930 /* TestSupportNamingGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001931 /* TestSupportNamingGovernanceTests.swift */; };
+		0A00000000000000000019A4 /* TestSupportNamingGovernanceTerms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000019A5 /* TestSupportNamingGovernanceTerms.swift */; };
+		0A00000000000000000019A6 /* TestResultQueueSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000019A7 /* TestResultQueueSupport.swift */; };
 		0A00000000000000000019A0 /* SnapshotConstructorInventoryFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000019A1 /* SnapshotConstructorInventoryFixtures.swift */; };
 		0A00000000000000000019A2 /* PlatformCapabilityFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000019A3 /* PlatformCapabilityFixtures.swift */; };
 		0A0000000000000000001980 /* MacOSArchitectureBoundaryGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001981 /* MacOSArchitectureBoundaryGovernanceTests.swift */; };
@@ -832,6 +834,8 @@
 		0A00000000000000000000FD /* AreaMatrixShellTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008DD /* AreaMatrixShellFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001931 /* TestSupportNamingGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/TestSupportNamingGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000019A5 /* TestSupportNamingGovernanceTerms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/TestSupportNamingGovernanceTerms.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000019A7 /* TestResultQueueSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/TestResultQueueSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000019A1 /* SnapshotConstructorInventoryFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SnapshotConstructorInventoryFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000019A3 /* PlatformCapabilityFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/PlatformCapabilityFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001981 /* MacOSArchitectureBoundaryGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSArchitectureBoundaryGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
@@ -2355,6 +2359,8 @@
 					0A00000000000000000000FD /* AreaMatrixShellTestDoubleSupport.swift */,
 					0A00000000000000000008DD /* AreaMatrixShellFixtures.swift */,
 					0A0000000000000000001931 /* TestSupportNamingGovernanceTests.swift */,
+					0A00000000000000000019A5 /* TestSupportNamingGovernanceTerms.swift */,
+					0A00000000000000000019A7 /* TestResultQueueSupport.swift */,
 					0A00000000000000000019A1 /* SnapshotConstructorInventoryFixtures.swift */,
 					0A00000000000000000019A3 /* PlatformCapabilityFixtures.swift */,
 					0A0000000000000000001981 /* MacOSArchitectureBoundaryGovernanceTests.swift */,
@@ -3192,6 +3198,8 @@
 					0A00000000000000000000FC /* AreaMatrixShellTestDoubleSupport.swift in Sources */,
 					0A00000000000000000008DC /* AreaMatrixShellFixtures.swift in Sources */,
 					0A0000000000000000001930 /* TestSupportNamingGovernanceTests.swift in Sources */,
+					0A00000000000000000019A4 /* TestSupportNamingGovernanceTerms.swift in Sources */,
+					0A00000000000000000019A6 /* TestResultQueueSupport.swift in Sources */,
 					0A00000000000000000019A0 /* SnapshotConstructorInventoryFixtures.swift in Sources */,
 					0A00000000000000000019A2 /* PlatformCapabilityFixtures.swift in Sources */,
 					0A0000000000000000001980 /* MacOSArchitectureBoundaryGovernanceTests.swift in Sources */,

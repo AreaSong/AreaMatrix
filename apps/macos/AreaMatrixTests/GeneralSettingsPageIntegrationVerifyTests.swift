@@ -79,8 +79,8 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
         XCTAssertNil(model.saveError)
         try assertGeneralSettingsFileBoundaries(repoURL: repoURL, sourceURL: sourceURL)
-        XCTAssertEqual(ignoreRulesManager.createdPaths, [repoURL.path])
-        XCTAssertEqual(ignoreRulesManager.openedPaths, [repoURL.path, repoURL.path])
+        ignoreRulesManager.assertCreatedPaths([repoURL.path])
+        ignoreRulesManager.assertOpenedPaths([repoURL.path, repoURL.path])
 
         await model.updateLocale(GeneralSettingsLocale.en)
         XCTAssertEqual(model.draft?.locale, .system)

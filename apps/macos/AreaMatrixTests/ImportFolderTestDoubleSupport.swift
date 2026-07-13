@@ -17,26 +17,23 @@ struct ImportFolderStaticFolderScanner: ImportFolderScanning {
 }
 
 actor ImportFolderSequenceFolderScanner: ImportFolderScanning {
-    private var results: [ImportFolderScanResult]
+    private var resultQueue: TestValueQueue<ImportFolderScanResult>
 
     init(results: [ImportFolderScanResult]) {
-        self.results = results
+        resultQueue = TestValueQueue(values: results, missingValue: Self.emptyResult)
     }
 
     func scanFolder(rootURL _: URL, includeHiddenFiles _: Bool,
                     followSymlinks _: Bool) async -> ImportFolderScanResult {
-        guard !results.isEmpty else {
-            return ImportFolderScanResult(rows: [], folderCount: 0, skippedRules: [], errors: [])
-        }
-        return results.removeFirst()
+        resultQueue.next()
+    }
+
+    private static func emptyResult() -> ImportFolderScanResult {
+        ImportFolderScanResult(rows: [], folderCount: 0, skippedRules: [], errors: [])
     }
 }
 
-struct ImportFolderConflictPrecheckRequest: Equatable {
-    var repoPath: String
-    var rowIDs: [String]
-    var destination: ImportBatchDestinationOption
-}
+typealias ImportFolderConflictPrecheckRequest = ImportPrecheckRowsRequest
 
 actor ImportFolderStaticConflictPrechecker: ImportFolderConflictPrechecking {
     private let results: [String: ImportFolderConflictPrecheckResult]
@@ -59,11 +56,7 @@ actor ImportFolderStaticConflictPrechecker: ImportFolderConflictPrechecking {
         return results
     }
 
-    func recordedRequests() -> [ImportFolderConflictPrecheckRequest] {
-        requests
-    }
-
-    func assertRecordedPrecheckDestinations(
+    func assertImportFolderPrecheckDestinations(
         _ expectedDestinations: [ImportBatchDestinationOption],
         file: StaticString = #filePath,
         line: UInt = #line

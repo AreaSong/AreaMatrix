@@ -20,7 +20,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
 
         XCTAssertEqual(model.records, page.records)
         XCTAssertEqual(model.page?.retentionDays, 90)
-        await lister.assertFirstRequest(
+        await lister.assertFirstAICallLogListRequest(
             route: .remote,
             status: .success,
             searchQuery: "OpenAI"
@@ -45,9 +45,9 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         await model.applyDatePreset(.last7Days, now: now)
         await model.clearFilters()
 
-        await lister.assertFirstRequest(occurredAfter: expectedAfter)
+        await lister.assertFirstAICallLogListRequest(occurredAfter: expectedAfter)
         XCTAssertFalse(model.hasActiveFilters)
-        await lister.assertLastRequest()
+        await lister.assertLastAICallLogListRequest()
     }
 
     @MainActor
@@ -85,7 +85,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         await model.load()
         await model.clearAll()
 
-        await clearer.assertFirstRequest(scope: .all, entryIDs: [])
+        await clearer.assertFirstAICallLogClearRequest(scope: .all, entryIDs: [])
         XCTAssertEqual(model.records, [])
         XCTAssertEqual(model.toastMessage, "AI call log cleared.")
     }
@@ -108,7 +108,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         model.selectedRecordIDs = [605]
         await model.deleteSelected()
 
-        await clearer.assertFirstRequest(scope: .selectedEntries, entryIDs: [605])
+        await clearer.assertFirstAICallLogClearRequest(scope: .selectedEntries, entryIDs: [605])
         XCTAssertEqual(model.records.map(\.id), [604])
         XCTAssertEqual(model.toastMessage, "AI log entries deleted.")
     }

@@ -67,12 +67,12 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
         await model.requestStorageMode(.move)
         XCTAssertEqual(model.pendingStorageConfirmation, .move)
-        await updater.assertNoRequests()
+        await updater.assertNoConfigurationUpdateRequests()
 
         model.cancelPendingStorageMode()
         XCTAssertNil(model.pendingStorageConfirmation)
         XCTAssertEqual(model.draft?.defaultStorageMode, .copy)
-        await updater.assertNoRequests()
+        await updater.assertNoConfigurationUpdateRequests()
 
         await model.requestStorageMode(.indexOnly)
         await model.confirmPendingStorageMode()
@@ -88,7 +88,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
         await model.requestStorageMode(.move)
         XCTAssertEqual(model.pendingStorageConfirmation, .move)
-        await updater.assertNoRequests()
+        await updater.assertNoConfigurationUpdateRequests()
 
         await model.confirmPendingStorageMode()
 
@@ -121,7 +121,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
         await model.requestOverviewOutput(.rootAreaMatrixFile)
         XCTAssertEqual(model.pendingRootOverviewStatus, .userContent)
-        await updater.assertNoRequests()
+        await updater.assertNoConfigurationUpdateRequests()
 
         await model.confirmRootOverview()
 
@@ -149,11 +149,11 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
 
         // swiftformat:disable:next spaceAroundParens
         XCTAssertEqual(model.pendingRootOverviewStatus, RootOverviewFileStatus.unsafe(unsafeReason))
-        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+        revealer.assertRevealRequests([RecordingRepositoryFileRevealer.Request(
             repoPath: "/tmp/repo",
             relativePath: "AREAMATRIX.md"
         )])
-        await updater.assertNoRequests()
+        await updater.assertNoConfigurationUpdateRequests()
     }
 
     @MainActor

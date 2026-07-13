@@ -27,11 +27,11 @@ actor DetailTagRecordingStore: CoreTagCRUD {
     typealias SuggestionResult = Swift.Result<TagSuggestionReportSnapshot, Error>
     typealias ApplySuggestionResult = Swift.Result<TagSuggestionApplyReportSnapshot, Error>
 
-    private var listResults: [Result]
-    private var addResults: [Result]
-    private var removeResults: [Result]
-    private var suggestionResults: [SuggestionResult]
-    private var applySuggestionResults: [ApplySuggestionResult]
+    private var listResults: TestResultQueue<TagSetSnapshot>
+    private var addResults: TestResultQueue<TagSetSnapshot>
+    private var removeResults: TestResultQueue<TagSetSnapshot>
+    private var suggestionResults: TestResultQueue<TagSuggestionReportSnapshot>
+    private var applySuggestionResults: TestResultQueue<TagSuggestionApplyReportSnapshot>
     private var recordedListRequests: [DetailTagListRequest] = []
     private var recordedAddRequests: [DetailTagMutationRequest] = []
     private var recordedRemoveRequests: [DetailTagMutationRequest] = []
@@ -45,11 +45,21 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         suggestionResults: [SuggestionResult] = [],
         applySuggestionResults: [ApplySuggestionResult] = []
     ) {
-        self.listResults = listResults
-        self.addResults = addResults
-        self.removeResults = removeResults
-        self.suggestionResults = suggestionResults
-        self.applySuggestionResults = applySuggestionResults
+        self.listResults = TestResultQueue(results: listResults) {
+            .failure(CoreError.Internal(message: "missing detail tag list test result"))
+        }
+        self.addResults = TestResultQueue(results: addResults) {
+            .failure(CoreError.Internal(message: "missing detail tag add test result"))
+        }
+        self.removeResults = TestResultQueue(results: removeResults) {
+            .failure(CoreError.Internal(message: "missing detail tag remove test result"))
+        }
+        self.suggestionResults = TestResultQueue(results: suggestionResults) {
+            .failure(CoreError.Internal(message: "missing detail tag suggestion test result"))
+        }
+        self.applySuggestionResults = TestResultQueue(results: applySuggestionResults) {
+            .failure(CoreError.Internal(message: "missing detail tag apply suggestion test result"))
+        }
     }
 
     func listTags(repoPath: String, fileID: Int64) async throws -> TagSetSnapshot {
@@ -72,8 +82,9 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         request: TagSuggestionRequestSnapshot
     ) async throws -> TagSuggestionReportSnapshot {
         recordedSuggestionRequests.append(TagSuggestionRequestRecord(repoPath: repoPath, request: request))
-        guard !suggestionResults.isEmpty else { return .tagSuggestionsFixture(fileID: request.fileID) }
-        return try suggestionResults.removeFirst().get()
+        return try suggestionResults.next {
+            .success(.tagSuggestionsFixture(fileID: request.fileID))
+        }
     }
 
     func applyTagSuggestions(
@@ -81,19 +92,12 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         request: ApplyTagSuggestionsRequestSnapshot
     ) async throws -> TagSuggestionApplyReportSnapshot {
         recordedApplySuggestionRequests.append(ApplyTagSuggestionsRequestRecord(repoPath: repoPath, request: request))
-        guard !applySuggestionResults.isEmpty else { return .tagSuggestionsApplied(fileID: request.fileID) }
-        return try applySuggestionResults.removeFirst().get()
+        return try applySuggestionResults.next {
+            .success(.tagSuggestionsApplied(fileID: request.fileID))
+        }
     }
 
-    func addRequests() -> [DetailTagMutationRequest] {
-        recordedAddRequests
-    }
-
-    func removeRequests() -> [DetailTagMutationRequest] {
-        recordedRemoveRequests
-    }
-
-    func assertAddRequests(
+    func assertDetailTagAddRequests(
         _ expectedRequests: [DetailTagMutationRequest],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -101,7 +105,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         XCTAssertEqual(recordedAddRequests, expectedRequests, file: file, line: line)
     }
 
-    func assertRemoveRequests(
+    func assertDetailTagRemoveRequests(
         _ expectedRequests: [DetailTagMutationRequest],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -109,7 +113,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         XCTAssertEqual(recordedRemoveRequests, expectedRequests, file: file, line: line)
     }
 
-    func assertListRequests(
+    func assertDetailTagListRequests(
         _ expectedRequests: [DetailTagListRequest],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -117,7 +121,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         XCTAssertEqual(recordedListRequests, expectedRequests, file: file, line: line)
     }
 
-    func assertListRequestFileIDs(
+    func assertDetailTagListRequestFileIDs(
         _ expectedFileIDs: [Int64],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -125,7 +129,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         XCTAssertEqual(recordedListRequests.map(\.fileID), expectedFileIDs, file: file, line: line)
     }
 
-    func assertSuggestionRequests(
+    func assertDetailTagSuggestionRequests(
         _ expectedRequests: [TagSuggestionRequestRecord],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -133,7 +137,7 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         XCTAssertEqual(recordedSuggestionRequests, expectedRequests, file: file, line: line)
     }
 
-    func assertApplySuggestionRequests(
+    func assertDetailTagApplySuggestionRequests(
         _ expectedRequests: [ApplyTagSuggestionsRequestRecord],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -141,14 +145,14 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         XCTAssertEqual(recordedApplySuggestionRequests, expectedRequests, file: file, line: line)
     }
 
-    func assertNoApplySuggestionRequests(
+    func assertNoDetailTagApplySuggestionRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertApplySuggestionRequests([], file: file, line: line)
+        assertDetailTagApplySuggestionRequests([], file: file, line: line)
     }
 
-    func assertLastApplySuggestionRequestSuggestions(
+    func assertLastDetailTagApplySuggestionRequestSuggestions(
         _ expectedSuggestions: [ApplyTagSuggestionItemSnapshot],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -161,9 +165,13 @@ actor DetailTagRecordingStore: CoreTagCRUD {
         )
     }
 
-    private func consume(_ results: inout [Result], fallbackFileID: Int64) throws -> TagSetSnapshot {
-        guard !results.isEmpty else { return TagSetSnapshot.tagAddFixture(fileID: fallbackFileID, values: []) }
-        return try results.removeFirst().get()
+    private func consume(
+        _ results: inout TestResultQueue<TagSetSnapshot>,
+        fallbackFileID: Int64
+    ) throws -> TagSetSnapshot {
+        try results.next {
+            .success(TagSetSnapshot.tagAddFixture(fileID: fallbackFileID, values: []))
+        }
     }
 }
 

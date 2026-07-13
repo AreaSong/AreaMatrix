@@ -25,45 +25,62 @@ struct FileListRequest: Equatable {
 }
 
 actor RecordingFileLister: CoreFileListing {
-    private var results: [Swift.Result<[FileEntrySnapshot], Error>]
+    private var resultQueue: TestResultQueue<[FileEntrySnapshot]>
     private var requestsStorage: [FileListRequest] = []
 
     init(results: [Swift.Result<[FileEntrySnapshot], Error>]) {
-        self.results = results
+        resultQueue = TestResultQueue(results: results) {
+            .success([])
+        }
     }
 
     init(files: [FileEntrySnapshot]) {
-        results = [.success(files)]
+        resultQueue = TestResultQueue(results: [.success(files)]) {
+            .success([])
+        }
     }
 
     func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         requestsStorage.append(FileListRequest(repoPath: repoPath, filter: filter))
-        guard !results.isEmpty else { return [] }
-
-        return try results.removeFirst().get()
+        return try resultQueue.next()
     }
 
-    func recordedRequests() -> [FileFilterSnapshot] {
-        requestsStorage.map(\.filter)
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [FileFilterSnapshot],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(requestsStorage.map(\.filter), expectedRequests, file: file, line: line)
-    }
-
-    func recordedListRequests() -> [FileListRequest] {
-        requestsStorage
-    }
-
-    func assertRecordedListRequests(
+    func assertFileListRequests(
         _ expectedRequests: [FileListRequest],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+    }
+
+    func assertNoFileListRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertFileListRequests([], file: file, line: line)
+    }
+
+    func assertFileListRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage.count, expectedCount, file: file, line: line)
+    }
+
+    func assertLastFileListRequest(
+        _ expectedRequest: FileListRequest,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage.last, expectedRequest, file: file, line: line)
+    }
+
+    func assertFileListFilters(
+        _ expectedFilters: [FileFilterSnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestsStorage.map(\.filter), expectedFilters, file: file, line: line)
     }
 }

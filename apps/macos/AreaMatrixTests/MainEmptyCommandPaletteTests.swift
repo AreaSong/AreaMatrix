@@ -33,7 +33,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
 
         await model.loadCommandIndex(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
 
-        await searcher.assertRequests([])
+        await searcher.assertSearchRequests([])
         await indexer.assertRequestContexts([
             .commandPalette(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
         ])
@@ -56,7 +56,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
         await model.loadCommandIndex(query: "", selectedFileIDs: Set<Int64>(), currentPath: String?.none)
 
         XCTAssertEqual(model.commandPaletteState.errorMapping, mapping)
-        await mapper.assertRecordedErrors([CoreError.Db(message: "command db locked")])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "command db locked")])
     }
 
     func testCommandPaletteCommandIndexCoreCommandPaletteRowsAreExecutableAndShowDangerBoundary() {
@@ -328,8 +328,8 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
         }
         XCTAssertEqual(result, .redoActionLogRedoneMove())
         XCTAssertEqual(refreshed.redoActions, [.redoActionLogExecutedMoveRedo()])
-        await redoStore.assertRedoRequests(["/tmp/repo|redo-move-3"])
-        await redoStore.assertListRequests(["/tmp/repo", "/tmp/repo"])
+        await redoStore.assertRedoActionRequests(["/tmp/repo|redo-move-3"])
+        await redoStore.assertRedoActionListRequests(["/tmp/repo", "/tmp/repo"])
     }
 
     @MainActor
@@ -359,7 +359,7 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
         guard case .redone = state else {
             return XCTFail("expected redone state, got \(state)")
         }
-        await redoStore.assertRedoRequests(["/tmp/repo|redo-move-3"])
+        await redoStore.assertRedoActionRequests(["/tmp/repo|redo-move-3"])
     }
 
     @MainActor
@@ -389,6 +389,6 @@ final class MainEmptyCommandPaletteRedoTests: XCTestCase {
         XCTAssertEqual(state, .loaded(.empty))
         XCTAssertEqual(request.source, .viewHistory)
         XCTAssertEqual(request.failureMapping?.rawContext, "redo-action-log redo-action-log-core redo-action-log")
-        await redoStore.assertRedoRequests([])
+        await redoStore.assertRedoActionRequests([])
     }
 }

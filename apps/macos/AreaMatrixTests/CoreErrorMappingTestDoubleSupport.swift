@@ -14,7 +14,7 @@ actor StaticCoreErrorMapper: CoreErrorMapping {
         return mapping
     }
 
-    func assertRecordedErrors(
+    func assertMappedCoreErrors(
         _ expectedErrors: [CoreError],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -22,7 +22,7 @@ actor StaticCoreErrorMapper: CoreErrorMapping {
         XCTAssertEqual(errors, expectedErrors, file: file, line: line)
     }
 
-    func assertRecordedErrorCount(
+    func assertMappedCoreErrorCount(
         _ expectedCount: Int,
         file: StaticString = #filePath,
         line: UInt = #line
@@ -30,7 +30,7 @@ actor StaticCoreErrorMapper: CoreErrorMapping {
         XCTAssertEqual(errors.count, expectedCount, file: file, line: line)
     }
 
-    func assertFirstRecordedInternalErrorContains(
+    func assertFirstMappedInternalErrorContains(
         _ expectedMessage: String,
         file: StaticString = #filePath,
         line: UInt = #line
@@ -55,7 +55,7 @@ actor RecordingCoreErrorMapper: CoreErrorMapping {
         return mapping(error)
     }
 
-    func assertRecordedErrors(
+    func assertMappedCoreErrors(
         _ expectedErrors: [CoreError],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -63,7 +63,7 @@ actor RecordingCoreErrorMapper: CoreErrorMapping {
         XCTAssertEqual(errors, expectedErrors, file: file, line: line)
     }
 
-    func assertRecordedErrorCount(
+    func assertMappedCoreErrorCount(
         _ expectedCount: Int,
         file: StaticString = #filePath,
         line: UInt = #line

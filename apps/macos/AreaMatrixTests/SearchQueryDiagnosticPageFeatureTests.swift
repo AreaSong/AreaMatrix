@@ -78,7 +78,7 @@ final class QueryErrorPageFeatureTests: XCTestCase {
         XCTAssertFalse(model.canSaveCurrentSearch)
         XCTAssertEqual(model.searchState.page?.diagnostics.first, diagnostic)
         XCTAssertEqual(model.files, [])
-        await searcher.assertRecordedQueries(["kindd:pdf tag:finance"])
+        await searcher.assertSearchRequestQueries(["kindd:pdf tag:finance"])
     }
 }
 
@@ -251,7 +251,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
 
         await runner.assertSmartListRunRequests(savedSearchID: saved.id, count: 2)
         await runner.assertSearchRequests([])
-        await mapper.assertRecordedErrors([CoreError.FileNotFound(path: "\(saved.id)")])
+        await mapper.assertMappedCoreErrors([CoreError.FileNotFound(path: "\(saved.id)")])
         XCTAssertEqual(model.searchState.page?.totalCount, 4)
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: saved.id, name: saved.name))
     }

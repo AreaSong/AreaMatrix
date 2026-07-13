@@ -61,7 +61,7 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
         XCTAssertEqual(recorded.loadCount, expectedCount, file: file, line: line)
     }
 
-    func assertNoRequests(
+    func assertNoRemotePrivacyRulesRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {

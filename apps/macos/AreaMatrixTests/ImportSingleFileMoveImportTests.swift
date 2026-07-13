@@ -28,7 +28,7 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
         await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
 
-        await importer.assertRecordedCoreRequests([
+        await importer.assertCoreImportRequests([
             ImportSingleFileCoreImportRequest(
                 repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
@@ -61,7 +61,7 @@ final class ImportSingleFileMoveImportTests: XCTestCase {
         model.selectedStorageMode = .move
         await model.importSelectedFile()
 
-        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: importSingleFileSourcePath())])
+        await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: importSingleFileSourcePath())])
         XCTAssertEqual(
             model.importStatus,
             .failed(CoreErrorMappingSnapshot.importMoveFixture(kind: .permissionDenied))

@@ -7,33 +7,38 @@ struct ChangeLogListRequest: Equatable {
 }
 
 actor RecordingChangeLogLister: CoreChangeLogListing {
-    private var results: [Swift.Result<[ChangeLogEntrySnapshot], Error>]
+    private var resultQueue: TestResultQueue<[ChangeLogEntrySnapshot]>
     private var requestsStorage: [ChangeLogListRequest] = []
 
     init(results: [Swift.Result<[ChangeLogEntrySnapshot], Error>]) {
-        self.results = results
+        resultQueue = TestResultQueue(results: results) {
+            .success([])
+        }
     }
 
     init(entries: [ChangeLogEntrySnapshot]) {
-        results = [.success(entries)]
+        resultQueue = TestResultQueue(results: [.success(entries)]) {
+            .success([])
+        }
     }
 
     func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
         requestsStorage.append(ChangeLogListRequest(repoPath: repoPath, filter: filter))
-        guard !results.isEmpty else { return [] }
-
-        return try results.removeFirst().get()
+        return try resultQueue.next()
     }
 
-    func recordedRequests() -> [ChangeLogListRequest] {
-        requestsStorage
-    }
-
-    func assertRecordedRequests(
+    func assertChangeLogListRequests(
         _ expectedRequests: [ChangeLogListRequest],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(requestsStorage, expectedRequests, file: file, line: line)
+    }
+
+    func assertNoChangeLogListRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertChangeLogListRequests([], file: file, line: line)
     }
 }

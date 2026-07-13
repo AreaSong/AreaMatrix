@@ -28,7 +28,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         await waitForImportSingleFilePreflightToSettle(model)
         await model.importSelectedFile()
 
-        await importer.assertRecordedCoreRequests([
+        await importer.assertCoreImportRequests([
             ImportSingleFileCoreImportRequest(
                 repoPath: importSingleFileRepoPath(),
                 sourceURL: sourceURL,
@@ -61,7 +61,7 @@ final class ImportSingleFileIndexImportTests: XCTestCase {
         model.selectedStorageMode = .indexOnly
         await model.importSelectedFile()
 
-        await errorMapper.assertRecordedErrors([CoreError.ICloudPlaceholder(path: importSingleFileSourcePath())])
+        await errorMapper.assertMappedCoreErrors([CoreError.ICloudPlaceholder(path: importSingleFileSourcePath())])
         XCTAssertEqual(
             model.importStatus,
             .failed(CoreErrorMappingSnapshot.importIndexFixture(kind: .iCloudPlaceholder))

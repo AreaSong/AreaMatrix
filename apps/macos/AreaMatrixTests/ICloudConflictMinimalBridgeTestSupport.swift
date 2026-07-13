@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import Foundation
+import XCTest
 
 enum ICloudConflictMinimalOutOfScopeAction: Equatable {
     case rename
@@ -112,8 +113,12 @@ actor ICloudConflictMinimalRecordingMainCore: CoreFileListing,
         return .testFixture(snapshotPath: "", createdAt: 0)
     }
 
-    func recordedOutOfScopeActions() -> [ICloudConflictMinimalOutOfScopeAction] {
-        outOfScopeActions
+    func assertOutOfScopeActions(
+        _ expectedActions: [ICloudConflictMinimalOutOfScopeAction],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(outOfScopeActions, expectedActions, file: file, line: line)
     }
 }
 
@@ -136,8 +141,16 @@ actor ICloudConflictResolver: ICloudConflictResolving {
         return try result.get()
     }
 
-    func recordedRequests() -> [ICloudConflictResolutionRequest] {
-        requests
+    func assertKeepBothResolutionRequest(
+        repoPath: String,
+        fileID: Int64,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requests.count, 1, file: file, line: line)
+        XCTAssertEqual(requests.first?.repoPath, repoPath, file: file, line: line)
+        XCTAssertEqual(requests.first?.fileID, fileID, file: file, line: line)
+        XCTAssertEqual(requests.first?.strategy, .keepBoth, file: file, line: line)
     }
 }
 
@@ -182,11 +195,19 @@ actor ICloudConflictReviewer: CoreICloudConflictReviewing {
         return try ICloudConflictResolutionResult(report: resolveResult.get())
     }
 
-    func recordedPreviewRequests() -> [PreviewRequest] {
-        previewRequests
+    func assertICloudConflictPreviewRequests(
+        _ expectedRequests: [PreviewRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(previewRequests, expectedRequests, file: file, line: line)
     }
 
-    func recordedResolveRequests() -> [ResolveRequest] {
-        resolveRequests
+    func assertICloudConflictResolutionRequests(
+        _ expectedRequests: [ResolveRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(resolveRequests, expectedRequests, file: file, line: line)
     }
 }

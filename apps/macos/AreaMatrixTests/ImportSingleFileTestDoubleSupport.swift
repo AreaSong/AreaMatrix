@@ -42,7 +42,7 @@ actor ImportSingleFileStaticFileLoader: ImportBatchCoreFileLoading {
         return files
     }
 
-    func assertRecordedRequests(
+    func assertRequestedFileLoads(
         _ expectedRequests: [ImportSingleFileFileLoadRequest],
         file: StaticString = #filePath,
         line: UInt = #line

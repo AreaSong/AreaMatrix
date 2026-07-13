@@ -20,7 +20,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         await model.loadImportConflictBatchPreview()
 
         XCTAssertTrue(model.showsCoreConflictBatchReview)
-        await conflictBatcher.assertPreviewRequests([
+        await conflictBatcher.assertImportConflictBatchPreviewRequests([
             ImportConflictBatchPreviewRequest(
                 repoPath: importSingleFileRepoPath(),
                 request: ImportConflictBatchPreviewRequestSnapshot(
@@ -58,7 +58,7 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
         let confirmedResult = await model.applyImportConflictBatch(replaceConfirmed: true)
 
         XCTAssertNil(blockedResult)
-        await conflictBatcher.assertApplyRequests([
+        await conflictBatcher.assertImportConflictBatchApplyRequests([
             ImportConflictBatchApplyRequest(
                 repoPath: importSingleFileRepoPath(),
                 request: .testFixture(),
@@ -91,12 +91,11 @@ final class ImportSingleFileNameConflictCoreTests: XCTestCase {
 
         let applyResult = await model.applyImportConflictBatch()
         _ = await model.askConflictBatchPerItem()
-        let applyRequests = await conflictBatcher.applyRequests()
 
         XCTAssertNil(model.conflictBatchAskPerItemDisabledReason)
         XCTAssertEqual(applyResult?.report?.resolvedCount, 2)
-        XCTAssertEqual(applyRequests.first?.request.conflictIDs, ["dup-1", "name-blocked"])
-        XCTAssertEqual(applyRequests.last?.request.duplicateStrategy, .askPerItem)
+        await conflictBatcher.assertFirstApplyRequestConflictIDs(["dup-1", "name-blocked"])
+        await conflictBatcher.assertLastApplyRequestDuplicateStrategy(.askPerItem)
     }
 
     @MainActor
@@ -211,15 +210,7 @@ private actor RecordingConflictBatcher: CoreImportConflictBatching {
         return .importConflictBatchReport(for: request)
     }
 
-    func previewRequests() -> [ImportConflictBatchPreviewRequest] {
-        recordedPreviewRequests
-    }
-
-    func applyRequests() -> [ImportConflictBatchApplyRequest] {
-        recordedApplyRequests
-    }
-
-    func assertPreviewRequests(
+    func assertImportConflictBatchPreviewRequests(
         _ expectedRequests: [ImportConflictBatchPreviewRequest],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -227,12 +218,28 @@ private actor RecordingConflictBatcher: CoreImportConflictBatching {
         XCTAssertEqual(recordedPreviewRequests, expectedRequests, file: file, line: line)
     }
 
-    func assertApplyRequests(
+    func assertImportConflictBatchApplyRequests(
         _ expectedRequests: [ImportConflictBatchApplyRequest],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(recordedApplyRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertFirstApplyRequestConflictIDs(
+        _ expectedConflictIDs: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedApplyRequests.first?.request.conflictIDs, expectedConflictIDs, file: file, line: line)
+    }
+
+    func assertLastApplyRequestDuplicateStrategy(
+        _ expectedStrategy: ImportConflictBatchStrategySnapshot,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedApplyRequests.last?.request.duplicateStrategy, expectedStrategy, file: file, line: line)
     }
 }
 

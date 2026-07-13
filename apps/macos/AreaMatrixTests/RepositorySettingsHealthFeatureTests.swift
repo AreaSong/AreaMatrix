@@ -150,7 +150,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         await model.load()
 
-        await loader.assertRequests([
+        await loader.assertPlatformCapabilityRequests([
             RepositorySettingsCapabilityRequest(platform: .macos, appVersion: "4.3.159")
         ])
         XCTAssertEqual(model.state, .loaded(capabilities))
@@ -175,7 +175,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         await model.load()
 
-        await loader.assertRequests([RepositorySettingsCapabilityRequest(
+        await loader.assertPlatformCapabilityRequests([RepositorySettingsCapabilityRequest(
             platform: .macos,
             appVersion: "5.6.7 (89)"
         )])

@@ -41,7 +41,7 @@ final class AreaMatrixShellTests: XCTestCase {
 
         XCTAssertEqual(model.repositoryPathError, "请输入资料库路径")
         XCTAssertFalse(model.canContinueFromChoosePath)
-        await validator.assertNoRequests()
+        await validator.assertNoRepoPathRequests()
     }
 
     @MainActor
@@ -54,7 +54,7 @@ final class AreaMatrixShellTests: XCTestCase {
 
         XCTAssertEqual(model.repositoryPathError, "请选择资料库根目录，而不是 .areamatrix 内部目录")
         XCTAssertFalse(model.canContinueFromChoosePath)
-        await validator.assertNoRequests()
+        await validator.assertNoRepoPathRequests()
     }
 
     @MainActor

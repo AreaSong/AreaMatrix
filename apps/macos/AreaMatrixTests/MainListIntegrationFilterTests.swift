@@ -96,7 +96,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0],
             filters: .empty
         )
-        await searcher.assertRequests([
+        await searcher.assertSearchRequests([
             .testFixture(
                 query: "合同",
                 sort: .newestImported
@@ -129,7 +129,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             sidebarRow: row,
             filters: .empty
         )
-        await searcher.assertRequests([
+        await searcher.assertSearchRequests([
             .testFixture(
                 query: "customer",
                 scope: .current,
@@ -164,7 +164,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
 
         XCTAssertEqual(model.searchState.errorMapping, mapping)
         XCTAssertEqual(model.searchState.request?.query, "合同")
-        await mapper.assertRecordedErrors([CoreError.Db(message: "search db locked")])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "search db locked")])
         XCTAssertFalse(model.isLoading)
     }
 
@@ -223,7 +223,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             filters: .empty,
             mode: .semantic
         )
-        await fallback.assertRecordedSemanticFallbackRequests([
+        await fallback.assertSemanticFallbackStatusRequests([
             .semanticSearchIndexNotReady(repoPath: "/tmp/repo", callLogID: 308)
         ])
         XCTAssertEqual(model.semanticFallbackState.status?.primaryAction, .buildSemanticIndex)

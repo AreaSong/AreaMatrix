@@ -1,4 +1,27 @@
 @testable import AreaMatrix
+import XCTest
+
+struct ImportBatchSavedSessionExpectation {
+    var repoPath: String?
+    var completed: Int?
+    var failed: Int?
+    var total: Int?
+    var itemPhases: [ImportBatchProgressSnapshot.Phase]?
+
+    init(
+        repoPath: String? = nil,
+        completed: Int? = nil,
+        failed: Int? = nil,
+        total: Int? = nil,
+        itemPhases: [ImportBatchProgressSnapshot.Phase]? = nil
+    ) {
+        self.repoPath = repoPath
+        self.completed = completed
+        self.failed = failed
+        self.total = total
+        self.itemPhases = itemPhases
+    }
+}
 
 actor StaticImportBatchSessionStore: ImportBatchSessionPersisting {
     private let session: ImportBatchSessionSnapshot?
@@ -17,10 +40,6 @@ actor StaticImportBatchSessionStore: ImportBatchSessionPersisting {
 
     func clearSession(repoPath: String) {
         cleared.append(repoPath)
-    }
-
-    func clearedRepoPaths() -> [String] {
-        cleared
     }
 
     func waitForClearedRepoPaths(_ expected: [String], attempts: Int = 1000) async -> [String] {
@@ -54,11 +73,64 @@ actor RecordingImportBatchSessionStore: ImportBatchSessionPersisting {
         sessionsByRepoPath[repoPath] = nil
     }
 
-    func savedSessions() -> [ImportBatchSessionSnapshot] {
-        saved
+    func assertFirstSavedSession(
+        _ expected: ImportBatchSavedSessionExpectation,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertSavedSession(
+            saved.first,
+            expected: expected,
+            file: file,
+            line: line
+        )
     }
 
-    func clearedRepoPaths() -> [String] {
-        cleared
+    func assertLastSavedSession(
+        _ expected: ImportBatchSavedSessionExpectation,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertSavedSession(
+            saved.last,
+            expected: expected,
+            file: file,
+            line: line
+        )
+    }
+
+    func assertClearedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(cleared, expectedRepoPaths, file: file, line: line)
+    }
+
+    private func assertSavedSession(
+        _ session: ImportBatchSessionSnapshot?,
+        expected: ImportBatchSavedSessionExpectation,
+        file: StaticString,
+        line: UInt
+    ) {
+        guard let session else {
+            XCTFail("Expected saved import batch session", file: file, line: line)
+            return
+        }
+        if let repoPath = expected.repoPath {
+            XCTAssertEqual(session.repoPath, repoPath, file: file, line: line)
+        }
+        if let completed = expected.completed {
+            XCTAssertEqual(session.completed, completed, file: file, line: line)
+        }
+        if let failed = expected.failed {
+            XCTAssertEqual(session.failed, failed, file: file, line: line)
+        }
+        if let total = expected.total {
+            XCTAssertEqual(session.total, total, file: file, line: line)
+        }
+        if let itemPhases = expected.itemPhases {
+            XCTAssertEqual(session.items.map(\.phase), itemPhases, file: file, line: line)
+        }
     }
 }

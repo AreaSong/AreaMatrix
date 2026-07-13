@@ -32,7 +32,7 @@ final class SemanticSearchCoreRoutingTests: XCTestCase {
         )
 
         await semantic.assertSemanticRequest(query: "上个月的发票", mode: SearchModeSnapshot.semantic)
-        await normal.assertRequests([])
+        await normal.assertSearchRequests([])
         XCTAssertEqual(model.searchState.page?.semanticPage?.semanticTotalCount, 1)
         XCTAssertEqual(model.searchState.page?.semanticPage?.normalTotalCount, 1)
         XCTAssertEqual(model.files.map(\.id), [semanticFile.id, normalFile.id])

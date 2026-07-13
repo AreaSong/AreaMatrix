@@ -26,7 +26,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertEqual(model.validatePathPrimaryActionTitle, "Open Repository")
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
         await opener.assertRequestedRepoPaths(["/tmp/repo"])
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        writer.assertSavedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.route, .mainList(opening))
     }
 
@@ -54,7 +54,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
         await opener.assertRequestedRepoPaths(["/tmp/new-repo"])
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/new-repo"])
+        writer.assertSavedRepoPaths(["/tmp/new-repo"])
         XCTAssertEqual(model.route, .mainList(opening))
     }
 
@@ -86,7 +86,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertTrue(model.validatePathReturnRouteIsSettings)
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
         await opener.assertRequestedRepoPaths(["/tmp/second-repo"])
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/second-repo"])
+        writer.assertSavedRepoPaths(["/tmp/second-repo"])
         XCTAssertEqual(model.route, .mainList(opening))
     }
 
@@ -106,7 +106,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
 
         XCTAssertFalse(shouldCloseWindow)
         XCTAssertEqual(model.route, .settingsRepository)
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        writer.assertNoSavedRepoPaths()
     }
 
     @MainActor
@@ -167,12 +167,10 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
         await model.adoptExistingRepositoryFromConfirmInit()
-        let createdPaths = await initializer.createdRepoPaths()
-        let adoptedPaths = await initializer.adoptedRepoPaths()
 
-        XCTAssertEqual(createdPaths, [])
-        XCTAssertEqual(adoptedPaths, ["/tmp/repo"])
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        await initializer.assertCreatedRepoPaths([])
+        await initializer.assertAdoptedRepoPaths(["/tmp/repo"])
+        writer.assertSavedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
             repoPath: "/tmp/repo",
             mode: .adoptExisting,
@@ -244,10 +242,9 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertEqual(model.route, .initializing(draft))
 
         await initializationTask.value
-        let createdPaths = await initializer.createdRepoPaths()
 
-        XCTAssertEqual(createdPaths, ["/tmp/repo"])
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        await initializer.assertCreatedRepoPaths(["/tmp/repo"])
+        writer.assertSavedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
             repoPath: "/tmp/repo",
             mode: .createEmpty,
@@ -282,12 +279,10 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
         await model.createEmptyRepositoryFromConfirmInit()
-        let createdPaths = await initializer.createdRepoPaths()
-        let adoptedPaths = await initializer.adoptedRepoPaths()
 
-        XCTAssertEqual(createdPaths, [])
-        XCTAssertEqual(adoptedPaths, [])
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        await initializer.assertCreatedRepoPaths([])
+        await initializer.assertAdoptedRepoPaths([])
+        writer.assertNoSavedRepoPaths()
         XCTAssertEqual(model.repositoryPathValidation, changedValidation)
         XCTAssertEqual(model.repositoryPathError, "路径状态已变化，请返回重新校验")
         XCTAssertEqual(model.route, .validatePath)

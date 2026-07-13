@@ -95,7 +95,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         await model.load()
         await model.setProviderPreference(.remoteFirst)
 
-        await updater.assertNoRequests()
+        await updater.assertNoAISettingsUpdateRequests()
         XCTAssertEqual(model.snapshot?.config.providerPreference, .localFirst)
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
             message: "Remote AI requires explicit setup.",
@@ -189,7 +189,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         )])
         XCTAssertEqual(model.snapshot?.availability, .notInstalled)
         XCTAssertEqual(model.statusText, "Status: Not installed")
-        XCTAssertEqual(copier.summaries, ["manifest: missing; runtime: unavailable"])
+        copier.assertCopiedSummaries(["manifest: missing; runtime: unavailable"])
     }
 
     @MainActor
@@ -266,7 +266,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
         XCTAssertEqual(explicitModel.storageLocation, "/tmp/localModelStatus-explicit")
         XCTAssertEqual(defaultedModel.storageLocation, "/tmp/localModelStatus-provider")
-        XCTAssertEqual(provider.requestCount, 1)
+        provider.assertRequestCount(1)
     }
 
     @MainActor

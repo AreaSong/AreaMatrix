@@ -8,9 +8,12 @@ import shutil
 import subprocess
 import tempfile
 import time
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from typing import Callable, Sequence
 
+import scripts.areaflow_shim as areaflow_shim
 from scripts.dev_tools.checks import run_skills_check
 from scripts.dev_tools.discussion import discussion_artifacts, validate_discussion_artifacts
 from scripts.dev_tools.execution_paths import (
@@ -412,6 +415,101 @@ def check_template_changes(h: Harness) -> None:
     if bad_force.returncode == 0:
         raise CheckFailure("template draft generate unexpectedly accepted --force without --write")
     assert_contains(bad_force.stdout + bad_force.stderr, "--force requires --write", "changes generate force guard")
+
+
+def check_areaflow_read_only_workflow_shim(h: Harness) -> None:
+    doctor = h.run([h.dev, "workflow", "doctor"]).stdout
+    assert_contains(doctor, "AreaFlow read-only shim: workflow doctor", "shim workflow doctor")
+    assert_contains(doctor, "native_workflow_doctor: skipped", "shim workflow doctor native skip")
+    assert_contains(doctor, "task_loop_run_forwarding: blocked", "shim workflow doctor task-loop block")
+    assert_contains(doctor, "status_projection: pass", "shim workflow doctor projection")
+    assert_contains(
+        doctor,
+        "status_projection_shim_lifecycle_state: read_only_shim",
+        "shim workflow doctor projection state",
+    )
+
+    status = h.run([h.dev, "workflow", "status"]).stdout
+    assert_contains(status, "AreaFlow read-only shim: workflow status fallback", "shim workflow status")
+    assert_contains(status, "execution_forwarding: blocked", "shim workflow status execution block")
+    assert_contains(status, "task_loop_run_forwarding: blocked", "shim workflow status task-loop block")
+    assert_contains(status, "source: .areaflow/status.json", "shim workflow status projection source")
+
+    init_preview = h.run([h.dev, "workflow", "init", "--version", "v2"]).stdout
+    assert_contains(init_preview, "AreaFlow read-only shim: workflow init preview", "shim workflow init preview")
+    assert_contains(init_preview, "local_write: false", "shim workflow init no local write")
+    assert_contains(init_preview, "workflow_versions_write: blocked", "shim workflow init workflow block")
+    assert_contains(init_preview, "execution_write: blocked", "shim workflow init execution block")
+
+    workflow_write = h.run([h.dev, "workflow", "init", "--version", "v2", "--write"], check=False)
+    if workflow_write.returncode != 2:
+        raise CheckFailure(f"workflow init --write returned {workflow_write.returncode}, expected 2")
+    output = workflow_write.stdout + workflow_write.stderr
+    assert_contains(output, "workflow init blocked", "shim workflow init write blocked")
+    assert_not_exists(h.tmp / "workflow-init-write/progress.json", "shim workflow init write progress")
+
+    plan_write = h.run(
+        [h.dev, "workflow", "plan", "--version", "v-template", "--write", "--out-dir", str(h.tmp / "shim-plan")],
+        check=False,
+    )
+    if plan_write.returncode != 2:
+        raise CheckFailure(f"workflow plan --write returned {plan_write.returncode}, expected 2")
+    output = plan_write.stdout + plan_write.stderr
+    assert_contains(output, "dev write command blocked", "shim workflow plan write blocked")
+    assert_not_exists(h.tmp / "shim-plan", "shim workflow plan out dir")
+
+    baseline_write = h.run([h.dev, "workflow", "baseline", "--version", "v-template", "write"], check=False)
+    if baseline_write.returncode != 2:
+        raise CheckFailure(f"workflow baseline write returned {baseline_write.returncode}, expected 2")
+    output = baseline_write.stdout + baseline_write.stderr
+    assert_contains(output, "dev write command blocked", "shim workflow baseline write blocked")
+
+
+def check_areaflow_read_only_changes_shim(h: Harness) -> None:
+    changes_write = h.run(
+        [h.dev, "changes", "generate", "--write", "--out-dir", str(h.tmp / "shim-drafts")],
+        check=False,
+    )
+    if changes_write.returncode != 2:
+        raise CheckFailure(f"changes generate --write returned {changes_write.returncode}, expected 2")
+    output = changes_write.stdout + changes_write.stderr
+    assert_contains(output, "dev write command blocked", "shim changes generate write blocked")
+    assert_not_exists(h.tmp / "shim-drafts", "shim changes draft out dir")
+
+
+def check_areaflow_read_only_task_loop_shim(h: Harness) -> None:
+    task_status = h.run([h.task_loop, "status"]).stdout
+    assert_contains(task_status, "AreaFlow read-only shim: task-loop status", "shim task-loop status")
+    assert_contains(task_status, "legacy_runner_started: false", "shim task-loop legacy runner")
+    assert_contains(task_status, "run_command: blocked", "shim task-loop run command")
+
+    buffer = StringIO()
+    with redirect_stdout(buffer):
+        run_result = areaflow_shim.handle_task_loop_command("run", h.root)
+    if run_result != 2:
+        raise CheckFailure(f"shim run handler returned {run_result}, expected 2")
+    assert_contains(buffer.getvalue(), "./task-loop run blocked", "shim run handler blocked")
+    assert_contains(buffer.getvalue(), "legacy_runner_started: false", "shim run handler no legacy runner")
+
+    for command in ["resume-stale", "resume-failed", "clear-stale", "reset-progress", "drain"]:
+        result = h.task_loop_run(f"shim-{command}", [command], check=False)
+        if result.returncode != 2:
+            raise CheckFailure(f"./task-loop {command} returned {result.returncode}, expected 2")
+        output = result.stdout + result.stderr
+        assert_contains(output, f"./task-loop {command} blocked", f"shim task-loop {command} blocked")
+        prefix = h.tmp / f"shim-{command}"
+        assert_not_exists(prefix / "progress.json", f"shim task-loop {command} progress")
+        assert_not_exists(prefix / "logs", f"shim task-loop {command} logs")
+        assert_not_exists(prefix / "runs", f"shim task-loop {command} runs")
+
+
+def check_areaflow_read_only_shim(h: Harness) -> None:
+    log("AreaFlow read-only shim")
+    if areaflow_shim.LOCAL_SHIM_STATE != "read_only_shim":
+        raise CheckFailure(f"unexpected shim lifecycle state: {areaflow_shim.LOCAL_SHIM_STATE}")
+    check_areaflow_read_only_workflow_shim(h)
+    check_areaflow_read_only_changes_shim(h)
+    check_areaflow_read_only_task_loop_shim(h)
 
 
 def check_versioned_workflow(h: Harness) -> None:
@@ -1717,23 +1815,34 @@ def run_check(root_dir: Path) -> int:
         try:
             check_static(harness)
             check_repo_health(harness)
-            check_template_changes(harness)
-            check_versioned_workflow(harness)
-            check_lightweight_tasks_and_backlog(harness)
-            check_real_status(harness)
-            check_dev_home(harness)
-            check_dev_console(harness)
-            check_runner_core(harness)
-            check_git_helpers(harness)
-            check_runner_git_checkpoint(harness)
-            check_runner_no_output_timeout_default_disabled()
-            check_runner_no_output_timeout(harness)
-            check_runner_codex_idle_timeout(harness)
-            check_runner_repeated_diff_is_not_progress(harness)
-            check_validation_process_detection()
-            check_runner_activity_replace_and_orphan_detection(harness)
-            check_progress_path_persistence(harness)
-            check_git_ignore(harness)
+            if areaflow_shim.LOCAL_SHIM_STATE == "read_only_shim":
+                check_areaflow_read_only_shim(harness)
+                check_lightweight_tasks_and_backlog(harness)
+                check_dev_home(harness)
+                check_git_helpers(harness)
+                check_runner_no_output_timeout_default_disabled()
+                check_validation_process_detection()
+                check_runner_activity_replace_and_orphan_detection(harness)
+                check_progress_path_persistence(harness)
+                check_git_ignore(harness)
+            else:
+                check_template_changes(harness)
+                check_versioned_workflow(harness)
+                check_lightweight_tasks_and_backlog(harness)
+                check_real_status(harness)
+                check_dev_home(harness)
+                check_dev_console(harness)
+                check_runner_core(harness)
+                check_git_helpers(harness)
+                check_runner_git_checkpoint(harness)
+                check_runner_no_output_timeout_default_disabled()
+                check_runner_no_output_timeout(harness)
+                check_runner_codex_idle_timeout(harness)
+                check_runner_repeated_diff_is_not_progress(harness)
+                check_validation_process_detection()
+                check_runner_activity_replace_and_orphan_detection(harness)
+                check_progress_path_persistence(harness)
+                check_git_ignore(harness)
         except CheckFailure as exc:
             print(f"[task-loop-check] FAIL: {exc}")
             print(f"[task-loop-check] temp dir: {tmp}")

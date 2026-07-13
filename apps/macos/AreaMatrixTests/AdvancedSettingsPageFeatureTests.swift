@@ -63,7 +63,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
                 returnRoute: .settingsGeneral(opening, selectedTab: "advanced")
             ))
         )
-        await recoverer.assertNoRequests()
+        await recoverer.assertNoRepoPathRequests()
     }
 
     @MainActor
@@ -108,7 +108,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
         await model.requestOverviewOutput(.rootAreaMatrixFile)
         XCTAssertEqual(model.pendingRootOverviewStatus, .userContent)
-        await updater.assertNoRequests()
+        await updater.assertNoConfigurationUpdateRequests()
 
         await model.confirmRootOverview()
 
@@ -155,12 +155,12 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
         await model.requestAllowReplaceDuringImport(true)
         XCTAssertTrue(model.isReplaceConfirmationPending)
-        await updater.assertNoRequests()
+        await updater.assertNoConfigurationUpdateRequests()
 
         model.cancelAllowReplaceDuringImport()
         XCTAssertFalse(model.isReplaceConfirmationPending)
         XCTAssertEqual(model.draft?.allowReplaceDuringImport, false)
-        await updater.assertNoRequests()
+        await updater.assertNoConfigurationUpdateRequests()
 
         await model.requestAllowReplaceDuringImport(true)
         await model.confirmAllowReplaceDuringImport()

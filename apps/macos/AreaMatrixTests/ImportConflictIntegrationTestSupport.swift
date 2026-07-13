@@ -98,20 +98,71 @@ actor ImportConflictBatcher: CoreImportConflictBatching {
         return .importConflictBatchIntegrationReport(for: request)
     }
 
-    func previewRequests() -> [ImportConflictPreviewRequest] {
-        recordedPreviewRequests
-    }
-
-    func applyRequests() -> [ImportConflictApplyRequest] {
-        recordedApplyRequests
-    }
-
-    func assertApplyRequests(
+    func assertImportConflictApplyRequests(
         _ expectedRequests: [ImportConflictApplyRequest],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(recordedApplyRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertNoImportConflictApplyRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportConflictApplyRequests([], file: file, line: line)
+    }
+
+    func assertImportConflictPreviewRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedPreviewRequests.count, expectedCount, file: file, line: line)
+    }
+
+    func assertLastImportConflictApplyRequest(
+        duplicateStrategy: ImportConflictBatchStrategySnapshot? = nil,
+        conflictIDs: [String]? = nil,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard let request = recordedApplyRequests.last else {
+            XCTFail("Expected import conflict apply request", file: file, line: line)
+            return
+        }
+        if let duplicateStrategy {
+            XCTAssertEqual(request.request.duplicateStrategy, duplicateStrategy, file: file, line: line)
+        }
+        if let conflictIDs {
+            XCTAssertEqual(request.request.conflictIDs, conflictIDs, file: file, line: line)
+        }
+    }
+
+    func assertImportConflictPreviewStrategies(
+        _ expectedStrategies: [ImportConflictBatchStrategySnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            recordedPreviewRequests.map(\.request.duplicateStrategy),
+            expectedStrategies,
+            file: file,
+            line: line
+        )
+    }
+
+    func assertImportConflictPreviewScopes(
+        _ expectedScopes: [Bool],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(
+            recordedPreviewRequests.map(\.request.applyToAllSimilarConflicts),
+            expectedScopes,
+            file: file,
+            line: line
+        )
     }
 }
 

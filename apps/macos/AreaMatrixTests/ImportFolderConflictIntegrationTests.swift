@@ -11,7 +11,7 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
 
         assertImportRowStatusTags(model.rows, ["DUP", "NAME", "BLOCKED"])
         assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
-        await fixture.importer.assertRecordedRequests([])
+        await fixture.importer.assertImportedBatchFiles([])
 
         applyImportFolderInitialConflictResolutions(model: model, fixture: fixture)
         assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
@@ -67,10 +67,9 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
         model.selectedDestination = .category("docs")
 
         let didRetry = await model.downloadICloudPlaceholdersAndRetry()
-        let downloadedURLs = await downloader.recordedURLs()
 
         XCTAssertTrue(didRetry)
-        XCTAssertEqual(downloadedURLs, [cloudURL])
+        await downloader.assertDownloadedURLs([cloudURL])
         XCTAssertEqual(model.selectedStorageMode, .indexOnly)
         XCTAssertEqual(model.selectedDestination, .category("docs"))
         assertImportRowStatusTags(model.rows, ["OK"])
@@ -97,7 +96,7 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
             recoveryCheck: .checking
         )
         scenario.controlState.registerQueueContinuation(scenario.importModel)
-        await scenario.importer.assertRecordedOverrideFilenames(["first.pdf", "second.pdf"])
+        await scenario.importer.assertImportedOverrideFilenames(["first.pdf", "second.pdf"])
         XCTAssertEqual(outcome?.fatalRetryContext, importFolderFatalRetryContext(sourcePath: scenario.secondURL.path))
         guard let pausedState = requireImportProgressRoute(
             scenario.model,
@@ -210,7 +209,7 @@ private func assertImportFolderConflictImportResult(
     importer: ImportBatchRecordingBatchImporter,
     model: ImportFolderPreviewModel
 ) async {
-    await importer.assertRecordedRequests([
+    await importer.assertImportedBatchFiles([
         ImportBatchBatchImportRequest(
             destination: .autoClassify,
             suggestedCategory: "docs",

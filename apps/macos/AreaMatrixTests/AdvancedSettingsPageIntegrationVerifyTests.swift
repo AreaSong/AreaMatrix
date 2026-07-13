@@ -133,16 +133,13 @@ private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSet
     XCTAssertNil(context.model.versionError)
     XCTAssertEqual(context.model.diagnosticsState, .collected(context.diagnosticsSnapshot))
     await context.diagnosticsCollector.assertRequestedRepoPaths([context.repoURL.path])
-    XCTAssertEqual(context.logsOpener.openedRepoPaths, [context.repoURL.path])
-    assertAdvancedSettingsCopiedSummary(context.summaryCopier.copiedSummaries)
-}
-
-private func assertAdvancedSettingsCopiedSummary(_ copiedSummaries: [String]) {
-    XCTAssertEqual(copiedSummaries.count, 1)
-    XCTAssertTrue(copiedSummaries[0].contains("App version: 9.8.7 (654)"))
-    XCTAssertTrue(copiedSummaries[0].contains("Core version: 0.1.0-test"))
-    XCTAssertTrue(copiedSummaries[0].contains("Repo schema version: v2"))
-    XCTAssertTrue(copiedSummaries[0].contains("Diagnostics exclude original file contents"))
+    context.logsOpener.assertOpenedRepoPaths([context.repoURL.path])
+    context.summaryCopier.assertCopiedSummary(contains: [
+        "App version: 9.8.7 (654)",
+        "Core version: 0.1.0-test",
+        "Repo schema version: v2",
+        "Diagnostics exclude original file contents"
+    ])
 }
 
 @MainActor
@@ -162,7 +159,7 @@ private func assertAdvancedSettingsRepairExit(
         ))
     )
     XCTAssertEqual(shell.settingsGeneralSelectedTab, "advanced")
-    await recoverer.assertNoRequests()
+    await recoverer.assertNoRepoPathRequests()
 }
 
 private struct AdvancedSettingsIntegrationContext {

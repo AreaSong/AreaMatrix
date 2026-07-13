@@ -159,19 +159,16 @@ final class FileActionsIntegrationVerifyTests: XCTestCase {
         model.beginDelete(fileID: trash.id)
         let didMoveToTrash = await model.submitDelete(fileID: trash.id, operation: .moveToTrash)
 
-        let calls = await core.recordedActionCalls()
-
         XCTAssertTrue(didRename)
         XCTAssertTrue(didMove)
         XCTAssertTrue(didRemoveIndex)
         XCTAssertTrue(didMoveToTrash)
-        XCTAssertEqual(calls, [
+        await core.assertFileActionCalls([
             .rename(fileID: owned.id, newName: "renamed.pdf"),
             .previewMove(fileID: owned.id, targetCategory: "finance"),
             .move(fileID: owned.id, targetCategory: "finance"),
             .removeIndex(fileID: indexed.id),
             .delete(fileID: trash.id)
         ])
-        XCTAssertTrue(calls.allSatisfy(\.isDeclaredFileActionCapability))
     }
 }

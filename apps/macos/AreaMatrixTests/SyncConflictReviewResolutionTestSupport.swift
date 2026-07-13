@@ -45,12 +45,36 @@ actor SyncConflictReviewResolver: CoreSyncConflictResolving {
         return try resolveResult.get()
     }
 
-    func recordedPreviewRequests() -> [SyncConflictPreviewRequest] {
-        previewRequests
+    func assertResolutionPreviewRequests(
+        _ expectedRequests: [SyncConflictPreviewRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(previewRequests, expectedRequests, file: file, line: line)
     }
 
-    func recordedResolveRequests() -> [SyncConflictResolveRequest] {
-        resolveRequests
+    func assertPreviewedResolutionStrategies(
+        _ expectedResolutions: [SyncConflictResolutionStrategySnapshot],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(previewRequests.map(\.resolution), expectedResolutions, file: file, line: line)
+    }
+
+    func assertResolutionApplyRequests(
+        _ expectedRequests: [SyncConflictResolveRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(resolveRequests, expectedRequests, file: file, line: line)
+    }
+
+    func assertResolutionApplyRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(resolveRequests.count, expectedCount, file: file, line: line)
     }
 }
 
@@ -67,16 +91,19 @@ actor SyncConflictReviewDetector: CoreSyncConflictDetecting {
         return try result.get()
     }
 
-    func recordedRequests() -> [String] {
-        requests
-    }
-
-    func assertRecordedRequests(
+    func assertDetectedSyncConflictRepos(
         _ expectedRequests: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+    }
+
+    func assertNoSyncConflictDetections(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertDetectedSyncConflictRepos([], file: file, line: line)
     }
 }
 
@@ -133,10 +160,8 @@ func makeSyncConflictReplaceContext() -> SyncConflictReplaceContext {
 @MainActor
 func assertSyncConflictReplaceResolutionBlocksUnconfirmedApply(
     model: SyncConflictReviewModel,
-    unresolvedRequests: [SyncConflictResolveRequest],
     panelBody: Any
 ) {
-    XCTAssertEqual(unresolvedRequests, [])
     XCTAssertFalse(model.canApplyResolution)
     XCTAssertTrue(model.canConfirmReplacePlan)
     assertTestMirrorDescription(of: panelBody, contains: [
@@ -152,14 +177,8 @@ func assertSyncConflictReplaceResolutionBlocksUnconfirmedApply(
 @MainActor
 func assertSyncConflictReplaceResolutionApplyExit(
     model: SyncConflictReviewModel,
-    detectRequests: [String],
-    previewRequests: [SyncConflictPreviewRequest],
-    resolveRequests: [SyncConflictResolveRequest],
     resolvedReports: [SyncConflictResolveReportSnapshot]
 ) {
-    XCTAssertEqual(detectRequests, ["/tmp/syncConflictReview-repo"])
-    XCTAssertEqual(previewRequests.map(\.resolution), [.keepBoth, .useIncoming])
-    XCTAssertEqual(resolveRequests, [.useIncomingConfirmedRequest])
     XCTAssertEqual(resolvedReports, [.syncConflictReviewResolveFixture(resolution: .useIncoming)])
     XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
 }

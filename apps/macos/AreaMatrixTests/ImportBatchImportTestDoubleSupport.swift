@@ -50,41 +50,54 @@ actor ImportBatchRecordingBatchImporter: CoreBatchCopyImporting {
         )
     }
 
-    func recordedRequests() -> [ImportBatchBatchImportRequest] {
-        requests
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [ImportBatchBatchImportRequest],
+    func assertImportedBatchFiles(
+        _ expectedImports: [ImportBatchBatchImportRequest],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertImportBatchRecordedRequests(requests, expectedRequests, file: file, line: line)
+        assertImportBatchImportedFiles(requests, expectedImports, file: file, line: line)
     }
 
-    func assertLastRecordedRequest(
-        _ expectedRequest: ImportBatchBatchImportRequest,
+    func assertNoImportedBatchFiles(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertImportBatchLastRecordedRequest(requests, expectedRequest, file: file, line: line)
+        assertImportBatchNoImportedFiles(requests, file: file, line: line)
     }
 
-    func assertRecordedOverrideFilenames(
+    func assertLastImportedBatchFile(
+        _ expectedImport: ImportBatchBatchImportRequest,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchLastImportedFile(requests, expectedImport, file: file, line: line)
+    }
+
+    func assertImportedOverrideFilenames(
         _ expectedFilenames: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertImportBatchRecordedOverrideFilenames(requests, expectedFilenames, file: file, line: line)
+        assertImportBatchImportedOverrideFilenames(requests, expectedFilenames, file: file, line: line)
+    }
+
+    func assertImportedDuplicateStrategies(
+        _ expectedStrategies: [DuplicateStrategy],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchImportedDuplicateStrategies(requests, expectedStrategies, file: file, line: line)
     }
 }
 
 actor ImportBatchSequenceBatchImporter: CoreBatchCopyImporting {
-    private var results: [Result<FileEntrySnapshot, Error>]
+    private var resultQueue: TestResultQueue<FileEntrySnapshot>
     private var requests: [ImportBatchBatchImportRequest] = []
 
     init(results: [Result<FileEntrySnapshot, Error>]) {
-        self.results = results
+        resultQueue = TestResultQueue(results: results) {
+            .failure(CoreError.Internal(message: "missing batch import test result"))
+        }
     }
 
     func importCopiedFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
@@ -95,10 +108,7 @@ actor ImportBatchSequenceBatchImporter: CoreBatchCopyImporting {
             overrideFilename: request.overrideFilename,
             duplicateStrategy: request.duplicateStrategy
         ))
-        guard !results.isEmpty else {
-            throw CoreError.Internal(message: "missing batch import test result")
-        }
-        return try results.removeFirst().get()
+        return try resultQueue.next()
     }
 
     func importBatchFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
@@ -109,64 +119,89 @@ actor ImportBatchSequenceBatchImporter: CoreBatchCopyImporting {
             overrideFilename: request.overrideFilename,
             duplicateStrategy: request.duplicateStrategy
         ))
-        guard !results.isEmpty else {
-            throw CoreError.Internal(message: "missing batch import test result")
-        }
-        return try results.removeFirst().get()
+        return try resultQueue.next()
     }
 
-    func recordedRequests() -> [ImportBatchBatchImportRequest] {
-        requests
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [ImportBatchBatchImportRequest],
+    func assertImportedBatchFiles(
+        _ expectedImports: [ImportBatchBatchImportRequest],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertImportBatchRecordedRequests(requests, expectedRequests, file: file, line: line)
+        assertImportBatchImportedFiles(requests, expectedImports, file: file, line: line)
     }
 
-    func assertLastRecordedRequest(
-        _ expectedRequest: ImportBatchBatchImportRequest,
+    func assertNoImportedBatchFiles(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertImportBatchLastRecordedRequest(requests, expectedRequest, file: file, line: line)
+        assertImportBatchNoImportedFiles(requests, file: file, line: line)
     }
 
-    func assertRecordedOverrideFilenames(
+    func assertLastImportedBatchFile(
+        _ expectedImport: ImportBatchBatchImportRequest,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchLastImportedFile(requests, expectedImport, file: file, line: line)
+    }
+
+    func assertImportedOverrideFilenames(
         _ expectedFilenames: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertImportBatchRecordedOverrideFilenames(requests, expectedFilenames, file: file, line: line)
+        assertImportBatchImportedOverrideFilenames(requests, expectedFilenames, file: file, line: line)
+    }
+
+    func assertImportedDuplicateStrategies(
+        _ expectedStrategies: [DuplicateStrategy],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertImportBatchImportedDuplicateStrategies(requests, expectedStrategies, file: file, line: line)
     }
 }
 
-private func assertImportBatchRecordedRequests(
-    _ recordedRequests: [ImportBatchBatchImportRequest],
-    _ expectedRequests: [ImportBatchBatchImportRequest],
+private func assertImportBatchImportedFiles(
+    _ requests: [ImportBatchBatchImportRequest],
+    _ expectedImports: [ImportBatchBatchImportRequest],
     file: StaticString,
     line: UInt
 ) {
-    XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
+    XCTAssertEqual(requests, expectedImports, file: file, line: line)
 }
 
-private func assertImportBatchLastRecordedRequest(
-    _ recordedRequests: [ImportBatchBatchImportRequest],
-    _ expectedRequest: ImportBatchBatchImportRequest,
+private func assertImportBatchNoImportedFiles(
+    _ requests: [ImportBatchBatchImportRequest],
     file: StaticString,
     line: UInt
 ) {
-    XCTAssertEqual(recordedRequests.last, expectedRequest, file: file, line: line)
+    assertImportBatchImportedFiles(requests, [], file: file, line: line)
 }
 
-private func assertImportBatchRecordedOverrideFilenames(
-    _ recordedRequests: [ImportBatchBatchImportRequest],
+private func assertImportBatchLastImportedFile(
+    _ requests: [ImportBatchBatchImportRequest],
+    _ expectedImport: ImportBatchBatchImportRequest,
+    file: StaticString,
+    line: UInt
+) {
+    XCTAssertEqual(requests.last, expectedImport, file: file, line: line)
+}
+
+private func assertImportBatchImportedOverrideFilenames(
+    _ requests: [ImportBatchBatchImportRequest],
     _ expectedFilenames: [String],
     file: StaticString,
     line: UInt
 ) {
-    XCTAssertEqual(recordedRequests.map(\.overrideFilename), expectedFilenames, file: file, line: line)
+    XCTAssertEqual(requests.map(\.overrideFilename), expectedFilenames, file: file, line: line)
+}
+
+private func assertImportBatchImportedDuplicateStrategies(
+    _ requests: [ImportBatchBatchImportRequest],
+    _ expectedStrategies: [DuplicateStrategy],
+    file: StaticString,
+    line: UInt
+) {
+    XCTAssertEqual(requests.map(\.duplicateStrategy), expectedStrategies, file: file, line: line)
 }

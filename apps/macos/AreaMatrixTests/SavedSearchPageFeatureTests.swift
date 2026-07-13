@@ -153,7 +153,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             .savedSearchSavedSearchFixtureTree()
             .appendingSortedSavedSearches(saved ?? [])
 
-        await store.assertRecordedListRepoPaths(["/tmp/repo"])
+        await store.assertSavedSearchListRepoPaths(["/tmp/repo"])
         XCTAssertEqual(rows.sidebarRows.filter { !$0.isSmartList }.map(\.displayName), ["inbox"])
         XCTAssertEqual(rows.sidebarRows.filter(\.isSmartList).map(\.displayName), ["Pinned New", "Pinned Old", "Alpha"])
         XCTAssertEqual(rows.sidebarRows.filter(\.isSmartList).compactMap(\.savedSearchID), [2, 1, 3])
@@ -178,7 +178,7 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             XCTAssertEqual(tree.sidebarRows.filter { !$0.isSmartList }.map(\.displayName), ["inbox"])
             XCTAssertEqual(tree.sidebarRows.filter(\.isSmartList), [])
             XCTAssertEqual(mapped, mapping)
-            await mapper.assertRecordedErrors([CoreError.Db(message: "db locked")])
+            await mapper.assertMappedCoreErrors([CoreError.Db(message: "db locked")])
         }
     }
 

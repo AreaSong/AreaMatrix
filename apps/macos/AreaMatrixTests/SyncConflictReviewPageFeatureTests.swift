@@ -37,7 +37,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        await detector.assertRecordedRequests(["/tmp/syncConflictReview-repo"])
+        await detector.assertDetectedSyncConflictRepos(["/tmp/syncConflictReview-repo"])
         XCTAssertEqual(model.state, .loaded(expected))
         XCTAssertEqual(model.conflict, expected)
         XCTAssertFalse(model.isLoading)
@@ -153,7 +153,7 @@ final class SyncConflictReviewPageFeatureTests: XCTestCase {
             onClose: {}
         ).body
 
-        await mapper.assertRecordedErrors([CoreError.Conflict(path: "stale conflict id")])
+        await mapper.assertMappedCoreErrors([CoreError.Conflict(path: "stale conflict id")])
         assertTestMirrorDescription(of: body, contains: [
             SyncConflictReviewAccessibilityID.error,
             SyncConflictReviewCopy.errorTitle,

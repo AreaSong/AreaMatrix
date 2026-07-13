@@ -22,8 +22,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         ))
         await model.openInitializedRepository()
 
-        let requestedRepoPaths = await opener.requestedEmptyRepoPaths()
-        XCTAssertEqual(requestedRepoPaths, ["/tmp/empty-repo"])
+        await opener.assertRequestedEmptyRepoPaths(["/tmp/empty-repo"])
         XCTAssertNil(model.initializationOpenErrorMapping)
         XCTAssertEqual(model.route, .mainEmpty(opening))
     }
@@ -53,7 +52,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         XCTAssertEqual(model.route, .initializationDone(result))
         XCTAssertEqual(model.initializationOpenErrorMapping, mapping)
-        await errorMapper.assertRecordedErrors([error])
+        await errorMapper.assertMappedCoreErrors([error])
     }
 
     @MainActor
@@ -126,8 +125,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         ))
         await model.openInitializedRepository()
 
-        let opened = await opener.requestedAdoptedRepoPaths()
-        XCTAssertEqual(opened, ["/tmp/adopted-repo"])
+        await opener.assertRequestedAdoptedRepoPaths(["/tmp/adopted-repo"])
         XCTAssertNil(model.initializationOpenErrorMapping)
         XCTAssertEqual(model.route, .mainList(opening))
     }
@@ -157,7 +155,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         XCTAssertEqual(model.route, .initializationDone(result))
         XCTAssertEqual(model.initializationOpenErrorMapping, mapping)
-        await errorMapper.assertRecordedErrors([error])
+        await errorMapper.assertMappedCoreErrors([error])
     }
 
     @MainActor
@@ -188,7 +186,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         finderOpener.assertRepoPaths(["/tmp/adopted-repo"])
         XCTAssertEqual(model.route, .initializationDone(result))
         XCTAssertTrue(message.contains("无法在 Finder 中打开资料库"))
-        XCTAssertEqual(accessibilityAnnouncer.announcements, [message])
+        accessibilityAnnouncer.assertAnnouncements([message])
     }
 
     func testDefaultCoreBridgeOpensRealAdoptedRepositoryThroughLoadConfigAndTree() async throws {

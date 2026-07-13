@@ -90,7 +90,7 @@ actor MainListRecordingSemanticFallbackReader: CoreSemanticFallbackStatusReading
         return status
     }
 
-    func assertRecordedSemanticFallbackRequests(
+    func assertSemanticFallbackStatusRequests(
         _ expectedRequests: [MainListFallbackRequestRecord],
         file: StaticString = #filePath,
         line: UInt = #line

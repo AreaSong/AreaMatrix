@@ -1,7 +1,81 @@
 @testable import AreaMatrix
 import XCTest
 
-actor RecordingRepositoryOpener: CoreEmptyRepositoryOpening {
+protocol RepoPathRequestRecording: Actor {
+    var repoPathsForAssertions: [String] { get }
+}
+
+extension RepoPathRequestRecording {
+    func assertRequestedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(repoPathsForAssertions, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertNoRepoPathRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRequestedRepoPaths([], file: file, line: line)
+    }
+}
+
+protocol ConfiguredRepoPathRequestRecording: Actor {
+    var configuredRepoPathsForAssertions: [String] { get }
+}
+
+extension ConfiguredRepoPathRequestRecording {
+    func assertRequestedConfiguredRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(configuredRepoPathsForAssertions, expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertNoConfiguredRepoPaths(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRequestedConfiguredRepoPaths([], file: file, line: line)
+    }
+}
+
+protocol EmptyRepoPathRequestRecording: Actor {
+    var emptyRepoPathsForAssertions: [String] { get }
+}
+
+extension EmptyRepoPathRequestRecording {
+    func assertRequestedEmptyRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(emptyRepoPathsForAssertions, expectedRepoPaths, file: file, line: line)
+    }
+}
+
+protocol AdoptedRepoPathRequestRecording: Actor {
+    var adoptedRepoPathsForAssertions: [String] { get }
+}
+
+extension AdoptedRepoPathRequestRecording {
+    func assertRequestedAdoptedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(adoptedRepoPathsForAssertions, expectedRepoPaths, file: file, line: line)
+    }
+}
+
+actor RecordingRepositoryOpener: CoreEmptyRepositoryOpening,
+    RepoPathRequestRecording,
+    ConfiguredRepoPathRequestRecording,
+    EmptyRepoPathRequestRecording,
+    AdoptedRepoPathRequestRecording {
     private let result: Swift.Result<RepositoryOpeningResult, Error>
     private var repoPaths: [String] = []
     private var configuredRepoPaths: [String] = []
@@ -38,49 +112,19 @@ actor RecordingRepositoryOpener: CoreEmptyRepositoryOpening {
         return try result.get()
     }
 
-    func requestedRepoPaths() -> [String] {
+    var repoPathsForAssertions: [String] {
         repoPaths
     }
 
-    func assertRequestedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(repoPaths, expectedRepoPaths, file: file, line: line)
-    }
-
-    func assertNoRequests(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        assertRequestedRepoPaths([], file: file, line: line)
-    }
-
-    func requestedConfiguredRepoPaths() -> [String] {
+    var configuredRepoPathsForAssertions: [String] {
         configuredRepoPaths
     }
 
-    func assertRequestedConfiguredRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(configuredRepoPaths, expectedRepoPaths, file: file, line: line)
-    }
-
-    func assertNoConfiguredRepoPaths(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(configuredRepoPaths, [], file: file, line: line)
-    }
-
-    func requestedEmptyRepoPaths() -> [String] {
+    var emptyRepoPathsForAssertions: [String] {
         emptyRepoPaths
     }
 
-    func requestedAdoptedRepoPaths() -> [String] {
+    var adoptedRepoPathsForAssertions: [String] {
         adoptedRepoPaths
     }
 }

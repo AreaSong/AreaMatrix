@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import Foundation
+import XCTest
 
 struct StaticICloudPlaceholderDownloader: ICloudPlaceholderDownloading {
     var error: Error?
@@ -26,7 +27,11 @@ actor RecordingICloudPlaceholderDownloader: ICloudPlaceholderDownloading {
         }
     }
 
-    func recordedURLs() -> [URL] {
-        urls
+    func assertDownloadedURLs(
+        _ expectedURLs: [URL],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(urls, expectedURLs, file: file, line: line)
     }
 }

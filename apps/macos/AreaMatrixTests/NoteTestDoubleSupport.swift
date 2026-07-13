@@ -24,20 +24,21 @@ actor RecordingNoteStore: CoreNoteReadingWriting {
     typealias ReadResult = Swift.Result<String?, Error>
     typealias WriteResult = Swift.Result<Void, Error>
 
-    private var readResults: [ReadResult]
-    private var writeResults: [WriteResult]
+    private var readResultQueue: TestResultQueue<String?>
+    private var writeResultQueue: VoidResultQueue
     private var reads: [NoteReadRequest] = []
     private var writes: [NoteWriteRequest] = []
 
     init(readResults: [ReadResult] = [], writeResults: [WriteResult] = []) {
-        self.readResults = readResults
-        self.writeResults = writeResults
+        readResultQueue = TestResultQueue(results: readResults) {
+            .success(nil)
+        }
+        writeResultQueue = VoidResultQueue(results: writeResults)
     }
 
     func readNote(repoPath: String, fileID: Int64) async throws -> String? {
         reads.append(NoteReadRequest(repoPath: repoPath, fileID: fileID))
-        guard !readResults.isEmpty else { return nil }
-        return try readResults.removeFirst().get()
+        return try readResultQueue.next()
     }
 
     func writeNote(repoPath: String, fileID: Int64, contentMarkdown: String) async throws {
@@ -46,11 +47,10 @@ actor RecordingNoteStore: CoreNoteReadingWriting {
             fileID: fileID,
             contentMarkdown: contentMarkdown
         ))
-        guard !writeResults.isEmpty else { return }
-        try writeResults.removeFirst().get()
+        try writeResultQueue.next().get()
     }
 
-    func assertReadRequests(
+    func assertDetailNoteReadRequests(
         _ expectedRequests: [NoteReadRequest],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -58,7 +58,7 @@ actor RecordingNoteStore: CoreNoteReadingWriting {
         XCTAssertEqual(reads, expectedRequests, file: file, line: line)
     }
 
-    func assertWriteRequests(
+    func assertDetailNoteWriteRequests(
         _ expectedRequests: [NoteWriteRequest],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -74,7 +74,7 @@ actor RecordingNoteStore: CoreNoteReadingWriting {
         XCTAssertEqual(writes.map(\.contentMarkdown), expectedContents, file: file, line: line)
     }
 
-    func assertNoWriteRequests(file: StaticString = #filePath, line: UInt = #line) {
+    func assertNoDetailNoteWriteRequests(file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertEqual(writes, [], file: file, line: line)
     }
 }

@@ -29,9 +29,9 @@ final class AITagBatchPageFeatureTests: XCTestCase {
         await model.selectFiles(Set(files.map(\.id)))
         await model.loadBatchAITagSuggestions(files: files)
         await bridge.assertSuggestFileIDs([707, 708])
-        await bridge.assertNoApplyRequests()
+        await bridge.assertNoAITagSuggestionApplyRequests()
         model.confirmBatchAITagSuggestions()
-        await bridge.assertNoApplyRequests()
+        await bridge.assertNoAITagSuggestionApplyRequests()
         await model.applyBatchAITagSuggestions()
 
         await bridge.assertApplyFileIDs([707, 708], confirmed: true)
@@ -159,7 +159,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
         XCTAssertEqual(review?.reports[files[0].id]?.suggestions, [])
         XCTAssertEqual(review?.reports[files[1].id]?.suggestions, [])
         XCTAssertEqual(review?.rejectedFeedback.count, 2)
-        await bridge.assertNoApplyRequests()
+        await bridge.assertNoAITagSuggestionApplyRequests()
     }
 
     @MainActor
@@ -198,7 +198,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
             await model.selectFiles([file.id])
             await model.loadSelectedFileAITagSuggestions()
 
-            await bridge.assertNoRequests()
+            await bridge.assertNoAITagSuggestionRequests()
             await privacy.assertEvaluationFeatures([.autoTags])
             XCTAssertEqual(model.aiTagSuggestionState.report?.status, .skipped)
             XCTAssertEqual(model.aiTagSuggestionState.report?.skippedReason, .providerUnavailable)

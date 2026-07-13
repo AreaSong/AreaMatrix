@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 
+import scripts.areaflow_shim as areaflow_shim
 from . import dev_config, state
 from .actions import ACTIONS, COMMAND_ALIASES, MENUS, SHORTCUT_ALIASES
 from .i18n import normalize_lang_mode, t, t_lines
@@ -1108,6 +1109,10 @@ def print_command_preview(cfg: ConsoleConfig, command: RunnerCommand) -> None:
 
 
 def run_runner_command(cfg: ConsoleConfig, command: RunnerCommand) -> int:
+    subcommand = command.argv[1] if len(command.argv) > 1 else "run"
+    shim_result = areaflow_shim.handle_task_loop_command(subcommand, cfg.runtime.root_dir)
+    if shim_result is not None:
+        return shim_result
     cfg.console_log_root.mkdir(parents=True, exist_ok=True)
     print_command_preview(cfg, command)
     if command.execution_mode == "foreground":
@@ -1138,6 +1143,9 @@ def preview_with_wizard(cfg: ConsoleConfig) -> int:
 
 
 def run_temp_dry_run(cfg: ConsoleConfig) -> int:
+    shim_result = areaflow_shim.handle_task_loop_command("run", cfg.runtime.root_dir)
+    if shim_result is not None:
+        return shim_result
     with tempfile.TemporaryDirectory(prefix="areamatrix-task-loop-") as tmp:
         tmp_dir = Path(tmp)
         print(tr(cfg, "dry_run.temp_dir", path=tmp_dir))
@@ -1169,6 +1177,9 @@ def run_temp_dry_run(cfg: ConsoleConfig) -> int:
 
 
 def request_drain(cfg: ConsoleConfig) -> int:
+    shim_result = areaflow_shim.handle_task_loop_command("drain", cfg.runtime.root_dir)
+    if shim_result is not None:
+        return shim_result
     if not live_runner_active(cfg):
         print(tr(cfg, "drain.no_runner"))
         return 1
@@ -1218,6 +1229,9 @@ def show_latest_console_log(cfg: ConsoleConfig) -> int:
 
 
 def clear_stale(cfg: ConsoleConfig) -> int:
+    shim_result = areaflow_shim.handle_task_loop_command("clear-stale", cfg.runtime.root_dir)
+    if shim_result is not None:
+        return shim_result
     if not confirm(cfg, tr(cfg, "clear_stale.confirm")):
         print(tr(cfg, "error.cancelled"))
         return 1
@@ -1226,6 +1240,9 @@ def clear_stale(cfg: ConsoleConfig) -> int:
 
 
 def reset_progress(cfg: ConsoleConfig) -> int:
+    shim_result = areaflow_shim.handle_task_loop_command("reset-progress", cfg.runtime.root_dir)
+    if shim_result is not None:
+        return shim_result
     print(tr(cfg, "reset.warning"))
     if env_value("RESET_CONFIRM") != "RESET" and (not sys.stdin.isatty() or input(tr(cfg, "reset.confirm")).strip() != "RESET"):
         print(tr(cfg, "error.cancelled"))

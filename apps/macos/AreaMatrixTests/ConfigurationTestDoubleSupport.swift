@@ -5,37 +5,36 @@ struct NoopConfigurationUpdater: CoreConfigurationUpdating {
     func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
 }
 
-actor RecordingConfigurationUpdater: CoreConfigurationUpdating {
+actor RecordingConfigurationUpdater:
+    CoreConfigurationUpdating,
+    RepoPathRequestRecording,
+    ConfigUpdateRecording {
     struct Request: Equatable {
         var repoPath: String
         var config: RepoConfigSnapshot
     }
 
-    private var results: [Swift.Result<Void, Error>]
-    private let repeatsSingleResult: Bool
+    private var resultQueue: VoidResultQueue
     private var recordedRequests: [Request] = []
 
     init(result: Swift.Result<Void, Error> = .success(())) {
-        results = [result]
-        repeatsSingleResult = true
+        resultQueue = VoidResultQueue(result: result)
     }
 
     init(results: [Swift.Result<Void, Error>]) {
-        self.results = results
-        repeatsSingleResult = false
+        resultQueue = VoidResultQueue(results: results)
     }
 
     init(failureThenSuccess error: Error) {
-        results = [.failure(error), .success(())]
-        repeatsSingleResult = false
+        resultQueue = VoidResultQueue(failureThenSuccess: error)
     }
 
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
         recordedRequests.append(Request(repoPath: repoPath, config: newConfig))
-        try nextResult().get()
+        try resultQueue.next().get()
     }
 
-    func assertRequests(
+    func assertConfigurationUpdateRequests(
         _ expectedRequests: [Request],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -43,20 +42,27 @@ actor RecordingConfigurationUpdater: CoreConfigurationUpdating {
         XCTAssertEqual(recordedRequests, expectedRequests, file: file, line: line)
     }
 
+    func assertNoConfigurationUpdateRequests(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertConfigurationUpdateRequests([], file: file, line: line)
+    }
+
+    var repoPathsForAssertions: [String] {
+        recordedRequests.map(\.repoPath)
+    }
+
+    var updatedConfigsForAssertions: [RepoConfigSnapshot] {
+        recordedRequests.map(\.config)
+    }
+
     func assertRequestCount(
         _ expectedCount: Int,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedRequests.count, expectedCount, file: file, line: line)
-    }
-
-    func assertRequestedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(recordedRequests.map(\.repoPath), expectedRepoPaths, file: file, line: line)
+        assertConfigUpdateCount(expectedCount, file: file, line: line)
     }
 
     func assertRequestedConfigValues<Value: Equatable>(
@@ -65,7 +71,7 @@ actor RecordingConfigurationUpdater: CoreConfigurationUpdating {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedRequests.map { $0.config[keyPath: keyPath] }, expectedValues, file: file, line: line)
+        assertConfigUpdateValues(keyPath, expectedValues, file: file, line: line)
     }
 
     func assertRequestedConfigValue<Value: Equatable>(
@@ -75,26 +81,64 @@ actor RecordingConfigurationUpdater: CoreConfigurationUpdating {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        guard recordedRequests.indices.contains(index) else {
-            XCTFail("Expected config request at index \(index), got \(recordedRequests.count)", file: file, line: line)
-            return
-        }
-
-        XCTAssertEqual(recordedRequests[index].config[keyPath: keyPath], expectedValue, file: file, line: line)
+        assertConfigUpdateValue(
+            at: index,
+            keyPath,
+            expectedValue,
+            failureSubject: "config request",
+            file: file,
+            line: line
+        )
     }
+}
 
-    func assertNoRequests(
+protocol ConfigUpdateRecording: Actor {
+    associatedtype ConfigSnapshot
+
+    var updatedConfigsForAssertions: [ConfigSnapshot] { get }
+}
+
+extension ConfigUpdateRecording {
+    func assertConfigUpdateCount(
+        _ expectedCount: Int,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(recordedRequests, [], file: file, line: line)
+        XCTAssertEqual(updatedConfigsForAssertions.count, expectedCount, file: file, line: line)
     }
 
-    private func nextResult() -> Swift.Result<Void, Error> {
-        if repeatsSingleResult {
-            return results.first ?? .success(())
+    func assertConfigUpdateValues<Value: Equatable>(
+        _ keyPath: KeyPath<ConfigSnapshot, Value>,
+        _ expectedValues: [Value],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(updatedConfigsForAssertions.map { $0[keyPath: keyPath] }, expectedValues, file: file, line: line)
+    }
+
+    func assertConfigUpdateValue<Value: Equatable>(
+        at index: Int,
+        _ keyPath: KeyPath<ConfigSnapshot, Value>,
+        _ expectedValue: Value,
+        failureSubject: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard updatedConfigsForAssertions.indices.contains(index) else {
+            XCTFail(
+                "Expected \(failureSubject) at index \(index), got \(updatedConfigsForAssertions.count)",
+                file: file,
+                line: line
+            )
+            return
         }
-        return results.isEmpty ? .success(()) : results.removeFirst()
+
+        XCTAssertEqual(
+            updatedConfigsForAssertions[index][keyPath: keyPath],
+            expectedValue,
+            file: file,
+            line: line
+        )
     }
 }
 
@@ -111,30 +155,24 @@ actor StaticConfigurationLoader: CoreConfigurationLoading {
 }
 
 actor RecordingConfigurationLoader: CoreConfigurationLoading {
-    private var results: [Result<RepoConfigSnapshot, Error>]
-    private let repeatsSingleResult: Bool
+    private var resultQueue: TestResultQueue<RepoConfigSnapshot>
     private var paths: [String] = []
 
     init(result: Result<RepoConfigSnapshot, Error>) {
-        results = [result]
-        repeatsSingleResult = true
+        resultQueue = TestResultQueue(result: result) {
+            .failure(CoreError.Internal(message: "missing config"))
+        }
     }
 
     init(results: [Result<RepoConfigSnapshot, Error>]) {
-        self.results = results
-        repeatsSingleResult = false
+        resultQueue = TestResultQueue(results: results) {
+            .failure(CoreError.Internal(message: "missing config"))
+        }
     }
 
     func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
         paths.append(repoPath)
-        guard let result = nextResult() else {
-            throw CoreError.Internal(message: "missing config")
-        }
-        return try result.get()
-    }
-
-    func requestedPaths() -> [String] {
-        paths
+        return try resultQueue.next()
     }
 
     func assertRequestedPaths(
@@ -143,12 +181,5 @@ actor RecordingConfigurationLoader: CoreConfigurationLoading {
         line: UInt = #line
     ) {
         XCTAssertEqual(paths, expectedPaths, file: file, line: line)
-    }
-
-    private func nextResult() -> Result<RepoConfigSnapshot, Error>? {
-        if repeatsSingleResult {
-            return results.first
-        }
-        return results.isEmpty ? nil : results.removeFirst()
     }
 }

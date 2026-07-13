@@ -84,7 +84,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         model.updatePreviewFilename("Invoice_2026Q1.pdf")
         await model.previewClassification()
 
-        await predictor.assertRequests([
+        await predictor.assertCategoryPredictionRequests([
             ClassifierSettingsSequencePredictor.Request(repoPath: "/tmp/repo", filename: "Invoice_2026Q1.pdf")
         ])
         XCTAssertEqual(model.previewResult?.category, "finance")
@@ -114,7 +114,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         model.updatePreviewFilename("Bad.pdf")
         await model.previewClassification()
 
-        await predictor.assertRequests([
+        await predictor.assertCategoryPredictionRequests([
             ClassifierSettingsSequencePredictor.Request(repoPath: "/tmp/repo", filename: "Bad.pdf")
         ])
         XCTAssertNil(model.previewResult)
@@ -152,7 +152,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             relativePath: ".areamatrix/classifier.yaml"
         )
-        opener.assertRequests([expected])
+        opener.assertOpenFileRequests([expected])
         XCTAssertNil(model.fileActionError)
     }
 
@@ -172,7 +172,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         XCTAssertFalse(passed)
         XCTAssertEqual(model.validationStatusLabel, "Failed")
         XCTAssertEqual(model.validationError?.message, "分类规则文件不存在")
-        await predictor.assertNoRequests()
+        await predictor.assertNoCategoryPredictionRequests()
     }
 
     @MainActor
@@ -203,7 +203,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         await model.revertToLastValid()
 
         await loader.assertRequestedPaths([repoURL.path])
-        await predictor.assertNoRequests()
+        await predictor.assertNoCategoryPredictionRequests()
         XCTAssertFalse(model.canRevertToLastValid)
         XCTAssertEqual(model.validationState, .idle)
     }

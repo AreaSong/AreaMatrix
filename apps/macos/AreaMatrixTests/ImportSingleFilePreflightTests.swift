@@ -26,7 +26,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(result.conflict, .none)
         XCTAssertNil(result.keepBothTargetRelativePath)
         XCTAssertNil(result.importBlockingReason())
-        await fileLoader.assertRecordedRequests([ImportSingleFileFileLoadRequest(
+        await fileLoader.assertRequestedFileLoads([ImportSingleFileFileLoadRequest(
             repoPath: importSingleFileRepoPath(),
             categories: [nil]
         )])
@@ -147,6 +147,6 @@ final class ImportSingleFilePreflightTests: XCTestCase {
 
         XCTAssertEqual(result.conflict, .iCloudPlaceholder(path: sourceURL.path))
         XCTAssertEqual(result.importBlockingReason(), "iCloud placeholder 需要下载后才能导入")
-        await fileLoader.assertRecordedRequests([])
+        await fileLoader.assertRequestedFileLoads([])
     }
 }

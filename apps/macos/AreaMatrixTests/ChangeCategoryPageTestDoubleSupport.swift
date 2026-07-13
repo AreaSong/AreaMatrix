@@ -56,16 +56,19 @@ actor ChangeCategoryRecordingMover: CoreFileCategoryMoving {
         return try correctionResult.get()
     }
 
-    func recordedRequests() -> [ChangeCategoryRequest] {
-        requests
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [ChangeCategoryRequest],
+    func assertCategoryChangeActions(
+        _ expectedActions: [ChangeCategoryRequest],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+        XCTAssertEqual(requests, expectedActions, file: file, line: line)
+    }
+
+    func assertNoCategoryChangeActions(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertCategoryChangeActions([], file: file, line: line)
     }
 }
 

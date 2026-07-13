@@ -18,8 +18,8 @@ final class UndoHistoryActionLogTests: XCTestCase {
         XCTAssertEqual(state.actions, [latest, older])
         XCTAssertEqual(UndoHistoryActionLog.action(in: state.actions, focusedActionID: older.actionID), older)
         XCTAssertNil(state.failure)
-        await undoStore.assertListRequests([importProgressRepoPath()])
-        await redoStore.assertListRequests([importProgressRepoPath()])
+        await undoStore.assertUndoActionListRequests([importProgressRepoPath()])
+        await redoStore.assertRedoActionListRequests([importProgressRepoPath()])
     }
 
     @MainActor
@@ -42,8 +42,8 @@ final class UndoHistoryActionLogTests: XCTestCase {
 
         XCTAssertEqual(state.actions, [.undoHistoryExecutedTrashMove(), older])
         XCTAssertEqual(state.snapshot.redoActions, [redo])
-        await undoStore.assertUndoRequests(["\(importProgressRepoPath())|\(latest.actionID)"])
-        await undoStore.assertListRequests([importProgressRepoPath()])
+        await undoStore.assertUndoActionRequests(["\(importProgressRepoPath())|\(latest.actionID)"])
+        await undoStore.assertUndoActionListRequests([importProgressRepoPath()])
     }
 
     @MainActor
@@ -67,7 +67,7 @@ final class UndoHistoryActionLogTests: XCTestCase {
         }
         XCTAssertEqual(mapping.kind, .db)
         XCTAssertEqual(previous.undoActions, [latest])
-        await undoStore.assertListRequests([importProgressRepoPath()])
+        await undoStore.assertUndoActionListRequests([importProgressRepoPath()])
     }
 
     @MainActor
@@ -85,7 +85,7 @@ final class UndoHistoryActionLogTests: XCTestCase {
 
         XCTAssertEqual(state.actions, [blocked])
         XCTAssertEqual(state.failure?.userMessage, "External change prevents undo.")
-        await undoStore.assertUndoRequests([])
+        await undoStore.assertUndoActionRequests([])
     }
 
     @MainActor

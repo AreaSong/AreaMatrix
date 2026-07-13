@@ -62,9 +62,9 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
         XCTAssertNil(model.tagFilterRegistryState.errorMapping)
         XCTAssertEqual(model.smartListFilterDraft?.filters, filters)
         XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 42, name: "Tagged"))
-        await tagStore.assertListRequestFileIDs([detail.id, detail.id, detail.id])
-        await tagStore.assertAddRequests([])
-        await tagStore.assertRemoveRequests([])
+        await tagStore.assertDetailTagListRequestFileIDs([detail.id, detail.id, detail.id])
+        await tagStore.assertDetailTagAddRequests([])
+        await tagStore.assertDetailTagRemoveRequests([])
     }
 
     @MainActor
@@ -91,11 +91,11 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
             .sidebar("tag-filters-sidebar-tags-filter")
         )
 
-        await tagStore.assertListRequests([
+        await tagStore.assertDetailTagListRequests([
             DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)
         ])
-        await tagStore.assertAddRequests([])
-        await tagStore.assertRemoveRequests([])
+        await tagStore.assertDetailTagAddRequests([])
+        await tagStore.assertDetailTagRemoveRequests([])
     }
 }
 

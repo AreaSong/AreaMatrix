@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 from typing import Sequence
 
+import scripts.areaflow_shim as areaflow_shim
 from .backlog import run_backlog_command
 from .build import run_bindings_update, run_core_build
 from .changes import run_changes_doctor, run_changes_generate, run_changes_preview
@@ -666,6 +668,7 @@ def _build_parser() -> argparse.ArgumentParser:
     workflow_sub = workflow.add_subparsers(dest="workflow_command", required=True)
     workflow_sub.add_parser("doctor", help="Validate versioned workflow structure and gates")
     workflow_sub.add_parser("status", help="Show versioned workflow status and promotion gates")
+    workflow_sub.add_parser("open", help="Show the AreaFlow workflow URL from the read-only shim")
     workflow_sub.add_parser("check-template", help=f"Run the full managed template reference gate; defaults to {DEFAULT_VERSION}")
     workflow_init = workflow_sub.add_parser("init", help="Render or write a new v* workflow version skeleton")
     workflow_init.add_argument("--version", required=True, help="Workflow version to initialize, such as v2")
@@ -775,7 +778,8 @@ def _normalize_codex_os_common_args(args: argparse.Namespace) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = _build_parser()
-    args = parser.parse_args(list(argv) if argv is not None else None)
+    raw_argv = list(argv) if argv is not None else sys.argv[1:]
+    args = parser.parse_args(raw_argv)
     _normalize_codex_os_common_args(args)
     root = project_root()
     try:
@@ -868,6 +872,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 applications_dir=args.applications_dir,
                 install_confirm=args.install_confirm,
             )
+        if args.command == "changes":
+            shim_args = raw_argv[1:] if raw_argv[:1] == ["changes"] else []
+            shim_result = areaflow_shim.handle_changes_command(args.changes_command, shim_args, root)
+            if shim_result is not None:
+                return shim_result
         if args.command == "changes" and args.changes_command == "doctor":
             return run_changes_doctor(root, args)
         if args.command == "changes" and args.changes_command == "preview":
@@ -880,6 +889,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_tasks_command(root, args)
         if args.command == "codex-os":
             return run_codex_os_command(root, args)
+        if args.command == "workflow":
+            shim_args = raw_argv[1:] if raw_argv[:1] == ["workflow"] else []
+            shim_result = areaflow_shim.handle_workflow_command(args.workflow_command, shim_args, root)
+            if shim_result is not None:
+                return shim_result
         if args.command == "workflow" and args.workflow_command == "doctor":
             return run_workflow_doctor(root, args)
         if args.command == "workflow" and args.workflow_command == "status":

@@ -76,7 +76,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             return XCTFail("expected failed repository validation")
         }
 
-        await errorMapper.assertRecordedErrors([
+        await errorMapper.assertMappedCoreErrors([
             CoreError.ICloudPlaceholder(path: "/tmp/repo/docs/report.pdf.icloud")
         ])
         XCTAssertEqual(failure, mapping)
@@ -99,7 +99,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
 
         await model.validateRepositoryPath()
 
-        await errorMapper.assertRecordedErrors([CoreError.Internal(message: "stale conflict context")])
+        await errorMapper.assertMappedCoreErrors([CoreError.Internal(message: "stale conflict context")])
         guard case let .failed(failure) = model.repositoryValidationState else {
             return XCTFail("expected failed repository validation")
         }
@@ -209,15 +209,12 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             "Conflict detail failed: Conflict",
             "Retry"
         ])
-        let previewRequests = await reviewer.recordedPreviewRequests()
-        let resolveRequests = await reviewer.recordedResolveRequests()
-
-        XCTAssertEqual(previewRequests, [ICloudConflictReviewer.PreviewRequest(
+        await reviewer.assertICloudConflictPreviewRequests([ICloudConflictReviewer.PreviewRequest(
             repoPath: "/tmp/repo",
             conflictID: "stale"
         )])
-        XCTAssertEqual(resolveRequests, [])
-        await mapper.assertRecordedErrors([CoreError.Conflict(path: "stale conflict id")])
+        await reviewer.assertICloudConflictResolutionRequests([])
+        await mapper.assertMappedCoreErrors([CoreError.Conflict(path: "stale conflict id")])
         XCTAssertFalse(model.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
     }
 
@@ -242,9 +239,8 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         await model.validateRepositoryPath()
         await model.loadPreview()
         let result = await model.resolveConflict(strategy: .keepBoth)
-        let resolveRequests = await reviewer.recordedResolveRequests()
 
-        XCTAssertEqual(resolveRequests, [ICloudConflictReviewer.ResolveRequest(
+        await reviewer.assertICloudConflictResolutionRequests([ICloudConflictReviewer.ResolveRequest(
             repoPath: "/tmp/repo",
             conflictID: "conflict-1",
             strategy: .keepBoth

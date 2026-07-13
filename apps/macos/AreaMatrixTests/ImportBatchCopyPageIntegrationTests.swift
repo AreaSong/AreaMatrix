@@ -184,7 +184,7 @@ final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
         let renamedOutcome = await model.importReadyFiles(selectedDestination: .autoClassify)
         XCTAssertEqual(renamedOutcome?.succeededEntries.count, 2)
 
-        await importer.assertLastRecordedRequest(importBatchExpectedContractRequest(
+        await importer.assertLastImportedBatchFile(importBatchExpectedContractRequest(
             overrideFilename: "合同-renamed.pdf",
             duplicateStrategy: .keepBoth
         ))
@@ -217,7 +217,7 @@ final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
 
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
-        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest(duplicateStrategy: .overwrite)])
+        await importer.assertImportedBatchFiles([importBatchExpectedInvoiceRequest(duplicateStrategy: .overwrite)])
     }
 
     @MainActor
@@ -241,7 +241,7 @@ final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
 
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
-        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest(duplicateStrategy: .keepBoth)])
+        await importer.assertImportedBatchFiles([importBatchExpectedInvoiceRequest(duplicateStrategy: .keepBoth)])
     }
 
     @MainActor
@@ -266,7 +266,7 @@ final class ImportBatchCopyProgressIntegrationTests: XCTestCase {
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
 
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
-        await importer.assertRecordedRequests([importBatchExpectedContractRequest(
+        await importer.assertImportedBatchFiles([importBatchExpectedContractRequest(
             overrideFilename: "合同-renamed.pdf",
             duplicateStrategy: .keepBoth
         )])

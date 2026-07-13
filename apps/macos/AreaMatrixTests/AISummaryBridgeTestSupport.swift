@@ -9,12 +9,14 @@ enum AISummaryIntegrationSummaryEvent: Equatable {
 }
 
 actor AISummaryIntegrationSummaryBridge: CoreAISummaryManaging {
-    private var drafts: [AiSummaryDraft]
+    private var draftQueue: TestResultQueue<AiSummaryDraft>
     private let savedSummary: AISummarySavedSnapshot?
     private var recorded: [AISummaryIntegrationSummaryEvent] = []
 
     init(drafts: [AiSummaryDraft], savedSummary: AISummarySavedSnapshot? = nil) {
-        self.drafts = drafts
+        draftQueue = TestResultQueue(results: drafts.map { .success($0) }) {
+            .failure(CoreError.Internal(message: "missing ai-summary draft"))
+        }
         self.savedSummary = savedSummary
     }
 
@@ -28,8 +30,7 @@ actor AISummaryIntegrationSummaryBridge: CoreAISummaryManaging {
             regenerate: request.regenerateExisting,
             privacyPolicyRef: request.privacyPolicyRef
         ))
-        guard !drafts.isEmpty else { throw CoreError.Internal(message: "missing ai-summary draft") }
-        return drafts.removeFirst()
+        return try draftQueue.next()
     }
 
     func saveAISummary(repoPath _: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport {
@@ -95,8 +96,12 @@ actor AISummaryIntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
         return report
     }
 
-    func routes() -> [AiPrivacyEvaluationRoute] {
-        recordedRoutes
+    func assertEvaluatedRoutes(
+        _ expectedRoutes: [AiPrivacyEvaluationRoute],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(recordedRoutes, expectedRoutes, file: file, line: line)
     }
 }
 

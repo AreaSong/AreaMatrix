@@ -33,7 +33,7 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
         let indexDatabasePath = repoURL.appendingPathComponent(".areamatrix/index.db").path
         XCTAssertTrue(FileManager.default.fileExists(atPath: indexDatabasePath))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
-        XCTAssertEqual(writer.savedRepoPaths, [repoURL.path])
+        await writer.assertSavedRepoPaths([repoURL.path])
         XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
             repoPath: repoURL.path,
             mode: .createEmpty,
@@ -57,10 +57,9 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
-        let requestedScanPaths = await scanReader.requestedRepoPaths()
 
         XCTAssertTrue(model.canContinueFromValidatePath)
-        XCTAssertEqual(requestedScanPaths, [])
+        await scanReader.assertRequestedRepoPaths([])
         XCTAssertEqual(model.validatePathAction, .adoptExistingRequested(validation, scanSession: nil))
         XCTAssertEqual(model.route, .confirmRepositoryInitialization(RepositoryInitializationDraft(
             validation: validation,
@@ -95,11 +94,10 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
-        let requestedRepoPaths = await opener.requestedRepoPaths()
 
         XCTAssertEqual(model.existingRepositoryMetadata?.schemaVersion, 1)
-        XCTAssertEqual(requestedRepoPaths, ["/tmp/repo"])
-        XCTAssertEqual(writer.savedRepoPaths, ["/tmp/repo"])
+        await opener.assertRequestedRepoPaths(["/tmp/repo"])
+        await writer.assertSavedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.route, .mainList(opening))
     }
 
@@ -143,9 +141,8 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
-        let requestedScanPaths = await scanReader.requestedRepoPaths()
 
-        XCTAssertEqual(requestedScanPaths, ["/tmp/repo"])
+        await scanReader.assertRequestedRepoPaths(["/tmp/repo"])
         XCTAssertEqual(model.latestScanSession, scanSession)
         XCTAssertEqual(
             model.route,
@@ -241,7 +238,7 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
         model.returnFromValidatePath()
 
         XCTAssertEqual(model.route, .settingsRepository)
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        await writer.assertNoSavedRepoPaths()
     }
 
     @MainActor
@@ -266,7 +263,7 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
         XCTAssertEqual(model.route, .welcome)
         XCTAssertNil(model.repositoryPathValidation)
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        await writer.assertNoSavedRepoPaths()
     }
 }
 

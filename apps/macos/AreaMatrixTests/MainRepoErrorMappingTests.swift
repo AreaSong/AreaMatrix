@@ -120,7 +120,7 @@ final class MainRepoErrorRouteTests: XCTestCase {
 
         XCTAssertEqual(route.repoPath, "/tmp/repo")
         XCTAssertEqual(route.mapping, mapping)
-        await errorMapper.assertRecordedErrors([error])
+        await errorMapper.assertMappedCoreErrors([error])
         XCTAssertEqual(
             RepositoryErrorPresentation.mainRepo(mapping: route.mapping).primaryAction,
             .reconnectFolder
@@ -305,10 +305,10 @@ final class MainRepoReconnectFolderTests: XCTestCase {
 
         await model.reconnectMainRepositoryFolder(from: "/tmp/repo")
 
-        XCTAssertEqual(picker.chooseCount, 1)
+        picker.assertChooseCount(1)
         await initializedValidator.assertRequestedRepoPaths([selectedPath])
         await opener.assertRequestedConfiguredRepoPaths([selectedPath])
-        XCTAssertEqual(writer.savedRepoPaths, [selectedPath])
+        writer.assertSavedRepoPaths([selectedPath])
         XCTAssertEqual(model.route, OnboardingModel.Route.mainList(opening))
     }
 

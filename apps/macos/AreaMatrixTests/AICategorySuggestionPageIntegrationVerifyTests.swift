@@ -30,7 +30,7 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
         ))
 
         XCTAssertTrue(didApply)
-        await mover.assertRequests([
+        await mover.assertCategorySuggestionMoveRequests([
             .preview(fileID: original.id, targetCategory: "finance/invoices"),
             .correction(fileID: original.id, targetCategory: "finance/invoices", moveFile: true, remember: false)
         ])
@@ -156,7 +156,7 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
         await model.load()
 
         XCTAssertEqual(model.record, record)
-        await lister.assertFirstRequest(feature: .classification)
+        await lister.assertFirstAICallLogListRequest(feature: .classification)
     }
 }
 
@@ -207,7 +207,7 @@ private actor AICategorySuggestionMover: CoreFileCategoryMoving {
         return try correctionResult.get()
     }
 
-    func assertRequests(
+    func assertCategorySuggestionMoveRequests(
         _ expectedRequests: [AICategorySuggestionCategoryMoveRequest],
         file: StaticString = #filePath,
         line: UInt = #line

@@ -20,16 +20,19 @@ actor RenameRecordingRenamer: CoreFileRenaming {
         return try result.get()
     }
 
-    func recordedRequests() -> [RenameRequest] {
-        requests
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [RenameRequest],
+    func assertRenamedFiles(
+        _ expectedRenames: [RenameRequest],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
+        XCTAssertEqual(requests, expectedRenames, file: file, line: line)
+    }
+
+    func assertNoRenamedFiles(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertRenamedFiles([], file: file, line: line)
     }
 }
 
@@ -81,7 +84,7 @@ actor BatchRenameRecordingRenamer: CoreBatchRenaming {
         return try applyResult.get()
     }
 
-    func assertPreviewRequests(
+    func assertBatchRenamePreviewRequests(
         _ expectedRequests: [BatchRenamePreviewRequest],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -89,7 +92,7 @@ actor BatchRenameRecordingRenamer: CoreBatchRenaming {
         XCTAssertEqual(previewRequests, expectedRequests, file: file, line: line)
     }
 
-    func assertApplyRequests(
+    func assertBatchRenameApplyRequests(
         _ expectedRequests: [BatchRenameApplyRequest],
         file: StaticString = #filePath,
         line: UInt = #line

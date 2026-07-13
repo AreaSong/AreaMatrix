@@ -8,16 +8,14 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         let empty = await openConfiguredRepository(opening: emptyOpening)
 
         XCTAssertEqual(empty.route, .mainEmpty(emptyOpening))
-        XCTAssertEqual(empty.openedRepoPaths, ["/tmp/empty-repo"])
-        XCTAssertEqual(empty.savedRepoPaths, [])
-        XCTAssertEqual(empty.successfulRepoOpenPaths, ["/tmp/empty-repo"])
+        empty.assertNoSavedRepoPaths()
+        empty.assertSuccessfulRepoOpenPaths(["/tmp/empty-repo"])
 
         let populatedOpening = RepositoryOpeningResult.shellFixture(repoPath: "/tmp/list-repo", fileCount: 4)
         let populated = await openConfiguredRepository(opening: populatedOpening)
 
         XCTAssertEqual(populated.route, .mainList(populatedOpening))
-        XCTAssertEqual(populated.openedRepoPaths, ["/tmp/list-repo"])
-        XCTAssertEqual(populated.successfulRepoOpenPaths, ["/tmp/list-repo"])
+        populated.assertSuccessfulRepoOpenPaths(["/tmp/list-repo"])
     }
 
     @MainActor
@@ -43,7 +41,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         guard let state = requireMainLoadingState(model, message: "expected main-loading route") else { return }
 
         await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        writer.assertNoSavedRepoPaths()
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
         XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
         XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
@@ -68,8 +66,8 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         await model.bootstrapIfNeeded()
 
         XCTAssertEqual(model.route, .mainRepoError("/tmp/repo", mapping))
-        XCTAssertEqual(writer.savedRepoPaths, [])
-        await mapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
+        writer.assertNoSavedRepoPaths()
+        await mapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(RepositoryErrorPresentation.mainRepo(mapping: mapping).primaryAction, .reconnectFolder)
     }
 
@@ -108,11 +106,10 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         )
 
         await model.bootstrapIfNeeded()
-        return await MainWindowIntegrationOpenResult(
+        await opener.assertRequestedConfiguredRepoPaths([opening.config.repoPath])
+        return MainWindowIntegrationOpenResult(
             route: model.route,
-            openedRepoPaths: opener.requestedConfiguredRepoPaths(),
-            savedRepoPaths: writer.savedRepoPaths,
-            successfulRepoOpenPaths: writer.successfulRepoOpenPaths
+            writer: writer
         )
     }
 
@@ -139,7 +136,28 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
 
 private struct MainWindowIntegrationOpenResult {
     var route: OnboardingModel.Route
-    var openedRepoPaths: [String]
-    var savedRepoPaths: [String]
-    var successfulRepoOpenPaths: [String]
+    let writer: ShellRecordingSettingsWriter
+
+    func assertSavedRepoPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        writer.assertSavedRepoPaths(expectedRepoPaths, file: file, line: line)
+    }
+
+    func assertNoSavedRepoPaths(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        writer.assertNoSavedRepoPaths(file: file, line: line)
+    }
+
+    func assertSuccessfulRepoOpenPaths(
+        _ expectedRepoPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        writer.assertSuccessfulRepoOpenPaths(expectedRepoPaths, file: file, line: line)
+    }
 }

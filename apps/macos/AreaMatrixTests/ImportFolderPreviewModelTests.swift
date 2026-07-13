@@ -26,7 +26,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
 
         await model.load(request: importFolderFolderRequest(rootURL: rootURL))
 
-        await predictor.assertRecordedRequestFilenames(
+        await predictor.assertCategoryPredictionFilenames(
             ["Invoice_2026Q1.pdf", "合同.pdf"],
             repoPath: importBatchRepoPath(),
             requestCount: 2
@@ -66,7 +66,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
 
         await model.load(request: importFolderFolderRequest(rootURL: rootURL))
 
-        await predictor.assertRecordedRequests([
+        await predictor.assertCategoryPredictionRequests([
             ImportFolderPredictRequest(repoPath: importBatchRepoPath(), filename: "Report.pdf")
         ])
         XCTAssertEqual(model.rows.map(\.originalName), ["Report.pdf"])
@@ -109,7 +109,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
 
         await model.load(request: importFolderFolderRequest(rootURL: importBatchFixtureRootURL()))
 
-        await predictor.assertRecordedRequests([])
+        await predictor.assertCategoryPredictionRequests([])
         XCTAssertEqual(model.iCloudPlaceholderCount, 1)
         assertImportRowStatusTags(model.rows, ["ICLOUD"])
     }

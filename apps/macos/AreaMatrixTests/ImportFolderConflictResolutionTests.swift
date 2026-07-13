@@ -22,8 +22,8 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         _ = await model.applyImportConflictBatch(replaceConfirmed: true)
 
         XCTAssertEqual(model.conflictBatchUndoState, .ready(action))
-        await undoStore.assertListRequests(["/tmp/repo"])
-        await undoStore.assertUndoRequests([])
+        await undoStore.assertUndoActionListRequests(["/tmp/repo"])
+        await undoStore.assertUndoActionRequests([])
     }
 
     @MainActor
@@ -73,7 +73,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         await model.undoImportConflictBatchAction()
 
         XCTAssertEqual(model.conflictBatchUndoState, .undone(result))
-        await undoStore.assertUndoRequests(["/tmp/repo|undo-import-conflict-batch"])
+        await undoStore.assertUndoActionRequests(["/tmp/repo|undo-import-conflict-batch"])
     }
 
     func testImportConflictBatchUndoActionLogCoreFallbackUsesAppSemanticFailureSnapshot() {
@@ -110,11 +110,10 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
             batcher: batcher,
             errorMapper: CoreBridge()
         )
-        let applyRequests = await batcher.applyRequests()
 
         XCTAssertNil(result.report)
         XCTAssertEqual(result.failure, .conflict(rawContext: "Select at least one conflict."))
-        XCTAssertEqual(applyRequests, [])
+        await batcher.assertNoImportConflictApplyRequests()
     }
 
     @MainActor
@@ -128,7 +127,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
 
         await model.load(request: importFolderFolderRequest(rootURL: fixture.rootURL))
 
-        await fixture.prechecker.assertRecordedPrecheckDestinations([.autoClassify])
+        await fixture.prechecker.assertImportFolderPrecheckDestinations([.autoClassify])
         assertImportRowStatusTags(model.rows, ["DUP", "NAME", "BLOCKED"])
         XCTAssertEqual(model.duplicateCount, 1)
         XCTAssertEqual(model.nameConflictCount, 1)
@@ -155,7 +154,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         model.renameIncomingFile(for: fixture.nameURL.path, to: "renamed-name.pdf")
         let outcome = await model.importReadyFiles()
 
-        await importer.assertRecordedRequests([
+        await importer.assertImportedBatchFiles([
             ImportBatchBatchImportRequest(
                 destination: .autoClassify,
                 suggestedCategory: "docs",
@@ -206,7 +205,7 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
         )
         let outcome = await model.importReadyFiles()
 
-        await importer.assertRecordedRequests([importFolderFolderOverwriteRequest()])
+        await importer.assertImportedBatchFiles([importFolderFolderOverwriteRequest()])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         assertImportRowStatusTags(model.rows, ["IMPORTED"])
     }

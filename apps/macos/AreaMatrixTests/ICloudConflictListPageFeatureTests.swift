@@ -35,7 +35,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        await lister.assertRecordedRequests(["/tmp/iCloudConflictList-repo"])
+        await lister.assertListedICloudConflictRepos(["/tmp/iCloudConflictList-repo"])
         XCTAssertEqual(model.state, .loaded([conflict]))
         XCTAssertEqual(model.conflicts, [conflict])
         XCTAssertFalse(model.isLoading)
@@ -57,7 +57,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        await mapper.assertRecordedErrors([
+        await mapper.assertMappedCoreErrors([
             CoreError.ICloudPlaceholder(path: "/tmp/iCloudConflictList-repo/docs/report.pdf.icloud")
         ])
         assertTestMirrorDescription(of: ICloudConflictListView(
@@ -135,7 +135,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         model.revealConflict(conflict)
 
         finder.assertRepoPaths(["/tmp/iCloudConflictList-repo"])
-        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+        revealer.assertRevealRequests([RecordingRepositoryFileRevealer.Request(
             repoPath: "/tmp/iCloudConflictList-repo",
             relativePath: "docs/report (Alice's conflicted copy).pdf"
         )])
@@ -219,7 +219,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         await sheetModel.validateRepositoryPath()
         await sheetModel.loadPreview()
 
-        await validator.assertRecordedRequests(["/tmp/iCloudConflictList-repo"])
+        await validator.assertRequestedRepoPaths(["/tmp/iCloudConflictList-repo"])
         XCTAssertEqual(sheetModel.previewState.preview?.conflictID, route.conflict.conflictID)
         XCTAssertEqual(sheetModel.previewVersions.map(\.previewStatus), [.available, .available])
         XCTAssertTrue(sheetModel.canApply(strategy: .keepBoth, isTrashAvailable: true, didConfirmSingleVersion: false))
@@ -255,7 +255,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        await lister.assertRecordedRequests(["/tmp/iCloudConflictVisual-repo"])
+        await lister.assertListedICloudConflictRepos(["/tmp/iCloudConflictVisual-repo"])
         XCTAssertEqual(model.state, .loaded([conflict]))
         assertTestMirrorDescription(of: ICloudConflictListView(
             model: model,
@@ -306,11 +306,7 @@ private actor ICloudConflictLister: CoreICloudConflictListing {
         return try result.get()
     }
 
-    func recordedRequests() -> [String] {
-        requests
-    }
-
-    func assertRecordedRequests(
+    func assertListedICloudConflictRepos(
         _ expectedRequests: [String],
         file: StaticString = #filePath,
         line: UInt = #line

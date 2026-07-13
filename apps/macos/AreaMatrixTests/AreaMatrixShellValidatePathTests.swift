@@ -145,7 +145,7 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         XCTAssertEqual(route.repoPath, "/tmp/repo")
         XCTAssertEqual(route.mapping?.kind, .db)
         await opener.assertRequestedConfiguredRepoPaths(["/tmp/repo"])
-        XCTAssertEqual(writer.savedRepoPaths, [])
+        writer.assertNoSavedRepoPaths()
     }
 
     @MainActor
@@ -167,21 +167,24 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         model.copyMainListPath(opening: opening, relativePath: "docs/a.pdf")
         model.copyMainListPaths(opening: opening, relativePaths: ["docs/a.pdf", "docs/b.pdf"])
 
-        revealer.assertRequests([RecordingRepositoryFileRevealer.Request(
+        revealer.assertRevealRequests([RecordingRepositoryFileRevealer.Request(
             repoPath: "/tmp/repo",
             relativePath: "docs/a.pdf"
         )])
-        opener.assertRequests([RecordingRepositoryFileOpener.Request(
+        opener.assertOpenFileRequests([RecordingRepositoryFileOpener.Request(
             repoPath: "/tmp/repo",
             relativePath: "docs/a.pdf.md"
         )])
-        copier.assertRequests([ShellRecordingPathCopier.Request(repoPath: "/tmp/repo", relativePath: "docs/a.pdf")])
+        copier.assertCopiedPathRequests([ShellRecordingPathCopier.Request(
+            repoPath: "/tmp/repo",
+            relativePath: "docs/a.pdf"
+        )])
         copier.assertMultiPathRequests([ShellRecordingPathCopier.MultiPathRequest(
             repoPath: "/tmp/repo",
             relativePaths: ["docs/a.pdf", "docs/b.pdf"]
         )])
         XCTAssertEqual(model.toastMessage, "2 paths copied.")
-        XCTAssertEqual(announcer.announcements, ["Path copied.", "2 paths copied."])
+        announcer.assertAnnouncements(["Path copied.", "2 paths copied."])
     }
 
     @MainActor

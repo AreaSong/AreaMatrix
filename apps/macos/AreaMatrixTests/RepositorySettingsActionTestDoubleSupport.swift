@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import XCTest
 
 struct NoopRepositoryIgnoreRulesManager: RepositoryIgnoreRulesManaging {
     @MainActor
@@ -25,8 +26,8 @@ final class RecordingRepositoryIgnoreRulesManager: RepositoryIgnoreRulesManaging
 
     private let openScenario: OpenScenario
     private var openAttempts = 0
-    private(set) var openedPaths: [String] = []
-    private(set) var createdPaths: [String] = []
+    private var openedPaths: [String] = []
+    private var createdPaths: [String] = []
 
     init(openScenario: OpenScenario = .success) {
         self.openScenario = openScenario
@@ -43,5 +44,21 @@ final class RecordingRepositoryIgnoreRulesManager: RepositoryIgnoreRulesManaging
 
     func createDefaultIgnoreRules(repoPath: String) throws {
         createdPaths.append(repoPath)
+    }
+
+    func assertOpenedPaths(
+        _ expectedPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(openedPaths, expectedPaths, file: file, line: line)
+    }
+
+    func assertCreatedPaths(
+        _ expectedPaths: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(createdPaths, expectedPaths, file: file, line: line)
     }
 }

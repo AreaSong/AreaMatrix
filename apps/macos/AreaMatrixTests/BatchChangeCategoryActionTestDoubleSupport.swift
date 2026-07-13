@@ -3,17 +3,63 @@ import XCTest
 
 typealias BatchChangeCategoryRecordingUndoStore = LenientUndoActionRecordingTestStore
 
+enum BatchCategoryActionCall: Equatable {
+    case preview(
+        repoPath: String,
+        fileIDs: [Int64],
+        targetCategory: String,
+        moveRepoOwnedFiles: Bool
+    )
+    case apply(
+        repoPath: String,
+        fileIDs: [Int64],
+        targetCategory: String,
+        moveRepoOwnedFiles: Bool,
+        previewToken: String
+    )
+}
+
+func batchCategoryPreviewCall(
+    fileIDs: [Int64],
+    targetCategory: String = "finance",
+    moveRepoOwnedFiles: Bool = true
+) -> BatchCategoryActionCall {
+    .preview(
+        repoPath: batchChangeCategoryRepoPath(),
+        fileIDs: fileIDs,
+        targetCategory: targetCategory,
+        moveRepoOwnedFiles: moveRepoOwnedFiles
+    )
+}
+
+func batchCategoryApplyCall(
+    fileIDs: [Int64],
+    targetCategory: String = "finance",
+    moveRepoOwnedFiles: Bool = true,
+    previewToken: String
+) -> BatchCategoryActionCall {
+    .apply(
+        repoPath: batchChangeCategoryRepoPath(),
+        fileIDs: fileIDs,
+        targetCategory: targetCategory,
+        moveRepoOwnedFiles: moveRepoOwnedFiles,
+        previewToken: previewToken
+    )
+}
+
 actor BatchCategoryChanger: CoreBatchCategoryChanging {
     enum Step {
         case preview(Swift.Result<BatchCategoryPreviewReportSnapshot, Error>)
         case apply(Swift.Result<BatchCategoryChangeReportSnapshot, Error>)
     }
 
-    private var results: [Step]
-    private var requests: [String] = []
+    private var stepQueue: TestStepQueue<Step>
+    private var calls: [BatchCategoryActionCall] = []
 
     init(results: [Step]) {
-        self.results = results
+        stepQueue = TestStepQueue(steps: results) {
+            throw CoreError.Internal(message: "Expected batch category action step")
+        }
     }
 
     func previewBatchMoveToCategory(
@@ -22,14 +68,16 @@ actor BatchCategoryChanger: CoreBatchCategoryChanging {
         targetCategory: String,
         moveRepoOwnedFiles: Bool
     ) async throws -> BatchCategoryPreviewReportSnapshot {
-        requests.append(requestLabel(
-            action: "preview",
+        calls.append(.preview(
             repoPath: repoPath,
             fileIDs: fileIDs,
             targetCategory: targetCategory,
             moveRepoOwnedFiles: moveRepoOwnedFiles
         ))
-        guard !results.isEmpty, case let .preview(result) = results.removeFirst() else {
+        let step = try stepQueue.next {
+            throw CoreError.Internal(message: "Expected preview_batch_move_to_category")
+        }
+        guard case let .preview(result) = step else {
             throw CoreError.Internal(message: "Expected preview_batch_move_to_category")
         }
         return try result.get()
@@ -42,41 +90,27 @@ actor BatchCategoryChanger: CoreBatchCategoryChanging {
         moveRepoOwnedFiles: Bool,
         previewToken: String
     ) async throws -> BatchCategoryChangeReportSnapshot {
-        requests.append(requestLabel(
-            action: "apply",
+        calls.append(.apply(
             repoPath: repoPath,
             fileIDs: fileIDs,
             targetCategory: targetCategory,
             moveRepoOwnedFiles: moveRepoOwnedFiles,
             previewToken: previewToken
         ))
-        guard !results.isEmpty, case let .apply(result) = results.removeFirst() else {
+        let step = try stepQueue.next {
+            throw CoreError.Internal(message: "Expected batch_move_to_category")
+        }
+        guard case let .apply(result) = step else {
             throw CoreError.Internal(message: "Expected batch_move_to_category")
         }
         return try result.get()
     }
 
-    func recordedRequests() -> [String] {
-        requests
-    }
-
-    func assertRecordedRequests(
-        _ expectedRequests: [String],
+    func assertCategoryChangeActions(
+        _ expectedCalls: [BatchCategoryActionCall],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(requests, expectedRequests, file: file, line: line)
-    }
-
-    private func requestLabel(
-        action: String,
-        repoPath: String,
-        fileIDs: [Int64],
-        targetCategory: String,
-        moveRepoOwnedFiles: Bool,
-        previewToken: String? = nil
-    ) -> String {
-        let base = "\(action)|\(repoPath)|\(fileIDs.map(String.init).joined(separator: ","))"
-        return "\(base)|\(targetCategory)|\(moveRepoOwnedFiles)\(previewToken.map { "|\($0)" } ?? "")"
+        XCTAssertEqual(calls, expectedCalls, file: file, line: line)
     }
 }

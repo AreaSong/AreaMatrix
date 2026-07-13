@@ -17,7 +17,7 @@ final class ValidatePathErrorMappingTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        await errorMapper.assertRecordedErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
+        await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.repositoryPathError, "无访问权限")
         XCTAssertEqual(model.repositoryPathErrorMapping, mapping)
         XCTAssertFalse(model.canContinueFromValidatePath)
@@ -45,7 +45,7 @@ final class ValidatePathErrorMappingTests: XCTestCase {
         XCTAssertEqual(mappedError, mapping)
         XCTAssertEqual(knownMapping, mapping)
         XCTAssertEqual(error.localizedDescription, "app-semantic-path")
-        await errorMapper.assertRecordedErrors([])
+        await errorMapper.assertMappedCoreErrors([])
         XCTAssertNil(CoreErrorRawContextSnapshot(error))
     }
 
@@ -268,7 +268,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
             model.aiTagSuggestionState.rejectedFeedback?.message,
             "2 suggestions rejected. Feedback recorded for this review."
         )
-        await bridge.assertNoApplyRequests()
+        await bridge.assertNoAITagSuggestionApplyRequests()
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), [])
     }
 
@@ -292,7 +292,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         await model.loadSelectedFileAITagSuggestions()
 
         await settings.assertRequestedRepoPaths(["/tmp/repo"])
-        await bridge.assertNoRequests()
+        await bridge.assertNoAITagSuggestionRequests()
         await privacy.assertLoadCount(0)
         await privacy.assertNoEvaluations()
         XCTAssertEqual(model.aiTagSuggestionState.report?.status, .skipped)
@@ -320,7 +320,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         await model.selectFiles([file.id])
         await model.loadSelectedFileAITagSuggestions()
 
-        await bridge.assertNoRequests()
+        await bridge.assertNoAITagSuggestionRequests()
         await privacy.assertLoadCount(0)
         await privacy.assertNoEvaluations()
         XCTAssertEqual(model.aiTagSuggestionState.report?.status, .skipped)

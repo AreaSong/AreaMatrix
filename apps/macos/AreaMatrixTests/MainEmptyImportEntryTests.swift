@@ -83,7 +83,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
 
         XCTAssertNil(model.pendingImportEntry)
         XCTAssertEqual(model.toastMessage, "Cannot import these items")
-        XCTAssertEqual(accessibilityAnnouncer.announcements, ["Cannot import these items"])
+        accessibilityAnnouncer.assertAnnouncements(["Cannot import these items"])
     }
 
     func testDropFileURLItemDecoderAcceptsFileURLDataAndRejectsRemoteURL() throws {

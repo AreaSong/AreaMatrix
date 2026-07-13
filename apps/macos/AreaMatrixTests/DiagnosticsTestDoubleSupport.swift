@@ -1,31 +1,25 @@
 @testable import AreaMatrix
-import XCTest
 
-actor RecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
+actor RecordingDiagnosticsCollector: CoreDiagnosticsCollecting, RepoPathRequestRecording {
     typealias SnapshotResult = Swift.Result<DiagnosticsSnapshotSnapshot, Error>
 
-    private let repeatingResult: SnapshotResult?
-    private var queuedResults: [SnapshotResult]
+    private var resultQueue: TestResultQueue<DiagnosticsSnapshotSnapshot>
     private var repoPaths: [String] = []
 
     init(result: SnapshotResult) {
-        repeatingResult = result
-        queuedResults = []
+        resultQueue = TestResultQueue(result: result, missingResult: Self.missingResult)
     }
 
     init(snapshot: DiagnosticsSnapshotSnapshot) {
-        repeatingResult = .success(snapshot)
-        queuedResults = []
+        resultQueue = TestResultQueue(result: .success(snapshot), missingResult: Self.missingResult)
     }
 
     init(snapshots: [DiagnosticsSnapshotSnapshot]) {
-        repeatingResult = nil
-        queuedResults = snapshots.map { .success($0) }
+        resultQueue = TestResultQueue(results: snapshots.map { .success($0) }, missingResult: Self.missingResult)
     }
 
     init(results: [SnapshotResult]) {
-        repeatingResult = nil
-        queuedResults = results
+        resultQueue = TestResultQueue(results: results, missingResult: Self.missingResult)
     }
 
     func createDiagnosticsSnapshot(repoPath: String) async throws -> DiagnosticsSnapshotSnapshot {
@@ -33,45 +27,15 @@ actor RecordingDiagnosticsCollector: CoreDiagnosticsCollecting {
         return try nextResult()
     }
 
-    func requestedRepoPaths() -> [String] {
+    var repoPathsForAssertions: [String] {
         repoPaths
-    }
-
-    func recordedRepoPaths() -> [String] {
-        repoPaths
-    }
-
-    func assertRequestedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(repoPaths, expectedRepoPaths, file: file, line: line)
-    }
-
-    func assertRecordedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        assertRequestedRepoPaths(expectedRepoPaths, file: file, line: line)
-    }
-
-    func assertNoRequests(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        assertRequestedRepoPaths([], file: file, line: line)
     }
 
     private func nextResult() throws -> DiagnosticsSnapshotSnapshot {
-        if let repeatingResult {
-            return try repeatingResult.get()
-        }
-        guard !queuedResults.isEmpty else {
-            throw CoreError.Internal(message: "missing diagnostics fixture")
-        }
+        try resultQueue.next()
+    }
 
-        return try queuedResults.removeFirst().get()
+    private static func missingResult() -> SnapshotResult {
+        .failure(CoreError.Internal(message: "missing diagnostics fixture"))
     }
 }

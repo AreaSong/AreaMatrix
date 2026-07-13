@@ -18,7 +18,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
         await model.selectFiles([detail.id])
         await model.loadSelectedFileChangeLog()
 
-        await lister.assertRecordedRequests([
+        await lister.assertChangeLogListRequests([
             DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: detail.id))
         ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: detail.id, entries: [entry]))
@@ -41,7 +41,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
         await model.loadSelectedFileChangeLog()
 
         XCTAssertEqual(model.detailLogState, .failed(fileID: detail.id, mapping))
-        await mapper.assertRecordedErrors([CoreError.Db(message: "change log locked")])
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "change log locked")])
     }
 
     @MainActor
@@ -93,7 +93,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
         await model.loadSelectedFileChangeLog()
         await model.collectDetailLogDiagnostics()
 
-        await diagnosticsCollector.assertNoRequests()
+        await diagnosticsCollector.assertNoRepoPathRequests()
         XCTAssertEqual(model.detailLogDiagnosticsState, .idle)
 
         model.requestDetailLogDiagnosticsPrivacyConfirmation()
@@ -126,7 +126,7 @@ final class DetailLogPageFeatureTests: XCTestCase {
         await model.collectDetailLogDiagnostics()
 
         XCTAssertEqual(model.detailLogDiagnosticsState, .failed(fileID: detail.id, mapping))
-        await mapper.assertRecordedErrors([
+        await mapper.assertMappedCoreErrors([
             CoreError.Db(message: "change log locked"),
             CoreError.PermissionDenied(path: "/tmp/repo")
         ])

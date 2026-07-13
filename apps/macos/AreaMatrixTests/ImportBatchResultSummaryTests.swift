@@ -26,7 +26,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
         )
         let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
 
-        await importer.assertRecordedRequests([importBatchExpectedInvoiceRequest()])
+        await importer.assertImportedBatchFiles([importBatchExpectedInvoiceRequest()])
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.failedCount, 0)
         XCTAssertEqual(outcome?.previewErrorCount, 1)

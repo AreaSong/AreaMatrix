@@ -15,11 +15,8 @@ struct StaticSettingsReader: AppSettingsReading {
 }
 
 final class RecordingAppSettingsWriter: AppSettingsWriting {
-    private(set) var savedRepoPaths: [String] = []
-    private(set) var successfulRepoOpens: [(repoPath: String, openedAt: Int64)] = []
-    var successfulRepoOpenPaths: [String] {
-        successfulRepoOpens.map(\.repoPath)
-    }
+    private var savedRepoPaths: [String] = []
+    private var successfulRepoOpens: [(repoPath: String, openedAt: Int64)] = []
 
     func saveConfiguredRepoPath(_ repoPath: String) {
         savedRepoPaths.append(repoPath)
@@ -37,11 +34,18 @@ final class RecordingAppSettingsWriter: AppSettingsWriting {
         XCTAssertEqual(savedRepoPaths, expectedRepoPaths, file: file, line: line)
     }
 
+    func assertNoSavedRepoPaths(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        assertSavedRepoPaths([], file: file, line: line)
+    }
+
     func assertSuccessfulRepoOpenPaths(
         _ expectedRepoPaths: [String],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(successfulRepoOpenPaths, expectedRepoPaths, file: file, line: line)
+        XCTAssertEqual(successfulRepoOpens.map(\.repoPath), expectedRepoPaths, file: file, line: line)
     }
 }

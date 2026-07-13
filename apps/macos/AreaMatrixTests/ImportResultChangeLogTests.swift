@@ -12,7 +12,7 @@ final class ImportResultChangeLogTests: XCTestCase {
         guard showImportResultRoute(model, progress: ImportResultFixtures.importedProgress) != nil else { return }
         await model.loadImportResultChangeLog()
 
-        await lister.assertRecordedRequests([
+        await lister.assertChangeLogListRequests([
             ImportResultChangeLogRequest(repoPath: importResultRepoPath(), filter: .importResultRecent)
         ])
         guard let result = requireImportResultRoute(model) else { return }
@@ -34,7 +34,7 @@ final class ImportResultChangeLogTests: XCTestCase {
         guard showImportResultRoute(model, progress: ImportResultFixtures.importedProgress) != nil else { return }
         await model.loadImportResultChangeLog()
 
-        await errorMapper.assertRecordedErrors([CoreError.Db(message: "change log locked")])
+        await errorMapper.assertMappedCoreErrors([CoreError.Db(message: "change log locked")])
         guard let result = requireImportResultRoute(model) else { return }
         XCTAssertEqual(result.changeLog, .failed(.importSingleFileError(kind: .db)))
     }

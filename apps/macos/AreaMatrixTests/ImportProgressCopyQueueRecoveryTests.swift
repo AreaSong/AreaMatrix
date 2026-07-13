@@ -75,7 +75,7 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
             model.updateImportEntryProgress(progress.withItems(importModel.progressItems()))
         }
 
-        await importer.assertRecordedRequests([ImportBatchBatchImportRequest(
+        await importer.assertImportedBatchFiles([ImportBatchBatchImportRequest(
             destination: .autoClassify,
             suggestedCategory: "docs",
             overrideFilename: "first.pdf",
@@ -229,7 +229,7 @@ extension ImportProgressCopyQueueRecoveryTests {
 
     @MainActor
     static func assertFatalCopyRetryCompleted(_ scenario: ImportProgressFatalCopyRetryScenario) async {
-        await scenario.retryImporter.assertRecordedRequests([
+        await scenario.retryImporter.assertImportedFiles([
             ImportSingleFileImportRequest(
                 mode: .copy,
                 overrideCategory: "docs",
@@ -237,7 +237,7 @@ extension ImportProgressCopyQueueRecoveryTests {
                 duplicateStrategy: .ask
             )
         ])
-        await scenario.importer.assertRecordedOverrideFilenames(fatalCopyRetryFilenames)
+        await scenario.importer.assertImportedOverrideFilenames(fatalCopyRetryFilenames)
         XCTAssertEqual(scenario.model.route, .mainEmpty(scenario.opening))
         XCTAssertEqual(scenario.model.toastMessage, "已导入：third.pdf")
     }

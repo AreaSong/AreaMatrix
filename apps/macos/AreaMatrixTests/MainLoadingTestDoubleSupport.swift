@@ -1,7 +1,7 @@
 @testable import AreaMatrix
 import XCTest
 
-actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering {
+actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering, RepoPathRequestRecording {
     private let result: Result<RecoveryReportSnapshot, Error>
     private let pauseGate = MainLoadingPauseGate()
     private var paths: [String] = []
@@ -24,48 +24,34 @@ actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering {
         await pauseGate.finish()
     }
 
-    func requestedRepoPaths() -> [String] {
+    var repoPathsForAssertions: [String] {
         paths
-    }
-
-    func assertRequestedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(paths, expectedRepoPaths, file: file, line: line)
     }
 }
 
-actor MainLoadingRecordingTreeLister: CoreRepositoryTreeListing {
-    private var results: [Result<RepositoryTreeNodeSnapshot, Error>]
+actor MainLoadingRecordingTreeLister: CoreRepositoryTreeListing, RepoPathRequestRecording {
+    private var resultQueue: TestResultQueue<RepositoryTreeNodeSnapshot>
     private var requests: [String] = []
 
     init(result: Result<RepositoryTreeNodeSnapshot, Error>) {
-        results = [result]
+        resultQueue = TestResultQueue(results: [result]) {
+            .failure(CoreError.Internal(message: "missing tree result"))
+        }
     }
 
     init(results: [Result<RepositoryTreeNodeSnapshot, Error>]) {
-        self.results = results
+        resultQueue = TestResultQueue(results: results) {
+            .failure(CoreError.Internal(message: "missing tree result"))
+        }
     }
 
     func listTree(repoPath: String, locale _: String) async throws -> RepositoryTreeNodeSnapshot {
         requests.append(repoPath)
-        let result = results.isEmpty ? Result.failure(CoreError.Internal(message: "missing tree result")) : results
-            .removeFirst()
-        return try result.get()
+        return try resultQueue.next()
     }
 
-    func requestedRepoPaths() -> [String] {
+    var repoPathsForAssertions: [String] {
         requests
-    }
-
-    func assertRequestedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(requests, expectedRepoPaths, file: file, line: line)
     }
 }
 
@@ -79,7 +65,7 @@ actor MainLoadingInitializedPathValidator: CoreRepositoryPathValidating, CoreIni
     }
 }
 
-actor MainLoadingPausingRepositoryOpener: CoreEmptyRepositoryOpening {
+actor MainLoadingPausingRepositoryOpener: CoreEmptyRepositoryOpening, ConfiguredRepoPathRequestRecording {
     private let opening: RepositoryOpeningResult
     private let pauseGate = MainLoadingPauseGate()
     private var configuredPaths: [String] = []
@@ -110,23 +96,8 @@ actor MainLoadingPausingRepositoryOpener: CoreEmptyRepositoryOpening {
         await pauseGate.finish()
     }
 
-    func requestedConfiguredRepoPaths() -> [String] {
+    var configuredRepoPathsForAssertions: [String] {
         configuredPaths
-    }
-
-    func assertRequestedConfiguredRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(configuredPaths, expectedRepoPaths, file: file, line: line)
-    }
-
-    func assertNoConfiguredRepoPaths(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        assertRequestedConfiguredRepoPaths([], file: file, line: line)
     }
 }
 

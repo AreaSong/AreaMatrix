@@ -18,8 +18,8 @@ final class DetailNotePageFeatureTests: XCTestCase {
         model.updateDraft("contract notes")
         await waitForDetailNoteSaveSettled(model)
 
-        await noteStore.assertReadRequests([DetailNoteReadRequest(repoPath: "/tmp/repo", fileID: file.id)])
-        await noteStore.assertWriteRequests([DetailNoteWriteRequest(
+        await noteStore.assertDetailNoteReadRequests([DetailNoteReadRequest(repoPath: "/tmp/repo", fileID: file.id)])
+        await noteStore.assertDetailNoteWriteRequests([DetailNoteWriteRequest(
             repoPath: "/tmp/repo",
             fileID: file.id,
             contentMarkdown: "contract notes"
@@ -131,7 +131,7 @@ final class DetailNotePageFeatureTests: XCTestCase {
             saveStatus: .saved,
             writeBlock: .fileMissing
         ))
-        await noteStore.assertNoWriteRequests()
+        await noteStore.assertNoDetailNoteWriteRequests()
     }
 
     @MainActor

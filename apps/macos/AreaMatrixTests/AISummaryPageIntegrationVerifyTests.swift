@@ -65,8 +65,7 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
 
         await model.clear()
 
-        let routes = await privacy.routes()
-        XCTAssertEqual(routes, [.remote, .remote])
+        await privacy.assertEvaluatedRoutes([.remote, .remote])
         await summary.assertEvents([
             .generate(regenerate: false, privacyPolicyRef: nil),
             .save(text: "Initial AI summary.", edited: false, callLogID: 1706),

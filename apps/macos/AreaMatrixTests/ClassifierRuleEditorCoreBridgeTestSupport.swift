@@ -66,14 +66,6 @@ actor RecordingLocalModelReader: CoreLocalModelStatusReading {
         return location
     }
 
-    func statusRequests() -> [StatusRequest] {
-        recordedStatusRequests
-    }
-
-    func folderRequests() -> [FolderRequest] {
-        recordedFolderRequests
-    }
-
     func assertStatusRequests(
         _ expectedRequests: [StatusRequest],
         file: StaticString = #filePath,
@@ -92,7 +84,7 @@ actor RecordingLocalModelReader: CoreLocalModelStatusReading {
 }
 
 final class RecordingLocalModelStorageProvider: LocalModelStorageLocationProviding, @unchecked Sendable {
-    private(set) var requestCount = 0
+    private var requestCount = 0
     private let defaultLocation: String
 
     init(defaultLocation: String) {
@@ -103,11 +95,19 @@ final class RecordingLocalModelStorageProvider: LocalModelStorageLocationProvidi
         requestCount += 1
         return defaultLocation
     }
+
+    func assertRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestCount, expectedCount, file: file, line: line)
+    }
 }
 
 @MainActor
 final class RecordingInstallHelpOpener: LocalModelInstallHelpOpening {
-    private(set) var openCount = 0
+    private var openCount = 0
 
     func openLocalModelInstallHelp() throws {
         openCount += 1
@@ -116,7 +116,7 @@ final class RecordingInstallHelpOpener: LocalModelInstallHelpOpening {
 
 @MainActor
 final class LocalModelStatusRecordingFolderOpener: LocalModelFolderOpening {
-    private(set) var locations: [LocalModelFolderLocationState] = []
+    private var locations: [LocalModelFolderLocationState] = []
 
     func openLocalModelFolder(_ location: LocalModelFolderLocationState) throws {
         locations.append(location)
@@ -138,9 +138,17 @@ final class LocalModelStatusRecordingFolderOpener: LocalModelFolderOpening {
 
 @MainActor
 final class RecordingDiagnosticsCopier: LocalModelDiagnosticsCopying {
-    private(set) var summaries: [String] = []
+    private var summaries: [String] = []
 
     func copyLocalModelDiagnostics(_ summary: String) throws {
         summaries.append(summary)
+    }
+
+    func assertCopiedSummaries(
+        _ expectedSummaries: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(summaries, expectedSummaries, file: file, line: line)
     }
 }

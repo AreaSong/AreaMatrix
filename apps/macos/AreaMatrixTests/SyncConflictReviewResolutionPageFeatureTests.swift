@@ -22,12 +22,11 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             onBackToNeedsReview: {},
             onClose: {}
         ).body
-        let previewRequests = await resolver.recordedPreviewRequests()
 
         XCTAssertEqual(loadedConflict.conflictType.displayName, "Same name, different content")
         XCTAssertEqual(loadedConflict.primaryPath, "docs/report.pdf")
         XCTAssertEqual(loadedConflict.affectedFiles.map(\.role.displayName), ["Existing file", "Incoming file"])
-        XCTAssertEqual(previewRequests, [
+        await resolver.assertResolutionPreviewRequests([
             SyncConflictPreviewRequest(
                 repoPath: "/tmp/syncConflictReview-repo",
                 conflictID: "conflict-report",
@@ -58,14 +57,12 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
 
         await model.load()
         await model.selectResolution(.useExisting)
-        let previewRequests = await resolver.recordedPreviewRequests()
-        let resolveRequests = await resolver.recordedResolveRequests()
 
         XCTAssertEqual(model.selectedResolution, .useExisting)
         XCTAssertEqual(model.previewState.preview?.resolution, .useExisting)
         XCTAssertTrue(model.canApplyResolution)
-        XCTAssertEqual(previewRequests.map(\.resolution), [.keepBoth, .useExisting])
-        XCTAssertEqual(resolveRequests, [])
+        await resolver.assertPreviewedResolutionStrategies([.keepBoth, .useExisting])
+        await resolver.assertResolutionApplyRequests([])
     }
 
     @MainActor
@@ -88,7 +85,6 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         await model.applyResolution()
         let preview = try XCTUnwrap(model.previewState.preview)
         let replacePlan = try XCTUnwrap(preview.replacePlan)
-        let resolveRequests = await resolver.recordedResolveRequests()
 
         XCTAssertFalse(model.canApplyResolution)
         XCTAssertTrue(model.canConfirmReplacePlan)
@@ -96,7 +92,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             model.applyDisabledReason,
             "Confirm the replace-resolution replace plan before applying Use incoming version."
         )
-        XCTAssertEqual(resolveRequests, [])
+        await resolver.assertResolutionApplyRequests([])
         XCTAssertEqual(preview.blockedReasonDisplay, "Replace confirmation required")
         XCTAssertEqual(replacePlan.changeLogAction, "conflict_resolved_use_incoming")
         XCTAssertEqual(replacePlan.backupTarget, "Trash")
@@ -136,10 +132,9 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             disabledReason: model.replaceConfirmationDisabledReason,
             onConfirm: { _ in }
         ).body
-        let resolveRequests = await resolver.recordedResolveRequests()
 
         XCTAssertEqual(confirmation.previewToken, "preview-token-use-incoming")
-        XCTAssertEqual(resolveRequests, [
+        await resolver.assertResolutionApplyRequests([
             SyncConflictResolveRequest(
                 repoPath: "/tmp/syncConflictReview-repo",
                 conflictID: "conflict-report",
@@ -176,13 +171,12 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         await model.selectResolution(.useIncoming)
         model.confirmReplacePlan(understandsReplace: true)
         await model.applyResolution()
-        let resolveRequests = await resolver.recordedResolveRequests()
 
         XCTAssertNil(model.replaceConfirmation)
         XCTAssertFalse(model.canConfirmReplacePlan)
         XCTAssertEqual(model.replaceConfirmationDisabledReason, "Replace requires Trash or safety backup")
         XCTAssertFalse(model.canApplyResolution)
-        XCTAssertEqual(resolveRequests, [])
+        await resolver.assertResolutionApplyRequests([])
     }
 
     @MainActor
@@ -199,9 +193,8 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
             onBackToNeedsReview: {},
             onClose: {}
         ).body
-        let resolveRequests = await resolver.recordedResolveRequests()
 
-        XCTAssertEqual(resolveRequests, [
+        await resolver.assertResolutionApplyRequests([
             SyncConflictResolveRequest(
                 repoPath: "/tmp/syncConflictReview-repo",
                 conflictID: "conflict-report",
@@ -226,9 +219,8 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         await model.load()
         await model.applyResolution()
         await model.applyResolution()
-        let resolveRequests = await resolver.recordedResolveRequests()
 
-        XCTAssertEqual(resolveRequests.count, 1)
+        await resolver.assertResolutionApplyRequestCount(1)
         XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
     }
 
@@ -260,7 +252,7 @@ final class SyncConflictReviewResolutionFeatureTests: XCTestCase {
         await model.selectResolution(.useExisting)
         await model.applyResolution()
 
-        await mapper.assertRecordedErrors([
+        await mapper.assertMappedCoreErrors([
             CoreError.Db(message: "preview locked"),
             CoreError.Conflict(path: "stale sync conflict")
         ])
@@ -308,13 +300,10 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
         await model.selectResolution(.useIncoming)
         model.confirmReplacePlan(understandsReplace: true)
         await view.applySelectedResolution()
-        let detectRequests = await detector.recordedRequests()
-        let previewRequests = await resolver.recordedPreviewRequests()
-        let resolveRequests = await resolver.recordedResolveRequests()
 
-        XCTAssertEqual(detectRequests, ["/tmp/syncConflictReview-repo"])
-        XCTAssertEqual(previewRequests.map(\.resolution), [.keepBoth, .useIncoming])
-        XCTAssertEqual(resolveRequests, [.useIncomingConfirmedRequest])
+        await detector.assertDetectedSyncConflictRepos(["/tmp/syncConflictReview-repo"])
+        await resolver.assertPreviewedResolutionStrategies([.keepBoth, .useIncoming])
+        await resolver.assertResolutionApplyRequests([.useIncomingConfirmedRequest])
         XCTAssertEqual(resolvedReports, [.syncConflictReviewResolveFixture(resolution: .useIncoming)])
         XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
     }
@@ -343,7 +332,7 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
         guard case .failed(.keepBoth, _) = model.applyState else {
             return XCTFail("Expected apply failure to remain in sync-conflict-review")
         }
-        await mapper.assertRecordedErrors([CoreError.Conflict(path: "stale sync conflict")])
+        await mapper.assertMappedCoreErrors([CoreError.Conflict(path: "stale sync conflict")])
     }
 
     @MainActor
@@ -366,14 +355,12 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
 
         await content.fileListModel.loadCurrentCategory("docs")
         content.beginSyncConflictReview(file: docsFile)
-        let beforeResolveRequests = await lister.recordedRequests()
+        await lister.assertFileListFilters([.currentCategory("docs")])
 
         await content.handleSyncConflictResolved(.syncConflictReviewResolveFixture())
-        let listRequests = await lister.recordedRequests()
 
         XCTAssertNil(content.pendingSyncConflictReviewRoute)
-        XCTAssertEqual(beforeResolveRequests, [FileFilterSnapshot.currentCategory("docs")])
-        XCTAssertEqual(listRequests.count, beforeResolveRequests.count + 1)
+        await lister.assertFileListRequestCount(2)
     }
 }
 

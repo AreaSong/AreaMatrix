@@ -17,7 +17,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         XCTAssertEqual(model.nameConflictResolution, .keepBoth)
         XCTAssertEqual(model.progressCurrentPath, "docs/source_1.pdf")
         XCTAssertEqual(imported?.storageMode, "Copied")
-        await importer.assertLastRecordedRequest(ImportSingleFileImportRequest(
+        await importer.assertLastImportedFile(ImportSingleFileImportRequest(
             mode: .copy,
             overrideCategory: "docs",
             overrideFilename: "source.pdf",
@@ -43,7 +43,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         XCTAssertEqual(model.nameConflictResolution, .renameIncoming("renamed.pdf"))
         XCTAssertEqual(model.progressCurrentPath, "docs/renamed.pdf")
         XCTAssertEqual(imported?.currentName, "renamed.pdf")
-        await importer.assertLastRecordedRequest(ImportSingleFileImportRequest(
+        await importer.assertLastImportedFile(ImportSingleFileImportRequest(
             mode: .copy,
             overrideCategory: "docs",
             overrideFilename: "renamed.pdf",
@@ -76,7 +76,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         XCTAssertEqual(model.singleFilePrimaryActionTitle, "Import")
 
         _ = await model.importSelectedFile()
-        await importer.assertLastRecordedRequest(ImportSingleFileImportRequest(
+        await importer.assertLastImportedFile(ImportSingleFileImportRequest(
             mode: .copy,
             overrideCategory: "docs",
             overrideFilename: "source.pdf",
@@ -105,7 +105,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         let context = try XCTUnwrap(model.pendingReplaceConfirmation)
 
         XCTAssertEqual(model.activeConflictPage, .name)
-        await importer.assertRecordedRequests([])
+        await importer.assertNoImportedFiles()
         XCTAssertEqual(context.existingPath, existingFile.path)
         XCTAssertEqual(context.existingSizeBytes, existingFile.sizeBytes)
         XCTAssertEqual(context.incomingPath, importSingleFileSourcePath())
@@ -120,7 +120,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         XCTAssertEqual(model.singleFilePrimaryActionTitle, "Import")
 
         _ = await model.importSelectedFile()
-        await importer.assertRecordedRequests([
+        await importer.assertImportedFiles([
             ImportSingleFileImportRequest(
                 mode: .copy,
                 overrideCategory: "docs",
@@ -149,7 +149,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
 
         let confirmation = ImportEntrySingleFilePrimaryActionGate.pendingReplaceConfirmation(for: model)
 
-        await importer.assertRecordedRequests([])
+        await importer.assertNoImportedFiles()
         XCTAssertEqual(confirmation?.context.existingPath, existingFile.path)
         XCTAssertEqual(confirmation?.context.targetRelativePath, existingFile.path)
         XCTAssertFalse(model.isReplaceConfirmed)
@@ -160,7 +160,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
 
         XCTAssertNil(ImportEntrySingleFilePrimaryActionGate.pendingReplaceConfirmation(for: model))
         _ = await model.importSelectedFile()
-        await importer.assertLastRecordedRequest(ImportSingleFileImportRequest(
+        await importer.assertLastImportedFile(ImportSingleFileImportRequest(
             mode: .copy,
             overrideCategory: "docs",
             overrideFilename: "source.pdf",
@@ -185,7 +185,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
         let imported = await model.importSelectedFile()
 
         XCTAssertNil(imported)
-        await importer.assertRecordedRequests([])
+        await importer.assertNoImportedFiles()
         XCTAssertEqual(model.importStatus, .blocked("Replace 必须先进入二次确认"))
     }
 

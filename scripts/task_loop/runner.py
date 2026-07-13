@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Sequence
 
+import scripts.areaflow_shim as areaflow_shim
 from . import git as git_helpers
 from . import state
 from scripts.dev_tools.execution_paths import (
@@ -1925,6 +1926,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     cfg = RuntimeConfig.from_env()
 
     try:
+        shim_result = areaflow_shim.handle_task_loop_command(command, cfg.root_dir)
+        if shim_result is not None:
+            return shim_result
         if command == "status":
             print_loop_status(cfg)
             return 0

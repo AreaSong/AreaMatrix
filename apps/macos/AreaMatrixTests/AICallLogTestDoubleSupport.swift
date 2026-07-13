@@ -15,17 +15,17 @@ private struct AICallLogListRequestExpectation {
 }
 
 actor RecordingAICallLogLister: CoreAICallLogListing {
-    private var pages: [AiCallLogPage]
+    private var pageQueue: TestValueQueue<AiCallLogPage>
     private let error: Error?
     private var recordedRequests: [AICallLogListRequest] = []
 
     init(page: AiCallLogPage) {
-        pages = [page]
+        pageQueue = TestValueQueue(values: [page], missingValue: AiCallLogPage.emptyTestPage)
         error = nil
     }
 
     init(pages: [AiCallLogPage] = [], error: Error? = nil) {
-        self.pages = pages
+        pageQueue = TestValueQueue(values: pages, missingValue: AiCallLogPage.emptyTestPage)
         self.error = error
     }
 
@@ -36,10 +36,10 @@ actor RecordingAICallLogLister: CoreAICallLogListing {
     ) async throws -> AiCallLogPage {
         recordedRequests.append((filter, pagination))
         if let error { throw error }
-        return pages.isEmpty ? .emptyTestPage() : pages.removeFirst()
+        return pageQueue.next()
     }
 
-    func assertFirstRequest(
+    func assertFirstAICallLogListRequest(
         feature: AiCallLogFeature? = nil,
         route: AiCallLogRoute? = nil,
         status: AiCallLogStatus? = nil,
@@ -51,7 +51,7 @@ actor RecordingAICallLogLister: CoreAICallLogListing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertRequest(
+        assertAICallLogListRequest(
             recordedRequests.first,
             expected: AICallLogListRequestExpectation(
                 feature: feature,
@@ -68,7 +68,7 @@ actor RecordingAICallLogLister: CoreAICallLogListing {
         )
     }
 
-    func assertLastRequest(
+    func assertLastAICallLogListRequest(
         feature: AiCallLogFeature? = nil,
         route: AiCallLogRoute? = nil,
         status: AiCallLogStatus? = nil,
@@ -80,7 +80,7 @@ actor RecordingAICallLogLister: CoreAICallLogListing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        assertRequest(
+        assertAICallLogListRequest(
             recordedRequests.last,
             expected: AICallLogListRequestExpectation(
                 feature: feature,
@@ -97,7 +97,7 @@ actor RecordingAICallLogLister: CoreAICallLogListing {
         )
     }
 
-    private func assertRequest(
+    private func assertAICallLogListRequest(
         _ request: AICallLogListRequest?,
         expected: AICallLogListRequestExpectation,
         file: StaticString,
@@ -129,7 +129,7 @@ actor RecordingAICallLogClearer: CoreAICallLogClearing {
         )
     }
 
-    func assertFirstRequest(
+    func assertFirstAICallLogClearRequest(
         scope: AiCallLogClearScope,
         entryIDs: [Int64],
         olderThan: Int64? = nil,
@@ -144,7 +144,7 @@ actor RecordingAICallLogClearer: CoreAICallLogClearing {
         XCTAssertEqual(request.olderThan, olderThan, file: file, line: line)
     }
 
-    func assertNoRequests(
+    func assertNoAICallLogClearRequests(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
