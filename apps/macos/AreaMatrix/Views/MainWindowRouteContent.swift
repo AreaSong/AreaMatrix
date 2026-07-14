@@ -279,7 +279,7 @@ private extension MainWindowRouteContent {
                 opening: state.sourceOpening,
                 state: .list,
                 isImportProgressReadOnly: true,
-                importProgressItems: state.items
+                importProgressPresentation: ImportProgressListPresentation(items: state.items)
             )
             ImportProgressView(
                 state: state,
@@ -311,7 +311,7 @@ private extension MainWindowRouteContent {
         opening: RepositoryOpeningResult,
         state: MainRepositoryContentState,
         isImportProgressReadOnly: Bool = false,
-        importProgressItems: [ImportBatchProgressSnapshot.Item] = []
+        importProgressPresentation: ImportProgressListPresentation = .empty
     ) -> MainRepositoryContentView {
         let displayOpening = isImportProgressReadOnly ? opening.importProgressReadOnlyOpening : opening
         return MainRepositoryContentView(
@@ -328,8 +328,10 @@ private extension MainWindowRouteContent {
             onOpenRepository: model.showChoosePath,
             onOpenHelp: model.openLearnMore,
             onOpenImportConflictBatch: { model.startImportConflictBatchReview(opening: opening, route: $0) },
-            onRetryCurrentList: { Task { await model.retryConfigurationLoad() } },
-            onCollectDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
+            mainListErrorRecoveryActions: MainListErrorRecoveryActions(
+                retryFallback: { Task { await model.retryConfigurationLoad() } },
+                collectFallbackDiagnostics: { await model.collectMainListDiagnostics(opening: opening) }
+            ),
             onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
             onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
             onCopyPaths: { model.copyMainListPaths(opening: opening, relativePaths: $0) },
@@ -341,7 +343,7 @@ private extension MainWindowRouteContent {
             onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent,
             pendingTagSuggestionFocus: model.pendingTagSuggestionFocus,
             onPendingTagSuggestionFocusConsumed: model.consumePendingTagSuggestionFocus,
-            importProgressItems: importProgressItems
+            importProgressPresentation: importProgressPresentation
         )
     }
 }

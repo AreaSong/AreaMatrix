@@ -1,14 +1,9 @@
-use std::{
-    env,
-    ffi::OsString,
-    io::Write,
-    path::Path,
-    process::{Command, Stdio},
-};
+use std::{env, ffi::OsString, path::Path, process::Command, time::Duration};
 
 use serde::Serialize;
 
 use crate::{
+    external_runtime::{ExternalRuntimeError, ExternalRuntimeLimits},
     remote_provider_config::{RemoteAiProviderKind, StoredRemoteProviderConfig},
     AiFeatureKind, CoreError, CoreResult,
 };
@@ -21,6 +16,8 @@ const REMOTE_RUNTIME_ENV: &str = "AREAMATRIX_AI_TAGS_REMOTE_RUNTIME";
 const MIN_CONFIDENCE: f32 = 0.05;
 const MAX_CONFIDENCE: f32 = 0.99;
 const MAX_REASON_CHARS: usize = 240;
+const RUNTIME_TIMEOUT: Duration = Duration::from_secs(30);
+const MAX_RUNTIME_OUTPUT_BYTES: usize = 1024 * 1024;
 
 #[derive(Clone, Debug)]
 pub(super) struct AiTagRuntimeDraft {
@@ -87,27 +84,28 @@ fn execute_external_runtime(
 ) -> CoreResult<AiTagRuntimeDraft> {
     let payload = serde_json::to_vec(&payload)
         .map_err(|_| CoreError::internal("AI tag request is invalid"))?;
-    let mut child = Command::new(runtime_path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|_| CoreError::internal("AI tags runtime unavailable"))?;
-    let Some(mut stdin) = child.stdin.take() else {
-        return Err(CoreError::internal("AI tags runtime unavailable"));
-    };
-    stdin
-        .write_all(&payload)
-        .map_err(|_| CoreError::internal("AI tags runtime failed"))?;
-    drop(stdin);
-
-    let output = child
-        .wait_with_output()
-        .map_err(|_| CoreError::internal("AI tags runtime failed"))?;
+    let mut command = Command::new(runtime_path);
+    let output = crate::external_runtime::run(
+        &mut command,
+        &payload,
+        ExternalRuntimeLimits {
+            timeout: RUNTIME_TIMEOUT,
+            max_stdout_bytes: MAX_RUNTIME_OUTPUT_BYTES,
+            preserved_environment: &[],
+        },
+    )
+    .map_err(map_runtime_error)?;
     if !output.status.success() {
         return Err(CoreError::internal("AI tags runtime failed"));
     }
     parse_runtime_response(&output.stdout, route, model, used_context)
+}
+
+fn map_runtime_error(error: ExternalRuntimeError) -> CoreError {
+    match error {
+        ExternalRuntimeError::Spawn => CoreError::internal("AI tags runtime unavailable"),
+        _ => CoreError::internal("AI tags runtime failed"),
+    }
 }
 
 fn parse_runtime_response(
@@ -136,42 +134,25 @@ fn runtime_suggestion(value: RuntimeSuggestion) -> AiTagRuntimeSuggestion {
         slug: value.slug.trim().to_owned(),
         display_name: value
             .display_name
-            .map(|name| sanitize_response_text(&name))
+            .map(|name| {
+                crate::ai_runtime::sanitize_response_text(
+                    &name,
+                    "AI tag suggestion completed",
+                    MAX_REASON_CHARS,
+                )
+            })
             .filter(|name| !name.is_empty()),
         confidence: value.confidence.clamp(MIN_CONFIDENCE, MAX_CONFIDENCE),
-        reason: sanitize_response_text(
+        reason: crate::ai_runtime::sanitize_response_text(
             value
                 .reason
                 .as_deref()
                 .unwrap_or("AI tag suggestion completed"),
+            "AI tag suggestion completed",
+            MAX_REASON_CHARS,
         ),
         merge_target_slug: value.merge_target_slug.map(|slug| slug.trim().to_owned()),
     }
-}
-
-fn sanitize_response_text(value: &str) -> String {
-    let sanitized = value
-        .split_whitespace()
-        .filter(|part| !looks_sensitive(part))
-        .collect::<Vec<_>>()
-        .join(" ");
-    if sanitized.is_empty() {
-        "AI tag suggestion completed".to_owned()
-    } else {
-        sanitized.chars().take(MAX_REASON_CHARS).collect()
-    }
-}
-
-fn looks_sensitive(value: &str) -> bool {
-    let normalized = value.to_ascii_lowercase();
-    normalized.starts_with("sk-")
-        || normalized.starts_with("sk_")
-        || normalized.contains("bearer")
-        || normalized.contains("api_key")
-        || normalized.contains("apikey")
-        || normalized.contains("secret=")
-        || normalized.contains("token=")
-        || normalized.contains("-----begin")
 }
 
 #[derive(Serialize)]

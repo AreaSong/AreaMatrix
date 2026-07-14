@@ -1,11 +1,39 @@
 import SwiftUI
 
 extension MainRepositoryContentView {
+    func applyMainRepositoryContentSearchTasks(to content: some View) -> some View {
+        content
+            .task(id: searchTaskKey) {
+                guard state == .list else { return }
+                guard savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                guard !Task.isCancelled else { return }
+                await fileListModel.runSearch(
+                    query: filterText,
+                    scope: searchScope,
+                    sort: searchSort,
+                    sidebarRow: selectedSidebarRow,
+                    filters: effectiveSearchFilters,
+                    mode: searchMode
+                )
+            }
+            .task(id: searchFacetsTaskKey) {
+                guard state == .list else { return }
+                guard savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
+                await fileListModel.loadSearchFacets(
+                    query: filterText,
+                    scope: searchScope,
+                    sidebarRow: selectedSidebarRow,
+                    filters: effectiveSearchFilters
+                )
+            }
+    }
+
     func applyMainRepositorySearchSheets(to content: some View) -> some View {
         content
             .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
-            .sheet(item: $semanticPrivacyRuleRoute, content: semanticPrivacyRuleSheet)
-            .sheet(item: $semanticCallLogRoute, content: semanticCallLogSheet)
+            .sheet(item: $searchRoutingState.semanticPrivacyRuleRoute, content: semanticPrivacyRuleSheet)
+            .sheet(item: $searchRoutingState.semanticCallLogRoute, content: semanticCallLogSheet)
     }
 
     func applyMainRepositorySearchFilterDismissRelay(to content: some View) -> some View {
@@ -88,6 +116,50 @@ struct MainRepositorySearchRoutingState: Equatable {
     var isToolbarFiltersPresented = false
     var isSidebarTagsFilterPresented = false
     var smartListManagementRoute: SmartListManagementRoute?
+    var isSemanticIndexConfirmationPresented = false
+    var semanticPrivacyRuleRoute: AIClassificationPrivacyRuleRoute?
+    var semanticCallLogRoute: SemanticSearchCallLogRoute?
+}
+
+extension MainRepositoryContentView {
+    func applyMainRepositorySemanticIndexDialogs(to content: some View) -> some View {
+        content
+            .confirmationDialog(
+                "Build semantic index?",
+                isPresented: $searchRoutingState.isSemanticIndexConfirmationPresented,
+                titleVisibility: .visible
+            ) {
+                Button("Start index build") {
+                    Task { await fileListModel.buildSemanticIndexForCurrentSearch() }
+                }
+                .disabled(!fileListModel.semanticPrivacyGateState.allowsIndexBuild)
+                semanticIndexRecoveryActions
+                Button("Back") {}
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(semanticIndexConfirmationMessage)
+            }
+            .confirmationDialog(
+                "Cancel semantic index build?",
+                isPresented: Binding(
+                    get: {
+                        if case .cancelConfirm = fileListModel.semanticIndexControlState { return true }
+                        return false
+                    },
+                    set: { if !$0 { fileListModel.keepBuildingSemanticIndexForCurrentSearch() } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button("Cancel index build", role: .destructive) {
+                    Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
+                }
+                Button("Keep building", role: .cancel) {
+                    fileListModel.keepBuildingSemanticIndexForCurrentSearch()
+                }
+            } message: {
+                Text(semanticIndexCancelConfirmationMessage)
+            }
+    }
 }
 
 extension MainRepositoryContentView {

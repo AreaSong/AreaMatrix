@@ -1,5 +1,24 @@
 import SwiftUI
 
+struct ImportProgressListPresentation: Equatable {
+    var items: [ImportBatchProgressSnapshot.Item]
+
+    static let empty = ImportProgressListPresentation(items: [])
+
+    var rows: [ImportProgressListRow] {
+        items.map(ImportProgressListRow.init)
+    }
+}
+
+struct ImportProgressListSelectionState: Equatable {
+    var selectedIDs: Set<String> = []
+
+    func selectedRow(in presentation: ImportProgressListPresentation) -> ImportProgressListRow? {
+        guard let id = selectedIDs.first else { return nil }
+        return presentation.rows.first { $0.id == id }
+    }
+}
+
 struct ImportProgressListRow: Identifiable, Equatable {
     let item: ImportBatchProgressSnapshot.Item
 
@@ -104,9 +123,15 @@ struct ImportProgressDetailPane: View {
 }
 
 extension MainRepositoryContentView {
+    func applyMainRepositoryImportProgressSelectionRelay(to content: some View) -> some View {
+        content.onChange(of: importProgressSelectionState.selectedIDs) { _, ids in
+            guard !ids.isEmpty else { return }
+            selectedFileIDs = []
+        }
+    }
+
     var selectedImportProgressRow: ImportProgressListRow? {
-        guard let id = selectedImportProgressIDs.first else { return nil }
-        return importProgressRows.first { $0.id == id }
+        importProgressSelectionState.selectedRow(in: importProgressPresentation)
     }
 }
 

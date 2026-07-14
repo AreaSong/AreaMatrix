@@ -1,14 +1,9 @@
-use std::{
-    env,
-    ffi::OsString,
-    io::Write,
-    path::Path,
-    process::{Command, Stdio},
-};
+use std::{env, ffi::OsString, path::Path, process::Command, time::Duration};
 
 use serde::Serialize;
 
 use crate::{
+    external_runtime::{ExternalRuntimeError, ExternalRuntimeLimits},
     remote_provider_config::{RemoteAiProviderKind, StoredRemoteProviderConfig},
     AiFeatureKind, CoreError, CoreResult,
 };
@@ -19,6 +14,8 @@ const LOCAL_MODEL_ID: &str = "areamatrix-local-summary";
 const LOCAL_RUNTIME_ENV: &str = "AREAMATRIX_AI_SUMMARY_LOCAL_RUNTIME";
 const REMOTE_RUNTIME_ENV: &str = "AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME";
 const MAX_SUMMARY_CHARS: usize = 1_200;
+const RUNTIME_TIMEOUT: Duration = Duration::from_secs(30);
+const MAX_RUNTIME_OUTPUT_BYTES: usize = 1024 * 1024;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct AiSummaryRuntimeDraft {
@@ -76,27 +73,28 @@ fn execute_external_runtime(
 ) -> CoreResult<AiSummaryRuntimeDraft> {
     let payload = serde_json::to_vec(&payload)
         .map_err(|_| CoreError::internal("AI summary request is invalid"))?;
-    let mut child = Command::new(runtime_path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|_| CoreError::internal("AI summary runtime unavailable"))?;
-    let Some(mut stdin) = child.stdin.take() else {
-        return Err(CoreError::internal("AI summary runtime unavailable"));
-    };
-    stdin
-        .write_all(&payload)
-        .map_err(|_| CoreError::internal("AI summary runtime failed"))?;
-    drop(stdin);
-
-    let output = child
-        .wait_with_output()
-        .map_err(|_| CoreError::internal("AI summary runtime failed"))?;
+    let mut command = Command::new(runtime_path);
+    let output = crate::external_runtime::run(
+        &mut command,
+        &payload,
+        ExternalRuntimeLimits {
+            timeout: RUNTIME_TIMEOUT,
+            max_stdout_bytes: MAX_RUNTIME_OUTPUT_BYTES,
+            preserved_environment: &[],
+        },
+    )
+    .map_err(map_runtime_error)?;
     if !output.status.success() {
         return Err(CoreError::internal("AI summary runtime failed"));
     }
     parse_runtime_response(&output.stdout, route, model, used_context)
+}
+
+fn map_runtime_error(error: ExternalRuntimeError) -> CoreError {
+    match error {
+        ExternalRuntimeError::Spawn => CoreError::internal("AI summary runtime unavailable"),
+        _ => CoreError::internal("AI summary runtime failed"),
+    }
 }
 
 fn parse_runtime_response(
@@ -107,7 +105,8 @@ fn parse_runtime_response(
 ) -> CoreResult<AiSummaryRuntimeDraft> {
     let value: RuntimeResponse = serde_json::from_slice(output)
         .map_err(|_| CoreError::internal("AI summary response is invalid"))?;
-    let summary_text = sanitize_response_text(&value.summary_text);
+    let summary_text =
+        crate::ai_runtime::sanitize_response_text(&value.summary_text, "", MAX_SUMMARY_CHARS);
     if summary_text.is_empty() {
         return Err(CoreError::internal("AI summary response is empty"));
     }
@@ -117,29 +116,6 @@ fn parse_runtime_response(
         model,
         used_context,
     })
-}
-
-fn sanitize_response_text(value: &str) -> String {
-    value
-        .split_whitespace()
-        .filter(|part| !looks_sensitive(part))
-        .collect::<Vec<_>>()
-        .join(" ")
-        .chars()
-        .take(MAX_SUMMARY_CHARS)
-        .collect()
-}
-
-fn looks_sensitive(value: &str) -> bool {
-    let normalized = value.to_ascii_lowercase();
-    normalized.starts_with("sk-")
-        || normalized.starts_with("sk_")
-        || normalized.contains("bearer")
-        || normalized.contains("api_key")
-        || normalized.contains("apikey")
-        || normalized.contains("secret=")
-        || normalized.contains("token=")
-        || normalized.contains("-----begin")
 }
 
 #[derive(Serialize)]

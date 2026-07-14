@@ -33,6 +33,11 @@
 
 `PlatformServices/` 是目标落点；既有平台服务仍可能暂时留在 `App/` 或 `Models/`。触达相关代码时按风险和验证能力渐进迁移。
 
+`Models/`、根 `Views/`、`Views/Main/`、`Views/Onboarding/` 与 `Views/Settings/` 由
+`MacOSMigrationZoneGovernanceTests` 作为受控迁移区精确盘点。当前 `Models/` 和
+`Views/Onboarding/` 已无 Swift 文件；其他保留项必须有 owner 和退出条件。删除或继续迁出时同步更新
+inventory，新增业务 View / State / Action 不得回流这些目录。
+
 ## Feature 落点
 
 新增或明显修改以下能力时，优先收敛到 feature 目录：
@@ -45,6 +50,9 @@
 - `Features/Search/`
 - `Features/SyncConflicts/`
 - `Features/FileActions/`
+- `Features/CommandPalette/`
+- `Features/Detail/`
+- `Features/RepositoryLifecycle/`
 
 每个 feature 可以按需要包含：
 
@@ -56,6 +64,9 @@
 - feature-local tests support
 
 只有当组件跨多个 feature 复用且不携带业务语义时，才放入 `Views/DesignSystem/` 或共享 support。
+
+当前 11 个 Feature 目录由 `MacOSFeatureOwnershipGovernanceTests` 精确登记职责、风险边界和验证重点。
+新增 Feature 目录必须先补 owner inventory；跨 feature 公共能力仍需至少两个真实调用方后再抽取。
 
 ## Bridge 边界
 
@@ -109,14 +120,36 @@ inventory。保留项必须落入下列专项之一，并在收口时补充对�
 
 平台服务应通过小接口注入到 model 或 app shell，便于测试替身复用。不要为了一个调用点过度抽象；当能力跨 feature 复用或涉及用户文件安全边界时，再抽到稳定服务。
 
+Import progress 在主列表中的临时行展示通过 `ImportProgressListPresentation` 传入，选择状态、row/detail
+projection 和文件选择互斥 relay 由 Import feature 持有；MainList 只负责摆放 Import 提供的 table/detail contract，
+不得重新持有裸 progress items 或 selection ID。
+
+MainList error recovery 使用 `MainListErrorRecoveryActions` 接收非列表态的 retry / diagnostics fallback；
+正常列表态的 diagnostics state 与收集动作继续由 `MainFileListModel` 管理。content shell 不直接保存独立的
+diagnostics closure，也不改变 diagnostics 的隐私、脱敏或 Core snapshot 语义。
+
 受控平台例外必须按真实副作用审计，不能只按 Swift API 名称判断：
 
-- `ImportBatchCopyImportSession.swift` 只写 app-owned `.areamatrix/import-sessions/current.json`，真实临时目录的
-  save / load / missing / corrupt / clear / permission 测试已固定其行为；它是下一项结构迁移候选，迁移时仍需按
-  Import 高风险边界单独确认写入路径、失败降级和回滚证据。
-- `RemoteProviderProbeRuntime.swift` 涉及临时脚本、权限、全局环境变量、Keychain 读取、网络请求以及 Rust Core `Command` 执行。它是独立高风险安全边界，不能通过单纯移动到 `PlatformServices/` 宣称收口；退出条件至少包括 runtime 路径可信性、owner / symlink / mode 校验、避免全局环境状态、凭据脱敏和进程 / 网络边界验证。
+- `Features/Import/ImportBatchCopyImportSession.swift` 只保留 session snapshot、协议和中断恢复语义；
+  `PlatformServices/ImportBatchSessionPlatformServices.swift` 承载 app-owned
+  `.areamatrix/import-sessions/current.json` 的 JSON / FileManager 实现。真实临时目录的 save / load /
+  missing / corrupt / clear / permission 测试已固定其行为；后续演进仍需按 Import 高风险边界保留写入路径、
+  失败降级和回滚证据。
+- `PlatformServices/RemoteProviderProbeRuntime.swift` 涉及 app-owned runtime 文件、权限、全局环境变量、Keychain 读取、
+  网络请求以及 Rust Core `Command` 执行。当前 installer 使用共享 actor 做 single-flight 装配，runtime descriptor 固定
+  版本、内容 hash、owner / mode、device / inode，并拒绝任意外部环境路径、弱权限和 symlink；shell runtime 限制
+  provider / method / URL，拒绝控制字符 credential，并通过 curl header stdin 传递凭据，避免 curl config 文本注入和
+  credential 出现在进程参数中。`RemoteProviderProbeRuntimeInstallerTests` 固定异常内容修复、缓存 descriptor 重校验、
+  symlink 替换保护和 CoreBridge 显式 installer 注入。该能力仍是独立高风险安全边界，不能通过单纯移动到
+  `PlatformServices/` 宣称完全收口；本地 HTTP fallback 已有响应上限、完整 framing 和网络失败矩阵证据，
+  剩余退出条件包括把 descriptor 绑定到 Core 的原子执行句柄，并补足 credential 生命周期证据。
 - 平台能力 inventory 已覆盖 `FileManager` 默认实例、`FileHandle`、`URL.resourceValues`、Data 读写、
   脚本写入与环境变量访问；后续新增同类 feature 例外会直接触发治理测试。
+
+AI runtime environment contract 当前由 Core 的 7 个 `AREAMATRIX_*_RUNTIME` key 与治理检查共同固定：
+classification、tags、summary 的 local / remote runtime 由外部集成提供；
+`AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME` 由 macOS 安装器受控提供。Core 新增或重命名 runtime key、
+或 macOS 引用未登记 key 时，`./dev check governance` 必须失败，不能让跨 Rust / Swift 的环境变量合同静默漂移。
 
 ## 渐进迁移顺序
 
@@ -133,7 +166,10 @@ inventory。保留项必须落入下列专项之一，并在收口时补充对�
 - 手写 Swift 文件达到 450 行后进入 `SwiftFileSizeGovernanceTests` 精确清单，必须记录 owner、继续保留的理由和下一次增长前的拆分触发条件。
 - 清单记录当前行数上界；已进入清单的文件不能继续增长，优先按完整职责族拆分，而不是拆散同一语义。
 - 500 行是手写 Swift 文件硬上限。`Bridge/Generated/` 与 `Bridge/UniFFI/` 的 UniFFI 生成绑定不适用手写文件阈值，但由生成产物与 bindings drift 门禁单独约束。
-- 当前清单只保留 `AppPlatformServiceAdapters.swift` 与 `ConfigurationFixtures.swift`；架构治理测试的共享扫描能力已提取到 `MacOSGovernanceFileSystemTestSupport.swift`，文件名显式暴露测试文件系统边界。
+- 当前 450 行近阈值清单只登记 459 行的 `MacOSArchitectureBoundaryGovernanceTests.swift`，并冻结其继续增长；
+  `RepoConfigSnapshot` fixture family 与 Local File URL platform adapter family 已分别按完整职责迁出，
+  架构治理测试的共享扫描能力也已提取到 `MacOSGovernanceFileSystemTestSupport.swift`。下一次扩展
+  architecture governance 扫描前，必须继续提取独立扫描族或 shared assertion helper。
 
 ## 不做
 

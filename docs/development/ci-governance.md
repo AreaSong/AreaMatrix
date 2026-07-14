@@ -16,9 +16,14 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
 | `macos-ci.yml` | Core build、tracked Swift bindings drift、Xcode build/test、SwiftLint、SwiftFormat | 所有 PR、main push |
-| `governance-ci.yml` | governance files、skills、quality smoke、Codex OS、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
+| `governance-ci.yml` | governance files、skills、quality smoke、品牌资产、Codex OS、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 
-macOS app 工程尚未存在时，`macos-ci.yml` 可以按现有保护逻辑跳过 app build/test，但 workflow 本身必须运行。
+macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.yml` 必须先显式检查工程和源码目录；
+任一目录缺失都应立即失败，不得通过条件表达式跳过 build/test、SwiftLint 或 SwiftFormat。
+`./dev check governance` 还会把磁盘上的 `*GovernanceTests.swift` 和
+`MacOSGovernance*TestSupport.swift` 与 `AreaMatrixTests` target 的 Sources membership 双向核对，
+防止治理测试只有文件引用、没有进入可执行 XCTest target 时被 CI 静默漏跑。
+它还会核对 Core 与 macOS 之间的 `AREAMATRIX_*_RUNTIME` key 合同，防止新增或改名 runtime 后只有一侧更新。
 
 ## 本地等价检查
 
@@ -36,6 +41,9 @@ macOS app 工程尚未存在时，`macos-ci.yml` 可以按现有保护逻辑跳�
 ./dev check secrets          # 默认 diff 模式：未提交变更 + 领先 origin/main 的 commit
 ./dev build core
 ./dev bindings verify        # 只读比较当前 UDL 与 Xcode tracked Swift bindings
+python3 -m venv .brand-venv
+.brand-venv/bin/pip install --requirement scripts/brand/requirements.txt
+.brand-venv/bin/python scripts/brand/validate_assets.py
 ```
 
 `./dev release status --json --remote` 和 `./dev release evidence-audit --json` 是 release owner
@@ -108,7 +116,8 @@ cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftform
 
 - CI 失败默认阻断合并。
 - 修复 CI 失败优先于继续堆叠功能。
-- 环境性失败必须在 PR 中写明失败 job、错误摘要、重跑结果和残余风险。
+- 环境性失败必须在 PR 中写明失败 job、错误摘要、重跑结果和残余风险；Xcode system content mismatch
+  会以明确的非零 blocked 状态返回，不得被当作 XCTest PASS。
 - 不允许用本地截图替代可复现命令输出。
 
 ## Task-loop 与 CI
@@ -125,9 +134,9 @@ Task-loop 的 `VERIFY_RESULT: PASS` 是单任务验收证据。合并前仍需 C
 
 只有以下情况允许跳过部分检查：
 
-- 目标工程尚未存在，workflow 内部已显式检测并说明。
 - 外部服务不可用，且 PR 描述记录了命令、错误和补跑计划。
-- 文档-only 改动无需跑产品 build，但 governance/prompt/skill 检查仍必须跑。
+- 文档-only 改动在本地可以按改动范围不跑产品 build，但远端 CI 仍运行完整 workflow；
+  governance/prompt/skill 检查不得跳过。
 
 ## Quality Smoke
 

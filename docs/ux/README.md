@@ -27,6 +27,7 @@ docs/ux/first-launch.md
 
 | 文档 | 说明 |
 |---|---|
+| [brand-assets.md](brand-assets.md) | Logo、颜色、留白、最小尺寸与品牌交付规范 |
 | [first-launch.md](first-launch.md) | 首次启动向导 |
 | [drag-import-flow.md](drag-import-flow.md) | 拖拽导入与 ImportSheet |
 | [ui-states.md](ui-states.md) | Tree/List/Detail 三件套状态机 |

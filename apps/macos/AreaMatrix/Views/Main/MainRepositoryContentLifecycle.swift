@@ -3,6 +3,7 @@ import SwiftUI
 extension View {
     func mainRepositoryContentLifecycle(_ contentView: MainRepositoryContentView) -> some View {
         mainRepositoryContentLoadTasks(contentView)
+            .mainRepositoryContentImportProgressSelection(contentView)
             .mainRepositoryContentSearchTasks(contentView)
             .mainRepositoryContentDialogs(contentView)
             .mainRepositoryContentSheets(contentView)
@@ -15,6 +16,10 @@ extension View {
 
     func mainRepositoryContentSearchTasks(_ contentView: MainRepositoryContentView) -> some View {
         contentView.applyMainRepositoryContentSearchTasks(to: self)
+    }
+
+    func mainRepositoryContentImportProgressSelection(_ contentView: MainRepositoryContentView) -> some View {
+        contentView.applyMainRepositoryImportProgressSelectionRelay(to: self)
     }
 
     func mainRepositoryContentDialogs(_ contentView: MainRepositoryContentView) -> some View {
@@ -71,38 +76,6 @@ extension MainRepositoryContentView {
             .onChange(of: selectedFileIDs) { previousIDs, ids in
                 handleSelectedFileIDsChange(previousIDs: previousIDs, ids: ids)
             }
-            .onChange(of: selectedImportProgressIDs) { _, ids in
-                guard !ids.isEmpty else { return }
-                selectedFileIDs = []
-            }
-    }
-
-    func applyMainRepositoryContentSearchTasks(to content: some View) -> some View {
-        content
-            .task(id: searchTaskKey) {
-                guard state == .list else { return }
-                guard savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
-                try? await Task.sleep(nanoseconds: 250_000_000)
-                guard !Task.isCancelled else { return }
-                await fileListModel.runSearch(
-                    query: filterText,
-                    scope: searchScope,
-                    sort: searchSort,
-                    sidebarRow: selectedSidebarRow,
-                    filters: effectiveSearchFilters,
-                    mode: searchMode
-                )
-            }
-            .task(id: searchFacetsTaskKey) {
-                guard state == .list else { return }
-                guard savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
-                await fileListModel.loadSearchFacets(
-                    query: filterText,
-                    scope: searchScope,
-                    sidebarRow: selectedSidebarRow,
-                    filters: effectiveSearchFilters
-                )
-            }
     }
 
     func applyMainRepositoryContentDialogs(to content: some View) -> some View {
@@ -131,45 +104,6 @@ extension MainRepositoryContentView {
                 }
             } message: {
                 Text("Save or discard the AI summary draft before switching files.")
-            }
-    }
-
-    func applyMainRepositorySemanticIndexDialogs(to content: some View) -> some View {
-        content
-            .confirmationDialog(
-                "Build semantic index?",
-                isPresented: $isSemanticIndexConfirmationPresented,
-                titleVisibility: .visible
-            ) {
-                Button("Start index build") {
-                    Task { await fileListModel.buildSemanticIndexForCurrentSearch() }
-                }
-                .disabled(!fileListModel.semanticPrivacyGateState.allowsIndexBuild)
-                semanticIndexRecoveryActions
-                Button("Back") {}
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text(semanticIndexConfirmationMessage)
-            }
-            .confirmationDialog(
-                "Cancel semantic index build?",
-                isPresented: Binding(
-                    get: {
-                        if case .cancelConfirm = fileListModel.semanticIndexControlState { return true }
-                        return false
-                    },
-                    set: { if !$0 { fileListModel.keepBuildingSemanticIndexForCurrentSearch() } }
-                ),
-                titleVisibility: .visible
-            ) {
-                Button("Cancel index build", role: .destructive) {
-                    Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
-                }
-                Button("Keep building", role: .cancel) {
-                    fileListModel.keepBuildingSemanticIndexForCurrentSearch()
-                }
-            } message: {
-                Text(semanticIndexCancelConfirmationMessage)
             }
     }
 

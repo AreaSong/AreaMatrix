@@ -70,6 +70,25 @@ final class ProbeRuntimeRecorder {
     }
 }
 
+actor ProbeRuntimeInstallerDouble: RemoteProviderProbeRuntimeInstalling {
+    private let runtimePath: String
+
+    init(runtimePath: String) {
+        self.runtimePath = runtimePath
+    }
+
+    func ensureInstalled() async throws -> RemoteProviderProbeRuntimeDescriptor {
+        setenv(RemoteProviderProbeRuntimeInstaller.environmentKey, runtimePath, 1)
+        return RemoteProviderProbeRuntimeDescriptor(
+            executablePath: runtimePath,
+            version: "test-runtime",
+            contentHash: "test-runtime",
+            device: 0,
+            inode: 0
+        )
+    }
+}
+
 final class ProbeRuntimeEnvironment {
     private let oldRuntime: String?
     private let oldEvidence: String?

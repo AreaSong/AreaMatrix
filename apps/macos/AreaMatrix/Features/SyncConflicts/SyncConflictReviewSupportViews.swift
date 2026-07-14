@@ -2,7 +2,7 @@ import SwiftUI
 
 extension MainRepositoryContentView {
     func applyMainRepositorySyncConflictSheet(to content: some View) -> some View {
-        content.sheet(item: $pendingSyncConflictReviewRoute, content: syncConflictReviewSheet)
+        content.sheet(item: $syncConflictReviewRoutingState.route, content: syncConflictReviewSheet)
     }
 
     func syncConflictReviewSheet(_ route: SyncConflictReviewRoute) -> some View {
@@ -12,11 +12,15 @@ extension MainRepositoryContentView {
                 conflictID: route.conflictID,
                 primaryPath: route.primaryPath
             ),
-            onBackToNeedsReview: { pendingSyncConflictReviewRoute = nil },
-            onClose: { pendingSyncConflictReviewRoute = nil },
+            onBackToNeedsReview: { syncConflictReviewRoutingState.route = nil },
+            onClose: { syncConflictReviewRoutingState.route = nil },
             onResolved: handleSyncConflictResolved
         )
     }
+}
+
+struct SyncConflictReviewRoutingState: Equatable {
+    var route: SyncConflictReviewRoute?
 }
 
 struct SyncConflictReviewSummarySection: View {

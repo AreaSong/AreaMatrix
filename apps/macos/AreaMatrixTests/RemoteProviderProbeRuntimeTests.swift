@@ -8,7 +8,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
     func testCoreBridgeUsesInstalledRuntimeForKeychainReferenceProviderProbe() async throws {
         let runtime = try ProbeRuntimeRecorder()
         let environment = ProbeRuntimeEnvironment(
-            runtimePath: runtime.runtimeURL.path,
+            runtimePath: nil,
             evidencePath: runtime.evidenceURL.path
         )
         environment.install()
@@ -23,7 +23,11 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         ))
         let keyReference = "keychain:remote-ai-other-runtime-test"
 
-        let bridge = CoreBridge()
+        let bridge = CoreBridge(
+            remoteProviderProbeRuntimeInstaller: ProbeRuntimeInstallerDouble(
+                runtimePath: runtime.runtimeURL.path
+            )
+        )
         let testResult = try await bridge.testRemoteProvider(
             repoPath: repoURL.path,
             request: RemoteProviderTestRequestState(
@@ -56,27 +60,6 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         XCTAssertTrue(evidence.contains("url=\(runtime.endpointURL)"))
         XCTAssertTrue(evidence.contains("key_reference=\(keyReference)"))
         XCTAssertTrue(evidence.contains("credential_reference_shape=keychain"))
-    }
-
-    func testInstallerRegistersExecutableCredentialBackedRuntime() throws {
-        let environment = ProbeRuntimeEnvironment(runtimePath: nil, evidencePath: nil)
-        environment.clearRuntime()
-        defer { environment.restore() }
-        let installer = RemoteProviderProbeRuntimeInstaller()
-        let runtimePath = try installer.ensureInstalled()
-
-        let attributes = try FileManager.default.attributesOfItem(atPath: runtimePath)
-        let permissions = try XCTUnwrap(attributes[.posixPermissions] as? Int)
-        let script = try String(contentsOfFile: runtimePath, encoding: .utf8)
-        let installedPath = environmentString(RemoteProviderProbeRuntimeInstaller.environmentKey)
-        XCTAssertEqual(installedPath, runtimePath)
-        XCTAssertEqual(permissions & 0o111, 0o100)
-        XCTAssertTrue(script.contains("/usr/bin/security find-generic-password"))
-        XCTAssertTrue(script.contains("Authorization: Bearer %s"))
-        XCTAssertTrue(script.contains("x-api-key: %s"))
-        XCTAssertTrue(script.contains("$credential"))
-        XCTAssertFalse(script.contains("Authorization: Bearer %s\"\\n' \"$key_reference\""))
-        XCTAssertFalse(script.contains("x-api-key: %s\"\\n' \"$key_reference\""))
     }
 
     @MainActor

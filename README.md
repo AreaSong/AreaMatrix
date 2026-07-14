@@ -1,5 +1,11 @@
 # AreaMatrix
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/brand/final/areamatrix-logo-lockup-outlined-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/brand/final/areamatrix-logo-lockup-outlined-light.svg">
+  <img alt="AreaMatrix" src="./assets/brand/final/areamatrix-logo-lockup-outlined-light.svg" width="720">
+</picture>
+
 > Drag, drop, and your files organize themselves.
 >
 > A native macOS desktop app for visual file management with auto classification, change tracking, and a tree-view of everything you own.

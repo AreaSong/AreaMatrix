@@ -121,6 +121,7 @@ docs/adr/README.md  (索引)
 | 文档 | 说明 |
 |---|---|
 | [ux/README.md](ux/README.md) | UX 文档索引（Wireframe Specs） |
+| [ux/brand-assets.md](ux/brand-assets.md) | Logo、颜色、留白、尺寸与交付规范 |
 
 ### 架构 / Architecture
 

@@ -3,6 +3,22 @@ import Foundation
 import XCTest
 
 final class MainEmptyBuildTreeTests: XCTestCase {
+    @MainActor
+    func testMainListErrorRecoveryActionsKeepRetryAndDiagnosticsFallbacksTogether() async {
+        var retried = false
+        var collected = false
+        let actions = MainListErrorRecoveryActions(
+            retryFallback: { retried = true },
+            collectFallbackDiagnostics: { collected = true }
+        )
+
+        actions.retryFallback()
+        await actions.collectFallbackDiagnostics()
+
+        XCTAssertTrue(retried)
+        XCTAssertTrue(collected)
+    }
+
     func testDefaultCoreBridgeListsRealEmptyRepositoryTreeForMainEmpty() async throws {
         let repoURL = try makeBuildTreeTemporaryRepositoryURL()
         defer { removeTestTemporaryItems(repoURL) }

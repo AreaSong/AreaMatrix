@@ -2,7 +2,7 @@
 import XCTest
 
 final class DetailTagFilterIntegrationTests: XCTestCase {
-    func testSearchRoutingStateKeepsToolbarSidebarAndSmartListRoutesIndependent() {
+    func testSearchRoutingStateKeepsFilterSmartListAndSemanticRoutesIndependent() {
         var routingState = MainRepositorySearchRoutingState()
 
         routingState.isSidebarTagsFilterPresented = true
@@ -14,6 +14,14 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
         routingState.isSidebarTagsFilterPresented = false
         XCTAssertTrue(routingState.isToolbarFiltersPresented)
         XCTAssertFalse(routingState.isSidebarTagsFilterPresented)
+
+        routingState.isSemanticIndexConfirmationPresented = true
+        routingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: "privacy-rule")
+        routingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: 42)
+        XCTAssertTrue(routingState.isSemanticIndexConfirmationPresented)
+        XCTAssertEqual(routingState.semanticPrivacyRuleRoute?.ruleID, "privacy-rule")
+        XCTAssertEqual(routingState.semanticCallLogRoute?.callLogID, 42)
+        XCTAssertTrue(routingState.isToolbarFiltersPresented)
     }
 
     @MainActor

@@ -1,12 +1,21 @@
 import SwiftUI
 
+struct MainListErrorRecoveryActions {
+    let retryFallback: () -> Void
+    let collectFallbackDiagnostics: () async -> Void
+
+    static let none = MainListErrorRecoveryActions(
+        retryFallback: {},
+        collectFallbackDiagnostics: {}
+    )
+}
+
 @MainActor
 struct MainCurrentListErrorPane: View {
     let error: CoreErrorMappingSnapshot
     let state: MainRepositoryContentState
     let fileListModel: MainFileListModel
-    let onRetryCurrentList: () -> Void
-    let onCollectDiagnostics: () async -> Void
+    let recoveryActions: MainListErrorRecoveryActions
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -79,7 +88,7 @@ struct MainCurrentListErrorPane: View {
         if state == .list {
             Task { await fileListModel.retryCurrentCategory() }
         } else {
-            onRetryCurrentList()
+            recoveryActions.retryFallback()
         }
     }
 
@@ -87,7 +96,7 @@ struct MainCurrentListErrorPane: View {
         if state == .list {
             await fileListModel.collectCurrentListDiagnostics()
         } else {
-            await onCollectDiagnostics()
+            await recoveryActions.collectFallbackDiagnostics()
         }
     }
 }
@@ -98,8 +107,7 @@ extension MainRepositoryContentView {
             error: error,
             state: state,
             fileListModel: fileListModel,
-            onRetryCurrentList: onRetryCurrentList,
-            onCollectDiagnostics: onCollectDiagnostics
+            recoveryActions: mainListErrorRecoveryActions
         )
     }
 }

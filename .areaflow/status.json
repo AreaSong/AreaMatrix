@@ -19,10 +19,16 @@
   "last_synced_at": "2026-07-13T05:48:34Z",
   "source_snapshot_hash": "35f51913af9834e7e21540c866e06f87150eb2cdd109e5f6457e8e659a363a3a",
   "compatibility": {
-    "shim_lifecycle_state": "not_installed",
+    "shim_lifecycle_state": "read_only_shim",
     "offline_source": ".areaflow/status.json",
     "blocked_commands": [
       "./task-loop run",
+      "./task-loop resume-stale",
+      "./task-loop resume-failed",
+      "./task-loop reset-progress",
+      "./task-loop clear-stale",
+      "./task-loop drain",
+      "changes generate --write",
       "promotion apply",
       "write execution"
     ]

@@ -58,7 +58,14 @@ cd core && cargo test --workspace
 - Apache-2.0
 - BSD-2-Clause / BSD-3-Clause
 - ISC
+- HPND（仅限经过来源核验的 Pillow 等工具依赖）
 - Unicode-DFS-2016
+
+## 品牌工具
+
+品牌导出和校验使用 `Pillow==11.3.0`，来源为 PyPI，许可证为 HPND。它只运行在开发工具和 CI，负责 PNG 重采样、ICO 封装、品牌总览合成和 CMYK TIFF；不进入 AreaMatrix 应用、Rust Core 或用户文件处理路径。macOS 自带 `sips` 和 `iconutil` 负责 SVG 栅格化、PDF 与 ICNS，但不能独立覆盖 ICO、图层合成和 CMYK 校验，因此不作为完整替代。
+
+版本固定在 `scripts/brand/requirements.txt`。移除品牌自动化时，可同时删除该 requirements 文件、品牌 Python 工具和 Governance CI 的品牌步骤，产品运行时不受影响。
 
 需要人工确认：
 

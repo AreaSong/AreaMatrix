@@ -153,26 +153,44 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(RELEASE, "`./dev release preflight --json`");
     assert_contains(RELEASE, "`required_distribution_evidence`");
     assert_contains(RELEASE, "`evidence_record_template`");
-    assert_contains(RELEASE, "`./dev release final-tag-readiness-audit --json --remote`");
+    assert_contains(
+        RELEASE,
+        "`./dev release final-tag-readiness-audit --json --remote`",
+    );
     assert_contains(RELEASE, "`ready_to_create_formal_tag: true`");
     assert_contains(RELEASE, "不创建 tag、不推送 tag、不创建 GitHub Release");
-    assert_contains(RELEASE, "`./dev release icloud-placeholder-smoke-audit --json`");
+    assert_contains(
+        RELEASE,
+        "`./dev release icloud-placeholder-smoke-audit --json`",
+    );
     assert_contains(RELEASE, "`smoke_evidence_gate: BLOCKED`");
     assert_contains(RELEASE, "不能关闭 `v1-rl-002`");
-    assert_contains(RELEASE, "`./dev release task05-release-review-audit --json`");
+    assert_contains(
+        RELEASE,
+        "`./dev release task05-release-review-audit --json`",
+    );
     assert_contains(RELEASE, "`release_evidence_review_gate: BLOCKED`");
     assert_contains(RELEASE, "不能关闭 `v1-ref-003-1-task-05`");
-    assert_contains(RELEASE, "`./dev release alpha-feedback-decision-audit --json`");
+    assert_contains(
+        RELEASE,
+        "`./dev release alpha-feedback-decision-audit --json`",
+    );
     assert_contains(RELEASE, "`decision_gate.status: BLOCKED`");
     assert_contains(RELEASE, "不能关闭 `v1-rl-006`");
     assert_contains(RELEASE, "`./dev release distribution-artifact-probe");
     assert_contains(RELEASE, "`probe.status` 表示采集是否成功");
-    assert_contains(RELEASE, "`distribution_requirements.status` 才表达正式分发要求");
+    assert_contains(
+        RELEASE,
+        "`distribution_requirements.status` 才表达正式分发要求",
+    );
     assert_contains(BUILD, "release distribution");
     assert_contains(BUILD, "preflight: BLOCKED");
     assert_contains(BUILD, "./dev release preflight --json");
     assert_contains(BUILD, "`blocked_by`");
-    assert_contains(BUILD, "./dev release final-tag-readiness-audit --json --remote");
+    assert_contains(
+        BUILD,
+        "./dev release final-tag-readiness-audit --json --remote",
+    );
     assert_contains(BUILD, "`ready_to_create_formal_tag: true`");
     assert_contains(BUILD, "不会创建 tag");
     assert_contains(BUILD, "./dev release icloud-placeholder-smoke-audit --json");
@@ -185,17 +203,32 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(BUILD, "./dev release alpha-feedback-decision-audit --json");
     assert_contains(BUILD, "当前决策缺失时返回 `BLOCKED` 是预期状态");
     assert_contains(BUILD, "不会创建");
-    assert_contains(CI_GOVERNANCE, "./dev release alpha-feedback-decision-audit --json");
-    assert_contains(CI_GOVERNANCE, "./dev release final-tag-readiness-audit --json --remote");
-    assert_contains(CI_GOVERNANCE, "./dev release icloud-placeholder-smoke-audit --json");
+    assert_contains(
+        CI_GOVERNANCE,
+        "./dev release alpha-feedback-decision-audit --json",
+    );
+    assert_contains(
+        CI_GOVERNANCE,
+        "./dev release final-tag-readiness-audit --json --remote",
+    );
+    assert_contains(
+        CI_GOVERNANCE,
+        "./dev release icloud-placeholder-smoke-audit --json",
+    );
     assert_contains(CI_GOVERNANCE, "`smoke_evidence_gate: BLOCKED`");
-    assert_contains(CI_GOVERNANCE, "./dev release task05-release-review-audit --json");
+    assert_contains(
+        CI_GOVERNANCE,
+        "./dev release task05-release-review-audit --json",
+    );
     assert_contains(CI_GOVERNANCE, "`release_evidence_review_gate: BLOCKED`");
     assert_contains(CI_GOVERNANCE, "不属于普通 PR 或 CI 必跑项");
     assert_contains(CI_GOVERNANCE, "不应记为普通 CI failure");
     assert_contains(BUILD, "./dev release distribution-artifact-probe");
     assert_contains(BUILD, "`probe.status: captured` 只表示采集成功");
-    assert_contains(BUILD, "`distribution_requirements.status` 在正式证据不足时仍为 `blocked`");
+    assert_contains(
+        BUILD,
+        "`distribution_requirements.status` 在正式证据不足时仍为 `blocked`",
+    );
     assert_contains(
         CHECKLIST,
         "no valid Developer ID Application signing identity found",
@@ -210,7 +243,10 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(CHECKLIST, "Developer ID codesign");
     assert_contains(CHECKLIST, "notarytool accepted log");
     assert_contains(CHECKLIST, "DMG checksum");
-    assert_contains(CHECKLIST, "`distribution_requirements.status` 在正式证据不足时仍为 `blocked`");
+    assert_contains(
+        CHECKLIST,
+        "`distribution_requirements.status` 在正式证据不足时仍为 `blocked`",
+    );
     assert_contains(CHECKLIST, "默认不执行完整 DMG SHA-256 读取");
     assert_contains(RELEASE, "Developer ID / notarization 后续补证");
     assert_contains(RELEASE, "`./dev release preflight` 通过");
@@ -421,7 +457,10 @@ fn release_checklist_records_changelog_and_version_state_without_claiming_releas
     assert_contains(CHECKLIST, "build `202606161707`");
     assert_contains(CHECKLIST, "正式 `v0.1.0` tag 尚未创建");
     assert_contains(CHECKLIST, "`ready_to_create_formal_tag: false`");
-    assert_contains(CHECKLIST, "`./dev release final-tag-readiness-audit --json --remote`");
+    assert_contains(
+        CHECKLIST,
+        "`./dev release final-tag-readiness-audit --json --remote`",
+    );
     assert_contains(CHECKLIST, "不得把它当作正式 `v0.1.0` release tag");
 }
 
@@ -481,7 +520,10 @@ fn alpha_feedback_template_collects_release_review_fields_without_closing_decisi
     assert_contains(ALPHA_FEEDBACK_ROUTE, "alpha_feedback_release_decision");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "closes_residual: false");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "trusted_tester_list.status: pending");
-    assert_contains(ALPHA_FEEDBACK_ROUTE, "decision_side_effects.testers_invited: false");
+    assert_contains(
+        ALPHA_FEEDBACK_ROUTE,
+        "decision_side_effects.testers_invited: false",
+    );
     assert_contains(ALPHA_FEEDBACK_ROUTE, "announcement.status: pending");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "feedback_route.status: pending");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "triage_owner.status: pending");

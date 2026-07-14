@@ -68,7 +68,10 @@ extension MainRepositoryContentView {
 
     var fileTable: some View {
         VStack(spacing: 8) {
-            ImportProgressTableView(rows: importProgressRows, selection: $selectedImportProgressIDs)
+            ImportProgressTableView(
+                rows: importProgressPresentation.rows,
+                selection: $importProgressSelectionState.selectedIDs
+            )
             if let semanticPage = fileListModel.searchState.page?.semanticPage {
                 semanticResultsContent(semanticPage)
             } else {

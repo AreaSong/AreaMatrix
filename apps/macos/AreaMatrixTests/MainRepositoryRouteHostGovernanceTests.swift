@@ -61,6 +61,34 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertFalse(commandPaletteSource.contains("pendingImportConflictBatchRoute = route"))
     }
 
+    func testImportProgressListContractStaysOwnedByImportFeature() throws {
+        let contentSource = try productionSource(at: "Views/Main/MainRepositoryContentView.swift")
+        let lifecycleSource = try mainRepositoryContentLifecycleSource()
+        let importProgressSource = try productionSource(
+            at: "Features/Import/ImportProgressListIntegration.swift"
+        )
+
+        XCTAssertTrue(contentSource.contains("ImportProgressListPresentation"))
+        XCTAssertTrue(contentSource.contains("ImportProgressListSelectionState()"))
+        XCTAssertFalse(contentSource.contains("let importProgressItems:"))
+        XCTAssertFalse(contentSource.contains("@State var selectedImportProgressIDs"))
+        XCTAssertTrue(importProgressSource.contains("struct ImportProgressListPresentation"))
+        XCTAssertTrue(importProgressSource.contains("struct ImportProgressListSelectionState"))
+        XCTAssertTrue(importProgressSource.contains("func applyMainRepositoryImportProgressSelectionRelay("))
+        XCTAssertFalse(lifecycleSource.contains("onChange(of: selectedImportProgressIDs)"))
+    }
+
+    func testMainListErrorRecoveryActionsStayOwnedByMainListFeature() throws {
+        let contentSource = try productionSource(at: "Views/Main/MainRepositoryContentView.swift")
+        let recoverySource = try productionSource(at: "Features/MainList/MainCurrentListErrorPane.swift")
+
+        XCTAssertTrue(contentSource.contains("MainListErrorRecoveryActions"))
+        XCTAssertFalse(contentSource.contains("let onRetryCurrentList:"))
+        XCTAssertFalse(contentSource.contains("let onCollectDiagnostics:"))
+        XCTAssertTrue(recoverySource.contains("struct MainListErrorRecoveryActions"))
+        XCTAssertTrue(recoverySource.contains("recoveryActions.collectFallbackDiagnostics()"))
+    }
+
     func testLifecycleComposesFeatureOwnedCommandHostsInExistingModifierOrder() throws {
         let lifecycleSource = try mainRepositoryContentLifecycleSource()
         let expectedCommandHosts = [
@@ -108,12 +136,22 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
         let searchRoutingSource = try productionSource(
             at: "Features/Search/MainRepositoryContentSearchRouting.swift"
         )
+        let lifecycleSource = try mainRepositoryContentLifecycleSource()
 
         XCTAssertTrue(contentSource.contains("MainRepositorySearchRoutingState()"))
         XCTAssertFalse(contentSource.contains("@State var isSearchFiltersPresented"))
         XCTAssertFalse(contentSource.contains("@State var isSidebarTagsFilterPresented"))
         XCTAssertFalse(contentSource.contains("@State var smartListManagementRoute"))
+        XCTAssertFalse(contentSource.contains("@State var isSemanticIndexConfirmationPresented"))
+        XCTAssertFalse(contentSource.contains("@State var semanticPrivacyRuleRoute"))
+        XCTAssertFalse(contentSource.contains("@State var semanticCallLogRoute"))
         XCTAssertTrue(searchRoutingSource.contains("struct MainRepositorySearchRoutingState"))
+        XCTAssertTrue(searchRoutingSource.contains("func applyMainRepositoryContentSearchTasks("))
+        XCTAssertTrue(searchRoutingSource.contains("func applyMainRepositorySemanticIndexDialogs("))
+        XCTAssertFalse(lifecycleSource.contains(".task(id: searchTaskKey)"))
+        XCTAssertFalse(lifecycleSource.contains(".task(id: searchFacetsTaskKey)"))
+        XCTAssertFalse(lifecycleSource.contains("\"Build semantic index?\""))
+        XCTAssertFalse(lifecycleSource.contains("\"Cancel semantic index build?\""))
     }
 
     func testFileActionPresentationRoutingStateStaysOwnedByFileActionsFeature() throws {
@@ -134,6 +172,7 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
     }
 
     func testSyncConflictReviewSheetStaysOwnedBySyncConflictsFeature() throws {
+        let contentSource = try productionSource(at: "Views/Main/MainRepositoryContentView.swift")
         let syncConflictSource = try productionSource(
             at: "Features/SyncConflicts/SyncConflictReviewSupportViews.swift"
         )
@@ -142,6 +181,9 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
         )
 
         XCTAssertTrue(syncConflictSource.contains("func syncConflictReviewSheet("))
+        XCTAssertTrue(syncConflictSource.contains("struct SyncConflictReviewRoutingState"))
+        XCTAssertTrue(contentSource.contains("SyncConflictReviewRoutingState()"))
+        XCTAssertFalse(contentSource.contains("@State var pendingSyncConflictReviewRoute"))
         XCTAssertFalse(
             detailSource.contains("func syncConflictReviewSheet("),
             "Sync conflict review routing must not drift back into the Detail feature."

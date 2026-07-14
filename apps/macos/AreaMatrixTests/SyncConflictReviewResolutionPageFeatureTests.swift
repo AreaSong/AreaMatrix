@@ -362,7 +362,7 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
 
         await content.handleSyncConflictResolved(.syncConflictReviewResolveFixture())
 
-        XCTAssertNil(content.pendingSyncConflictReviewRoute)
+        XCTAssertNil(content.syncConflictReviewRoutingState.route)
         await lister.assertFileListRequestCount(2)
     }
 }

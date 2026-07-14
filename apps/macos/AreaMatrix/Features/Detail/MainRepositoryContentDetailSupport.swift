@@ -71,14 +71,14 @@ extension MainRepositoryContentView {
 
     func beginSyncConflictReview(file: FileEntrySnapshot) {
         if let conflict = syncConflictEntryModel.detailConflict(for: file) {
-            pendingSyncConflictReviewRoute = syncConflictEntryModel.reviewRoute(for: conflict)
+            syncConflictReviewRoutingState.route = syncConflictEntryModel.reviewRoute(for: conflict)
             return
         }
-        pendingSyncConflictReviewRoute = .fileDetail(repoPath: opening.config.repoPath, file: file)
+        syncConflictReviewRoutingState.route = .fileDetail(repoPath: opening.config.repoPath, file: file)
     }
 
     func handleSyncConflictResolved(_: SyncConflictResolveReportSnapshot) async {
-        pendingSyncConflictReviewRoute = nil
+        syncConflictReviewRoutingState.route = nil
         await syncConflictEntryModel.refresh()
         await fileListModel.retryCurrentCategory()
     }

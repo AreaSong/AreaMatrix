@@ -4,12 +4,17 @@ import XCTest
 final class ImportProgressPageIntegrationVerifyTests: XCTestCase {
     @MainActor
     func testImportProgressMainListTemporaryImportRowsCanDriveDetailPane() {
-        let rows = ImportProgressFixtures.runningCopyProgress.items.map(ImportProgressListRow.init)
+        let presentation = ImportProgressListPresentation(items: ImportProgressFixtures.runningCopyProgress.items)
+        var selectionState = ImportProgressListSelectionState()
+        let rows = presentation.rows
 
         XCTAssertEqual(rows.map(\.displayName), ["invoice.pdf", "contract.pdf", "later.pdf"])
         XCTAssertEqual(rows.map(\.statusText), ["Imported", "Copying file", "Queued"])
         XCTAssertEqual(rows[1].sourcePath, importProgressBatchSourcePath("contract.pdf"))
         XCTAssertEqual(rows[1].targetPath, "docs/contract.pdf")
+
+        selectionState.selectedIDs = [rows[1].id]
+        XCTAssertEqual(selectionState.selectedRow(in: presentation), rows[1])
     }
 
     @MainActor

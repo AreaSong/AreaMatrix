@@ -89,6 +89,16 @@ FILE_SAFETY_GATE_KEYWORDS = (
     "同步",
 )
 
+AI_RUNTIME_ENV_CONTRACT = {
+    "AREAMATRIX_AI_CLASSIFICATION_LOCAL_RUNTIME": "external",
+    "AREAMATRIX_AI_CLASSIFICATION_REMOTE_RUNTIME": "external",
+    "AREAMATRIX_AI_SUMMARY_LOCAL_RUNTIME": "external",
+    "AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME": "external",
+    "AREAMATRIX_AI_TAGS_LOCAL_RUNTIME": "external",
+    "AREAMATRIX_AI_TAGS_REMOTE_RUNTIME": "external",
+    "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME": "installed-by-macos",
+}
+
 
 @dataclass(frozen=True)
 class TaskManifestEntry:
@@ -141,6 +151,123 @@ def _check_workflow_has_no_paths_filter(root: Path, failures: FailureCollector, 
         failures.fail(f"{rel_path} must not use PR/push paths filters; enterprise CI runs on every PR")
 
 
+def _pbx_object_body(project_text: str, object_id: str) -> str | None:
+    match = re.search(
+        rf"(?ms)^(?P<indent>[ \t]*){re.escape(object_id)} /\*[^\n]*?\*/ = \{{"
+        rf"(?P<body>.*?)^(?P=indent)\}};",
+        project_text,
+    )
+    return match.group("body") if match else None
+
+
+def _macos_test_target_source_build_file_ids(project_text: str) -> set[str] | None:
+    target_match = re.search(
+        r"(?m)^[ \t]*([A-F0-9]{24}) /\* AreaMatrixTests \*/ = \{\s*isa = PBXNativeTarget;",
+        project_text,
+    )
+    if not target_match:
+        return None
+    target_body = _pbx_object_body(project_text, target_match.group(1))
+    if target_body is None:
+        return None
+    phases_match = re.search(r"buildPhases = \((.*?)\);", target_body, flags=re.DOTALL)
+    if not phases_match:
+        return None
+
+    source_build_files: set[str] = set()
+    for phase_id in re.findall(r"([A-F0-9]{24}) /\*", phases_match.group(1)):
+        phase_body = _pbx_object_body(project_text, phase_id)
+        if phase_body is None or "isa = PBXSourcesBuildPhase;" not in phase_body:
+            continue
+        files_match = re.search(r"files = \((.*?)\);", phase_body, flags=re.DOTALL)
+        if files_match:
+            source_build_files.update(re.findall(r"([A-F0-9]{24}) /\*", files_match.group(1)))
+    return source_build_files
+
+
+def _check_macos_governance_test_membership(root: Path, failures: FailureCollector) -> None:
+    tests_dir = root / "apps/macos/AreaMatrixTests"
+    project_file = root / "apps/macos/AreaMatrix.xcodeproj/project.pbxproj"
+    governance_files = sorted(
+        {
+            path
+            for pattern in ("*GovernanceTests.swift", "MacOSGovernance*TestSupport.swift")
+            for path in tests_dir.glob(pattern)
+            if path.is_file()
+        }
+    )
+    if not governance_files:
+        failures.fail("no macOS governance XCTest files found for Xcode target membership audit")
+        return
+    if not project_file.is_file():
+        failures.fail(f"missing Xcode project file for governance test membership: {project_file}")
+        return
+
+    project_text = _read(project_file)
+    target_source_ids = _macos_test_target_source_build_file_ids(project_text)
+    if target_source_ids is None:
+        failures.fail("AreaMatrixTests PBXSourcesBuildPhase could not be resolved")
+        return
+
+    for source_file in governance_files:
+        source_path = source_file.relative_to(root / "apps/macos").as_posix()
+        file_ref_match = re.search(
+            rf"(?m)^[ \t]*([A-F0-9]{{24}}) /\*.*?\*/ = \{{isa = PBXFileReference;"
+            rf"[^\n]*path = \"?{re.escape(source_path)}\"?;",
+            project_text,
+        )
+        if not file_ref_match:
+            failures.fail(f"macOS governance test missing PBXFileReference: {source_path}")
+            continue
+
+        file_ref_id = file_ref_match.group(1)
+        build_file_ids = set(
+            re.findall(
+                rf"(?m)^[ \t]*([A-F0-9]{{24}}) /\*.*?\*/ = \{{isa = PBXBuildFile;"
+                rf" fileRef = {file_ref_id}\b",
+                project_text,
+            )
+        )
+        if not build_file_ids:
+            failures.fail(f"macOS governance test missing PBXBuildFile: {source_path}")
+        elif build_file_ids.isdisjoint(target_source_ids):
+            failures.fail(f"macOS governance test missing AreaMatrixTests Sources membership: {source_path}")
+
+
+def _check_ai_runtime_environment_contract(root: Path, failures: FailureCollector) -> None:
+    expected = set(AI_RUNTIME_ENV_CONTRACT)
+    core_keys = {
+        key
+        for path in (root / "core/src").rglob("*.rs")
+        if path.is_file()
+        for key in re.findall(r'"(AREAMATRIX_[A-Z0-9_]+_RUNTIME)"', _read(path))
+    }
+    swift_keys = {
+        key
+        for path in (root / "apps/macos/AreaMatrix").rglob("*.swift")
+        if path.is_file()
+        for key in re.findall(r'"(AREAMATRIX_[A-Z0-9_]+_RUNTIME)"', _read(path))
+    }
+
+    if core_keys != expected:
+        failures.fail(
+            "AI runtime environment contract drift: "
+            f"expected Core keys {sorted(expected)}, found {sorted(core_keys)}"
+        )
+    unexpected_swift_keys = swift_keys - expected
+    if unexpected_swift_keys:
+        failures.fail(
+            "AI runtime environment contract drift: macOS references unknown keys "
+            f"{sorted(unexpected_swift_keys)}"
+        )
+    installed_keys = {key for key, mode in AI_RUNTIME_ENV_CONTRACT.items() if mode == "installed-by-macos"}
+    if not installed_keys.issubset(swift_keys):
+        failures.fail(
+            "AI runtime environment contract drift: macOS no longer installs declared keys "
+            f"{sorted(installed_keys - swift_keys)}"
+        )
+
+
 def run_governance_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     failures = FailureCollector()
@@ -164,6 +291,9 @@ def run_governance_check(root: Path | None = None) -> int:
     ]
     for rel_path in required_files:
         _check_file(root, failures, rel_path)
+
+    _check_macos_governance_test_membership(root, failures)
+    _check_ai_runtime_environment_contract(root, failures)
 
     _require_text(root, failures, "SECURITY.md", "GitHub Security Advisory", "private security advisory reporting")
     _forbid_text(root, failures, "SECURITY.md", "security@<your-domain>", "placeholder security email")
@@ -241,6 +371,30 @@ def run_governance_check(root: Path | None = None) -> int:
         ".github/workflows/macos-ci.yml",
         r"\./dev bindings verify",
         "tracked Swift bindings drift gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"run: test -d apps/macos/AreaMatrix\.xcodeproj$",
+        "required macOS project gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"run: test -d apps/macos/AreaMatrix$",
+        "required macOS source gate",
+    )
+    _require_text(root, failures, ".github/workflows/macos-ci.yml", r"\./dev test macos", "macOS test gate")
+    _require_text(root, failures, ".github/workflows/macos-ci.yml", r"swiftlint lint --strict", "SwiftLint gate")
+    _require_text(root, failures, ".github/workflows/macos-ci.yml", r"swiftformat --lint", "SwiftFormat gate")
+    _forbid_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"macos_(?:project|sources)\.outputs\.present|skipping (?:app|SwiftLint|SwiftFormat)",
+        "conditional macOS project/source skip guard",
     )
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check governance", "governance check")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check skills", "skill health")
@@ -1069,25 +1223,22 @@ def _run_macos_checks(root: Path) -> int:
     macos_dir = root / "apps/macos"
     macos_project = macos_dir / "AreaMatrix.xcodeproj"
     if not macos_dir.is_dir():
-        print()
-        print("==> Skipping macOS checks")
-        print(f"    {macos_dir} does not exist yet.")
-        return 0
-    if macos_project.is_dir():
-        rc = _run_macos_prerequisites_check()
-        if rc != 0:
-            return rc
-        out_dir = Path(os.environ.get("AREAMATRIX_CHECK_CORE_OUT_DIR", "/private/tmp/areamatrix-check-all/Bridge/UniFFI"))
-        rc = run_core_build(root, out_dir=out_dir)
-        if rc != 0:
-            return rc
-        rc = run_macos_tests(root)
-        if rc != 0:
-            return rc
-    else:
-        print()
-        print("==> Skipping Xcode build and test")
-        print(f"    {macos_project} does not exist yet.")
+        print(f"ERROR: required macOS source directory not found at {macos_dir}.", file=os.sys.stderr)
+        return 1
+    if not macos_project.is_dir():
+        print(f"ERROR: required Xcode project not found at {macos_project}.", file=os.sys.stderr)
+        return 1
+
+    rc = _run_macos_prerequisites_check()
+    if rc != 0:
+        return rc
+    out_dir = Path(os.environ.get("AREAMATRIX_CHECK_CORE_OUT_DIR", "/private/tmp/areamatrix-check-all/Bridge/UniFFI"))
+    rc = run_core_build(root, out_dir=out_dir)
+    if rc != 0:
+        return rc
+    rc = run_macos_tests(root)
+    if rc != 0:
+        return rc
     return _run_swift_checks(root)
 
 

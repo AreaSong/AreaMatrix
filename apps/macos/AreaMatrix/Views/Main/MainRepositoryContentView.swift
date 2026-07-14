@@ -12,8 +12,7 @@ struct MainRepositoryContentView: View {
     let onOpenRepository: () -> Void
     let onOpenHelp: () -> Void
     let onOpenImportConflictBatch: (ImportConflictBatchRoute) -> Void
-    let onRetryCurrentList: () -> Void
-    let onCollectDiagnostics: () async -> Void
+    let mainListErrorRecoveryActions: MainListErrorRecoveryActions
     let onShowInFinder: (String) -> Void
     let onCopyPath: (String) -> Void
     let onCopyPaths: ([String]) -> Void
@@ -28,14 +27,14 @@ struct MainRepositoryContentView: View {
     let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
     let pendingTagSuggestionFocus: TagSuggestionPresentationRequest?
     let onPendingTagSuggestionFocusConsumed: (TagSuggestionPresentationRequest) -> Void
-    let importProgressItems: [ImportBatchProgressSnapshot.Item]
+    let importProgressPresentation: ImportProgressListPresentation
     @StateObject var fileListModel: MainFileListModel
     @StateObject var syncConflictEntryModel: SyncConflictEntryModel
     @State var repositoryTree: RepositoryTreeNodeSnapshot
     @State var selectedSidebarID: String = "inbox"
     @State var selectedFileIDs: Set<Int64> = []
     @State var pendingMovedFileFocusID: Int64?
-    @State var selectedImportProgressIDs: Set<String> = []
+    @State var importProgressSelectionState = ImportProgressListSelectionState()
     @State var fileActionRoutingState = MainFileActionRoutingState()
     @State var importConflictBatchRelayState = ImportConflictBatchRelayState()
     @State var commandPaletteFocusRoutingState = CommandPaletteFocusRoutingState()
@@ -45,12 +44,9 @@ struct MainRepositoryContentView: View {
     @State var searchSort: SearchSortSnapshot = .newestImported
     @State var searchFilters: SearchFilterStateSnapshot = .empty
     @State var searchRoutingState = MainRepositorySearchRoutingState()
-    @State var isSemanticIndexConfirmationPresented = false
-    @State var semanticPrivacyRuleRoute: AIClassificationPrivacyRuleRoute?
-    @State var semanticCallLogRoute: SemanticSearchCallLogRoute?
     @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
     @State var smartListLoadError: CoreErrorMappingSnapshot?
-    @State var pendingSyncConflictReviewRoute: SyncConflictReviewRoute?
+    @State var syncConflictReviewRoutingState = SyncConflictReviewRoutingState()
     @FocusState var isSearchFieldFocused: Bool
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
@@ -71,8 +67,7 @@ struct MainRepositoryContentView: View {
         onOpenRepository: @escaping () -> Void = {},
         onOpenHelp: @escaping () -> Void = {},
         onOpenImportConflictBatch: @escaping (ImportConflictBatchRoute) -> Void = { _ in },
-        onRetryCurrentList: @escaping () -> Void = {},
-        onCollectDiagnostics: @escaping () async -> Void = {},
+        mainListErrorRecoveryActions: MainListErrorRecoveryActions = .none,
         onShowInFinder: @escaping (String) -> Void = { _ in },
         onCopyPath: @escaping (String) -> Void = { _ in },
         onCopyPaths: @escaping ([String]) -> Void = { _ in },
@@ -82,14 +77,14 @@ struct MainRepositoryContentView: View {
         onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
         pendingTagSuggestionFocus: TagSuggestionPresentationRequest? = nil,
         onPendingTagSuggestionFocusConsumed: @escaping (TagSuggestionPresentationRequest) -> Void = { _ in },
-        importProgressItems: [ImportBatchProgressSnapshot.Item] = []
+        importProgressPresentation: ImportProgressListPresentation = .empty
     ) {
         self.opening = opening; self.state = state
         self.onImport = onImport; self.onDropImport = onDropImport
         self.onOpenSettings = onOpenSettings; self.onOpenAISettings = onOpenAISettings
         self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp
         self.onOpenImportConflictBatch = onOpenImportConflictBatch
-        self.onRetryCurrentList = onRetryCurrentList; self.onCollectDiagnostics = onCollectDiagnostics
+        self.mainListErrorRecoveryActions = mainListErrorRecoveryActions
         self.onShowInFinder = onShowInFinder; self.onCopyPath = onCopyPath; self.onCopyPaths = onCopyPaths
         self.onOpenNoteFile = onOpenNoteFile
         self.onOpenChangeCategoryPermissionRecovery = onOpenChangeCategoryPermissionRecovery
@@ -102,7 +97,7 @@ struct MainRepositoryContentView: View {
         self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
         self.pendingTagSuggestionFocus = pendingTagSuggestionFocus
         self.onPendingTagSuggestionFocusConsumed = onPendingTagSuggestionFocusConsumed
-        self.importProgressItems = importProgressItems
+        self.importProgressPresentation = importProgressPresentation
         _dropPreviewModel = StateObject(wrappedValue: assembly.makeDropPreviewModel())
         _detailNoteModel = StateObject(wrappedValue: assembly.makeDetailNoteModel())
         _summaryExitController = StateObject(wrappedValue: assembly.makeSummaryExitController())

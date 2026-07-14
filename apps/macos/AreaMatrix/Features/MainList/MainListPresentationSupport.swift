@@ -34,13 +34,9 @@ extension MainRepositoryContentView {
         return "\(match.kindDisplayName): \(match.fieldDisplayName) - \(match.snippet)"
     }
 
-    var importProgressRows: [ImportProgressListRow] {
-        importProgressItems.map(ImportProgressListRow.init)
-    }
-
     @ViewBuilder
     var emptyListOverlay: some View {
-        if !fileListModel.isLoading, visibleFiles.isEmpty, importProgressRows.isEmpty {
+        if !fileListModel.isLoading, visibleFiles.isEmpty, importProgressPresentation.rows.isEmpty {
             if let destination = fileListModel.searchPageDestination {
                 searchRouteStatus(destination)
             } else {
@@ -78,7 +74,7 @@ extension MainRepositoryContentView {
             }
         } else if state == .list {
             SyncConflictEntryPanel(model: syncConflictEntryModel) { route in
-                pendingSyncConflictReviewRoute = route
+                syncConflictReviewRoutingState.route = route
             }
         }
     }

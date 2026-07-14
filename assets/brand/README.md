@@ -1,69 +1,80 @@
 # AreaMatrix Brand Assets
 
-本目录存放 AreaMatrix 品牌视觉资产。**唯一启用版本在 `final/`**，其余为历史探索稿，不参与构建或对外引用。
+本目录保存 AreaMatrix 品牌资产。`final/` 是唯一可用于产品、文档、发布和宣传的权威目录；`archive/` 只用于设计回溯。
 
 ## 目录结构
 
 ```text
 assets/brand/
-├── final/                 # 权威源（canonical）
-│   ├── areamatrix-app-icon-dark.svg
-│   ├── areamatrix-app-icon-light.svg
-│   ├── areamatrix-logo-lockup.svg
-│   ├── areamatrix-logo-lockup-light.svg
-│   ├── areamatrix-logo-lockup-dark.svg
-│   ├── areamatrix-logo-mark-light.svg
-│   ├── areamatrix-logo-mark-dark.svg
-│   ├── areamatrix-logo-mark-mono-dark.svg
-│   ├── areamatrix-logo-mark-mono-light.svg
-│   ├── app-icon/          # App Icon 各尺寸 PNG 导出
-│   ├── lockup/            # 横版 lockup PNG 导出
-│   └── mark/              # 单独 logo mark PNG 导出
-└── archive/               # 历史草稿，不启用
-    ├── early-drafts/
-    ├── v2/
-    ├── v3/
-    └── v4/
+├── brand-manifest.json       # 机器可读交付矩阵
+├── wordmark-outlines.json    # Inter Bold 字标轮廓数据
+├── final/
+│   ├── *.svg                 # canonical 矢量源文件
+│   ├── app-icon/             # 常规、opaque、maskable PNG
+│   ├── favicon/              # 16/32/48 PNG 与 ICO
+│   ├── lockup/               # 横向 Logo PNG
+│   ├── mark/                 # 彩色与单色 Mark PNG
+│   ├── native/               # macOS/iOS/Android/Windows 图标
+│   ├── print/                # SVG/PDF/CMYK TIFF
+│   ├── social/               # 1200x630 社交预览
+│   ├── stacked/              # 竖向 Logo PNG
+│   ├── symbol/               # 透明彩色 Symbol PNG
+│   └── wordmark/             # 纯字标 PNG
+└── archive/                  # 历史探索稿，禁止正式引用
 ```
 
-## 使用约定
+## 资产矩阵
 
-| 场景 | 引用路径 |
-|------|----------|
-| App Icon 深色设计 | `assets/brand/final/areamatrix-app-icon-dark.svg` 或 `assets/brand/final/app-icon/*-dark-*` |
-| App Icon 浅色设计 | `assets/brand/final/areamatrix-app-icon-light.svg` 或 `assets/brand/final/app-icon/*-light-*` |
-| 横版 Logo 深色背景版本 | `assets/brand/final/areamatrix-logo-lockup-dark.svg` 或 `assets/brand/final/lockup/*-dark-*` |
-| 横版 Logo 浅色背景版本 | `assets/brand/final/areamatrix-logo-lockup-light.svg` 或 `assets/brand/final/lockup/*-light-*` |
-| 横版 Logo 默认设计 | `assets/brand/final/areamatrix-logo-lockup.svg` 或 `assets/brand/final/lockup/areamatrix-logo-lockup-1600x520.png` |
-| 单独 Logo Mark 深色设计 | `assets/brand/final/areamatrix-logo-mark-dark.svg` 或 `assets/brand/final/mark/*-dark-*` |
-| 单独 Logo Mark 浅色设计 | `assets/brand/final/areamatrix-logo-mark-light.svg` 或 `assets/brand/final/mark/*-light-*` |
-| 单色 Mark 深色设计 | `assets/brand/final/areamatrix-logo-mark-mono-dark.svg` 或 `assets/brand/final/mark/*-mono-dark-*` |
-| 单色 Mark 浅色设计 | `assets/brand/final/areamatrix-logo-mark-mono-light.svg` 或 `assets/brand/final/mark/*-mono-light-*` |
-| 应用 bundle 内资源 | 从 `final/` 派生复制到 `apps/macos/AreaMatrix/Resources/Assets.xcassets/`，不直接引用 `archive/` |
+| 类型 | 内容 |
+|---|---|
+| App Icon | 深浅 SVG；`16/32/48/64/128/180/192/256/512/1024/4096/8192` PNG |
+| Small Icon | 深浅 SVG；用于 `16/32/48` 导出 |
+| Opaque Icon | 深浅 SVG；不透明 `180/1024` PNG |
+| Maskable Icon | 深浅 SVG；全出血 `192/512` PNG |
+| Logo Mark | 彩色与单色深浅 SVG；`256/512/1024` PNG |
+| Logo Symbol | 透明彩色深浅 SVG；`256/512/1024` PNG |
+| Horizontal Lockup | 默认、深色、浅色、outlined、mono SVG 与 `1600x520` PNG |
+| Wordmark | 深浅 outlined SVG 与 `1200x336` PNG |
+| Stacked Logo | 深浅 SVG 与 `1024x1024` PNG |
+| Favicon | `16/32/48` PNG 与多尺寸 ICO |
+| Social Preview | 默认、深色、浅色 SVG 与 `1200x630` PNG |
+| Native | `.icns`、iOS AppIcon、Android adaptive icon、Windows ICO |
+| Print | 浅色/深色背景 outlined SVG、PDF、300 DPI CMYK TIFF |
+| Overview | `1600x1200` 品牌资产总览 |
 
-## 尺寸说明
+## 应用内资源
 
-`final/app-icon/` 中的 PNG 按设计版本和边长命名（例如
-`areamatrix-app-icon-dark-1024.png`、`areamatrix-app-icon-light-1024.png`）。
-日常引用优先 1024 及以下；4096 / 8192 为高清母版导出，不打包进应用 bundle。
-macOS asset catalog 内仍使用 Xcode 约定的 `app-icon-*` 文件名，由深色设计版本派生。
+macOS 应用使用以下两套资源：
 
-macOS app 另有 `apps/macos/AreaMatrix/Resources/AppIcon.icon`，这是 Xcode
-Icon Composer 格式的 App Icon 输入。它使用 `areamatrix-app-icon-light-1024.png`
-作为默认外观，使用 `areamatrix-app-icon-dark-1024.png` 作为深色外观；
-传统 `AppIcon.appiconset` 保留为可构建兼容资源，不在其中硬塞 `luminosity`
-变体，因为当前 Xcode 会把传统 macOS 多尺寸槽位里的深色重复项判为未分配资源。
+- `apps/macos/AreaMatrix/Resources/AppIcon.icon`：Icon Composer 深浅 App Icon。
+- `apps/macos/AreaMatrix/Resources/Assets.xcassets/`：兼容 AppIcon、Lockup、Mark 和 Mono Mark。
 
-`final/lockup/` 中的 PNG 当前导出为 `1600x520`，对应 macOS asset catalog 中
-的 `AreaMatrixLogoLockup*` 资源。`AreaMatrixLogoLockup` 是自动深浅色适配资源：
-浅色界面默认使用浅色背景版本，深色界面使用深色背景版本；`AreaMatrixLogoLockupDark`
-和 `AreaMatrixLogoLockupLight` 用于需要强制指定背景版本的场景。
+Windows 工程使用 `apps/windows/AreaMatrix/Resources/AreaMatrix.ico`。这些文件均为 `final/` 的受控副本，校验工具会检查 SHA-256 是否一致。
 
-`final/mark/` 中的 PNG 按设计版本和边长命名。`dark` / `light` 是彩色 mark
-的深浅设计版本；`mono-dark` / `mono-light` 是单色版本。对应 macOS asset catalog
-中的 `AreaMatrixLogoMark*` 资源；`AreaMatrixLogoMark` 会随系统深浅色自动切换：
-浅色界面默认使用深色设计，深色界面使用浅色设计。
+## 生成与校验
 
-## archive/
+补齐缺失文件并同步应用副本：
 
-`archive/` 内为设计迭代过程中的探索稿，仅供回溯参考。任何 README、UI、CI 或发布流程不得引用此目录。
+```bash
+python3 scripts/brand/export_assets.py
+```
+
+SVG 发生变化后全量重建：
+
+```bash
+python3 scripts/brand/export_assets.py --refresh
+```
+
+检查尺寸、透明度、SVG XML、ICO/ICNS、iOS slots、CMYK TIFF 和应用副本漂移：
+
+```bash
+python3 scripts/brand/validate_assets.py
+```
+
+补充 SVG 源由 `scripts/brand/build_source_assets.py` 从 canonical 几何和固化的字标轮廓生成。重新定稿字形时，才需要使用 `generate_wordmark_outlines.swift` 和明确授权的字体文件。
+
+## 使用规范
+
+完整颜色、字体、留白、最小尺寸、背景选择、禁止用法和授权边界见 [品牌视觉规范](../../docs/ux/brand-assets.md)。跨环境使用横向 Logo 时优先选择 `outlined` 文件，避免字体替换。
+
+`archive/` 中的任何文件不得被 README、UI、CI 或发布流程引用。

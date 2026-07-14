@@ -163,7 +163,7 @@ extension MainRepositoryContentView {
         source: CommandPaletteLinkedPageRoute
     ) -> ImportConflictBatchRoute? {
         ImportConflictBatchRoute(
-            metadata: importProgressItems.compactMap(\.importConflictBatch),
+            metadata: importProgressPresentation.items.compactMap(\.importConflictBatch),
             source: source
         )
     }

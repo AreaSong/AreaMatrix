@@ -21,51 +21,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check macOS project
-        id: macos_project
-        run: |
-          if [[ -d apps/macos/AreaMatrix.xcodeproj ]]; then
-            echo "present=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "present=false" >> "${GITHUB_OUTPUT}"
-            echo "macOS app project is not present yet; skipping app build steps."
-          fi
+      - name: Require macOS project
+        run: test -d apps/macos/AreaMatrix.xcodeproj
 
       - name: Show Xcode version
-        if: steps.macos_project.outputs.present == 'true'
         run: xcodebuild -version
 
       - uses: dtolnay/rust-toolchain@stable
-        if: steps.macos_project.outputs.present == 'true'
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - uses: Swatinem/rust-cache@v2
-        if: steps.macos_project.outputs.present == 'true'
         with:
           workspaces: core
 
       - name: Build core (Rust → universal staticlib + Swift bindings)
-        if: steps.macos_project.outputs.present == 'true'
         run: ./dev build core
 
       - name: Verify tracked Swift bindings
-        if: steps.macos_project.outputs.present == 'true'
         run: ./dev bindings verify
 
       - name: Resolve Swift package dependencies
-        if: steps.macos_project.outputs.present == 'true'
         run: |
           xcodebuild -resolvePackageDependencies \
             -project apps/macos/AreaMatrix.xcodeproj \
             -scheme AreaMatrix
 
       - name: Build & test
-        if: steps.macos_project.outputs.present == 'true'
         run: ./dev test macos --destination 'platform=macOS,arch=arm64' --result-bundle-path TestResults.xcresult --disable-parallel-testing
 
       - uses: actions/upload-artifact@v4
-        if: always() && steps.macos_project.outputs.present == 'true'
+        if: always()
         with:
           name: xcresult
           path: TestResults.xcresult
@@ -76,20 +62,11 @@ jobs:
     needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
-      - name: Check macOS sources
-        id: macos_sources
-        run: |
-          if [[ -d apps/macos ]]; then
-            echo "present=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "present=false" >> "${GITHUB_OUTPUT}"
-            echo "macOS app sources are not present yet; skipping SwiftLint."
-          fi
+      - name: Require macOS sources
+        run: test -d apps/macos/AreaMatrix
       - name: Install SwiftLint
-        if: steps.macos_sources.outputs.present == 'true'
         run: brew install swiftlint
       - name: Run SwiftLint
-        if: steps.macos_sources.outputs.present == 'true'
         run: swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache
         working-directory: apps/macos
 
@@ -99,19 +76,10 @@ jobs:
     needs: prompt-doctor
     steps:
       - uses: actions/checkout@v4
-      - name: Check macOS sources
-        id: macos_sources
-        run: |
-          if [[ -d apps/macos ]]; then
-            echo "present=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "present=false" >> "${GITHUB_OUTPUT}"
-            echo "macOS app sources are not present yet; skipping SwiftFormat."
-          fi
+      - name: Require macOS sources
+        run: test -d apps/macos/AreaMatrix
       - name: Install SwiftFormat
-        if: steps.macos_sources.outputs.present == 'true'
         run: brew install swiftformat
       - name: Run SwiftFormat (check)
-        if: steps.macos_sources.outputs.present == 'true'
         run: swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore
         working-directory: apps/macos

@@ -65,7 +65,7 @@ extension CoreBridge: CoreRemoteProviderConfiguring {
         repoPath: String,
         request: RemoteProviderTestRequestState
     ) async throws -> RemoteProviderTestResultState {
-        try ensureRemoteProviderProbeRuntime()
+        try await ensureRemoteProviderProbeRuntime()
         return try await Task.detached(priority: .userInitiated) {
             try RemoteProviderTestResultState(coreResult: testRemoteAiProvider(
                 repoPath: repoPath,
@@ -98,8 +98,8 @@ extension CoreBridge: CoreRemoteProviderConfiguring {
         }.value
     }
 
-    private func ensureRemoteProviderProbeRuntime() throws {
-        _ = try RemoteProviderProbeRuntimeInstaller().ensureInstalled()
+    private func ensureRemoteProviderProbeRuntime() async throws {
+        _ = try await remoteProviderProbeRuntimeInstaller.ensureInstalled()
     }
 }
 

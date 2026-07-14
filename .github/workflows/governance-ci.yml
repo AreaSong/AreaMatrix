@@ -24,6 +24,14 @@ jobs:
       - name: Quality smoke
         run: ./dev check quality
 
+      - name: Brand asset dependencies
+        run: |
+          python3 -m venv .brand-venv
+          .brand-venv/bin/pip install --requirement scripts/brand/requirements.txt
+
+      - name: Brand asset integrity
+        run: .brand-venv/bin/python scripts/brand/validate_assets.py
+
       - name: Codex OS health
         run: ./dev check codex-os
 

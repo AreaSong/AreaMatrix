@@ -1,5 +1,11 @@
 # AreaMatrix（领域矩阵）
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/brand/final/areamatrix-logo-lockup-outlined-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/brand/final/areamatrix-logo-lockup-outlined-light.svg">
+  <img alt="AreaMatrix" src="./assets/brand/final/areamatrix-logo-lockup-outlined-light.svg" width="720">
+</picture>
+
 > 拖进来，文件自己整理自己。
 >
 > 一款 macOS 原生桌面应用，用拖拽、自动分类、改动追踪和树状视图，把散乱的资料变成可导航的知识仓库。

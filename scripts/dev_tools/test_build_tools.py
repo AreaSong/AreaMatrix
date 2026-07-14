@@ -17,6 +17,58 @@ from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
+    def _write_macos_governance_membership_fixture(
+        self,
+        root: Path,
+        *,
+        include_build_file: bool = True,
+        include_source_membership: bool = True,
+    ) -> None:
+        tests_dir = root / "apps/macos/AreaMatrixTests"
+        tests_dir.mkdir(parents=True)
+        test_name = "MacOSArchitectureBoundaryGovernanceTests.swift"
+        (tests_dir / test_name).write_text("import XCTest\n", encoding="utf-8")
+        project_dir = root / "apps/macos/AreaMatrix.xcodeproj"
+        project_dir.mkdir(parents=True)
+        build_file = (
+            "\t\tAAAAAAAAAAAAAAAAAAAAAAAA /* MacOSArchitectureBoundaryGovernanceTests.swift in Sources */ = "
+            "{isa = PBXBuildFile; fileRef = BBBBBBBBBBBBBBBBBBBBBBBB "
+            "/* MacOSArchitectureBoundaryGovernanceTests.swift */; };\n"
+            if include_build_file
+            else ""
+        )
+        source_member = (
+            "\t\t\t\tAAAAAAAAAAAAAAAAAAAAAAAA "
+            "/* MacOSArchitectureBoundaryGovernanceTests.swift in Sources */,\n"
+            if include_source_membership
+            else ""
+        )
+        (project_dir / "project.pbxproj").write_text(
+            """// !$*UTF8*$!
+{
+\tobjects = {
+"""
+            + build_file
+            + """\t\tBBBBBBBBBBBBBBBBBBBBBBBB /* MacOSArchitectureBoundaryGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSArchitectureBoundaryGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
+\t\tCCCCCCCCCCCCCCCCCCCCCCCC /* AreaMatrixTests */ = {
+\t\t\tisa = PBXNativeTarget;
+\t\t\tbuildPhases = (
+\t\t\t\tDDDDDDDDDDDDDDDDDDDDDDDD /* Sources */,
+\t\t\t);
+\t\t};
+\t\tDDDDDDDDDDDDDDDDDDDDDDDD /* Sources */ = {
+\t\t\tisa = PBXSourcesBuildPhase;
+\t\t\tfiles = (
+"""
+            + source_member
+            + """\t\t\t);
+\t\t};
+\t};
+}
+""",
+            encoding="utf-8",
+        )
+
     def _write_bindings_fixture(self, root: Path) -> tuple[Path, Path, Path]:
         core_dir = root / "core"
         core_dir.mkdir(parents=True)
@@ -242,6 +294,75 @@ class BuildToolsTest(unittest.TestCase):
 
             core_build.assert_not_called()
             macos_tests.assert_not_called()
+
+    def test_macos_checks_fail_when_source_directory_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            self.assertEqual(checks._run_macos_checks(Path(tmp)), 1)
+
+    def test_macos_checks_fail_when_xcode_project_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            (root / "apps/macos").mkdir(parents=True)
+
+            self.assertEqual(checks._run_macos_checks(root), 1)
+
+    def test_macos_governance_membership_accepts_test_target_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_macos_governance_membership_fixture(root)
+            failures = checks.FailureCollector()
+
+            checks._check_macos_governance_test_membership(root, failures)
+
+            self.assertEqual(failures.count, 0)
+
+    def test_macos_governance_membership_rejects_file_reference_without_build_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            self._write_macos_governance_membership_fixture(
+                root,
+                include_build_file=False,
+                include_source_membership=False,
+            )
+            failures = checks.FailureCollector()
+
+            checks._check_macos_governance_test_membership(root, failures)
+
+            self.assertEqual(failures.count, 1)
+
+    def test_macos_governance_membership_rejects_missing_test_sources_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            self._write_macos_governance_membership_fixture(root, include_source_membership=False)
+            failures = checks.FailureCollector()
+
+            checks._check_macos_governance_test_membership(root, failures)
+
+            self.assertEqual(failures.count, 1)
+
+    def test_ai_runtime_environment_contract_matches_repository(self) -> None:
+        failures = checks.FailureCollector()
+
+        checks._check_ai_runtime_environment_contract(Path(__file__).resolve().parents[2], failures)
+
+        self.assertEqual(failures.count, 0)
+
+    def test_ai_runtime_environment_contract_rejects_unknown_core_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            core_src = root / "core/src"
+            core_src.mkdir(parents=True)
+            (core_src / "runtime.rs").write_text(
+                'const UNKNOWN: &str = "AREAMATRIX_UNKNOWN_RUNTIME";\n',
+                encoding="utf-8",
+            )
+            swift_src = root / "apps/macos/AreaMatrix"
+            swift_src.mkdir(parents=True)
+            failures = checks.FailureCollector()
+
+            checks._check_ai_runtime_environment_contract(root, failures)
+
+            self.assertEqual(failures.count, 2)
 
     def test_macos_prerequisites_reports_all_missing_tools(self) -> None:
         completed = type(

@@ -3,20 +3,15 @@ import XCTest
 final class SwiftFileSizeGovernanceTests: MacOSGovernanceTestCase {
     private let nearLimitThreshold = 450
     private let hardLimit = 500
-    private let nearLimitInventory = [
+    private let nearLimitInventory: [NearLimitSwiftFile] = [
         NearLimitSwiftFile(
-            path: "AreaMatrix/App/AppPlatformServiceAdapters.swift",
-            owner: "App platform service adapters",
-            rationale: "Keeps app-wide AppKit and local file adapters visible behind one composition boundary.",
-            splitTrigger: "Split by interaction, file URL, picker, and export adapter families before adding lines.",
-            maximumLineCount: 462
-        ),
-        NearLimitSwiftFile(
-            path: "AreaMatrixTests/ConfigurationFixtures.swift",
-            owner: "Cross-feature snapshot fixtures",
-            rationale: "Centralizes canonical Core snapshot builders shared by configuration and repository tests.",
-            splitTrigger: "Move a complete snapshot fixture family to feature-local support before adding lines.",
-            maximumLineCount: 479
+            path: "AreaMatrixTests/MacOSArchitectureBoundaryGovernanceTests.swift",
+            owner: "macOS architecture boundary governance",
+            rationale: "Keeps the cross-layer source scans and their shared boundary assertions "
+                + "together as one governance surface.",
+            splitTrigger: "Before any growth beyond the current inventory, extract another scan family "
+                + "or shared assertion helper into a feature-local governance support file.",
+            maximumLineCount: 459
         )
     ]
 

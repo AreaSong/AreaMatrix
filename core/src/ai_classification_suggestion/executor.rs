@@ -1,14 +1,9 @@
-use std::{
-    env,
-    ffi::OsString,
-    io::Write,
-    path::Path,
-    process::{Command, Stdio},
-};
+use std::{env, ffi::OsString, path::Path, process::Command, time::Duration};
 
 use serde::Serialize;
 
 use crate::{
+    external_runtime::{ExternalRuntimeError, ExternalRuntimeLimits},
     remote_provider_config::{RemoteAiProviderKind, StoredRemoteProviderConfig},
     AiFeatureKind, CoreError, CoreResult,
 };
@@ -22,6 +17,9 @@ const LOCAL_RUNTIME_ENV: &str = "AREAMATRIX_AI_CLASSIFICATION_LOCAL_RUNTIME";
 const REMOTE_RUNTIME_ENV: &str = "AREAMATRIX_AI_CLASSIFICATION_REMOTE_RUNTIME";
 const MIN_CONFIDENCE: f32 = 0.1;
 const MAX_CONFIDENCE: f32 = 0.99;
+const MAX_REASON_CHARS: usize = 240;
+const RUNTIME_TIMEOUT: Duration = Duration::from_secs(30);
+const MAX_RUNTIME_OUTPUT_BYTES: usize = 1024 * 1024;
 
 #[derive(Clone, Debug)]
 pub(super) struct AiSuggestionDraft {
@@ -85,27 +83,28 @@ fn execute_external_runtime(
 ) -> CoreResult<AiSuggestionDraft> {
     let payload =
         serde_json::to_vec(&payload).map_err(|_| CoreError::internal("AI request is invalid"))?;
-    let mut child = Command::new(runtime_path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|_| CoreError::internal("AI classification runtime unavailable"))?;
-    let Some(mut stdin) = child.stdin.take() else {
-        return Err(CoreError::internal("AI classification runtime unavailable"));
-    };
-    stdin
-        .write_all(&payload)
-        .map_err(|_| CoreError::internal("AI classification runtime failed"))?;
-    drop(stdin);
-
-    let output = child
-        .wait_with_output()
-        .map_err(|_| CoreError::internal("AI classification runtime failed"))?;
+    let mut command = Command::new(runtime_path);
+    let output = crate::external_runtime::run(
+        &mut command,
+        &payload,
+        ExternalRuntimeLimits {
+            timeout: RUNTIME_TIMEOUT,
+            max_stdout_bytes: MAX_RUNTIME_OUTPUT_BYTES,
+            preserved_environment: &[],
+        },
+    )
+    .map_err(map_runtime_error)?;
     if !output.status.success() {
         return Err(CoreError::internal("AI classification runtime failed"));
     }
     parse_runtime_response(&output.stdout, route, model, used_context)
+}
+
+fn map_runtime_error(error: ExternalRuntimeError) -> CoreError {
+    match error {
+        ExternalRuntimeError::Spawn => CoreError::internal("AI classification runtime unavailable"),
+        _ => CoreError::internal("AI classification runtime failed"),
+    }
 }
 
 fn parse_runtime_response(
@@ -120,11 +119,13 @@ fn parse_runtime_response(
         .category
         .filter(|category| !category.trim().is_empty())
         .map(|category| category.trim().to_owned());
-    let reason = sanitize_response_text(
+    let reason = crate::ai_runtime::sanitize_response_text(
         value
             .reason
             .as_deref()
             .unwrap_or("AI classification completed"),
+        "AI classification completed",
+        MAX_REASON_CHARS,
     );
     Ok(AiSuggestionDraft {
         category,
@@ -134,31 +135,6 @@ fn parse_runtime_response(
         model,
         used_context,
     })
-}
-
-fn sanitize_response_text(value: &str) -> String {
-    let sanitized = value
-        .split_whitespace()
-        .filter(|part| !looks_sensitive(part))
-        .collect::<Vec<_>>()
-        .join(" ");
-    if sanitized.is_empty() {
-        "AI classification completed".to_owned()
-    } else {
-        sanitized.chars().take(240).collect()
-    }
-}
-
-fn looks_sensitive(value: &str) -> bool {
-    let normalized = value.to_ascii_lowercase();
-    normalized.starts_with("sk-")
-        || normalized.starts_with("sk_")
-        || normalized.contains("bearer")
-        || normalized.contains("api_key")
-        || normalized.contains("apikey")
-        || normalized.contains("secret=")
-        || normalized.contains("token=")
-        || normalized.contains("-----begin")
 }
 
 #[derive(Serialize)]

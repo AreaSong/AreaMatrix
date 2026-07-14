@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "brand": "AreaMatrix",
+  "packageRoot": "assets/brand/final",
+  "themes": ["dark", "light"],
+  "themedSquareFamilies": [
+    {
+      "id": "app-icon",
+      "source": "areamatrix-app-icon-{theme}.svg",
+      "smallSource": "areamatrix-app-icon-small-{theme}.svg",
+      "smallSizes": [16, 32, 48],
+      "sizes": [16, 32, 48, 64, 128, 180, 192, 256, 512, 1024, 4096, 8192],
+      "output": "app-icon/areamatrix-app-icon-{theme}-{size}.png",
+      "alpha": true
+    },
+    {
+      "id": "opaque-app-icon",
+      "source": "areamatrix-app-icon-opaque-{theme}.svg",
+      "sizes": [180, 1024],
+      "output": "app-icon/areamatrix-app-icon-opaque-{theme}-{size}.png",
+      "alpha": false
+    },
+    {
+      "id": "maskable-app-icon",
+      "source": "areamatrix-app-icon-maskable-{theme}.svg",
+      "sizes": [192, 512],
+      "output": "app-icon/areamatrix-app-icon-maskable-{theme}-{size}.png",
+      "alpha": false
+    },
+    {
+      "id": "logo-mark",
+      "source": "areamatrix-logo-mark-{theme}.svg",
+      "sizes": [256, 512, 1024],
+      "output": "mark/areamatrix-logo-mark-{theme}-{size}.png",
+      "alpha": true
+    },
+    {
+      "id": "mono-logo-mark",
+      "source": "areamatrix-logo-mark-mono-{theme}.svg",
+      "sizes": [256, 512, 1024],
+      "output": "mark/areamatrix-logo-mark-mono-{theme}-{size}.png",
+      "alpha": true
+    },
+    {
+      "id": "logo-symbol",
+      "source": "areamatrix-logo-symbol-{theme}.svg",
+      "sizes": [256, 512, 1024],
+      "output": "symbol/areamatrix-logo-symbol-{theme}-{size}.png",
+      "alpha": true
+    }
+  ],
+  "fixedRasterExports": [
+    {"source": "areamatrix-logo-lockup-outlined.svg", "output": "lockup/areamatrix-logo-lockup-1600x520.png", "width": 1600, "height": 520, "alpha": true},
+    {"source": "areamatrix-logo-lockup-outlined-dark.svg", "output": "lockup/areamatrix-logo-lockup-dark-1600x520.png", "width": 1600, "height": 520, "alpha": true},
+    {"source": "areamatrix-logo-lockup-outlined-light.svg", "output": "lockup/areamatrix-logo-lockup-light-1600x520.png", "width": 1600, "height": 520, "alpha": true},
+    {"source": "areamatrix-logo-lockup-outlined-dark.svg", "output": "lockup/areamatrix-logo-lockup-dark-800x260.png", "width": 800, "height": 260, "alpha": true},
+    {"source": "areamatrix-logo-lockup-outlined-light.svg", "output": "lockup/areamatrix-logo-lockup-light-800x260.png", "width": 800, "height": 260, "alpha": true},
+    {"source": "areamatrix-logo-lockup-mono-dark.svg", "output": "lockup/areamatrix-logo-lockup-mono-dark-1600x520.png", "width": 1600, "height": 520, "alpha": true},
+    {"source": "areamatrix-logo-lockup-mono-light.svg", "output": "lockup/areamatrix-logo-lockup-mono-light-1600x520.png", "width": 1600, "height": 520, "alpha": true},
+    {"source": "areamatrix-logo-lockup-outlined.svg", "output": "lockup/areamatrix-logo-lockup-outlined-1600x520.png", "width": 1600, "height": 520, "alpha": true},
+    {"source": "areamatrix-logo-lockup-outlined-dark.svg", "output": "lockup/areamatrix-logo-lockup-outlined-dark-1600x520.png", "width": 1600, "height": 520, "alpha": true},
+    {"source": "areamatrix-logo-lockup-outlined-light.svg", "output": "lockup/areamatrix-logo-lockup-outlined-light-1600x520.png", "width": 1600, "height": 520, "alpha": true},
+    {"source": "areamatrix-wordmark-dark.svg", "output": "wordmark/areamatrix-wordmark-dark-1200x336.png", "width": 1200, "height": 336, "alpha": true},
+    {"source": "areamatrix-wordmark-light.svg", "output": "wordmark/areamatrix-wordmark-light-1200x336.png", "width": 1200, "height": 336, "alpha": true},
+    {"source": "areamatrix-logo-stacked-dark.svg", "output": "stacked/areamatrix-logo-stacked-dark-1024.png", "width": 1024, "height": 1024, "alpha": true},
+    {"source": "areamatrix-logo-stacked-light.svg", "output": "stacked/areamatrix-logo-stacked-light-1024.png", "width": 1024, "height": 1024, "alpha": true},
+    {"source": "social/areamatrix-social-preview-dark.svg", "output": "social/areamatrix-social-preview-dark.png", "width": 1200, "height": 630, "alpha": true},
+    {"source": "social/areamatrix-social-preview-light.svg", "output": "social/areamatrix-social-preview-light.png", "width": 1200, "height": 630, "alpha": true},
+    {"source": "social/areamatrix-social-preview.svg", "output": "social/areamatrix-social-preview.png", "width": 1200, "height": 630, "alpha": true}
+  ],
+  "favicon": {
+    "source": "areamatrix-app-icon-small-dark.svg",
+    "sizes": [16, 32, 48],
+    "output": "favicon/areamatrix-favicon-{size}.png",
+    "ico": "favicon/areamatrix-favicon.ico"
+  },
+  "overview": {"output": "areamatrix-brand-overview.png", "width": 1600, "height": 1200},
+  "runtimeCopies": [
+    {"source": "native/windows/AreaMatrix.ico", "output": "apps/windows/AreaMatrix/Resources/AreaMatrix.ico"},
+    {"source": "app-icon/areamatrix-app-icon-dark-16.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-16.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-32.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-16@2x.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-32.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-32.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-64.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-32@2x.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-128.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-128.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-256.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-128@2x.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-256.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-256.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-512.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-256@2x.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-512.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-512.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-1024.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AppIcon.appiconset/app-icon-512@2x.png"},
+    {"source": "app-icon/areamatrix-app-icon-light-1024.png", "output": "apps/macos/AreaMatrix/Resources/AppIcon.icon/Assets/areamatrix-app-icon-light-1024.png"},
+    {"source": "app-icon/areamatrix-app-icon-dark-1024.png", "output": "apps/macos/AreaMatrix/Resources/AppIcon.icon/Assets/areamatrix-app-icon-dark-1024.png"},
+    {"source": "lockup/areamatrix-logo-lockup-dark-800x260.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoLockup.imageset/areamatrix-logo-lockup-dark.png"},
+    {"source": "lockup/areamatrix-logo-lockup-dark-1600x520.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoLockup.imageset/areamatrix-logo-lockup-dark@2x.png"},
+    {"source": "lockup/areamatrix-logo-lockup-light-800x260.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoLockup.imageset/areamatrix-logo-lockup-light.png"},
+    {"source": "lockup/areamatrix-logo-lockup-light-1600x520.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoLockup.imageset/areamatrix-logo-lockup-light@2x.png"},
+    {"source": "lockup/areamatrix-logo-lockup-dark-800x260.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoLockupDark.imageset/areamatrix-logo-lockup-dark.png"},
+    {"source": "lockup/areamatrix-logo-lockup-dark-1600x520.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoLockupDark.imageset/areamatrix-logo-lockup-dark@2x.png"},
+    {"source": "lockup/areamatrix-logo-lockup-light-800x260.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoLockupLight.imageset/areamatrix-logo-lockup-light.png"},
+    {"source": "lockup/areamatrix-logo-lockup-light-1600x520.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoLockupLight.imageset/areamatrix-logo-lockup-light@2x.png"},
+    {"source": "mark/areamatrix-logo-mark-dark-512.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMark.imageset/areamatrix-logo-mark-dark.png"},
+    {"source": "mark/areamatrix-logo-mark-dark-1024.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMark.imageset/areamatrix-logo-mark-dark@2x.png"},
+    {"source": "mark/areamatrix-logo-mark-light-512.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMark.imageset/areamatrix-logo-mark-light.png"},
+    {"source": "mark/areamatrix-logo-mark-light-1024.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMark.imageset/areamatrix-logo-mark-light@2x.png"},
+    {"source": "mark/areamatrix-logo-mark-dark-512.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMarkDark.imageset/areamatrix-logo-mark-dark.png"},
+    {"source": "mark/areamatrix-logo-mark-dark-1024.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMarkDark.imageset/areamatrix-logo-mark-dark@2x.png"},
+    {"source": "mark/areamatrix-logo-mark-light-512.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMarkLight.imageset/areamatrix-logo-mark-light.png"},
+    {"source": "mark/areamatrix-logo-mark-light-1024.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMarkLight.imageset/areamatrix-logo-mark-light@2x.png"},
+    {"source": "mark/areamatrix-logo-mark-mono-dark-512.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMarkMonoDark.imageset/areamatrix-logo-mark-mono-dark.png"},
+    {"source": "mark/areamatrix-logo-mark-mono-dark-1024.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMarkMonoDark.imageset/areamatrix-logo-mark-mono-dark@2x.png"},
+    {"source": "mark/areamatrix-logo-mark-mono-light-512.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMarkMonoLight.imageset/areamatrix-logo-mark-mono-light.png"},
+    {"source": "mark/areamatrix-logo-mark-mono-light-1024.png", "output": "apps/macos/AreaMatrix/Resources/Assets.xcassets/AreaMatrixLogoMarkMonoLight.imageset/areamatrix-logo-mark-mono-light@2x.png"}
+  ],
+  "native": {
+    "macosSource": "app-icon/areamatrix-app-icon-opaque-dark-1024.png",
+    "iosSource": "app-icon/areamatrix-app-icon-opaque-dark-1024.png",
+    "androidForegroundSource": "symbol/areamatrix-logo-symbol-light-1024.png",
+    "androidBackground": "#0A201E",
+    "windowsSource": "app-icon/areamatrix-app-icon-opaque-dark-1024.png",
+    "printLightSource": "areamatrix-logo-lockup-outlined-light.svg",
+    "printDarkSource": "areamatrix-logo-lockup-outlined-dark.svg"
+  }
+}

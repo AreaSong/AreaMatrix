@@ -5,18 +5,21 @@ use std::{
     ffi::OsString,
     io::{Read, Write},
     net::{TcpStream, ToSocketAddrs},
-    process::{Command, Stdio},
+    process::Command,
     time::Duration,
 };
 
 use serde::Serialize;
 
 use crate::{
+    external_runtime::{ExternalRuntimeError, ExternalRuntimeLimits},
     remote_provider_config::{
         RemoteAiProviderKind, RemoteProviderTestRequest, RemoteProviderTestStatus,
     },
     CoreError, CoreResult,
 };
+
+use super::http::parse_http_status;
 
 const VERIFIED_MESSAGE: &str = "Remote provider metadata verified";
 const REJECTED_MESSAGE: &str = "Remote provider rejected the credential or model";
@@ -30,6 +33,11 @@ const OPENAI_MODELS_ENDPOINT: &str = "https://api.openai.com/v1/models";
 const ANTHROPIC_MODELS_ENDPOINT: &str = "https://api.anthropic.com/v1/models";
 const PROBE_RUNTIME_ENV: &str = "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME";
 const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
+const EXTERNAL_PROBE_TIMEOUT: Duration = Duration::from_secs(12);
+const MAX_PROBE_RUNTIME_OUTPUT_BYTES: usize = 4 * 1024;
+const MAX_CURL_OUTPUT_BYTES: usize = 64;
+const MAX_PLAIN_HTTP_RESPONSE_BYTES: usize = 16 * 1024;
+const PROBE_RUNTIME_ENVIRONMENT: &[&str] = &["HOME", "AREAMATRIX_REMOTE_PROVIDER_PROBE_EVIDENCE"];
 
 pub(super) struct RemoteProviderProbeResult {
     pub(super) status: RemoteProviderTestStatus,
@@ -221,23 +229,17 @@ fn execute_external_probe_runtime(
         return Ok(None);
     };
     let payload = runtime_probe_payload(request)?;
-    let mut child = Command::new(runtime_path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|_| CoreError::internal("remote provider runtime unavailable"))?;
-    let Some(mut stdin) = child.stdin.take() else {
-        return Err(CoreError::internal("remote provider runtime unavailable"));
-    };
-    stdin
-        .write_all(&payload)
-        .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
-    drop(stdin);
-
-    let output = child
-        .wait_with_output()
-        .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
+    let mut command = Command::new(runtime_path);
+    let output = crate::external_runtime::run(
+        &mut command,
+        &payload,
+        ExternalRuntimeLimits {
+            timeout: EXTERNAL_PROBE_TIMEOUT,
+            max_stdout_bytes: MAX_PROBE_RUNTIME_OUTPUT_BYTES,
+            preserved_environment: PROBE_RUNTIME_ENVIRONMENT,
+        },
+    )
+    .map_err(map_probe_runtime_error)?;
     if !output.status.success() {
         return Err(CoreError::internal("remote provider runtime unavailable"));
     }
@@ -267,14 +269,25 @@ fn execute_plain_http_probe(
 
     let mut response = Vec::new();
     stream
+        .take((MAX_PLAIN_HTTP_RESPONSE_BYTES + 1) as u64)
         .read_to_end(&mut response)
         .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
+    if response.len() > MAX_PLAIN_HTTP_RESPONSE_BYTES {
+        return Err(CoreError::internal(CONNECTION_FAILED_MESSAGE));
+    }
     let status = parse_http_status(&response)?;
     Ok(map_http_status(&request.provider, status))
 }
 
 fn external_probe_runtime_path() -> Option<OsString> {
     env::var_os(PROBE_RUNTIME_ENV).filter(|value| !value.is_empty())
+}
+
+fn map_probe_runtime_error(error: ExternalRuntimeError) -> CoreError {
+    match error {
+        ExternalRuntimeError::Spawn => CoreError::internal("remote provider runtime unavailable"),
+        _ => CoreError::internal(CONNECTION_FAILED_MESSAGE),
+    }
 }
 
 fn runtime_probe_payload(request: &ProbeHttpRequest) -> CoreResult<Vec<u8>> {
@@ -312,25 +325,19 @@ fn parse_runtime_status(
 }
 
 fn execute_curl_probe(request: &ProbeHttpRequest) -> CoreResult<RemoteProviderTestStatus> {
-    let mut child = Command::new("curl")
-        .arg("--config")
-        .arg("-")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|_| CoreError::internal("remote provider runtime unavailable"))?;
-    let Some(mut stdin) = child.stdin.take() else {
-        return Err(CoreError::internal("remote provider runtime unavailable"));
-    };
-    stdin
-        .write_all(curl_config(request).as_bytes())
-        .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
-    drop(stdin);
-
-    let output = child
-        .wait_with_output()
-        .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
+    let mut command = Command::new("curl");
+    command.arg("--config").arg("-");
+    let config = curl_config(request);
+    let output = crate::external_runtime::run(
+        &mut command,
+        config.as_bytes(),
+        ExternalRuntimeLimits {
+            timeout: EXTERNAL_PROBE_TIMEOUT,
+            max_stdout_bytes: MAX_CURL_OUTPUT_BYTES,
+            preserved_environment: &[],
+        },
+    )
+    .map_err(map_probe_runtime_error)?;
     if !output.status.success() {
         return Ok(RemoteProviderTestStatus::ConnectionFailed);
     }
@@ -422,18 +429,6 @@ fn parse_optional_port(suffix: &str, default_port: u16) -> CoreResult<u16> {
 fn parse_port(port: &str) -> CoreResult<u16> {
     port.parse()
         .map_err(|_| CoreError::config("remote provider endpoint is invalid"))
-}
-
-fn parse_http_status(response: &[u8]) -> CoreResult<u16> {
-    let response = String::from_utf8_lossy(response);
-    let Some(status) = response
-        .lines()
-        .next()
-        .and_then(|line| line.split_whitespace().nth(1))
-    else {
-        return Err(CoreError::internal(CONNECTION_FAILED_MESSAGE));
-    };
-    parse_port(status)
 }
 
 fn parse_curl_status(output: &[u8]) -> CoreResult<u16> {

@@ -23,7 +23,10 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
         #"write\(to:"#,
         #"setenv\("#,
         #"getenv\("#,
-        #"unsetenv\("#
+        #"unsetenv\("#,
+        #"\blstat\("#,
+        #"\bstat\("#,
+        #"\bgeteuid\("#
     ]
 
     private let nonBridgeCoreErrorInventory = [
@@ -81,13 +84,6 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "Features/AI/RemoteProviderCredentialStore.swift:SecItemCopyMatching:1",
             "Features/AI/RemoteProviderCredentialStore.swift:SecItemDelete:1",
             "Features/AI/RemoteProviderCredentialStore.swift:SecItemUpdate:1",
-            "Features/AI/RemoteProviderProbeRuntime.swift:FileManager = .default:1",
-            "Features/AI/RemoteProviderProbeRuntime.swift:getenv(:1",
-            "Features/AI/RemoteProviderProbeRuntime.swift:setenv(:1",
-            "Features/AI/RemoteProviderProbeRuntime.swift:write(to::1",
-            "Features/Import/ImportBatchCopyImportSession.swift:Data(contentsOf::1",
-            "Features/Import/ImportBatchCopyImportSession.swift:FileManager = .default:1",
-            "Features/Import/ImportBatchCopyImportSession.swift:write(to::1",
             "Features/Import/ImportBatchPreviewState.swift:resourceValues:5",
             "Features/Import/ImportFolderPreviewState.swift:resourceValues:1",
             "Features/Import/ImportSingleFilePreflightCorePreview.swift:FileHandle:1",
@@ -105,6 +101,65 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             expected,
             "Feature-layer platform capability usage must stay explicitly inventoried until migrated " +
                 "to PlatformServices."
+        )
+    }
+
+    func testRemoteProviderProbeRuntimeImplementationStaysInPlatformServices() throws {
+        let implementationFiles = try productionSwiftFiles().filter {
+            relativeProductionPath(for: $0) == "PlatformServices/RemoteProviderProbeRuntime.swift"
+        }
+        let actual = try countedRegexMatches(
+            in: implementationFiles,
+            pattern: #"\bactor RemoteProviderProbeRuntimeInstaller\b"#
+        )
+
+        XCTAssertEqual(
+            actual,
+            ["PlatformServices/RemoteProviderProbeRuntime.swift:actor RemoteProviderProbeRuntimeInstaller:1"],
+            "Remote provider probe installation owns app runtime files, credentials, process execution, and " +
+                "environment setup; keep that platform side effect outside the AI feature implementation."
+        )
+    }
+
+    func testRemoteProviderProbeRuntimeAssemblyKeepsDescriptorProvenanceAndSingleFlight() throws {
+        let implementationFiles = try productionSwiftFiles().filter {
+            relativeProductionPath(for: $0) == "PlatformServices/RemoteProviderProbeRuntime.swift"
+        }
+        let source = try String(contentsOf: XCTUnwrap(implementationFiles.first), encoding: .utf8)
+        let requiredTerms = [
+            "RemoteProviderProbeRuntimeDescriptor",
+            "static let shared = RemoteProviderProbeRuntimeInstaller()",
+            "cachedDescriptor",
+            "runtimeVersion",
+            "contentHash",
+            "device:",
+            "inode:",
+            "Data(runtimeScript.utf8)",
+            "setenv(Self.environmentKey, descriptor.executablePath, 1)"
+        ]
+
+        let missing = requiredTerms.filter { !source.contains($0) }
+        XCTAssertEqual(
+            missing,
+            [],
+            "Remote provider runtime assembly must keep provenance validation and shared single-flight setup."
+        )
+    }
+
+    func testImportSessionPersistenceImplementationStaysInPlatformServices() throws {
+        let implementationFiles = try productionSwiftFiles().filter {
+            relativeProductionPath(for: $0) == "PlatformServices/ImportBatchSessionPlatformServices.swift"
+        }
+        let actual = try countedRegexMatches(
+            in: implementationFiles,
+            pattern: #"\bFileImportBatchSessionStore\b"#
+        )
+
+        XCTAssertEqual(
+            actual,
+            ["PlatformServices/ImportBatchSessionPlatformServices.swift:FileImportBatchSessionStore:1"],
+            "Import session file persistence should stay in PlatformServices; the Import feature owns only " +
+                "session semantics and recovery state."
         )
     }
 
@@ -227,8 +282,8 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
 
 final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
     private let nsWorkspaceOpenInventory = [
-        "App/AppPlatformServiceAdapters.swift:NSWorkspace.shared.activateFileViewerSelecting:1",
-        "App/AppPlatformServiceAdapters.swift:NSWorkspace.shared.open:1",
+        "App/LocalFileURLPlatformAdapters.swift:NSWorkspace.shared.activateFileViewerSelecting:1",
+        "App/LocalFileURLPlatformAdapters.swift:NSWorkspace.shared.open:1",
         "PlatformServices/ExternalURLPolicy.swift:NSWorkspace.shared.open:1"
     ]
 

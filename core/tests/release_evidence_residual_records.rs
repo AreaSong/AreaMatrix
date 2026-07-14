@@ -133,13 +133,19 @@ fn icloud_placeholder_smoke_record_stays_blocked_until_real_manual_smoke() {
         ICLOUD_PLACEHOLDER_SMOKE_EVIDENCE,
         "command: ./dev release icloud-placeholder-smoke-audit --json",
     );
-    assert_contains(ICLOUD_PLACEHOLDER_SMOKE_EVIDENCE, "smoke_evidence_gate: BLOCKED");
+    assert_contains(
+        ICLOUD_PLACEHOLDER_SMOKE_EVIDENCE,
+        "smoke_evidence_gate: BLOCKED",
+    );
     assert_contains(ICLOUD_PLACEHOLDER_SMOKE_EVIDENCE, "audit_side_effects:");
     assert_contains(
         ICLOUD_PLACEHOLDER_SMOKE_EVIDENCE,
         "icloud_download_attempted: false",
     );
-    assert_contains(ICLOUD_PLACEHOLDER_SMOKE_EVIDENCE, "network_attempted: false");
+    assert_contains(
+        ICLOUD_PLACEHOLDER_SMOKE_EVIDENCE,
+        "network_attempted: false",
+    );
     assert_contains(ICLOUD_PLACEHOLDER_SMOKE_EVIDENCE, "metadata_probe:");
     assert_contains(
         ICLOUD_PLACEHOLDER_SMOKE_EVIDENCE,
@@ -323,9 +329,15 @@ fn final_tag_record_stays_blocked_until_release_gates_and_tag_push() {
         FINAL_TAG_RELEASE_EVIDENCE,
         "command: ./dev release final-tag-readiness-audit --json --remote",
     );
-    assert_contains(FINAL_TAG_RELEASE_EVIDENCE, "pre_tag_release_evidence_gate: BLOCKED");
+    assert_contains(
+        FINAL_TAG_RELEASE_EVIDENCE,
+        "pre_tag_release_evidence_gate: BLOCKED",
+    );
     assert_contains(FINAL_TAG_RELEASE_EVIDENCE, "tag_prerequisite_gate: BLOCKED");
-    assert_contains(FINAL_TAG_RELEASE_EVIDENCE, "ready_to_create_formal_tag: false");
+    assert_contains(
+        FINAL_TAG_RELEASE_EVIDENCE,
+        "ready_to_create_formal_tag: false",
+    );
     assert_contains(
         FINAL_TAG_RELEASE_EVIDENCE,
         "preview tag is a formal release tag",
@@ -402,7 +414,10 @@ fn alpha_feedback_route_record_stays_blocked_until_release_decision() {
     assert_contains(ALPHA_FEEDBACK_ROUTE, "announcement.status: pending");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "feedback_route.status: pending");
     assert_contains(ALPHA_FEEDBACK_ROUTE, "triage_owner.status: pending");
-    assert_contains(ALPHA_FEEDBACK_ROUTE, "decision_audit.decision_gate: BLOCKED");
+    assert_contains(
+        ALPHA_FEEDBACK_ROUTE,
+        "decision_audit.decision_gate: BLOCKED",
+    );
 }
 
 #[test]
@@ -455,9 +470,15 @@ fn task05_release_gate_review_record_stays_deferred_without_task_loop_pass() {
     assert_contains(RELEASE_GATE_REVIEW_TASK05, "forbidden_repair_gate: PASS");
     assert_contains(RELEASE_GATE_REVIEW_TASK05, "audit_side_effects:");
     assert_contains(RELEASE_GATE_REVIEW_TASK05, "progress_json_rewritten: false");
-    assert_contains(RELEASE_GATE_REVIEW_TASK05, "task_loop_logs_rewritten: false");
+    assert_contains(
+        RELEASE_GATE_REVIEW_TASK05,
+        "task_loop_logs_rewritten: false",
+    );
     assert_contains(RELEASE_GATE_REVIEW_TASK05, "run_summaries_rewritten: false");
-    assert_contains(RELEASE_GATE_REVIEW_TASK05, "git_checkpoint_backfilled: false");
+    assert_contains(
+        RELEASE_GATE_REVIEW_TASK05,
+        "git_checkpoint_backfilled: false",
+    );
     assert_contains(RELEASE_GATE_REVIEW_TASK05, "commit_created: false");
     assert_contains(RELEASE_GATE_REVIEW_TASK05, "tag_created: false");
     assert_contains(RELEASE_GATE_REVIEW_TASK05, "github_release_created: false");

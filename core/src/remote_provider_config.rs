@@ -1,5 +1,6 @@
 //! remote provider configuration contract types and entry points.
 
+mod http;
 mod probe;
 mod state;
 

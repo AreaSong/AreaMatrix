@@ -120,7 +120,7 @@ extension MainRepositoryContentView {
     private func applySelectedFileIDs(_ ids: Set<Int64>, leaving previousIDs: Set<Int64>) {
         showFailedNoteDraftBannerIfNeeded(leaving: previousIDs)
         if !ids.isEmpty {
-            selectedImportProgressIDs = []
+            importProgressSelectionState.selectedIDs = []
         }
         Task {
             await fileListModel.selectFiles(ids)
@@ -138,7 +138,7 @@ extension MainRepositoryContentView {
 
     private func restoreSelectedFileIDs(_ ids: Set<Int64>) {
         if !ids.isEmpty {
-            selectedImportProgressIDs = []
+            importProgressSelectionState.selectedIDs = []
         }
         guard selectedFileIDs != ids else {
             summarySelectionExitState.cancelRestoreFlag()

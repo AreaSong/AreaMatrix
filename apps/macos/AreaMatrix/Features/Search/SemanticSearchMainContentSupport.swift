@@ -83,7 +83,7 @@ extension MainRepositoryContentView {
 
     func semanticPrivacyRuleSheet(_ route: AIClassificationPrivacyRuleRoute) -> some View {
         AIClassificationPrivacyRuleReferenceSheet(repoPath: opening.config.repoPath, ruleID: route.ruleID) {
-            semanticPrivacyRuleRoute = nil
+            searchRoutingState.semanticPrivacyRuleRoute = nil
         }
     }
 
@@ -93,7 +93,7 @@ extension MainRepositoryContentView {
             callLogID: route.callLogID,
             feature: .semanticSearch
         ) {
-            semanticCallLogRoute = nil
+            searchRoutingState.semanticCallLogRoute = nil
         }
     }
 
@@ -101,7 +101,7 @@ extension MainRepositoryContentView {
     var semanticIndexRecoveryActions: some View {
         if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
             Button("View privacy rule") {
-                semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
             }
             .accessibilityIdentifier("semantic-search-ai-privacy-rules-core-view-privacy-rule")
         }
@@ -111,7 +111,7 @@ extension MainRepositoryContentView {
                 Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
             }
             Button("Use normal search") {
-                isSemanticIndexConfirmationPresented = false
+                searchRoutingState.isSemanticIndexConfirmationPresented = false
                 searchMode = .normal
                 Task { await rerunCurrentSearch(mode: .normal) }
             }
@@ -125,7 +125,7 @@ extension MainRepositoryContentView {
     private var semanticCallLogRecoveryButton: some View {
         if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
             Button("View call log") {
-                semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
             }
         }
     }
@@ -198,18 +198,18 @@ extension MainRepositoryContentView {
             let ruleID = fileListModel.semanticFallbackState.status?.privacyRuleId ??
                 fileListModel.searchState.page?.semanticPage?.privacyRuleID
             if let ruleID = ruleID?.trimmingCharacters(in: .whitespacesAndNewlines), !ruleID.isEmpty {
-                semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
             }
         case .viewCallLog:
             let callLogID = fileListModel.semanticFallbackState.status?.callLogId ??
                 fileListModel.searchState.page?.semanticPage?.callLogID
             if let callLogID {
-                semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
             }
         case .buildSemanticIndex:
             Task {
                 await fileListModel.refreshSemanticPrivacyGateForCurrentSearch()
-                isSemanticIndexConfirmationPresented = true
+                searchRoutingState.isSemanticIndexConfirmationPresented = true
             }
         case .useNormalSearch:
             searchMode = .normal
@@ -233,7 +233,7 @@ extension MainRepositoryContentView {
                 Text("Privacy gate blocked semantic indexing. \(report.message)")
                 if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
                     Button("View privacy rule") {
-                        semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                        searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
                     }
                 }
                 Button("Retry privacy check") {
@@ -294,7 +294,7 @@ extension MainRepositoryContentView {
                 }
                 Button("View call log") {
                     if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
-                        semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                        searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
                     }
                 }
             }
@@ -306,7 +306,7 @@ extension MainRepositoryContentView {
                 }
                 Button("View call log") {
                     if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
-                        semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                        searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
                     }
                 }
             }
@@ -329,7 +329,7 @@ extension MainRepositoryContentView {
             Button("Build semantic index") {
                 Task {
                     await fileListModel.refreshSemanticPrivacyGateForCurrentSearch()
-                    isSemanticIndexConfirmationPresented = true
+                    searchRoutingState.isSemanticIndexConfirmationPresented = true
                 }
             }
             .disabled(

@@ -33,6 +33,7 @@ task-loop  -> scripts.task_loop.cli.main()
 
 ```text
 scripts/
+├── brand/           # 品牌 SVG、数字端、原生端与印刷资产生成/校验
 ├── task_loop/       # Dev Console、task-loop runner、状态、锁、i18n、Git checkpoint
 ├── dev_tools/       # build/check/workflow/tasks/backlog/release/skills 等子命令
 ├── task_loop.md     # task-loop 操作手册
@@ -58,6 +59,8 @@ scripts/
 ./dev tasks status
 ./task-loop status
 ./task-loop check
+python3 scripts/brand/export_assets.py --refresh
+python3 scripts/brand/validate_assets.py
 ```
 
 涉及真实 runner 执行前，先确认没有已有 live runner、工作区状态符合 checkpoint 要求，并遵守 `AGENTS.md`、`.ai-governance/` 和 `workflow/AGENTS.md` 的边界。

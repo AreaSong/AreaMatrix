@@ -8,9 +8,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.dev_tools.macos import (
+    MACOS_TESTS_BLOCKED_BY_XCODE_ENVIRONMENT,
     RELEASE_APP_LAUNCH_BLOCKED,
     _codex_local_xcode_system_content_blocked,
     _handle_release_app_launch_probe_result,
+    _parallel_xcodebuild_retry_allowed,
     _run_sandbox_fallback,
     _run_macos_tests_inner,
     _test_base_args,
@@ -89,6 +91,62 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
         self.assertFalse(result)
 
+    def test_parallel_retry_requires_test_activity_without_real_failure(self) -> None:
+        retryable = self.tmp_path / "retryable.log"
+        retryable.write_text(
+            "Testing started\n"
+            "Test Suite 'AreaMatrixTests.xctest' started\n"
+            "Executed 12 tests, with 0 failures (0 unexpected)\n",
+            encoding="utf-8",
+        )
+        failed = self.tmp_path / "failed.log"
+        failed.write_text(
+            "Testing started\n"
+            "Test Case '-[AreaMatrixTests.ExampleTests testExample]' failed\n",
+            encoding="utf-8",
+        )
+
+        self.assertTrue(_parallel_xcodebuild_retry_allowed(retryable))
+        self.assertFalse(_parallel_xcodebuild_retry_allowed(failed))
+
+    def test_parallel_xcodebuild_without_real_failure_retries_serially_once(self) -> None:
+        project = self.tmp_path / "AreaMatrix.xcodeproj"
+        project.mkdir()
+        test_log = self.tmp_path / "xcodebuild-test.log"
+        build_log = self.tmp_path / "xcodebuild-build.log"
+        invocations: list[list[str]] = []
+
+        def fake_run_and_tee(argv, log_path, env=None):
+            del env
+            invocations.append(list(argv))
+            if "-parallel-testing-enabled" not in argv:
+                log_path.write_text(
+                    "Testing started\nExecuted 12 tests, with 0 failures (0 unexpected)\n",
+                    encoding="utf-8",
+                )
+                return 65
+            log_path.write_text("Test Suite 'All tests' passed\n", encoding="utf-8")
+            return 0
+
+        with patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee):
+            result = _run_macos_tests_inner(
+                self.tmp_path,
+                project,
+                "AreaMatrix",
+                "AreaMatrixTests.xctest",
+                "platform=macOS,arch=arm64",
+                self.tmp_path,
+                test_log,
+                build_log,
+                None,
+                [],
+            )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(len(invocations), 2)
+        self.assertNotIn("-parallel-testing-enabled", invocations[0])
+        self.assertIn("-parallel-testing-enabled", invocations[1])
+
     def test_detects_xcode_system_content_failure(self) -> None:
         log_path = self.write_log(
             "\n".join(
@@ -121,7 +179,7 @@ class MacOSTestRunnerTest(unittest.TestCase):
         with patch.dict("os.environ", {"CODEX_SANDBOX": ""}, clear=False):
             self.assertFalse(_codex_local_xcode_system_content_blocked(log_path))
 
-    def test_xcode_system_content_block_keeps_codex_local_validation_green(self) -> None:
+    def test_xcode_system_content_block_returns_explicit_blocked_status(self) -> None:
         project = self.tmp_path / "AreaMatrix.xcodeproj"
         project.mkdir()
         test_log = self.tmp_path / "xcodebuild-test.log"
@@ -156,7 +214,7 @@ class MacOSTestRunnerTest(unittest.TestCase):
                 [],
             )
 
-        self.assertEqual(result, 0)
+        self.assertEqual(result, MACOS_TESTS_BLOCKED_BY_XCODE_ENVIRONMENT)
 
     def test_launchservices_probe_blocked_requires_codex_sandbox(self) -> None:
         output = (

@@ -4,7 +4,11 @@ class MacOSGovernanceTestCase: XCTestCase {}
 
 extension MacOSGovernanceTestCase {
     var appPlatformServiceFiles: Set<String> {
-        ["App/AppPlatformServices.swift", "App/AppPlatformServiceAdapters.swift"]
+        [
+            "App/AppPlatformServices.swift",
+            "App/AppPlatformServiceAdapters.swift",
+            "App/LocalFileURLPlatformAdapters.swift"
+        ]
     }
 
     func productionSwiftFiles() throws -> [URL] {
@@ -23,6 +27,20 @@ extension MacOSGovernanceTestCase {
     func productionDirectory() -> URL {
         testsDirectory().deletingLastPathComponent()
             .appendingPathComponent("AreaMatrix", isDirectory: true)
+    }
+
+    func productionFeatureDirectories() throws -> [String] {
+        let featuresDirectory = productionDirectory().appendingPathComponent("Features", isDirectory: true)
+        let entries = try FileManager.default.contentsOfDirectory(
+            at: featuresDirectory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        )
+
+        return try entries
+            .filter { try $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory == true }
+            .map(\.lastPathComponent)
+            .sorted()
     }
 
     func testsDirectory() -> URL {

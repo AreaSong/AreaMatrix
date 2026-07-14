@@ -13,7 +13,7 @@
 - `Bridge/`：`CoreBridge`、Core 调用封装、snapshot / DTO 转换、`CoreError` 映射，以及 Swift 调用 Rust Core 的唯一手写入口。
 - `Bridge/Generated/` 与 `Bridge/UniFFI/`：只放 UniFFI 生成绑定；不得手写业务逻辑。
 - `PlatformServices/` 或现有 `App/` 平台服务文件：AppKit、FileManager、iCloud、FSEvents、NSOpenPanel、NSSavePanel、NSWorkspace、Pasteboard、系统能力检测等平台副作用。新增平台能力优先进入 `PlatformServices/`；既有 `App/` 平台服务可随触达渐进迁移。
-- `Features/<FeatureName>/`：按业务域收拢 View / Model / State / Actions / Support。候选 feature 包括 `MainList`、`Import`、`Settings`、`Onboarding`、`AI`、`Search`、`SyncConflicts`、`FileActions`。
+- `Features/<FeatureName>/`：按业务域收拢 View / Model / State / Actions / Support。当前 owner 包括 `AI`、`CommandPalette`、`Detail`、`FileActions`、`Import`、`MainList`、`Onboarding`、`RepositoryLifecycle`、`Search`、`Settings`、`SyncConflicts`。
 - `Models/`：尚未收拢到 feature 的 UI state、presentation state、routing state 和轻量 view model。新增复杂 model 优先放到对应 `Features/<FeatureName>/`，不要继续扩大顶层 `Models/`。
 - `Views/`：现有跨 feature 的 SwiftUI 入口和渐进迁移区。新增业务视图优先放入 `Features/<FeatureName>/`；`Views/DesignSystem/` 只放通用 UI 组件、主题、效果和可复用控件。
 - `Resources/`：静态资源。
@@ -27,6 +27,9 @@
   initializer 只接收显式装配结果，不直接解析 `AppCoreServices` 或 `AppPlatformServices` 默认值。
 - `@StateObject` identity 继续由对应 SwiftUI View 持有；assembly 只提供构造闭包，不持有全局 model
   单例，也不改变现有 CoreBridge 实例生命周期。
+- Remote provider probe runtime 由共享的 `RemoteProviderProbeRuntimeInstaller` actor 装配；runtime
+  descriptor 必须固定版本、内容 hash、owner / mode 和文件身份，并通过显式依赖注入进入 CoreBridge。
+  不得恢复为接受任意进程级环境路径或在每次调用中重复创建 installer。
 - 初始化、导入、DB 修复、同步冲突、iCloud conflict、AI 隐私 / 远程 provider
   等高风险专项路径允许受控保留直接 `CoreBridge()` 默认构造。
 - 保留的直接 `CoreBridge()` 默认构造必须有治理测试登记；新增或删除登记项时，要说明风险归属和收口条件。
@@ -35,7 +38,10 @@
 ## 渐进治理
 
 - 新功能先判断 feature owner，再写代码；没有 owner 时先补规则或创建 feature 目录。
+- `MacOSFeatureOwnershipGovernanceTests` 精确登记每个 Feature 目录的职责、风险边界和验证重点；新增 Feature 目录必须先补 owner inventory。
 - 触达旧文件时只做与当前需求相关的归位，不为了目录完整一次性搬迁全仓库。
+- 顶层 `Models/`、根 `Views/`、`Views/Main/`、`Views/Onboarding/` 与 `Views/Settings/` 是受控迁移区；
+  `MacOSMigrationZoneGovernanceTests` 精确登记当前保留文件、owner 和退出条件。新增业务文件不得进入这些区域。
 - 文件拆分按职责边界，不按行数凑数字；超过或接近 500 行时优先寻找 route、state、action、platform adapter、support 的自然边界。
 - 手写 Swift 文件达到 450 行后必须进入 `SwiftFileSizeGovernanceTests` 精确清单，登记 owner、保留理由和拆分触发条件；清单文件不得继续增长，500 行仍是硬上限。UniFFI 生成绑定单独治理。
 - 只有一个实现、一个调用点、一个场景时，谨慎引入协议、工厂、策略等额外层次。

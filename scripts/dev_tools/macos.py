@@ -15,6 +15,8 @@ from typing import Mapping, Sequence
 from .common import fail, project_root, require_command
 from .macos_release_probe import RELEASE_APP_LAUNCH_BLOCKED, run_release_app_launch_probe
 
+MACOS_TESTS_BLOCKED_BY_XCODE_ENVIRONMENT = 75
+
 
 def _run_and_tee(argv: Sequence[str], log_path: Path, *, env: Mapping[str, str] | None = None) -> int:
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -94,6 +96,11 @@ def _xcodebuild_tests_passed_before_sandbox_teardown(log_path: Path, only_testin
     if "Test Suite 'Selected tests' passed" not in text:
         return False
     return all(f"Test Suite '{suite}' passed" in text for suite in _requested_xctest_suites(only_testing))
+
+
+def _parallel_xcodebuild_retry_allowed(log_path: Path) -> bool:
+    text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else ""
+    return ("Testing started" in text or "Test Suite '" in text) and not _has_real_test_or_build_failure(text)
 
 
 def _find_test_bundle(derived_data_dir: Path, test_bundle_name: str) -> Path | None:
@@ -440,8 +447,24 @@ def _run_macos_tests_inner(
         print("macOS tests: xcodebuild was blocked by local Xcode system content mismatch.")
         print("macOS tests: run 'xcodebuild -runFirstLaunch' or repair Xcode outside this sandbox.")
         print("macOS tests: CI and non-sandbox local runs remain required for XCTest evidence.")
-        return 0
+        return MACOS_TESTS_BLOCKED_BY_XCODE_ENVIRONMENT
     if not _sandbox_failure(test_log_path):
+        if not disable_parallel_testing and result_bundle is None and _parallel_xcodebuild_retry_allowed(test_log_path):
+            print("macOS tests: parallel xcodebuild ended without a real test or build failure.")
+            print("macOS tests: retrying once with parallel testing disabled.")
+            return _run_macos_tests_inner(
+                root,
+                project_path,
+                scheme,
+                test_bundle_name,
+                destination,
+                derived_data_dir,
+                test_log_path,
+                build_log_path,
+                result_bundle,
+                only_testing,
+                True,
+            )
         fail(f"xcodebuild test failed for a non-sandbox reason. See {test_log_path}.", rc)
 
     return _run_sandbox_fallback(
