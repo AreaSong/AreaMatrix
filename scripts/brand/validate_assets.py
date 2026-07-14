@@ -29,7 +29,7 @@ def main() -> int:
     overview = manifest["overview"]
     validate_raster(root / overview["output"], overview["width"], overview["height"], False, errors)
     validate_ico(root / manifest["favicon"]["ico"], manifest["favicon"]["sizes"], errors)
-    validate_native(root, errors)
+    validate_native(root, manifest, errors)
     validate_runtime_copies(root, manifest, errors)
     validate_svg_sources(root, errors)
     validate_integrations(root, manifest, errors)
@@ -41,7 +41,7 @@ def main() -> int:
     return 0
 
 
-def validate_native(root: Path, errors: list[str]) -> None:
+def validate_native(root: Path, manifest: dict, errors: list[str]) -> None:
     required = (
         "README.md", "native/README.md", "native/macos/AreaMatrix.icns",
         "native/ios/AreaMatrixAppIcon.appiconset/Contents.json",
@@ -67,7 +67,11 @@ def validate_native(root: Path, errors: list[str]) -> None:
     validate_ico(root / "native/windows/AreaMatrix.ico", [16, 24, 32, 48, 64, 128, 256], errors)
     for name in ("light-background", "dark-background"):
         validate_magic(root / f"print/areamatrix-logo-{name}.pdf", b"%PDF", errors)
-        validate_tiff(root / f"print/areamatrix-logo-{name}-cmyk.tiff", errors)
+        validate_tiff(
+            root / f"print/areamatrix-logo-{name}-cmyk.tiff",
+            manifest["native"]["printDpi"],
+            errors,
+        )
 
 
 def validate_ios(directory: Path, errors: list[str]) -> None:
@@ -95,12 +99,17 @@ def validate_raster(path: Path, width: int, height: int, alpha: bool, errors: li
             errors.append(f"wrong alpha mode: {relative(path)} expected alpha={alpha}, got {has_alpha}")
 
 
-def validate_tiff(path: Path, errors: list[str]) -> None:
+def validate_tiff(path: Path, expected_dpi: int, errors: list[str]) -> None:
     if not path.exists():
         return
     with Image.open(path) as image:
         if image.size != (3600, 1170) or image.mode != "CMYK":
             errors.append(f"invalid print TIFF: {relative(path)} expected 3600x1170 CMYK, got {image.size} {image.mode}")
+        dpi = image.info.get("dpi")
+        if dpi is None or any(abs(value - expected_dpi) > 0.5 for value in dpi):
+            errors.append(f"wrong print TIFF density: {relative(path)} expected {expected_dpi} DPI, got {dpi}")
+        if image.tag_v2.get(296) != 2:
+            errors.append(f"wrong print TIFF resolution unit: {relative(path)} expected inch")
 
 
 def validate_ico(path: Path, sizes: list[int], errors: list[str]) -> None:
@@ -141,6 +150,8 @@ def validate_runtime_copies(root: Path, manifest: dict, errors: list[str]) -> No
 def validate_integrations(root: Path, manifest: dict, errors: list[str]) -> None:
     if manifest.get("schemaVersion") != 1 or manifest.get("brand") != "AreaMatrix":
         errors.append("brand manifest identity or schema version is invalid")
+    if manifest.get("native", {}).get("printDpi") != 300:
+        errors.append("brand manifest printDpi must be 300")
     required = (
         ROOT / "assets/brand/README.md",
         ROOT / "assets/brand/wordmark-outlines.json",

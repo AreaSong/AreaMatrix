@@ -117,6 +117,7 @@
     "androidBackground": "#0A201E",
     "windowsSource": "app-icon/areamatrix-app-icon-opaque-dark-1024.png",
     "printLightSource": "areamatrix-logo-lockup-outlined-light.svg",
-    "printDarkSource": "areamatrix-logo-lockup-outlined-dark.svg"
+    "printDarkSource": "areamatrix-logo-lockup-outlined-dark.svg",
+    "printDpi": 300
   }
 }

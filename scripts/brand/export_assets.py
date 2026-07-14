@@ -211,7 +211,8 @@ def export_print(root: Path, manifest: dict, refresh: bool) -> None:
                     rgba = image.convert("RGBA")
                     flattened = Image.new("RGB", rgba.size, background)
                     flattened.paste(rgba, mask=rgba.getchannel("A"))
-                    flattened.convert("CMYK").save(tiff, compression="tiff_lzw", dpi=(300, 300))
+                    dpi = manifest["native"]["printDpi"]
+                    flattened.convert("CMYK").save(tiff, compression="tiff_lzw", dpi=(dpi, dpi))
 
 
 def export_overview(root: Path, manifest: dict, refresh: bool) -> None:
