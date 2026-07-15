@@ -39,3 +39,36 @@ actor RecordingDiagnosticsCollector: CoreDiagnosticsCollecting, RepoPathRequestR
         .failure(CoreError.Internal(message: "missing diagnostics fixture"))
     }
 }
+
+actor SuspendedDiagnosticsCollector: CoreDiagnosticsCollecting {
+    private let result: Swift.Result<DiagnosticsSnapshotSnapshot, Error>
+    private var startContinuations: [CheckedContinuation<Void, Never>] = []
+    private var finishContinuation: CheckedContinuation<Void, Never>?
+    private var hasStarted = false
+    private var canFinish = false
+
+    init(result: Swift.Result<DiagnosticsSnapshotSnapshot, Error>) {
+        self.result = result
+    }
+
+    func createDiagnosticsSnapshot(repoPath _: String) async throws -> DiagnosticsSnapshotSnapshot {
+        hasStarted = true
+        startContinuations.forEach { $0.resume() }
+        startContinuations.removeAll()
+        if !canFinish {
+            await withCheckedContinuation { finishContinuation = $0 }
+        }
+        return try result.get()
+    }
+
+    func waitUntilStarted() async {
+        guard !hasStarted else { return }
+        await withCheckedContinuation { startContinuations.append($0) }
+    }
+
+    func finish() {
+        canFinish = true
+        finishContinuation?.resume()
+        finishContinuation = nil
+    }
+}

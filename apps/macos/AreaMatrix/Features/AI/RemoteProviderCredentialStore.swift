@@ -72,7 +72,7 @@ final class RemoteProviderKeychainCredentialStore: RemoteProviderCredentialStori
 
     @MainActor
     func removeCredential(reference: String) throws {
-        guard let account = reference.removingKeychainPrefix else { return }
+        guard let account = reference.remoteProviderKeychainAccount else { return }
         try deleteCredential(account: account)
         rollbackSnapshots = rollbackSnapshots.filter { $0.value.account != account }
     }
@@ -122,7 +122,7 @@ final class RemoteProviderKeychainCredentialStore: RemoteProviderCredentialStori
     private func baseQuery(account: String) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "AreaMatrix.RemoteAI",
+            kSecAttrService as String: RemoteProviderCredentialKeychain.service,
             kSecAttrAccount as String: account
         ]
     }
@@ -172,12 +172,5 @@ enum RemoteProviderCredentialStoreError: LocalizedError {
         case let .keychainWriteFailed(status): "Keychain write failed with status \(status)."
         case let .keychainDeleteFailed(status): "Keychain delete failed with status \(status)."
         }
-    }
-}
-
-private extension String {
-    var removingKeychainPrefix: String? {
-        guard hasPrefix("keychain:") else { return nil }
-        return String(dropFirst("keychain:".count))
     }
 }

@@ -140,6 +140,7 @@ final class AboutSettingsModel: ObservableObject {
     private let diagnosticsRevealer: any AboutDiagnosticsRevealing
     private let errorMapper: any CoreErrorMapping
     private let accessibilityAnnouncer: any AccessibilityAnnouncing
+    private var diagnosticsGeneration = SettingsDiagnosticsGeneration()
 
     init(
         repoPath: String,
@@ -178,6 +179,7 @@ final class AboutSettingsModel: ObservableObject {
     func load() async {
         isLoadingVersionInfo = true
         actionFeedback = nil
+        diagnosticsGeneration.invalidate()
         diagnosticsState = .idle
         versionError = nil
 
@@ -258,7 +260,8 @@ final class AboutSettingsModel: ObservableObject {
     }
 
     func cancelDiagnosticsExport() {
-        if diagnosticsState.isConfirmingPrivacy {
+        if diagnosticsState.isConfirmingPrivacy || diagnosticsState.isCollecting {
+            diagnosticsGeneration.invalidate()
             diagnosticsState = .idle
         }
     }
@@ -266,6 +269,7 @@ final class AboutSettingsModel: ObservableObject {
     func collectDiagnostics() async {
         guard diagnosticsState.isConfirmingPrivacy else { return }
 
+        let generation = diagnosticsGeneration.begin()
         diagnosticsState = .collecting
         actionFeedback = nil
         do {
@@ -274,9 +278,11 @@ final class AboutSettingsModel: ObservableObject {
                 versionIssue: versionError?.message
             )
             let snapshot = try await diagnosticsExporter.exportDiagnostics(context: context)
+            guard diagnosticsGeneration.isCurrent(generation) else { return }
             diagnosticsState = .collected(snapshot)
             actionFeedback = .success("Diagnostics collected.")
         } catch {
+            guard diagnosticsGeneration.isCurrent(generation) else { return }
             let mapped = await mappedError(for: error, fallbackMessage: "Diagnostics could not be exported")
             diagnosticsState = .failed(mapped)
             accessibilityAnnouncer.announce(mapped.message)

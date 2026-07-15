@@ -171,6 +171,26 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testCancelledAboutDiagnosticsIgnoresLateExporterResult() async {
+        let snapshot = AboutDiagnosticsExportSnapshot.fixture()
+        let exporter = SuspendedAboutDiagnosticsExporter(result: .success(snapshot))
+        let model = aboutSettingsModel(diagnosticsExporter: exporter)
+        await model.load()
+
+        model.requestDiagnosticsExport()
+        let collection = Task { await model.collectDiagnostics() }
+        await exporter.waitUntilStarted()
+        XCTAssertEqual(model.diagnosticsState, .collecting)
+
+        model.cancelDiagnosticsExport()
+        await exporter.finish()
+        await collection.value
+
+        XCTAssertEqual(model.diagnosticsState, .idle)
+        XCTAssertNil(model.actionFeedback)
+    }
+
+    @MainActor
     private func aboutSettingsModel(
         diagnosticsExporter: any AboutDiagnosticsExporting =
             AboutDiagnosticsExporter(result: .success(.fixture())),
@@ -210,6 +230,39 @@ private actor AboutDiagnosticsExporter: AboutDiagnosticsExporting {
 
     func contexts() -> [AboutDiagnosticsExportContext] {
         capturedContexts
+    }
+}
+
+private actor SuspendedAboutDiagnosticsExporter: AboutDiagnosticsExporting {
+    private let result: Result<AboutDiagnosticsExportSnapshot, Error>
+    private var startContinuations: [CheckedContinuation<Void, Never>] = []
+    private var finishContinuation: CheckedContinuation<Void, Never>?
+    private var hasStarted = false
+    private var canFinish = false
+
+    init(result: Result<AboutDiagnosticsExportSnapshot, Error>) {
+        self.result = result
+    }
+
+    func exportDiagnostics(context _: AboutDiagnosticsExportContext) async throws -> AboutDiagnosticsExportSnapshot {
+        hasStarted = true
+        startContinuations.forEach { $0.resume() }
+        startContinuations.removeAll()
+        if !canFinish {
+            await withCheckedContinuation { finishContinuation = $0 }
+        }
+        return try result.get()
+    }
+
+    func waitUntilStarted() async {
+        guard !hasStarted else { return }
+        await withCheckedContinuation { startContinuations.append($0) }
+    }
+
+    func finish() {
+        canFinish = true
+        finishContinuation?.resume()
+        finishContinuation = nil
     }
 }
 

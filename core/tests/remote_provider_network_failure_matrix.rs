@@ -1,47 +1,29 @@
 #[path = "support/remote_provider_config_common.rs"]
 mod common;
 
-use std::{
-    env,
-    ffi::OsString,
-    io::{Read, Write},
-    net::{TcpListener, TcpStream},
-    sync::{Mutex, MutexGuard},
-    thread::{self, JoinHandle},
-    time::Duration,
-};
-
 use area_matrix_core::{
-    test_remote_ai_provider, CoreError, ErrorKind, RemoteProviderTestResult,
-    RemoteProviderTestStatus,
+    complete_remote_ai_provider_probe, prepare_remote_ai_provider_probe, CoreError, ErrorKind,
+    RemoteProviderProbeObservation, RemoteProviderProbeOutcome, RemoteProviderTestStatus,
 };
-use common::{initialized_repo, path_string, test_request_with_key_reference};
-
-const NETWORK_SECRET_ENV: &str = "AREAMATRIX_REMOTE_PROVIDER_NETWORK_TEST_KEY";
-const PROBE_RUNTIME_ENV: &str = "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME";
-const SECRET_VALUE: &str = "network-test-secret";
-static NETWORK_ENV_LOCK: Mutex<()> = Mutex::new(());
+use common::{complete_provider_test, initialized_repo, path_string, test_request_for_endpoint};
 
 #[test]
-fn real_http_statuses_map_to_public_probe_states() {
-    let _environment = NetworkEnvironment::new();
-
-    for (status_line, expected_status) in [
-        ("HTTP/1.1 200 OK", RemoteProviderTestStatus::Succeeded),
-        (
-            "HTTP/1.1 401 Unauthorized",
-            RemoteProviderTestStatus::ProviderRejected,
-        ),
-        (
-            "HTTP/1.1 503 Service Unavailable",
-            RemoteProviderTestStatus::ConnectionFailed,
-        ),
+fn sanitized_http_statuses_map_to_public_probe_states() {
+    for (http_status, expected_status) in [
+        (200, RemoteProviderTestStatus::Succeeded),
+        (401, RemoteProviderTestStatus::ProviderRejected),
+        (503, RemoteProviderTestStatus::ConnectionFailed),
+        (404, RemoteProviderTestStatus::UnsupportedProvider),
+        (302, RemoteProviderTestStatus::UnsupportedProvider),
     ] {
-        let (endpoint, server) = response_server(format!(
-            "{status_line}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-        ));
-        let result = run_probe(&endpoint).expect("real HTTP status should return a probe result");
-        server.join().expect("join HTTP status server");
+        let repo = initialized_repo();
+        let result = complete_provider_test(
+            path_string(repo.path()),
+            test_request_for_endpoint("https://provider.example.test/probe"),
+            RemoteProviderProbeOutcome::HttpResponse,
+            Some(http_status),
+        )
+        .expect("sanitized HTTP status should return a probe result");
 
         assert_eq!(result.status, expected_status);
         assert_eq!(
@@ -52,166 +34,64 @@ fn real_http_statuses_map_to_public_probe_states() {
 }
 
 #[test]
-fn refused_connection_returns_sanitized_connectivity_error() {
-    let _environment = NetworkEnvironment::new();
-    let listener = TcpListener::bind("127.0.0.1:0").expect("reserve refused connection port");
-    let address = listener
-        .local_addr()
-        .expect("read refused connection address");
-    drop(listener);
-
-    let error = run_probe(&format!("http://{address}/probe"))
-        .expect_err("refused connection should not return a successful probe result");
-
-    assert_connectivity_error(error);
-}
-
-#[test]
-fn empty_or_truncated_http_response_returns_sanitized_connectivity_error() {
-    let _environment = NetworkEnvironment::new();
-
-    for response in ["", "HTTP/1.1\r\n"] {
-        let (endpoint, server) = response_server(response.to_owned());
-        let error = run_probe(&endpoint)
-            .expect_err("invalid HTTP response should not return a probe result");
-        server.join().expect("join invalid HTTP response server");
-
-        assert_connectivity_error(error);
-    }
-}
-
-#[test]
-fn stalled_http_response_respects_read_timeout() {
-    let _environment = NetworkEnvironment::new();
-    let (endpoint, server) = server_with(|_stream| thread::sleep(Duration::from_secs(6)));
-
-    let error =
-        run_probe(&endpoint).expect_err("stalled HTTP response should reach the read timeout");
-    server.join().expect("join stalled HTTP server");
-
-    assert_connectivity_error(error);
-}
-
-#[test]
-fn tls_handshake_failure_maps_to_connection_failed() {
-    let _environment = NetworkEnvironment::new();
-    let (endpoint, server) = server_with_scheme("https", |mut stream| {
-        let _ = stream.write_all(b"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n");
-    });
-
-    let result = run_probe(&endpoint).expect("TLS handshake failure should return a probe result");
-    server.join().expect("join TLS handshake failure server");
-
-    assert_eq!(result.status, RemoteProviderTestStatus::ConnectionFailed);
-    assert!(!result.provider_verified);
-}
-
-#[test]
-fn reserved_invalid_domain_maps_to_connection_failed() {
-    let _environment = NetworkEnvironment::new();
-    let result = run_probe("https://areamatrix-network-failure.invalid/probe")
-        .expect("DNS failure should return a probe result");
-
-    assert_eq!(result.status, RemoteProviderTestStatus::ConnectionFailed);
-    assert!(!result.provider_verified);
-}
-
-#[test]
-fn oversized_http_response_returns_sanitized_connectivity_error() {
-    let _environment = NetworkEnvironment::new();
-    let body = "x".repeat(16 * 1024 + 1);
-    let response = format!(
-        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
-        body.len()
-    );
-    let (endpoint, server) = response_server(response);
-    let error = run_probe(&endpoint)
-        .expect_err("oversized HTTP response should not be buffered without a limit");
-    server.join().expect("join oversized HTTP response server");
-
-    assert_connectivity_error(error);
-}
-
-fn run_probe(endpoint: &str) -> Result<RemoteProviderTestResult, CoreError> {
+fn platform_transport_failure_maps_to_connection_failed() {
     let repo = initialized_repo();
-    test_remote_ai_provider(
+    let result = complete_provider_test(
         path_string(repo.path()),
-        test_request_with_key_reference(
-            endpoint,
-            format!("secure-storage:env:{NETWORK_SECRET_ENV}"),
-        ),
+        test_request_for_endpoint("https://provider.example.test/probe"),
+        RemoteProviderProbeOutcome::ConnectionFailed,
+        None,
     )
+    .expect("transport failure should return a sanitized result");
+
+    assert_eq!(result.status, RemoteProviderTestStatus::ConnectionFailed);
+    assert!(!result.provider_verified);
+    assert!(result.verification_token.is_none());
 }
 
-fn response_server(response: String) -> (String, JoinHandle<()>) {
-    server_with(move |mut stream| {
-        stream
-            .write_all(response.as_bytes())
-            .expect("write local probe response");
-    })
+#[test]
+fn unavailable_platform_credential_maps_to_permission_denied() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+    let plan = prepare_remote_ai_provider_probe(
+        repo_path.clone(),
+        test_request_for_endpoint("https://provider.example.test/probe"),
+    )
+    .expect("prepare provider probe");
+
+    let error = complete_remote_ai_provider_probe(
+        repo_path,
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token,
+            outcome: RemoteProviderProbeOutcome::CredentialUnavailable,
+            http_status: None,
+        },
+    )
+    .expect_err("unavailable credential should fail");
+
+    assert_eq!(error.kind(), ErrorKind::PermissionDenied);
+    assert!(!error.to_string().contains("keychain:"));
 }
 
-fn server_with(handler: impl FnOnce(TcpStream) + Send + 'static) -> (String, JoinHandle<()>) {
-    server_with_scheme("http", handler)
-}
+#[test]
+fn malformed_platform_observation_is_rejected_without_verification() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+    let plan = prepare_remote_ai_provider_probe(
+        repo_path.clone(),
+        test_request_for_endpoint("https://provider.example.test/probe"),
+    )
+    .expect("prepare provider probe");
 
-fn server_with_scheme(
-    scheme: &str,
-    handler: impl FnOnce(TcpStream) + Send + 'static,
-) -> (String, JoinHandle<()>) {
-    let listener = TcpListener::bind("127.0.0.1:0").expect("bind local probe server");
-    let address = listener.local_addr().expect("read local probe address");
-    let server = thread::spawn(move || {
-        let (mut stream, _) = listener.accept().expect("accept local probe connection");
-        let mut request = [0_u8; 4096];
-        let _ = stream.read(&mut request);
-        handler(stream);
-    });
-    (format!("{scheme}://{address}/probe"), server)
-}
+    let error = complete_remote_ai_provider_probe(
+        repo_path,
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token,
+            outcome: RemoteProviderProbeOutcome::HttpResponse,
+            http_status: None,
+        },
+    )
+    .expect_err("HTTP response without status should fail");
 
-fn assert_connectivity_error(error: CoreError) {
-    assert_eq!(error.kind(), ErrorKind::Internal);
-    assert_eq!(
-        error.to_string(),
-        "internal error: Remote provider connection failed"
-    );
-    assert!(!error.to_string().contains(SECRET_VALUE));
-}
-
-struct NetworkEnvironment {
-    _guard: MutexGuard<'static, ()>,
-    old_runtime: Option<OsString>,
-    old_secret: Option<OsString>,
-}
-
-impl NetworkEnvironment {
-    fn new() -> Self {
-        let guard = NETWORK_ENV_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let old_runtime = env::var_os(PROBE_RUNTIME_ENV);
-        let old_secret = env::var_os(NETWORK_SECRET_ENV);
-        env::remove_var(PROBE_RUNTIME_ENV);
-        env::set_var(NETWORK_SECRET_ENV, SECRET_VALUE);
-        Self {
-            _guard: guard,
-            old_runtime,
-            old_secret,
-        }
-    }
-}
-
-impl Drop for NetworkEnvironment {
-    fn drop(&mut self) {
-        restore_environment(PROBE_RUNTIME_ENV, self.old_runtime.take());
-        restore_environment(NETWORK_SECRET_ENV, self.old_secret.take());
-    }
-}
-
-fn restore_environment(name: &str, value: Option<OsString>) {
-    match value {
-        Some(value) => env::set_var(name, value),
-        None => env::remove_var(name),
-    }
+    assert!(matches!(error, CoreError::Config { .. }));
 }

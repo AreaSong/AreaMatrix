@@ -47,6 +47,31 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
     }
 
     @MainActor
+    func testCancelledImportProgressDiagnosticsIgnoresLateCollectorResult() async {
+        let collector = SuspendedDiagnosticsCollector(result: .success(.testFixture()))
+        let model = makeImportProgressMainListFixture(diagnosticsCollector: collector).model
+        model.beginImportEntryProgress(
+            currentPath: "docs/moved.pdf",
+            retryContext: ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
+        )
+        model.failImportEntry(
+            progress: ImportProgressFixtures.moveFailedProgress,
+            mapping: .importProgressFatalCopyError,
+            retryContext: ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath()),
+            recoveryCheck: .retryAllowed(nil)
+        )
+        model.requestImportProgressDiagnosticsPrivacyConfirmation()
+
+        let collection = Task { await model.collectImportProgressDiagnostics() }
+        await collector.waitUntilStarted()
+        model.cancelImportProgressDiagnosticsPrivacyConfirmation()
+        await collector.finish()
+        await collection.value
+
+        XCTAssertEqual(model.currentImportProgressState?.diagnostics, .idle)
+    }
+
+    @MainActor
     func testImportProgressStopAfterCurrentFileStopsBatchAtSafePointAndReturnsResults() async {
         let controlState = ImportProgressControlState()
         let fixture = makeImportProgressMainListFixture(importProgressControlState: controlState)

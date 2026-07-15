@@ -12,10 +12,9 @@ use rusqlite::{params, Connection};
 
 pub use super::remote_provider_common::path_string;
 use super::remote_provider_common::{
-    enable_request_for_endpoint, test_request_for_endpoint, ProbeRuntime, SECRET_VALUE,
-    TEST_SECRET_ENV,
+    enable_request_for_endpoint, successful_provider_test, test_request_for_endpoint, SECRET_VALUE,
 };
-use area_matrix_core::{enable_remote_ai_provider, test_remote_ai_provider};
+use area_matrix_core::enable_remote_ai_provider;
 
 pub const PRIVACY_RULES_KEY: &str = "ai_privacy_rules";
 
@@ -173,12 +172,8 @@ pub fn snapshot_rules_as_input(snapshot: &AiPrivacyRulesSnapshot) -> Vec<AiPriva
 
 pub fn configure_remote_provider(repo: &Path) -> AiPrivacyProviderScopeSnapshot {
     let endpoint = "https://provider.example.test/privacy-validation";
-    let runtime = ProbeRuntime::new("Succeeded");
-    let tested = test_remote_ai_provider(path_string(repo), test_request_for_endpoint(endpoint))
+    let tested = successful_provider_test(path_string(repo), test_request_for_endpoint(endpoint))
         .expect("test remote provider");
-    let payload = runtime.captured_payload();
-    assert_contains(&payload, "provider.example.test/privacy-validation");
-    assert_not_contains(&payload, "user readme");
 
     let enabled = enable_remote_ai_provider(
         path_string(repo),
@@ -232,7 +227,7 @@ pub fn install_privacy_update_failure(repo: &Path) {
 }
 
 pub fn assert_secret_free(value: &str) {
-    for forbidden in [SECRET_VALUE, TEST_SECRET_ENV, "api_key", "token", "secret"] {
+    for forbidden in [SECRET_VALUE, "api_key", "token", "secret"] {
         assert_not_contains(value, forbidden);
     }
 }

@@ -169,7 +169,9 @@ pub use redo::{
 };
 pub use remote_provider_config::{
     RemoteAiProviderKind, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
-    RemoteProviderEnableRequest, RemoteProviderTestRequest, RemoteProviderTestResult,
+    RemoteProviderEnableRequest, RemoteProviderProbeAuthorization, RemoteProviderProbeHeader,
+    RemoteProviderProbeMethod, RemoteProviderProbeObservation, RemoteProviderProbeOutcome,
+    RemoteProviderProbePlan, RemoteProviderTestRequest, RemoteProviderTestResult,
     RemoteProviderTestStatus,
 };
 pub use search::*;

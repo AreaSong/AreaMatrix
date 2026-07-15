@@ -135,21 +135,20 @@ diagnostics closure，也不改变 diagnostics 的隐私、脱敏或 Core snapsh
   `.areamatrix/import-sessions/current.json` 的 JSON / FileManager 实现。真实临时目录的 save / load /
   missing / corrupt / clear / permission 测试已固定其行为；后续演进仍需按 Import 高风险边界保留写入路径、
   失败降级和回滚证据。
-- `PlatformServices/RemoteProviderProbeRuntime.swift` 涉及 app-owned runtime 文件、权限、全局环境变量、Keychain 读取、
-  网络请求以及 Rust Core `Command` 执行。当前 installer 使用共享 actor 做 single-flight 装配，runtime descriptor 固定
-  版本、内容 hash、owner / mode、device / inode，并拒绝任意外部环境路径、弱权限和 symlink；shell runtime 限制
-  provider / method / URL，拒绝控制字符 credential，并通过 curl header stdin 传递凭据，避免 curl config 文本注入和
-  credential 出现在进程参数中。`RemoteProviderProbeRuntimeInstallerTests` 固定异常内容修复、缓存 descriptor 重校验、
-  symlink 替换保护和 CoreBridge 显式 installer 注入。该能力仍是独立高风险安全边界，不能通过单纯移动到
-  `PlatformServices/` 宣称完全收口；本地 HTTP fallback 已有响应上限、完整 framing 和网络失败矩阵证据，
-  剩余退出条件包括把 descriptor 绑定到 Core 的原子执行句柄，并补足 credential 生命周期证据。
+- `PlatformServices/RemoteProviderProbeService.swift` 是独立高风险网络边界。Core 通过
+  `prepare_remote_ai_provider_probe` 生成不含 secret 的 method / URL / header / auth / timeout 计划；共享
+  `RemoteProviderProbeService` actor 只在平台层读取 Keychain，使用 ephemeral URLSession，禁止 redirect，
+  在收到 response header 后立即取消 body，并只回传 transport outcome 与 HTTP status。Core 再通过
+  `complete_remote_ai_provider_probe` 映射稳定状态并签发 verification token。Bridge 和平台测试固定 bearer / Anthropic
+  header 装配、credential unavailable、connection failure、headers-only、redirect 禁止和显式 performer 注入；Core
+  不再读取 Keychain、不再启动 shell/curl/TCP probe，也不再接受进程级 probe runtime 环境路径。
 - 平台能力 inventory 已覆盖 `FileManager` 默认实例、`FileHandle`、`URL.resourceValues`、Data 读写、
   脚本写入与环境变量访问；后续新增同类 feature 例外会直接触发治理测试。
 
-AI runtime environment contract 当前由 Core 的 7 个 `AREAMATRIX_*_RUNTIME` key 与治理检查共同固定：
+AI runtime environment contract 当前由 Core 的 6 个 `AREAMATRIX_*_RUNTIME` key 与治理检查共同固定：
 classification、tags、summary 的 local / remote runtime 由外部集成提供；
-`AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME` 由 macOS 安装器受控提供。Core 新增或重命名 runtime key、
-或 macOS 引用未登记 key 时，`./dev check governance` 必须失败，不能让跨 Rust / Swift 的环境变量合同静默漂移。
+remote provider probe 已退出 runtime 环境合同。Core 新增或重命名 runtime key 时，
+`./dev check governance` 必须失败，不能让跨 Rust / Swift 的环境变量合同静默漂移。
 
 ## 渐进迁移顺序
 

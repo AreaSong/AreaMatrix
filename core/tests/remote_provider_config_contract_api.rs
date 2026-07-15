@@ -1,7 +1,8 @@
 use area_matrix_core::{
-    disable_remote_ai_provider, enable_remote_ai_provider, load_remote_ai_provider_config,
-    test_remote_ai_provider, AiFeatureKind, CoreError, CoreResult, RemoteAiProviderKind,
-    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
+    complete_remote_ai_provider_probe, disable_remote_ai_provider, enable_remote_ai_provider,
+    load_remote_ai_provider_config, prepare_remote_ai_provider_probe, AiFeatureKind, CoreError,
+    CoreResult, RemoteAiProviderKind, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
+    RemoteProviderEnableRequest, RemoteProviderProbeObservation, RemoteProviderProbePlan,
     RemoteProviderTestRequest, RemoteProviderTestResult, RemoteProviderTestStatus,
 };
 use pretty_assertions::assert_eq;
@@ -45,8 +46,12 @@ fn enable_request() -> RemoteProviderEnableRequest {
 
 #[test]
 fn remote_provider_config_contract_exposes_signatures_inputs_outputs_and_errors() {
-    fn assert_test(
-        _: fn(String, RemoteProviderTestRequest) -> CoreResult<RemoteProviderTestResult>,
+    fn assert_prepare(
+        _: fn(String, RemoteProviderTestRequest) -> CoreResult<RemoteProviderProbePlan>,
+    ) {
+    }
+    fn assert_complete(
+        _: fn(String, RemoteProviderProbeObservation) -> CoreResult<RemoteProviderTestResult>,
     ) {
     }
     fn assert_enable(
@@ -59,7 +64,8 @@ fn remote_provider_config_contract_exposes_signatures_inputs_outputs_and_errors(
     ) {
     }
 
-    assert_test(test_remote_ai_provider);
+    assert_prepare(prepare_remote_ai_provider_probe);
+    assert_complete(complete_remote_ai_provider_probe);
     assert_load(load_remote_ai_provider_config);
     assert_enable(enable_remote_ai_provider);
     assert_disable(disable_remote_ai_provider);
@@ -109,28 +115,28 @@ fn remote_provider_config_contract_exposes_signatures_inputs_outputs_and_errors(
 #[test]
 fn remote_provider_config_contract_rejects_invalid_inputs_without_fake_success() {
     assert!(matches!(
-        test_remote_ai_provider(String::new(), test_request()),
+        prepare_remote_ai_provider_probe(String::new(), test_request()),
         Err(CoreError::Config { .. })
     ));
 
     let mut raw_secret = test_request();
     raw_secret.key_reference = "sk-secret-key-material".to_owned();
     assert!(matches!(
-        test_remote_ai_provider("/tmp/repo".to_owned(), raw_secret),
+        prepare_remote_ai_provider_probe("/tmp/repo".to_owned(), raw_secret),
         Err(CoreError::Config { .. })
     ));
 
     let mut missing_endpoint = test_request();
     missing_endpoint.provider = RemoteAiProviderKind::Other;
     assert!(matches!(
-        test_remote_ai_provider("/tmp/repo".to_owned(), missing_endpoint),
+        prepare_remote_ai_provider_probe("/tmp/repo".to_owned(), missing_endpoint),
         Err(CoreError::Config { .. })
     ));
 
     let mut managed_endpoint = test_request();
     managed_endpoint.endpoint_url = Some("https://api.example.test".to_owned());
     assert!(matches!(
-        test_remote_ai_provider("/tmp/repo".to_owned(), managed_endpoint),
+        prepare_remote_ai_provider_probe("/tmp/repo".to_owned(), managed_endpoint),
         Err(CoreError::Config { .. })
     ));
 
@@ -161,8 +167,10 @@ fn remote_provider_config_contract_rejects_invalid_inputs_without_fake_success()
 #[test]
 fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "RemoteProviderTestResult test_remote_ai_provider(",
+        "RemoteProviderProbePlan prepare_remote_ai_provider_probe(",
         "string repo_path, RemoteProviderTestRequest request",
+        "RemoteProviderTestResult complete_remote_ai_provider_probe(",
+        "string repo_path, RemoteProviderProbeObservation observation",
         "RemoteProviderConfigSnapshot load_remote_ai_provider_config(",
         "RemoteProviderConfigSnapshot enable_remote_ai_provider(",
         "string repo_path, RemoteProviderEnableRequest request",
@@ -188,6 +196,14 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
         "\"OpenAi\"",
         "\"Anthropic\"",
         "\"Other\"",
+        "dictionary RemoteProviderProbePlan",
+        "string probe_token;",
+        "RemoteProviderProbeAuthorization authorization;",
+        "dictionary RemoteProviderProbeObservation",
+        "RemoteProviderProbeOutcome outcome;",
+        "enum RemoteProviderProbeOutcome",
+        "\"HttpResponse\"",
+        "\"CredentialUnavailable\"",
         "enum RemoteProviderTestStatus",
         "\"Succeeded\"",
         "\"ProviderRejected\"",
@@ -199,11 +215,13 @@ fn remote_provider_config_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "| `test_remote_ai_provider(repo, request)` | ai | √ | Config / PermissionDenied / Internal |",
+        "| `prepare_remote_ai_provider_probe(repo, request)` | ai | √ | Config / Internal |",
+        "| `complete_remote_ai_provider_probe(repo, observation)` | ai | √ | Config / PermissionDenied / Internal |",
         "| `load_remote_ai_provider_config(repo)` | ai | √ | Config / Internal |",
         "| `enable_remote_ai_provider(repo, request)` | ai | √ | Config / PermissionDenied / Internal |",
         "| `disable_remote_ai_provider(repo, request)` | ai | √ | Config / Internal |",
-        "### `test_remote_ai_provider(repoPath: String, request: RemoteProviderTestRequest) throws -> RemoteProviderTestResult`",
+        "### `prepare_remote_ai_provider_probe(repoPath: String, request: RemoteProviderTestRequest) throws -> RemoteProviderProbePlan`",
+        "### `complete_remote_ai_provider_probe(repoPath: String, observation: RemoteProviderProbeObservation) throws -> RemoteProviderTestResult`",
         "### `load_remote_ai_provider_config(repoPath: String) throws -> RemoteProviderConfigSnapshot`",
         "### `enable_remote_ai_provider(repoPath: String, request: RemoteProviderEnableRequest) throws -> RemoteProviderConfigSnapshot`",
         "### `disable_remote_ai_provider(repoPath: String, request: RemoteProviderDisableRequest) throws -> RemoteProviderConfigSnapshot`",
@@ -242,9 +260,10 @@ fn remote_provider_config_contract_documents_consumer_state_and_scope_boundaries
     }
 
     for fragment in [
-        "Tests a remote AI provider without sending user file content.",
+        "Prepares a platform-executed remote provider probe without sending user file content.",
+        "Completes a prepared remote provider probe from a sanitized platform observation.",
         "Loads the persisted remote provider gate snapshot.",
-        "Core must never accept or return raw API keys",
+        "Core does not read Keychain",
         "Enables a remote AI provider after successful test and consent.",
         "Disables the remote provider gate without touching AI privacy rules.",
         "AI privacy rules remains responsible for",

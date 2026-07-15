@@ -5,17 +5,16 @@ use std::{fs, path::Path};
 
 use area_matrix_core::{
     enable_remote_ai_provider, evaluate_ai_privacy, list_ai_privacy_rules, map_core_error,
-    test_remote_ai_provider, update_ai_privacy_rules, AiFeatureKind, AiPrivacyDecision,
-    AiPrivacyEvaluationContext, AiPrivacyEvaluationRequest, AiPrivacyEvaluationRoute,
-    AiPrivacyFieldRule, AiPrivacyInputField, AiPrivacyProviderGateReason,
-    AiPrivacyProviderScopeSnapshot, AiPrivacyRuleAppliesTo, AiPrivacyRuleInput, AiPrivacyRuleKind,
-    AiPrivacyRulesUpdateRequest, AiPrivacySkippedReason, CoreError, ErrorKind, ErrorMappingInput,
-    ErrorRecoverability, ErrorSeverity,
+    update_ai_privacy_rules, AiFeatureKind, AiPrivacyDecision, AiPrivacyEvaluationContext,
+    AiPrivacyEvaluationRequest, AiPrivacyEvaluationRoute, AiPrivacyFieldRule, AiPrivacyInputField,
+    AiPrivacyProviderGateReason, AiPrivacyProviderScopeSnapshot, AiPrivacyRuleAppliesTo,
+    AiPrivacyRuleInput, AiPrivacyRuleKind, AiPrivacyRulesUpdateRequest, AiPrivacySkippedReason,
+    CoreError, ErrorKind, ErrorMappingInput, ErrorRecoverability, ErrorSeverity,
 };
 use pretty_assertions::assert_eq;
 use remote_provider_common::{
-    enable_request_for_endpoint, initialized_repo, path_string, test_request_for_endpoint,
-    ProbeRuntime, SECRET_VALUE, TEST_SECRET_ENV,
+    enable_request_for_endpoint, initialized_repo, path_string, successful_provider_test,
+    test_request_for_endpoint, SECRET_VALUE,
 };
 use rusqlite::{params, Connection, OptionalExtension};
 
@@ -174,7 +173,7 @@ fn open_db(repo: &Path) -> Connection {
 fn assert_no_secret_material(value: &str) {
     for fragment in [
         SECRET_VALUE,
-        TEST_SECRET_ENV,
+        "AREAMATRIX_REMOTE_PROVIDER_TEST_KEY",
         "sk-secret",
         "api_key",
         "token=",
@@ -419,13 +418,11 @@ fn ai_privacy_rules_failure_error_mapping_matches_documented_codes() {
 fn ai_privacy_rules_failure_provider_keys_never_surface_through_remote_privacy_gate() {
     let repo = initialized_repo();
     let endpoint = "https://provider.example.test/privacy";
-    let runtime = ProbeRuntime::new("200");
-    let tested = test_remote_ai_provider(
+    let tested = successful_provider_test(
         path_string(repo.path()),
         test_request_for_endpoint(endpoint),
     )
     .expect("test remote provider");
-    let _ = runtime.captured_payload();
     enable_remote_ai_provider(
         path_string(repo.path()),
         enable_request_for_endpoint(

@@ -1,5 +1,22 @@
 import Foundation
 
+struct SettingsDiagnosticsGeneration {
+    private var value = 0
+
+    mutating func begin() -> Int {
+        value += 1
+        return value
+    }
+
+    mutating func invalidate() {
+        value += 1
+    }
+
+    func isCurrent(_ generation: Int) -> Bool {
+        value == generation
+    }
+}
+
 protocol CoreVersionReading: Sendable {
     func coreVersion() async throws -> String
 }

@@ -65,13 +65,29 @@ extension CoreBridge: CoreRemoteProviderConfiguring {
         repoPath: String,
         request: RemoteProviderTestRequestState
     ) async throws -> RemoteProviderTestResultState {
-        try await ensureRemoteProviderProbeRuntime()
-        return try await Task.detached(priority: .userInitiated) {
-            try RemoteProviderTestResultState(coreResult: testRemoteAiProvider(
+        try Task.checkCancellation()
+        let plan = try prepareRemoteAiProviderProbe(
+            repoPath: repoPath,
+            request: RemoteProviderTestRequest(snapshot: request)
+        )
+        let observation = await remoteProviderProbePerformer.perform(
+            plan: RemoteProviderProbePlanState(corePlan: plan)
+        )
+        if Task.isCancelled {
+            _ = try? completeRemoteAiProviderProbe(
                 repoPath: repoPath,
-                request: RemoteProviderTestRequest(snapshot: request)
-            ))
-        }.value
+                observation: RemoteProviderProbeObservation(state: RemoteProviderProbeObservationState(
+                    probeToken: plan.probeToken,
+                    outcome: .connectionFailed,
+                    httpStatus: nil
+                ))
+            )
+            throw CancellationError()
+        }
+        return try RemoteProviderTestResultState(coreResult: completeRemoteAiProviderProbe(
+            repoPath: repoPath,
+            observation: RemoteProviderProbeObservation(state: observation)
+        ))
     }
 
     func enableRemoteProvider(
@@ -96,10 +112,6 @@ extension CoreBridge: CoreRemoteProviderConfiguring {
                 request: RemoteProviderDisableRequest(snapshot: request)
             ))
         }.value
-    }
-
-    private func ensureRemoteProviderProbeRuntime() async throws {
-        _ = try await remoteProviderProbeRuntimeInstaller.ensureInstalled()
     }
 }
 

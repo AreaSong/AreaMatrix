@@ -1,6 +1,5 @@
 //! remote provider configuration contract types and entry points.
 
-mod http;
 mod probe;
 mod state;
 
@@ -9,7 +8,6 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use probe::probe_remote_provider;
 use serde::{Deserialize, Serialize};
 use state::{serialize_stored_config, snapshot_from_stored_config};
 use uuid::Uuid;
@@ -25,6 +23,7 @@ const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_MODEL_ID_LEN: usize = 128;
 const MAX_ENDPOINT_URL_LEN: usize = 512;
 const MAX_KEY_REFERENCE_LEN: usize = 256;
+const MAX_PROBE_TOKEN_LEN: usize = 256;
 const MAX_VERIFICATION_TOKEN_LEN: usize = 256;
 const VERIFIED_MESSAGE: &str = "Remote provider metadata verified";
 
@@ -63,6 +62,82 @@ pub struct RemoteProviderTestRequest {
     pub endpoint_url: Option<String>,
     /// Platform secure-storage reference for the API key.
     pub key_reference: String,
+}
+
+/// HTTP method selected by Core for a platform-executed provider probe.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum RemoteProviderProbeMethod {
+    /// Read provider model metadata without sending user content.
+    Get,
+}
+
+/// Authentication header shape that the platform layer must assemble from secure storage.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum RemoteProviderProbeAuthorization {
+    /// `Authorization: Bearer <credential>`.
+    Bearer,
+    /// `x-api-key: <credential>`.
+    AnthropicApiKey,
+}
+
+/// Sanitized non-secret header included in a provider probe plan.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct RemoteProviderProbeHeader {
+    /// Header name fixed by Core policy.
+    pub name: String,
+    /// Non-secret header value fixed by Core policy.
+    pub value: String,
+}
+
+/// Platform-neutral plan for the macOS layer to execute with Keychain and URLSession.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct RemoteProviderProbePlan {
+    /// Provider family being tested.
+    pub provider: RemoteAiProviderKind,
+    /// Model id being tested.
+    pub model_id: String,
+    /// Custom endpoint being tested, when present.
+    pub endpoint_url: Option<String>,
+    /// Platform secure-storage reference. This is never raw credential material.
+    pub key_reference: String,
+    /// Opaque token binding the observation to the current probe preparation.
+    pub probe_token: String,
+    /// HTTP method selected by Core.
+    pub method: RemoteProviderProbeMethod,
+    /// Fully rendered provider metadata URL.
+    pub url: String,
+    /// Non-secret provider headers.
+    pub headers: Vec<RemoteProviderProbeHeader>,
+    /// Authentication header shape for the platform layer.
+    pub authorization: RemoteProviderProbeAuthorization,
+    /// Request and resource timeout required from the platform transport.
+    pub timeout_millis: u32,
+    /// Maximum response body bytes. Zero means headers-only observation.
+    pub maximum_response_body_bytes: u64,
+    /// Whether redirects may be followed.
+    pub follow_redirects: bool,
+}
+
+/// Sanitized platform observation returned after executing a provider probe plan.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct RemoteProviderProbeObservation {
+    /// Opaque token from the prepared plan.
+    pub probe_token: String,
+    /// Sanitized transport outcome.
+    pub outcome: RemoteProviderProbeOutcome,
+    /// HTTP status when an HTTP response was observed.
+    pub http_status: Option<u32>,
+}
+
+/// Allowed sanitized outcomes from the platform transport.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum RemoteProviderProbeOutcome {
+    /// An HTTP response status was observed.
+    HttpResponse,
+    /// DNS, TLS, timeout, refusal, or another transport failure occurred.
+    ConnectionFailed,
+    /// The secure credential reference could not be resolved.
+    CredentialUnavailable,
 }
 
 /// Request for enabling a tested remote provider after explicit consent.
@@ -145,6 +220,19 @@ struct PendingRemoteProviderVerification {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+struct PendingRemoteProviderProbe {
+    request: RemoteProviderTestRequest,
+    probe_token: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "value")]
+enum PendingRemoteProviderTestRecord {
+    Probe(PendingRemoteProviderProbe),
+    Verification(PendingRemoteProviderVerification),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub(crate) struct StoredRemoteProviderConfig {
     pub(crate) provider: RemoteAiProviderKind,
     pub(crate) model_id: String,
@@ -155,38 +243,81 @@ pub(crate) struct StoredRemoteProviderConfig {
     pub(crate) remote_provider_enabled: bool,
 }
 
-pub(crate) fn test_remote_ai_provider(
+pub(crate) fn prepare_remote_ai_provider_probe(
     repo_path: String,
     request: RemoteProviderTestRequest,
-) -> CoreResult<RemoteProviderTestResult> {
+) -> CoreResult<RemoteProviderProbePlan> {
     validate_repo_path(&repo_path)?;
     validate_connection_request(&request)?;
-    let probe = probe_remote_provider(&request)?;
-    if probe.status != RemoteProviderTestStatus::Succeeded {
-        return Ok(RemoteProviderTestResult {
-            provider: request.provider,
-            model_id: request.model_id,
-            endpoint_url: request.endpoint_url,
-            status: probe.status,
-            provider_verified: false,
-            verification_token: None,
-            sanitized_message: probe.sanitized_message,
-        });
+    let probe_token = new_probe_token();
+    let plan = probe::build_probe_plan(&request, probe_token.clone())?;
+    let pending = PendingRemoteProviderTestRecord::Probe(PendingRemoteProviderProbe {
+        request,
+        probe_token,
+    });
+    let repo = PathBuf::from(&repo_path);
+    let serialized = serialize_pending_test_record(&pending)?;
+    db::save_remote_provider_test_record(&repo, &serialized).map_err(map_storage_error)?;
+    Ok(plan)
+}
+
+pub(crate) fn complete_remote_ai_provider_probe(
+    repo_path: String,
+    observation: RemoteProviderProbeObservation,
+) -> CoreResult<RemoteProviderTestResult> {
+    validate_repo_path(&repo_path)?;
+    validate_probe_token(&observation.probe_token)?;
+    let repo = PathBuf::from(&repo_path);
+    let pending = load_pending_probe(&repo)?;
+    if pending.probe_token != observation.probe_token {
+        return Err(CoreError::config("remote provider probe token is invalid"));
     }
 
-    let pending = pending_verification(request, new_verification_token());
-    let repo = PathBuf::from(&repo_path);
-    let serialized = serialize_pending_verification(&pending)?;
+    let status = match probe::status_from_observation(
+        &pending.request.provider,
+        &observation.outcome,
+        observation.http_status,
+    ) {
+        Ok(status) => status,
+        Err(error) => {
+            db::delete_remote_provider_test_record(&repo).map_err(map_storage_error)?;
+            return Err(error);
+        }
+    };
+    if status != RemoteProviderTestStatus::Succeeded {
+        db::delete_remote_provider_test_record(&repo).map_err(map_storage_error)?;
+        return Ok(unverified_test_result(pending.request, status));
+    }
+
+    let verification = pending_verification(pending.request, new_verification_token());
+    let serialized = serialize_pending_test_record(
+        &PendingRemoteProviderTestRecord::Verification(verification.clone()),
+    )?;
     db::save_remote_provider_test_record(&repo, &serialized).map_err(map_storage_error)?;
     Ok(RemoteProviderTestResult {
-        provider: pending.provider,
-        model_id: pending.model_id,
-        endpoint_url: pending.endpoint_url,
+        provider: verification.provider,
+        model_id: verification.model_id,
+        endpoint_url: verification.endpoint_url,
         status: RemoteProviderTestStatus::Succeeded,
         provider_verified: true,
-        verification_token: Some(pending.verification_token),
+        verification_token: Some(verification.verification_token),
         sanitized_message: VERIFIED_MESSAGE.to_owned(),
     })
+}
+
+fn unverified_test_result(
+    request: RemoteProviderTestRequest,
+    status: RemoteProviderTestStatus,
+) -> RemoteProviderTestResult {
+    RemoteProviderTestResult {
+        provider: request.provider,
+        model_id: request.model_id,
+        endpoint_url: request.endpoint_url,
+        sanitized_message: probe::sanitized_probe_message(&status).to_owned(),
+        status,
+        provider_verified: false,
+        verification_token: None,
+    }
 }
 
 pub(crate) fn enable_remote_ai_provider(
@@ -231,6 +362,10 @@ fn new_verification_token() -> String {
     format!("verify:remote-provider:{}", Uuid::new_v4())
 }
 
+fn new_probe_token() -> String {
+    format!("probe:remote-provider:{}", Uuid::new_v4())
+}
+
 fn load_pending_verification(repo_path: &Path) -> CoreResult<PendingRemoteProviderVerification> {
     let Some((serialized, _)) =
         db::load_remote_provider_test_record(repo_path).map_err(map_storage_error)?
@@ -239,7 +374,28 @@ fn load_pending_verification(repo_path: &Path) -> CoreResult<PendingRemoteProvid
             "remote provider must be tested before enabling",
         ));
     };
-    deserialize_pending_verification(&serialized)
+    match deserialize_pending_test_record(&serialized)? {
+        PendingRemoteProviderTestRecord::Verification(pending) => Ok(pending),
+        PendingRemoteProviderTestRecord::Probe(_) => Err(CoreError::config(
+            "remote provider probe must be completed before enabling",
+        )),
+    }
+}
+
+fn load_pending_probe(repo_path: &Path) -> CoreResult<PendingRemoteProviderProbe> {
+    let Some((serialized, _)) =
+        db::load_remote_provider_test_record(repo_path).map_err(map_storage_error)?
+    else {
+        return Err(CoreError::config(
+            "remote provider probe must be prepared before completion",
+        ));
+    };
+    match deserialize_pending_test_record(&serialized)? {
+        PendingRemoteProviderTestRecord::Probe(pending) => Ok(pending),
+        PendingRemoteProviderTestRecord::Verification(_) => Err(CoreError::config(
+            "remote provider probe has already been completed",
+        )),
+    }
 }
 
 fn ensure_pending_matches_request(
@@ -346,6 +502,7 @@ fn validate_custom_endpoint(endpoint: &str) -> CoreResult<()> {
         || endpoint.contains('\0')
         || endpoint.chars().any(char::is_whitespace)
         || !probe::custom_endpoint_scheme_allowed(endpoint)
+        || custom_endpoint_has_userinfo(endpoint)
         || looks_sensitive(endpoint)
     {
         return Err(CoreError::config(
@@ -353,6 +510,19 @@ fn validate_custom_endpoint(endpoint: &str) -> CoreResult<()> {
         ));
     }
     Ok(())
+}
+
+fn custom_endpoint_has_userinfo(endpoint: &str) -> bool {
+    endpoint
+        .split_once("://")
+        .map(|(_, remainder)| {
+            remainder
+                .split('/')
+                .next()
+                .unwrap_or(remainder)
+                .contains('@')
+        })
+        .unwrap_or(false)
 }
 
 fn validate_key_reference(key_reference: &str) -> CoreResult<()> {
@@ -404,16 +574,27 @@ fn validate_verification_token(token: &str) -> CoreResult<()> {
     Ok(())
 }
 
-fn serialize_pending_verification(
-    pending: &PendingRemoteProviderVerification,
-) -> CoreResult<String> {
+fn validate_probe_token(token: &str) -> CoreResult<()> {
+    if token.trim() != token
+        || token.is_empty()
+        || token.len() > MAX_PROBE_TOKEN_LEN
+        || token.contains('\0')
+        || token.chars().any(char::is_whitespace)
+        || looks_sensitive(token)
+    {
+        return Err(CoreError::config("remote provider probe token is invalid"));
+    }
+    Ok(())
+}
+
+fn serialize_pending_test_record(pending: &PendingRemoteProviderTestRecord) -> CoreResult<String> {
     serde_json::to_string(pending)
         .map_err(|_| CoreError::internal("remote provider verification metadata is invalid"))
 }
 
-fn deserialize_pending_verification(
+fn deserialize_pending_test_record(
     serialized: &str,
-) -> CoreResult<PendingRemoteProviderVerification> {
+) -> CoreResult<PendingRemoteProviderTestRecord> {
     serde_json::from_str(serialized)
         .map_err(|_| CoreError::config("remote provider verification metadata is invalid"))
 }

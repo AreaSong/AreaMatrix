@@ -40,6 +40,19 @@ pub(crate) fn load_remote_provider_test_record(
     load_repo_config_value(repo_path, REMOTE_PROVIDER_PENDING_TEST_KEY)
 }
 
+pub(crate) fn delete_remote_provider_test_record(repo_path: &Path) -> CoreResult<()> {
+    super::ensure_config_storage_writable(repo_path)?;
+    let connection =
+        super::open_repo_connection(repo_path).map_err(super::map_update_open_error)?;
+    connection
+        .execute(
+            "DELETE FROM repo_config WHERE key = ?1",
+            params![REMOTE_PROVIDER_PENDING_TEST_KEY],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(())
+}
+
 pub(crate) fn load_remote_provider_config_record(
     repo_path: &Path,
 ) -> CoreResult<Option<(String, i64)>> {

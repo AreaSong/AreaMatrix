@@ -44,7 +44,13 @@ extension OnboardingModel {
     @MainActor
     func cancelImportProgressDiagnosticsPrivacyConfirmation() {
         guard case let .importProgress(state) = route else { return }
-        guard case .confirmingPrivacy = state.diagnostics else { return }
+        guard case .confirmingPrivacy = state.diagnostics else {
+            guard case .collecting = state.diagnostics else { return }
+            importProgressDiagnosticsGeneration += 1
+            route = .importProgress(state.withDiagnostics(.idle))
+            return
+        }
+        importProgressDiagnosticsGeneration += 1
         route = .importProgress(state.withDiagnostics(.idle))
     }
 
@@ -53,12 +59,16 @@ extension OnboardingModel {
         guard case let .importProgress(state) = route else { return }
         guard case .confirmingPrivacy = state.diagnostics else { return }
 
+        importProgressDiagnosticsGeneration += 1
+        let generation = importProgressDiagnosticsGeneration
         route = .importProgress(state.withDiagnostics(.collecting))
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: state.repoPath)
+            guard importProgressDiagnosticsGeneration == generation else { return }
             guard case let .importProgress(latestState) = route else { return }
             route = .importProgress(latestState.withDiagnostics(.collected(snapshot)))
         } catch {
+            guard importProgressDiagnosticsGeneration == generation else { return }
             guard case let .importProgress(latestState) = route else { return }
             route = await .importProgress(latestState.withDiagnostics(.failed(importProgressMapping(for: error))))
         }

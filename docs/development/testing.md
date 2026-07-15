@@ -34,8 +34,8 @@ flowchart TB
 | `core/sync` | ≥ 80% | cargo-llvm-cov |
 | `core/overview` | ≥ 75% | cargo-llvm-cov |
 | 全 core 加权 | ≥ 70% | CI 强制 |
-| Swift Watcher | ≥ 60% | Xcode coverage |
-| Swift Bridge | ≥ 50%（其余靠集成测试） | - |
+| Swift Watcher | ≥ 60% | Xcode coverage，CI 强制 |
+| Swift Bridge | ≥ 50%（其余靠集成测试） | Xcode coverage，CI 强制 |
 | SwiftUI 视图 | 不强制 | 靠 E2E 和 UI snapshot（后续 UI 自动化） |
 
 ---
@@ -236,6 +236,11 @@ bundle。普通编译失败、断言失败、链接失败或非沙箱错误仍�
 如果 `xcodebuild test` 已经输出目标 XCTest suite 全部通过，但仅在测试结束后的
 `testmanagerd` 日志收集或分布式通知时被本地 sandbox 拦截，`./dev test macos`
 会把该结果视为标准 XCTest 证据通过；这种判定不得掩盖真实构建失败或断言失败。
+
+macOS CI 使用 `--coverage-gate` 显式开启 Xcode coverage，并从 `.xcresult` 中核对
+`PlatformServices` 的 Watcher 文件清单和手写 `Bridge/` 文件。`Bridge/Generated/` 与
+`Bridge/UniFFI/` 不计入手写 Bridge 覆盖率；coverage target、清单文件或可执行行缺失均按失败处理，
+不得把空集合或 `xcrun xctest` fallback 当作 coverage PASS。
 
 当仅运行 `AreaMatrixTests/AreaMatrixPerfTests` 时，`./dev test macos` 还会在
 显式开启 v1 performance XCTest，并在 performance 通过后构建 signed Release `.app`，执行 codesign、自包含链接检查和

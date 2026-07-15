@@ -26,6 +26,29 @@
 - 测试支撑能复用，新增 feature 不需要重复搭建 fixture 和 mock。
 - 架构规则能通过文档、review 和自动化检查防止漂移。
 
+### 100% 验收证据矩阵
+
+状态只依据当前权威文件和可执行证据：`已证明` 表示已有直接门禁或多调用方测试；`部分证明` 表示主干成立，
+但仍缺真实环境证据或连续演进证据。该矩阵是本文完成条件的索引，不替代测试、CI、review 或 residual ledger。
+
+| 完成条件 | 权威实现 / 规则 | 自动化或验收证据 | 当前状态 |
+|---|---|---|---|
+| 新功能先找到 feature owner | `apps/macos/AGENTS.md`、`Features/*` | `MacOSFeatureOwnershipGovernanceTests` 精确 inventory 11 个 owner | 已证明 |
+| 新功能以 feature-local 改动为主 | migration zone inventory、feature owner 规则 | `MacOSMigrationZoneGovernanceTests` 禁止旧区新增文件；PR 模板强制记录 primary owner、跨 feature 理由、复用调用方和边界验证；仍需继续积累多个后续 feature 的局部落地记录 | 部分证明 |
+| SwiftUI View 不直接做平台 IO | `macos-frontend-architecture.md`、`PlatformServices/` | `testSwiftUIViewFilesDoNotOwnPlatformIO`、platform capability inventory | 已证明 |
+| Swift 调用 Core 只走手写 Bridge | `Bridge/`、`AppCoreServices` | `testGeneratedCoreCallsStayInsideBridge`、`MacOSDefaultCoreServicesGovernanceTests` | 已证明 |
+| Generated / UniFFI 保持纯生成 | `Bridge/Generated/`、`Bridge/UniFFI/` | generated artifact governance、`./dev bindings verify`、macOS CI bindings gate | 已证明 |
+| 平台能力进入 PlatformServices 或有迁移路径 | `PlatformServices/`、受控 App adapter | platform capability / default adapter / NSWorkspace / SQLite governance tests | 已证明 |
+| 主要功能域有稳定落点 | 11 个 `Features/<Owner>/` | feature owner inventory 记录 responsibility、risk、validation | 已证明 |
+| 通用 UI、async 与 recovery 模式可复用 | DesignSystem、feature-owned routing、Settings diagnostics generation、FileActions undo support | Repository / Advanced / About 共享 diagnostics generation；Batch Rename / Delete / Change Category 共享 undo 后处理，均有多调用方 XCTest | 已证明 |
+| 高风险用户文件边界有固定口径 | `CODE_REVIEW.md`、file-safety 规则、Import / repair / conflict tests | forbidden-touch、失败恢复和真实临时 repo 证据充分；真实 iCloud placeholder 与正式分发证据仍由 residual ledger 阻断 | 部分证明 |
+| 测试支撑可复用 | shared queues、temporary FS、fixtures、test doubles | `TestSupportNamingGovernanceTests` 与多个 feature 真实调用方 | 已证明 |
+| 文档、review、CI 能阻止架构漂移 | docs、AGENTS、CI governance | governance XCTest membership、Swift file size、bindings、coverage、SwiftLint、SwiftFormat CI gates | 已证明 |
+
+因此当前不能依据“多数条目已有门禁”直接宣布 100%。矩阵当前为 9 条`已证明`、2 条`部分证明`：本地工程侧仍需
+继续积累新功能 feature-local 落地的连续演进证据；真实环境和正式分发证据继续由 residual ledger 单独判断，不能用
+本地测试代替。
+
 ## 100% 成熟度账本
 
 这条路线的核心目标是把 AreaMatrix 从“功能可以继续堆”推进到“功能可以稳定、高效、低风险地持续新增”。
@@ -44,6 +67,9 @@
 MainList、FileActions、Import、Settings、Onboarding、AI、SyncConflicts 等主要功能域已有稳定落点；
 TestSupport 请求日志与结果队列已在多个 feature 复用，Bridge、生成绑定、平台能力和默认服务也已有治理测试。
 FileActions、Search、SmartList 与 SyncConflicts 的 sheet host 已归回各自 feature，通用 lifecycle 只保留顺序组合。
+FileActions 的 batch change category、batch delete 与 batch rename 现在共享同一套 undo token 规范化、
+action-log 加载和 toast 状态转换；各动作仍保留自己的成功条件与风险提示，不合并 confirmation、Core apply
+或 selection cleanup 等业务语义不同的路径。
 `MainRepositoryContentView` 的生产默认服务装配也已归入 App 层轻量 assembly，并保留 View-owned `@StateObject` identity。
 App appearance、cursor 与 haptic 已由共享 interaction feedback adapter 承接，View-like 文件的全局平台写入也已有门禁。
 Command Palette 搜索焦点恢复、Search presentation routing、FileActions batch / undo presentation state 和
@@ -56,14 +82,13 @@ MainList-owned recovery contract。`RepoConfigSnapshot` fixture family 与 Local
 也已完成自然拆分；当前 450 行近阈值清单只登记 459 行的
 `MacOSArchitectureBoundaryGovernanceTests.swift`，并冻结其继续增长。macOS CI 也已从“目录缺失时跳过”升级为
 工程 / 源码缺失即失败，并由本地 governance check 防止 skip guard 回流。Import session persistence 已迁入
-`PlatformServices`；AI remote provider probe runtime 已补齐 app-owned runtime directory、shared actor single-flight、runtime
-descriptor 的版本 / 内容 hash / owner / mode / device / inode 校验、异常内容修复、symlink 保护、显式
-CoreBridge installer 注入、credential 传递与 curl 参数边界测试。Core 的 classification / tags / summary runtime 响应脱敏已收敛到
+`PlatformServices`；AI remote provider probe 已切换为 Core prepare / complete 两阶段合同，并由共享
+`RemoteProviderProbeService` actor 使用 Keychain 与 headers-only URLSession 执行，禁止 redirect，只回传净化 observation。
+Core 的 classification / tags / summary runtime 响应脱敏已收敛到
 `core/src/ai_runtime.rs`，由三个 executor 复用并保留各自 fallback / 长度策略；四类外部进程调用也已
 收敛到 `core/src/external_runtime.rs`，统一最小环境、timeout、独立 Unix process group、后代进程回收、
-kill / wait、stdout 上限与 stderr 丢弃策略。本地 HTTP fallback 也已补齐 16 KiB 响应上限、header terminator、
-HTTP version / status、Content-Length、chunked framing、trailer 和冲突 framing 校验。接下来继续治理
-descriptor 到 Core 的原子执行绑定和长期演进证据。旧
+kill / wait、stdout 上限与 stderr 丢弃策略。旧 probe shell/runtime、Core curl/TCP fallback 和进程级 probe
+环境变量合同已经删除，TOCTOU 路径竞态不再存在。接下来继续治理长期隐私、credential lifecycle 和发布证据。旧
 `Models` / `Views` 迁移区也已建立精确 inventory，
 新增业务文件回流会被 XCTest / CI 阻断。11 个 Feature 目录也已建立 owner、风险和验证 inventory，
 新增 Feature 必须先明确 owner 才能进入代码面。
@@ -95,19 +120,18 @@ descriptor 到 Core 的原子执行绑定和长期演进证据。旧
   tracked Swift bindings 已有本地与 CI
   exact drift gate；手写 Swift 文件达到 450 行后必须登记 owner、理由与拆分触发条件，且不得继续增长，
   500 行仍是硬上限，UniFFI 生成绑定由独立清单与 drift gate 管理。
-- 当前治理重点：继续处理 AI remote provider descriptor 到 Core 的原子执行绑定和长期演进证据，
-  使复用与自动化检查成为新增功能的默认路径。
+- macOS CI 已显式开启 Xcode coverage，并对 Swift Watcher 精确文件清单执行 60% 门槛、对全部手写
+  Bridge 文件执行 50% 门槛；生成绑定不计入手写覆盖率，target / 文件清单缺失、空集合和 direct
+  `xctest` fallback 均不能形成 coverage PASS。
+- 当前治理重点：继续补强 AI credential lifecycle、隐私与发布证据，使复用与自动化检查成为新增功能的默认路径。
 - Import session persistence 已有真实临时目录的 save / load / missing / corrupt / clear / permission
   回归证据，并已迁入 `PlatformServices/ImportBatchSessionPlatformServices.swift`；后续演进不得改变
   app-owned metadata 路径或失败不阻断导入的语义。
-- Remote provider probe runtime 已有 descriptor provenance、异常内容修复、弱权限拒绝、symlink 拒绝和 Keychain reference probe
-  回归证据；凭据通过 curl header stdin 传递，不进入 curl config 文本或进程参数。Rust Core 外部
-  `Command` 生命周期已统一收口，并有 Unix 后代 process group 回收证据；`remote_provider_network_failure_matrix.rs` 已补 loopback
-  TCP 的真实 2xx / 401 / 503、拒绝连接、空响应、截断响应、读取超时、超大响应体拒绝、TLS handshake failure
-  和保留 `.invalid` 域名 DNS failure 证据；本地 HTTP fallback 已有 16 KiB 响应上限，并拒绝 header 不完整、
-  Content-Length 不一致、chunked 不完整、非法 trailer、HTTP/1.0 chunked 以及 Content-Length / Transfer-Encoding
-  冲突等不完整或歧义 framing。当前网络失败与 HTTP framing 定义已有可重复证据，剩余高风险边界仍是
-  descriptor 校验结果到最终 Core `exec` 之间的原子绑定。
+- Remote provider probe 已有 Core plan / observation 状态矩阵、Keychain credential unavailable、bearer / Anthropic
+  header 装配、URLSession redirect status、timeout failure、headers-only body 取消和 Bridge enable 闭环证据。
+  Core 不读取 secret、不执行网络、不启动 probe 进程；平台层不回传响应正文、header 或底层错误原文。
+  自定义 endpoint 的 URL userinfo 已由 Core 与平台层双重拒绝；Swift 任务取消会终止 URLSession，
+  清理 pending probe，且不会产生 verification token。
 - 分发证据、外部冒烟或决策类 residual 仍以 residual ledger 为准；它们不改变本文的工程成熟度百分比，
   但会阻止把项目表述为正式分发状态已完全闭合。
 
@@ -139,11 +163,10 @@ descriptor 到 Core 的原子执行绑定和长期演进证据。旧
   `ConfigurationFixtures.swift` 与 `AppPlatformServiceAdapters.swift` 已分别按完整 fixture / platform adapter
   family 拆分；当前近阈值 inventory 只包含 459 行的 `MacOSArchitectureBoundaryGovernanceTests.swift`；
   `MacOSArchitectureBoundaryGovernanceTests.swift` 的通用文件扫描 helper 已提取到
-  `MacOSGovernanceFileSystemTestSupport.swift`；当前新增的 runtime / platform contract 扫描仍保持在同一
+  `MacOSGovernanceFileSystemTestSupport.swift`；当前新增的 remote provider platform contract 扫描仍保持在同一
   architecture governance owner 下，并要求下一次增长前继续提取独立扫描族或 shared assertion helper。
 - 架构治理测试已固定生成 `ReindexReport` 只在 Bridge 转换，并显式盘点已迁入 PlatformServices 的
-  Import session persistence，以及 iCloud placeholder download、AI Keychain 与 probe runtime 等仍需
-  专项安全证据或后续收口的例外。
+  Import session persistence，以及 iCloud placeholder download 与 AI Keychain 等仍需专项安全证据的例外。
 - `MainRepositoryContentLifecycle` 已改为按原 modifier 顺序组合 FileActions、Search、SmartList、
   SyncConflicts 和 Import 的 feature-owned route host / relay；治理测试禁止具体 sheet builder 与
   Import conflict relay 回流，并固定对应实现留在各自 feature。
@@ -165,6 +188,20 @@ descriptor 到 Core 的原子执行绑定和长期演进证据。旧
   View-like 文件直接使用这些 AppKit API 或发布 `NotificationCenter.default.post`。
 - classifier rule editor 保存结果已从进程级通知广播改为当前 route 的直接闭包回传，移除了多实例
   同时存活时误响应同一次保存事件的路径。
+- classifier rule editor 的 load / save recovery state 已拆成互斥转换：加载失败不再同时伪造保存失败，
+  保存失败保持已加载 snapshot 与用户 draft，并由回归测试固定 retry 所需状态不丢失。
+- configured repository bootstrap、打开已有仓库与初始化完成后的首次打开现在统一通过
+  `beginMainOpening(repoPath:scanSession:)` 建立 cancellation token、startup recovery checking、可选 scan session
+  与 tree loading 初始状态；三条入口只保留各自后续的保存路径和错误恢复语义。
+- Repository Settings 的 stale repository path 同步失败会保留当前可见配置和待持久化 snapshot，错误横幅只重试
+  `updateConfig`，不通过整页 reload 混淆可见路径与已持久化路径；成功后清除 pending sync 与错误状态。
+- Repository、Advanced 与 About Settings diagnostics 共享 `SettingsDiagnosticsGeneration` 隔离异步结果；
+  reload、离开页面或显式取消会使当前收集失效，已经在执行的 collector / exporter 即使随后返回，也不能
+  把新状态覆盖成迟到的 collected / failed。
+- initialization failure 与 main repository error diagnostics 在 `OnboardingModel` 内分别维护请求 generation；
+  同一路由中取消 collecting 后，即使 Core collector 随后返回，也保持 idle，不再依赖 repo path 检查间接防护。
+- Import progress 与 Database Repair diagnostics 也分别固定同路由取消 generation；Database Repair 页面退出会使
+  collecting 结果失效，四类恢复入口均有挂起 collector 的迟到结果回归测试。
 - `./dev bindings verify` 已使用 `Cargo.lock` 锁定的 UniFFI 生成器，在临时目录规范化并精确比较
   Xcode tracked Swift/header/module map；macOS CI 与 governance check 已固定该门禁，现存 tracked
   bindings 漂移也已同步消除。
@@ -423,6 +460,8 @@ macOS project / sources 缺失会直接阻断 build/test、SwiftLint 与 SwiftFo
 与 `AreaMatrixTests` Sources membership，避免门禁文件存在但未进入测试 target 的静默失效；macOS
 runner 对本地 Xcode system content mismatch 也返回明确 blocked 状态，避免无 XCTest 证据时误报 PASS；
 Core 与 macOS 的 `AREAMATRIX_*_RUNTIME` key 合同也由同一门禁双向核对。
+macOS runner 的 `--coverage-gate` 还会从 `.xcresult` 读取 `xccov` JSON，按可执行行加权计算
+Watcher 与手写 Bridge 覆盖率；当前真实全量 XCTest 证据分别为 66.67% 和 59.85%。
 
 稳定证据：
 
@@ -591,11 +630,10 @@ PlatformDifferences 已归入 `Features/Settings/`；`Views/Settings` 当前只�
 
 状态：owner 稳定。provider config、privacy rules、summary、classification suggestion、tag
 suggestion、local model status 等能力已有 `Features/AI/` 落点；remote provider probe 的平台运行时已归位
-到 `PlatformServices/RemoteProviderProbeRuntime.swift`。credential / probe runtime
-已补齐 descriptor provenance、owner / symlink / mode、credential 传递与 curl 参数边界测试，后续重点是继续
-收敛 descriptor 到 Core 的执行绑定、隐私验证和少量直接 bridge 受控例外；curl `000` transport failure 已固定为
-`ConnectionFailed`。Probe runtime 仍涉及临时脚本、Keychain、
-网络请求和 Rust Core 进程执行，必须作为高风险安全专项设计，不能用普通目录迁移替代进程 / 网络边界验证。
+到 `PlatformServices/RemoteProviderProbeService.swift`。Core 已拆成 prepare / complete 两阶段合同，平台层使用
+Keychain 与受限 URLSession 执行 headers-only probe，禁止 redirect，只回传净化 outcome / HTTP status；旧 shell
+runtime、全局环境变量和 Core 进程执行路径已移除。后续重点是保持 provider config / privacy rules / call log
+之间的 consent 与 credential 生命周期证据，并继续收口少量直接 bridge 受控例外。
 
 范围：
 
@@ -617,11 +655,10 @@ suggestion、local model status 等能力已有 `Features/AI/` 落点；remote p
 目标：统一平台副作用落点。
 
 状态：复用主干在建。`PlatformServices/` 已覆盖 Import scan、Import session persistence、FSEvents watcher、iCloud status、
-NSWorkspace、Pasteboard、settings / onboarding capability probing，以及 remote provider probe runtime 等能力；
-App 层 interaction feedback adapter 已统一 appearance、cursor 与 haptic。Import placeholder 下载、AI Keychain
-以及 probe runtime 的 descriptor 到 Core 执行绑定等仍是
-需要显式 owner 和退出条件的受控例外；现有平台 capability inventory 已覆盖 `FileHandle`、`URL.resourceValues`、
-session persistence、脚本和环境变量等真实 IO。
+NSWorkspace、Pasteboard、settings / onboarding capability probing，以及 remote provider Keychain / URLSession probe；
+App 层 interaction feedback adapter 已统一 appearance、cursor 与 haptic。Import placeholder 下载与 AI Keychain
+仍是需要显式 owner 和安全证据的受控例外；现有平台 capability inventory 已覆盖 `FileHandle`、
+`URL.resourceValues`、session persistence、URLSession、Security、脚本和环境变量等真实 IO。
 
 范围：
 

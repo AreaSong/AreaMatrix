@@ -14,13 +14,7 @@ extension OnboardingModel {
     @MainActor
     func loadConfiguredRepository() async {
         guard let repoPath = settingsReader.configuredRepoPath() else { route = .welcome; return }
-        let cancellationToken = UUID()
-        openingCancellationToken = cancellationToken
-        route = .mainLoading(MainLoadingState(
-            repoPath: repoPath,
-            startupRecovery: .checking,
-            treeLoading: mainLoadingTreeLister != nil ? .loading : nil
-        ))
+        let cancellationToken = beginMainOpening(repoPath: repoPath)
         var loadingRefreshTask: Task<Void, Never>?
 
         do {

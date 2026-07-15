@@ -4,18 +4,20 @@ mod api_contract_source;
 mod validation_support;
 
 use area_matrix_core::{
-    disable_remote_ai_provider, enable_remote_ai_provider, load_remote_ai_provider_config,
-    test_remote_ai_provider, AiFeatureKind, CoreResult, ErrorKind, RemoteAiProviderKind,
-    RemoteProviderConfigSnapshot, RemoteProviderDisableRequest, RemoteProviderEnableRequest,
-    RemoteProviderTestRequest, RemoteProviderTestResult, RemoteProviderTestStatus,
+    complete_remote_ai_provider_probe, disable_remote_ai_provider, enable_remote_ai_provider,
+    load_remote_ai_provider_config, prepare_remote_ai_provider_probe, AiFeatureKind, CoreResult,
+    ErrorKind, RemoteAiProviderKind, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
+    RemoteProviderEnableRequest, RemoteProviderProbeObservation, RemoteProviderProbeOutcome,
+    RemoteProviderProbePlan, RemoteProviderTestRequest, RemoteProviderTestResult,
+    RemoteProviderTestStatus,
 };
 use pretty_assertions::assert_eq;
 use validation_support::{
     assert_consumer_gate_alignment, assert_contains, assert_core_api_and_udl_alignment,
     assert_no_api_key_material, assert_not_contains, assert_rust_contract_alignment,
-    assert_sanitized_error, assert_validation_docs_alignment, enable_request, initialized_repo,
-    path_string, repo_config_rows, repo_config_value, repo_snapshot, test_key_reference,
-    test_request, ProbeRuntime, PENDING_TEST_KEY, REMOTE_CONFIG_KEY,
+    assert_sanitized_error, assert_validation_docs_alignment, complete_provider_test,
+    enable_request, initialized_repo, path_string, repo_config_rows, repo_config_value,
+    repo_snapshot, test_key_reference, test_request, PENDING_TEST_KEY, REMOTE_CONFIG_KEY,
 };
 
 #[test]
@@ -23,15 +25,22 @@ fn remote_provider_config_validation_covers_ui_ready_success_without_secret_pers
     let repo = initialized_repo();
     let before = repo_snapshot(repo.path());
     let endpoint_url = "https://provider.example.test/probe";
-    let runtime = ProbeRuntime::new("Succeeded");
-
-    let test_result = test_remote_ai_provider(path_string(repo.path()), test_request(endpoint_url))
-        .expect("test provider succeeds");
+    let plan =
+        prepare_remote_ai_provider_probe(path_string(repo.path()), test_request(endpoint_url))
+            .expect("prepare provider probe");
+    let test_result = complete_remote_ai_provider_probe(
+        path_string(repo.path()),
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token.clone(),
+            outcome: RemoteProviderProbeOutcome::HttpResponse,
+            http_status: Some(200),
+        },
+    )
+    .expect("complete provider probe");
     let verification_token = test_result
         .verification_token
         .clone()
         .expect("successful test returns verification token");
-    let captured_payload = runtime.captured_payload();
 
     assert_eq!(test_result.status, RemoteProviderTestStatus::Succeeded);
     assert!(test_result.provider_verified);
@@ -41,10 +50,10 @@ fn remote_provider_config_validation_covers_ui_ready_success_without_secret_pers
     );
     assert_no_api_key_material(&test_result.sanitized_message);
     assert_no_api_key_material(&verification_token);
-    assert_contains(&captured_payload, "provider.example.test/probe");
-    assert_contains(&captured_payload, "gpt-4.1-mini");
-    assert_not_contains(&captured_payload, "user readme");
-    assert_not_contains(&captured_payload, "user overview");
+    assert_contains(&plan.url, "provider.example.test/probe");
+    assert_contains(&plan.url, "gpt-4.1-mini");
+    assert_not_contains(&format!("{plan:?}"), "user readme");
+    assert_not_contains(&format!("{plan:?}"), "user overview");
 
     let snapshot = enable_remote_ai_provider(
         path_string(repo.path()),
@@ -127,7 +136,16 @@ fn remote_provider_config_validation_covers_failure_paths_and_rollback() {
         key_reference: "secure-storage:env:AREAMATRIX_REMOTE_PROVIDER_VALIDATION_MISSING_KEY"
             .to_owned(),
     };
-    let result = test_remote_ai_provider(path_string(repo.path()), missing_credential);
+    let plan = prepare_remote_ai_provider_probe(path_string(repo.path()), missing_credential)
+        .expect("prepare missing credential probe");
+    let result = complete_remote_ai_provider_probe(
+        path_string(repo.path()),
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token,
+            outcome: RemoteProviderProbeOutcome::CredentialUnavailable,
+            http_status: None,
+        },
+    );
     assert_sanitized_error(
         result.expect_err("missing credential must fail"),
         ErrorKind::PermissionDenied,
@@ -136,33 +154,33 @@ fn remote_provider_config_validation_covers_failure_paths_and_rollback() {
 
     let mut invalid_endpoint = test_request("http://example.test/probe");
     invalid_endpoint.key_reference = test_key_reference();
-    let result = test_remote_ai_provider(path_string(repo.path()), invalid_endpoint);
+    let result = prepare_remote_ai_provider_probe(path_string(repo.path()), invalid_endpoint);
     assert_sanitized_error(
         result.expect_err("non-loopback HTTP endpoint must fail"),
         ErrorKind::Config,
     );
     assert_eq!(repo_config_rows(repo.path()), before_rows);
 
-    let rejected_runtime = ProbeRuntime::new("ProviderRejected");
-    let rejected = test_remote_ai_provider(
+    let rejected = complete_provider_test(
         path_string(repo.path()),
         test_request("https://provider.example.test/rejected"),
+        RemoteProviderProbeOutcome::HttpResponse,
+        Some(401),
     )
     .expect("provider rejection returns sanitized status");
-    let _ = rejected_runtime.captured_payload();
     assert_eq!(rejected.status, RemoteProviderTestStatus::ProviderRejected);
     assert!(!rejected.provider_verified);
     assert!(rejected.verification_token.is_none());
     assert_no_api_key_material(&rejected.sanitized_message);
     assert_eq!(repo_config_rows(repo.path()), before_rows);
 
-    let success_runtime = ProbeRuntime::new("Succeeded");
-    let test_result = test_remote_ai_provider(
+    let test_result = complete_provider_test(
         path_string(repo.path()),
         test_request("https://provider.example.test/probe"),
+        RemoteProviderProbeOutcome::HttpResponse,
+        Some(200),
     )
     .expect("test provider before invalid enable attempts");
-    let _ = success_runtime.captured_payload();
     let pending_before =
         repo_config_value(repo.path(), PENDING_TEST_KEY).expect("pending verification stored");
 
@@ -205,8 +223,12 @@ fn remote_provider_config_validation_covers_failure_paths_and_rollback() {
 
 #[test]
 fn remote_provider_config_validation_locks_core_api_udl_and_rust_contract() {
-    fn assert_test_signature(
-        _: fn(String, RemoteProviderTestRequest) -> CoreResult<RemoteProviderTestResult>,
+    fn assert_prepare_signature(
+        _: fn(String, RemoteProviderTestRequest) -> CoreResult<RemoteProviderProbePlan>,
+    ) {
+    }
+    fn assert_complete_signature(
+        _: fn(String, RemoteProviderProbeObservation) -> CoreResult<RemoteProviderTestResult>,
     ) {
     }
     fn assert_enable_signature(
@@ -219,7 +241,8 @@ fn remote_provider_config_validation_locks_core_api_udl_and_rust_contract() {
     ) {
     }
 
-    assert_test_signature(test_remote_ai_provider);
+    assert_prepare_signature(prepare_remote_ai_provider_probe);
+    assert_complete_signature(complete_remote_ai_provider_probe);
     assert_load_signature(load_remote_ai_provider_config);
     assert_enable_signature(enable_remote_ai_provider);
     assert_disable_signature(disable_remote_ai_provider);

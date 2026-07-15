@@ -167,6 +167,32 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testCancelledDatabaseRepairDiagnosticsIgnoresLateCollectorResult() async {
+        let collector = SuspendedDiagnosticsCollector(result: .success(.databaseRepairDiagnosticsFixture()))
+        let model = DatabaseRepairConfirmModel(
+            repoPath: "/tmp/repo",
+            scanSession: nil,
+            mapping: nil,
+            lastOpenedAt: nil,
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
+                result: .success(.databaseRepairRepairReportFixture())
+            ),
+            startupRecoverer: StaticStartupRecoverer(),
+            diagnosticsCollector: collector,
+            errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
+        )
+        model.requestDiagnosticsExport()
+
+        let collection = Task { await model.collectDiagnostics() }
+        await collector.waitUntilStarted()
+        model.cancelDiagnosticsExport()
+        await collector.finish()
+        await collection.value
+
+        XCTAssertEqual(model.diagnosticsState, .idle)
+    }
+
+    @MainActor
     func testDatabaseRepairRepairReindexMetadataCoreViewExposesRepairCopyAndNoAdjacentCoreActionsWhenNoScanSession() {
         let view = DBRepairConfirmView(
             repoPath: "/tmp/repo",

@@ -114,8 +114,13 @@ extension ClassifierRuleEditorModelState {
         saveState = .saving
     }
 
-    mutating func markFailed(_ mapping: CoreErrorMappingSnapshot) {
-        loadState = rules.isEmpty ? .failed(mapping) : .loaded
+    mutating func markLoadFailed(_ mapping: CoreErrorMappingSnapshot) {
+        loadState = .failed(mapping)
+        saveState = .idle
+    }
+
+    mutating func markSaveFailed(_ mapping: CoreErrorMappingSnapshot) {
+        loadState = rules.isEmpty ? .idle : .loaded
         saveState = .failed(mapping)
     }
 

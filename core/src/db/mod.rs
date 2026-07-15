@@ -99,8 +99,9 @@ pub(crate) use platform_watcher_status::upsert_platform_watcher_health;
 pub(crate) use read_models::{list_files, with_availability_status};
 pub(crate) use redo::clear_redo_stack_in_tx;
 pub(crate) use remote_provider_config::{
-    load_remote_provider_config_record, load_remote_provider_test_record,
-    save_remote_provider_test_record, update_remote_provider_config_record,
+    delete_remote_provider_test_record, load_remote_provider_config_record,
+    load_remote_provider_test_record, save_remote_provider_test_record,
+    update_remote_provider_config_record,
 };
 pub(crate) use rename::{
     batch_update_rename_indexed_in_tx, batch_update_rename_repo_owned_in_tx,

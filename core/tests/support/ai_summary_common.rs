@@ -7,16 +7,16 @@ use std::{
 };
 
 use area_matrix_core::{
-    enable_remote_ai_provider, import_file, init_repo, test_remote_ai_provider, update_ai_config,
-    AiFeatureConfig, AiFeatureKind, AiProviderPreference, DuplicateStrategy, ImportDestination,
-    ImportOptions, OverviewOutput, RemoteProviderEnableRequest, RemoteProviderTestRequest,
-    RepoInitMode, RepoInitOptions, StorageMode,
+    complete_remote_ai_provider_probe, enable_remote_ai_provider, import_file, init_repo,
+    prepare_remote_ai_provider_probe, update_ai_config, AiFeatureConfig, AiFeatureKind,
+    AiProviderPreference, DuplicateStrategy, ImportDestination, ImportOptions, OverviewOutput,
+    RemoteProviderEnableRequest, RemoteProviderProbeObservation, RemoteProviderProbeOutcome,
+    RemoteProviderTestRequest, RepoInitMode, RepoInitOptions, StorageMode,
 };
 use rusqlite::Connection;
 
 static LOCAL_RUNTIME_LOCK: Mutex<()> = Mutex::new(());
 static REMOTE_RUNTIME_LOCK: Mutex<()> = Mutex::new(());
-static PROVIDER_PROBE_LOCK: Mutex<()> = Mutex::new(());
 
 pub fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
@@ -59,9 +59,17 @@ pub fn enable_remote_summaries(repo: &Path, endpoint_url: &str) {
         ai_config(repo_path.clone(), true, true, true),
     )
     .expect("enable remote AI summaries setting");
-    let _probe = ProviderProbeRuntime::new(200);
-    let test_result = test_remote_ai_provider(repo_path.clone(), test_request(endpoint_url))
-        .expect("test provider");
+    let plan = prepare_remote_ai_provider_probe(repo_path.clone(), test_request(endpoint_url))
+        .expect("prepare provider probe");
+    let test_result = complete_remote_ai_provider_probe(
+        repo_path.clone(),
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token,
+            outcome: RemoteProviderProbeOutcome::HttpResponse,
+            http_status: Some(200),
+        },
+    )
+    .expect("complete provider probe");
     let token = test_result
         .verification_token
         .expect("successful test returns token");
@@ -300,42 +308,6 @@ impl RemoteRuntimeProbe {
 impl Drop for RemoteRuntimeProbe {
     fn drop(&mut self) {
         std::env::remove_var("AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME");
-        let _ = self.output.path();
-    }
-}
-
-struct ProviderProbeRuntime {
-    _lock: MutexGuard<'static, ()>,
-    output: tempfile::TempDir,
-}
-
-impl ProviderProbeRuntime {
-    fn new(output_status: impl ToString) -> Self {
-        let guard = PROVIDER_PROBE_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let output = tempfile::tempdir().expect("create provider probe runtime directory");
-        let script_path = output.path().join("probe-runtime.sh");
-        let script = format!(
-            "#!/bin/sh\ncat >/dev/null\nprintf '{}\\n'\n",
-            output_status.to_string()
-        );
-        fs::write(&script_path, script).expect("write probe runtime script");
-        make_executable(&script_path);
-        std::env::set_var(
-            "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME",
-            script_path.to_string_lossy().into_owned(),
-        );
-        Self {
-            _lock: guard,
-            output,
-        }
-    }
-}
-
-impl Drop for ProviderProbeRuntime {
-    fn drop(&mut self) {
-        std::env::remove_var("AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME");
         let _ = self.output.path();
     }
 }

@@ -27,9 +27,9 @@
   initializer 只接收显式装配结果，不直接解析 `AppCoreServices` 或 `AppPlatformServices` 默认值。
 - `@StateObject` identity 继续由对应 SwiftUI View 持有；assembly 只提供构造闭包，不持有全局 model
   单例，也不改变现有 CoreBridge 实例生命周期。
-- Remote provider probe runtime 由共享的 `RemoteProviderProbeRuntimeInstaller` actor 装配；runtime
-  descriptor 必须固定版本、内容 hash、owner / mode 和文件身份，并通过显式依赖注入进入 CoreBridge。
-  不得恢复为接受任意进程级环境路径或在每次调用中重复创建 installer。
+- Remote provider probe 由共享的 `RemoteProviderProbeService` actor 执行；CoreBridge 先从 Core 获取
+  非 secret 的 probe plan，再由平台层使用 Keychain 与受限 URLSession 执行，并只把净化 observation
+  回传 Core。不得恢复 shell runtime、进程级环境路径或让 Core 读取 Keychain / 发起网络请求。
 - 初始化、导入、DB 修复、同步冲突、iCloud conflict、AI 隐私 / 远程 provider
   等高风险专项路径允许受控保留直接 `CoreBridge()` 默认构造。
 - 保留的直接 `CoreBridge()` 默认构造必须有治理测试登记；新增或删除登记项时，要说明风险归属和收口条件。

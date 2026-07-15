@@ -9,14 +9,16 @@ use std::path::Path;
 use ai_common::AiRuntime;
 use area_matrix_core::{
     enable_remote_ai_provider, import_file, init_repo, list_files, suggest_category_with_ai,
-    test_remote_ai_provider, update_ai_config, AiCategorySuggestionContextField,
-    AiCategorySuggestionContextPolicy, AiCategorySuggestionRequest, AiCategorySuggestionRoute,
-    AiCategorySuggestionSkipReason, AiCategorySuggestionStatus, AiConfig, AiFeatureConfig,
-    AiFeatureKind, AiProviderPreference, DuplicateStrategy, FileFilter, ImportDestination,
-    ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
+    update_ai_config, AiCategorySuggestionContextField, AiCategorySuggestionContextPolicy,
+    AiCategorySuggestionRequest, AiCategorySuggestionRoute, AiCategorySuggestionSkipReason,
+    AiCategorySuggestionStatus, AiConfig, AiFeatureConfig, AiFeatureKind, AiProviderPreference,
+    DuplicateStrategy, FileFilter, ImportDestination, ImportOptions, OverviewOutput, RepoInitMode,
+    RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
-use remote_common::{enable_request_for_endpoint, test_request_for_endpoint, ProbeRuntime};
+use remote_common::{
+    enable_request_for_endpoint, successful_provider_test, test_request_for_endpoint,
+};
 use rusqlite::{params, Connection, OptionalExtension};
 
 fn path_string(path: &Path) -> String {
@@ -170,11 +172,9 @@ fn active_category(repo: &Path, file_id: i64) -> String {
 }
 
 fn enable_remote_classification_provider(repo: &Path, endpoint_url: &str) {
-    let probe = ProbeRuntime::new(200);
     let test_result =
-        test_remote_ai_provider(path_string(repo), test_request_for_endpoint(endpoint_url))
+        successful_provider_test(path_string(repo), test_request_for_endpoint(endpoint_url))
             .expect("test remote provider");
-    let _ = probe.captured_payload();
     let token = test_result
         .verification_token
         .expect("successful test returns verification token");

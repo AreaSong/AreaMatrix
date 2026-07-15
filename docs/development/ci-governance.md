@@ -15,7 +15,7 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 | Workflow | 目的 | 触发 |
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
-| `macos-ci.yml` | Core build、tracked Swift bindings drift、Xcode build/test、SwiftLint、SwiftFormat | 所有 PR、main push |
+| `macos-ci.yml` | Core build、tracked Swift bindings drift、Xcode build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
 | `governance-ci.yml` | governance files、skills、quality smoke、品牌资产、Codex OS、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 
 macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.yml` 必须先显式检查工程和源码目录；

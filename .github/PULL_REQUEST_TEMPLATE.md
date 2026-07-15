@@ -30,6 +30,17 @@ Thanks for the PR! Please fill out the template below.
 - [ ] 测试 / Tests
 - [ ] CI / 工程化 / CI / Tooling
 
+## 架构归属 / Architecture Ownership
+
+<!-- 新功能或 macOS 结构变更必须填写；纯文档或仓库外层工具改动可写 N/A。 -->
+
+- Primary feature owner:
+- Primary feature-local paths:
+- Cross-feature / shared paths and why:
+- Migration zone touched:
+- Reuse evidence (existing callers / new callers):
+- Boundary validation:
+
 ## 测试方式 / How to Test
 
 <!-- 评审者怎么验证这个改动？给出可执行的步骤 -->
@@ -75,6 +86,7 @@ Thanks for the PR! Please fill out the template below.
 - [ ] 我已在 `CHANGELOG.md` 的 `[Unreleased]` 段落添加条目
 - [ ] Commit 信息符合 [Conventional Commits](https://www.conventionalcommits.org/)
 - [ ] 我已按 [CODE_REVIEW.md](../CODE_REVIEW.md) 自查评审阻断项
+- [ ] 新功能已声明 primary feature owner；跨 feature / shared 改动已说明必要性和复用调用方
 - [ ] 我已说明安全、隐私、用户文件、DB、staging、iCloud 或权限影响
 - [ ] 新增依赖已按 [dependency-policy.md](../docs/development/dependency-policy.md) 说明许可证和供应链风险
 - [ ] CI / governance checks 已通过，或已在备注中说明阻塞原因

@@ -44,7 +44,13 @@ extension OnboardingModel {
 
     @MainActor
     func cancelInitializationDiagnosticsPrivacyConfirmation() {
-        guard case .confirmingPrivacy = initializationDiagnostics else { return }
+        guard case .confirmingPrivacy = initializationDiagnostics else {
+            guard case .collecting = initializationDiagnostics else { return }
+            initializationDiagnosticsGeneration += 1
+            initializationDiagnostics = .idle
+            return
+        }
+        initializationDiagnosticsGeneration += 1
         initializationDiagnostics = .idle
     }
 
@@ -52,13 +58,17 @@ extension OnboardingModel {
     func collectInitializationDiagnostics() async {
         guard case let .initializationFailed(repoPath, _, _) = route else { return }
 
+        initializationDiagnosticsGeneration += 1
+        let generation = initializationDiagnosticsGeneration
         initializationDiagnostics = .collecting
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            guard initializationDiagnosticsGeneration == generation else { return }
             guard case let .initializationFailed(currentRepoPath, _, _) = route,
                   currentRepoPath == repoPath else { return }
             initializationDiagnostics = .collected(snapshot)
         } catch {
+            guard initializationDiagnosticsGeneration == generation else { return }
             guard case let .initializationFailed(currentRepoPath, _, _) = route,
                   currentRepoPath == repoPath else { return }
             initializationDiagnostics = await .failed(errorMapper.mapError(error))

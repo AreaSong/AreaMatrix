@@ -73,8 +73,13 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
-    RemoteProviderTestResult test_remote_ai_provider(
+    RemoteProviderProbePlan prepare_remote_ai_provider_probe(
         string repo_path, RemoteProviderTestRequest request
+    );
+
+    [Throws=CoreError]
+    RemoteProviderTestResult complete_remote_ai_provider_probe(
+        string repo_path, RemoteProviderProbeObservation observation
     );
 
     [Throws=CoreError]
@@ -661,6 +666,32 @@ dictionary RemoteProviderTestRequest {
     string model_id;
     string? endpoint_url;
     string key_reference;
+};
+
+dictionary RemoteProviderProbeHeader {
+    string name;
+    string value;
+};
+
+dictionary RemoteProviderProbePlan {
+    RemoteAiProviderKind provider;
+    string model_id;
+    string? endpoint_url;
+    string key_reference;
+    string probe_token;
+    RemoteProviderProbeMethod method;
+    string url;
+    sequence<RemoteProviderProbeHeader> headers;
+    RemoteProviderProbeAuthorization authorization;
+    u32 timeout_millis;
+    u64 maximum_response_body_bytes;
+    boolean follow_redirects;
+};
+
+dictionary RemoteProviderProbeObservation {
+    string probe_token;
+    RemoteProviderProbeOutcome outcome;
+    u32? http_status;
 };
 
 dictionary RemoteProviderEnableRequest {
@@ -2256,6 +2287,11 @@ enum AiFeatureKind {
     "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"
 };
 enum RemoteAiProviderKind { "OpenAi", "Anthropic", "Other" };
+enum RemoteProviderProbeMethod { "Get" };
+enum RemoteProviderProbeAuthorization { "Bearer", "AnthropicApiKey" };
+enum RemoteProviderProbeOutcome {
+    "HttpResponse", "ConnectionFailed", "CredentialUnavailable"
+};
 enum RemoteProviderTestStatus {
     "Succeeded", "ProviderRejected", "ConnectionFailed", "UnsupportedProvider"
 };
@@ -2577,7 +2613,8 @@ interface CoreError {
 | `update_ai_config(repo, cfg)` | ai | √ | Config / PermissionDenied / Io |
 | `get_local_model_status(repo, request)` | ai | √ | Config / PermissionDenied / Io |
 | `locate_local_model_folder(repo, request)` | ai | √ | Config / PermissionDenied / Io |
-| `test_remote_ai_provider(repo, request)` | ai | √ | Config / PermissionDenied / Internal |
+| `prepare_remote_ai_provider_probe(repo, request)` | ai | √ | Config / Internal |
+| `complete_remote_ai_provider_probe(repo, observation)` | ai | √ | Config / PermissionDenied / Internal |
 | `load_remote_ai_provider_config(repo)` | ai | √ | Config / Internal |
 | `enable_remote_ai_provider(repo, request)` | ai | √ | Config / PermissionDenied / Internal |
 | `disable_remote_ai_provider(repo, request)` | ai | √ | Config / Internal |
@@ -2705,7 +2742,7 @@ interface CoreError {
 - AI capabilities：AI settings 配置（`load_ai_config`、`update_ai_config`）已提升为本文与
   `core/area_matrix.udl` 的稳定合同；local model status 本地模型状态
   （`get_local_model_status`、`locate_local_model_folder`）和 remote provider configuration 远程 provider 配置
-  （`test_remote_ai_provider`、`enable_remote_ai_provider`）以及 AI category suggestion 分类建议
+  （`prepare_remote_ai_provider_probe`、`complete_remote_ai_provider_probe`、`enable_remote_ai_provider`）以及 AI category suggestion 分类建议
   （`suggest_category_with_ai`）、AI call log 调用日志（`list_ai_calls`、
   `clear_ai_call_log`）以及 AI summary 摘要（`generate_ai_summary`、
   `save_ai_summary`、`clear_ai_summary`）、semantic search 语义搜索（`semantic_search`、
@@ -3243,10 +3280,10 @@ local model status 的本地模型目录定位入口，服务 local model status
   `Open model location` 的启用、禁用和错误说明。
 - 本合同不提供下载、删除、训练、远程 provider 或 fallback 能力。
 
-### `test_remote_ai_provider(repoPath: String, request: RemoteProviderTestRequest) throws -> RemoteProviderTestResult`
+### `prepare_remote_ai_provider_probe(repoPath: String, request: RemoteProviderTestRequest) throws -> RemoteProviderProbePlan`
 
 ```swift
-let result = try AreaMatrix.testRemoteAiProvider(
+let plan = try AreaMatrix.prepareRemoteAiProviderProbe(
     repoPath: repoPath,
     request: RemoteProviderTestRequest(
         provider: .openAi,
@@ -3257,30 +3294,74 @@ let result = try AreaMatrix.testRemoteAiProvider(
 )
 ```
 
-remote provider configuration 的远程 provider 连接测试入口，服务 remote provider settings surface 的 `Test connection`。输入只包含
-provider、model、可选自定义 endpoint 和平台安全存储 key reference；不接受 API key 明文。
+remote provider configuration 的连接测试准备入口。输入只包含 provider、model、可选自定义 endpoint
+和平台安全存储 key reference；不接受 API key 明文。Core 校验输入、生成不可伪造的 `probe_token`，
+并返回由平台层执行的最小网络计划。
 
-返回 `RemoteProviderTestResult`：
+自定义 endpoint 只允许 HTTPS，或开发用途的 loopback HTTP；不得包含 URL userinfo
+（例如 `https://user:password@host/`），避免凭据进入 plan、临时记录或 provider config。
 
-- `status`：`Succeeded`、`ProviderRejected`、`ConnectionFailed` 或 `UnsupportedProvider`。
-- `provider_verified`：当前 provider/model/endpoint/key 组合是否通过测试。
-- `verification_token`：测试成功后用于 enable 的不透明 token；不得包含 API key 或 key 片段。
-- `sanitized_message`：可展示的脱敏结果说明；不得包含 provider 原始响应体、API key、用户文件正文
-  或完整用户文件路径。
+返回 `RemoteProviderProbePlan`：
+
+- `method`、`url` 和 `headers`：不含 secret 的最小 HTTP 请求计划；认证 header 只通过
+  `authorization` 指示，由平台层读取 Keychain 后临时装配。
+- `key_reference`：平台安全存储引用，不是 API key 明文。
+- `timeout_millis`、`maximum_response_body_bytes` 和 `follow_redirects`：平台层必须执行的网络限制。
+  当前计划只读取 HTTP status，不消费响应正文，也不跟随 redirect。
+- `probe_token`：只用于把平台观测结果绑定到当前准备记录，不是 enable token。
 
 副作用边界：
 
-- 测试连接只允许做最小 provider 可用性探测；不得发送文件名、repo-relative path、提取文本、
-  note summary、tag/category context、prompt 或任何用户文件内容。
-- 测试不得启用远程 provider，不保存 `feature_scope`，不修改 `privacy_gate_enabled`，不生成 AI 结果。
-- 实现方可按 AI call log 写脱敏 `Provider Test` 日志，sent fields 必须为 none；日志不得包含 key、
-  key 片段或 provider 原始响应体。
+- Core 只写入当前 probe 的临时绑定记录；不读取 Keychain、不启动外部进程、不访问网络。
+- 计划不得包含文件名、repo-relative path、提取文本、note summary、tag/category context、prompt
+  或任何用户文件内容。
+- prepare 不启用远程 provider，不保存 `feature_scope`，不修改 `privacy_gate_enabled`，不生成 AI 结果。
 
 错误：
 
 - `Config`：`repoPath`、provider、model、endpoint 或 key reference 无效。
-- `PermissionDenied`：平台安全存储中的 credential reference 不可访问。
-- `Internal`：provider runtime 不可用或脱敏后的最小探测发生未归类失败。
+- `Internal`：临时 probe 记录无法持久化。
+
+### `complete_remote_ai_provider_probe(repoPath: String, observation: RemoteProviderProbeObservation) throws -> RemoteProviderTestResult`
+
+```swift
+let result = try AreaMatrix.completeRemoteAiProviderProbe(
+    repoPath: repoPath,
+    observation: RemoteProviderProbeObservation(
+        probeToken: plan.probeToken,
+        outcome: .httpResponse,
+        httpStatus: 200
+    )
+)
+```
+
+平台层必须使用 Keychain 和受限 `URLSession` 执行 `RemoteProviderProbePlan`，并只回传
+`RemoteProviderProbeObservation`。观测只允许包含 probe token、传输结果和 HTTP status；不得回传
+响应 header、响应正文、API key、请求 header 或底层错误原文。
+
+返回 `RemoteProviderTestResult`：
+
+- `status`：Core 根据 provider、HTTP status 或连接失败映射为 `Succeeded`、`ProviderRejected`、
+  `ConnectionFailed` 或 `UnsupportedProvider`。
+- `provider_verified`：当前 provider/model/endpoint/key 组合是否通过测试。
+- `verification_token`：成功后用于 enable 的不透明 token；不得包含 API key 或 key 片段。
+- `sanitized_message`：稳定、可展示的脱敏结果说明。
+
+副作用边界：
+
+- complete 只消费净化观测；Core 不接收 provider 原始响应，也不重新执行网络请求。
+- 失败观测不会生成 enable token，并清理当前临时 probe 记录。
+- Swift 调用任务被取消时，平台层必须取消正在执行的 `URLSession` 请求，并以失败观测清理临时
+  probe 记录；取消路径不得生成 verification token。
+- 成功观测把临时 probe 记录转换为待 enable 的 verification 记录；不启用远程 provider。
+- 平台探测不得发送文件名、repo-relative path、提取文本、note summary、tag/category context、
+  prompt 或任何用户文件内容。
+
+错误：
+
+- `Config`：probe token、观测 shape 或临时记录无效、过期或与当前 probe 不匹配。
+- `PermissionDenied`：平台报告 credential reference 无法读取或 credential 不可用。
+- `Internal`：临时记录读取、清理或 verification 持久化失败。
 
 页面消费状态：
 

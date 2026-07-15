@@ -107,6 +107,24 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         XCTAssertEqual(error.message, "Diagnostics could not be exported")
         XCTAssertFalse(error.recovery.isEmpty)
     }
+
+    @MainActor
+    func testAdvancedSettingsCancelledDiagnosticsIgnoresLateCollectorResult() async {
+        let snapshot = DiagnosticsSnapshotSnapshot.testFixture(snapshotPath: "/tmp/late-advanced-diagnostics")
+        let collector = SuspendedDiagnosticsCollector(result: .success(snapshot))
+        let model = await loadedAdvancedSettingsModel(diagnosticsCollector: collector)
+
+        model.requestDiagnosticsExport()
+        let collection = Task { await model.collectDiagnostics() }
+        await collector.waitUntilStarted()
+        XCTAssertEqual(model.diagnosticsState, .collecting)
+
+        model.cancelDiagnosticsExport()
+        await collector.finish()
+        await collection.value
+
+        XCTAssertEqual(model.diagnosticsState, .idle)
+    }
 }
 
 @MainActor

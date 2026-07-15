@@ -128,8 +128,14 @@ extension OnboardingModel {
 
     @MainActor
     func cancelMainRepositoryDiagnosticsPrivacyConfirmation() {
-        guard case .confirmingPrivacy = mainRepoDiagnostics else { return }
+        guard case .confirmingPrivacy = mainRepoDiagnostics else {
+            guard case .collecting = mainRepoDiagnostics else { return }
+            mainRepoDiagnosticsGeneration += 1
+            mainRepoDiagnostics = .idle
+            return
+        }
 
+        mainRepoDiagnosticsGeneration += 1
         mainRepoDiagnostics = .idle
     }
 
@@ -142,14 +148,18 @@ extension OnboardingModel {
             return
         }
 
+        mainRepoDiagnosticsGeneration += 1
+        let generation = mainRepoDiagnosticsGeneration
         mainRepoDiagnostics = .collecting
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            guard mainRepoDiagnosticsGeneration == generation else { return }
             guard case let .mainRepoError(latestRepoPath, _) = route, latestRepoPath == repoPath else {
                 return
             }
             mainRepoDiagnostics = .collected(snapshot)
         } catch {
+            guard mainRepoDiagnosticsGeneration == generation else { return }
             guard case let .mainRepoError(latestRepoPath, _) = route, latestRepoPath == repoPath else {
                 return
             }

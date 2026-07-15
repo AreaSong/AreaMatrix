@@ -3,17 +3,9 @@ import Foundation
 import XCTest
 
 // swiftlint:disable:next type_body_length
-final class RemoteProviderProbeRuntimeTests: XCTestCase {
+final class RemoteProviderProbeServiceTests: XCTestCase {
     @MainActor
-    func testCoreBridgeUsesInstalledRuntimeForKeychainReferenceProviderProbe() async throws {
-        let runtime = try ProbeRuntimeRecorder()
-        let environment = ProbeRuntimeEnvironment(
-            runtimePath: nil,
-            evidencePath: runtime.evidenceURL.path
-        )
-        environment.install()
-        defer { environment.restore() }
-
+    func testCoreBridgeUsesPlatformPerformerForKeychainReferenceProviderProbe() async throws {
         let repoURL = try makeRemoteProviderProbeTemporaryRepoURL()
         defer { removeTestTemporaryItems(repoURL) }
         try initRepo(repoPath: repoURL.path, options: RepoInitOptions(
@@ -22,18 +14,16 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
             overviewOutput: .generatedOnly
         ))
         let keyReference = "keychain:remote-ai-other-runtime-test"
+        let endpointURL = "https://provider.example.test/probe"
+        let performer = ProbePerformerRecorder()
 
-        let bridge = CoreBridge(
-            remoteProviderProbeRuntimeInstaller: ProbeRuntimeInstallerDouble(
-                runtimePath: runtime.runtimeURL.path
-            )
-        )
+        let bridge = CoreBridge(remoteProviderProbePerformer: performer)
         let testResult = try await bridge.testRemoteProvider(
             repoPath: repoURL.path,
             request: RemoteProviderTestRequestState(
                 provider: .other,
                 modelID: "gpt-4.1-mini",
-                endpointURL: runtime.endpointURL,
+                endpointURL: endpointURL,
                 keyReference: keyReference
             )
         )
@@ -44,7 +34,7 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
             request: RemoteProviderEnableRequestState(
                 provider: .other,
                 modelID: "gpt-4.1-mini",
-                endpointURL: runtime.endpointURL,
+                endpointURL: endpointURL,
                 keyReference: keyReference,
                 featureScope: [.autoSummaries],
                 verificationToken: verificationToken,
@@ -55,11 +45,60 @@ final class RemoteProviderProbeRuntimeTests: XCTestCase {
         XCTAssertEqual(testResult.status, .succeeded)
         XCTAssertTrue(testResult.providerVerified)
         XCTAssertTrue(enableSnapshot.remoteProviderEnabled)
-        let evidence = try runtime.evidence()
-        XCTAssertTrue(evidence.contains("provider=Other"))
-        XCTAssertTrue(evidence.contains("url=\(runtime.endpointURL)"))
-        XCTAssertTrue(evidence.contains("key_reference=\(keyReference)"))
-        XCTAssertTrue(evidence.contains("credential_reference_shape=keychain"))
+        let plans = await performer.recordedPlans()
+        let plan = try XCTUnwrap(plans.first)
+        XCTAssertEqual(plans.count, 1)
+        XCTAssertEqual(plan.keyReference, keyReference)
+        XCTAssertEqual(plan.url, "\(endpointURL)?model_id=gpt-4.1-mini&probe=provider_metadata")
+        XCTAssertEqual(plan.maximumResponseBodyBytes, 0)
+        XCTAssertFalse(plan.followRedirects)
+    }
+
+    @MainActor
+    func testCoreBridgeCancellationClearsPendingProbeWithoutCreatingVerification() async throws {
+        let repoURL = try makeRemoteProviderProbeTemporaryRepoURL()
+        defer { removeTestTemporaryItems(repoURL) }
+        try initRepo(repoPath: repoURL.path, options: RepoInitOptions(
+            mode: .createEmpty,
+            createDefaultCategories: false,
+            overviewOutput: .generatedOnly
+        ))
+        let performer = CancellationAwareProbePerformer()
+        let bridge = CoreBridge(remoteProviderProbePerformer: performer)
+        let task = Task {
+            try await bridge.testRemoteProvider(
+                repoPath: repoURL.path,
+                request: RemoteProviderTestRequestState(
+                    provider: .other,
+                    modelID: "gpt-4.1-mini",
+                    endpointURL: "https://provider.example.test/probe",
+                    keyReference: "keychain:remote-ai-cancellation-test"
+                )
+            )
+        }
+
+        while await performer.recordedPlans().isEmpty {
+            await Task.yield()
+        }
+        task.cancel()
+
+        do {
+            _ = try await task.value
+            XCTFail("cancelled provider probe must not produce a verification result")
+        } catch is CancellationError {
+            // Expected cancellation after Core pending-probe cleanup.
+        }
+
+        let plans = await performer.recordedPlans()
+        let plan = try XCTUnwrap(plans.first)
+        XCTAssertThrowsError(try completeRemoteAiProviderProbe(
+            repoPath: repoURL.path,
+            observation: RemoteProviderProbeObservation(
+                probeToken: plan.probeToken,
+                outcome: .connectionFailed,
+                httpStatus: nil
+            )
+        ))
     }
 
     @MainActor

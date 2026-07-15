@@ -1,194 +1,97 @@
-//! Provider probe policy for remote provider tests.
-
-use std::{
-    env,
-    ffi::OsString,
-    io::{Read, Write},
-    net::{TcpStream, ToSocketAddrs},
-    process::Command,
-    time::Duration,
-};
-
-use serde::Serialize;
+//! Platform-neutral remote provider probe planning and observation mapping.
 
 use crate::{
-    external_runtime::{ExternalRuntimeError, ExternalRuntimeLimits},
     remote_provider_config::{
-        RemoteAiProviderKind, RemoteProviderTestRequest, RemoteProviderTestStatus,
+        RemoteAiProviderKind, RemoteProviderProbeAuthorization, RemoteProviderProbeHeader,
+        RemoteProviderProbeMethod, RemoteProviderProbeOutcome, RemoteProviderProbePlan,
+        RemoteProviderTestRequest, RemoteProviderTestStatus,
     },
     CoreError, CoreResult,
 };
-
-use super::http::parse_http_status;
 
 const VERIFIED_MESSAGE: &str = "Remote provider metadata verified";
 const REJECTED_MESSAGE: &str = "Remote provider rejected the credential or model";
 const CONNECTION_FAILED_MESSAGE: &str = "Remote provider connection failed";
 const UNSUPPORTED_MESSAGE: &str = "Remote provider is not supported by this runtime";
-const INVALID_KEY_REFERENCE_MESSAGE: &str = "remote provider key reference is invalid";
-const SECURE_STORAGE_ENV_PREFIX: &str = "secure-storage:env:";
-const SECURE_STORE_ENV_PREFIX: &str = "secure-store:env:";
-const KEYCHAIN_PREFIX: &str = "keychain:";
 const OPENAI_MODELS_ENDPOINT: &str = "https://api.openai.com/v1/models";
 const ANTHROPIC_MODELS_ENDPOINT: &str = "https://api.anthropic.com/v1/models";
-const PROBE_RUNTIME_ENV: &str = "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME";
-const HTTP_TIMEOUT: Duration = Duration::from_secs(5);
-const EXTERNAL_PROBE_TIMEOUT: Duration = Duration::from_secs(12);
-const MAX_PROBE_RUNTIME_OUTPUT_BYTES: usize = 4 * 1024;
-const MAX_CURL_OUTPUT_BYTES: usize = 64;
-const MAX_PLAIN_HTTP_RESPONSE_BYTES: usize = 16 * 1024;
-const PROBE_RUNTIME_ENVIRONMENT: &[&str] = &["HOME", "AREAMATRIX_REMOTE_PROVIDER_PROBE_EVIDENCE"];
+const PROBE_TIMEOUT_MILLIS: u32 = 10_000;
 
-pub(super) struct RemoteProviderProbeResult {
-    pub(super) status: RemoteProviderTestStatus,
-    pub(super) sanitized_message: String,
-}
-
-struct CredentialSecret {
-    value: String,
-}
-
-enum ProbeCredential {
-    Secret(CredentialSecret),
-    PlatformReference(String),
-}
-
-struct ProbeHttpRequest {
-    provider: RemoteAiProviderKind,
-    method: &'static str,
-    url: String,
-    headers: Vec<(&'static str, String)>,
-    key_reference: Option<String>,
-}
-
-struct ProbeUrl {
-    scheme: String,
-    host: String,
-    port: u16,
-    path: String,
-}
-
-#[derive(Serialize)]
-struct RuntimeProbePayload<'a> {
-    provider: &'a RemoteAiProviderKind,
-    method: &'a str,
-    url: &'a str,
-    headers: Vec<RuntimeProbeHeader<'a>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    key_reference: Option<&'a str>,
-}
-
-#[derive(Serialize)]
-struct RuntimeProbeHeader<'a> {
-    name: &'a str,
-    value: &'a str,
-}
-
-/// Performs the remote provider configuration minimal probe without accepting raw API key material.
-pub(super) fn probe_remote_provider(
+pub(super) fn build_probe_plan(
     request: &RemoteProviderTestRequest,
-) -> CoreResult<RemoteProviderProbeResult> {
-    let credential = inspect_credential_reference(&request.key_reference)?;
-    let probe_request = build_probe_request(request, &credential)?;
-    let status = execute_probe_request(&probe_request)?;
-    Ok(RemoteProviderProbeResult {
-        sanitized_message: sanitized_probe_message(&status).to_owned(),
-        status,
+    probe_token: String,
+) -> CoreResult<RemoteProviderProbePlan> {
+    let (url, headers, authorization) = match request.provider {
+        RemoteAiProviderKind::OpenAi => (
+            model_metadata_url(OPENAI_MODELS_ENDPOINT, &request.model_id),
+            Vec::new(),
+            RemoteProviderProbeAuthorization::Bearer,
+        ),
+        RemoteAiProviderKind::Anthropic => (
+            model_metadata_url(ANTHROPIC_MODELS_ENDPOINT, &request.model_id),
+            vec![RemoteProviderProbeHeader {
+                name: "anthropic-version".to_owned(),
+                value: "2023-06-01".to_owned(),
+            }],
+            RemoteProviderProbeAuthorization::AnthropicApiKey,
+        ),
+        RemoteAiProviderKind::Other => (
+            custom_probe_url(request)?,
+            Vec::new(),
+            RemoteProviderProbeAuthorization::Bearer,
+        ),
+    };
+
+    Ok(RemoteProviderProbePlan {
+        provider: request.provider.clone(),
+        model_id: request.model_id.clone(),
+        endpoint_url: request.endpoint_url.clone(),
+        key_reference: request.key_reference.clone(),
+        probe_token,
+        method: RemoteProviderProbeMethod::Get,
+        url,
+        headers,
+        authorization,
+        timeout_millis: PROBE_TIMEOUT_MILLIS,
+        maximum_response_body_bytes: 0,
+        follow_redirects: false,
     })
+}
+
+pub(super) fn status_from_observation(
+    provider: &RemoteAiProviderKind,
+    outcome: &RemoteProviderProbeOutcome,
+    http_status: Option<u32>,
+) -> CoreResult<RemoteProviderTestStatus> {
+    match (outcome, http_status) {
+        (RemoteProviderProbeOutcome::HttpResponse, Some(status))
+            if (100..=599).contains(&status) =>
+        {
+            Ok(map_http_status(provider, status))
+        }
+        (RemoteProviderProbeOutcome::ConnectionFailed, None) => {
+            Ok(RemoteProviderTestStatus::ConnectionFailed)
+        }
+        (RemoteProviderProbeOutcome::CredentialUnavailable, None) => {
+            Err(CoreError::permission_denied("remote provider credential"))
+        }
+        _ => Err(CoreError::config(
+            "remote provider probe observation is invalid",
+        )),
+    }
 }
 
 pub(super) fn custom_endpoint_scheme_allowed(endpoint: &str) -> bool {
     endpoint.starts_with("https://") || is_loopback_http_endpoint(endpoint)
 }
 
-fn inspect_credential_reference(key_reference: &str) -> CoreResult<ProbeCredential> {
-    if key_reference.starts_with(KEYCHAIN_PREFIX) {
-        return keychain_reference(key_reference);
+pub(super) fn sanitized_probe_message(status: &RemoteProviderTestStatus) -> &'static str {
+    match status {
+        RemoteProviderTestStatus::Succeeded => VERIFIED_MESSAGE,
+        RemoteProviderTestStatus::ProviderRejected => REJECTED_MESSAGE,
+        RemoteProviderTestStatus::ConnectionFailed => CONNECTION_FAILED_MESSAGE,
+        RemoteProviderTestStatus::UnsupportedProvider => UNSUPPORTED_MESSAGE,
     }
-    let Some(env_name) = credential_env_name(key_reference)? else {
-        return Err(CoreError::permission_denied("remote provider credential"));
-    };
-    let value = env::var(env_name)
-        .map_err(|_| CoreError::permission_denied("remote provider credential"))?;
-    if value.trim().is_empty() || value.contains('\0') || value.chars().any(char::is_control) {
-        return Err(CoreError::permission_denied("remote provider credential"));
-    }
-    Ok(ProbeCredential::Secret(CredentialSecret { value }))
-}
-
-fn keychain_reference(key_reference: &str) -> CoreResult<ProbeCredential> {
-    let name = key_reference
-        .strip_prefix(KEYCHAIN_PREFIX)
-        .expect("keychain prefix was checked before parsing");
-    if name.is_empty() {
-        return Err(CoreError::config(INVALID_KEY_REFERENCE_MESSAGE));
-    }
-    Ok(ProbeCredential::PlatformReference(key_reference.to_owned()))
-}
-
-fn credential_env_name(key_reference: &str) -> CoreResult<Option<&str>> {
-    let env_name = key_reference
-        .strip_prefix(SECURE_STORAGE_ENV_PREFIX)
-        .or_else(|| key_reference.strip_prefix(SECURE_STORE_ENV_PREFIX));
-    let Some(env_name) = env_name else {
-        return Ok(None);
-    };
-    if env_name.is_empty()
-        || env_name.len() > 128
-        || !env_name
-            .chars()
-            .all(|value| value.is_ascii_alphanumeric() || value == '_')
-    {
-        return Err(CoreError::config(INVALID_KEY_REFERENCE_MESSAGE));
-    }
-    Ok(Some(env_name))
-}
-
-fn build_probe_request(
-    request: &RemoteProviderTestRequest,
-    credential: &ProbeCredential,
-) -> CoreResult<ProbeHttpRequest> {
-    let (headers, key_reference) = match credential {
-        ProbeCredential::Secret(secret) => {
-            (provider_headers(&request.provider, &secret.value), None)
-        }
-        ProbeCredential::PlatformReference(reference) => (Vec::new(), Some(reference.clone())),
-    };
-    let url = match request.provider {
-        RemoteAiProviderKind::OpenAi => {
-            model_metadata_url(OPENAI_MODELS_ENDPOINT, &request.model_id)
-        }
-        RemoteAiProviderKind::Anthropic => {
-            model_metadata_url(ANTHROPIC_MODELS_ENDPOINT, &request.model_id)
-        }
-        RemoteAiProviderKind::Other => custom_probe_url(request)?,
-    };
-    Ok(ProbeHttpRequest {
-        provider: request.provider.clone(),
-        method: "GET",
-        url,
-        headers,
-        key_reference,
-    })
-}
-
-fn provider_headers(
-    provider: &RemoteAiProviderKind,
-    credential: &str,
-) -> Vec<(&'static str, String)> {
-    match provider {
-        RemoteAiProviderKind::Anthropic => vec![
-            ("x-api-key", credential.to_owned()),
-            ("anthropic-version", "2023-06-01".to_owned()),
-        ],
-        RemoteAiProviderKind::OpenAi | RemoteAiProviderKind::Other => {
-            vec![("Authorization", format!("Bearer {credential}"))]
-        }
-    }
-}
-
-fn model_metadata_url(base: &str, model_id: &str) -> String {
-    format!("{base}/{}", percent_encode(model_id))
 }
 
 fn custom_probe_url(request: &RemoteProviderTestRequest) -> CoreResult<String> {
@@ -205,242 +108,11 @@ fn custom_probe_url(request: &RemoteProviderTestRequest) -> CoreResult<String> {
     ))
 }
 
-fn execute_probe_request(request: &ProbeHttpRequest) -> CoreResult<RemoteProviderTestStatus> {
-    if request.key_reference.is_some() {
-        return execute_external_probe_runtime(request)?
-            .ok_or_else(|| CoreError::permission_denied("remote provider credential"));
-    }
-    if let Some(status) = execute_external_probe_runtime(request)? {
-        return Ok(status);
-    }
-
-    let url = parse_probe_url(&request.url)?;
-    match url.scheme.as_str() {
-        "http" => execute_plain_http_probe(request, &url),
-        "https" => execute_curl_probe(request),
-        _ => Ok(RemoteProviderTestStatus::UnsupportedProvider),
-    }
+fn model_metadata_url(base: &str, model_id: &str) -> String {
+    format!("{base}/{}", percent_encode(model_id))
 }
 
-fn execute_external_probe_runtime(
-    request: &ProbeHttpRequest,
-) -> CoreResult<Option<RemoteProviderTestStatus>> {
-    let Some(runtime_path) = external_probe_runtime_path() else {
-        return Ok(None);
-    };
-    let payload = runtime_probe_payload(request)?;
-    let mut command = Command::new(runtime_path);
-    let output = crate::external_runtime::run(
-        &mut command,
-        &payload,
-        ExternalRuntimeLimits {
-            timeout: EXTERNAL_PROBE_TIMEOUT,
-            max_stdout_bytes: MAX_PROBE_RUNTIME_OUTPUT_BYTES,
-            preserved_environment: PROBE_RUNTIME_ENVIRONMENT,
-        },
-    )
-    .map_err(map_probe_runtime_error)?;
-    if !output.status.success() {
-        return Err(CoreError::internal("remote provider runtime unavailable"));
-    }
-    Ok(Some(parse_runtime_status(
-        &request.provider,
-        &output.stdout,
-    )?))
-}
-
-fn execute_plain_http_probe(
-    request: &ProbeHttpRequest,
-    url: &ProbeUrl,
-) -> CoreResult<RemoteProviderTestStatus> {
-    let address = (url.host.as_str(), url.port)
-        .to_socket_addrs()
-        .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?
-        .next()
-        .ok_or_else(|| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
-    let mut stream = TcpStream::connect_timeout(&address, HTTP_TIMEOUT)
-        .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
-    stream
-        .set_read_timeout(Some(HTTP_TIMEOUT))
-        .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
-    stream
-        .write_all(render_http_request(request, url).as_bytes())
-        .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
-
-    let mut response = Vec::new();
-    stream
-        .take((MAX_PLAIN_HTTP_RESPONSE_BYTES + 1) as u64)
-        .read_to_end(&mut response)
-        .map_err(|_| CoreError::internal(CONNECTION_FAILED_MESSAGE))?;
-    if response.len() > MAX_PLAIN_HTTP_RESPONSE_BYTES {
-        return Err(CoreError::internal(CONNECTION_FAILED_MESSAGE));
-    }
-    let status = parse_http_status(&response)?;
-    Ok(map_http_status(&request.provider, status))
-}
-
-fn external_probe_runtime_path() -> Option<OsString> {
-    env::var_os(PROBE_RUNTIME_ENV).filter(|value| !value.is_empty())
-}
-
-fn map_probe_runtime_error(error: ExternalRuntimeError) -> CoreError {
-    match error {
-        ExternalRuntimeError::Spawn => CoreError::internal("remote provider runtime unavailable"),
-        _ => CoreError::internal(CONNECTION_FAILED_MESSAGE),
-    }
-}
-
-fn runtime_probe_payload(request: &ProbeHttpRequest) -> CoreResult<Vec<u8>> {
-    let headers = request
-        .headers
-        .iter()
-        .map(|(name, value)| RuntimeProbeHeader { name, value })
-        .collect();
-    serde_json::to_vec(&RuntimeProbePayload {
-        provider: &request.provider,
-        method: request.method,
-        url: &request.url,
-        headers,
-        key_reference: request.key_reference.as_deref(),
-    })
-    .map_err(|_| CoreError::internal("remote provider probe metadata is invalid"))
-}
-
-fn parse_runtime_status(
-    provider: &RemoteAiProviderKind,
-    output: &[u8],
-) -> CoreResult<RemoteProviderTestStatus> {
-    let output = String::from_utf8_lossy(output);
-    let status = output.trim();
-    match status {
-        "Succeeded" => Ok(RemoteProviderTestStatus::Succeeded),
-        "ProviderRejected" => Ok(RemoteProviderTestStatus::ProviderRejected),
-        "ConnectionFailed" => Ok(RemoteProviderTestStatus::ConnectionFailed),
-        "UnsupportedProvider" => Ok(RemoteProviderTestStatus::UnsupportedProvider),
-        _ => status
-            .parse::<u16>()
-            .map(|code| map_http_status(provider, code))
-            .map_err(|_| CoreError::internal("remote provider runtime unavailable")),
-    }
-}
-
-fn execute_curl_probe(request: &ProbeHttpRequest) -> CoreResult<RemoteProviderTestStatus> {
-    let mut command = Command::new("curl");
-    command.arg("--config").arg("-");
-    let config = curl_config(request);
-    let output = crate::external_runtime::run(
-        &mut command,
-        config.as_bytes(),
-        ExternalRuntimeLimits {
-            timeout: EXTERNAL_PROBE_TIMEOUT,
-            max_stdout_bytes: MAX_CURL_OUTPUT_BYTES,
-            preserved_environment: &[],
-        },
-    )
-    .map_err(map_probe_runtime_error)?;
-    if !output.status.success() {
-        return Ok(RemoteProviderTestStatus::ConnectionFailed);
-    }
-    let status = parse_curl_status(&output.stdout)?;
-    Ok(map_http_status(&request.provider, status))
-}
-
-fn render_http_request(request: &ProbeHttpRequest, url: &ProbeUrl) -> String {
-    let mut rendered = format!(
-        "{} {} HTTP/1.1\r\nHost: {}\r\nUser-Agent: AreaMatrix\r\nConnection: close\r\n",
-        request.method, url.path, url.host
-    );
-    for (name, value) in &request.headers {
-        rendered.push_str(name);
-        rendered.push_str(": ");
-        rendered.push_str(value);
-        rendered.push_str("\r\n");
-    }
-    rendered.push_str("\r\n");
-    rendered
-}
-
-fn curl_config(request: &ProbeHttpRequest) -> String {
-    let mut config = format!(
-        "silent\nshow-error\noutput = \"/dev/null\"\nwrite-out = \"%{{http_code}}\"\n\
-         request = \"{}\"\nmax-time = \"10\"\nurl = \"{}\"\n",
-        request.method,
-        curl_config_value(&request.url)
-    );
-    for (name, value) in &request.headers {
-        config.push_str("header = \"");
-        config.push_str(&curl_config_value(&format!("{name}: {value}")));
-        config.push_str("\"\n");
-    }
-    config
-}
-
-fn parse_probe_url(url: &str) -> CoreResult<ProbeUrl> {
-    let (scheme, rest) = url
-        .split_once("://")
-        .ok_or_else(|| CoreError::config("remote provider endpoint is invalid"))?;
-    let authority_end = rest.find('/').unwrap_or(rest.len());
-    let authority = &rest[..authority_end];
-    if authority.is_empty() || authority.contains('@') {
-        return Err(CoreError::config("remote provider endpoint is invalid"));
-    }
-    let path = if authority_end < rest.len() {
-        &rest[authority_end..]
-    } else {
-        "/"
-    };
-    let (host, port) = parse_authority(authority, scheme)?;
-    Ok(ProbeUrl {
-        scheme: scheme.to_owned(),
-        host,
-        port,
-        path: path.to_owned(),
-    })
-}
-
-fn parse_authority(authority: &str, scheme: &str) -> CoreResult<(String, u16)> {
-    let default_port = if scheme == "https" { 443 } else { 80 };
-    if let Some(rest) = authority.strip_prefix('[') {
-        let (host, suffix) = rest
-            .split_once(']')
-            .ok_or_else(|| CoreError::config("remote provider endpoint is invalid"))?;
-        return Ok((host.to_owned(), parse_optional_port(suffix, default_port)?));
-    }
-    let Some((host, port)) = authority.rsplit_once(':') else {
-        return Ok((authority.to_owned(), default_port));
-    };
-    if port.chars().all(|value| value.is_ascii_digit()) {
-        Ok((host.to_owned(), parse_port(port)?))
-    } else {
-        Ok((authority.to_owned(), default_port))
-    }
-}
-
-fn parse_optional_port(suffix: &str, default_port: u16) -> CoreResult<u16> {
-    if suffix.is_empty() {
-        return Ok(default_port);
-    }
-    let port = suffix
-        .strip_prefix(':')
-        .ok_or_else(|| CoreError::config("remote provider endpoint is invalid"))?;
-    parse_port(port)
-}
-
-fn parse_port(port: &str) -> CoreResult<u16> {
-    port.parse()
-        .map_err(|_| CoreError::config("remote provider endpoint is invalid"))
-}
-
-fn parse_curl_status(output: &[u8]) -> CoreResult<u16> {
-    let output = String::from_utf8_lossy(output);
-    let status = output.trim();
-    if status.len() != 3 || !status.chars().all(|value| value.is_ascii_digit()) {
-        return Err(CoreError::internal(CONNECTION_FAILED_MESSAGE));
-    }
-    parse_port(status)
-}
-
-fn map_http_status(provider: &RemoteAiProviderKind, status: u16) -> RemoteProviderTestStatus {
+fn map_http_status(provider: &RemoteAiProviderKind, status: u32) -> RemoteProviderTestStatus {
     match status {
         200..=299 => RemoteProviderTestStatus::Succeeded,
         400 | 401 | 403 | 422 => RemoteProviderTestStatus::ProviderRejected,
@@ -450,15 +122,6 @@ fn map_http_status(provider: &RemoteAiProviderKind, status: u16) -> RemoteProvid
         404 => RemoteProviderTestStatus::ProviderRejected,
         408 | 425 | 429 | 500..=599 => RemoteProviderTestStatus::ConnectionFailed,
         _ => RemoteProviderTestStatus::UnsupportedProvider,
-    }
-}
-
-fn sanitized_probe_message(status: &RemoteProviderTestStatus) -> &'static str {
-    match status {
-        RemoteProviderTestStatus::Succeeded => VERIFIED_MESSAGE,
-        RemoteProviderTestStatus::ProviderRejected => REJECTED_MESSAGE,
-        RemoteProviderTestStatus::ConnectionFailed => CONNECTION_FAILED_MESSAGE,
-        RemoteProviderTestStatus::UnsupportedProvider => UNSUPPORTED_MESSAGE,
     }
 }
 
@@ -482,10 +145,6 @@ fn percent_encode(value: &str) -> String {
         }
     }
     encoded
-}
-
-fn curl_config_value(value: &str) -> String {
-    value.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 fn is_loopback_http_endpoint(endpoint: &str) -> bool {

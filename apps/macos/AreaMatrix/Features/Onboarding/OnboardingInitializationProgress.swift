@@ -2,6 +2,19 @@ import Foundation
 
 extension OnboardingModel {
     @MainActor
+    func beginMainOpening(repoPath: String, scanSession: ScanSessionSnapshot? = nil) -> UUID {
+        let cancellationToken = UUID()
+        openingCancellationToken = cancellationToken
+        route = .mainLoading(MainLoadingState(
+            repoPath: repoPath,
+            startupRecovery: .checking,
+            scanSession: scanSession,
+            treeLoading: mainLoadingTreeLister != nil ? .loading : nil
+        ))
+        return cancellationToken
+    }
+
+    @MainActor
     func cancelMainOpening() {
         guard case let .mainLoading(state) = route else { return }
 
@@ -15,13 +28,7 @@ extension OnboardingModel {
     func openExistingRepository(_ validation: RepoPathValidationSnapshot) async {
         initializationOpenErrorMapping = nil
         mainRepoRecoveryErrorMapping = nil
-        let cancellationToken = UUID()
-        openingCancellationToken = cancellationToken
-        route = .mainLoading(MainLoadingState(
-            repoPath: validation.repoPath,
-            startupRecovery: .checking,
-            treeLoading: mainLoadingTreeLister != nil ? .loading : nil
-        ))
+        let cancellationToken = beginMainOpening(repoPath: validation.repoPath)
 
         await Task.yield()
         guard openingCancellationToken == cancellationToken else { return }
@@ -73,14 +80,7 @@ extension OnboardingModel {
     func openInitializedRepository() async {
         guard case let .initializationDone(result) = route else { return }
         initializationOpenErrorMapping = nil
-        let cancellationToken = UUID()
-        openingCancellationToken = cancellationToken
-        route = .mainLoading(MainLoadingState(
-            repoPath: result.repoPath,
-            startupRecovery: .checking,
-            scanSession: result.scanSession,
-            treeLoading: mainLoadingTreeLister != nil ? .loading : nil
-        ))
+        let cancellationToken = beginMainOpening(repoPath: result.repoPath, scanSession: result.scanSession)
 
         await Task.yield()
         guard openingCancellationToken == cancellationToken else { return }

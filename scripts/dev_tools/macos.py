@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import platform
 import re
@@ -16,6 +17,13 @@ from .common import fail, project_root, require_command
 from .macos_release_probe import RELEASE_APP_LAUNCH_BLOCKED, run_release_app_launch_probe
 
 MACOS_TESTS_BLOCKED_BY_XCODE_ENVIRONMENT = 75
+SWIFT_WATCHER_COVERAGE_THRESHOLD = 0.60
+SWIFT_BRIDGE_COVERAGE_THRESHOLD = 0.50
+SWIFT_WATCHER_COVERAGE_FILES = {
+    "PlatformServices/InFlightFileChangeTracker.swift",
+    "PlatformServices/MainExternalCreatedFileWatcher.swift",
+    "PlatformServices/MainExternalSyncEvents.swift",
+}
 
 
 def _run_and_tee(argv: Sequence[str], log_path: Path, *, env: Mapping[str, str] | None = None) -> int:
@@ -219,6 +227,7 @@ def _test_base_args(
     result_bundle: str | Path | None,
     only_testing: Sequence[str],
     disable_parallel_testing: bool = False,
+    enable_code_coverage: bool = False,
 ) -> list[str]:
     base = [
         "-project",
@@ -234,6 +243,8 @@ def _test_base_args(
         base.extend(["-resultBundlePath", str(result_bundle)])
     if disable_parallel_testing:
         base.extend(["-parallel-testing-enabled", "NO"])
+    if enable_code_coverage:
+        base.extend(["-enableCodeCoverage", "YES"])
     for test_id in only_testing:
         base.append(f"-only-testing:{test_id}")
     base.append("CODE_SIGNING_ALLOWED=NO")
@@ -358,6 +369,8 @@ def run_macos_tests(
     result_bundle_path: str | Path | None = None,
     only_testing: Sequence[str] | None = None,
     disable_parallel_testing: bool = False,
+    enable_code_coverage: bool = False,
+    coverage_gate: bool = False,
 ) -> int:
     root = (root or project_root()).resolve()
     project_path = root / "apps/macos/AreaMatrix.xcodeproj"
@@ -368,6 +381,10 @@ def run_macos_tests(
     derived_data_dir, created = _resolve_derived_data_dir(derived_data_path)
     test_log_path, build_log_path = _resolve_log_paths(derived_data_dir, test_log, build_log)
     result_bundle = result_bundle_path or os.environ.get("XCODE_RESULT_BUNDLE_PATH")
+    if coverage_gate and not result_bundle:
+        fail("macOS coverage gate requires --result-bundle-path.")
+    if coverage_gate:
+        enable_code_coverage = True
 
     try:
         require_command("xcodebuild")
@@ -387,6 +404,8 @@ def run_macos_tests(
             result_bundle,
             list(only_testing or []),
             disable_parallel_testing,
+            enable_code_coverage,
+            coverage_gate,
         )
     finally:
         if created and not keep:
@@ -405,6 +424,8 @@ def _run_macos_tests_inner(
     result_bundle: str | Path | None,
     only_testing: Sequence[str],
     disable_parallel_testing: bool = False,
+    enable_code_coverage: bool = False,
+    coverage_gate: bool = False,
 ) -> int:
     base = _test_base_args(
         project_path,
@@ -414,6 +435,7 @@ def _run_macos_tests_inner(
         result_bundle,
         only_testing,
         disable_parallel_testing,
+        enable_code_coverage,
     )
     build_base = _build_for_testing_base_args(project_path, scheme, destination, derived_data_dir)
     print("==> xcodebuild test")
@@ -428,6 +450,8 @@ def _run_macos_tests_inner(
         )
         if handled_rc != 0:
             return handled_rc
+        if coverage_gate:
+            return _run_swift_coverage_gate(root, Path(result_bundle))
         print("macOS tests: xcodebuild test passed.")
         return 0
     if _xcodebuild_tests_passed_before_sandbox_teardown(test_log_path, only_testing):
@@ -440,6 +464,8 @@ def _run_macos_tests_inner(
         )
         if handled_rc != 0:
             return handled_rc
+        if coverage_gate:
+            return _run_swift_coverage_gate(root, Path(result_bundle))
         print("macOS tests: xcodebuild XCTest suites passed.")
         print("macOS tests: ignoring sandbox-only testmanagerd teardown/reporting failure.")
         return 0
@@ -464,9 +490,13 @@ def _run_macos_tests_inner(
                 result_bundle,
                 only_testing,
                 True,
+                enable_code_coverage,
+                coverage_gate,
             )
         fail(f"xcodebuild test failed for a non-sandbox reason. See {test_log_path}.", rc)
 
+    if coverage_gate:
+        fail("macOS coverage gate requires standard xcodebuild coverage evidence; xctest fallback is not accepted.")
     return _run_sandbox_fallback(
         root,
         derived_data_dir,
@@ -476,3 +506,95 @@ def _run_macos_tests_inner(
         build_log_path,
         only_testing,
     )
+
+
+def _run_swift_coverage_gate(root: Path, result_bundle: Path) -> int:
+    if not result_bundle.exists():
+        fail(f"macOS coverage result bundle not found at {result_bundle}.")
+    completed = subprocess.run(
+        ["xcrun", "xccov", "view", "--report", "--json", str(result_bundle)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        fail(f"xccov coverage report failed: {completed.stderr.strip()}", completed.returncode)
+    try:
+        report = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        fail("xccov coverage report returned invalid JSON.")
+    return _evaluate_swift_coverage_report(root, report)
+
+
+def _evaluate_swift_coverage_report(root: Path, report: object) -> int:
+    if not isinstance(report, dict) or not isinstance(report.get("targets"), list):
+        fail("xccov coverage report is missing targets.")
+    app_targets = [
+        target
+        for target in report["targets"]
+        if isinstance(target, dict) and target.get("name") == "AreaMatrix.app"
+    ]
+    if len(app_targets) != 1:
+        fail(f"xccov coverage report expected one AreaMatrix.app target, found {len(app_targets)}.")
+    files = app_targets[0].get("files")
+    if not isinstance(files, list):
+        fail("xccov AreaMatrix.app target is missing files.")
+
+    source_root = (root / "apps/macos/AreaMatrix").resolve()
+    missing_watcher_sources = sorted(
+        relative for relative in SWIFT_WATCHER_COVERAGE_FILES if not (source_root / relative).is_file()
+    )
+    if missing_watcher_sources:
+        fail(f"Swift Watcher coverage source inventory drift; missing {missing_watcher_sources}.")
+    expected_bridge_files = {
+        path.relative_to(source_root).as_posix()
+        for path in (source_root / "Bridge").rglob("*.swift")
+        if "Generated" not in path.parts and "UniFFI" not in path.parts
+    }
+    if not expected_bridge_files:
+        fail("Swift Bridge coverage source inventory is empty.")
+    watcher_rows = []
+    bridge_rows = []
+    for row in files:
+        path_value = row.get("path")
+        if not isinstance(path_value, str):
+            continue
+        path = Path(path_value).resolve()
+        try:
+            relative = path.relative_to(source_root).as_posix()
+        except ValueError:
+            continue
+        if relative in SWIFT_WATCHER_COVERAGE_FILES:
+            watcher_rows.append((relative, row))
+        if relative.startswith("Bridge/") and not relative.startswith(("Bridge/Generated/", "Bridge/UniFFI/")):
+            bridge_rows.append((relative, row))
+
+    found_watcher_files = {relative for relative, _ in watcher_rows}
+    if found_watcher_files != SWIFT_WATCHER_COVERAGE_FILES:
+        missing = sorted(SWIFT_WATCHER_COVERAGE_FILES - found_watcher_files)
+        fail(f"Swift Watcher coverage inventory drift; missing {missing}.")
+    found_bridge_files = {relative for relative, _ in bridge_rows}
+    if found_bridge_files != expected_bridge_files:
+        missing = sorted(expected_bridge_files - found_bridge_files)
+        unexpected = sorted(found_bridge_files - expected_bridge_files)
+        fail(f"Swift Bridge coverage inventory drift; missing {missing}, unexpected {unexpected}.")
+    watcher_coverage = _coverage_ratio(watcher_rows, "Swift Watcher")
+    bridge_coverage = _coverage_ratio(bridge_rows, "Swift Bridge")
+    print(f"Swift Watcher coverage: {watcher_coverage:.2%} (required {SWIFT_WATCHER_COVERAGE_THRESHOLD:.0%})")
+    print(f"Swift Bridge coverage: {bridge_coverage:.2%} (required {SWIFT_BRIDGE_COVERAGE_THRESHOLD:.0%})")
+    if watcher_coverage < SWIFT_WATCHER_COVERAGE_THRESHOLD:
+        fail("Swift Watcher coverage is below the required threshold.")
+    if bridge_coverage < SWIFT_BRIDGE_COVERAGE_THRESHOLD:
+        fail("Swift Bridge coverage is below the required threshold.")
+    print("macOS coverage gate: PASS")
+    return 0
+
+
+def _coverage_ratio(rows: Sequence[tuple[str, dict]], label: str) -> float:
+    if not rows:
+        fail(f"{label} coverage inventory is empty.")
+    covered = sum(int(row.get("coveredLines", 0)) for _, row in rows)
+    executable = sum(int(row.get("executableLines", 0)) for _, row in rows)
+    if executable <= 0:
+        fail(f"{label} coverage has no executable lines.")
+    return covered / executable

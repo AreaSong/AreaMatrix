@@ -4,7 +4,8 @@ use crate::{
     ai_settings, local_model_status, remote_provider_config, AiConfig, AiConfigSnapshot,
     CoreResult, LocalModelFolderLocation, LocalModelFolderRequest, LocalModelStatusRequest,
     LocalModelStatusSnapshot, RemoteProviderConfigSnapshot, RemoteProviderDisableRequest,
-    RemoteProviderEnableRequest, RemoteProviderTestRequest, RemoteProviderTestResult,
+    RemoteProviderEnableRequest, RemoteProviderProbeObservation, RemoteProviderProbePlan,
+    RemoteProviderTestRequest, RemoteProviderTestResult,
 };
 
 /// Loads the AI settings snapshot without starting any AI provider.
@@ -84,29 +85,46 @@ pub fn locate_local_model_folder(
     local_model_status::locate_local_model_folder(repo_path, request)
 }
 
-/// Tests a remote AI provider without sending user file content.
+/// Prepares a platform-executed remote provider probe without sending user file content.
 ///
-/// remote provider settings surface uses this contract before enabling remote AI. The request includes
-/// provider, model, optional custom endpoint, and a platform secure-storage key
-/// reference. Core must never accept or return raw API keys, user file paths,
-/// file content, prompts, notes, summaries, tags, or provider raw responses.
+/// remote provider settings surface uses this contract before enabling remote AI. Core validates the
+/// provider metadata, persists an opaque in-flight probe token, and returns a
+/// non-secret HTTP plan for the platform layer. Core does not read Keychain,
+/// start a process, or access the network.
 ///
-/// The later implementation may perform a minimal provider connectivity probe
-/// and write a sanitized provider-test log entry owned by AI call log. The test must
-/// not persist enablement, feature scope, privacy rules, or any user content.
+/// The plan must never contain raw API keys, user file paths, file content,
+/// prompts, notes, summaries, tags, or provider raw responses.
 ///
 /// # Errors
 ///
 /// Returns `CoreError::Config { reason }` for invalid provider, model,
-/// endpoint, or key-reference shape; `CoreError::PermissionDenied { path }`
-/// when the secure credential reference cannot be accessed; and
-/// `CoreError::Internal { message }` for unavailable provider runtime or
-/// unexpected sanitized probe failures.
-pub fn test_remote_ai_provider(
+/// endpoint, or key-reference shape, and `CoreError::Internal { message }`
+/// when the in-flight probe record cannot be persisted.
+pub fn prepare_remote_ai_provider_probe(
     repo_path: String,
     request: RemoteProviderTestRequest,
+) -> CoreResult<RemoteProviderProbePlan> {
+    remote_provider_config::prepare_remote_ai_provider_probe(repo_path, request)
+}
+
+/// Completes a prepared remote provider probe from a sanitized platform observation.
+///
+/// The platform layer executes the plan with Keychain and URLSession, then
+/// returns only the probe token, transport outcome, and optional HTTP status.
+/// Core maps that observation to the stable test result and creates an enable
+/// verification token only after a successful status.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config { reason }` for malformed, stale, or mismatched
+/// observations; `CoreError::PermissionDenied { path }` when the platform
+/// reports an unavailable credential; and `CoreError::Internal { message }`
+/// when pending probe metadata cannot be read, updated, or cleared.
+pub fn complete_remote_ai_provider_probe(
+    repo_path: String,
+    observation: RemoteProviderProbeObservation,
 ) -> CoreResult<RemoteProviderTestResult> {
-    remote_provider_config::test_remote_ai_provider(repo_path, request)
+    remote_provider_config::complete_remote_ai_provider_probe(repo_path, observation)
 }
 
 /// Loads the persisted remote provider gate snapshot.

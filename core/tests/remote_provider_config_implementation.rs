@@ -4,15 +4,16 @@ mod common;
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    disable_remote_ai_provider, enable_remote_ai_provider, load_remote_ai_provider_config,
-    test_remote_ai_provider, AiFeatureKind, CoreError, RemoteAiProviderKind,
-    RemoteProviderDisableRequest, RemoteProviderTestRequest, RemoteProviderTestStatus,
+    complete_remote_ai_provider_probe, disable_remote_ai_provider, enable_remote_ai_provider,
+    load_remote_ai_provider_config, prepare_remote_ai_provider_probe, AiFeatureKind, CoreError,
+    RemoteAiProviderKind, RemoteProviderDisableRequest, RemoteProviderProbeObservation,
+    RemoteProviderProbeOutcome, RemoteProviderTestRequest, RemoteProviderTestStatus,
 };
 use common::{
-    enable_request, enable_request_for_endpoint, enable_request_with_key_reference,
-    initialized_repo, keychain_reference, path_string, repo_config_rows, repo_config_value,
-    test_key_reference, test_request, test_request_for_endpoint, test_request_with_key_reference,
-    ProbeRuntime,
+    complete_provider_test, enable_request, enable_request_for_endpoint,
+    enable_request_with_key_reference, initialized_repo, keychain_reference, path_string,
+    repo_config_rows, repo_config_value, successful_provider_test, test_key_reference,
+    test_request, test_request_for_endpoint, test_request_with_key_reference,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -20,17 +21,24 @@ use rusqlite::Connection;
 #[test]
 fn remote_provider_config_implementation_tests_then_enables_persisted_snapshot() {
     let repo = initialized_repo();
-    let runtime = ProbeRuntime::new(200);
     let endpoint_url = "https://provider.example.test/probe";
     let request = test_request_for_endpoint(endpoint_url);
     let expected_key_reference = request.key_reference.clone();
-    let test_result =
-        test_remote_ai_provider(path_string(repo.path()), request).expect("test provider");
+    let plan = prepare_remote_ai_provider_probe(path_string(repo.path()), request)
+        .expect("prepare provider probe");
+    let test_result = complete_remote_ai_provider_probe(
+        path_string(repo.path()),
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token.clone(),
+            outcome: RemoteProviderProbeOutcome::HttpResponse,
+            http_status: Some(200),
+        },
+    )
+    .expect("complete provider probe");
     let verification_token = test_result
         .verification_token
         .clone()
         .expect("successful test returns verification token");
-    let captured_request = runtime.captured_payload();
 
     assert_eq!(test_result.status, RemoteProviderTestStatus::Succeeded);
     assert!(test_result.provider_verified);
@@ -39,12 +47,14 @@ fn remote_provider_config_implementation_tests_then_enables_persisted_snapshot()
         "Remote provider metadata verified"
     );
     assert!(!verification_token.contains("keychain"));
-    assert!(captured_request.contains("\"url\":\"https://provider.example.test/probe?model_id=gpt-4.1-mini&probe=provider_metadata\""));
-    assert!(captured_request.contains("\"name\":\"Authorization\""));
-    assert!(captured_request.contains("\"value\":\"Bearer test-provider-secret\""));
-    assert!(!captured_request.contains("README"));
-    assert!(!captured_request.contains("AREAMATRIX"));
-    assert!(!captured_request.contains("note"));
+    assert_eq!(
+        plan.url,
+        "https://provider.example.test/probe?model_id=gpt-4.1-mini&probe=provider_metadata"
+    );
+    assert!(plan.headers.is_empty());
+    assert_eq!(plan.maximum_response_body_bytes, 0);
+    assert!(!plan.follow_redirects);
+    assert!(!format!("{plan:?}").contains("test-provider-secret"));
 
     let snapshot = enable_remote_ai_provider(
         path_string(repo.path()),
@@ -114,14 +124,12 @@ fn remote_provider_config_implementation_loads_empty_and_removes_credential_on_d
     assert!(!empty.credential_configured);
     assert!(empty.feature_scope.is_empty());
 
-    let runtime = ProbeRuntime::new(200);
     let endpoint_url = "https://provider.example.test/remove-credential";
-    let test_result = test_remote_ai_provider(
+    let test_result = successful_provider_test(
         path_string(repo.path()),
         test_request_for_endpoint(endpoint_url),
     )
     .expect("test provider");
-    let _ = runtime.captured_payload();
     enable_remote_ai_provider(
         path_string(repo.path()),
         enable_request_for_endpoint(
@@ -172,12 +180,10 @@ fn remote_provider_config_implementation_requires_matching_successful_test() {
     assert!(matches!(without_test, Err(CoreError::Config { .. })));
     assert!(repo_config_value(repo.path(), "remote_provider_config").is_none());
 
-    let runtime = ProbeRuntime::new(200);
     let endpoint_url = "https://provider.example.test/probe";
     let test_result =
-        test_remote_ai_provider(repo_path.clone(), test_request_for_endpoint(endpoint_url))
+        successful_provider_test(repo_path.clone(), test_request_for_endpoint(endpoint_url))
             .expect("test provider before enable");
-    let _ = runtime.captured_payload();
     let mut changed_model = enable_request(
         test_result
             .verification_token
@@ -198,21 +204,21 @@ fn remote_provider_config_implementation_rejects_secret_like_key_without_partial
     let mut request = test_request();
     request.key_reference = "sk-secret-key-material".to_owned();
 
-    let result = test_remote_ai_provider(path_string(repo.path()), request);
+    let result = prepare_remote_ai_provider_probe(path_string(repo.path()), request);
 
     assert!(matches!(result, Err(CoreError::Config { .. })));
     assert_eq!(repo_config_rows(repo.path()), before_rows);
 
     let mut hidden_secret = test_request();
     hidden_secret.key_reference = "keychain:sk-secret-key-material".to_owned();
-    let result = test_remote_ai_provider(path_string(repo.path()), hidden_secret);
+    let result = prepare_remote_ai_provider_probe(path_string(repo.path()), hidden_secret);
 
     assert!(matches!(result, Err(CoreError::Config { .. })));
     assert_eq!(repo_config_rows(repo.path()), before_rows);
 
     let mut plain_reference = test_request();
     plain_reference.key_reference = "remote-openai".to_owned();
-    let result = test_remote_ai_provider(path_string(repo.path()), plain_reference);
+    let result = prepare_remote_ai_provider_probe(path_string(repo.path()), plain_reference);
 
     assert!(matches!(result, Err(CoreError::Config { .. })));
     assert_eq!(repo_config_rows(repo.path()), before_rows);
@@ -223,32 +229,24 @@ fn remote_provider_config_implementation_maps_provider_test_failures_without_ver
     let repo = initialized_repo();
     let before_rows = repo_config_rows(repo.path());
 
-    let rejected_runtime = ProbeRuntime::new(401);
     let rejected = test_request_for_endpoint("https://provider.example.test/rejected");
     assert_unverified_test_status(
         repo.path(),
         rejected,
         RemoteProviderTestStatus::ProviderRejected,
     );
-    let _ = rejected_runtime.captured_payload();
-
-    let connection_failed_runtime = ProbeRuntime::new(503);
     let connection_failed = test_request_for_endpoint("https://provider.example.test/unavailable");
     assert_unverified_test_status(
         repo.path(),
         connection_failed,
         RemoteProviderTestStatus::ConnectionFailed,
     );
-    let _ = connection_failed_runtime.captured_payload();
-
-    let unsupported_runtime = ProbeRuntime::new(404);
     let unsupported = test_request_for_endpoint("https://provider.example.test/unsupported");
     assert_unverified_test_status(
         repo.path(),
         unsupported,
         RemoteProviderTestStatus::UnsupportedProvider,
     );
-    let _ = unsupported_runtime.captured_payload();
 
     assert_eq!(repo_config_rows(repo.path()), before_rows);
 }
@@ -257,13 +255,21 @@ fn remote_provider_config_implementation_maps_provider_test_failures_without_ver
 fn remote_provider_config_implementation_accepts_keychain_reference_via_platform_runtime() {
     let repo = initialized_repo();
     let before_rows = repo_config_rows(repo.path());
-    let runtime = ProbeRuntime::new(200);
     let endpoint_url = "https://provider.example.test/keychain";
     let key_reference = keychain_reference();
     let request = test_request_with_key_reference(endpoint_url, key_reference.clone());
 
-    let result = test_remote_ai_provider(path_string(repo.path()), request).expect("test provider");
-    let captured_request = runtime.captured_payload();
+    let plan = prepare_remote_ai_provider_probe(path_string(repo.path()), request)
+        .expect("prepare keychain provider probe");
+    let result = complete_remote_ai_provider_probe(
+        path_string(repo.path()),
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token.clone(),
+            outcome: RemoteProviderProbeOutcome::HttpResponse,
+            http_status: Some(200),
+        },
+    )
+    .expect("complete keychain provider probe");
     let verification_token = result
         .verification_token
         .clone()
@@ -271,9 +277,8 @@ fn remote_provider_config_implementation_accepts_keychain_reference_via_platform
 
     assert_eq!(result.status, RemoteProviderTestStatus::Succeeded);
     assert!(result.provider_verified);
-    assert!(!captured_request.contains("Authorization"));
-    assert!(!captured_request.contains("Bearer"));
-    assert!(captured_request.contains("\"key_reference\":\"keychain:areamatrix-remote-openai\""));
+    assert_eq!(plan.key_reference, "keychain:areamatrix-remote-openai");
+    assert!(plan.headers.is_empty());
 
     let snapshot = enable_remote_ai_provider(
         path_string(repo.path()),
@@ -293,12 +298,10 @@ fn remote_provider_config_implementation_accepts_keychain_reference_via_platform
 fn remote_provider_config_implementation_rolls_back_when_enable_write_fails() {
     let repo = initialized_repo();
     let repo_path = path_string(repo.path());
-    let runtime = ProbeRuntime::new(200);
     let endpoint_url = "https://provider.example.test/probe";
     let test_result =
-        test_remote_ai_provider(repo_path.clone(), test_request_for_endpoint(endpoint_url))
+        successful_provider_test(repo_path.clone(), test_request_for_endpoint(endpoint_url))
             .expect("test provider");
-    let _ = runtime.captured_payload();
     let pending_before = repo_config_value(repo.path(), "remote_provider_pending_verification")
         .expect("pending verification persisted");
     let connection =
@@ -341,16 +344,12 @@ fn remote_provider_config_implementation_preserves_user_files_and_ai_boundaries(
     fs::write(&readme_path, "user readme\n").expect("write user README");
     fs::write(&overview_path, "user overview\n").expect("write user overview");
 
-    let runtime = ProbeRuntime::new(200);
     let endpoint_url = "https://provider.example.test/probe";
-    let test_result = test_remote_ai_provider(
+    let test_result = successful_provider_test(
         path_string(repo.path()),
         test_request_for_endpoint(endpoint_url),
     )
     .expect("test remote provider");
-    let captured_request = runtime.captured_payload();
-    assert!(!captured_request.contains("user readme"));
-    assert!(!captured_request.contains("user overview"));
     enable_remote_ai_provider(
         path_string(repo.path()),
         enable_request_for_endpoint(
@@ -389,8 +388,19 @@ fn assert_unverified_test_status(
     request: RemoteProviderTestRequest,
     expected_status: RemoteProviderTestStatus,
 ) {
-    let result =
-        test_remote_ai_provider(path_string(repo), request).expect("test provider returns status");
+    let http_status = match expected_status {
+        RemoteProviderTestStatus::ProviderRejected => 401,
+        RemoteProviderTestStatus::ConnectionFailed => 503,
+        RemoteProviderTestStatus::UnsupportedProvider => 404,
+        RemoteProviderTestStatus::Succeeded => 200,
+    };
+    let result = complete_provider_test(
+        path_string(repo),
+        request,
+        RemoteProviderProbeOutcome::HttpResponse,
+        Some(http_status),
+    )
+    .expect("test provider returns status");
 
     assert_eq!(result.status, expected_status);
     assert!(!result.provider_verified);

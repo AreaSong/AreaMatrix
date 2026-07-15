@@ -50,8 +50,13 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
-    RemoteProviderTestResult test_remote_ai_provider(
+    RemoteProviderProbePlan prepare_remote_ai_provider_probe(
         string repo_path, RemoteProviderTestRequest request
+    );
+
+    [Throws=CoreError]
+    RemoteProviderTestResult complete_remote_ai_provider_probe(
+        string repo_path, RemoteProviderProbeObservation observation
     );
 
     [Throws=CoreError]
@@ -638,6 +643,32 @@ dictionary RemoteProviderTestRequest {
     string model_id;
     string? endpoint_url;
     string key_reference;
+};
+
+dictionary RemoteProviderProbeHeader {
+    string name;
+    string value;
+};
+
+dictionary RemoteProviderProbePlan {
+    RemoteAiProviderKind provider;
+    string model_id;
+    string? endpoint_url;
+    string key_reference;
+    string probe_token;
+    RemoteProviderProbeMethod method;
+    string url;
+    sequence<RemoteProviderProbeHeader> headers;
+    RemoteProviderProbeAuthorization authorization;
+    u32 timeout_millis;
+    u64 maximum_response_body_bytes;
+    boolean follow_redirects;
+};
+
+dictionary RemoteProviderProbeObservation {
+    string probe_token;
+    RemoteProviderProbeOutcome outcome;
+    u32? http_status;
 };
 
 dictionary RemoteProviderEnableRequest {
@@ -2233,6 +2264,11 @@ enum AiFeatureKind {
     "ClassificationSuggestions", "AutoSummaries", "AutoTags", "SemanticSearch"
 };
 enum RemoteAiProviderKind { "OpenAi", "Anthropic", "Other" };
+enum RemoteProviderProbeMethod { "Get" };
+enum RemoteProviderProbeAuthorization { "Bearer", "AnthropicApiKey" };
+enum RemoteProviderProbeOutcome {
+    "HttpResponse", "ConnectionFailed", "CredentialUnavailable"
+};
 enum RemoteProviderTestStatus {
     "Succeeded", "ProviderRejected", "ConnectionFailed", "UnsupportedProvider"
 };

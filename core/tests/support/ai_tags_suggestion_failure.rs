@@ -3,12 +3,13 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    enable_remote_ai_provider, import_file, init_repo, test_remote_ai_provider, update_ai_config,
-    AiConfig, AiFeatureConfig, AiFeatureKind, AiProviderPreference, AiTagSuggestionRequest,
-    ApplyAiTagSuggestionItem, ApplyAiTagSuggestionsRequest, CoreError, DuplicateStrategy,
-    ErrorKind, ImportDestination, ImportOptions, OverviewOutput, RemoteAiProviderKind,
-    RemoteProviderEnableRequest, RemoteProviderTestRequest, RepoInitMode, RepoInitOptions,
-    StorageMode,
+    complete_remote_ai_provider_probe, enable_remote_ai_provider, import_file, init_repo,
+    prepare_remote_ai_provider_probe, update_ai_config, AiConfig, AiFeatureConfig, AiFeatureKind,
+    AiProviderPreference, AiTagSuggestionRequest, ApplyAiTagSuggestionItem,
+    ApplyAiTagSuggestionsRequest, CoreError, DuplicateStrategy, ErrorKind, ImportDestination,
+    ImportOptions, OverviewOutput, RemoteAiProviderKind, RemoteProviderEnableRequest,
+    RemoteProviderProbeObservation, RemoteProviderProbeOutcome, RemoteProviderTestRequest,
+    RepoInitMode, RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -298,15 +299,22 @@ pub(crate) fn ai_call_log_text(repo: &Path) -> String {
 
 pub(crate) fn enable_remote_tags(repo: &Path) {
     let repo_path = path_string(repo);
-    let probe_runtime = RemoteProbeRuntime::new();
-    let test = test_remote_ai_provider(repo_path.clone(), remote_test_request())
-        .expect("test remote provider");
+    let plan = prepare_remote_ai_provider_probe(repo_path.clone(), remote_test_request())
+        .expect("prepare remote provider probe");
+    let test = complete_remote_ai_provider_probe(
+        repo_path.clone(),
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token,
+            outcome: RemoteProviderProbeOutcome::HttpResponse,
+            http_status: Some(200),
+        },
+    )
+    .expect("complete remote provider probe");
     let token = test.verification_token.expect("verification token");
     update_ai_config(repo_path.clone(), ai_config(repo_path.clone(), true))
         .expect("enable remote AI tags");
     enable_remote_ai_provider(repo_path, remote_enable_request(token))
         .expect("enable remote provider");
-    drop(probe_runtime);
 }
 
 fn remote_test_request() -> RemoteProviderTestRequest {
@@ -397,53 +405,9 @@ pub(crate) fn install_ai_tag_apply_log_failure(repo: &Path) {
         .expect("install AI tag apply log failure trigger");
 }
 
-struct RemoteProbeRuntime {
-    output: tempfile::TempDir,
-}
-
-impl RemoteProbeRuntime {
-    fn new() -> Self {
-        let output = tempfile::tempdir().expect("create remote probe runtime directory");
-        let script = output.path().join("probe.sh");
-        fs::write(
-            &script,
-            "#!/bin/sh\ncat >/dev/null\nprintf 'Succeeded\\n'\n",
-        )
-        .expect("write remote probe runtime");
-        make_executable(&script);
-        std::env::set_var(
-            "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME",
-            script.to_string_lossy().into_owned(),
-        );
-        Self { output }
-    }
-}
-
-impl Drop for RemoteProbeRuntime {
-    fn drop(&mut self) {
-        std::env::remove_var("AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME");
-        std::env::remove_var("AREAMATRIX_AI_TAGS_TEST_KEY");
-        let _ = self.output.path();
-    }
-}
-
 pub(crate) fn open_db(repo: &Path) -> Connection {
     Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database")
 }
-
-#[cfg(unix)]
-fn make_executable(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-
-    let mut permissions = fs::metadata(path)
-        .expect("read script metadata")
-        .permissions();
-    permissions.set_mode(0o700);
-    fs::set_permissions(path, permissions).expect("mark script executable");
-}
-
-#[cfg(not(unix))]
-fn make_executable(_path: &Path) {}
 
 #[cfg(unix)]
 pub(crate) struct ReadOnlyGuard {

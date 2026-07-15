@@ -399,6 +399,38 @@ fileprivate class UniffiHandleMap<T> {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
+    typealias FfiType = UInt32
+    typealias SwiftType = UInt32
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
+    typealias FfiType = UInt64
+    typealias SwiftType = UInt64
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt64 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
     typealias FfiType = Int64
     typealias SwiftType = Int64
@@ -13532,6 +13564,292 @@ public func FfiConverterTypeRemoteProviderEnableRequest_lower(_ value: RemotePro
 }
 
 
+public struct RemoteProviderProbeHeader {
+    public var name: String
+    public var value: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(name: String, value: String) {
+        self.name = name
+        self.value = value
+    }
+}
+
+
+
+extension RemoteProviderProbeHeader: Equatable, Hashable {
+    public static func ==(lhs: RemoteProviderProbeHeader, rhs: RemoteProviderProbeHeader) -> Bool {
+        if lhs.name != rhs.name {
+            return false
+        }
+        if lhs.value != rhs.value {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(name)
+        hasher.combine(value)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeRemoteProviderProbeHeader: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeHeader {
+        return
+            try RemoteProviderProbeHeader(
+                name: FfiConverterString.read(from: &buf),
+                value: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: RemoteProviderProbeHeader, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterString.write(value.value, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeHeader_lift(_ buf: RustBuffer) throws -> RemoteProviderProbeHeader {
+    return try FfiConverterTypeRemoteProviderProbeHeader.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeHeader_lower(_ value: RemoteProviderProbeHeader) -> RustBuffer {
+    return FfiConverterTypeRemoteProviderProbeHeader.lower(value)
+}
+
+
+public struct RemoteProviderProbeObservation {
+    public var probeToken: String
+    public var outcome: RemoteProviderProbeOutcome
+    public var httpStatus: UInt32?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(probeToken: String, outcome: RemoteProviderProbeOutcome, httpStatus: UInt32?) {
+        self.probeToken = probeToken
+        self.outcome = outcome
+        self.httpStatus = httpStatus
+    }
+}
+
+
+
+extension RemoteProviderProbeObservation: Equatable, Hashable {
+    public static func ==(lhs: RemoteProviderProbeObservation, rhs: RemoteProviderProbeObservation) -> Bool {
+        if lhs.probeToken != rhs.probeToken {
+            return false
+        }
+        if lhs.outcome != rhs.outcome {
+            return false
+        }
+        if lhs.httpStatus != rhs.httpStatus {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(probeToken)
+        hasher.combine(outcome)
+        hasher.combine(httpStatus)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeRemoteProviderProbeObservation: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeObservation {
+        return
+            try RemoteProviderProbeObservation(
+                probeToken: FfiConverterString.read(from: &buf),
+                outcome: FfiConverterTypeRemoteProviderProbeOutcome.read(from: &buf),
+                httpStatus: FfiConverterOptionUInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: RemoteProviderProbeObservation, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.probeToken, into: &buf)
+        FfiConverterTypeRemoteProviderProbeOutcome.write(value.outcome, into: &buf)
+        FfiConverterOptionUInt32.write(value.httpStatus, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeObservation_lift(_ buf: RustBuffer) throws -> RemoteProviderProbeObservation {
+    return try FfiConverterTypeRemoteProviderProbeObservation.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeObservation_lower(_ value: RemoteProviderProbeObservation) -> RustBuffer {
+    return FfiConverterTypeRemoteProviderProbeObservation.lower(value)
+}
+
+
+public struct RemoteProviderProbePlan {
+    public var provider: RemoteAiProviderKind
+    public var modelId: String
+    public var endpointUrl: String?
+    public var keyReference: String
+    public var probeToken: String
+    public var method: RemoteProviderProbeMethod
+    public var url: String
+    public var headers: [RemoteProviderProbeHeader]
+    public var authorization: RemoteProviderProbeAuthorization
+    public var timeoutMillis: UInt32
+    public var maximumResponseBodyBytes: UInt64
+    public var followRedirects: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(provider: RemoteAiProviderKind, modelId: String, endpointUrl: String?, keyReference: String, probeToken: String, method: RemoteProviderProbeMethod, url: String, headers: [RemoteProviderProbeHeader], authorization: RemoteProviderProbeAuthorization, timeoutMillis: UInt32, maximumResponseBodyBytes: UInt64, followRedirects: Bool) {
+        self.provider = provider
+        self.modelId = modelId
+        self.endpointUrl = endpointUrl
+        self.keyReference = keyReference
+        self.probeToken = probeToken
+        self.method = method
+        self.url = url
+        self.headers = headers
+        self.authorization = authorization
+        self.timeoutMillis = timeoutMillis
+        self.maximumResponseBodyBytes = maximumResponseBodyBytes
+        self.followRedirects = followRedirects
+    }
+}
+
+
+
+extension RemoteProviderProbePlan: Equatable, Hashable {
+    public static func ==(lhs: RemoteProviderProbePlan, rhs: RemoteProviderProbePlan) -> Bool {
+        if lhs.provider != rhs.provider {
+            return false
+        }
+        if lhs.modelId != rhs.modelId {
+            return false
+        }
+        if lhs.endpointUrl != rhs.endpointUrl {
+            return false
+        }
+        if lhs.keyReference != rhs.keyReference {
+            return false
+        }
+        if lhs.probeToken != rhs.probeToken {
+            return false
+        }
+        if lhs.method != rhs.method {
+            return false
+        }
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.headers != rhs.headers {
+            return false
+        }
+        if lhs.authorization != rhs.authorization {
+            return false
+        }
+        if lhs.timeoutMillis != rhs.timeoutMillis {
+            return false
+        }
+        if lhs.maximumResponseBodyBytes != rhs.maximumResponseBodyBytes {
+            return false
+        }
+        if lhs.followRedirects != rhs.followRedirects {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(provider)
+        hasher.combine(modelId)
+        hasher.combine(endpointUrl)
+        hasher.combine(keyReference)
+        hasher.combine(probeToken)
+        hasher.combine(method)
+        hasher.combine(url)
+        hasher.combine(headers)
+        hasher.combine(authorization)
+        hasher.combine(timeoutMillis)
+        hasher.combine(maximumResponseBodyBytes)
+        hasher.combine(followRedirects)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeRemoteProviderProbePlan: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbePlan {
+        return
+            try RemoteProviderProbePlan(
+                provider: FfiConverterTypeRemoteAiProviderKind.read(from: &buf),
+                modelId: FfiConverterString.read(from: &buf),
+                endpointUrl: FfiConverterOptionString.read(from: &buf),
+                keyReference: FfiConverterString.read(from: &buf),
+                probeToken: FfiConverterString.read(from: &buf),
+                method: FfiConverterTypeRemoteProviderProbeMethod.read(from: &buf),
+                url: FfiConverterString.read(from: &buf),
+                headers: FfiConverterSequenceTypeRemoteProviderProbeHeader.read(from: &buf),
+                authorization: FfiConverterTypeRemoteProviderProbeAuthorization.read(from: &buf),
+                timeoutMillis: FfiConverterUInt32.read(from: &buf),
+                maximumResponseBodyBytes: FfiConverterUInt64.read(from: &buf),
+                followRedirects: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: RemoteProviderProbePlan, into buf: inout [UInt8]) {
+        FfiConverterTypeRemoteAiProviderKind.write(value.provider, into: &buf)
+        FfiConverterString.write(value.modelId, into: &buf)
+        FfiConverterOptionString.write(value.endpointUrl, into: &buf)
+        FfiConverterString.write(value.keyReference, into: &buf)
+        FfiConverterString.write(value.probeToken, into: &buf)
+        FfiConverterTypeRemoteProviderProbeMethod.write(value.method, into: &buf)
+        FfiConverterString.write(value.url, into: &buf)
+        FfiConverterSequenceTypeRemoteProviderProbeHeader.write(value.headers, into: &buf)
+        FfiConverterTypeRemoteProviderProbeAuthorization.write(value.authorization, into: &buf)
+        FfiConverterUInt32.write(value.timeoutMillis, into: &buf)
+        FfiConverterUInt64.write(value.maximumResponseBodyBytes, into: &buf)
+        FfiConverterBool.write(value.followRedirects, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbePlan_lift(_ buf: RustBuffer) throws -> RemoteProviderProbePlan {
+    return try FfiConverterTypeRemoteProviderProbePlan.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbePlan_lower(_ value: RemoteProviderProbePlan) -> RustBuffer {
+    return FfiConverterTypeRemoteProviderProbePlan.lower(value)
+}
+
+
 public struct RemoteProviderTestRequest {
     public var provider: RemoteAiProviderKind
     public var modelId: String
@@ -26325,6 +26643,198 @@ extension RemoteAiProviderKind: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
+public enum RemoteProviderProbeAuthorization {
+
+    case bearer
+    case anthropicApiKey
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeRemoteProviderProbeAuthorization: FfiConverterRustBuffer {
+    typealias SwiftType = RemoteProviderProbeAuthorization
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeAuthorization {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        case 1: return .bearer
+
+        case 2: return .anthropicApiKey
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: RemoteProviderProbeAuthorization, into buf: inout [UInt8]) {
+        switch value {
+
+
+        case .bearer:
+            writeInt(&buf, Int32(1))
+
+
+        case .anthropicApiKey:
+            writeInt(&buf, Int32(2))
+
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeAuthorization_lift(_ buf: RustBuffer) throws -> RemoteProviderProbeAuthorization {
+    return try FfiConverterTypeRemoteProviderProbeAuthorization.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeAuthorization_lower(_ value: RemoteProviderProbeAuthorization) -> RustBuffer {
+    return FfiConverterTypeRemoteProviderProbeAuthorization.lower(value)
+}
+
+
+
+extension RemoteProviderProbeAuthorization: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum RemoteProviderProbeMethod {
+
+    case get
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeRemoteProviderProbeMethod: FfiConverterRustBuffer {
+    typealias SwiftType = RemoteProviderProbeMethod
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeMethod {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        case 1: return .get
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: RemoteProviderProbeMethod, into buf: inout [UInt8]) {
+        switch value {
+
+
+        case .get:
+            writeInt(&buf, Int32(1))
+
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeMethod_lift(_ buf: RustBuffer) throws -> RemoteProviderProbeMethod {
+    return try FfiConverterTypeRemoteProviderProbeMethod.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeMethod_lower(_ value: RemoteProviderProbeMethod) -> RustBuffer {
+    return FfiConverterTypeRemoteProviderProbeMethod.lower(value)
+}
+
+
+
+extension RemoteProviderProbeMethod: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum RemoteProviderProbeOutcome {
+
+    case httpResponse
+    case connectionFailed
+    case credentialUnavailable
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeRemoteProviderProbeOutcome: FfiConverterRustBuffer {
+    typealias SwiftType = RemoteProviderProbeOutcome
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeOutcome {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        case 1: return .httpResponse
+
+        case 2: return .connectionFailed
+
+        case 3: return .credentialUnavailable
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: RemoteProviderProbeOutcome, into buf: inout [UInt8]) {
+        switch value {
+
+
+        case .httpResponse:
+            writeInt(&buf, Int32(1))
+
+
+        case .connectionFailed:
+            writeInt(&buf, Int32(2))
+
+
+        case .credentialUnavailable:
+            writeInt(&buf, Int32(3))
+
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeOutcome_lift(_ buf: RustBuffer) throws -> RemoteProviderProbeOutcome {
+    return try FfiConverterTypeRemoteProviderProbeOutcome.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteProviderProbeOutcome_lower(_ value: RemoteProviderProbeOutcome) -> RustBuffer {
+    return FfiConverterTypeRemoteProviderProbeOutcome.lower(value)
+}
+
+
+
+extension RemoteProviderProbeOutcome: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 public enum RemoteProviderTestStatus {
 
     case succeeded
@@ -28771,6 +29281,30 @@ extension UndoActionStatus: Equatable, Hashable {}
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
+    typealias SwiftType = UInt32?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterUInt32.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterUInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
 
@@ -30491,6 +31025,31 @@ fileprivate struct FfiConverterSequenceTypeRedoActionRecord: FfiConverterRustBuf
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeRemoteProviderProbeHeader: FfiConverterRustBuffer {
+    typealias SwiftType = [RemoteProviderProbeHeader]
+
+    public static func write(_ value: [RemoteProviderProbeHeader], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeRemoteProviderProbeHeader.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [RemoteProviderProbeHeader] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [RemoteProviderProbeHeader]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeRemoteProviderProbeHeader.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeRuleImpactConflict: FfiConverterRustBuffer {
     typealias SwiftType = [RuleImpactConflict]
 
@@ -31267,6 +31826,14 @@ public func clearAiSummary(repoPath: String, request: AiSummaryClearRequest)thro
     )
 })
 }
+public func completeRemoteAiProviderProbe(repoPath: String, observation: RemoteProviderProbeObservation)throws  -> RemoteProviderTestResult {
+    return try  FfiConverterTypeRemoteProviderTestResult.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
+    uniffi_area_matrix_core_fn_func_complete_remote_ai_provider_probe(
+        FfiConverterString.lower(repoPath),
+        FfiConverterTypeRemoteProviderProbeObservation.lower(observation),$0
+    )
+})
+}
 public func correctFileCategory(repoPath: String, fileId: Int64, category: String, moveFile: Bool, remember: Bool)throws  -> ClassifierCorrectionResult {
     return try  FfiConverterTypeClassifierCorrectionResult.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_correct_file_category(
@@ -31619,6 +32186,14 @@ public func predictCategory(repoPath: String, filename: String)throws  -> Classi
     )
 })
 }
+public func prepareRemoteAiProviderProbe(repoPath: String, request: RemoteProviderTestRequest)throws  -> RemoteProviderProbePlan {
+    return try  FfiConverterTypeRemoteProviderProbePlan.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
+    uniffi_area_matrix_core_fn_func_prepare_remote_ai_provider_probe(
+        FfiConverterString.lower(repoPath),
+        FfiConverterTypeRemoteProviderTestRequest.lower(request),$0
+    )
+})
+}
 public func previewBatchDelete(repoPath: String, fileIds: [Int64], deleteMode: BatchDeleteMode)throws  -> BatchDeletePreviewReport {
     return try  FfiConverterTypeBatchDeletePreviewReport.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_preview_batch_delete(
@@ -31902,14 +32477,6 @@ public func syncExternalChanges(repoPath: String, events: [ExternalEvent])throws
     )
 })
 }
-public func testRemoteAiProvider(repoPath: String, request: RemoteProviderTestRequest)throws  -> RemoteProviderTestResult {
-    return try  FfiConverterTypeRemoteProviderTestResult.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
-    uniffi_area_matrix_core_fn_func_test_remote_ai_provider(
-        FfiConverterString.lower(repoPath),
-        FfiConverterTypeRemoteProviderTestRequest.lower(request),$0
-    )
-})
-}
 public func undoAction(repoPath: String, actionId: String)throws  -> UndoActionResult {
     return try  FfiConverterTypeUndoActionResult.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_undo_action(
@@ -32029,6 +32596,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_clear_ai_summary() != 64894) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_area_matrix_core_checksum_func_complete_remote_ai_provider_probe() != 33432) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_correct_file_category() != 18229) {
@@ -32169,6 +32739,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_area_matrix_core_checksum_func_predict_category() != 65047) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_area_matrix_core_checksum_func_prepare_remote_ai_provider_probe() != 12583) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_area_matrix_core_checksum_func_preview_batch_delete() != 58527) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -32269,9 +32842,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_sync_external_changes() != 54775) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_area_matrix_core_checksum_func_test_remote_ai_provider() != 37456) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_undo_action() != 60370) {

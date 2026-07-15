@@ -104,45 +104,43 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
         )
     }
 
-    func testRemoteProviderProbeRuntimeImplementationStaysInPlatformServices() throws {
+    func testRemoteProviderProbeServiceImplementationStaysInPlatformServices() throws {
         let implementationFiles = try productionSwiftFiles().filter {
-            relativeProductionPath(for: $0) == "PlatformServices/RemoteProviderProbeRuntime.swift"
+            relativeProductionPath(for: $0) == "PlatformServices/RemoteProviderProbeService.swift"
         }
         let actual = try countedRegexMatches(
             in: implementationFiles,
-            pattern: #"\bactor RemoteProviderProbeRuntimeInstaller\b"#
+            pattern: #"\bactor RemoteProviderProbeService\b"#
         )
 
         XCTAssertEqual(
             actual,
-            ["PlatformServices/RemoteProviderProbeRuntime.swift:actor RemoteProviderProbeRuntimeInstaller:1"],
-            "Remote provider probe installation owns app runtime files, credentials, process execution, and " +
-                "environment setup; keep that platform side effect outside the AI feature implementation."
+            ["PlatformServices/RemoteProviderProbeService.swift:actor RemoteProviderProbeService:1"],
+            "Remote provider Keychain and URLSession execution must stay outside the AI feature implementation."
         )
     }
 
-    func testRemoteProviderProbeRuntimeAssemblyKeepsDescriptorProvenanceAndSingleFlight() throws {
+    func testRemoteProviderProbeServiceKeepsCredentialAndNetworkLimitsExplicit() throws {
         let implementationFiles = try productionSwiftFiles().filter {
-            relativeProductionPath(for: $0) == "PlatformServices/RemoteProviderProbeRuntime.swift"
+            relativeProductionPath(for: $0) == "PlatformServices/RemoteProviderProbeService.swift"
         }
         let source = try String(contentsOf: XCTUnwrap(implementationFiles.first), encoding: .utf8)
         let requiredTerms = [
-            "RemoteProviderProbeRuntimeDescriptor",
-            "static let shared = RemoteProviderProbeRuntimeInstaller()",
-            "cachedDescriptor",
-            "runtimeVersion",
-            "contentHash",
-            "device:",
-            "inode:",
-            "Data(runtimeScript.utf8)",
-            "setenv(Self.environmentKey, descriptor.executablePath, 1)"
+            "static let shared = RemoteProviderProbeService()",
+            "KeychainProbeCredentialReader",
+            "URLSessionRemoteProviderProbeTransport",
+            "URLSessionConfiguration.ephemeral",
+            "maximumResponseBodyBytes == 0",
+            "!plan.followRedirects",
+            "completionHandler(nil)",
+            "kSecReturnData"
         ]
 
         let missing = requiredTerms.filter { !source.contains($0) }
         XCTAssertEqual(
             missing,
             [],
-            "Remote provider runtime assembly must keep provenance validation and shared single-flight setup."
+            "Remote provider platform execution must keep Keychain isolation and headers-only network limits."
         )
     }
 
@@ -392,7 +390,8 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
 
     func testExternalURLStringParsingStaysCentralizedInPolicy() throws {
         let expected = [
-            "PlatformServices/ExternalURLPolicy.swift:URL(string::1"
+            "PlatformServices/ExternalURLPolicy.swift:URL(string::1",
+            "PlatformServices/RemoteProviderProbeService.swift:URL(string::1"
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles(),
@@ -402,8 +401,8 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertEqual(
             actual,
             expected,
-            "External URL string parsing should stay behind ExternalURLPolicy so app and feature code " +
-                "reuse the same HTTPS-only guard before opening remote links."
+            "External links stay behind ExternalURLPolicy; remote provider probe URLs are a separately reviewed " +
+                "network boundary in PlatformServices."
         )
     }
 

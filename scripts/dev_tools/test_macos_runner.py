@@ -11,6 +11,7 @@ from scripts.dev_tools.macos import (
     MACOS_TESTS_BLOCKED_BY_XCODE_ENVIRONMENT,
     RELEASE_APP_LAUNCH_BLOCKED,
     _codex_local_xcode_system_content_blocked,
+    _evaluate_swift_coverage_report,
     _handle_release_app_launch_probe_result,
     _parallel_xcodebuild_retry_allowed,
     _run_sandbox_fallback,
@@ -20,6 +21,7 @@ from scripts.dev_tools.macos import (
     _xcode_system_content_failure,
     _xcode_test_env,
 )
+from scripts.dev_tools.common import ToolError
 from scripts.dev_tools.macos_release_probe import (
     _direct_launch_probe_blocked,
     _launchservices_probe_blocked,
@@ -283,6 +285,69 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
         self.assertNotIn("-parallel-testing-enabled", args)
 
+    def test_code_coverage_flag_is_explicit(self) -> None:
+        args = _test_base_args(
+            self.tmp_path / "AreaMatrix.xcodeproj",
+            "AreaMatrix",
+            "platform=macOS,arch=arm64",
+            self.tmp_path / "DerivedData",
+            "TestResults.xcresult",
+            [],
+            enable_code_coverage=True,
+        )
+
+        self.assertIn("-enableCodeCoverage", args)
+        self.assertEqual(args[args.index("-enableCodeCoverage") + 1], "YES")
+
+    def test_swift_coverage_gate_uses_weighted_watcher_and_bridge_coverage(self) -> None:
+        source_root = self.tmp_path / "apps/macos/AreaMatrix"
+        watcher_files = [
+            "PlatformServices/InFlightFileChangeTracker.swift",
+            "PlatformServices/MainExternalCreatedFileWatcher.swift",
+            "PlatformServices/MainExternalSyncEvents.swift",
+        ]
+        bridge_files = ["Bridge/CoreBridge.swift", "Bridge/CoreFileListing.swift"]
+        for relative in [*watcher_files, *bridge_files]:
+            path = source_root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("// fixture\n", encoding="utf-8")
+        files = [
+            self.coverage_file(source_root / watcher_files[0], 6, 10),
+            self.coverage_file(source_root / watcher_files[1], 30, 50),
+            self.coverage_file(source_root / watcher_files[2], 24, 40),
+            self.coverage_file(source_root / bridge_files[0], 1, 1),
+            self.coverage_file(source_root / bridge_files[1], 49, 99),
+            self.coverage_file(source_root / "Bridge/UniFFI/area_matrix.swift", 0, 1000),
+        ]
+
+        result = _evaluate_swift_coverage_report(
+            self.tmp_path,
+            {"targets": [{"name": "AreaMatrix.app", "files": files}]},
+        )
+
+        self.assertEqual(result, 0)
+
+    def test_swift_coverage_gate_rejects_missing_inventory(self) -> None:
+        source_root = self.tmp_path / "apps/macos/AreaMatrix"
+        for relative in [
+            "PlatformServices/InFlightFileChangeTracker.swift",
+            "PlatformServices/MainExternalCreatedFileWatcher.swift",
+            "PlatformServices/MainExternalSyncEvents.swift",
+            "Bridge/CoreBridge.swift",
+        ]:
+            path = source_root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("// fixture\n", encoding="utf-8")
+
+        with self.assertRaises(ToolError):
+            _evaluate_swift_coverage_report(
+                self.tmp_path,
+                {"targets": [{
+                    "name": "AreaMatrix.app",
+                    "files": [self.coverage_file(source_root / "Bridge/CoreBridge.swift", 1, 1)],
+                }]},
+            )
+
     def test_sandbox_fallback_passes_when_only_release_launch_is_locally_blocked(self) -> None:
         bundle = self.tmp_path / "AreaMatrixTests.xctest"
         bundle.mkdir()
@@ -301,6 +366,37 @@ class MacOSTestRunnerTest(unittest.TestCase):
             )
 
         self.assertEqual(result, 0)
+
+    def test_coverage_gate_rejects_direct_xctest_fallback(self) -> None:
+        project = self.tmp_path / "AreaMatrix.xcodeproj"
+        project.mkdir()
+        test_log = self.tmp_path / "xcodebuild-test.log"
+        build_log = self.tmp_path / "xcodebuild-build.log"
+        result_bundle = self.tmp_path / "TestResults.xcresult"
+
+        def fake_run_and_tee(_argv, log_path, env=None):
+            del env
+            log_path.write_text(
+                "com.apple.testmanagerd.control failed because of a sandbox restriction\n",
+                encoding="utf-8",
+            )
+            return 65
+
+        with patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee), \
+            self.assertRaises(ToolError):
+            _run_macos_tests_inner(
+                self.tmp_path,
+                project,
+                "AreaMatrix",
+                "AreaMatrixTests.xctest",
+                "platform=macOS,arch=arm64",
+                self.tmp_path,
+                test_log,
+                build_log,
+                result_bundle,
+                [],
+                coverage_gate=True,
+            )
 
     def test_sandbox_fallback_fails_real_release_launch_probe_error(self) -> None:
         bundle = self.tmp_path / "AreaMatrixTests.xctest"
@@ -366,6 +462,14 @@ class MacOSTestRunnerTest(unittest.TestCase):
         path = self.tmp_path / "xcodebuild-test.log"
         path.write_text(text, encoding="utf-8")
         return path
+
+    @staticmethod
+    def coverage_file(path: Path, covered: int, executable: int) -> dict[str, object]:
+        return {
+            "path": str(path),
+            "coveredLines": covered,
+            "executableLines": executable,
+        }
 
 
 if __name__ == "__main__":

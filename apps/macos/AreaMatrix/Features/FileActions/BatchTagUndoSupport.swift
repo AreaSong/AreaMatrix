@@ -119,7 +119,34 @@ struct BatchTagUndoRefreshPlan: Equatable {
     }
 }
 
+struct BatchUndoStateRequest {
+    var repoPath: String
+    var shouldRefreshConsumer: Bool
+    var undoToken: String?
+    var failure: CoreErrorMappingSnapshot?
+    var unavailableResultReason: String
+}
+
 enum BatchTagUndoAction {
+    static func stateAfterBatchApply(
+        request: BatchUndoStateRequest,
+        undoStore: any CoreUndoActionLogging,
+        errorMapper: any CoreErrorMapping
+    ) async -> BatchTagUndoState? {
+        guard request.failure == nil, request.shouldRefreshConsumer else { return nil }
+        guard let token = normalizedToken(request.undoToken) else {
+            return .unavailable(reason: request.unavailableResultReason)
+        }
+
+        let loadResult = await loadAction(
+            repoPath: request.repoPath,
+            undoToken: token,
+            undoStore: undoStore,
+            errorMapper: errorMapper
+        )
+        return loadResult.toastState ?? .unavailable(reason: "Undo action is no longer available.")
+    }
+
     static func refreshLatestToastState(
         repoPath: String,
         undoStore: any CoreUndoActionLogging,

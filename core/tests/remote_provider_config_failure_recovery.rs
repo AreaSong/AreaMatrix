@@ -4,15 +4,17 @@ mod common;
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    disable_remote_ai_provider, enable_remote_ai_provider, load_ai_config,
-    load_remote_ai_provider_config, map_core_error, test_remote_ai_provider, AiFeatureKind,
-    CoreError, ErrorKind, ErrorRecoverability, ErrorSeverity, RemoteAiProviderKind,
-    RemoteProviderDisableRequest, RemoteProviderTestRequest, RemoteProviderTestStatus,
+    complete_remote_ai_provider_probe, disable_remote_ai_provider, enable_remote_ai_provider,
+    load_ai_config, load_remote_ai_provider_config, map_core_error,
+    prepare_remote_ai_provider_probe, AiFeatureKind, CoreError, ErrorKind, ErrorRecoverability,
+    ErrorSeverity, RemoteAiProviderKind, RemoteProviderDisableRequest,
+    RemoteProviderProbeObservation, RemoteProviderProbeOutcome, RemoteProviderTestRequest,
+    RemoteProviderTestStatus,
 };
 use common::{
-    enable_request_for_endpoint, initialized_repo, path_string, repo_config_rows,
-    repo_config_value, test_key_reference, test_request_for_endpoint, ProbeRuntime, SECRET_VALUE,
-    TEST_SECRET_ENV,
+    complete_provider_test, enable_request_for_endpoint, initialized_repo, path_string,
+    repo_config_rows, repo_config_value, test_key_reference, test_request_for_endpoint,
+    SECRET_VALUE,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -26,11 +28,11 @@ fn assert_no_remote_provider_rows(repo: &Path) {
 }
 
 fn successful_provider_test(repo: &Path, endpoint_url: &str) -> String {
-    let runtime = ProbeRuntime::new("200");
-    let result =
-        test_remote_ai_provider(path_string(repo), test_request_for_endpoint(endpoint_url))
-            .expect("test provider");
-    let _ = runtime.captured_payload();
+    let result = common::successful_provider_test(
+        path_string(repo),
+        test_request_for_endpoint(endpoint_url),
+    )
+    .expect("test provider");
     result
         .verification_token
         .expect("successful test returns verification token")
@@ -50,7 +52,7 @@ fn assert_sanitized_error(error: CoreError, expected_kind: ErrorKind) {
 }
 
 fn assert_no_secret_material(value: &str) {
-    for secret_fragment in [SECRET_VALUE, TEST_SECRET_ENV, "sk-secret", "Bearer"] {
+    for secret_fragment in [SECRET_VALUE, "sk-secret", "Bearer"] {
         assert!(
             !value.contains(secret_fragment),
             "unexpected secret fragment `{secret_fragment}` in `{value}`"
@@ -109,13 +111,19 @@ fn remote_provider_config_failure_invalid_inputs_do_not_write_partial_state() {
         RemoteProviderTestRequest {
             provider: RemoteAiProviderKind::Other,
             model_id: "gpt-4.1-mini".to_owned(),
+            endpoint_url: Some("https://user:password@provider.example.test/probe".to_owned()),
+            key_reference: test_key_reference(),
+        },
+        RemoteProviderTestRequest {
+            provider: RemoteAiProviderKind::Other,
+            model_id: "gpt-4.1-mini".to_owned(),
             endpoint_url: Some("https://provider.example.test/probe".to_owned()),
             key_reference: "sk-secret-key-material".to_owned(),
         },
     ];
 
     for request in invalid_tests {
-        let result = test_remote_ai_provider(path_string(repo.path()), request);
+        let result = prepare_remote_ai_provider_probe(path_string(repo.path()), request);
         assert_sanitized_error(
             result.expect_err("invalid provider test input must fail"),
             ErrorKind::Config,
@@ -173,8 +181,16 @@ fn remote_provider_config_failure_permission_denied_does_not_leak_key_or_write_s
         key_reference: "secure-storage:env:AREAMATRIX_MISSING_SECRET".to_owned(),
     };
 
-    let result = test_remote_ai_provider(path_string(repo.path()), request);
-
+    let plan = prepare_remote_ai_provider_probe(path_string(repo.path()), request)
+        .expect("credential access belongs to platform completion");
+    let result = complete_remote_ai_provider_probe(
+        path_string(repo.path()),
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token,
+            outcome: RemoteProviderProbeOutcome::CredentialUnavailable,
+            http_status: None,
+        },
+    );
     assert_sanitized_error(
         result.expect_err("missing credential must fail"),
         ErrorKind::PermissionDenied,
@@ -187,18 +203,18 @@ fn remote_provider_config_failure_provider_rejections_do_not_create_enable_token
     let repo = initialized_repo();
     let before_rows = repo_config_rows(repo.path());
 
-    for (runtime_status, expected_status) in [
-        ("401", RemoteProviderTestStatus::ProviderRejected),
-        ("503", RemoteProviderTestStatus::ConnectionFailed),
-        ("404", RemoteProviderTestStatus::UnsupportedProvider),
+    for (http_status, expected_status) in [
+        (401, RemoteProviderTestStatus::ProviderRejected),
+        (503, RemoteProviderTestStatus::ConnectionFailed),
+        (404, RemoteProviderTestStatus::UnsupportedProvider),
     ] {
-        let runtime = ProbeRuntime::new(runtime_status);
-        let result = test_remote_ai_provider(
+        let result = complete_provider_test(
             path_string(repo.path()),
             test_request_for_endpoint("https://provider.example.test/probe"),
+            RemoteProviderProbeOutcome::HttpResponse,
+            Some(http_status),
         )
         .expect("provider test returns sanitized failure status");
-        let _ = runtime.captured_payload();
 
         assert_eq!(result.status, expected_status);
         assert!(!result.provider_verified);
@@ -209,29 +225,34 @@ fn remote_provider_config_failure_provider_rejections_do_not_create_enable_token
 }
 
 #[test]
-fn remote_provider_config_failure_runtime_or_db_errors_map_to_internal_without_partial_write() {
+fn remote_provider_config_failure_observation_or_db_errors_do_not_write_partial_state() {
     let repo = initialized_repo();
     let before_rows = repo_config_rows(repo.path());
 
-    let runtime = ProbeRuntime::new("not-a-status");
-    let result = test_remote_ai_provider(
+    let plan = prepare_remote_ai_provider_probe(
         path_string(repo.path()),
         test_request_for_endpoint("https://provider.example.test/probe"),
+    )
+    .expect("prepare provider probe");
+    let result = complete_remote_ai_provider_probe(
+        path_string(repo.path()),
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token,
+            outcome: RemoteProviderProbeOutcome::HttpResponse,
+            http_status: None,
+        },
     );
-    let _ = runtime.captured_payload();
     assert_sanitized_error(
-        result.expect_err("invalid probe runtime output must fail"),
-        ErrorKind::Internal,
+        result.expect_err("invalid probe observation must fail"),
+        ErrorKind::Config,
     );
     assert_eq!(repo_config_rows(repo.path()), before_rows);
 
     install_repo_config_insert_failure(repo.path(), PENDING_TEST_KEY);
-    let runtime = ProbeRuntime::new("200");
-    let result = test_remote_ai_provider(
+    let result = prepare_remote_ai_provider_probe(
         path_string(repo.path()),
         test_request_for_endpoint("https://provider.example.test/db-failure"),
     );
-    let _ = runtime.captured_payload();
     assert_sanitized_error(
         result.expect_err("pending verification write failure must fail"),
         ErrorKind::Internal,

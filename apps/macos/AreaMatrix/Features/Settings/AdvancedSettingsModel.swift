@@ -33,6 +33,7 @@ final class AdvancedSettingsModel: ObservableObject {
     private let summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying
     private let errorMapper: any CoreErrorMapping
     private var pendingRetry: AdvancedSettingsPendingSave?
+    private var diagnosticsGeneration = SettingsDiagnosticsGeneration()
 
     init(
         repoPath: String,
@@ -90,6 +91,7 @@ final class AdvancedSettingsModel: ObservableObject {
         pendingRetry = nil
         pendingRootOverviewStatus = nil
         isReplaceConfirmationPending = false
+        diagnosticsGeneration.invalidate()
         diagnosticsState = .idle
         actionFeedback = nil
         versionError = nil
@@ -120,7 +122,8 @@ final class AdvancedSettingsModel: ObservableObject {
     }
 
     func cancelDiagnosticsExport() {
-        if diagnosticsState.isConfirmingPrivacy {
+        if diagnosticsState.isConfirmingPrivacy || diagnosticsState.isCollecting {
+            diagnosticsGeneration.invalidate()
             diagnosticsState = .idle
         }
     }
@@ -128,12 +131,15 @@ final class AdvancedSettingsModel: ObservableObject {
     func collectDiagnostics() async {
         guard diagnosticsState.isConfirmingPrivacy else { return }
 
+        let generation = diagnosticsGeneration.begin()
         diagnosticsState = .collecting
         actionFeedback = nil
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            guard diagnosticsGeneration.isCurrent(generation) else { return }
             diagnosticsState = .collected(snapshot)
         } catch {
+            guard diagnosticsGeneration.isCurrent(generation) else { return }
             diagnosticsState = await .failed(mappedError(
                 for: error,
                 fallbackMessage: "Diagnostics could not be exported"

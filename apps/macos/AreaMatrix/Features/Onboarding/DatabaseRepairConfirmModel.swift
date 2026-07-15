@@ -57,6 +57,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
     private let startupRecoverer: any CoreStartupRecovering
     private let diagnosticsCollector: any CoreDiagnosticsCollecting
     private let errorMapper: any CoreErrorMapping
+    private var diagnosticsGeneration = 0
 
     init(
         repoPath: String,
@@ -127,18 +128,28 @@ final class DatabaseRepairConfirmModel: ObservableObject {
     }
 
     func cancelDiagnosticsExport() {
-        guard case .confirmingPrivacy = diagnosticsState else { return }
+        guard case .confirmingPrivacy = diagnosticsState else {
+            guard case .collecting = diagnosticsState else { return }
+            diagnosticsGeneration += 1
+            diagnosticsState = .idle
+            return
+        }
+        diagnosticsGeneration += 1
         diagnosticsState = .idle
     }
 
     func collectDiagnostics() async {
         guard case .confirmingPrivacy = diagnosticsState else { return }
 
+        diagnosticsGeneration += 1
+        let generation = diagnosticsGeneration
         diagnosticsState = .collecting
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            guard diagnosticsGeneration == generation else { return }
             diagnosticsState = .collected(snapshot)
         } catch {
+            guard diagnosticsGeneration == generation else { return }
             diagnosticsState = await .failed(errorMapper.mapError(error))
         }
     }

@@ -181,6 +181,26 @@ final class InitFailedErrorMappingTests: XCTestCase {
         await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.route, .initializationFailed("/tmp/repo", nil, nil))
     }
+
+    @MainActor
+    func testCancelledInitializationDiagnosticsIgnoresLateCollectorResult() async {
+        let collector = SuspendedDiagnosticsCollector(result: .success(.testFixture()))
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            diagnosticsCollector: collector,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+        model.route = .initializationFailed("/tmp/repo", nil, nil)
+        model.requestInitializationDiagnosticsPrivacyConfirmation()
+
+        let collection = Task { await model.collectInitializationDiagnostics() }
+        await collector.waitUntilStarted()
+        model.cancelInitializationDiagnosticsPrivacyConfirmation()
+        await collector.finish()
+        await collection.value
+
+        XCTAssertEqual(model.initializationDiagnostics, .idle)
+    }
 }
 
 private typealias InitFailedRecordingSettingsWriter = RecordingAppSettingsWriter

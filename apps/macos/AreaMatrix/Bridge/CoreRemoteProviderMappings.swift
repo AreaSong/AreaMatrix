@@ -65,6 +65,30 @@ extension RemoteProviderTestRequest {
     }
 }
 
+extension RemoteProviderProbePlanState {
+    init(corePlan: RemoteProviderProbePlan) {
+        keyReference = corePlan.keyReference
+        probeToken = corePlan.probeToken
+        method = RemoteProviderProbeMethodState(coreMethod: corePlan.method)
+        url = corePlan.url
+        headers = corePlan.headers.map(RemoteProviderProbeHeaderState.init(coreHeader:))
+        authorization = RemoteProviderProbeAuthorizationState(coreAuthorization: corePlan.authorization)
+        timeoutMilliseconds = corePlan.timeoutMillis
+        maximumResponseBodyBytes = corePlan.maximumResponseBodyBytes
+        followRedirects = corePlan.followRedirects
+    }
+}
+
+extension RemoteProviderProbeObservation {
+    init(state: RemoteProviderProbeObservationState) {
+        self.init(
+            probeToken: state.probeToken,
+            outcome: RemoteProviderProbeOutcome(stateOutcome: state.outcome),
+            httpStatus: state.httpStatus
+        )
+    }
+}
+
 extension RemoteProviderEnableRequest {
     init(snapshot: RemoteProviderEnableRequestState) {
         self.init(
@@ -233,6 +257,39 @@ private extension RemoteProviderTestStatusState {
         case .providerRejected: self = .providerRejected
         case .connectionFailed: self = .connectionFailed
         case .unsupportedProvider: self = .unsupportedProvider
+        }
+    }
+}
+
+private extension RemoteProviderProbeMethodState {
+    init(coreMethod: RemoteProviderProbeMethod) {
+        switch coreMethod {
+        case .get: self = .get
+        }
+    }
+}
+
+private extension RemoteProviderProbeHeaderState {
+    init(coreHeader: RemoteProviderProbeHeader) {
+        self.init(name: coreHeader.name, value: coreHeader.value)
+    }
+}
+
+private extension RemoteProviderProbeAuthorizationState {
+    init(coreAuthorization: RemoteProviderProbeAuthorization) {
+        switch coreAuthorization {
+        case .bearer: self = .bearer
+        case .anthropicApiKey: self = .anthropicAPIKey
+        }
+    }
+}
+
+private extension RemoteProviderProbeOutcome {
+    init(stateOutcome: RemoteProviderProbeOutcomeState) {
+        switch stateOutcome {
+        case .httpResponse: self = .httpResponse
+        case .connectionFailed: self = .connectionFailed
+        case .credentialUnavailable: self = .credentialUnavailable
         }
     }
 }

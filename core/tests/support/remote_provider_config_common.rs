@@ -1,20 +1,16 @@
 #![allow(dead_code)]
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    sync::{Mutex, MutexGuard},
-};
+use std::path::Path;
 
 use area_matrix_core::{
-    init_repo, AiFeatureKind, OverviewOutput, RemoteAiProviderKind, RemoteProviderEnableRequest,
-    RemoteProviderTestRequest, RepoInitMode, RepoInitOptions,
+    complete_remote_ai_provider_probe, init_repo, prepare_remote_ai_provider_probe, AiFeatureKind,
+    CoreResult, OverviewOutput, RemoteAiProviderKind, RemoteProviderEnableRequest,
+    RemoteProviderProbeObservation, RemoteProviderProbeOutcome, RemoteProviderTestRequest,
+    RemoteProviderTestResult, RepoInitMode, RepoInitOptions,
 };
 use rusqlite::{params, Connection, OptionalExtension};
 
-pub const TEST_SECRET_ENV: &str = "AREAMATRIX_REMOTE_PROVIDER_TEST_KEY";
 pub const SECRET_VALUE: &str = "test-provider-secret";
-static PROBE_RUNTIME_LOCK: Mutex<()> = Mutex::new(());
 
 pub fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
@@ -82,8 +78,7 @@ pub fn enable_request_with_key_reference(
 }
 
 pub fn test_key_reference() -> String {
-    std::env::set_var(TEST_SECRET_ENV, SECRET_VALUE);
-    format!("secure-storage:env:{TEST_SECRET_ENV}")
+    "keychain:areamatrix-remote-openai".to_owned()
 }
 
 pub fn keychain_reference() -> String {
@@ -118,58 +113,31 @@ pub fn repo_config_rows(repo: &Path) -> Vec<(String, String)> {
     rows.map(|row| row.expect("read repo_config row")).collect()
 }
 
-pub struct ProbeRuntime {
-    _lock: MutexGuard<'static, ()>,
-    output: tempfile::TempDir,
-    payload_path: PathBuf,
+pub fn complete_provider_test(
+    repo_path: String,
+    request: RemoteProviderTestRequest,
+    outcome: RemoteProviderProbeOutcome,
+    http_status: Option<u32>,
+) -> CoreResult<RemoteProviderTestResult> {
+    let plan = prepare_remote_ai_provider_probe(repo_path.clone(), request)?;
+    complete_remote_ai_provider_probe(
+        repo_path,
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token,
+            outcome,
+            http_status,
+        },
+    )
 }
 
-impl ProbeRuntime {
-    pub fn new(output_status: impl ToString) -> Self {
-        let lock = PROBE_RUNTIME_LOCK
-            .lock()
-            .expect("lock remote provider probe runtime env");
-        let output = tempfile::tempdir().expect("create probe runtime directory");
-        let script_path = output.path().join("probe-runtime.sh");
-        let payload_path = output.path().join("payload.json");
-        let script = format!(
-            "#!/bin/sh\ncat > \"{}\"\nprintf '{}\\n'\n",
-            payload_path.display(),
-            output_status.to_string()
-        );
-        fs::write(&script_path, script).expect("write probe runtime script");
-        make_executable(&script_path);
-        std::env::set_var(
-            "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME",
-            script_path.to_string_lossy().into_owned(),
-        );
-        Self {
-            _lock: lock,
-            output,
-            payload_path,
-        }
-    }
-
-    pub fn captured_payload(self) -> String {
-        fs::read_to_string(&self.payload_path).expect("read captured probe payload")
-    }
-}
-
-impl Drop for ProbeRuntime {
-    fn drop(&mut self) {
-        std::env::remove_var("AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME");
-        let _ = self.output.path();
-    }
-}
-
-fn make_executable(path: &Path) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut permissions = fs::metadata(path)
-            .expect("read probe runtime metadata")
-            .permissions();
-        permissions.set_mode(0o700);
-        fs::set_permissions(path, permissions).expect("mark probe runtime executable");
-    }
+pub fn successful_provider_test(
+    repo_path: String,
+    request: RemoteProviderTestRequest,
+) -> CoreResult<RemoteProviderTestResult> {
+    complete_provider_test(
+        repo_path,
+        request,
+        RemoteProviderProbeOutcome::HttpResponse,
+        Some(200),
+    )
 }

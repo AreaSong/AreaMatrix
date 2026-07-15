@@ -3,6 +3,19 @@ import XCTest
 
 final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     @MainActor
+    func testDetailLogSyncExternalCreatedCoreWatcherLifecycleIsIdempotent() throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalCreatedWatcherTests")
+        defer { removeTestTemporaryItems(repoURL) }
+        let watcher = MainExternalCreatedFileWatcher()
+
+        watcher.start(repoPath: "  \n")
+        watcher.start(repoPath: repoURL.path)
+        watcher.start(repoPath: repoURL.path)
+        watcher.stop()
+        watcher.stop()
+    }
+
+    @MainActor
     func testDetailLogSyncExternalCreatedCoreProductionRelayCreatesCurrentMainWindowEvent() throws {
         let fixture = makeShellMainListFixture(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),

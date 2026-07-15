@@ -1,12 +1,10 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    sync::{Mutex, MutexGuard},
-};
+use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, AiFeatureKind, CoreError, ErrorKind, OverviewOutput, RemoteAiProviderKind,
-    RemoteProviderEnableRequest, RemoteProviderTestRequest, RepoInitMode, RepoInitOptions,
+    complete_remote_ai_provider_probe, init_repo, prepare_remote_ai_provider_probe, AiFeatureKind,
+    CoreError, CoreResult, ErrorKind, OverviewOutput, RemoteAiProviderKind,
+    RemoteProviderEnableRequest, RemoteProviderProbeObservation, RemoteProviderProbeOutcome,
+    RemoteProviderTestRequest, RemoteProviderTestResult, RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -19,11 +17,9 @@ const REMOTE_PROVIDER_RS: &str = include_str!("../../src/remote_provider_config.
 const DB_REMOTE_PROVIDER_RS: &str = include_str!("../../src/db/remote_provider_config.rs");
 const PROBE_RS: &str = include_str!("../../src/remote_provider_config/probe.rs");
 
-const TEST_SECRET_ENV: &str = "AREAMATRIX_REMOTE_PROVIDER_VALIDATION_KEY";
 const SECRET_VALUE: &str = "validation-provider-secret";
 pub const REMOTE_CONFIG_KEY: &str = "remote_provider_config";
 pub const PENDING_TEST_KEY: &str = "remote_provider_pending_verification";
-static PROBE_RUNTIME_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct RepoSnapshot {
@@ -53,7 +49,24 @@ pub fn initialized_repo() -> tempfile::TempDir {
 }
 
 pub fn test_key_reference() -> String {
-    format!("secure-storage:env:{TEST_SECRET_ENV}")
+    "keychain:areamatrix-remote-validation".to_owned()
+}
+
+pub fn complete_provider_test(
+    repo_path: String,
+    request: RemoteProviderTestRequest,
+    outcome: RemoteProviderProbeOutcome,
+    http_status: Option<u32>,
+) -> CoreResult<RemoteProviderTestResult> {
+    let plan = prepare_remote_ai_provider_probe(repo_path.clone(), request)?;
+    complete_remote_ai_provider_probe(
+        repo_path,
+        RemoteProviderProbeObservation {
+            probe_token: plan.probe_token,
+            outcome,
+            http_status,
+        },
+    )
 }
 
 pub fn test_request(endpoint_url: &str) -> RemoteProviderTestRequest {
@@ -174,11 +187,14 @@ pub fn assert_validation_docs_alignment() {
 
 pub fn assert_core_api_and_udl_alignment() {
     for fragment in [
-        "RemoteProviderTestResult test_remote_ai_provider(",
+        "RemoteProviderProbePlan prepare_remote_ai_provider_probe(",
+        "RemoteProviderTestResult complete_remote_ai_provider_probe(",
         "RemoteProviderConfigSnapshot load_remote_ai_provider_config(",
         "RemoteProviderConfigSnapshot enable_remote_ai_provider(",
         "RemoteProviderConfigSnapshot disable_remote_ai_provider(",
         "dictionary RemoteProviderTestRequest",
+        "dictionary RemoteProviderProbePlan",
+        "dictionary RemoteProviderProbeObservation",
         "dictionary RemoteProviderEnableRequest",
         "dictionary RemoteProviderDisableRequest",
         "sequence<AiFeatureKind> feature_scope;",
@@ -224,7 +240,8 @@ pub fn assert_core_api_and_udl_alignment() {
 
 pub fn assert_rust_contract_alignment() {
     for fragment in [
-        "pub fn test_remote_ai_provider(",
+        "pub fn prepare_remote_ai_provider_probe(",
+        "pub fn complete_remote_ai_provider_probe(",
         "pub fn load_remote_ai_provider_config(",
         "pub fn enable_remote_ai_provider(",
         "pub fn disable_remote_ai_provider(",
@@ -232,7 +249,7 @@ pub fn assert_rust_contract_alignment() {
         "RemoteProviderEnableRequest",
         "RemoteProviderDisableRequest",
         "RemoteProviderConfigSnapshot",
-        "Core must never accept or return raw API keys",
+        "Core does not read Keychain",
         "AI privacy rules remains responsible for",
     ] {
         assert_contains(API_RS, fragment);
@@ -259,11 +276,11 @@ pub fn assert_rust_contract_alignment() {
     }
 
     for fragment in [
-        "SECURE_STORAGE_ENV_PREFIX",
-        "KEYCHAIN_PREFIX",
-        "ProbeCredential::PlatformReference",
-        "key_reference: request.key_reference.as_deref()",
-        "probe_remote_provider",
+        "build_probe_plan",
+        "status_from_observation",
+        "RemoteProviderProbeAuthorization",
+        "maximum_response_body_bytes: 0",
+        "follow_redirects: false",
         "sanitized_probe_message",
         "custom_endpoint_scheme_allowed",
     ] {
@@ -296,64 +313,4 @@ fn section_between<'a>(haystack: &'a str, start: &str, end: &str) -> &'a str {
     let after_start = &haystack[start_index..];
     let end_index = after_start.find(end).expect("section end exists");
     &after_start[..end_index]
-}
-
-pub struct ProbeRuntime {
-    _lock: MutexGuard<'static, ()>,
-    output: tempfile::TempDir,
-    payload_path: PathBuf,
-}
-
-impl ProbeRuntime {
-    pub fn new(output_status: &str) -> Self {
-        let lock = PROBE_RUNTIME_LOCK
-            .lock()
-            .expect("lock remote provider probe runtime env");
-        std::env::set_var(TEST_SECRET_ENV, SECRET_VALUE);
-
-        let output = tempfile::tempdir().expect("create probe runtime directory");
-        let script_path = output.path().join("probe-runtime.sh");
-        let payload_path = output.path().join("payload.json");
-        let script = format!(
-            "#!/bin/sh\ncat > \"{}\"\nprintf '{}\\n'\n",
-            payload_path.display(),
-            output_status
-        );
-        fs::write(&script_path, script).expect("write probe runtime script");
-        make_executable(&script_path);
-        std::env::set_var(
-            "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME",
-            script_path.to_string_lossy().into_owned(),
-        );
-
-        Self {
-            _lock: lock,
-            output,
-            payload_path,
-        }
-    }
-
-    pub fn captured_payload(self) -> String {
-        fs::read_to_string(&self.payload_path).expect("read captured probe payload")
-    }
-}
-
-impl Drop for ProbeRuntime {
-    fn drop(&mut self) {
-        std::env::remove_var("AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME");
-        std::env::remove_var(TEST_SECRET_ENV);
-        let _ = self.output.path();
-    }
-}
-
-fn make_executable(path: &Path) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut permissions = fs::metadata(path)
-            .expect("read probe runtime metadata")
-            .permissions();
-        permissions.set_mode(0o700);
-        fs::set_permissions(path, permissions).expect("mark probe runtime executable");
-    }
 }

@@ -96,7 +96,6 @@ AI_RUNTIME_ENV_CONTRACT = {
     "AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME": "external",
     "AREAMATRIX_AI_TAGS_LOCAL_RUNTIME": "external",
     "AREAMATRIX_AI_TAGS_REMOTE_RUNTIME": "external",
-    "AREAMATRIX_REMOTE_PROVIDER_PROBE_RUNTIME": "installed-by-macos",
 }
 
 
@@ -309,6 +308,34 @@ def run_governance_check(root: Path | None = None) -> int:
         "dependency/license/supply-chain section",
     )
     _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "Task-loop Evidence", "task-loop evidence section")
+    _require_text(
+        root,
+        failures,
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        "架构归属|Architecture Ownership",
+        "architecture ownership section",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        "Primary feature owner",
+        "primary feature owner evidence",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        "Cross-feature / shared paths and why",
+        "cross-feature change justification",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        r"Reuse evidence \(existing callers / new callers\)",
+        "reuse caller evidence",
+    )
     _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "CODEOWNERS", "CODEOWNERS checklist")
     _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "rollback|回滚", "rollback checklist")
     _require_text(root, failures, ".github/ISSUE_TEMPLATE/bug_report.md", "数据安全影响|Data Safety Impact", "bug data safety section")
@@ -387,6 +414,7 @@ def run_governance_check(root: Path | None = None) -> int:
         "required macOS source gate",
     )
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"\./dev test macos", "macOS test gate")
+    _require_text(root, failures, ".github/workflows/macos-ci.yml", r"--coverage-gate", "Swift coverage gate")
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"swiftlint lint --strict", "SwiftLint gate")
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"swiftformat --lint", "SwiftFormat gate")
     _forbid_text(

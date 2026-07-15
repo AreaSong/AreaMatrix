@@ -84,6 +84,7 @@ struct DBRepairConfirmView: View {
         .task {
             await model.runStartupRecoveryCheckIfNeeded()
         }
+        .onDisappear(perform: model.cancelDiagnosticsExport)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("database-repair-db-repair-confirm")
     }

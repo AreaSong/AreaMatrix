@@ -34,6 +34,8 @@ final class RepositorySettingsModel: ObservableObject {
     private let coreVersionLoader: any CoreVersionLoading
     let errorMapper: any CoreErrorMapping
     private let accessibilityAnnouncer: any AccessibilityAnnouncing
+    private var pendingRepositoryPathSyncConfig: RepoConfigSnapshot?
+    private var diagnosticsGeneration = SettingsDiagnosticsGeneration()
 
     init(
         repoPath: String,
@@ -109,7 +111,9 @@ extension RepositorySettingsModel {
         repositoryActionMessage = nil
         repositoryActionError = nil
         overviewActionError = nil
+        diagnosticsGeneration.invalidate()
         diagnosticsState = .idle
+        pendingRepositoryPathSyncConfig = nil
         do {
             let config = try await loader.loadConfig(repoPath: repoPath)
             let effectiveConfig = config.withRepositoryPath(repoPath)
@@ -118,8 +122,10 @@ extension RepositorySettingsModel {
             loadedConfig = effectiveConfig
 
             if shouldSyncRepositoryPath(from: config, metadataPresence: metadataPresence) {
+                pendingRepositoryPathSyncConfig = effectiveConfig
                 do {
                     try await updater.updateConfig(repoPath: repoPath, newConfig: effectiveConfig)
+                    pendingRepositoryPathSyncConfig = nil
                 } catch {
                     syncError = await syncError(for: error)
                 }
@@ -135,6 +141,18 @@ extension RepositorySettingsModel {
         } catch {
             loadedConfig = nil
             loadState = await .failed(loadError(for: error))
+        }
+    }
+
+    func retryRepositoryPathSync() async {
+        guard let pendingConfig = pendingRepositoryPathSyncConfig else { return }
+
+        syncError = nil
+        do {
+            try await updater.updateConfig(repoPath: repoPath, newConfig: pendingConfig)
+            pendingRepositoryPathSyncConfig = nil
+        } catch {
+            syncError = await syncError(for: error)
         }
     }
 
@@ -168,11 +186,13 @@ extension RepositorySettingsModel {
 
     func requestDiagnosticsExport() {
         clearRepositoryActionFeedback()
+        guard !diagnosticsState.isCollecting else { return }
         diagnosticsState = .confirmingPrivacy
     }
 
     func cancelDiagnosticsExport() {
-        if diagnosticsState.isConfirmingPrivacy {
+        if diagnosticsState.isConfirmingPrivacy || diagnosticsState.isCollecting {
+            diagnosticsGeneration.invalidate()
             diagnosticsState = .idle
         }
     }
@@ -180,11 +200,14 @@ extension RepositorySettingsModel {
     func collectDiagnostics() async {
         guard diagnosticsState.isConfirmingPrivacy else { return }
 
+        let generation = diagnosticsGeneration.begin()
         diagnosticsState = .collecting
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            guard diagnosticsGeneration.isCurrent(generation) else { return }
             diagnosticsState = .collected(snapshot)
         } catch {
+            guard diagnosticsGeneration.isCurrent(generation) else { return }
             diagnosticsState = await .failed(diagnosticsError(for: error))
         }
     }

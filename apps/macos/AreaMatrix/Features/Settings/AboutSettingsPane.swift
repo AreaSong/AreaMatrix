@@ -85,6 +85,7 @@ struct AboutSettingsPane: View {
         .task {
             await model.load()
         }
+        .onDisappear(perform: model.cancelDiagnosticsExport)
         .confirmationDialog(
             "Collect diagnostics?",
             isPresented: diagnosticsConfirmationBinding

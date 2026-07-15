@@ -9,19 +9,18 @@ actor CoreBridge {
     private let repoURL: URL?
     private let unavailableState: CoreBridgeUnavailableState
     private let availabilityChecker: any FileAvailabilityChecking
-    let remoteProviderProbeRuntimeInstaller: any RemoteProviderProbeRuntimeInstalling
+    let remoteProviderProbePerformer: any RemoteProviderProbePerforming
 
     init(
         repoURL: URL? = nil,
         unavailableState: CoreBridgeUnavailableState = .generatedBindingsUnavailable,
         availabilityChecker: any FileAvailabilityChecking = LocalFileAvailabilityChecker(),
-        remoteProviderProbeRuntimeInstaller: any RemoteProviderProbeRuntimeInstalling =
-            RemoteProviderProbeRuntimeInstaller.shared
+        remoteProviderProbePerformer: any RemoteProviderProbePerforming = RemoteProviderProbeService.shared
     ) {
         self.repoURL = repoURL
         self.unavailableState = unavailableState
         self.availabilityChecker = availabilityChecker
-        self.remoteProviderProbeRuntimeInstaller = remoteProviderProbeRuntimeInstaller
+        self.remoteProviderProbePerformer = remoteProviderProbePerformer
     }
 
     nonisolated var state: BridgeState {

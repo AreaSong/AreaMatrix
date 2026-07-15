@@ -96,6 +96,7 @@ extension RepositorySettingsPane {
         .task {
             await reload()
         }
+        .onDisappear(perform: model.cancelDiagnosticsExport)
     }
 
     private var emptyRepositoryBody: some View {
@@ -263,6 +264,12 @@ extension RepositorySettingsPane {
                 Text(error.recovery)
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                Button("Retry path sync") {
+                    Task {
+                        await model.retryRepositoryPathSync()
+                    }
+                }
+                .accessibilityIdentifier("repository-settings-retry-path-sync")
             }
         }
     }

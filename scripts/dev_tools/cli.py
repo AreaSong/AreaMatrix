@@ -152,6 +152,16 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Pass -parallel-testing-enabled NO to xcodebuild test for CI-stable filesystem integration runs",
     )
     macos.add_argument(
+        "--enable-code-coverage",
+        action="store_true",
+        help="Pass -enableCodeCoverage YES to xcodebuild test",
+    )
+    macos.add_argument(
+        "--coverage-gate",
+        action="store_true",
+        help="Enforce documented Swift Watcher and Bridge coverage thresholds from the result bundle",
+    )
+    macos.add_argument(
         "--only-testing",
         action="append",
         default=[],
@@ -842,6 +852,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 result_bundle_path=args.result_bundle_path,
                 only_testing=args.only_testing,
                 disable_parallel_testing=args.disable_parallel_testing,
+                enable_code_coverage=args.enable_code_coverage,
+                coverage_gate=args.coverage_gate,
             )
         if args.command == "bindings" and args.bindings_command == "update":
             return run_bindings_update(root, args.udl, args.out_dir)

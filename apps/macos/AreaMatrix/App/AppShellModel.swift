@@ -22,12 +22,15 @@ final class OnboardingModel: ObservableObject {
     @Published var mainRepoRecoveryErrorMapping: CoreErrorMappingSnapshot?
     @Published var mainRepoExternalRemoval: MainRepoExternalRemovalState = .unavailable
     @Published var mainRepoDiagnostics: MainRepoDiagnosticsState = .idle
+    var mainRepoDiagnosticsGeneration = 0
     @Published var mainRepoLastOpenedAt: Int64?
     @Published var pendingExternalCreatedFileEvent: MainPendingExternalCreatedFileEvent?
     @Published var pendingTagSuggestionFocus: TagSuggestionPresentationRequest?
     @Published var isRetryingMainRepository = false
     var openingCancellationToken: UUID?
     @Published var initializationDiagnostics: InitializationDiagnosticsState = .idle
+    var initializationDiagnosticsGeneration = 0
+    var importProgressDiagnosticsGeneration = 0
     @Published var pendingImportEntry: ImportEntryRequest?
     @Published var isInitializationCancellationRequested = false
     @Published private(set) var isValidatingRepositoryPath = false

@@ -19,7 +19,7 @@ extension ClassifierSettingsModel {
             let snapshot = try await ruleEditor.listClassifierRules(repoPath: repoPath)
             classifierRuleEditor.replaceSnapshot(snapshot)
         } catch {
-            await classifierRuleEditor.markFailed(mappedClassifierRuleEditorError(error))
+            await classifierRuleEditor.markLoadFailed(mappedClassifierRuleEditorError(error))
         }
     }
 
@@ -73,7 +73,7 @@ extension ClassifierSettingsModel {
             classifierRuleEditor.replaceSnapshot(snapshot)
             publishSavedCategoryIfNeeded()
         } catch {
-            await classifierRuleEditor.markFailed(mappedClassifierRuleEditorError(error))
+            await classifierRuleEditor.markSaveFailed(mappedClassifierRuleEditorError(error))
         }
     }
 
@@ -95,7 +95,7 @@ extension ClassifierSettingsModel {
             let snapshot = try await ruleEditor.deleteClassifierRule(repoPath: repoPath, request: request)
             classifierRuleEditor.replaceSnapshot(snapshot)
         } catch {
-            await classifierRuleEditor.markFailed(mappedClassifierRuleEditorError(error))
+            await classifierRuleEditor.markSaveFailed(mappedClassifierRuleEditorError(error))
         }
     }
 

@@ -31,6 +31,7 @@ Code review 不是只看代码风格。评审必须确认：
 
 - 没有读取或对齐权威文档，却改变产品/API/安全语义。
 - `Expected New Paths` 缺失、`Forbidden Touches` 被触碰，或 task scope 扩散。
+- 新功能没有声明 primary feature owner，或跨 feature / shared 改动没有说明必要性、调用方和边界验证。
 - 生产路径存在 `unwrap()`、`panic!()`、`try!`、强制解包、静默吞错或无理由全局状态。
 - public Rust API 缺 rustdoc，复杂错误路径缺 `# Errors` 或必要示例。
 - 新依赖没有说明用途、许可证、供应链风险和替代方案。
@@ -57,7 +58,8 @@ Code review 不是只看代码风格。评审必须确认：
 
 评审者按以下顺序看：
 
-1. **范围**：PR 描述、task、manifest、ADR、CODEOWNERS 是否匹配。
+1. **范围**：PR 描述、task、manifest、ADR、CODEOWNERS 和 primary feature owner 是否匹配；跨 feature
+   或 shared 路径是否有必要性与复用证据。
 2. **设计**：是否遵循 KISS、YAGNI、高内聚低耦合；是否引入不必要抽象。
 3. **实现**：数据流、控制流、错误流是否清晰；复杂逻辑是否拆分。
 4. **安全**：路径、权限、隐私、日志、外部输入、依赖和本地文件安全是否可证明。

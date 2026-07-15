@@ -48,6 +48,7 @@ extension AdvancedSettingsPane {
         .task {
             await model.load()
         }
+        .onDisappear(perform: model.cancelDiagnosticsExport)
         .confirmationDialog(
             "Export diagnostics?",
             isPresented: diagnosticsConfirmationBinding
