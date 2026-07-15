@@ -85,6 +85,8 @@ open apps/macos/AreaMatrix.xcodeproj
 - High / Mission-Critical 改动必须说明影响、风险、验证和回滚。
 - 用户文件、DB、staging、FSEvents/iCloud、隐私、安全或 Core API 破坏性变化不能只靠口头确认。
 - task-loop 自动生成的 PASS commit 仍需 CI 和 review，不能直接视为可合并。
+- 所有变更按 [企业工作流治理基线](docs/governance/enterprise-workflow-baseline.md) 标记 L0-L4 和当前 G0-G8 门禁。
+- L3/L4、High 或 Mission-Critical 缺少独立合格复核时不得合并。
 
 ## 编码规范
 

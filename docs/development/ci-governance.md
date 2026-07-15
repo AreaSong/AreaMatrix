@@ -10,6 +10,8 @@
 
 CI 是合并前的最低共同质量线。它不能替代 review，但可以阻止明显不完整、不可复现或不可追溯的改动进入主线。
 
+企业治理检查同时验证 `ASW-EWF-001@1.0.0` 的 AreaMatrix 适配基线、G0-G8、L0-L4、治理登记册和 authoring-only 权限边界。CI 不能把外部签名、公证、独立复核、测试参与者或 AreaFlow execution 标记为完成。
+
 ## 必跑矩阵
 
 | Workflow | 目的 | 触发 |
@@ -24,6 +26,7 @@ macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.
 `MacOSGovernance*TestSupport.swift` 与 `AreaMatrixTests` target 的 Sources membership 双向核对，
 防止治理测试只有文件引用、没有进入可执行 XCTest target 时被 CI 静默漏跑。
 它还会核对 Core 与 macOS 之间的 `AREAMATRIX_*_RUNTIME` key 合同，防止新增或改名 runtime 后只有一侧更新。
+它同时检查 `docs/governance/` 的固定源事实、上游版本/hash、owner、复审字段、RAID、G0-G8、PR 模板字段，以及 promotion apply / execution / runner 仍被 shim 阻断。
 
 ## 本地等价检查
 

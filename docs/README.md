@@ -6,6 +6,13 @@
 
 功能、界面、API、配置或安全边界发生变化时，对应长期文档必须在同一变更中更新。历史计划、任务、执行证据、收口决策和分发记录从 [workflow versions](../workflow/versions/README.md) 查阅；它们不参与当前产品导航。未实现且不属于正式产品的方向保存在未来 workflow，不得写成可用能力。
 
+## 治理
+
+- [企业工作流治理基线](governance/enterprise-workflow-baseline.md)
+- [项目章程](governance/project-charter.md)
+- [治理登记册](governance/governance-register.yaml)
+- [运行与能力生命周期](governance/operations-lifecycle.md)
+
 ## 开始使用
 
 - [用户指南](user-guide/README.md)
@@ -112,6 +119,7 @@
 5. 用户文件、DB、导入、恢复、iCloud 和远程 AI 文档必须写清副作用与取消或恢复路径。
 6. 每篇 Markdown 使用一级标题、摘要、正文和 `Related`，代码块注明语言。
 7. 文档变更后检查相对链接、导航完整性和长期措辞。
+8. 长期治理文档的 owner、状态和复审条件登记在 `governance/governance-register.yaml`；新建或实质修改时再逐步加入内嵌元数据。
 
 ## Related
 

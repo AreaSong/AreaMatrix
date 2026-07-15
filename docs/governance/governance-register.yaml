@@ -1,0 +1,132 @@
+schema_version: 1
+id: AM-GOV-REGISTER-001
+status: active
+owner: "@AreaSong"
+updated: "2026-07-15"
+upstream:
+  spec_id: ASW-EWF-001
+  version: 1.0.0
+  source_task_id: 019f63ff-b316-79d2-a0cd-215090bcea1e
+  local_source: /Users/as/Documents/New project 2/docs/governance/ASW-EWF-001-enterprise-workflow-baseline.md
+  sha256: ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1
+  adoption: adapted-complete
+
+raci:
+  accountable: "@AreaSong"
+  roles:
+    executive_sponsor: "@AreaSong"
+    product_owner: "@AreaSong"
+    technical_owner: "@AreaSong"
+    data_owner: "@AreaSong"
+    security_coordinator: "@AreaSong"
+    release_owner: "@AreaSong"
+  independent_review:
+    required_for:
+      - L3
+      - L4
+      - High
+      - Mission-Critical
+    missing_reviewer_behavior: blocked
+
+documents:
+  - id: AM-GOV-001
+    path: docs/governance/enterprise-workflow-baseline.md
+    authority: governance-adaptation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-15"
+    review_cycle: quarterly
+    review_triggers:
+      - upstream-spec-changed
+      - workflow-gates-changed
+      - project-risk-boundary-changed
+  - id: AM-CHARTER-001
+    path: docs/governance/project-charter.md
+    authority: project-charter
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-15"
+    review_cycle: quarterly
+    review_triggers:
+      - product-scope-changed
+      - ownership-changed
+      - distribution-model-changed
+  - id: AM-OPS-001
+    path: docs/governance/operations-lifecycle.md
+    authority: operations-and-retirement
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-15"
+    review_cycle: quarterly
+    review_triggers:
+      - remote-service-added
+      - release-channel-changed
+      - incident-control-changed
+
+raid:
+  - id: AM-RISK-001
+    type: risk
+    status: open
+    severity: high
+    owner: "@AreaSong"
+    summary: Single-maintainer role concentration can prevent independent review.
+    mitigation: Keep L3/L4 changes blocked until a qualified independent reviewer is recorded.
+    due: ongoing
+    escalation: Any L3/L4 or Mission-Critical change enters G3 or G5.
+    close_evidence: Named reviewer and completed independent review evidence.
+  - id: AM-DEP-001
+    type: dependency
+    status: blocked-external
+    severity: high
+    owner: "@AreaSong"
+    summary: Formal Apple distribution requires external signing and notarization capability.
+    mitigation: Keep formal distribution residuals open and do not relabel previews as releases.
+    due: before-formal-distribution
+    escalation: G6 formal distribution review.
+    close_evidence: Developer ID, notarization, stapling, spctl, checksum and clean-Mac evidence.
+  - id: AM-DEP-002
+    type: dependency
+    status: blocked-external
+    severity: medium
+    owner: "@AreaSong"
+    summary: Trusted preview participant invitation and feedback operations require external participants.
+    mitigation: Keep the related v1 feedback residual open until real invitation and triage evidence exists.
+    due: before-formal-test-distribution
+    escalation: G6 trusted preview distribution decision.
+    close_evidence: Tester roster, invitation, feedback route and triage owner evidence.
+  - id: AM-DEP-003
+    type: dependency
+    status: deferred
+    severity: high
+    owner: "@AreaSong"
+    summary: AreaFlow execution cutover and live mapping are not authorized.
+    mitigation: Permit governance authoring only; block promotion apply, execution and task-loop writes.
+    due: before-v2-live-execution
+    escalation: Any request to write execution state or start runner commands.
+    close_evidence: Explicit execution authorization, live mapping, recovery plan and passing boundary tests.
+  - id: AM-DEP-004
+    type: dependency
+    status: deferred
+    severity: medium
+    owner: "@AreaSong"
+    summary: GitHub remote CI and branch protection are external merge controls.
+    mitigation: Run local equivalent gates and require remote CI before merge.
+    due: before-merge
+    escalation: G5 merge readiness review.
+    close_evidence: Required GitHub checks and branch protection evidence.
+
+exceptions: []
+
+capabilities:
+  - id: AM-CAP-GOVERNANCE
+    owner: "@AreaSong"
+    status: active
+    success_metrics:
+      - ASW applicability matrix has no unclassified domain.
+      - G0-G8 have unique AreaMatrix landing points.
+      - Governance checks reject missing owners and widened execution permissions.
+    operational_targets:
+      - Quarterly source verification.
+      - Governance CI on every PR and main push.
+    retirement_conditions:
+      - A superseding governance baseline is accepted and migration evidence is recorded.

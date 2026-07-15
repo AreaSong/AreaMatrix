@@ -459,6 +459,111 @@ def _check_ai_runtime_environment_contract(root: Path, failures: FailureCollecto
         )
 
 
+def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector) -> None:
+    from .changes import ChangeYAMLError, parse_yaml_subset
+
+    baseline_path = root / "docs/governance/enterprise-workflow-baseline.md"
+    register_path = root / "docs/governance/governance-register.yaml"
+    if not baseline_path.is_file() or not register_path.is_file():
+        return
+
+    baseline = _read(baseline_path)
+    for gate in range(9):
+        if not re.search(rf"\bG{gate}\b", baseline):
+            failures.fail(f"enterprise governance baseline is missing G{gate}")
+    applicability_rows = re.findall(r"(?m)^\|\s*(?:[1-9]|[12][0-9]|3[0-7])\s+[^|]+\|", baseline)
+    if len(applicability_rows) != 37:
+        failures.fail(f"enterprise governance applicability matrix must classify 37 domains, found {len(applicability_rows)}")
+
+    try:
+        register = parse_yaml_subset(_read(register_path), register_path)
+    except ChangeYAMLError as exc:
+        failures.fail(f"invalid enterprise governance register: {exc}")
+        return
+    if not isinstance(register, dict):
+        failures.fail("enterprise governance register must be a mapping")
+        return
+
+    upstream = register.get("upstream")
+    expected_upstream = {
+        "spec_id": "ASW-EWF-001",
+        "version": "1.0.0",
+        "sha256": "ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1",
+        "adoption": "adapted-complete",
+    }
+    if not isinstance(upstream, dict):
+        failures.fail("enterprise governance register upstream must be a mapping")
+    else:
+        for key, value in expected_upstream.items():
+            if str(upstream.get(key)) != value:
+                failures.fail(f"enterprise governance register upstream.{key} must be {value}")
+
+    raci = register.get("raci")
+    if not isinstance(raci, dict) or raci.get("accountable") != "@AreaSong":
+        failures.fail("enterprise governance register must declare @AreaSong accountable")
+    else:
+        independent = raci.get("independent_review")
+        if not isinstance(independent, dict) or independent.get("missing_reviewer_behavior") != "blocked":
+            failures.fail("enterprise governance independent review must fail closed")
+
+    documents = register.get("documents")
+    if not isinstance(documents, list) or len(documents) < 3:
+        failures.fail("enterprise governance register must contain at least three source documents")
+    else:
+        for entry in documents:
+            if not isinstance(entry, dict):
+                failures.fail("enterprise governance document entry must be a mapping")
+                continue
+            for key in ["id", "path", "authority", "owner", "status", "last_verified", "review_cycle", "review_triggers"]:
+                if not entry.get(key):
+                    failures.fail(f"enterprise governance document entry is missing {key}")
+            path = entry.get("path")
+            if isinstance(path, str) and not (root / path).is_file():
+                failures.fail(f"enterprise governance document does not exist: {path}")
+
+    raid = register.get("raid")
+    if not isinstance(raid, list) or not raid:
+        failures.fail("enterprise governance register RAID must be non-empty")
+    else:
+        by_id = {str(entry.get("id")): entry for entry in raid if isinstance(entry, dict)}
+        required_ids = ["AM-RISK-001", "AM-DEP-001", "AM-DEP-002", "AM-DEP-003", "AM-DEP-004"]
+        for entry_id in required_ids:
+            entry = by_id.get(entry_id)
+            if not isinstance(entry, dict):
+                failures.fail(f"enterprise governance RAID is missing {entry_id}")
+                continue
+            for key in ["type", "status", "severity", "owner", "mitigation", "due", "escalation", "close_evidence"]:
+                if not entry.get(key):
+                    failures.fail(f"enterprise governance RAID {entry_id} is missing {key}")
+        for entry_id in required_ids[1:]:
+            entry = by_id.get(entry_id, {})
+            if entry.get("status") not in {"blocked-external", "deferred"}:
+                failures.fail(f"enterprise dependency {entry_id} must remain blocked-external or deferred")
+
+    status_path = root / ".areaflow/status.json"
+    try:
+        status = json.loads(_read(status_path))
+    except (OSError, json.JSONDecodeError) as exc:
+        failures.fail(f"invalid AreaFlow status projection: {exc}")
+        return
+    compatibility = status.get("compatibility")
+    compatibility = compatibility if isinstance(compatibility, dict) else {}
+    if compatibility.get("shim_lifecycle_state") != "authoring_only_shim":
+        failures.fail("AreaFlow shim lifecycle state must be authoring_only_shim")
+    blocked_values = compatibility.get("blocked_commands")
+    blocked = set(blocked_values) if isinstance(blocked_values, list) else set()
+    required_blocked = {"./task-loop run", "promotion apply", "write execution"}
+    if not required_blocked.issubset(blocked):
+        failures.fail(f"AreaFlow status projection is missing blocked commands: {sorted(required_blocked - blocked)}")
+
+    execution_root = root / "workflow/versions/v2/execution"
+    execution_files = sorted(path.relative_to(execution_root) for path in execution_root.rglob("*") if path.is_file())
+    if execution_files != [Path("README.md")]:
+        failures.fail(f"v2 execution must remain README-only, found {[str(path) for path in execution_files]}")
+    _require_text(root, failures, "workflow/versions/v2/promotion/promotion.yaml", r"live_mapping:\s+pending", "v2 pending live mapping")
+    _require_text(root, failures, "workflow/versions/v2/promotion/approval.yaml", r"approved:\s+false", "v2 promotion approval block")
+
+
 def run_governance_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     failures = FailureCollector()
@@ -478,6 +583,13 @@ def run_governance_check(root: Path | None = None) -> int:
         "docs/development/git-workflow.md",
         "docs/development/dependency-policy.md",
         "docs/development/ci-governance.md",
+        "docs/governance/enterprise-workflow-baseline.md",
+        "docs/governance/project-charter.md",
+        "docs/governance/governance-register.yaml",
+        "docs/governance/operations-lifecycle.md",
+        "workflow/versions/v2/discussion/decisions.yaml",
+        "workflow/versions/v2/promotion/promotion.yaml",
+        "workflow/versions/v2/promotion/approval.yaml",
         "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md",
     ]
     for rel_path in required_files:
@@ -486,6 +598,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _check_macos_governance_test_membership(root, failures)
     _check_ai_runtime_environment_contract(root, failures)
     _check_feature_evolution_evidence(root, failures)
+    _check_enterprise_governance_baseline(root, failures)
 
     _require_text(root, failures, "SECURITY.md", "GitHub Security Advisory", "private security advisory reporting")
     _forbid_text(root, failures, "SECURITY.md", "security@<your-domain>", "placeholder security email")
@@ -531,6 +644,9 @@ def run_governance_check(root: Path | None = None) -> int:
     )
     _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "CODEOWNERS", "CODEOWNERS checklist")
     _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "rollback|回滚", "rollback checklist")
+    _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "ASW change level", "ASW change level field")
+    _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "Current gate", "G0-G8 current gate field")
+    _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "Retirement / deprecation impact", "retirement impact field")
     _require_text(root, failures, ".github/ISSUE_TEMPLATE/bug_report.md", "数据安全影响|Data Safety Impact", "bug data safety section")
     _require_text(root, failures, ".github/ISSUE_TEMPLATE/bug_report.md", "Security Advisory", "private security disclosure reminder")
     _require_text(root, failures, ".github/ISSUE_TEMPLATE/feature_request.md", "本地优先|Local-first", "feature local-first section")

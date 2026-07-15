@@ -18,12 +18,16 @@ Code review 不是只看代码风格。评审必须确认：
 
 ## 评审分级
 
+评审同时使用 `docs/governance/enterprise-workflow-baseline.md` 的 L0-L4 变更等级和 G0-G8 生命周期门禁。Low/Medium/High/Mission-Critical 是 review 风险视角，L0-L4 是企业治理视角，两者都必须填写，不能互相替代。
+
 | 等级 | 典型改动 | 要求 |
 |---|---|---|
 | Low | 文案、注释、低风险 docs | 作者自测 + 一位维护者可快速合并 |
 | Medium | 单模块功能、测试、脚本 | 至少 1 位维护者 review，相关测试通过 |
 | High | Core API、UDL、跨层 wiring、DB、文件系统行为 | 至少 1 位熟悉该域的维护者 review，必须有验证证据 |
 | Mission-Critical | 用户文件破坏性风险、migration、staging recovery、隐私、安全 | 先说明影响、风险、验证、回滚；不得只凭口头判断合并 |
+
+L3/L4、High 或 Mission-Critical 需要独立合格复核。当前只有一位维护者时，缺少复核者必须保持 blocked，并登记到治理 RAID；不得通过自批把职责分离标记为已满足。
 
 ## 阻断项
 
@@ -39,6 +43,8 @@ Code review 不是只看代码风格。评审必须确认：
 - 测试只覆盖 happy path，缺少关键失败路径、边界条件或回归用例。
 - dry-run、mock-only、fixture-only 或截图被当成真实闭环证据。
 - Git checkpoint 混入旧改动，或者 PASS task 没有可追溯 progress/log/summary/commit 证据。
+- PR 未声明 ASW 变更等级、当前 G0-G8 门禁、源事实、RAID/外部依赖、兼容性、回滚或退役影响。
+- 外部签名、公证、测试参与者、远端 CI、独立复核或 AreaFlow execution 没有证据却被标记为完成。
 
 ## 评审输出格式
 
@@ -67,6 +73,7 @@ Code review 不是只看代码风格。评审必须确认：
 6. **文档**：Core API、UDL、README、ADR、CHANGELOG 和 prompt manifest 是否需要同步；UDL 变化后
    `./dev bindings verify` 是否通过。
 7. **CI**：必须通过相关 workflow；失败不能用“本地可以”替代。
+8. **生命周期**：确认当前 G0-G8 门禁、发布后观察和 G8 退役影响；无影响时写明依据。
 
 ## Task-loop PASS 后评审
 

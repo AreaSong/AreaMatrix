@@ -3,7 +3,7 @@
   "project_id": "areamatrix",
   "project_name": "AreaMatrix",
   "area_flow_url": "http://127.0.0.1:3847/projects/areamatrix",
-  "cutover_phase": "import_mirror",
+  "cutover_phase": "local_governance_authoring",
   "active_versions": [
     {
       "display_label": "v1-mvp",
@@ -14,13 +14,32 @@
         "label": "637/637 v1 execution tasks completed",
         "blocked": true
       }
+    },
+    {
+      "display_label": "v2",
+      "version_kind": "workflow_version",
+      "lifecycle_status": "planning",
+      "rough_progress": {
+        "percent": 100,
+        "label": "governance authoring complete; live mapping pending",
+        "blocked": true
+      }
     }
   ],
   "last_synced_at": "2026-07-13T05:48:34Z",
   "source_snapshot_hash": "35f51913af9834e7e21540c866e06f87150eb2cdd109e5f6457e8e659a363a3a",
   "compatibility": {
-    "shim_lifecycle_state": "read_only_shim",
+    "shim_lifecycle_state": "authoring_only_shim",
     "offline_source": ".areaflow/status.json",
+    "allowed_authoring_commands": [
+      "workflow init --write",
+      "workflow discuss init --write",
+      "workflow baseline write",
+      "workflow middle init --write",
+      "workflow plan --write",
+      "workflow queue --write",
+      "workflow promote preview --write"
+    ],
     "blocked_commands": [
       "./task-loop run",
       "./task-loop resume-stale",
@@ -28,7 +47,7 @@
       "./task-loop reset-progress",
       "./task-loop clear-stale",
       "./task-loop drain",
-      "changes generate --write",
+      "changes generate --write outside v2 drafts",
       "promotion apply",
       "write execution"
     ]

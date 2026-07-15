@@ -479,7 +479,7 @@ def check_areaflow_read_only_changes_shim(h: Harness) -> None:
 
 def check_areaflow_read_only_task_loop_shim(h: Harness) -> None:
     task_status = h.run([h.task_loop, "status"]).stdout
-    assert_contains(task_status, "AreaFlow read-only shim: task-loop status", "shim task-loop status")
+    assert_contains(task_status, f"AreaFlow {areaflow_shim.LOCAL_SHIM_STATE.replace('_', '-')[:-5]} shim: task-loop status", "shim task-loop status")
     assert_contains(task_status, "legacy_runner_started: false", "shim task-loop legacy runner")
     assert_contains(task_status, "run_command: blocked", "shim task-loop run command")
 
@@ -509,6 +509,59 @@ def check_areaflow_read_only_shim(h: Harness) -> None:
         raise CheckFailure(f"unexpected shim lifecycle state: {areaflow_shim.LOCAL_SHIM_STATE}")
     check_areaflow_read_only_workflow_shim(h)
     check_areaflow_read_only_changes_shim(h)
+    check_areaflow_read_only_task_loop_shim(h)
+
+
+def check_areaflow_authoring_only_shim(h: Harness) -> None:
+    log("AreaFlow authoring-only shim")
+    if areaflow_shim.LOCAL_SHIM_STATE != "authoring_only_shim":
+        raise CheckFailure(f"unexpected shim lifecycle state: {areaflow_shim.LOCAL_SHIM_STATE}")
+
+    status = h.run([h.dev, "workflow", "status"]).stdout
+    assert_contains(status, "AreaFlow authoring-only shim: workflow status fallback", "authoring shim status")
+    assert_contains(status, "execution_forwarding: blocked", "authoring shim execution block")
+    assert_contains(status, "task_loop_run_forwarding: blocked", "authoring shim runner block")
+
+    init_preview = h.run([h.dev, "workflow", "init", "--version", "v9"]).stdout
+    assert_contains(init_preview, "Workflow version init", "authoring shim native init preview")
+    assert_contains(init_preview, "preview only; no files written", "authoring shim init preview no writes")
+
+    init_out = h.tmp / "authoring-v9"
+    init_write = h.run(
+        [h.dev, "workflow", "init", "--version", "v9", "--write", "--out-dir", str(init_out)]
+    ).stdout
+    assert_contains(init_write, "workflow init: wrote files", "authoring shim init write")
+    assert_exists(init_out / "version.yaml", "authoring shim version skeleton")
+    assert_exists(init_out / "execution/README.md", "authoring shim execution boundary readme")
+    assert_not_exists(init_out / "execution/_shared/progress.json", "authoring shim no progress")
+
+    if areaflow_shim.handle_changes_command(
+        "generate",
+        ["generate", "--version", "v2", "--write"],
+        h.root,
+    ) is not None:
+        raise CheckFailure("v2 draft authoring should be allowed")
+    outside_buffer = StringIO()
+    with redirect_stdout(outside_buffer):
+        outside_result = areaflow_shim.handle_changes_command(
+            "generate",
+            ["generate", "--version", "v2", "--write", "--out-dir", str(h.tmp / "outside")],
+            h.root,
+        )
+    if outside_result != 2:
+        raise CheckFailure(f"outside v2 draft write returned {outside_result}, expected 2")
+
+    apply_write = h.run(
+        [h.dev, "workflow", "promote", "--version", "v-template", "apply", "--write"],
+        check=False,
+    )
+    if apply_write.returncode != 2:
+        raise CheckFailure(f"promotion apply returned {apply_write.returncode}, expected 2")
+    assert_contains(
+        apply_write.stdout + apply_write.stderr,
+        "dev write command blocked",
+        "authoring shim promotion apply block",
+    )
     check_areaflow_read_only_task_loop_shim(h)
 
 
@@ -1815,8 +1868,11 @@ def run_check(root_dir: Path) -> int:
         try:
             check_static(harness)
             check_repo_health(harness)
-            if areaflow_shim.LOCAL_SHIM_STATE == "read_only_shim":
-                check_areaflow_read_only_shim(harness)
+            if areaflow_shim.LOCAL_SHIM_STATE in {"read_only_shim", "authoring_only_shim"}:
+                if areaflow_shim.LOCAL_SHIM_STATE == "read_only_shim":
+                    check_areaflow_read_only_shim(harness)
+                else:
+                    check_areaflow_authoring_only_shim(harness)
                 check_lightweight_tasks_and_backlog(harness)
                 check_dev_home(harness)
                 check_git_helpers(harness)

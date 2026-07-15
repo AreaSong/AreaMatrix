@@ -49,6 +49,8 @@ docs
 - residual ledger 不能写 live execution、`progress.json`、task-loop logs、runner lock、checkpoint 或 run summaries，也不能把 reference-only / template-only / accepted-exception 自动转成任务。
 - promotion preview 只是映射预演，不等于真实 promote/apply。
 - 产品行为仍以 `docs/` 为源事实；workflow 只能记录、拆分和追踪，不替代 docs。
+- 当前 `authoring_only_shim` 只允许 v2 治理 discussion、baseline、middle-layer、changes、plans、drafts、queue 和 promotion preview；不得把该权限解释为 execution cutover。
+- `workflow promote approve/apply`、projection/closeout 写入、execution 状态和 task-loop runner 继续硬阻断。
 
 ## 验证
 

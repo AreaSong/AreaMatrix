@@ -14,7 +14,8 @@
 2. `.codex/` 只承载 Codex 运行材料，不作为业务规则权威来源。
 3. `workflow/versions/<version>/execution/` 是任务执行边界，不替代长期治理规则。
 4. 高风险边界必须显式记录，不能只靠临场判断。
-5. 企业治理规则先落到 `CODE_REVIEW.md`、`SECURITY.md` 和 `docs/development/`，再同步到 `.codex/` skills 或 prompt 门禁。
+5. 企业治理适配先落到 `docs/governance/`，评审、安全、CI 和 Codex 材料只作为执行适配器。
+6. `ASW-EWF-001@1.0.0` 的项目落点、G0-G8、RACI、RAID 和外部依赖以 `docs/governance/` 为准。
 
 ## Live 主线保护
 
@@ -53,3 +54,5 @@ AGENTS.md / .ai-governance
 - 代码评审：[../CODE_REVIEW.md](../CODE_REVIEW.md)
 - 安全政策：[../SECURITY.md](../SECURITY.md)
 - CI 治理：[../docs/development/ci-governance.md](../docs/development/ci-governance.md)
+- 企业治理基线：[../docs/governance/enterprise-workflow-baseline.md](../docs/governance/enterprise-workflow-baseline.md)
+- 治理登记册：[../docs/governance/governance-register.yaml](../docs/governance/governance-register.yaml)

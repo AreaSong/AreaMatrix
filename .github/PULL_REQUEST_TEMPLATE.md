@@ -30,6 +30,17 @@ Thanks for the PR! Please fill out the template below.
 - [ ] 测试 / Tests
 - [ ] CI / 工程化 / CI / Tooling
 
+## 企业治理 / Enterprise Governance
+
+- ASW change level (`L0`-`L4`):
+- Current gate (`G0`-`G8`):
+- Source-of-truth IDs / paths:
+- RAID or external dependency IDs:
+- Independent reviewer required / available:
+- Compatibility impact:
+- Rollout / stop condition:
+- Retirement / deprecation impact:
+
 ## 架构归属 / Architecture Ownership
 
 <!-- 新功能或 macOS 结构变更必须填写；纯文档或仓库外层工具改动可写 N/A。 -->
@@ -90,6 +101,9 @@ Thanks for the PR! Please fill out the template below.
 - [ ] 我已说明安全、隐私、用户文件、DB、staging、iCloud 或权限影响
 - [ ] 新增依赖已按 [dependency-policy.md](../docs/development/dependency-policy.md) 说明许可证和供应链风险
 - [ ] CI / governance checks 已通过，或已在备注中说明阻塞原因
+- [ ] 我已填写 ASW 变更等级、G0-G8 门禁、源事实和 RAID / 外部依赖
+- [ ] L3/L4、High 或 Mission-Critical 已有独立合格复核；缺少时保持 blocked
+- [ ] 我没有把签名、公证、测试参与者、远端 CI 或 AreaFlow execution 虚假标记为已完成
 - [ ] CODEOWNERS 覆盖的维护者已被请求评审
 - [ ] 如为破坏性变更，已说明 migration / rollback / compatibility
 - [ ] 这个 PR 不引入未授权的第三方资源 / 商业 logo

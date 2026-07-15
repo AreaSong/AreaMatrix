@@ -1,8 +1,7 @@
-"""Read-only AreaFlow compatibility shim for AreaMatrix.
+"""Authoring-only AreaFlow compatibility shim for AreaMatrix.
 
-This helper is intentionally small: it can read AreaFlow query surfaces or the
-local `.areaflow/status.json` projection, but it must not write workflow
-versions, progress, logs, checkpoints, or start task execution.
+The shim permits local workflow planning artifacts while keeping promotion
+apply, execution state, progress, logs, checkpoints, and task execution blocked.
 """
 
 from __future__ import annotations
@@ -19,7 +18,7 @@ from typing import Any, Sequence
 
 PROJECT_KEY = "areamatrix"
 DEFAULT_API_BASE = "http://127.0.0.1:3847/api/v1"
-LOCAL_SHIM_STATE = "read_only_shim"
+LOCAL_SHIM_STATE = "authoring_only_shim"
 TASK_LOOP_BLOCKED_COMMANDS = {
     "run",
     "resume-stale",
@@ -35,7 +34,7 @@ STATUS_BLOCKED_COMMANDS = {
     "./task-loop reset-progress",
     "./task-loop clear-stale",
     "./task-loop drain",
-    "changes generate --write",
+    "changes generate --write outside v2 drafts",
     "promotion apply",
     "write execution",
 }
@@ -43,6 +42,16 @@ WORKFLOW_WRITE_SUBCOMMANDS = {
     ("baseline", "write"),
     ("project", "write"),
     ("closeout", "write"),
+}
+AUTHORING_WORKFLOW_COMMANDS = {
+    "init",
+    "discuss",
+    "baseline",
+    "middle",
+    "plan",
+    "drafts",
+    "queue",
+    "promote",
 }
 
 
@@ -84,7 +93,7 @@ def area_flow_api_base(status: dict[str, Any] | None = None) -> str:
 
 def api_get(path: str, status: dict[str, Any] | None = None) -> tuple[dict[str, Any] | None, str]:
     if os.environ.get("AREAFLOW_SHIM_ALLOW_LOCAL_API") != "1":
-        return None, "AreaFlow API disabled by read-only shim; set AREAFLOW_SHIM_ALLOW_LOCAL_API=1 to opt in"
+        return None, "AreaFlow API disabled by local shim; set AREAFLOW_SHIM_ALLOW_LOCAL_API=1 to opt in"
     url = f"{area_flow_api_base(status)}{path}"
     try:
         with urllib.request.urlopen(url, timeout=1.5) as response:
@@ -146,7 +155,7 @@ def _active_version_lines(status: dict[str, Any]) -> list[str]:
 def print_status_projection_summary(
     root: Path | None = None,
     *,
-    heading: str = "AreaFlow read-only shim status",
+    heading: str = "AreaFlow authoring-only shim status",
 ) -> int:
     status, error = load_status_projection(root)
     print(heading)
@@ -175,7 +184,7 @@ def print_status_projection_summary(
 
 
 def print_json_payload(label: str, payload: dict[str, Any]) -> int:
-    print(f"AreaFlow read-only shim: {label}")
+    print(f"AreaFlow authoring-only shim: {label}")
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
@@ -187,10 +196,10 @@ def workflow_status(root: Path | None = None) -> int:
         return print_json_payload("workflow status from AreaFlow API", payload)
     output, cli_error = cli_query(["project", "summary", PROJECT_KEY, "--json"])
     if output:
-        print("AreaFlow read-only shim: workflow status from AreaFlow CLI")
+        print("AreaFlow authoring-only shim: workflow status from AreaFlow CLI")
         print(output)
         return 0
-    rc = print_status_projection_summary(root, heading="AreaFlow read-only shim: workflow status fallback")
+    rc = print_status_projection_summary(root, heading="AreaFlow authoring-only shim: workflow status fallback")
     print(f"- api_status: {api_error}")
     print(f"- cli_status: {cli_error}")
     return rc
@@ -198,10 +207,10 @@ def workflow_status(root: Path | None = None) -> int:
 
 def workflow_doctor(root: Path | None = None) -> int:
     status, error = load_status_projection(root)
-    print("AreaFlow read-only shim: workflow doctor")
+    print("AreaFlow authoring-only shim: workflow doctor")
     print(f"- local_shim_lifecycle_state: {LOCAL_SHIM_STATE}")
     print("- native_workflow_doctor: skipped")
-    print("- native_workflow_doctor_reason: read-only shim does not run native doctor without explicit authorization")
+    print("- native_workflow_doctor_reason: compatibility projection check only")
     print("- task_loop_run_forwarding: blocked")
     if status is None:
         print(f"- status_projection: fail ({error})")
@@ -248,16 +257,16 @@ def workflow_init(args: Sequence[str], root: Path | None = None) -> int:
         elif value.startswith("--version="):
             version = value.split("=", 1)[1]
     if "--write" in values:
-        print("AreaFlow read-only shim: workflow init blocked")
+        print("AreaFlow authoring-only shim: workflow init blocked")
         print("- reason: Package B does not authorize writing workflow/versions/**")
         print("- command: ./dev workflow init --write")
         print("- next: request a separate AreaFlow authoring/cutover approval")
         return 2
     if not version:
-        print("AreaFlow read-only shim: workflow init requires --version <version>")
+        print("AreaFlow authoring-only shim: workflow init requires --version <version>")
         return 2
     status, _ = load_status_projection(root)
-    print("AreaFlow read-only shim: workflow init preview")
+    print("AreaFlow authoring-only shim: workflow init preview")
     print(f"- version: {version}")
     print("- local_write: false")
     print("- workflow_versions_write: blocked")
@@ -269,7 +278,7 @@ def workflow_init(args: Sequence[str], root: Path | None = None) -> int:
 
 def workflow_open(root: Path | None = None) -> int:
     status, _ = load_status_projection(root)
-    print("AreaFlow read-only shim: workflow open")
+    print("AreaFlow authoring-only shim: workflow open")
     print(f"- area_flow_url: {area_flow_project_url(status)}")
     print("- browser_opened: false")
     print("- note: open the AreaFlow URL manually if the local service is running")
@@ -277,15 +286,15 @@ def workflow_open(root: Path | None = None) -> int:
 
 
 def task_loop_status(root: Path | None = None) -> int:
-    rc = print_status_projection_summary(root, heading="AreaFlow read-only shim: task-loop status")
+    rc = print_status_projection_summary(root, heading="AreaFlow authoring-only shim: task-loop status")
     print("- legacy_runner_started: false")
     print("- run_command: blocked")
     return rc
 
 
 def block_task_loop_command(command: str) -> int:
-    print(f"AreaFlow read-only shim: ./task-loop {command} blocked")
-    print("- reason: Package B allows read-only shim only")
+    print(f"AreaFlow authoring-only shim: ./task-loop {command} blocked")
+    print("- reason: local cutover authorizes planning artifacts only")
     print("- execution_forwarding: disabled")
     print("- legacy_runner_started: false")
     print("- progress_written: false")
@@ -302,13 +311,37 @@ def workflow_write_requested(command: str, args: Sequence[str]) -> bool:
     return any(command == parent and child in values for parent, child in WORKFLOW_WRITE_SUBCOMMANDS)
 
 
+def option_value(args: Sequence[str], option: str) -> str:
+    values = list(args)
+    for index, value in enumerate(values):
+        if value == option and index + 1 < len(values):
+            return values[index + 1]
+        if value.startswith(f"{option}="):
+            return value.split("=", 1)[1]
+    return ""
+
+
+def v2_draft_write_allowed(args: Sequence[str], root: Path) -> bool:
+    if option_value(args, "--version") != "v2":
+        return False
+    configured = option_value(args, "--out-dir")
+    target = Path(configured) if configured else root / "workflow/versions/v2/drafts"
+    target = target if target.is_absolute() else root / target
+    allowed = (root / "workflow/versions/v2/drafts").resolve()
+    try:
+        target.resolve().relative_to(allowed)
+    except ValueError:
+        return False
+    return True
+
+
 def block_dev_write_command(surface: str, command: str, args: Sequence[str]) -> int:
     display_args = list(args)
     if display_args[:1] == [command]:
         display_args = display_args[1:]
     printable = " ".join(["./dev", surface, command, *display_args]).strip()
-    print("AreaFlow read-only shim: dev write command blocked")
-    print("- reason: Package B allows read-only shim only")
+    print("AreaFlow authoring-only shim: dev write command blocked")
+    print("- reason: local cutover authorizes planning artifacts only")
     print(f"- command: {printable}")
     print("- local_write: false")
     print("- workflow_versions_write: blocked")
@@ -316,7 +349,7 @@ def block_dev_write_command(surface: str, command: str, args: Sequence[str]) -> 
     print("- progress_written: false")
     print("- logs_written: false")
     print("- checkpoint_written: false")
-    print("- next: request a separate AreaFlow authoring/cutover approval")
+    print("- next: request explicit execution cutover authorization")
     return 2
 
 
@@ -327,20 +360,22 @@ def block_workflow_write_command(command: str, args: Sequence[str]) -> int:
 def handle_workflow_command(command: str, args: Sequence[str], root: Path | None = None) -> int | None:
     if command == "status":
         return workflow_status(root)
-    if command == "doctor":
-        return workflow_doctor(root)
-    if command == "init":
-        return workflow_init(args, root)
     if command == "open":
         return workflow_open(root)
-    if workflow_write_requested(command, args):
+    values = list(args)
+    if command == "promote" and workflow_write_requested(command, values):
+        if "approve" in values or "apply" in values:
+            return block_workflow_write_command(command, values)
+    if workflow_write_requested(command, values) and command not in AUTHORING_WORKFLOW_COMMANDS:
         return block_workflow_write_command(command, args)
     return None
 
 
 def handle_changes_command(command: str, args: Sequence[str], root: Path | None = None) -> int | None:
-    _ = root
     if command == "generate" and workflow_write_requested(command, args):
+        resolved_root = (root or project_root()).resolve()
+        if v2_draft_write_allowed(args, resolved_root):
+            return None
         return block_dev_write_command("changes", command, args)
     return None
 

@@ -17,6 +17,77 @@ from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
+    def _write_enterprise_governance_fixture(self, root: Path, *, dependency_status: str = "deferred") -> None:
+        governance = root / "docs/governance"
+        governance.mkdir(parents=True)
+        rows = "\n".join(f"| {number} Domain | 满足 | evidence |" for number in range(1, 38))
+        (governance / "enterprise-workflow-baseline.md").write_text(
+            "# Baseline\n\n" + " ".join(f"G{gate}" for gate in range(9)) + "\n" + rows + "\n",
+            encoding="utf-8",
+        )
+        for name in ["project-charter.md", "operations-lifecycle.md"]:
+            (governance / name).write_text(f"# {name}\n", encoding="utf-8")
+        document_entries = "\n".join(
+            f"""  - id: DOC-{index}
+    path: docs/governance/{path}
+    authority: governance
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-15"
+    review_cycle: quarterly
+    review_triggers:
+      - changed
+"""
+            for index, path in enumerate(
+                ["enterprise-workflow-baseline.md", "project-charter.md", "operations-lifecycle.md"],
+                start=1,
+            )
+        )
+        raid_entries = "\n".join(
+            f"""  - id: {entry_id}
+    type: dependency
+    status: {"open" if entry_id == "AM-RISK-001" else dependency_status}
+    severity: high
+    owner: "@AreaSong"
+    mitigation: fail closed
+    due: ongoing
+    escalation: gate review
+    close_evidence: evidence
+"""
+            for entry_id in ["AM-RISK-001", "AM-DEP-001", "AM-DEP-002", "AM-DEP-003", "AM-DEP-004"]
+        )
+        (governance / "governance-register.yaml").write_text(
+            """schema_version: 1
+upstream:
+  spec_id: ASW-EWF-001
+  version: 1.0.0
+  sha256: ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1
+  adoption: adapted-complete
+raci:
+  accountable: "@AreaSong"
+  independent_review:
+    missing_reviewer_behavior: blocked
+documents:
+"""
+            + document_entries
+            + "raid:\n"
+            + raid_entries,
+            encoding="utf-8",
+        )
+        (root / ".areaflow").mkdir(parents=True)
+        (root / ".areaflow/status.json").write_text(
+            '{"compatibility":{"shim_lifecycle_state":"authoring_only_shim",'
+            '"blocked_commands":["./task-loop run","promotion apply","write execution"]}}\n',
+            encoding="utf-8",
+        )
+        execution = root / "workflow/versions/v2/execution"
+        execution.mkdir(parents=True)
+        (execution / "README.md").write_text("blocked\n", encoding="utf-8")
+        promotion = root / "workflow/versions/v2/promotion"
+        promotion.mkdir(parents=True)
+        (promotion / "promotion.yaml").write_text("live_mapping: pending\n", encoding="utf-8")
+        (promotion / "approval.yaml").write_text("approved: false\n", encoding="utf-8")
+
     def _write_macos_governance_membership_fixture(
         self,
         root: Path,
@@ -339,6 +410,26 @@ class BuildToolsTest(unittest.TestCase):
             checks._check_macos_governance_test_membership(root, failures)
 
             self.assertEqual(failures.count, 1)
+
+    def test_enterprise_governance_baseline_accepts_complete_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 0)
+
+    def test_enterprise_governance_baseline_rejects_closed_external_dependency(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, dependency_status="closed")
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertGreaterEqual(failures.count, 4)
 
     def test_ai_runtime_environment_contract_matches_repository(self) -> None:
         failures = checks.FailureCollector()
