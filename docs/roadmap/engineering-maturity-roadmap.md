@@ -28,26 +28,31 @@
 
 ### 100% 验收证据矩阵
 
-状态只依据当前权威文件和可执行证据：`已证明` 表示已有直接门禁或多调用方测试；`部分证明` 表示主干成立，
-但仍缺真实环境证据或连续演进证据。该矩阵是本文完成条件的索引，不替代测试、CI、review 或 residual ledger。
+状态只依据当前权威文件和可执行证据：`已证明` 表示已有直接门禁、多调用方测试或可复核的连续演进记录；
+`部分证明` 表示工程主干成立但工程证据仍不完整。该矩阵只评工程成熟度，不替代测试、CI、review，正式
+分发 readiness 继续由 residual ledger 单独判断。
 
 | 完成条件 | 权威实现 / 规则 | 自动化或验收证据 | 当前状态 |
 |---|---|---|---|
 | 新功能先找到 feature owner | `apps/macos/AGENTS.md`、`Features/*` | `MacOSFeatureOwnershipGovernanceTests` 精确 inventory 11 个 owner | 已证明 |
-| 新功能以 feature-local 改动为主 | migration zone inventory、feature owner 规则 | `MacOSMigrationZoneGovernanceTests` 禁止旧区新增文件；PR 模板强制记录 primary owner、跨 feature 理由、复用调用方和边界验证；仍需继续积累多个后续 feature 的局部落地记录 | 部分证明 |
+| 新功能以 feature-local 改动为主 | migration zone inventory、feature owner 规则 | `MacOSMigrationZoneGovernanceTests` 禁止旧区新增文件；PR 模板记录 owner / 跨 feature 理由；`feature-evolution-evidence.json` 及 governance check 核验治理基线后的 3 轮真实演进批次 | 已证明 |
 | SwiftUI View 不直接做平台 IO | `macos-frontend-architecture.md`、`PlatformServices/` | `testSwiftUIViewFilesDoNotOwnPlatformIO`、platform capability inventory | 已证明 |
 | Swift 调用 Core 只走手写 Bridge | `Bridge/`、`AppCoreServices` | `testGeneratedCoreCallsStayInsideBridge`、`MacOSDefaultCoreServicesGovernanceTests` | 已证明 |
 | Generated / UniFFI 保持纯生成 | `Bridge/Generated/`、`Bridge/UniFFI/` | generated artifact governance、`./dev bindings verify`、macOS CI bindings gate | 已证明 |
 | 平台能力进入 PlatformServices 或有迁移路径 | `PlatformServices/`、受控 App adapter | platform capability / default adapter / NSWorkspace / SQLite governance tests | 已证明 |
 | 主要功能域有稳定落点 | 11 个 `Features/<Owner>/` | feature owner inventory 记录 responsibility、risk、validation | 已证明 |
 | 通用 UI、async 与 recovery 模式可复用 | DesignSystem、feature-owned routing、Settings diagnostics generation、FileActions undo support | Repository / Advanced / About 共享 diagnostics generation；Batch Rename / Delete / Change Category 共享 undo 后处理，均有多调用方 XCTest | 已证明 |
-| 高风险用户文件边界有固定口径 | `CODE_REVIEW.md`、file-safety 规则、Import / repair / conflict tests | forbidden-touch、失败恢复和真实临时 repo 证据充分；真实 iCloud placeholder 与正式分发证据仍由 residual ledger 阻断 | 部分证明 |
+| 高风险用户文件边界有固定口径 | `CODE_REVIEW.md`、file-safety 规则、Import / repair / conflict tests | forbidden-touch、失败恢复和真实临时 repo 证据充分；真实 iCloud placeholder 与正式分发证据由 residual ledger 独立阻断，不降低工程边界成熟度 | 已证明 |
 | 测试支撑可复用 | shared queues、temporary FS、fixtures、test doubles | `TestSupportNamingGovernanceTests` 与多个 feature 真实调用方 | 已证明 |
 | 文档、review、CI 能阻止架构漂移 | docs、AGENTS、CI governance | governance XCTest membership、Swift file size、bindings、coverage、SwiftLint、SwiftFormat CI gates | 已证明 |
 
-因此当前不能依据“多数条目已有门禁”直接宣布 100%。矩阵当前为 9 条`已证明`、2 条`部分证明`：本地工程侧仍需
-继续积累新功能 feature-local 落地的连续演进证据；真实环境和正式分发证据继续由 residual ledger 单独判断，不能用
-本地测试代替。
+矩阵当前 11 条完成条件均为`已证明`，AreaMatrix 的工程成熟度达到本文定义的 100%。这不表示产品功能永远完成，
+也不表示正式版本已可分发；真实 iCloud placeholder、Developer ID 签名 / 公证、正式 DMG、clean Mac、tester
+和 release owner 证据继续保留在 residual ledger，不能用本地测试代替或伪造关闭。
+
+连续演进证据的权威 registry 是 `docs/roadmap/feature-evolution-evidence.json`。`./dev check governance` 会核验治理
+基线提交、至少 3 个不同日期的后续批次、feature owner 路径、必要的 App / Bridge / Platform wiring 与测试路径。
+后续真实功能批次应继续追加记录，而不是重写或删除既有证据。
 
 ## 100% 成熟度账本
 

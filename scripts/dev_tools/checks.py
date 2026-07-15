@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -141,6 +142,101 @@ def _forbid_text(root: Path, failures: FailureCollector, rel_path: str, pattern:
     path = root / rel_path
     if path.is_file() and re.search(pattern, _read(path), flags=re.MULTILINE):
         failures.fail(f"{rel_path} contains forbidden text: {label}")
+
+
+def _git_text(root: Path, *args: str) -> str | None:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _check_feature_evolution_evidence(root: Path, failures: FailureCollector) -> None:
+    rel_path = "docs/roadmap/feature-evolution-evidence.json"
+    path = root / rel_path
+    if not path.is_file():
+        failures.fail(f"missing file: {rel_path}")
+        return
+    try:
+        data = json.loads(_read(path))
+    except json.JSONDecodeError as error:
+        failures.fail(f"{rel_path} is not valid JSON: {error}")
+        return
+
+    if data.get("schema_version") != 1:
+        failures.fail(f"{rel_path} schema_version must be 1")
+    baseline = data.get("baseline_commit")
+    if not isinstance(baseline, str) or not re.fullmatch(r"[0-9a-f]{40}", baseline):
+        failures.fail(f"{rel_path} baseline_commit must be a full Git hash")
+        return
+    baseline_rules = _git_text(root, "show", f"{baseline}:apps/macos/AGENTS.md")
+    if baseline_rules is None or "新功能先判断 feature owner" not in baseline_rules:
+        failures.fail(f"{rel_path} baseline must contain the feature owner rule")
+
+    batches = data.get("batches")
+    if not isinstance(batches, list) or len(batches) < 3:
+        failures.fail(f"{rel_path} must record at least three evolution batches")
+        return
+    seen_commits: set[str] = set()
+    seen_dates: set[str] = set()
+    for batch in batches:
+        if not isinstance(batch, dict):
+            failures.fail(f"{rel_path} contains a non-object batch")
+            continue
+        commit = batch.get("commit")
+        if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+            failures.fail(f"{rel_path} batch commit must be a full Git hash")
+            continue
+        if commit in seen_commits:
+            failures.fail(f"{rel_path} repeats batch commit {commit}")
+        seen_commits.add(commit)
+        if _git_text(root, "merge-base", "--is-ancestor", baseline, commit) is None:
+            failures.fail(f"{rel_path} batch {commit} is not after the governance baseline")
+        commit_date = _git_text(root, "show", "-s", "--format=%cs", commit)
+        if commit_date is None:
+            failures.fail(f"{rel_path} batch commit does not exist: {commit}")
+            continue
+        seen_dates.add(commit_date)
+        changed_text = _git_text(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commit)
+        if changed_text is None:
+            failures.fail(f"{rel_path} cannot inspect batch commit: {commit}")
+            continue
+        changed_paths = set(changed_text.splitlines())
+        owners = batch.get("owners")
+        feature_paths = batch.get("feature_paths")
+        if not isinstance(owners, list) or not owners or not all(isinstance(owner, str) for owner in owners):
+            failures.fail(f"{rel_path} batch {commit} must declare owners")
+            continue
+        if not isinstance(feature_paths, list) or not feature_paths:
+            failures.fail(f"{rel_path} batch {commit} must declare feature_paths")
+            continue
+        for feature_path in feature_paths:
+            if feature_path not in changed_paths:
+                failures.fail(f"{rel_path} batch {commit} did not change {feature_path}")
+                continue
+            if not any(feature_path.startswith(f"apps/macos/AreaMatrix/Features/{owner}/") for owner in owners):
+                failures.fail(f"{rel_path} batch {commit} feature path has no declared owner: {feature_path}")
+        for boundary_path in batch.get("boundary_paths", []):
+            if boundary_path not in changed_paths:
+                failures.fail(f"{rel_path} batch {commit} did not change boundary path {boundary_path}")
+            if not boundary_path.startswith(
+                (
+                    "apps/macos/AreaMatrix/App/",
+                    "apps/macos/AreaMatrix/Bridge/",
+                    "apps/macos/AreaMatrix/PlatformServices/",
+                    "apps/macos/AreaMatrix.xcodeproj/",
+                )
+            ):
+                failures.fail(f"{rel_path} batch {commit} has an invalid boundary path: {boundary_path}")
+        for test_path in batch.get("test_paths", []):
+            if test_path not in changed_paths or not test_path.startswith("apps/macos/AreaMatrixTests/"):
+                failures.fail(f"{rel_path} batch {commit} has invalid test evidence: {test_path}")
+    if len(seen_dates) < 3:
+        failures.fail(f"{rel_path} must cover at least three distinct evolution dates")
 
 
 def _check_workflow_has_no_paths_filter(root: Path, failures: FailureCollector, rel_path: str) -> None:
@@ -293,6 +389,7 @@ def run_governance_check(root: Path | None = None) -> int:
 
     _check_macos_governance_test_membership(root, failures)
     _check_ai_runtime_environment_contract(root, failures)
+    _check_feature_evolution_evidence(root, failures)
 
     _require_text(root, failures, "SECURITY.md", "GitHub Security Advisory", "private security advisory reporting")
     _forbid_text(root, failures, "SECURITY.md", "security@<your-domain>", "placeholder security email")

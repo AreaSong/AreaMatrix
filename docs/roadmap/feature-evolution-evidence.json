@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "3f5dd2897ad42cdb265dc647bf3e810a58f7728f",
+  "baseline_rule": "新功能先判断 feature owner，再写代码",
+  "batches": [
+    {
+      "commit": "f0f9dd4a8dc225af8de64eb241c1e82695a41d7d",
+      "summary": "AI tag batch suggestion and command palette capabilities",
+      "owners": ["AI", "CommandPalette", "Import", "SyncConflicts"],
+      "feature_paths": [
+        "apps/macos/AreaMatrix/Features/AI/AITagBatchSuggestionAction.swift",
+        "apps/macos/AreaMatrix/Features/CommandPalette/CommandPaletteState.swift",
+        "apps/macos/AreaMatrix/Features/Import/ImportBatchCopyImportModel.swift",
+        "apps/macos/AreaMatrix/Features/SyncConflicts/SyncConflictReviewModel.swift"
+      ],
+      "boundary_paths": [
+        "apps/macos/AreaMatrix.xcodeproj/project.pbxproj"
+      ],
+      "test_paths": []
+    },
+    {
+      "commit": "729b4d45b3061b200be2d977e1dc8141631f44b9",
+      "summary": "AI presentation state and shared FileActions routing support",
+      "owners": ["AI", "FileActions", "MainList"],
+      "feature_paths": [
+        "apps/macos/AreaMatrix/Features/AI/AIClassificationSuggestionPanelModel.swift",
+        "apps/macos/AreaMatrix/Features/AI/AISummaryPrivacySupport.swift",
+        "apps/macos/AreaMatrix/Features/FileActions/BatchTagUndoSupport.swift",
+        "apps/macos/AreaMatrix/Features/MainList/MainListPresentationSupport.swift"
+      ],
+      "boundary_paths": [
+        "apps/macos/AreaMatrix.xcodeproj/project.pbxproj"
+      ],
+      "test_paths": []
+    },
+    {
+      "commit": "837b0fd0f192cc3294b5cd9cadca74416b758939",
+      "summary": "Onboarding, classifier, import, and file action evolution",
+      "owners": ["AI", "FileActions", "Import", "MainList", "Onboarding", "Settings"],
+      "feature_paths": [
+        "apps/macos/AreaMatrix/Features/AI/RemoteProviderConfigCredentialLifecycle.swift",
+        "apps/macos/AreaMatrix/Features/FileActions/MainRepositoryContentUndoHistory.swift",
+        "apps/macos/AreaMatrix/Features/Import/ImportSingleFilePreflightSupport.swift",
+        "apps/macos/AreaMatrix/Features/MainList/MainFileListLoadingActions.swift",
+        "apps/macos/AreaMatrix/Features/Onboarding/OnboardingRouteActions.swift",
+        "apps/macos/AreaMatrix/Features/Settings/RepositorySettingsHealthActions.swift"
+      ],
+      "boundary_paths": [
+        "apps/macos/AreaMatrix/App/AppShellBootstrap.swift",
+        "apps/macos/AreaMatrix/Bridge/CoreClassifierRuleEditing.swift",
+        "apps/macos/AreaMatrix.xcodeproj/project.pbxproj"
+      ],
+      "test_paths": [
+        "apps/macos/AreaMatrixTests/BatchFileActionEligibilityTests.swift",
+        "apps/macos/AreaMatrixTests/RepositorySettingsHealthFeatureTests.swift"
+      ]
+    }
+  ]
+}
