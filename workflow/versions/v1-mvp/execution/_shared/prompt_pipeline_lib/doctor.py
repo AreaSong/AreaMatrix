@@ -47,7 +47,9 @@ REQUIRED_MANIFEST_SECTIONS = (
 )
 
 LEGACY_DOC_PATH_ALIASES = {
-    ROOT / "docs/roadmap/milestones.md": ROOT / "docs/roadmap/version-roadmap.md",
+    ROOT / "docs/roadmap/milestones.md": (
+        ROOT / "workflow/versions/v1-mvp/source-docs/roadmap/version-roadmap.md"
+    ),
 }
 
 

@@ -6,127 +6,108 @@
   <img alt="AreaMatrix" src="./assets/brand/final/areamatrix-logo-lockup-outlined-light.svg" width="720">
 </picture>
 
-> Drag, drop, and your files organize themselves.
->
-> A native macOS desktop app for visual file management with auto classification, change tracking, and a tree-view of everything you own.
+> Drag files in. Keep control of where they live.
+
+AreaMatrix is a source-available, native macOS application for organizing personal files into a searchable, auditable repository. It combines safe folder adoption, transactional imports, rules and optional AI classification, tree navigation, tags, search, change history, and recovery tools without locking files into a proprietary container.
 
 [简体中文](./README.zh-CN.md) | English
 
----
+## What AreaMatrix Does
 
-## What is AreaMatrix
+- Adopts an existing folder without moving, renaming, deleting, or overwriting its files.
+- Imports files using Move, Copy, or Index-only storage modes with duplicate and name-conflict review.
+- Organizes content with rules, editable classifier configuration, tags, batch actions, and undo/redo history.
+- Provides a native three-pane workspace for the repository tree, file list, metadata, notes, and change log.
+- Searches filenames, notes, metadata, saved searches, Smart Lists, and optional semantic indexes.
+- Supports optional local or remote AI classification, summaries, and tag suggestions behind explicit settings and privacy rules.
+- Reconciles external Finder changes, exposes iCloud and sync-conflict review, and provides startup recovery and metadata repair flows.
+- Writes generated overviews under `.areamatrix/generated/` by default and never overwrites an existing `README.md`.
 
-AreaMatrix is a **source-available** desktop application that turns the chaos of personal files into a navigable, self-organizing knowledge repository.
+## Product Surfaces
 
-Choose any folder as a repository, even one that already contains years of files. AreaMatrix indexes it without moving, renaming, or overwriting existing content. After that, drop a file in and AreaMatrix figures out what it is, where it belongs, and how to name it. Every change is logged, dedicated overview files stay up to date, and the entire tree is browsable in a single window.
+AreaMatrix uses one native macOS window with routed product surfaces rather than a collection of unrelated windows:
 
-## Highlights
+| Surface | Purpose |
+|---|---|
+| Onboarding and repository setup | Choose, validate, create, open, or safely adopt a repository folder |
+| Repository workspace | Browse the tree, sort and select files, inspect details, edit notes, and run file actions |
+| Import and conflict review | Preview imports, choose storage modes, resolve duplicates and name conflicts, and review results |
+| Search and organization | Search, filter, save queries, use Smart Lists, manage tags, and run batch actions |
+| AI and privacy | Inspect local-model status, configure remote providers, control data access, review suggestions, and inspect call history |
+| Settings and diagnostics | Manage repository, classifier, integration, advanced, and application settings |
+| Sync and recovery | Review iCloud or external conflicts, retry startup recovery, and confirm metadata repair |
 
-- **Drag-to-archive** — drop files onto any window region; smart categorization happens locally.
-- **Adopt existing folders** — any non-empty folder can become the repository root; first open scans and indexes it.
-- **Hybrid classification** — extension + keyword rules first, optional AI fallback when enabled.
-- **Three storage modes** — *Move*, *Copy*, or *Index-only* (decide per drop).
-- **Dedicated repository overviews** — generated under `.areamatrix/generated/` by default, with optional `AREAMATRIX.md`; existing `README.md` files are never overwritten.
-- **Tree-view navigation** — full repository structure in a sidebar, virtualized for large libraries.
-- **Two-way sync** — external Finder/Terminal modifications are picked up via FSEvents.
-- **Crash-safe** — transactional staging area; no half-moved files after a hard kill.
-- **iCloud aware** — placeholder files are coordinated through `NSFileCoordinator`.
-- **100% native macOS UI** — SwiftUI, not a WebView.
+See the [product surface map](docs/product/product-surfaces.md) and [user guides](docs/user-guide/README.md) for the complete behavior and entry points.
 
-## Architecture at a glance
+## Build From Source
+
+AreaMatrix is currently distributed as source. A signed and notarized installer is not yet provided.
+
+Requirements:
+
+- macOS 14 Sonoma or later
+- Xcode 15 or later
+- Rust stable 1.75 or later
+
+```bash
+./dev build core
+./dev bindings update \
+  --udl core/area_matrix.udl \
+  --out-dir apps/macos/AreaMatrix/Bridge/UniFFI
+xcodebuild \
+  -project apps/macos/AreaMatrix.xcodeproj \
+  -scheme AreaMatrix \
+  -destination 'generic/platform=macOS' \
+  build CODE_SIGNING_ALLOWED=NO
+```
+
+Detailed setup and run instructions are in [Getting Started](docs/user-guide/getting-started.md) and the [development setup guide](docs/development/setup.md).
+
+## Architecture
 
 ```mermaid
 flowchart LR
     UI[SwiftUI macOS App]
-    FFI[UniFFI Bridge]
-    Core[Rust Core Library]
-    DB[(SQLite)]
-    Repo[(Any repository folder)]
+    Bridge[Hand-written Swift Bridge]
+    FFI[UniFFI Bindings]
+    Core[Rust Core]
+    DB[(SQLite Metadata)]
+    FS[(Repository Files)]
 
-    UI --> FFI --> Core
+    UI --> Bridge --> FFI --> Core
     Core --> DB
-    Core --> Repo
-    UI -.FSEventStream.-> Repo
+    Core --> FS
+    UI -. platform services .-> FS
 ```
 
-The Rust core library is platform-agnostic. macOS is the first target; Windows / Linux / iOS can be added later by writing a new UI layer against the same core.
+The filesystem is authoritative for file existence, content, and location. SQLite stores AreaMatrix metadata such as tags, notes, history, configuration, and indexes. External filesystem changes are reconciled back into metadata; the database must not override a user's direct filesystem action.
 
-## Status
+## Documentation
 
-Implementation active, not distribution-ready. The v1 technical queue is
-complete, and the repository now contains the Rust core, the SwiftUI macOS app,
-tests, and early iOS / Windows / Linux surfaces.
-
-The v1 technical archive is an implementation record, not a distribution
-readiness signal. Distribution decisions and evidence remain tracked by the
-release guide and residual ledger instead of the historical prompt archive.
-
-See [docs/roadmap/version-roadmap.md](docs/roadmap/version-roadmap.md) for the version roadmap.
-
-## Repository layout
-
-AreaMatrix keeps source, planning, and local runtime material separate:
-
-| Layer | Paths | Notes |
-|---|---|---|
-| Product source | `core/`, `apps/`, `docs/` | Rust core, native app surfaces, and authoritative product docs. |
-| Product assets and prototypes | `assets/brand/`, `assets/prototypes/` | Canonical brand assets plus non-authoritative landing / workspace visual prototypes. |
-| Planning and governance | `.ai-governance/`, `workflow/`, `tasks/` | AI collaboration rules, version planning gates, version-local execution queues, lightweight task progress, and backlog material. |
-| Codex runtime | `.codex/`, `.agents/skills/`, `dev`, `task-loop`, `scripts/` | Repo-local Codex skills, discovery entrypoints, and task-loop tooling. These are stable tool entrypoints and should not be moved just to reduce visual clutter. |
-| Local generated output | `.build/`, `build/`, `core/target/`, `apps/*/.build`, `apps/**/bin`, `apps/**/obj`, `apps/macos/DerivedData/` | Ignored local build products. They are not part of the source layout. |
-
-Fixed paths such as `.codex/skills-src/`, `.agents/skills/`, `workflow/`, `dev`, and `task-loop` are intentionally kept in place because local Codex skills and task-loop scripts rely on them. Historical prompt queues are indexed through [workflow versions](workflow/versions/README.md). Lightweight independent tasks live under `tasks/active/` and `tasks/done/`; `tasks/backlog/` remains a candidate pool, not current task progress.
-
-Status boundaries: product facts come from `docs/`, `core/`, `apps/`, and
-`assets/brand/final/`; planning, archive, and reference material lives under
-`workflow/`; lightweight task state lives in `tasks/active/` and `tasks/done/`;
-closed backlog prompt packages are historical candidates; Codex runtime
-material in `.codex/`, `.agents/skills/`, `dev`, `task-loop`, and `scripts/`
-is tooling, not product source of truth.
-Residual release / reference / template items are indexed under
-`workflow/residuals/` and `workflow/versions/<version>/residuals/`; those indexes
-link back to their source files and do not replace `docs/`, release evidence, or
-task state.
-
-## Quick links
-
-| For | Read |
+| Need | Entry point |
 |---|---|
-| Product overview | [docs/product/prd.md](docs/product/prd.md) |
-| Architecture | [docs/architecture/overview.md](docs/architecture/overview.md) |
-| Module designs | [docs/modules/](docs/modules/) |
-| API reference | [docs/api/core-api.md](docs/api/core-api.md) |
-| Workflow planning | [workflow/README.md](workflow/README.md) |
-| Workflow versions | [workflow/versions/README.md](workflow/versions/README.md) |
-| Lightweight tasks | [tasks/README.md](tasks/README.md) |
-| Current unresolved / residual ledger | [workflow/residuals/README.md](workflow/residuals/README.md) |
-| Codex skills | [.codex/skills-src/README.md](.codex/skills-src/README.md) |
-| Setup & build | [docs/development/setup.md](docs/development/setup.md) |
-| Decision records | [docs/adr/](docs/adr/) |
-| Visual prototypes | [assets/prototypes/](assets/prototypes/) |
-| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Product overview and capabilities | [Product docs](docs/product/overview.md) |
+| Install and use AreaMatrix | [User guide](docs/user-guide/README.md) |
+| Understand product concepts and safety | [Architecture](docs/architecture/overview.md) |
+| Integrate with the Rust Core | [Core API](docs/api/core-api.md) |
+| Build, test, and contribute | [Development docs](docs/development/setup.md) |
+| Review technical decisions | [ADRs](docs/adr/README.md) |
+| Browse all long-lived documentation | [Documentation index](docs/README.md) |
 
-## Requirements
+Historical plans, execution evidence, and release records are indexed separately under [workflow versions](workflow/versions/README.md). They are not current product documentation.
 
-- macOS 14 Sonoma or later
-- Xcode 15+
-- Rust 1.75+ (stable)
-- Apple Silicon or Intel (universal binaries built by default)
+## Safety And Privacy
 
-## License
+- Existing files in an adopted folder remain untouched.
+- Failed imports must not leave final-directory half-products.
+- Removing `.areamatrix/` metadata must not remove user files.
+- Remote AI is optional, explicitly configured, and evaluated against user-controlled privacy rules.
+- Credentials stay in the macOS platform layer; the Rust Core does not read Keychain secrets or initiate network requests.
 
-AreaMatrix is distributed under the **[PolyForm Noncommercial License 1.0.0](LICENSE)**.
+Read the [privacy and data handling policy](docs/product/privacy.md) and [security policy](SECURITY.md) for details.
 
-You may use, modify, and redistribute the source for **noncommercial** purposes (personal use, education, research, internal business operations). The original copyright notice and license must be preserved.
+## License And Contributions
 
-For **commercial use** (selling, SaaS hosting, embedding in commercial products), see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for how to obtain a separate commercial license.
+AreaMatrix is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). Commercial use requires a separate license described in [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
-> **Note**: PolyForm-NC is *source-available*, not OSI-certified open source. Anyone can read the code, contribute, and use it noncommercially — but commercial use requires a separate agreement.
-
-## Contributing
-
-Issues, pull requests, and discussions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before submitting.
-
-## Acknowledgements
-
-AreaMatrix borrows architectural ideas from Obsidian (vault model), Eagle (visual library), and DEVONthink (auto classification). It is not affiliated with any of them.
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [CODE_REVIEW.md](CODE_REVIEW.md) before opening a change.

@@ -1,6 +1,6 @@
-# UX 文档索引（Wireframe Specs）
+# UX 文档索引
 
-> `docs/ux/` 目录提供 AreaMatrix 的产品/UX 规格文档（wireframe 级），用于把工程文档之外的“用户交互与文案”补齐到可直接实现的程度。
+> `docs/ux/` 目录保存 AreaMatrix 长期维护的交互、文案、状态和恢复语义。
 >
 > 阅读时长：约 4 分钟。
 

@@ -333,9 +333,6 @@ namespace area_matrix {
         ClassifierRuleDeleteRequest request
     );
 
-    [Throws=CoreError]
-    FileEntry restore_file(string repo_path, i64 file_id);
-
     // desktop main query reuses list_files, get_file, list_tree_json,
     // and search_files for Windows and Linux main-window state. Desktop
     // shells page through FileFilter.limit/offset and must not scan the repo
@@ -2647,7 +2644,6 @@ interface CoreError {
 | `rename_file(repo, file_id, new_name)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |
 | `preview_move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
 | `move_to_category(repo, file_id, cat)` | storage | √ | Classify / Conflict / FileNotFound / PermissionDenied / Io / Db |
-| `restore_file(repo, file_id)` | storage | √ | FileNotFound |
 | `list_files(repo, filter)` | query | √ | Db |
 | `search_files(repo, query, filter, sort, pagination)` | search | √ | Db / Config / InvalidPath |
 | `list_filter_facets(repo, query)` | search | √ | Db / Config |
@@ -2706,55 +2702,18 @@ interface CoreError {
 
 ---
 
-## 当前 API 缺口
+## 合同边界与组合能力
 
-> 本节记录 UX 页面已经需要、但当前 UDL 尚未完全表达的接口意图。实现前必须先更新本文档，再落到 `core/area_matrix.udl`。
+本文件只记录 `core/area_matrix.udl` 已声明的正式合同。未进入 UDL 的候选接口、页面编排优化和历史缺口不属于当前 API；它们应在未来 workflow 中完成设计、风险确认和提升，不能由 UI 伪造成 Core 能力。
 
-| 缺口 | 消费页面 | 对应能力 | 意图 | 当前替代 |
-|---|---|---|---|---|
-| `preview_import(repo_path, source_path, options) -> ImportPreview` | import preview surface, import classification surface, import queue surface, import progress surface, duplicate import review, name-conflict review | category prediction, duplicate detection, name-conflict resolution | 在导入前返回分类建议、目标路径、重复 hash、同名冲突和 iCloud 状态 | `predict_category` 只能给分类，`import_file` 会直接产生副作用 |
-| 导入进度 / 队列语义 | import queue surface, import progress surface, import cancellation surface, import result surface | copied-file import, moved-file import, indexed-file import | 支撑多文件/文件夹导入的逐项状态、取消和结果摘要 | 当前可由 Swift 队列包装多次 `import_file`，Core 暂不提供流式回调 |
-| 详情聚合 DTO | detail metadata surface, detail log surface, detail note surface | file-detail query, change-log query, file note contract | 一次拿到文件元数据、日志和笔记，降低 UI 调用编排 | 当前先用 `get_file` + `list_changes` + `read_note` 组合 |
-| 已初始化 repo 元数据摘要 | initialized repository metadata surface, main-window repository summary | repository path validation, error mapping | 已存在完整 repo 分支需要展示 `schema_version` 和 last opened，用于区分可打开、需修复和不可兼容状态 | initialized repository metadata surface 先用 macOS app 的只读 metadata inspector 读取 `.areamatrix/index.db` 中的 `schema_version`，last opened 无记录时显示未记录；不得伪造静态值。main-window repository summary 仍需要独立 Core summary API 提升 |
-| 错误映射元数据 | initialized repository metadata surface, import error surface, main-window repository summary, error recovery surface, error recovery surface | error mapping | 每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串 | `map_core_error` 返回 Core 侧稳定映射元数据，Swift `AppError` 包装层只负责本地化与展示编排 |
+macOS 应用可以在平台层组合稳定 API：
 
-这些缺口不得被 UI 伪造成已实现能力。若某个 UI 能力需要稳定 Core 合同，但对应合同尚未实现且没有明确替代路径，调用方必须展示不可用或缺口状态。
+- 文件详情当前先用 `get_file` + `list_changes` + `read_note` 组合；当前合同不提供详情聚合 DTO。
+- 导入进度 / 队列语义由 Swift 侧编排多次导入调用，覆盖 copied-file import, moved-file import, indexed-file import；Core 不提供流式导入队列合同。
+- `validate_initialized_repo_path` 负责 Core 的资料库基础校验。macOS 平台层如读取现有 metadata，只能以只读方式打开已存在的 `.areamatrix/index.db`；缺失、锁定、损坏或不兼容数据库必须返回错误，不得创建、迁移或修改数据库。
+- 错误映射元数据由 `map_core_error` 提供稳定结构；每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串。Swift `AppError` 包装层只负责本地化与展示编排。
 
-### 已提升接口与合同外参考
-
-尚未纳入稳定 Core 合同的接口，先以对应候选能力文档作为候选合同来源，不直接落 UDL：
-
-- Search / organization：search query `search_files`、search facets `list_filter_facets` 和 saved searches
-  CRUD（`create_saved_search`、`update_saved_search`、`delete_saved_search`、
-  `list_saved_searches`），Smart List execution `run_smart_list`，以及 tag CRUD
-  （`add_tag`、`remove_tag`、`list_tags`）和 batch tag mutation `batch_add_tags`
-  以及 undo action log（`list_undo_actions`、`undo_action`）、batch category change
-  批量改分类（`preview_batch_move_to_category`、`batch_move_to_category`）
-  batch delete 批量删除（`preview_batch_delete`、`batch_delete_to_trash`）、batch rename
-  批量重命名（`preview_batch_rename`、`batch_rename`）和 command index
-  命令索引（`list_command_targets`）、classifier rule save 分类规则保存
-  （`save_classifier_rule`）、classifier impact preview 规则影响预览
-  （`preview_classifier_rule_impact`）以及 classifier rule editor 分类规则编辑器
-  （`list_classifier_rules`、`create_classifier_rule`、`update_classifier_rule`、`delete_classifier_rule`）、
-  deterministic tag suggestions 非 AI 标签建议（`suggest_tags_for_file`、`apply_tag_suggestions`）
-  已提升为本文与 `core/area_matrix.udl` 的稳定合同；本文当前也已覆盖 Redo
-  和导入冲突批量决策合同。
-- AI capabilities：AI settings 配置（`load_ai_config`、`update_ai_config`）已提升为本文与
-  `core/area_matrix.udl` 的稳定合同；local model status 本地模型状态
-  （`get_local_model_status`、`locate_local_model_folder`）和 remote provider configuration 远程 provider 配置
-  （`prepare_remote_ai_provider_probe`、`complete_remote_ai_provider_probe`、`enable_remote_ai_provider`）以及 AI category suggestion 分类建议
-  （`suggest_category_with_ai`）、AI call log 调用日志（`list_ai_calls`、
-  `clear_ai_call_log`）以及 AI summary 摘要（`generate_ai_summary`、
-  `save_ai_summary`、`clear_ai_summary`）、semantic search 语义搜索（`semantic_search`、
-  `build_embedding_index`）以及 AI privacy rules AI 隐私规则（`list_ai_privacy_rules`、
-  `update_ai_privacy_rules`、`evaluate_ai_privacy`）和 AI fallback
-  （`get_ai_fallback_status`）已提升为本文与 `core/area_matrix.udl` 的稳定合同。
-- Platform capabilities：platform capabilities 平台能力矩阵（`get_platform_capabilities`）已提升为本文与
-  `core/area_matrix.udl` 的稳定合同；iOS/Windows/Linux repo 连接、watcher、
-  跨平台导入、同步冲突、缺失恢复、手动重扫等其余接口已在本文相关章节稳定描述。
-
-新能力纳入稳定 Core 合同前，必须先把确定 API 提升到本文和 `core/area_matrix.udl`；
-未提升前不得让 UI 把占位状态、模拟数据或未实现替代路径当作可用能力。
+Search、标签、批量操作、Undo/Redo、命令索引、分类规则、AI、隐私、语义搜索、冲突处理和平台能力矩阵均已进入 UDL。Search 包括 search query `search_files`、search facets `list_filter_facets` 和 saved search CRUD；调用方必须按各章节的副作用与错误合同使用。
 
 ---
 
@@ -2781,7 +2740,7 @@ do {
 
 `level`：`"trace" | "debug" | "info" | "warn" | "error"`。
 
-应用最早调用，避免初始化中间状态丢日志。
+当前实现只验证日志级别是否合法。完整 subscriber wiring（日志订阅器接线）不属于该函数现有保证，调用方不能据此假设 Core 日志已经持久化或输出到指定目的地。
 
 ---
 
@@ -2805,8 +2764,8 @@ cross-platform FFI contract 的平台中立 UniFFI 合同检查入口，服务 `
 - `target_platform`：请求检查的绑定家族。
 - `binding_version`：请求的稳定绑定合同版本。
 - `core_version`：AreaMatrix Core crate 版本。
-- `supported_apis`：当前绑定可直接消费的公开 API。
-- `type_mappings`：Rust / UDL / target-language 类型映射。
+- `supported_apis`：最小绑定能力报告中已核验的 API 子集，不是完整 UDL surface inventory。
+- `type_mappings`：报告覆盖的基础 Rust / UDL / target-language 类型映射，不代表所有业务 DTO。
 - `missing_capabilities`：当前绑定在该版本下缺失或受限的能力。
 
 副作用边界：
@@ -4805,16 +4764,6 @@ let moved = try await Task.detached {
 - `Io`：文件系统读写失败。
 - `Db`：SQLite 查询、更新或 change log 写入失败。
 
-### `restore_file(repoPath, fileId) throws -> FileEntry`
-
-```swift
-let restored = try AreaMatrix.restoreFile(repoPath: repoPath, fileId: deletedEntry.id)
-```
-
-恢复软删除的文件。如果 FS 中文件已被废纸篓清空，抛 `FileNotFound`。
-
----
-
 ## query API
 
 ### `list_files(repoPath, filter) throws -> [FileEntry]`
@@ -6109,6 +6058,10 @@ default 状态、dirty 状态和 warning。
 - classifier rule editor surface 不能从本合同得到历史文件更新、Undo action、Trash 删除、AI 建议或插件规则状态。
   本合同不新增 control map 之外的页面能力。
 
+文件级撤销与重做只通过 `list_undo_actions`、`undo_action`、`list_redo_actions`
+和 `redo_action` 合同提供。系统废纸篓中的独立恢复接口未纳入 Core 公共 API；调用方
+不得把系统废纸篓状态或未实现恢复路径展示为 AreaMatrix 的可执行能力。
+
 ### `list_undo_actions(repoPath) throws -> [UndoActionRecord]`
 
 ```swift
@@ -7302,14 +7255,12 @@ UniFFI 0.x 不支持 Rust 端 cooperative cancellation。Swift 端 `Task.cancel(
 
 ---
 
-## 版本演进
+## 合同演进规则
 
-| 版本 | 变化 |
-|---|---|
-| 0.1.x | 初始接口，可能多次微调 |
-| 0.2.x | 加 `search`、批量操作预览/执行、`undo` |
-| 0.3.x | 加 `ai_predict`、`auto_naming` |
-| 1.0.0 | 接口稳定承诺生效 |
+- 对外 API 变化先更新本文，再同步 `core/area_matrix.udl`、Rust facade、生成绑定、平台桥接和测试。
+- 新增字段优先保持向后兼容；删除、重命名或改变副作用属于破坏性变化，必须经过版本与迁移评审。
+- 候选能力在完成产品合同、风险分析和跨层验证前不得写入正式 UDL。
+- 具体版本的 API 变更记录在 [CHANGELOG](../../CHANGELOG.md) 和对应版本归档中，不在长期合同内维护交付路线。
 
 ---
 

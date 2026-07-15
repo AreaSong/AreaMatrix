@@ -6,6 +6,7 @@ use pretty_assertions::assert_eq;
 
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
+const HISTORY_API_RS: &str = include_str!("../src/api/history.rs");
 const UNDO_RS: &str = include_str!("../src/undo.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
@@ -13,6 +14,13 @@ fn assert_contains(haystack: &str, needle: &str) {
     assert!(
         haystack.contains(needle),
         "expected text to contain `{needle}`"
+    );
+}
+
+fn assert_not_contains(haystack: &str, needle: &str) {
+    assert!(
+        !haystack.contains(needle),
+        "expected text not to contain `{needle}`"
     );
 }
 
@@ -130,6 +138,23 @@ fn undo_action_log_contract_docs_api_udl_and_control_map_stay_aligned() {
     ] {
         assert_contains(CORE_API, fragment);
     }
+}
+
+#[test]
+fn undo_action_log_contract_is_the_only_public_file_restore_path() {
+    for forbidden in [
+        "FileEntry restore_file",
+        "restore_file(",
+        "### `restore_file",
+    ] {
+        assert_not_contains(CORE_API, forbidden);
+        assert_not_contains(UDL, forbidden);
+        assert_not_contains(HISTORY_API_RS, forbidden);
+    }
+
+    assert_contains(CORE_API, "UndoActionResult undo_action");
+    assert_contains(UDL, "UndoActionResult undo_action");
+    assert_contains(UNDO_RS, "pub fn undo_action");
 }
 
 #[test]

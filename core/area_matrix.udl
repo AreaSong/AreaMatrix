@@ -310,9 +310,6 @@ namespace area_matrix {
         ClassifierRuleDeleteRequest request
     );
 
-    [Throws=CoreError]
-    FileEntry restore_file(string repo_path, i64 file_id);
-
     // desktop main query reuses list_files, get_file, list_tree_json,
     // and search_files for Windows and Linux main-window state. Desktop
     // shells page through FileFilter.limit/offset and must not scan the repo

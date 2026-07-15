@@ -21,6 +21,7 @@ from .checks import (
     run_all_check,
     run_codex_os_check,
     run_diff_check,
+    run_docs_check,
     run_governance_check,
     run_prompts_check,
     run_quality_check,
@@ -113,7 +114,7 @@ def _build_parser() -> argparse.ArgumentParser:
     check.add_argument(
         "target",
         nargs="?",
-        choices=["governance", "skills", "quality", "wording", "task-loop", "prompts", "diff", "secrets", "codex-os", "all", "task"],
+        choices=["governance", "docs", "skills", "quality", "wording", "task-loop", "prompts", "diff", "secrets", "codex-os", "all", "task"],
     )
     check.add_argument("task_label", nargs="?", help="Task label for './dev check task', for example 4-1/task-15")
 
@@ -813,6 +814,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 parser.error("task_label is only valid with './dev check task <label>'")
             if args.target == "governance":
                 return run_governance_check(root)
+            if args.target == "docs":
+                return run_docs_check(root)
             if args.target == "skills":
                 return run_skills_check(root)
             if args.target == "quality":

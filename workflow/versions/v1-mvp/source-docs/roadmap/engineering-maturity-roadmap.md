@@ -50,7 +50,7 @@
 也不表示正式版本已可分发；真实 iCloud placeholder、Developer ID 签名 / 公证、正式 DMG、clean Mac、tester
 和 release owner 证据继续保留在 residual ledger，不能用本地测试代替或伪造关闭。
 
-连续演进证据的权威 registry 是 `docs/roadmap/feature-evolution-evidence.json`。`./dev check governance` 会核验治理
+连续演进证据的权威 registry 已归档为 `../../evidence/feature-evolution-evidence.json`。`./dev check governance` 会核验治理
 基线提交、至少 3 个不同日期的后续批次、feature owner 路径、必要的 App / Bridge / Platform wiring 与测试路径。
 后续真实功能批次应继续追加记录，而不是重写或删除既有证据。
 

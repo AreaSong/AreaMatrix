@@ -526,13 +526,13 @@ gantt
 
 ## 可选 CI 性能回归模板
 
-当前仓库未启用 `.github/workflows/perf-ci.yml`；性能基线仍以显式命令和 release evidence 为准。需要验证 macOS 性能测试时运行：
+性能检查按显式命令运行；是否接入持续集成以当前 CI 配置为准。需要验证 macOS 性能测试时运行：
 
 ```bash
 ./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests
 ```
 
-未来如需把性能回归接入 CI，可从以下模板起步：
+如需把性能回归接入 CI，可从以下模板起步：
 
 ```yaml
 name: perf-ci

@@ -23,6 +23,7 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 |---|---|---|---|
 | v1-mvp distribution evidence | `blocked-external` / `blocked-decision` / `deferred` | [../versions/v1-mvp/residuals/](../versions/v1-mvp/residuals/) | v1 分发证据和分发决策未关闭；其中 `v1-ref-003-1-task-05` 走分发证据 review。 |
 | v1-mvp checkpoint gaps | `accepted-exception` | [../versions/v1-mvp/residuals/accepted-exceptions.md](../versions/v1-mvp/residuals/accepted-exceptions.md) | 35 个历史 checkpoint gaps 已接受为 closeout exceptions，不回填历史。 |
+| closed product contract corrections | `closed` | [Core API](../../docs/api/core-api.md) / [macOS architecture](../../docs/architecture/macos-frontend-architecture.md) | 无效的独立恢复合同已移除；metadata reader 已收紧为只读打开。 |
 | AreaFlow | `reference-only` | [non-current-references.md](non-current-references.md) | 历史愿景材料，不是当前产品范围或 active backlog。 |
 | v-template | `template-only` | [non-current-references.md](non-current-references.md) | 模板参考实例，blocked-by-design，不是真版本未完成。 |
 | closed backlog packages | `reference-only` | [../../tasks/indexes/residuals.md](../../tasks/indexes/residuals.md) | 5 个 backlog prompt package 均 closed，不是当前待执行任务。 |
@@ -39,6 +40,8 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 | `v1-rl-006` | `blocked-decision` | `release-evidence` | v1 distribution not cleared | Alpha feedback issue template 和 route evidence 已存在，且 `closes_residual: false`；可信测试者名单、tester invitation side effect、正式公告 / Discussion 链接、反馈分流和 triage owner 决策未记录。 |
 | `v1-ref-003-1-task-05` | `deferred` | `release-evidence` | v1 distribution not cleared | release-gate review record 已结构化，当前 `closes_residual: false`；分发 review item 走 fresh release evidence review，不补造 task-loop verify evidence。 |
 | `v1-ex-001` | `accepted-exception` | `closeout-exception` | none | 35 个历史 checkpoint gaps 已接受为 closeout exceptions。 |
+| `global-product-restore-file-contract` | `closed` | `product-contract-gap` | none | 公开 `restore_file` 合同已移除；受支持的恢复统一使用 token 化 Undo/Redo。 |
+| `global-product-metadata-reader-write-flags` | `closed` | `file-safety-gap` | none | Metadata reader 仅使用只读 SQLite 打开策略，不创建 sidecar，也不修改 `index.db` 或 WAL。 |
 | `global-ref-areaflow` | `reference-only` | `historical-reference` | none | AreaFlow 历史愿景材料，不是当前 AreaMatrix 产品范围或 active task。 |
 | `global-template-vtemplate` | `template-only` | `template-reference` | none | `v-template` 是模板参考实例，不是真版本未完成。 |
 | `global-ref-closed-backlog-packages` | `reference-only` | `backlog-reference` | none | 5 个 backlog prompt package 均 closed。 |

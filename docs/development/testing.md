@@ -243,7 +243,7 @@ macOS CI 使用 `--coverage-gate` 显式开启 Xcode coverage，并从 `.xcresul
 不得把空集合或 `xcrun xctest` fallback 当作 coverage PASS。
 
 当仅运行 `AreaMatrixTests/AreaMatrixPerfTests` 时，`./dev test macos` 还会在
-显式开启 v1 performance XCTest，并在 performance 通过后构建 signed Release `.app`，执行 codesign、自包含链接检查和
+显式运行 performance XCTest，并在 performance 通过后构建 signed Release `.app`，执行 codesign、自包含链接检查和
 `scripts/dev_tools/macos_launch_probe.swift` 启动探针。若当前本地 sandbox 阻断
 LaunchServices 启动，或 direct executable probe 无法创建可见窗口，命令可以作为本地
 validation 通过，但 release checklist 必须继续记录“真实 `.app` 启动到首屏证据

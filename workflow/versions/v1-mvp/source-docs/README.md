@@ -19,6 +19,13 @@
 | Stage 3 AI | [stage-3-ai.md](core/capability-specs/stage-3-ai.md) | [stage-3-ai.md](ux/page-specs/stage-3-ai.md) | [stage-3-control-map.md](architecture/stage-3-control-map.md) |
 | Stage 4 Multiplatform | [stage-4-multiplatform.md](core/capability-specs/stage-4-multiplatform.md) | [stage-4-multiplatform.md](ux/page-specs/stage-4-multiplatform.md) | [stage-4-control-map.md](architecture/stage-4-control-map.md) |
 
+其他历史产品和路线材料：
+
+- [历史用户故事](product/user-stories.md)
+- [历史版本路线](roadmap/version-roadmap.md)
+- [工程成熟度记录](roadmap/engineering-maturity-roadmap.md)
+- [Core API 候选缺口快照](core/capability-specs/core-api-candidate-gaps.md)
+
 ## 使用规则
 
 - 查历史任务、旧 prompt、旧验收边界时读这里。

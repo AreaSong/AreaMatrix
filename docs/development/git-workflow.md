@@ -228,14 +228,12 @@ git push origin --delete feat/classify-keyword-fold
 # 1. 确认 main 已含所有要发的内容
 git checkout main && git pull
 
-# 2. 确认 residual 发布证据门禁已关闭
-# 正式 tag 缺失时该命令可退出 1；读取 JSON 中 residual_evidence_gate.status
-./dev release status --json --remote
+# 2. 按发布流程确认所有 tag 前门禁和真实发布证据已经满足
 
 # 3. 更新版本号
 # - core/Cargo.toml
 # - apps/macos/AreaMatrix/Info.plist
-# - CHANGELOG.md（[Unreleased] → [0.1.0] - 2026-04-28）
+# - CHANGELOG.md（[Unreleased] → [X.Y.Z] - YYYY-MM-DD）
 
 # 4. 提交版本 bump
 git add -A
@@ -246,12 +244,9 @@ git tag -a v0.1.0 -m "Release 0.1.0"
 git push origin main v0.1.0
 ```
 
-打正式 tag 前，`./dev release status --json --remote` 的 `residual_evidence_gate.status`
-必须为 `PASS`。若整体 `status` 仅因正式 tag 缺失而 `BLOCKED`，可以继续 tag 步骤；若
-`release_blockers` 非空，则不得创建正式 tag。tag push 后必须重新运行该命令，整体
-`status: PASS` 后才继续 GitHub Release 或用户分发。
+打正式 tag 前必须完成 [发布流程](release.md) 的 tag 前门禁。只读状态或审计命令不能替代签名、公证、产物验证和外部测试；存在未关闭发布条件时不得创建正式 tag。
 
-当前仓库尚未包含 release workflow；tag push 只发布 Git tag，不会自动构建、签名、公证或上传发布产物。正式发布仍按 [release.md](release.md) 的手工流程执行，直到 `.github/workflows/release.yml` 明确加入并通过治理审查。
+tag push 是否触发发布构建、签名和上传，以受治理的 release workflow 配置为准；未配置自动发布时，按 [release.md](release.md) 的手工流程执行。
 
 ---
 

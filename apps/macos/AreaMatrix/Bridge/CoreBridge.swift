@@ -153,10 +153,6 @@ actor CoreBridge {
         try requireGeneratedBindings(for: .moveToCategory)
     }
 
-    func restoreFile(id _: Int64) async throws -> Never {
-        try requireGeneratedBindings(for: .restoreFile)
-    }
-
     func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
         let availabilityChecker = availabilityChecker
         return try await Task.detached(priority: .userInitiated) {

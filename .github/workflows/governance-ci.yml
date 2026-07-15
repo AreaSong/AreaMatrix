@@ -18,6 +18,9 @@ jobs:
       - name: Governance check
         run: ./dev check governance
 
+      - name: Documentation integrity
+        run: ./dev check docs
+
       - name: Skill health
         run: ./dev check skills
 

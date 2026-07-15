@@ -104,7 +104,6 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case moveToCategory = "move_to_category"
     case previewBatchDelete = "preview_batch_delete"
     case batchDeleteToTrash = "batch_delete_to_trash"
-    case restoreFile = "restore_file"
     case listFiles = "list_files"
     case searchFiles = "search_files"
     case semanticSearch = "semantic_search"
@@ -177,26 +176,12 @@ struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading
             throw CoreError.Db(message: "missing .areamatrix/index.db")
         }
 
-        var lastError: Error?
-        for openFlags in Self.openFlags {
-            do {
-                let openedDatabase = try Self.openMetadataDatabase(dbURL: dbURL, openFlags: openFlags)
-                defer {
-                    sqlite3_close(openedDatabase)
-                }
-                return try Self.readMetadata(database: openedDatabase)
-            } catch {
-                lastError = error
-            }
+        let openedDatabase = try Self.openMetadataDatabase(dbURL: dbURL)
+        defer {
+            sqlite3_close(openedDatabase)
         }
-
-        throw lastError ?? CoreError.Db(message: "sqlite metadata read failed")
+        return try Self.readMetadata(database: openedDatabase)
     }
-
-    private static let openFlags: [Int32] = [
-        SQLITE_OPEN_READONLY,
-        SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
-    ]
 
     private static func readMetadata(database: OpaquePointer) throws -> ExistingRepositoryMetadataSnapshot {
         let schemaVersion = try readRequiredInt64(
@@ -219,9 +204,31 @@ struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading
         )
     }
 
-    private static func openMetadataDatabase(dbURL: URL, openFlags: Int32) throws -> OpaquePointer {
+    private static func openMetadataDatabase(dbURL: URL) throws -> OpaquePointer {
+        let walURL = URL(fileURLWithPath: "\(dbURL.path)-wal")
+        let sharedMemoryURL = URL(fileURLWithPath: "\(dbURL.path)-shm")
+        let hasWalSidecars = FileManager.default.fileExists(atPath: walURL.path)
+            || FileManager.default.fileExists(atPath: sharedMemoryURL.path)
+        if hasWalSidecars {
+            return try openMetadataDatabase(path: dbURL.path, flags: SQLITE_OPEN_READONLY)
+        }
+
+        guard var components = URLComponents(url: dbURL, resolvingAgainstBaseURL: false) else {
+            throw CoreError.Db(message: "invalid metadata database path")
+        }
+        components.queryItems = [URLQueryItem(name: "immutable", value: "1")]
+        guard let immutableURI = components.string else {
+            throw CoreError.Db(message: "invalid metadata database URI")
+        }
+        return try openMetadataDatabase(
+            path: immutableURI,
+            flags: SQLITE_OPEN_READONLY | SQLITE_OPEN_URI
+        )
+    }
+
+    private static func openMetadataDatabase(path: String, flags: Int32) throws -> OpaquePointer {
         var database: OpaquePointer?
-        let openResult = sqlite3_open_v2(dbURL.path, &database, openFlags, nil)
+        let openResult = sqlite3_open_v2(path, &database, flags, nil)
         guard openResult == SQLITE_OK, let openedDatabase = database else {
             let message = sqliteMessage(database)
             if let database {

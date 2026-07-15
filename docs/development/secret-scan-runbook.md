@@ -17,9 +17,9 @@
 
 工作区干净且没有领先 `origin/main` 的 commit 时，会输出 `nothing to scan` 并 **PASS**。
 
-## 维护者：v1 归档路径补扫（可选）
+## 维护者：归档路径专项扫描（可选）
 
-历史执行队列已经归档；需要复核旧 progress 或 task-loop evidence 是否重新出现本机绝对路径时，先从 [workflow versions](../../workflow/versions/README.md) 定位归档路径，再单独运行定向扫描。
+需要复核归档材料是否包含本机绝对路径或凭据模式时，先从 [workflow versions](../../workflow/versions/README.md) 定位范围，再单独运行定向扫描。
 
 不要把归档路径补扫加入提交前门禁；它只用于维护者专项审计。
 
@@ -30,7 +30,6 @@
 ```bash
 # 需要本地安装 gitleaks：brew install gitleaks
 AREAMATRIX_GITLEAKS_MODE=history GITLEAKS_LOG_OPTS="--all" ./dev check secrets
-git log -p -- .codex/runtime/task-loop/progress-backups/ > /tmp/areamatrix-progress-backups-history.patch
 ```
 
 报告写入 `.gitleaks-report.json`（已在 `.gitignore`）。
@@ -44,8 +43,4 @@ git log -p -- .codex/runtime/task-loop/progress-backups/ > /tmp/areamatrix-progr
 | 真实 secret | 轮换密钥 + 从历史移除（`git filter-repo`）需维护者确认 |
 | `generic-api-key` 误报 | 测试 fixture / build log：在 `.gitleaks.toml` allowlist 或改占位符 |
 
-## 当前结论（2026-06-11）
-
-- 仓库 **已公开**；**不 rewrite Git history**（Low 级路径泄露，无真实 key）。
-- 全历史约 79k path-leak、10 条疑似误报 `generic-api-key`。
-- HEAD 的 progress / task-loop-runs 已无 `/Users/as`。
+历史审计结果属于一次性证据，应保存在对应审计记录中，不写入长期 runbook。重写公开 Git 历史会改变所有 commit，只有确认真实 secret 泄露且完成密钥轮换、协作者协调和回滚方案后才能执行。

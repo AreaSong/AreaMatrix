@@ -149,86 +149,30 @@ fn release_checklist_records_current_macos_xctest_evidence_without_release_claim
 fn release_checklist_records_distribution_preflight_blocker_without_release_claim() {
     assert_contains(CHECKLIST, "2026-07-06 `./dev release preflight`");
     assert_contains(CHECKLIST, "`./dev release preflight`");
-    assert_contains(RELEASE, "`./dev release preflight` 通过");
-    assert_contains(RELEASE, "`./dev release preflight --json`");
-    assert_contains(RELEASE, "`required_distribution_evidence`");
-    assert_contains(RELEASE, "`evidence_record_template`");
+    assert_contains(RELEASE, "./dev release status --json --remote");
+    assert_contains(RELEASE, "./dev release evidence-audit --json");
     assert_contains(
         RELEASE,
-        "`./dev release final-tag-readiness-audit --json --remote`",
+        "不创建 tag、发布产物、关闭 residual 或完成外部验证",
     );
-    assert_contains(RELEASE, "`ready_to_create_formal_tag: true`");
-    assert_contains(RELEASE, "不创建 tag、不推送 tag、不创建 GitHub Release");
     assert_contains(
         RELEASE,
-        "`./dev release icloud-placeholder-smoke-audit --json`",
+        "Developer ID 签名、公证、staple、Gatekeeper 和干净 Mac 首启证据齐全",
     );
-    assert_contains(RELEASE, "`smoke_evidence_gate: BLOCKED`");
-    assert_contains(RELEASE, "不能关闭 `v1-rl-002`");
-    assert_contains(
-        RELEASE,
-        "`./dev release task05-release-review-audit --json`",
-    );
-    assert_contains(RELEASE, "`release_evidence_review_gate: BLOCKED`");
-    assert_contains(RELEASE, "不能关闭 `v1-ref-003-1-task-05`");
-    assert_contains(
-        RELEASE,
-        "`./dev release alpha-feedback-decision-audit --json`",
-    );
-    assert_contains(RELEASE, "`decision_gate.status: BLOCKED`");
-    assert_contains(RELEASE, "不能关闭 `v1-rl-006`");
-    assert_contains(RELEASE, "`./dev release distribution-artifact-probe");
-    assert_contains(RELEASE, "`probe.status` 表示采集是否成功");
-    assert_contains(
-        RELEASE,
-        "`distribution_requirements.status` 才表达正式分发要求",
-    );
-    assert_contains(BUILD, "release distribution");
-    assert_contains(BUILD, "preflight: BLOCKED");
-    assert_contains(BUILD, "./dev release preflight --json");
-    assert_contains(BUILD, "`blocked_by`");
+    assert_contains(RELEASE, "xcrun notarytool submit");
+    assert_contains(RELEASE, "xcrun stapler staple");
+    assert_contains(RELEASE, "干净 Mac");
+    assert_contains(RELEASE, "Developer ID identity");
     assert_contains(
         BUILD,
-        "./dev release final-tag-readiness-audit --json --remote",
+        "Developer ID 签名、公证、DMG、checksum 和干净 Mac 首启验证",
     );
-    assert_contains(BUILD, "`ready_to_create_formal_tag: true`");
-    assert_contains(BUILD, "不会创建 tag");
-    assert_contains(BUILD, "./dev release icloud-placeholder-smoke-audit --json");
-    assert_contains(BUILD, "`smoke_evidence_gate: BLOCKED`");
-    assert_contains(BUILD, "不接收路径、\n不运行 `mdls`");
-    assert_contains(BUILD, "不写 `.areamatrix/` metadata");
-    assert_contains(BUILD, "./dev release task05-release-review-audit --json");
-    assert_contains(BUILD, "`release_evidence_review_gate: BLOCKED`");
-    assert_contains(BUILD, "不读取 `.codex/task-loop-logs/**`");
-    assert_contains(BUILD, "./dev release alpha-feedback-decision-audit --json");
-    assert_contains(BUILD, "当前决策缺失时返回 `BLOCKED` 是预期状态");
-    assert_contains(BUILD, "不会创建");
+    assert_contains(BUILD, "状态、审计和产物探针只用于汇总或读取证据");
     assert_contains(
         CI_GOVERNANCE,
-        "./dev release alpha-feedback-decision-audit --json",
+        "发布状态、证据审计、签名、公证、DMG 和外部测试属于发布门禁",
     );
-    assert_contains(
-        CI_GOVERNANCE,
-        "./dev release final-tag-readiness-audit --json --remote",
-    );
-    assert_contains(
-        CI_GOVERNANCE,
-        "./dev release icloud-placeholder-smoke-audit --json",
-    );
-    assert_contains(CI_GOVERNANCE, "`smoke_evidence_gate: BLOCKED`");
-    assert_contains(
-        CI_GOVERNANCE,
-        "./dev release task05-release-review-audit --json",
-    );
-    assert_contains(CI_GOVERNANCE, "`release_evidence_review_gate: BLOCKED`");
-    assert_contains(CI_GOVERNANCE, "不属于普通 PR 或 CI 必跑项");
-    assert_contains(CI_GOVERNANCE, "不应记为普通 CI failure");
-    assert_contains(BUILD, "./dev release distribution-artifact-probe");
-    assert_contains(BUILD, "`probe.status: captured` 只表示采集成功");
-    assert_contains(
-        BUILD,
-        "`distribution_requirements.status` 在正式证据不足时仍为 `blocked`",
-    );
+    assert_contains(CI_GOVERNANCE, "不是普通 PR 的 CI 结果");
     assert_contains(
         CHECKLIST,
         "no valid Developer ID Application signing identity found",
@@ -248,16 +192,6 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
         "`distribution_requirements.status` 在正式证据不足时仍为 `blocked`",
     );
     assert_contains(CHECKLIST, "默认不执行完整 DMG SHA-256 读取");
-    assert_contains(RELEASE, "Developer ID / notarization 后续补证");
-    assert_contains(RELEASE, "`./dev release preflight` 通过");
-    assert_contains(RELEASE, "xcrun notarytool submit");
-    assert_contains(RELEASE, "xcrun stapler staple");
-    assert_contains(RELEASE, "干净 Mac 上首次打开通过 Gatekeeper");
-    assert_contains(RELEASE, "Signature=adhoc");
-    assert_contains(RELEASE, "Developer ID team");
-    assert_contains(RELEASE, "--install-confirm /Applications/AreaMatrix.app");
-    assert_contains(BUILD, "`./dev release readiness-build --install`");
-    assert_contains(BUILD, "`--install-confirm /Applications/AreaMatrix.app`");
     assert_contains(
         RELEASE_NOTES_010,
         "`./dev release preflight` 已补为可复现预检",
@@ -289,8 +223,8 @@ fn active_release_docs_do_not_reintroduce_v1_distribution_tracks() {
     }
 
     assert_contains(RELEASE, "workflow/versions/README.md");
-    assert_contains(RELEASE, "归档清单不作为后续版本发布命名模板");
-    assert_contains(BUILD, "不作为后续版本的发布命名模板");
+    assert_contains(RELEASE, "历史发布记录和未关闭外部条件");
+    assert_contains(BUILD, "历史记录通过 [workflow versions]");
 }
 
 #[test]
@@ -363,10 +297,10 @@ fn release_checklist_records_unnotarized_preview_without_alpha_claim() {
 #[test]
 fn release_checklist_keeps_release_build_and_archive_docs_aligned() {
     assert_contains(RELEASE, "workflow/versions/README.md");
-    assert_contains(RELEASE, "归档清单不作为后续版本发布命名模板");
+    assert_contains(RELEASE, "历史发布记录和未关闭外部条件");
     assert_contains(BUILD, "## 发布构建");
     assert_contains(BUILD, "workflow/versions/README.md");
-    assert_contains(BUILD, "不作为后续版本的发布命名模板");
+    assert_contains(BUILD, "历史记录通过 [workflow versions]");
     assert!(
         !BUILD.contains("发布构建（Stage 2 起激活）"),
         "build.md must not contradict archived v1 alpha release gates"

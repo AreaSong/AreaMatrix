@@ -1,220 +1,122 @@
-# AreaMatrix 文档导航
+# AreaMatrix 文档
 
-> 本目录是 AreaMatrix 的完整项目文档。中文为主，技术名词、API、配置 schema 保留英文。
+> 本目录保存 AreaMatrix 需要长期维护的产品、用户、UX、架构、API 和开发事实。
 >
-> 阅读时长：本页约 3 分钟。
+> 阅读时长：约 5 分钟。
 
----
+功能、界面、API、配置或安全边界发生变化时，对应长期文档必须在同一变更中更新。历史计划、任务、执行证据、收口决策和分发记录从 [workflow versions](../workflow/versions/README.md) 查阅；它们不参与当前产品导航。未实现且不属于正式产品的方向保存在未来 workflow，不得写成可用能力。
 
-## 文档层级
+## 开始使用
 
-`docs/` 只保存长期源事实：产品、架构、API、UX、开发规范、测试与发布规则。视觉展示原型、landing 页面草案和 workspace mockup 放在 `assets/prototypes/`，不作为产品或架构源事实。版本拆解、版本内 page specs、Core capability specs、control map、执行证据、release checklist、closeout 决策和归档材料放在 [workflow versions](../workflow/versions/README.md)。顶层 README 只做导航与摘要；当前发布规则以 [development/release.md](development/release.md) 为准，历史放行状态只作为归档证据查阅。
+- [用户指南](user-guide/README.md)
+- [安装与首次运行](user-guide/getting-started.md)
+- [创建和打开资料库](user-guide/repositories.md)
+- [接管已有目录](user-guide/adopting-existing-folders.md)
+- [导入文件](user-guide/importing-files.md)
+- [整理文件](user-guide/organizing-files.md)
+- [搜索、标签与智能列表](user-guide/search-tags-and-smart-lists.md)
+- [AI 功能与隐私](user-guide/ai-features-and-privacy.md)
+- [设置](user-guide/settings.md)
+- [冲突与恢复](user-guide/conflicts-and-recovery.md)
+- [常见问题与排障](user-guide/troubleshooting.md)
 
-历史执行归档、内部 page specs、Core capability specs、control map、性能基线、恢复场景和 release checklist 统一从 [workflow versions](../workflow/versions/README.md) 查阅。历史归档里的旧内部编号不代表未来版本已经开始。当前遗留项索引见 [workflow/residuals/](../workflow/residuals/)；这些索引不替代 `docs/`、`evidence/` 或 `closeout` 源事实。`workflow/references/`、`tasks/backlog/` 与 `.codex/` 材料不替代 `docs/` 的产品源事实。归档 source docs 的读法和写法约定见 [workflow/versions/source-docs-guide.md](../workflow/versions/source-docs-guide.md)。确认需要长期保留的事实后，再同步回本目录对应的产品、架构、API 或 UX 功能域文档。
+## 产品
 
-## 按角色推荐的阅读路径
+- [产品概览](product/overview.md)
+- [产品能力](product/capabilities.md)
+- [产品界面地图](product/product-surfaces.md)
+- [用户工作流](product/workflows.md)
+- [隐私与数据处理](product/privacy.md)
+- [产品需求](product/prd.md)
+- [用户故事](product/user-stories.md)
+- [术语表](product/glossary.md)
+- [能力方向](product/capability-direction.md)
 
-### 你是产品经理 / 关心做什么
+## UX
 
-```
-docs/product/prd.md
-   → docs/product/user-stories.md
-   → docs/roadmap/version-roadmap.md
-```
+- [UX 总览](ux/README.md)
+- [首次启动](ux/first-launch.md)
+- [拖拽与导入](ux/drag-import-flow.md)
+- [主界面状态](ux/ui-states.md)
+- [分类器调教](ux/classifier-calibration.md)
+- [去重与冲突](ux/dedup-conflict.md)
+- [搜索](ux/search.md)
+- [标签、批量、Undo 与命令面板](ux/deep-features.md)
+- [设置](ux/settings-panel.md)
+- [错误信息](ux/error-messages.md)
+- [品牌资产](ux/brand-assets.md)
+- [竞品与定位](ux/competitive-analysis.md)
 
-### 你是架构师 / 关心怎么搭
+## 架构
 
-```
-docs/architecture/overview.md
-   → docs/architecture/tech-stack.md
-   → docs/architecture/layered-design.md
-   → docs/architecture/core-internal-architecture.md
-   → docs/architecture/adopt-existing-folders.md
-   → docs/architecture/source-of-truth.md
-   → docs/adr/  (按需翻阅决策记录)
-```
+- [架构总览](architecture/overview.md)
+- [技术栈](architecture/tech-stack.md)
+- [分层设计](architecture/layered-design.md)
+- [macOS 前端架构](architecture/macos-frontend-architecture.md)
+- [Core 内部架构](architecture/core-internal-architecture.md)
+- [真相源策略](architecture/source-of-truth.md)
+- [接管已有目录](architecture/adopt-existing-folders.md)
+- [事务式导入](architecture/transactional-import.md)
+- [数据模型](architecture/data-model.md)
+- [FFI 设计](architecture/ffi-design.md)
+- [文件监听与 iCloud](architecture/fs-watcher.md)
+- [并发模型](architecture/concurrency.md)
+- [数据库迁移](architecture/migration.md)
 
-### 你是核心库实现者 / 写 Rust 部分
+## 模块
 
-```
-docs/architecture/data-model.md
-   → docs/architecture/core-internal-architecture.md
-   → docs/architecture/adopt-existing-folders.md
-   → docs/architecture/transactional-import.md
-   → docs/architecture/concurrency.md
-   → docs/architecture/migration.md
-   → docs/modules/storage.md
-   → docs/modules/classify.md
-   → docs/modules/overview-gen.md
-   → docs/modules/tree-scan.md
-   → docs/modules/change-log.md
-   → docs/api/core-api.md
-   → docs/api/error-codes.md
-   → docs/development/observability.md
-```
+- [存储](modules/storage.md)
+- [分类](modules/classify.md)
+- [概览生成](modules/overview-gen.md)
+- [目录扫描](modules/tree-scan.md)
+- [改动日志](modules/change-log.md)
 
-### 你是 macOS App 实现者 / 写 SwiftUI 部分
+## API 与配置
 
-```
-docs/architecture/overview.md
-   → docs/architecture/ffi-design.md
-   → docs/architecture/fs-watcher.md
-   → docs/architecture/concurrency.md
-   → docs/api/uniffi-recipes.md
-   → docs/development/setup.md
-   → docs/development/build.md
-   → docs/api/core-api.md
-```
+- [Core API](api/core-api.md)
+- [错误码](api/error-codes.md)
+- [classifier.yaml](api/classifier-yaml.md)
+- [UniFFI Swift 集成](api/uniffi-recipes.md)
 
-### 你在调试问题 / 性能 / 可观测性
+## 开发与运维
 
-```
-docs/development/troubleshooting.md
-   → docs/development/observability.md
-   → docs/development/performance.md
-```
+- [开发环境](development/setup.md)
+- [构建与运行](development/build.md)
+- [编码规范](development/coding-standards.md)
+- [Git 工作流](development/git-workflow.md)
+- [测试策略](development/testing.md)
+- [错误恢复矩阵](development/error-recovery-matrix.md)
+- [依赖政策](development/dependency-policy.md)
+- [CI 治理](development/ci-governance.md)
+- [发布流程](development/release.md)
+- [性能工程](development/performance.md)
+- [恢复说明](development/recovery.md)
+- [可观测性](development/observability.md)
+- [开发排障](development/troubleshooting.md)
+- [Secret Scan Runbook](development/secret-scan-runbook.md)
 
-### 你是新加入的贡献者
+## 决策与方向
 
-```
-顶层 README.md
-   → CONTRIBUTING.md
-   → CODE_REVIEW.md
-   → docs/development/setup.md
-   → docs/development/git-workflow.md
-   → docs/development/coding-standards.md
-   → docs/development/testing.md
-   → docs/development/ci-governance.md
-```
+- [ADR 索引](adr/README.md)
+- [长期能力方向](product/capability-direction.md)
+- [Roadmap 导航](roadmap/README.md)
 
-### 你在做企业治理 / 评审 / CI
+历史版本、source docs、执行证据和 closeout 从 [workflow versions](../workflow/versions/README.md) 查阅。未关闭的外部证据、接受的例外和历史引用从 [residual ledger](../workflow/residuals/README.md) 查阅。两者都不替代本目录的产品事实。
 
-```
-CODE_REVIEW.md
-   → SECURITY.md
-   → docs/development/dependency-policy.md
-   → docs/development/ci-governance.md
-   → .github/PULL_REQUEST_TEMPLATE.md
-```
+## 文档规则
 
-### 你想了解某个决策为什么是这样
+1. `README.md` 和 `README.zh-CN.md` 只做产品介绍、最短上手和导航。
+2. `docs/**` 解释产品如何使用、系统如何工作以及长期不变量。
+3. ADR 解释重要决策为什么成立，不充当当前用户指南。
+4. 历史状态和未来方向不能混入当前能力说明。
+5. 用户文件、DB、导入、恢复、iCloud 和远程 AI 文档必须写清副作用与取消或恢复路径。
+6. 每篇 Markdown 使用一级标题、摘要、正文和 `Related`，代码块注明语言。
+7. 文档变更后检查相对链接、导航完整性和长期措辞。
 
-```
-docs/adr/README.md  (索引)
-   → docs/adr/0001..0010-*.md  (具体决策)
-```
+## Related
 
----
-
-## 全部文档清单
-
-### 产品 / Product
-
-| 文档 | 说明 |
-|---|---|
-| [product/prd.md](product/prd.md) | 产品需求文档 |
-| [product/user-stories.md](product/user-stories.md) | 核心用户故事 |
-| [product/glossary.md](product/glossary.md) | 中英术语表 |
-
-### UX / 交互规格
-
-| 文档 | 说明 |
-|---|---|
-| [ux/README.md](ux/README.md) | UX 文档索引（Wireframe Specs） |
-| [ux/brand-assets.md](ux/brand-assets.md) | Logo、颜色、留白、尺寸与交付规范 |
-
-### 架构 / Architecture
-
-| 文档 | 说明 |
-|---|---|
-| [architecture/overview.md](architecture/overview.md) | 架构总览 |
-| [architecture/tech-stack.md](architecture/tech-stack.md) | 技术栈与选型理由 |
-| [architecture/layered-design.md](architecture/layered-design.md) | 分层设计（Core / FFI / Platform / UI） |
-| [architecture/macos-frontend-architecture.md](architecture/macos-frontend-architecture.md) | macOS 前端架构稳定化与 feature 落点 |
-| [architecture/core-internal-architecture.md](architecture/core-internal-architecture.md) | Core 内部 Rust 后端架构 |
-| [architecture/adopt-existing-folders.md](architecture/adopt-existing-folders.md) | 接管已有目录规则 |
-| [architecture/data-model.md](architecture/data-model.md) | SQLite schema 详解 |
-| [architecture/ffi-design.md](architecture/ffi-design.md) | Rust ↔ Swift UniFFI 桥接设计 |
-| [architecture/fs-watcher.md](architecture/fs-watcher.md) | 文件系统监听与 iCloud 集成 |
-| [architecture/transactional-import.md](architecture/transactional-import.md) | 事务式导入流程 |
-| [architecture/source-of-truth.md](architecture/source-of-truth.md) | 真相源策略 |
-| [architecture/concurrency.md](architecture/concurrency.md) | 并发模型（Tokio / Actor / FFI） |
-| [architecture/migration.md](architecture/migration.md) | DB schema 升级与回滚 |
-
-### 模块详细设计 / Modules
-
-| 文档 | 说明 |
-|---|---|
-| [modules/classify.md](modules/classify.md) | 分类引擎 |
-| [modules/storage.md](modules/storage.md) | 文件存储操作 |
-| [modules/overview-gen.md](modules/overview-gen.md) | 资料库概览生成器 |
-| [modules/tree-scan.md](modules/tree-scan.md) | 目录扫描与树构建 |
-| [modules/change-log.md](modules/change-log.md) | 改动日志 |
-
-### API / 配置规范
-
-| 文档 | 说明 |
-|---|---|
-| [api/core-api.md](api/core-api.md) | Core 对外 API（UDL 接口） |
-| [api/error-codes.md](api/error-codes.md) | 错误码列表 |
-| [api/classifier-yaml.md](api/classifier-yaml.md) | classifier.yaml 配置规范 |
-| [api/uniffi-recipes.md](api/uniffi-recipes.md) | Swift 端封装套路集 |
-
-### 开发指南 / Development
-
-| 文档 | 说明 |
-|---|---|
-| [development/setup.md](development/setup.md) | 开发环境搭建 |
-| [development/build.md](development/build.md) | 构建与运行 |
-| [development/coding-standards.md](development/coding-standards.md) | 编码规范 |
-| [development/git-workflow.md](development/git-workflow.md) | Git 分支与 commit 规范 |
-| [development/testing.md](development/testing.md) | 测试策略 |
-| [development/dependency-policy.md](development/dependency-policy.md) | 依赖、许可证与供应链规则 |
-| [development/ci-governance.md](development/ci-governance.md) | CI 与治理门禁 |
-| [development/release.md](development/release.md) | 发布流程 |
-| [development/troubleshooting.md](development/troubleshooting.md) | 常见错误诊断手册 |
-| [development/performance.md](development/performance.md) | 性能工程指南 |
-| [development/recovery.md](development/recovery.md) | 恢复证据与手工冒烟规则 |
-| [development/observability.md](development/observability.md) | 日志与可观测性 |
-
-### 决策记录 / ADR
-
-| 文档 | 决策主题 |
-|---|---|
-| [adr/README.md](adr/README.md) | ADR 索引与模板说明 |
-| [adr/0001-tech-stack.md](adr/0001-tech-stack.md) | 桌面技术栈选型 |
-| [adr/0002-uniffi-vs-others.md](adr/0002-uniffi-vs-others.md) | FFI 工具选择 |
-| [adr/0003-source-of-truth-strategy.md](adr/0003-source-of-truth-strategy.md) | 真相源策略 |
-| [adr/0004-transactional-storage.md](adr/0004-transactional-storage.md) | 事务式存储 |
-| [adr/0005-fsevents-listener.md](adr/0005-fsevents-listener.md) | 文件系统监听方案 |
-| [adr/0006-icloud-support.md](adr/0006-icloud-support.md) | iCloud 兼容程度 |
-| [adr/0007-readme-granularity.md](adr/0007-readme-granularity.md) | 概览生成粒度 |
-| [adr/0008-naming-and-i18n.md](adr/0008-naming-and-i18n.md) | 命名与国际化 |
-| [adr/0009-min-macos-version.md](adr/0009-min-macos-version.md) | 最低 macOS 版本 |
-| [adr/0010-adopt-existing-folders-and-overviews.md](adr/0010-adopt-existing-folders-and-overviews.md) | 接管已有目录与专属概览文件 |
-
-### 路线图 / Roadmap
-
-| 文档 | 说明 |
-|---|---|
-| [roadmap/version-roadmap.md](roadmap/version-roadmap.md) | 版本路线图 |
-| [roadmap/engineering-maturity-roadmap.md](roadmap/engineering-maturity-roadmap.md) | 工程成熟路线图 |
-| [workflow versions](../workflow/versions/README.md) | 版本执行材料、证据和 closeout 归档入口 |
-
----
-
-## 写作约定
-
-所有文档遵守以下统一规则：
-
-1. **每篇 .md 文件**：第一级标题 → 一句话摘要 → 阅读时长估算 → 正文
-2. **互连**：篇尾 "Related" 章节链接相关文档
-3. **代码示例**：用对应语言标签（`rust` / `swift` / `sql` / `yaml` / `bash`）
-4. **架构图**：`mermaid`，节点 ID 用 camelCase
-5. **决策点**：明确"为什么这样、考虑过什么备选、何时重审"
-6. **避免主观**：用"团队约定 / 当前共识"代替"我认为"
-7. **术语一致**：首次出现给中英对照（依赖 [product/glossary.md](product/glossary.md)）
-
-## 反馈
-
-发现文档错误、信息缺失、表述不清，欢迎直接 PR 修改，或提 issue 用 `documentation` 标签。
+- [项目 README](../README.zh-CN.md)
+- [产品概览](product/overview.md)
+- [用户指南](user-guide/README.md)
+- [架构总览](architecture/overview.md)
+- [开发环境](development/setup.md)

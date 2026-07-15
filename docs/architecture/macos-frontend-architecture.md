@@ -78,7 +78,7 @@ Swift 调用 Rust Core 的手写入口是 `Bridge/`。
 - `CoreError` 应尽量在 Bridge 或 model 边界映射成 App/UI 语义错误；View 不应承担错误分类。
 - `Bridge/Generated/` 和 `Bridge/UniFFI/` 保持纯生成绑定。
 
-受控例外必须明确：例如短期存在的 SQLite metadata reader，应记录原因、风险和退出条件。
+受控例外必须明确：例如 SQLite metadata reader 应记录原因、风险和退出条件。名称和职责为只读的 reader 必须使用 `SQLITE_OPEN_READONLY`，不得以 fallback 创建、迁移或修改 `.areamatrix/index.db`；需要写入或修复时必须进入独立的用户确认路径。
 
 ## 默认 Core 服务装配
 
@@ -152,8 +152,7 @@ remote provider probe 已退出 runtime 环境合同。Core 新增或重命名 r
 
 ## 渐进迁移顺序
 
-1. 规则与路线图先固定：`apps/macos/AGENTS.md`、本文和
-   `docs/roadmap/engineering-maturity-roadmap.md` 保持一致。
+1. 规则先固定：`apps/macos/AGENTS.md`、本文和治理测试保持一致。
 2. 已起步 feature 持续样板化：MainList、FileActions、Search、CommandPalette、
    SyncConflicts、AI、Import。
 3. 下一批优先治理高风险或高膨胀 owner：Settings、Onboarding。

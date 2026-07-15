@@ -362,7 +362,42 @@ class BuildToolsTest(unittest.TestCase):
 
             checks._check_ai_runtime_environment_contract(root, failures)
 
-            self.assertEqual(failures.count, 2)
+            self.assertEqual(failures.count, 1)
+
+    def test_docs_check_accepts_reachable_pages_and_ignores_code_fences(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / "README.md").write_text("[Docs](docs/README.md)\n", encoding="utf-8")
+            (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
+            (root / "docs/README.md").write_text(
+                "[Page](page.md)\n\n```markdown\n[Example](missing.md)\n```\n",
+                encoding="utf-8",
+            )
+            (root / "docs/page.md").write_text("# Page\n", encoding="utf-8")
+
+            self.assertEqual(checks.run_docs_check(root), 0)
+
+    def test_docs_check_rejects_broken_and_unreachable_pages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / "README.md").write_text("[Docs](docs/README.md)\n", encoding="utf-8")
+            (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
+            (root / "docs/README.md").write_text("[Missing](missing.md)\n", encoding="utf-8")
+            (root / "docs/orphan.md").write_text("# Orphan\n", encoding="utf-8")
+
+            self.assertEqual(checks.run_docs_check(root), 1)
+
+    def test_docs_check_rejects_internal_runtime_details_in_root_readme(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / "README.md").write_text("[Docs](docs/README.md)\n`.codex/runtime/`\n", encoding="utf-8")
+            (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
+            (root / "docs/README.md").write_text("# Docs\n", encoding="utf-8")
+
+            self.assertEqual(checks.run_docs_check(root), 1)
 
     def test_macos_prerequisites_reports_all_missing_tools(self) -> None:
         completed = type(

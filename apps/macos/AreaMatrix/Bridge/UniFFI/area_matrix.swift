@@ -32376,14 +32376,6 @@ public func resolveSyncConflict(repoPath: String, conflictId: String, resolution
     )
 })
 }
-public func restoreFile(repoPath: String, fileId: Int64)throws  -> FileEntry {
-    return try  FfiConverterTypeFileEntry.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
-    uniffi_area_matrix_core_fn_func_restore_file(
-        FfiConverterString.lower(repoPath),
-        FfiConverterInt64.lower(fileId),$0
-    )
-})
-}
 public func resumeScanSession(repoPath: String, scanSessionId: Int64)throws  -> ReindexReport {
     return try  FfiConverterTypeReindexReport.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_resume_scan_session(
@@ -32806,9 +32798,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_resolve_sync_conflict() != 50056) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_area_matrix_core_checksum_func_restore_file() != 39484) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_resume_scan_session() != 31216) {

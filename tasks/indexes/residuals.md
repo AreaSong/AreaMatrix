@@ -25,6 +25,8 @@
 | `v1-rl-006` | `blocked-decision` | Alpha feedback issue template 和 route evidence 已存在，且 `closes_residual: false`；可信测试者名单、tester invitation side effect、正式公告 / Discussion 链接、反馈分流和 triage owner 仍需要 release decision。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
 | `v1-ref-003-1-task-05` | `deferred` | release-gate review record 已结构化，当前 `closes_residual: false`；走 fresh release evidence review，不补造 task-loop verify evidence。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
 | `v1-ex-001` | `accepted-exception` | 已接受 checkpoint gaps，不补造历史。 | [accepted exceptions](../../workflow/versions/v1-mvp/residuals/accepted-exceptions.md) |
+| `global-product-restore-file-contract` | `closed` | 公开 `restore_file` 合同已移除；受支持的恢复继续使用 Undo/Redo，不是 active task。 | [Core API](../../docs/api/core-api.md) |
+| `global-product-metadata-reader-write-flags` | `closed` | Metadata reader 已收紧为只读打开，不创建 sidecar，也不修改 `index.db` 或 WAL，不是 active task。 | [metadata reader](../../apps/macos/AreaMatrix/Bridge/CoreBridgeUnavailableState.swift) |
 | `global-ref-areaflow` | `reference-only` | 历史愿景，不是 AreaMatrix 当前任务。 | [non-current references](../../workflow/residuals/non-current-references.md) |
 | `global-template-vtemplate` | `template-only` | 模板参考实例，blocked-by-design。 | [non-current references](../../workflow/residuals/non-current-references.md) |
 | `global-ref-closed-backlog-packages` | `reference-only` | 5 个 backlog prompt package 均 closed。 | [tasks backlog](../backlog/README.md) |

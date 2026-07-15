@@ -662,11 +662,6 @@ RustBuffer uniffi_area_matrix_core_fn_func_resolve_icloud_conflict(RustBuffer re
 RustBuffer uniffi_area_matrix_core_fn_func_resolve_sync_conflict(RustBuffer repo_path, RustBuffer conflict_id, RustBuffer resolution, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_RESTORE_FILE
-#define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_RESTORE_FILE
-RustBuffer uniffi_area_matrix_core_fn_func_restore_file(RustBuffer repo_path, int64_t file_id, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_RESUME_SCAN_SESSION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_RESUME_SCAN_SESSION
 RustBuffer uniffi_area_matrix_core_fn_func_resume_scan_session(RustBuffer repo_path, int64_t scan_session_id, RustCallStatus *_Nonnull out_status
@@ -1536,12 +1531,6 @@ uint16_t uniffi_area_matrix_core_checksum_func_resolve_icloud_conflict(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESOLVE_SYNC_CONFLICT
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESOLVE_SYNC_CONFLICT
 uint16_t uniffi_area_matrix_core_checksum_func_resolve_sync_conflict(void
-
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESTORE_FILE
-#define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESTORE_FILE
-uint16_t uniffi_area_matrix_core_checksum_func_restore_file(void
 
 );
 #endif

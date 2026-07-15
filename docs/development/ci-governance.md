@@ -16,7 +16,7 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
 | `macos-ci.yml` | Core build、tracked Swift bindings drift、Xcode build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
-| `governance-ci.yml` | governance files、skills、quality smoke、品牌资产、Codex OS、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
+| `governance-ci.yml` | governance files、文档链接与导航、skills、quality smoke、品牌资产、Codex OS、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 
 macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.yml` 必须先显式检查工程和源码目录；
 任一目录缺失都应立即失败，不得通过条件表达式跳过 build/test、SwiftLint 或 SwiftFormat。
@@ -31,6 +31,7 @@ macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.
 
 ```bash
 ./dev check governance
+./dev check docs
 ./dev check skills
 ./dev check quality
 ./dev check codex-os
@@ -46,32 +47,7 @@ python3 -m venv .brand-venv
 .brand-venv/bin/python scripts/brand/validate_assets.py
 ```
 
-`./dev release status --json --remote` 和 `./dev release evidence-audit --json` 是 release owner
-的只读发布聚合 / 记录一致性检查，不属于普通 PR 的必跑 CI 门禁。普通 PR 中若 status 因正式发布证据、
-正式 tag 或外部分发条件缺失而 `BLOCKED`，不应把它记录为 CI failure；只有执行正式发布流程时，
-才按 [release.md](release.md) 的发布门禁处理。`evidence-audit` 即使 `PASS`，也只说明 evidence
-record 与 residual 索引一致，不证明发布 ready。
-`./dev release final-tag-readiness-audit --json --remote` 同样是 release owner 的只读 tag 前门禁审计，
-不属于普通 PR 或 CI 必跑项。它不会创建 tag、推送 tag 或创建 GitHub Release；当前因其他发布证据
-阻断而 `BLOCKED` 时，不应记为普通 CI failure。
-`./dev release icloud-placeholder-smoke-audit --json` 是 release owner 的只读 iCloud smoke record
-审计，不属于普通 PR 或 CI 必跑项。它只读取 evidence record 和 residual 索引，不接收路径、不运行
-`mdls`、不触发 iCloud 下载、不读取用户文件内容、不写 DB、不写 `.areamatrix/`；当前
-`smoke_evidence_gate: BLOCKED` 表示 M-02 发布证据仍缺失，不应记为普通 CI failure。
-`./dev release task05-release-review-audit --json` 是 release owner 的只读 release evidence review
-审计，不属于普通 PR 或 CI 必跑项。它只读取对应的 v1 evidence record 和 residual 索引，
-不读取 `.codex/task-loop-logs/**`、不回填 progress、logs、summaries、checkpoint metadata、commit
-或 tag；当前 `release_evidence_review_gate: BLOCKED` 表示 fresh review 证据仍缺失，不应记为普通
-CI failure。
-`./dev release distribution-artifact-probe --app-path <APP_PATH> --dmg-path <DMG_PATH> --json`
-同样是 release owner 的只读产物 probe，不属于普通 PR 或 CI 必跑项；它不会写产物或提交公证，
-但也不能证明正式分发 ready。
-`./dev release alpha-feedback-decision-audit --json` 是 release owner 的只读反馈路线决策审计，
-不属于普通 PR 或 CI 必跑项。它只核对本地 issue template、Discussion links 和
-`alpha-feedback-route.md` 中的 decision record；当前缺 tester 名单、announcement / Discussion、
-备用反馈路线、triage owner 或响应 SLO 时返回 `BLOCKED` 是正确的发布阻断，不应记为普通 CI failure。
-`./dev release readiness-build --install` 会写入本机 Applications 目录，不属于 CI 门禁；
-CI 和普通 PR 不应安装或替换 `/Applications/AreaMatrix.app`。
+发布状态、证据审计、签名、公证、DMG 和外部测试属于发布门禁，不是普通 PR 的 CI 结果。CI 不安装或替换 `/Applications/AreaMatrix.app`，也不能把只读产物探针当作分发证据；正式发布统一遵循 [发布流程](release.md)。
 
 `./dev check codex-os` 会覆盖 Codex OS flow 编排入口的 CLI smoke，包括
 `go`、`flow`、`start-flow`、`now`、`run-validation --profile auto/full`、`repair-plan`、
@@ -120,15 +96,9 @@ cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftform
   会以明确的非零 blocked 状态返回，不得被当作 XCTest PASS。
 - 不允许用本地截图替代可复现命令输出。
 
-## Task-loop 与 CI
+## 任务验证与 CI
 
-Task-loop 的 `VERIFY_RESULT: PASS` 是单任务验收证据。合并前仍需 CI 作为远端质量门禁。
-
-如果 `GIT_CHECKPOINT=push` 自动上传 PASS task：
-
-- commit 必须包含 progress/log/summary evidence；
-- PR 仍需要 governance/core/macos CI；
-- CI 失败时不得继续合并，需要新 commit 修复。
+本地任务验证用于证明具体改动，远端 CI 用于提供可复现的合并质量门禁。任何本地任务结果、运行摘要或截图都不能替代 PR 所需的 governance、Core 和 macOS CI；CI 失败时不得合并。
 
 ## 跳过规则
 

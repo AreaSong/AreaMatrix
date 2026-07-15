@@ -6,131 +6,108 @@
   <img alt="AreaMatrix" src="./assets/brand/final/areamatrix-logo-lockup-outlined-light.svg" width="720">
 </picture>
 
-> 拖进来，文件自己整理自己。
->
-> 一款 macOS 原生桌面应用，用拖拽、自动分类、改动追踪和树状视图，把散乱的资料变成可导航的知识仓库。
+> 把文件拖进来，同时保留对文件位置和数据流向的控制权。
+
+AreaMatrix 是一款源码可得的 macOS 原生资料管理应用。它通过安全接管已有目录、事务式导入、规则与可选 AI 分类、目录树、标签、搜索、改动历史和恢复工具，把散乱文件整理成可搜索、可追溯、可继续用 Finder 管理的资料库。
 
 简体中文 | [English](./README.md)
 
----
+## AreaMatrix 能做什么
 
-## 项目定位
+- 接管已有文件夹时不移动、不重命名、不删除、不覆盖其中的用户文件。
+- 使用移动、复制或仅索引三种模式导入文件，并处理重复文件和同名冲突。
+- 使用分类规则、可视化规则编辑、标签、批量操作和撤销/重做整理资料。
+- 在原生三栏工作区中浏览目录树、文件列表、元数据、笔记和改动日志。
+- 搜索文件名、笔记和元数据，保存查询、使用智能列表，并按需建立语义索引。
+- 在明确配置和隐私规则约束下使用本地或远程 AI 分类、摘要和标签建议。
+- 同步 Finder 外部改动，审阅 iCloud 与同步冲突，并提供启动恢复和元数据修复流程。
+- 自动内容默认写入 `.areamatrix/generated/`，绝不覆盖用户已有的 `README.md`。
 
-AreaMatrix 是一款 **source-available（源码可得）** 的桌面端资料管理工具。它把个人文件的混乱状态，转化成一个**自组织、可追溯、可视化**的知识仓库。
+## 产品界面
 
-选择一个文件夹作为资料库，哪怕它已经有多年积累的内容。AreaMatrix 会在不移动、不重命名、不覆盖原文件的前提下建立索引；之后拖一个文件进来，它会自动识别是什么、归到哪一类、建议怎么命名。每次改动都有日志，专属概览文件会持续更新，整个目录结构在侧边栏树状图里一眼看清。
+AreaMatrix 使用一个 macOS 原生主窗口，通过稳定的产品界面承载不同任务：
 
-## 核心特性
+| 界面 | 用途 |
+|---|---|
+| 首次启动与资料库设置 | 选择、校验、创建、打开或安全接管资料库目录 |
+| 资料库工作区 | 浏览目录树和文件列表，查看详情、编辑笔记并执行文件操作 |
+| 导入与冲突审阅 | 预览导入、选择存储模式、处理重复和同名冲突、查看结果 |
+| 搜索与组织 | 搜索、筛选、保存查询、使用智能列表、标签和批量操作 |
+| AI 与隐私 | 查看本地模型状态、配置远程 Provider、控制数据范围、审阅建议和查看调用记录 |
+| 设置与诊断 | 管理资料库、分类器、集成、高级设置和应用信息 |
+| 同步与恢复 | 处理 iCloud 或外部冲突、启动恢复和元数据修复 |
 
-- **拖拽即归档** — 把文件拖进窗口任意位置，本地完成智能分类
-- **接管已有目录** — 任意非空文件夹都可以作为资料库根，首次打开会扫描并建立索引
-- **混合分类策略** — 先走扩展名 + 关键词规则；AI 兜底可按配置启用
-- **三种存储模式** — 每次拖入可选 *移动 / 复制 / 仅索引*
-- **专属资料库概览** — 默认写入 `.areamatrix/generated/`，可选生成 `AREAMATRIX.md`，不覆盖用户已有 `README.md`
-- **树状图导航** — 完整仓库结构展示在侧边栏，大资料库下虚拟化渲染
-- **双向同步** — 在 Finder/终端的外部改动通过 FSEventStream 实时回流
-- **崩溃安全** — staging 区事务式导入，强杀进程也不会留下半移动文件
-- **iCloud 兼容** — 占位符文件通过 `NSFileCoordinator` 协调下载
-- **100% 原生 macOS 界面** — SwiftUI 实现，不是 WebView
+完整入口和功能见[产品界面地图](docs/product/product-surfaces.md)与[用户指南](docs/user-guide/README.md)。
 
-## 架构一览
+## 从源码构建
+
+AreaMatrix 目前以源码形式提供，尚未提供完成签名与公证的安装包。
+
+环境要求：
+
+- macOS 14 Sonoma 或更高版本
+- Xcode 15 或更高版本
+- Rust stable 1.75 或更高版本
+
+```bash
+./dev build core
+./dev bindings update \
+  --udl core/area_matrix.udl \
+  --out-dir apps/macos/AreaMatrix/Bridge/UniFFI
+xcodebuild \
+  -project apps/macos/AreaMatrix.xcodeproj \
+  -scheme AreaMatrix \
+  -destination 'generic/platform=macOS' \
+  build CODE_SIGNING_ALLOWED=NO
+```
+
+完整步骤见[开始使用](docs/user-guide/getting-started.md)和[开发环境搭建](docs/development/setup.md)。
+
+## 架构
 
 ```mermaid
 flowchart LR
-    UI[SwiftUI macOS App]
-    FFI[UniFFI 桥接层]
-    Core[Rust 核心库]
-    DB[(SQLite)]
-    Repo[(任意资料库文件夹)]
+    UI[SwiftUI macOS 应用]
+    Bridge[手写 Swift Bridge]
+    FFI[UniFFI 绑定]
+    Core[Rust Core]
+    DB[(SQLite 元数据)]
+    FS[(资料库文件)]
 
-    UI --> FFI --> Core
+    UI --> Bridge --> FFI --> Core
     Core --> DB
-    Core --> Repo
-    UI -.FSEventStream.-> Repo
+    Core --> FS
+    UI -. 平台服务 .-> FS
 ```
 
-Rust 核心库与平台无关。macOS 是第一个目标平台，未来扩展 Windows / Linux / iOS 时，只需为同一份核心库写一层新的原生 UI。
+文件是否存在、文件内容和文件位置以文件系统为准。SQLite 保存标签、笔记、改动历史、配置和索引等 AreaMatrix 元数据。外部文件系统改动会同步回元数据，数据库不得否决用户直接进行的文件系统操作。
 
-## 设计哲学
+## 文档入口
 
-AreaMatrix 的所有架构决策围绕三条原则：
-
-1. **真相在 SQLite**：DB 是元数据真相源，文件系统是它的物化视图。但用户在外部的修改也会被监听并回流，保证两者最终一致。
-2. **任何中断都不丢数据**：所有写操作走 staging 区 → 校验哈希 → 原子提交 → 落位的事务流程。
-3. **核心与平台分离**：业务逻辑写一次（Rust），UI 每个平台各写各的（SwiftUI/WinUI/...）。未来扩端不浪费业务代码。
-
-## 项目状态
-
-实现态，尚未进入正式分发放行。v1 技术队列已完成，仓库内已经包含 Rust core、
-SwiftUI macOS app、测试，以及早期 iOS / Windows / Linux 表面层。
-
-v1 技术归档不等于正式分发放行。正式分发仍被 release 证据和 release decision
-阻断；当前 release 状态以 release 指南和 residual ledger 为准，不从历史 prompt
-归档推断。
-
-版本路线图见 [docs/roadmap/version-roadmap.md](docs/roadmap/version-roadmap.md)。
-
-## 仓库目录层次
-
-AreaMatrix 把源码、规划治理和本地运行材料分开看：
-
-| 层次 | 路径 | 说明 |
-|---|---|---|
-| 产品源码 | `core/`、`apps/`、`docs/` | Rust core、各平台原生应用和权威产品文档。 |
-| 产品资产与原型 | `assets/brand/`、`assets/prototypes/` | 权威品牌资产，以及不作为产品源事实的 landing / workspace 视觉原型。 |
-| 规划与治理 | `.ai-governance/`、`workflow/`、`tasks/` | AI 协作规则、版本规划 gate、版本内执行队列、轻量任务进度和 backlog 材料。 |
-| Codex 运行入口 | `.codex/`、`.agents/skills/`、`dev`、`task-loop`、`scripts/` | 仓库内 Codex skills、发现入口和 task-loop 工具。这些是稳定工具入口，不应为了视觉收紧而移动。 |
-| 本地生成物 | `.build/`、`build/`、`core/target/`、`apps/*/.build`、`apps/**/bin`、`apps/**/obj`、`apps/macos/DerivedData/` | 已忽略的本地构建产物，不属于源码目录形态。 |
-
-`.codex/skills-src/`、`.agents/skills/`、`workflow/`、`dev`、`task-loop` 这类固定路径需要保留在原位；Codex skills 和任务循环脚本会依赖它们。历史 prompt 队列通过 [workflow versions](workflow/versions/README.md) 索引。轻量独立任务放在 `tasks/active/` 和 `tasks/done/`；`tasks/backlog/` 保持候选池语义，不代表当前任务进度。
-
-状态边界：产品事实以 `docs/`、`core/`、`apps/` 和 `assets/brand/final/` 为准；
-`workflow/` 承载规划、归档和参考材料；轻量任务状态只看 `tasks/active/` 与
-`tasks/done/`；已 closed 的 backlog prompt package 只是历史候选材料；`.codex/`、
-`.agents/skills/`、`dev`、`task-loop` 和 `scripts/` 是 Codex 运行工具层，不是产品源事实。
-release / reference / template 遗留项统一索引在 `workflow/residuals/` 和
-`workflow/versions/<version>/residuals/`；这些索引只链接回源文件，不替代 `docs/`、
-release evidence 或任务状态。
-
-## 文档导览
-
-| 你是 | 推荐阅读 |
+| 需求 | 入口 |
 |---|---|
-| 产品视角想了解做什么 | [docs/product/prd.md](docs/product/prd.md) |
-| 架构师想了解怎么搭 | [docs/architecture/overview.md](docs/architecture/overview.md) |
-| 实现者想了解每块怎么写 | [docs/modules/](docs/modules/) |
-| 集成方想了解 API | [docs/api/core-api.md](docs/api/core-api.md) |
-| 规划 v* workflow / v2 discussion | [workflow/README.md](workflow/README.md) |
-| 查看 workflow versions | [workflow/versions/README.md](workflow/versions/README.md) |
-| 查看轻量任务 | [tasks/README.md](tasks/README.md) |
-| 查询当前未解决问题 / residual ledger | [workflow/residuals/README.md](workflow/residuals/README.md) |
-| 查看 Codex skills | [.codex/skills-src/README.md](.codex/skills-src/README.md) |
-| 新加入想搭环境 | [docs/development/setup.md](docs/development/setup.md) |
-| 想了解决策来龙去脉 | [docs/adr/](docs/adr/) |
-| 想查看视觉原型 | [assets/prototypes/](assets/prototypes/) |
-| 想贡献代码 | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| 了解产品与正式能力 | [产品文档](docs/product/overview.md) |
+| 安装和使用 AreaMatrix | [用户指南](docs/user-guide/README.md) |
+| 理解架构和安全边界 | [架构总览](docs/architecture/overview.md) |
+| 集成 Rust Core | [Core API](docs/api/core-api.md) |
+| 构建、测试和贡献 | [开发文档](docs/development/setup.md) |
+| 查看技术决策 | [ADR](docs/adr/README.md) |
+| 浏览全部长期文档 | [文档总览](docs/README.md) |
 
-## 系统要求
+历史计划、执行证据和发布记录统一从 [workflow versions](workflow/versions/README.md) 查阅，不属于产品文档。
 
-- macOS 14 Sonoma 或更高版本
-- Xcode 15+
-- Rust 1.75+（stable 通道）
-- Apple Silicon 或 Intel（默认产出 universal binary）
+## 文件安全与隐私
 
-## 许可证
+- 接管目录中的已有文件保持原样。
+- 失败导入不得在最终目录留下半成品。
+- 删除 `.areamatrix/` 元数据不得删除用户文件。
+- 远程 AI 默认不启用，必须由用户明确配置并通过隐私规则评估。
+- 凭据保留在 macOS 平台层；Rust Core 不读取 Keychain 密钥，也不直接发起网络请求。
 
-AreaMatrix 采用 **[PolyForm Noncommercial 1.0.0](LICENSE)** 许可证发布。
+详细说明见[隐私与数据处理](docs/product/privacy.md)和[安全政策](SECURITY.md)。
 
-你可以为**非商业目的**（个人使用、教育、研究、内部业务运营）自由使用、修改和再分发源代码。原始 copyright 声明和许可证文件必须保留。
+## 许可证与贡献
 
-如需**商业使用**（销售、SaaS 托管、嵌入商业产品中），请阅读 [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) 了解如何申请商业授权。
+AreaMatrix 使用 [PolyForm Noncommercial License 1.0.0](LICENSE)。商业使用需按 [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) 获取单独授权。
 
-> **说明**：PolyForm-NC 是 *source-available（源码可得）*，并非 OSI 认证的"开源"许可证。任何人都可以阅读代码、贡献代码、非商业使用 —— 但商业使用需要单独签订协议。
-
-## 贡献
-
-欢迎提 issue、PR 和 discussion。提交前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
-
-## 致谢
-
-AreaMatrix 在架构思路上参考了 Obsidian（vault 模型）、Eagle（视觉化资料库）、DEVONthink（自动分类）。本项目与上述产品无任何关联。
+欢迎贡献。提交变更前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)、[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) 和 [CODE_REVIEW.md](CODE_REVIEW.md)。

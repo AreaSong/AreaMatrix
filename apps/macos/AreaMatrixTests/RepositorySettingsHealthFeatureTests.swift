@@ -9,13 +9,101 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         removeRepositorySettingsMetadataDatabaseSidecars(in: repoURL)
+        let before = try repositorySettingsMetadataFootprint(in: repoURL)
 
         do {
             let metadata = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
             XCTAssertEqual(metadata.schemaVersion, 2)
+            XCTAssertEqual(metadata.configuredRepoPath, repoURL.path)
+            XCTAssertEqual(try repositorySettingsMetadataFootprint(in: repoURL), before)
         } catch {
             XCTFail("metadata read failed: \(error)")
         }
+    }
+
+    @MainActor
+    func testMetadataReaderReadsRepositoryWithWalSidecarsWithoutMutatingMetadataFiles() async throws {
+        let repoURL = try temporaryRepositorySettingsRepo()
+        defer { removeTestTemporaryItems(repoURL) }
+        try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
+        let database = try openRepositorySettingsWalFixture(in: repoURL)
+        defer { sqlite3_close(database) }
+
+        let metadataURL = repositorySettingsMetadataURL(in: repoURL)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: metadataURL.appendingPathComponent("index.db-wal").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: metadataURL.appendingPathComponent("index.db-shm").path))
+        let before = try repositorySettingsMetadataFootprint(in: repoURL)
+
+        let metadata = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
+
+        XCTAssertEqual(metadata.schemaVersion, 2)
+        XCTAssertEqual(metadata.configuredRepoPath, repoURL.path)
+        XCTAssertEqual(
+            try repositorySettingsMetadataFootprint(in: repoURL).normalizingSQLiteSharedMemoryCoordination(),
+            before.normalizingSQLiteSharedMemoryCoordination()
+        )
+    }
+
+    func testMetadataReaderMissingDatabaseDoesNotCreateMetadataFiles() async throws {
+        let repoURL = try temporaryRepositorySettingsRepo()
+        defer { removeTestTemporaryItems(repoURL) }
+        try FileManager.default.createDirectory(
+            at: repositorySettingsMetadataURL(in: repoURL),
+            withIntermediateDirectories: true
+        )
+        let before = try repositorySettingsMetadataFootprint(in: repoURL)
+
+        do {
+            _ = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
+            XCTFail("missing metadata database must fail")
+        } catch let CoreError.Db(message) {
+            XCTAssertEqual(message, "missing .areamatrix/index.db")
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(try repositorySettingsMetadataFootprint(in: repoURL), before)
+    }
+
+    func testMetadataReaderRejectsCorruptDatabaseWithoutMutatingMetadataFiles() async throws {
+        let repoURL = try temporaryRepositorySettingsRepo()
+        defer { removeTestTemporaryItems(repoURL) }
+        let metadataURL = repositorySettingsMetadataURL(in: repoURL)
+        try FileManager.default.createDirectory(at: metadataURL, withIntermediateDirectories: true)
+        try Data("not a sqlite database".utf8).write(to: repositorySettingsMetadataDatabaseURL(in: repoURL))
+        let before = try repositorySettingsMetadataFootprint(in: repoURL)
+
+        do {
+            _ = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
+            XCTFail("corrupt metadata database must fail")
+        } catch is CoreError {
+            // The exact SQLite message is version-specific; the file-safety contract is the stable assertion.
+        }
+
+        XCTAssertEqual(try repositorySettingsMetadataFootprint(in: repoURL), before)
+    }
+
+    @MainActor
+    func testMetadataReaderReadsReadOnlyDatabaseWithoutCreatingOrMutatingMetadataFiles() async throws {
+        let repoURL = try temporaryRepositorySettingsRepo()
+        defer { removeTestTemporaryItems(repoURL) }
+        try await CoreBridge().initializeEmptyRepository(repoPath: repoURL.path)
+        removeRepositorySettingsMetadataDatabaseSidecars(in: repoURL)
+        let metadataURL = repositorySettingsMetadataURL(in: repoURL)
+        let dbURL = repositorySettingsMetadataDatabaseURL(in: repoURL)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: metadataURL.path)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: dbURL.path)
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: dbURL.path)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: metadataURL.path)
+        let before = try repositorySettingsMetadataFootprint(in: repoURL)
+
+        let metadata = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
+
+        XCTAssertEqual(metadata.schemaVersion, 2)
+        XCTAssertEqual(metadata.configuredRepoPath, repoURL.path)
+        XCTAssertEqual(try repositorySettingsMetadataFootprint(in: repoURL), before)
     }
 
     @MainActor

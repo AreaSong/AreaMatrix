@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-06"
+updated: "2026-07-15"
 scope: global
 authority: index-only
 source_of_truth:
@@ -18,6 +18,45 @@ statuses:
   - accepted-exception
   - closed
 items:
+  - id: global-product-restore-file-contract
+    status: closed
+    type: product-contract-gap
+    title: Public restore_file contract removed
+    source: docs/api/core-api.md
+    supporting_sources:
+      - core/area_matrix.udl
+      - core/src/api/history.rs
+      - apps/macos/AreaMatrix/Bridge/CoreBridge.swift
+    owner: core-storage
+    current_impact: none
+    executable_task: false
+    promotion_required: false
+    close_condition: Completed. restore_file was removed from the public UDL, Rust facade, generated bindings, Bridge capability inventory, and Core API; supported recovery remains token-based Undo/Redo only.
+    validation:
+      - cargo fmt --all -- --check
+      - cargo clippy --all-targets --all-features -- -D warnings
+      - cargo test --workspace
+      - ./dev bindings verify
+      - macOS build and file-safety acceptance evidence
+    notes: Closed after public-contract removal. This is not an active restore implementation task, and internal restore_file_state remains part of the supported Undo/Redo inverse.
+  - id: global-product-metadata-reader-write-flags
+    status: closed
+    type: file-safety-gap
+    title: Read-only repository metadata reader no longer has writable fallback
+    source: apps/macos/AreaMatrix/Bridge/CoreBridgeUnavailableState.swift
+    supporting_sources:
+      - docs/architecture/macos-frontend-architecture.md
+      - docs/api/core-api.md
+    owner: macos-bridge
+    current_impact: none
+    executable_task: false
+    promotion_required: false
+    close_condition: Completed. The reader uses SQLITE_OPEN_READONLY for live WAL databases and an immutable read-only URI for clean databases without sidecars; missing and corrupt databases fail without creating files or modifying index.db or its WAL.
+    validation:
+      - macOS metadata reader unit and integration tests
+      - xcodebuild macOS build and test
+      - file-safety acceptance evidence showing no DB creation or mutation on reads
+    notes: Closed after read-only open-mode and negative-path verification. Existing SQLite shared-memory lock coordination may update index.db-shm during a read-only WAL read; the reader does not create sidecars or modify index.db or index.db-wal.
   - id: global-ref-areaflow
     status: reference-only
     type: historical-reference

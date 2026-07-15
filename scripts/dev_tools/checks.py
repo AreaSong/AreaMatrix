@@ -9,6 +9,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 from .build import run_core_build
 from .common import fail, project_root, require_command, require_file, run_step
@@ -144,6 +145,101 @@ def _forbid_text(root: Path, failures: FailureCollector, rel_path: str, pattern:
         failures.fail(f"{rel_path} contains forbidden text: {label}")
 
 
+def _markdown_link_targets(text: str) -> list[str]:
+    targets: list[str] = []
+    in_fence = False
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        line = re.sub(r"`[^`]*`", "", line)
+        for match in re.finditer(r"!?(?:\[[^\]]*\])\((?P<body>[^)]+)\)", line):
+            body = match.group("body").strip()
+            if body.startswith("<") and ">" in body:
+                target = body[1 : body.index(">")]
+            else:
+                target = body.split(maxsplit=1)[0]
+            if target:
+                targets.append(target)
+    return targets
+
+
+def _local_markdown_target(root: Path, source: Path, target: str) -> Path | None:
+    parsed = urlparse(target)
+    if parsed.scheme or target.startswith(("#", "//")):
+        return None
+    decoded = unquote(parsed.path)
+    if not decoded:
+        return None
+    if decoded.startswith("/"):
+        return (root / decoded.lstrip("/")).resolve()
+    return (source.parent / decoded).resolve()
+
+
+def run_docs_check(root: Path | None = None) -> int:
+    root = (root or project_root()).resolve()
+    failures = FailureCollector()
+    roots = [root / "README.md", root / "README.zh-CN.md", root / "docs/README.md"]
+    for path in roots:
+        if not path.is_file():
+            failures.fail(f"missing documentation entry point: {path.relative_to(root)}")
+
+    markdown_files = sorted(path for path in (root / "docs").rglob("*.md") if path.is_file())
+    checked_files = [path for path in roots if path.is_file()] + markdown_files
+    local_links: dict[Path, set[Path]] = {}
+    for source in checked_files:
+        local_links[source] = set()
+        for target in _markdown_link_targets(_read(source)):
+            resolved = _local_markdown_target(root, source, target)
+            if resolved is None:
+                continue
+            try:
+                resolved.relative_to(root)
+            except ValueError:
+                failures.fail(f"{source.relative_to(root)} links outside repository: {target}")
+                continue
+            if not resolved.exists():
+                failures.fail(f"{source.relative_to(root)} has broken link: {target}")
+                continue
+            if resolved.is_file() and resolved.suffix.lower() == ".md":
+                local_links[source].add(resolved)
+
+    reachable: set[Path] = set()
+    pending = [path for path in roots if path.is_file()]
+    while pending:
+        source = pending.pop()
+        if source in reachable:
+            continue
+        reachable.add(source)
+        pending.extend(local_links.get(source, ()))
+    for path in markdown_files:
+        if path not in reachable:
+            failures.fail(f"documentation page is not reachable from README entries: {path.relative_to(root)}")
+
+    forbidden_root_terms = {
+        r"\.codex/": "Codex runtime detail",
+        r"\btask-loop\b": "task-loop detail",
+        r"tasks/(?:active|backlog|done)": "task state detail",
+        r"workflow/residuals/": "residual ledger detail",
+    }
+    for path in roots[:2]:
+        if not path.is_file():
+            continue
+        text = _read(path)
+        for pattern, label in forbidden_root_terms.items():
+            if re.search(pattern, text, flags=re.IGNORECASE):
+                failures.fail(f"{path.relative_to(root)} contains internal {label}")
+
+    if failures.count:
+        print(f"docs check: FAILED ({failures.count} issue(s))", file=os.sys.stderr)
+        return 1
+    print(f"docs check: OK ({len(markdown_files)} page(s))")
+    return 0
+
+
 def _git_text(root: Path, *args: str) -> str | None:
     result = subprocess.run(
         ["git", *args],
@@ -156,7 +252,7 @@ def _git_text(root: Path, *args: str) -> str | None:
 
 
 def _check_feature_evolution_evidence(root: Path, failures: FailureCollector) -> None:
-    rel_path = "docs/roadmap/feature-evolution-evidence.json"
+    rel_path = "workflow/versions/v1-mvp/evidence/feature-evolution-evidence.json"
     path = root / rel_path
     if not path.is_file():
         failures.fail(f"missing file: {rel_path}")
@@ -522,6 +618,7 @@ def run_governance_check(root: Path | None = None) -> int:
         "conditional macOS project/source skip guard",
     )
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check governance", "governance check")
+    _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check docs", "documentation integrity")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check skills", "skill health")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check quality", "quality smoke")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check codex-os", "Codex OS health")
@@ -533,6 +630,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(root, failures, "scripts/check-secrets.sh", r"AREAMATRIX_GITLEAKS_MODE", "local secret scan diff/history modes")
     _require_text(root, failures, "docs/development/ci-governance.md", "./dev check secrets", "local secret scan docs")
     _require_text(root, failures, "docs/development/ci-governance.md", "./dev check codex-os", "Codex OS local check docs")
+    _require_text(root, failures, "docs/development/ci-governance.md", "./dev check docs", "documentation integrity docs")
     _require_text(
         root,
         failures,
@@ -1371,6 +1469,7 @@ def run_all_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     steps = [
         ("governance", lambda: run_governance_check(root)),
+        ("docs", lambda: run_docs_check(root)),
         ("skills", lambda: run_skills_check(root)),
         ("quality smoke", lambda: run_quality_check(root)),
         ("codex-os", lambda: run_codex_os_check(root)),

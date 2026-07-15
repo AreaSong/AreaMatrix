@@ -1,11 +1,7 @@
 //! Public FFI history entry points.
 
-use crate::{redo, CoreError, CoreResult, FileEntry, RedoActionRecord, RedoActionResult};
+use crate::{redo, CoreResult, RedoActionRecord, RedoActionResult};
 
-/// Restores a deleted file entry.
-pub fn restore_file(_repo_path: String, _file_id: i64) -> CoreResult<FileEntry> {
-    Err(CoreError::internal("internal error"))
-}
 /// Lists redo action state for redo surface.
 ///
 /// redo surface uses this contract in the redo slot of undo toast surface and the redo row of

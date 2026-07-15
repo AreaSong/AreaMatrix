@@ -1,6 +1,6 @@
 # 恢复证据与手工冒烟规则
 
-> 定义 AreaMatrix 恢复类质量证据的长期规则；版本执行记录归档到对应 `workflow/versions/v*/`。
+> 定义 AreaMatrix 恢复类质量证据的长期规则；版本执行记录从 workflow versions 归档入口查阅。
 >
 > 阅读时长：约 5 分钟。
 
@@ -8,14 +8,14 @@
 
 ## 定位
 
-本文是长期源事实，规定恢复场景、手工冒烟和 release evidence 的记录方式。具体版本的执行结果、截图、日志、blocked 原因和 release checklist 不放在 `docs/`，而是归档到对应版本目录。
+本文是长期源事实，规定恢复场景、手工冒烟和发布证据的记录方式。具体版本的执行结果、截图、日志、阻断原因和发布清单不放在 `docs/`，而是归档到对应版本目录。
 
 历史恢复证据通过 [workflow versions](../../workflow/versions/README.md) 和 residual ledger 定位。常见证据类型包括：
 
 - recovery scenarios
-- release checklist
+- 发布清单
 - performance baseline
-- closeout decision
+- 收口决策
 
 ## 不变量
 
@@ -51,12 +51,9 @@ user_file_invariants:
 release_gate: "block_if_missing_or_fail"
 ```
 
-## Release 处理
+## 发布处理
 
-- 自动化测试失败时，release 不通过。
-- 手工项为 `pending`、`fail` 或 `blocked` 时，release checklist 必须保留阻断结论。
-- 本机工程验证、ad-hoc signing、同机 smoke 或未公证 DMG 都不能替代 Developer ID signing、notarization、stapler、正式 DMG 或干净 Mac Gatekeeper 验证。
-- 因外部条件无法完成的项目应记录为 deferred / blocked，并写清恢复条件。例如没有付费 Apple Developer Program 时，Developer ID 与 notarization 天然 blocked。
+发布时，所有适用的自动化与手工恢复检查都必须通过。本机工程验证、ad-hoc signing、同机 smoke 或未公证 DMG 不能替代 Developer ID signing、notarization、stapler、正式 DMG 或干净 Mac Gatekeeper 验证。无法完成的检查必须在对应发布记录中注明所缺条件、产品影响和恢复路径。
 
 ## Related
 
