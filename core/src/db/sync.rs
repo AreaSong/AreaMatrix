@@ -20,6 +20,14 @@ pub(crate) struct ExternalRenamedRow {
     pub(crate) file_id: i64,
     pub(crate) path: String,
     pub(crate) current_name: String,
+    pub(crate) category: String,
+    pub(crate) detail_json: String,
+}
+
+pub(crate) struct ExternalModifiedRow {
+    pub(crate) file_id: i64,
+    pub(crate) size_bytes: i64,
+    pub(crate) hash_sha256: String,
     pub(crate) detail_json: String,
 }
 
@@ -39,14 +47,15 @@ pub(crate) struct ExternalSyncApplyResult {
     pub(crate) detected_creates: i64,
     pub(crate) detected_renames: i64,
     pub(crate) detected_deletes: i64,
+    pub(crate) detected_modifies: i64,
 }
 
 pub(crate) fn apply_external_sync_batch(
     repo_path: &Path,
     created_rows: Vec<ExternalCreatedRow>,
     renamed_rows: Vec<ExternalRenamedRow>,
+    modified_rows: Vec<ExternalModifiedRow>,
     removed_rows: Vec<ExternalRemovedRow>,
-    cursor: Option<i64>,
 ) -> CoreResult<ExternalSyncApplyResult> {
     let mut connection = open_repo_connection(repo_path)?;
     let tx = connection
@@ -55,6 +64,7 @@ pub(crate) fn apply_external_sync_batch(
     let mut detected_creates = 0_i64;
     let mut detected_renames = 0_i64;
     let mut detected_deletes = 0_i64;
+    let mut detected_modifies = 0_i64;
 
     for row in created_rows {
         if insert_external_file(&tx, row)? {
@@ -65,12 +75,13 @@ pub(crate) fn apply_external_sync_batch(
         update_external_renamed_file(&tx, row)?;
         detected_renames += 1;
     }
+    for row in modified_rows {
+        update_external_modified_file(&tx, row)?;
+        detected_modifies += 1;
+    }
     for row in removed_rows {
         soft_delete_external_removed_file(&tx, row)?;
         detected_deletes += 1;
-    }
-    if let Some(last_event_id) = cursor {
-        set_cursor(&tx, last_event_id)?;
     }
 
     tx.commit()
@@ -79,6 +90,7 @@ pub(crate) fn apply_external_sync_batch(
         detected_creates,
         detected_renames,
         detected_deletes,
+        detected_modifies,
     })
 }
 
@@ -136,9 +148,28 @@ pub(crate) fn set_fs_event_cursor(repo_path: &Path, last_event_id: i64) -> CoreR
 }
 
 fn insert_external_file(tx: &Transaction<'_>, row: ExternalCreatedRow) -> CoreResult<bool> {
+    let existing = tx
+        .query_row(
+            "SELECT id, status FROM files WHERE path = ?1",
+            params![row.path],
+            |record| Ok((record.get::<_, i64>(0)?, record.get::<_, String>(1)?)),
+        )
+        .optional()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    if let Some((file_id, status)) = existing {
+        if status == "active" {
+            return Ok(false);
+        }
+        if status != "deleted" {
+            return Err(CoreError::conflict("path conflict"));
+        }
+        reactivate_external_file(tx, file_id, row)?;
+        return Ok(true);
+    }
+
     let changed = tx
         .execute(
-            "INSERT OR IGNORE INTO files (
+            "INSERT INTO files (
                 path, original_name, current_name, category, size_bytes,
                 hash_sha256, storage_mode, origin, source_path,
                 imported_at, updated_at, status
@@ -172,15 +203,55 @@ fn insert_external_file(tx: &Transaction<'_>, row: ExternalCreatedRow) -> CoreRe
     Ok(true)
 }
 
+fn reactivate_external_file(
+    tx: &Transaction<'_>,
+    file_id: i64,
+    row: ExternalCreatedRow,
+) -> CoreResult<()> {
+    tx.execute(
+        "UPDATE files
+         SET original_name = ?2,
+             current_name = ?3,
+             category = ?4,
+             size_bytes = ?5,
+             hash_sha256 = ?6,
+             storage_mode = ?7,
+             origin = 'external',
+             source_path = NULL,
+             deleted_at = NULL,
+             updated_at = strftime('%s', 'now'),
+             status = 'active'
+         WHERE id = ?1 AND status = 'deleted'",
+        params![
+            file_id,
+            row.original_name,
+            row.current_name,
+            row.category,
+            row.size_bytes,
+            row.hash_sha256,
+            storage_mode_to_db(&crate::StorageMode::Indexed),
+        ],
+    )
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.execute(
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
+         VALUES (?1, 'external_modified', ?2, strftime('%s', 'now'))",
+        params![file_id, row.detail_json],
+    )
+    .map(|_| ())
+    .map_err(|error| CoreError::db(error.to_string()))
+}
+
 fn update_external_renamed_file(tx: &Transaction<'_>, row: ExternalRenamedRow) -> CoreResult<()> {
     let changed = tx
         .execute(
             "UPDATE files
              SET path = ?2,
                  current_name = ?3,
+                 category = ?4,
                  updated_at = strftime('%s', 'now')
              WHERE id = ?1 AND status = 'active'",
-            params![row.file_id, row.path, row.current_name],
+            params![row.file_id, row.path, row.current_name, row.category],
         )
         .map_err(|error| CoreError::db(error.to_string()))?;
     if changed != 1 {
@@ -190,6 +261,30 @@ fn update_external_renamed_file(tx: &Transaction<'_>, row: ExternalRenamedRow) -
     tx.execute(
         "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
          VALUES (?1, 'renamed', ?2, strftime('%s', 'now'))",
+        params![row.file_id, row.detail_json],
+    )
+    .map(|_| ())
+    .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn update_external_modified_file(tx: &Transaction<'_>, row: ExternalModifiedRow) -> CoreResult<()> {
+    let changed = tx
+        .execute(
+            "UPDATE files
+             SET size_bytes = ?2,
+                 hash_sha256 = ?3,
+                 updated_at = strftime('%s', 'now')
+             WHERE id = ?1 AND status = 'active'",
+            params![row.file_id, row.size_bytes, row.hash_sha256],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    if changed != 1 {
+        return Err(CoreError::file_not_found("missing file"));
+    }
+
+    tx.execute(
+        "INSERT INTO change_log (file_id, action, detail_json, occurred_at)
+         VALUES (?1, 'external_modified', ?2, strftime('%s', 'now'))",
         params![row.file_id, row.detail_json],
     )
     .map(|_| ())
@@ -228,7 +323,7 @@ fn set_cursor(tx: &Transaction<'_>, last_event_id: i64) -> CoreResult<()> {
         "INSERT INTO fs_event_cursor (id, last_event_id, updated_at)
          VALUES (1, ?1, strftime('%s', 'now'))
          ON CONFLICT(id) DO UPDATE SET
-             last_event_id = excluded.last_event_id,
+             last_event_id = MAX(fs_event_cursor.last_event_id, excluded.last_event_id),
              updated_at = excluded.updated_at",
         params![last_event_id],
     )

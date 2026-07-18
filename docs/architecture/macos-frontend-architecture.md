@@ -78,7 +78,20 @@ Swift 调用 Rust Core 的手写入口是 `Bridge/`。
 - `CoreError` 应尽量在 Bridge 或 model 边界映射成 App/UI 语义错误；View 不应承担错误分类。
 - `Bridge/Generated/` 和 `Bridge/UniFFI/` 保持纯生成绑定。
 
-受控例外必须明确：例如 SQLite metadata reader 应记录原因、风险和退出条件。名称和职责为只读的 reader 必须使用 `SQLITE_OPEN_READONLY`，不得以 fallback 创建、迁移或修改 `.areamatrix/index.db`；需要写入或修复时必须进入独立的用户确认路径。
+受控例外必须明确。名称和职责为只读的 reader 必须使用 `SQLITE_OPEN_READONLY`，不得以 fallback
+创建、迁移或修改 `.areamatrix/index.db`；需要写入或修复时必须进入独立的用户确认路径。
+
+### SQLite 只读 reader 例外
+
+当前登记两个 Bridge 层 SQLite 只读 reader：
+
+| Reader | 用途 | 打开策略 | 失败与退出条件 |
+|---|---|---|---|
+| `SQLiteExistingRepositoryMetadataReader` | Core 正常打开前读取 schema version、repo path、last opened time | 有 WAL/SHM sidecar 时以 `SQLITE_OPEN_READONLY` 打开 live DB；无 sidecar 时使用 `immutable=1` URI | DB 缺失、损坏、schema 为空或高于支持上限时失败，不创建、迁移或修复；当 Core 提供等价的不可用态只读合同后移除例外 |
+| `SQLiteAISummaryMetadataReader` | 读取已保存 AI summary 展示数据 | `SQLITE_OPEN_READONLY`，查询表存在性后读取单行 | 表缺失返回无数据；未知 route/context 或 DB 错误显式失败；当 Core summary read API 覆盖该展示合同后移除例外 |
+
+两个 reader 都不能回退到 writable connection。live WAL 只读打开可能参与 SQLite 共享内存锁协调，
+但 reader 不创建 metadata schema，不修改 `index.db` 或 `index.db-wal`，也不承担 repair/migration。
 
 ## 默认 Core 服务装配
 
@@ -189,7 +202,7 @@ xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destinat
 
 只改文档时可不跑 macOS build，但需要说明未运行原因。涉及 docs / skills / governance / prompts 时按对应治理门禁补充检查。
 
-## 相关文档
+## Related
 
 - [layered-design.md](layered-design.md)
 - [ffi-design.md](ffi-design.md)

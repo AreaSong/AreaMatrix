@@ -136,27 +136,18 @@ final class LocalFileURLOpenerTests: XCTestCase {
     }
 
     @MainActor
-    func testWelcomeHelpOpenerUsesSharedLocalFileURLOpenerAndPreservesErrors() throws {
-        let helpURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            .appendingPathComponent("docs/product/prd.md")
+    func testWelcomeHelpOpenerUsesStableHTTPSUserGuideAndPreservesErrors() throws {
+        let welcomeHelpOpener = RecordingExternalURLStringOpener()
+        try WelcomeHelpOpener(externalURLOpener: welcomeHelpOpener).openWelcomeHelp()
+        welcomeHelpOpener.assertOpenedValues([WelcomeHelpOpener.userGuideURL])
 
-        let welcomeHelpOpener = RecordingLocalFileURLOpener()
-        try LocalWelcomeHelpOpener(localURLOpener: welcomeHelpOpener).openWelcomeHelp()
-        welcomeHelpOpener.assertOpenExistingRequests([(path: helpURL.path, requiresDirectory: false)])
-
-        XCTAssertThrowsError(try LocalWelcomeHelpOpener(
-            localURLOpener: RecordingLocalFileURLOpener(
-                result: .failure(LocalFileURLOpenError.missing(helpURL.path))
+        XCTAssertThrowsError(try WelcomeHelpOpener(
+            externalURLOpener: RecordingExternalURLStringOpener(
+                result: .failure(ExternalURLOpenError.openRejected(WelcomeHelpOpener.userGuideURL))
             )
         ).openWelcomeHelp()) { error in
             XCTAssertEqual(error as? WelcomeHelpError, .helpDocumentUnavailable)
         }
-
-        XCTAssertNoThrow(try LocalWelcomeHelpOpener(
-            localURLOpener: RecordingLocalFileURLOpener(
-                result: .failure(LocalFileURLOpenError.openRejected(helpURL.path))
-            )
-        ).openWelcomeHelp())
     }
 
     @MainActor

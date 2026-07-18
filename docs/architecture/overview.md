@@ -167,7 +167,7 @@ sequenceDiagram
 
 ## 仓库目录结构
 
-```
+```text
 AreaMatrix/                            # Git 仓库
 ├── core/                              # Rust 核心库（Cargo crate）
 │   ├── Cargo.toml
@@ -214,7 +214,7 @@ AreaMatrix/                            # Git 仓库
 
 ## 资料库目录结构（用户实际看到的）
 
-```
+```text
 <repo>/                                # 用户选择的资料库根，可为空目录，也可已有大量内容
 ├── README.md                          # 用户原有文件，应用不覆盖
 ├── project-a/                         # 用户已有目录，UI 作为“文件夹”显示

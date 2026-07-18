@@ -23,8 +23,8 @@ struct MainRepositoryContentView: View {
     let batchRenamer: any CoreBatchRenaming
     let systemCapabilityChecker: any OnboardingSystemCapabilityChecking
     let errorMapper: any CoreErrorMapping
-    let externalCreatedEvent: MainExternalCreatedFileEvent?
-    let onExternalCreatedEventHandled: (MainExternalCreatedFileEvent) -> Void
+    let externalCreatedEvents: [MainExternalCreatedFileEvent]
+    let onExternalCreatedEventsHandled: ([MainExternalCreatedFileEvent]) -> Void
     let pendingTagSuggestionFocus: TagSuggestionPresentationRequest?
     let onPendingTagSuggestionFocusConsumed: (TagSuggestionPresentationRequest) -> Void
     let importProgressPresentation: ImportProgressListPresentation
@@ -73,8 +73,8 @@ struct MainRepositoryContentView: View {
         onCopyPaths: @escaping ([String]) -> Void = { _ in },
         onOpenNoteFile: @escaping (String) -> Void = { _ in },
         onOpenChangeCategoryPermissionRecovery: @escaping () -> Void = {},
-        externalCreatedEvent: MainExternalCreatedFileEvent? = nil,
-        onExternalCreatedEventHandled: @escaping (MainExternalCreatedFileEvent) -> Void = { _ in },
+        externalCreatedEvents: [MainExternalCreatedFileEvent] = [],
+        onExternalCreatedEventsHandled: @escaping ([MainExternalCreatedFileEvent]) -> Void = { _ in },
         pendingTagSuggestionFocus: TagSuggestionPresentationRequest? = nil,
         onPendingTagSuggestionFocusConsumed: @escaping (TagSuggestionPresentationRequest) -> Void = { _ in },
         importProgressPresentation: ImportProgressListPresentation = .empty
@@ -93,8 +93,8 @@ struct MainRepositoryContentView: View {
         batchRenamer = assembly.batchRenamer
         systemCapabilityChecker = assembly.systemCapabilityChecker
         errorMapper = assembly.errorMapper
-        self.externalCreatedEvent = externalCreatedEvent
-        self.onExternalCreatedEventHandled = onExternalCreatedEventHandled
+        self.externalCreatedEvents = externalCreatedEvents
+        self.onExternalCreatedEventsHandled = onExternalCreatedEventsHandled
         self.pendingTagSuggestionFocus = pendingTagSuggestionFocus
         self.onPendingTagSuggestionFocusConsumed = onPendingTagSuggestionFocusConsumed
         self.importProgressPresentation = importProgressPresentation

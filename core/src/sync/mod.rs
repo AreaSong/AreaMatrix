@@ -11,7 +11,7 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 
 use crate::{
-    db::{self, ExternalCreatedRow, ExternalRemovedRow, ExternalRenamedRow},
+    db::{self, ExternalCreatedRow, ExternalModifiedRow, ExternalRemovedRow, ExternalRenamedRow},
     overview, repo_path, CoreError, CoreResult, ExternalEvent, ExternalEventKind, SyncResult,
 };
 
@@ -26,12 +26,20 @@ struct CreatedPlan {
 
 struct RenamedPlan {
     row: ExternalRenamedRow,
-    category: String,
+    previous_category: String,
 }
 
 struct RemovedPlan {
     row: ExternalRemovedRow,
-    category: String,
+}
+
+struct ModifiedPlan {
+    row: ExternalModifiedRow,
+}
+
+enum ModifiedEventPlan {
+    Created(CreatedPlan),
+    Modified(ModifiedPlan),
 }
 
 struct ResolvedEventPath {
@@ -46,8 +54,8 @@ struct ResolvedEventPath {
 /// Returns `CoreError::InvalidPath { path }` for paths outside the initialized
 /// repository, `CoreError::ICloudPlaceholder { path }` for placeholder paths,
 /// `CoreError::PermissionDenied { path }` for unreadable files, `CoreError::FileNotFound { path }`
-/// for missing renamed targets, `CoreError::Conflict { path }` for ambiguous or
-/// cross-category rename pairing, `CoreError::Io { message }` for metadata/hash failures,
+/// for missing renamed targets, `CoreError::Conflict { path }` for ambiguous rename pairing,
+/// `CoreError::Io { message }` for metadata/hash failures,
 /// or `CoreError::Db { message }` for transactional persistence failures.
 pub(crate) fn sync_external_changes(
     repo_path: String,
@@ -57,52 +65,73 @@ pub(crate) fn sync_external_changes(
     let mut created_plans = Vec::new();
     let mut renamed_plans = Vec::new();
     let mut removed_plans = Vec::new();
+    let mut modified_plans = Vec::new();
+    let mut affected_nodes = BTreeSet::new();
     let mut max_sync_event_id = None;
-    let mut has_out_of_scope_events = false;
 
     for event in events {
+        validate_event_id(event.fs_event_id)?;
+        max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
+        if should_skip_event(&repo, &event.path)? {
+            continue;
+        }
+        if let Some(node) = affected_node_for_event(&repo, &event)? {
+            affected_nodes.insert(node);
+        }
         match event.kind {
             ExternalEventKind::Created => {
-                validate_event_id(event.fs_event_id)?;
-                max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
                 if let Some(plan) = plan_created_event(&repo, &event)? {
                     created_plans.push(plan);
                 }
             }
             ExternalEventKind::Renamed => {
-                validate_event_id(event.fs_event_id)?;
-                max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
                 if let Some(plan) = plan_renamed_event(&repo, &event)? {
+                    affected_nodes.insert(plan.previous_category.clone());
                     renamed_plans.push(plan);
                 }
             }
             ExternalEventKind::Removed => {
-                validate_event_id(event.fs_event_id)?;
-                max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
                 if let Some(plan) = plan_removed_event(&repo, &event)? {
                     removed_plans.push(plan);
                 }
             }
             ExternalEventKind::Modified => {
-                has_out_of_scope_events = true;
+                if let Some(plan) = plan_modified_event(&repo, &event)? {
+                    match plan {
+                        ModifiedEventPlan::Created(plan) => created_plans.push(plan),
+                        ModifiedEventPlan::Modified(plan) => modified_plans.push(plan),
+                    }
+                }
             }
         }
     }
 
-    let affected_nodes = affected_nodes_for_batch(&created_plans, &renamed_plans, &removed_plans);
-    let cursor = cursor_for_batch(max_sync_event_id, has_out_of_scope_events);
+    let renamed_file_ids = renamed_plans
+        .iter()
+        .map(|plan| plan.row.file_id)
+        .collect::<BTreeSet<_>>();
+    removed_plans.retain(|plan| !renamed_file_ids.contains(&plan.row.file_id));
     let created_rows = created_plans.into_iter().map(|plan| plan.row).collect();
     let renamed_rows = renamed_plans.into_iter().map(|plan| plan.row).collect();
+    let modified_rows = modified_plans.into_iter().map(|plan| plan.row).collect();
     let removed_rows = removed_plans.into_iter().map(|plan| plan.row).collect();
-    let applied =
-        db::apply_external_sync_batch(&repo, created_rows, renamed_rows, removed_rows, cursor)?;
+    let applied = db::apply_external_sync_batch(
+        &repo,
+        created_rows,
+        renamed_rows,
+        modified_rows,
+        removed_rows,
+    )?;
     regenerate_affected_overviews(&repo, &affected_nodes)?;
+    if let Some(cursor) = max_sync_event_id {
+        db::set_fs_event_cursor(&repo, cursor)?;
+    }
 
     Ok(SyncResult {
         detected_creates: applied.detected_creates,
         detected_renames: applied.detected_renames,
         detected_deletes: applied.detected_deletes,
-        detected_modifies: 0,
+        detected_modifies: applied.detected_modifies,
         errors: Vec::new(),
     })
 }
@@ -204,15 +233,13 @@ fn plan_renamed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
         [candidate] => candidate,
         _ => return Err(CoreError::conflict("path conflict")),
     };
-    if candidate.category != category {
-        return Err(CoreError::conflict("path conflict"));
-    }
-
     let detail_json = external_rename_detail(
         &candidate.path,
         &resolved.relative_path,
         &candidate.current_name,
         &current_name,
+        &candidate.category,
+        &category,
     )?;
 
     Ok(Some(RenamedPlan {
@@ -220,10 +247,56 @@ fn plan_renamed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
             file_id: candidate.id,
             path: resolved.relative_path,
             current_name,
+            category: category.clone(),
             detail_json,
         },
-        category,
+        previous_category: candidate.category.clone(),
     }))
+}
+
+fn plan_modified_event(
+    repo: &Path,
+    event: &ExternalEvent,
+) -> CoreResult<Option<ModifiedEventPlan>> {
+    let Some(resolved) = resolve_event_path(repo, &event.path)? else {
+        return Ok(None);
+    };
+    if has_icloud_placeholder_marker(Path::new(&resolved.relative_path)) {
+        return Err(CoreError::icloud_placeholder("icloud placeholder"));
+    }
+
+    let metadata = fs::symlink_metadata(&resolved.absolute_path).map_err(map_io_error)?;
+    if metadata.is_dir() {
+        return Ok(None);
+    }
+    if !metadata.is_file() {
+        return Err(CoreError::invalid_path("invalid path"));
+    }
+
+    let Some(file) = db::find_active_file_by_path(repo, &resolved.relative_path)? else {
+        return plan_created_event(repo, event).map(|plan| plan.map(ModifiedEventPlan::Created));
+    };
+    let hash_sha256 = sha256_file(&resolved.absolute_path)?;
+    let size_bytes = metadata.len() as i64;
+    if file.hash_sha256 == hash_sha256 && file.size_bytes == size_bytes {
+        return Ok(None);
+    }
+    let detail_json = external_modified_detail(
+        &resolved.relative_path,
+        &file.hash_sha256,
+        &hash_sha256,
+        file.size_bytes,
+        size_bytes,
+    )?;
+
+    Ok(Some(ModifiedEventPlan::Modified(ModifiedPlan {
+        row: ExternalModifiedRow {
+            file_id: file.id,
+            size_bytes,
+            hash_sha256,
+            detail_json,
+        },
+    })))
 }
 
 fn plan_removed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<RemovedPlan>> {
@@ -245,20 +318,12 @@ fn plan_removed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<R
             file_id: file.id,
             detail_json,
         },
-        category: file.category,
     }))
 }
 
-fn affected_nodes_for_batch(
-    created_plans: &[CreatedPlan],
-    renamed_plans: &[RenamedPlan],
-    removed_plans: &[RemovedPlan],
-) -> BTreeSet<String> {
-    let mut nodes = BTreeSet::new();
-    nodes.extend(created_plans.iter().map(|plan| plan.row.category.clone()));
-    nodes.extend(renamed_plans.iter().map(|plan| plan.category.clone()));
-    nodes.extend(removed_plans.iter().map(|plan| plan.category.clone()));
-    nodes
+fn affected_node_for_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<String>> {
+    resolve_event_path(repo, &event.path)
+        .map(|resolved| resolved.map(|path| category_for_relative_path(&path.relative_path)))
 }
 
 fn regenerate_affected_overviews(repo: &Path, nodes: &BTreeSet<String>) -> CoreResult<()> {
@@ -287,6 +352,23 @@ fn resolve_event_path(repo: &Path, raw_path: &str) -> CoreResult<Option<Resolved
         absolute_path: repo.join(&relative_path),
         relative_path,
     }))
+}
+
+fn should_skip_event(repo: &Path, raw_path: &str) -> CoreResult<bool> {
+    let Some(resolved) = resolve_event_path(repo, raw_path)? else {
+        return Ok(true);
+    };
+    is_managed_note_sidecar(repo, &resolved.relative_path)
+}
+
+fn is_managed_note_sidecar(repo: &Path, relative_path: &str) -> CoreResult<bool> {
+    let Some(file_path) = relative_path.strip_suffix(".md") else {
+        return Ok(false);
+    };
+    let Some(file) = db::find_active_file_by_path(repo, file_path)? else {
+        return Ok(false);
+    };
+    db::read_note_content(repo, file.id).map(|note| note.is_some())
 }
 
 fn normalize_relative_path(path: &Path) -> CoreResult<String> {
@@ -384,12 +466,35 @@ fn external_rename_detail(
     to_path: &str,
     from_name: &str,
     to_name: &str,
+    from_category: &str,
+    to_category: &str,
 ) -> CoreResult<String> {
     serde_json::to_string(&json!({
         "from_path": from_path,
         "to_path": to_path,
         "from_name": from_name,
         "to_name": to_name,
+        "from_category": from_category,
+        "to_category": to_category,
+        "by": "external",
+    }))
+    .map_err(|error| CoreError::internal(error.to_string()))
+}
+
+fn external_modified_detail(
+    relative_path: &str,
+    hash_before: &str,
+    hash_after: &str,
+    size_before: i64,
+    size_after: i64,
+) -> CoreResult<String> {
+    serde_json::to_string(&json!({
+        "kind": "content",
+        "path": relative_path,
+        "hash_before": hash_before,
+        "hash_after": hash_after,
+        "size_before": size_before,
+        "size_after": size_after,
         "by": "external",
     }))
     .map_err(|error| CoreError::internal(error.to_string()))
@@ -418,14 +523,6 @@ fn validate_event_id(event_id: i64) -> CoreResult<()> {
 
 fn max_event_id(current: Option<i64>, candidate: i64) -> i64 {
     current.map_or(candidate, |value| value.max(candidate))
-}
-
-fn cursor_for_batch(max_sync_event_id: Option<i64>, has_out_of_scope_events: bool) -> Option<i64> {
-    if has_out_of_scope_events {
-        None
-    } else {
-        max_sync_event_id
-    }
 }
 
 fn sha256_file(path: &Path) -> CoreResult<String> {

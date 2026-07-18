@@ -38,7 +38,11 @@ use crate::{
 /// Deleted rows are not visible to default `list_files` and return `CoreError::FileNotFound { path }`
 /// through `get_file`.
 ///
-/// Cursor persistence is part of the batch success contract.
+/// The Core commits the metadata/change-log batch first, regenerates affected
+/// overviews second, and persists the maximum event cursor last. An overview or
+/// cursor failure leaves the cursor unchanged so the platform can replay the
+/// batch. Replay must therefore remain idempotent because metadata may already
+/// be durable when a later step fails.
 ///
 /// # Errors
 /// Returns `CoreError::InvalidPath { path }`, `CoreError::ICloudPlaceholder { path }`,

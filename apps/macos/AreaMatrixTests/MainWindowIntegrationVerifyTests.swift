@@ -94,6 +94,29 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
+    func testMainWindowMenuCommandsRouteSettingsAndImportForOpenRepository() throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixMenuCommandRepo")
+        let importURL = repoURL.appendingPathComponent("source.pdf")
+        defer { removeTestTemporaryItems(repoURL) }
+        try Data("menu import".utf8).write(to: importURL)
+        let opening = RepositoryOpeningResult.shellFixture(repoPath: repoURL.path, fileCount: 0)
+        let model = OnboardingModel(
+            emptyRepositoryOpener: ShellRecordingRepositoryOpener(result: .success(opening)),
+            startupRecoverer: StaticStartupRecoverer(),
+            scanSessionReader: StaticScanSessionReader(),
+            helpOpener: NoopWelcomeHelpOpener(),
+            importPicker: ShellStaticImportPicker(urls: [importURL])
+        )
+        model.route = .mainEmpty(opening)
+
+        model.handleSettingsMenuCommand()
+        XCTAssertEqual(model.route, .settingsGeneral(opening))
+
+        model.handleImportMenuCommand()
+        XCTAssertEqual(model.pendingImportEntry?.urls, [importURL])
+    }
+
+    @MainActor
     private func openConfiguredRepository(
         opening: RepositoryOpeningResult
     ) async -> MainWindowIntegrationOpenResult {

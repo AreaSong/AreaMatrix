@@ -10,6 +10,10 @@ review_cycle: quarterly
 
 # AreaMatrix 项目章程
 
+> 本文固定 AreaMatrix 的使命、产品边界、成功条件、责任和退出条件。
+>
+> 阅读时长：约 4 分钟。
+
 ## 使命
 
 AreaMatrix 是 Rust Core、UniFFI 和 SwiftUI macOS 应用组成的本地优先资料管理工具。它帮助个人和小团队在保留普通文件夹、原始文件和外部工具兼容性的前提下，安全地导入、组织、搜索、理解和恢复资料。
@@ -52,3 +56,9 @@ AreaMatrix 是 Rust Core、UniFFI 和 SwiftUI macOS 应用组成的本地优先�
 
 当产品不再维护时，必须停止新增使用，提供数据和普通文件夹可继续访问路径，清理构建/分发凭据、自动化、告警、文档和所有权，并按 `operations-lifecycle.md` 完成退役证据。
 
+## Related
+
+- [企业工作流治理基线](enterprise-workflow-baseline.md)
+- [治理登记册](governance-register.yaml)
+- [运行与能力生命周期](operations-lifecycle.md)
+- [产品概览](../product/overview.md)

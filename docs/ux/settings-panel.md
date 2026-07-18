@@ -1,293 +1,182 @@
-# 设置面板（Settings Panel）
+# 设置面板
 
-> 定义 AreaMatrix 的设置面板信息架构（IA）与每一项设置的默认值、影响范围、风险提示、可恢复策略。面向工程实现的 wireframe 级规格，不含视觉稿。
+> 记录 AreaMatrix macOS 设置窗口的真实信息架构、持久化边界与高风险确认行为。
 >
-> 阅读时长：约 18 分钟。
+> 阅读时长：约 7 分钟。
 
 ---
 
-## 目标与成功标准
+## 入口与布局
 
-### 目标
+设置窗口通过菜单或 `Command-,` 打开。左侧为固定宽度侧栏，右侧显示当前资料库对应的设置内容。
 
-1. **关键设置可发现**：资料库路径、默认存储模式、规则配置、诊断导出必须一眼找到。\n
-2. **默认即最佳实践**：新用户不必改设置也能稳定使用。\n
-3. **设置可解释**：每个开关都能说明“会改变什么”，并提供“恢复默认”。\n
-4. **安全边界明确**：危险设置（Move 默认、Replace 默认）必须二次确认。\n
-5. **与工程一致**：设置项命名与 `docs/` 里的概念一致（见 glossary）。\n
+当前共有 7 个一级 Tab：
 
-### 成功标准（验收）
-
-- **资料库路径可发现**：用户能在 10 秒内找到“更换资料库路径”。\n
-- **诊断入口可发现**：用户能找到“导出诊断包/查看日志”。\n
-- **高风险默认有提示**：开启 Index-only 默认时会弹风险提示。\n
-- **规则编辑可恢复**：编辑 classifier.yaml 失败会显示行号，并可恢复上次有效版本。\n
-
----
-
-## 信息架构（6 个一级 Tab）
-
-| TabId | 名称 | 目标用户 | 主要内容 |
-|---|---|---|---|
-| general | 通用 | 所有人 | 默认存储模式、概览输出、语言、外观、快捷键提示 |
-| repository | 资料库 | 所有人 | repoPath、更换/迁移、打开 Finder、容量信息 |
-| classifier | 分类规则 | 高级用户 | 规则开关、YAML 编辑、校验、示例、导入导出 |
-| integrations | 集成 | 少数 | iCloud 相关提示、Spotlight 排除建议（提示而非执行） |
-| advanced | 高级 | 高级用户 | 性能/缓存/调试信号（仅 Debug）、危险开关 |
-| about | 关于 | 所有人 | 版本、许可证、诊断、反馈链接 |
-
----
-
-## 设置窗口布局（ASCII）
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ Settings                                                                      │
-├───────────────┬──────────────────────────────────────────────────────────────┤
-│ 通用          │ [General settings…]                                           │
-│ 资料库         │                                                              │
-│ 分类规则       │                                                              │
-│ 集成           │                                                              │
-│ 高级           │                                                              │
-│ 关于           │                                                              │
-└───────────────┴──────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Tab：通用（general）
-
-### 1) 默认存储模式（Default storage mode）
-
-| Setting | 默认值 | 影响范围 |
+| TabId | 名称 | 当前职责 |
 |---|---|---|
-| defaultStorageMode | Copy | ImportSheet 默认选项（仍允许每次更改） |
+| `general` | 通用 | 默认存储模式、概览输出、忽略规则、生成内容语言、外观状态 |
+| `repository` | 资料库 | 路径、健康状态、资料库配置、Finder、恢复入口 |
+| `classifier` | 分类规则 | 可视化规则维护、规则引擎开关、YAML 操作、分类预览 |
+| `ai` | AI | AI 总开关、provider、功能开关、隐私规则、调用日志和暂停 |
+| `integrations` | 集成 | iCloud 状态与警告、Finder 和外部改动说明 |
+| `advanced` | 高级 | 诊断、日志、恢复工具、概览输出和危险导入选项 |
+| `about` | 关于 | 版本、平台差异、许可证、外部链接、诊断和日志 |
 
-#### UI（ASCII）
+侧栏 Tab 是稳定路由标识。功能入口可以直接打开指定 Tab，例如 AI 错误恢复可以跳转到 `ai`。
 
-```
-默认存储模式：
- (●) Copy（推荐）  ( ) Move  ( ) Index-only
- 说明：导入时仍可在 ImportSheet 临时更改。
-```
+## 通用
 
-#### 风险提示（Move / Index-only）
+### 默认存储模式
 
-- 选择 Move 作为默认值：弹确认\n
-  - “Move 会让源文件从原位置消失，适合整理 Downloads。确定吗？”\n
-- 选择 Index-only：弹确认\n
-  - “Index-only 不复制文件，源文件移动/删除会导致条目缺失。”\n
+可选值为：
 
-### 2) 概览输出（Overview output）
+- `Copy (recommended)`：复制到资料库，保留来源文件。
+- `Move`：导入成功后来源位置不再保留该文件；切换为默认值前必须确认。
+- `Index-only`：只登记外部路径；来源文件移动后可能变为缺失；切换为默认值前必须确认。
 
-| Setting | 默认值 | 说明 |
-|---|---|---|
-| overviewOutput | GeneratedOnly | 默认只写 `.areamatrix/generated/`；可选维护根目录 `AREAMATRIX.md` |
+该设置只是导入默认值，单次导入仍可在导入界面修改。
 
-#### UI（ASCII）
+### 概览输出
 
-```
-资料库概览：
- (●) 仅保存在 .areamatrix/generated/
- ( ) 同时在根目录生成 AREAMATRIX.md
+- 默认只写 `.areamatrix/generated/`。
+- 用户明确确认后，可以同时维护资料库根目录的 `AREAMATRIX.md`。
+- AreaMatrix 不把 `README.md` 作为自动输出目标。
+- 已存在的 `AREAMATRIX.md` 只有在类型安全且用户确认后才会写入 AreaMatrix 管理块。
 
-说明：AreaMatrix 永远不会覆盖已有 README.md。
-```
+### 忽略规则
 
-选择 `AREAMATRIX.md` 时若文件已存在：
+`Open ignore.yaml` 打开 `.areamatrix/ignore.yaml`。文件缺失时，应用可以在用户确认后创建默认文件；该动作不得修改资料库中的其他文件。
 
-- 如果包含 AreaMatrix 标记块：只维护标记块
-- 如果不包含标记块：弹确认，说明会在文件末尾追加 AreaMatrix 托管段
-- 永不把 `README.md` 作为自动输出目标
+### 语言与外观
 
-### 3) 忽略规则（Ignore rules）
+通用页提供 `system`、`zh-CN`、`en`。该值控制当前资料库的树和生成内容语言，不代表整个 SwiftUI 界面已完成运行时本地化切换。
 
-| Setting | 默认值 | 说明 |
-|---|---|---|
-| ignoreRules | `.areamatrix/ignore.yaml` | 首次扫描、reindex、tree-scan 与 FSEvents 共用 |
+外观当前只显示并锁定为 `system`，应用跟随系统外观。
 
-UI 提供 `Open ignore.yaml`，用系统默认编辑器打开。`README.md` 不在默认忽略列表；`AREAMATRIX.md` 与 `.areamatrix/generated/` 始终由 Core 过滤。
+### 重置
 
-### 4) 语言（Locale）
+`Reset this tab` 只恢复通用页持久化字段，不是全局设置重置。其他 Tab 不提供统一的全局重置命令。
 
-| Setting | 默认值 | 说明 |
-|---|---|---|
-| uiLocale | system | 跟随系统，支持 zh-CN / en |
+## 资料库
 
-### 5) 外观（Appearance）
+资料库页展示并操作当前资料库：
 
-| Setting | 默认值 |
-|---|---|
-| appearance | system |
+- 当前路径、数据库状态、最近打开时间和容量摘要。
+- 在 Finder 中打开资料库、复制路径、更换资料库。
+- 打开恢复工具或平台能力说明。
+- 导出脱敏诊断；导出前必须确认，且不会自动上传。
+- 更新资料库配置中的概览输出、locale、iCloud 警告和未匹配文件回落策略。
 
-深色模式跟随系统外观；更细粒度的视觉适配以正式产品能力为准。\n
+资料库配置 locale 可识别 `system`、`zh-Hans`、`zh-CN`、`en`。它仍是资料库内容配置，不是应用 UI 语言开关。
 
----
+更换资料库不会在设置页直接移动旧资料库内容，而是进入资料库选择和校验流程。
 
-## Tab：资料库（repository）
+## 分类规则
 
-### 1) 当前资料库路径（repoPath）
+分类规则页以可视化规则维护为主：
 
-展示只读路径 + 快捷操作：\n
-- `Open in Finder`\n
-- `Copy path`\n
+- 列出规则并选择当前规则。
+- 创建、更新和删除非默认分类规则。
+- 编辑 slug、显示名、说明、命名模板、扩展名和关键词。
+- 保存前执行字段校验和影响预览。
+- 删除规则或移除 matcher 前要求确认。
 
-```
-当前资料库：
- ~/AreaMatrix/
- [ Open in Finder ] [ Copy path ]
-```
+从该页面保存规则只影响后续分类；不会移动、删除、重命名或重新分类已有文件。
 
-### 2) 更换资料库（Change repo）
+规则引擎开关包括 extension rules、keyword rules 和 fallback to inbox。这些开关写入当前资料库配置。
 
-按钮：`Change repository…`\n
-- 点击后走类似 first-launch 的 choosePath/validatePath\n
-- 若选择一个已存在 repo：提示“将打开现有资料库”\n
+YAML 辅助操作包括：
 
-### 3) 资料库健康（Health）
+- 打开 `classifier.yaml`。
+- 在 Finder 中显示该文件。
+- 校验当前规则。
+- 恢复到上次有效版本。
+- 文件缺失或不可读时创建默认配置。
 
-只读展示：\n
-- DB schema version\n
-- 文件条目数 / change_log 条目数\n
-- staging 残留数（若>0显示 warning）\n
-- 最近一次 rescan 时间\n
+设置页不提供 classifier YAML 的通用 Import/Export，也不提供模板库。YAML 是高级恢复和直接编辑入口，不替代可视化规则维护。
 
-按钮：\n
-- `Run integrity check`（耗时操作，显示进度）\n
-- `Collect diagnostics…`\n
+## AI
 
----
+AI 页管理仓库级 AI 行为：
 
-## Tab：分类规则（classifier）
+- AI 总开关。
+- local / remote provider preference。
+- 本地模型状态和远程 provider 配置入口。
+- 分类、标签、摘要等功能开关。
+- 隐私规则管理。
+- AI 调用日志。
+- `Pause all AI` 安全动作。
 
-### 1) 规则引擎开关
+远程 provider、credential 和隐私规则属于敏感边界。应用必须保持明示配置、最小数据使用、可暂停和可回退；设置页不得把远程调用伪装成本地处理。
 
-| Setting | 默认值 | 说明 |
-|---|---|---|
-| enableKeywordRules | true | 关键词匹配 |
-| enableExtensionRules | true | 扩展名匹配 |
-| fallbackToInbox | true | 兜底 inbox |
+## 集成
 
-### 2) YAML 编辑器
+集成页展示 iCloud Drive 与外部工具状态：
 
-必须提供：\n
-- `Open classifier.yaml`（Finder）\n
-- 内置 editor（推荐）\n
-- `Validate` / `Save` / `Revert`（回到上次有效）\n
-- `Export` / `Import`（分享规则）\n
+- 当前资料库是否位于 iCloud 管理路径。
+- iCloud 状态、风险说明和 Apple 帮助入口。
+- `Show iCloud warnings` 持久化开关。
+- 在 Finder 中显示资料库。
+- 外部应用修改文件时由 watcher 在可用条件下回流。
 
-#### 校验失败 UI（要求行号）
+该页面不会自动下载 iCloud placeholder，也不会修改 Spotlight 或系统 iCloud 设置。
 
-```
-校验失败：categories[2].slug 重复（line 47）
-[ Fix in editor ]  [ Revert to last valid ]
-```
+## 高级
 
-### 3) 示例模板
+高级页提供：
 
-提供下拉：\n
-- “研究者（论文/数据）”\n
-- “设计师（素材/客户）”\n
-- “开发者（代码/文档）”\n
+- App/Core/schema 版本和脱敏诊断。
+- 日志目录和诊断摘要。
+- 恢复工具入口。
+- 概览输出设置。
+- 默认关闭的 Replace 导入选项。
 
-对应内容引用 `docs/api/classifier-yaml.md` 的示例段落。\n
+启用 Replace 前必须确认。即使启用，每次替换仍需单独确认；可恢复的旧资料库文件进入系统 Trash，不能静默覆盖。
 
----
+高级页不存在 `enableTreeCache`、`listPageSize` 等用户可编辑字段，也不提供任意 key/value 配置编辑器。
 
-## Tab：集成（integrations）
+## 关于
 
-### iCloud
+关于页展示：
 
-这里只做提示与状态显示，不做复杂同步设置：\n
+- App、Core 和 metadata schema 版本。
+- 当前平台能力差异。
+- 许可证。
+- 项目、Issues、Discussions 等 HTTPS 链接。
+- 脱敏诊断和日志路径。
 
-- 当前 repo 是否在 iCloud 路径\n
-- iCloud 登录状态（若可检测）\n
-- 占位符策略说明（按需下载）\n
+诊断不包含用户原文件正文，不自动上传；路径和用户名在展示或导出前按诊断合同脱敏。
 
-按钮：\n
-- `Open iCloud help`（跳到 `docs/adr/0006-icloud-support.md` 或应用内帮助）\n
+## 保存、失败与恢复
 
----
+- 持久化写入通过 Core 配置 API 或明确的平台服务完成。
+- 保存期间禁用冲突操作。
+- 保存失败时 UI 恢复为上次持久化值，并提供重试或恢复动作。
+- 文件或 DB 错误通过结构化 `CoreError` 映射，不用字符串匹配决定主流程。
+- 设置窗口不提供全量 settings Import/Export，也不提供 `Reset all settings`。
 
-## Tab：高级（advanced）
+## 文件安全不变量
 
-### 1) 性能与缓存
+- 默认生成内容只写 `.areamatrix/generated/`。
+- 不覆盖已有 `README.md`。
+- 分类规则保存不移动已有文件。
+- iCloud 状态读取不触发隐式下载。
+- 诊断不读取或上传用户文件正文。
+- 更换资料库、恢复、Replace 和远程 AI 都必须进入各自确认边界。
 
-| Setting | 默认值 | 说明 |
-|---|---|---|
-| enableTreeCache | true | tree-scan 缓存 |
-| listPageSize | 200 | 列表分页大小 |
+## 验证重点
 
-### 2) 危险选项（需要二次确认）
-
-- `Allow replace during import`（默认 false）\n
-  - 开启后 ImportSheet 才显示 Replace 选项（参见 `dedup-conflict.md`）。\n
-
-### 3) Debug 信号（仅 Debug build）
-
-链接到 `docs/development/observability.md` 的 debug signals。\n
-
----
-
-## Tab：关于（about）
-
-必须包含：\n
-- App version / Core version / schema version\n
-- License：PolyForm Noncommercial\n
-- 链接：GitHub / Issue / Discussions\n
-- `Collect diagnostics…`\n
-- `Open logs in Console`（提示命令或引导）\n
-
----
-
-## “恢复默认”与“设置导出”规范
-
-### 恢复默认
-
-每个 tab 底部提供：\n
-- `Reset this tab`（仅重置本 tab）\n
-- `Reset all settings`（全局，需二次确认）\n
-
-### 导出/导入
-
-仅针对两类：\n
-- classifier.yaml\n
-- settings（可选）\n
-
-导出格式：JSON 或 plist（工程决定），UX 只要求“可分享”。\n
-
----
-
-## 文案（中英对照，关键按钮）
-
-| Key | 中文 | English |
-|---|---|---|
-| settings.title | 设置 | Settings |
-| settings.repo.change | 更换资料库… | Change repository… |
-| settings.repo.openFinder | 在 Finder 中打开 | Open in Finder |
-| settings.diagnostics.collect | 导出诊断包… | Collect diagnostics… |
-| settings.classifier.validate | 校验 | Validate |
-| settings.classifier.revert | 恢复上次有效版本 | Revert to last valid |
-| settings.reset.all | 重置全部设置 | Reset all settings |
-
----
-
-## 测试用例（产品验收清单）
-
-- [ ] 通用：默认存储模式可改，Move/Index-only 有确认\n
-- [ ] 资料库：能 Open in Finder、能 Change repository\n
-- [ ] 分类规则：Validate/Safe/Revert 正常，错误带行号\n
-- [ ] 高级：Replace 默认关闭，开启需要确认\n
-- [ ] 关于：诊断包按钮存在且可用\n
-
----
+- 7 个 Tab 路由与侧栏标识一致。
+- 持久化失败后 UI 回到已保存值。
+- Move、Index-only、根 `AREAMATRIX.md` 和 Replace 都有确认。
+- 可视化 classifier CRUD 与 YAML 辅助动作均可恢复。
+- AI 隐私、provider 和暂停入口保持可发现。
+- 诊断、外部链接、Finder 和 iCloud 错误有明确反馈。
 
 ## Related
 
-- [first-launch.md](first-launch.md)
-- [drag-import-flow.md](drag-import-flow.md)
 - [classifier-calibration.md](classifier-calibration.md)
-- [dedup-conflict.md](dedup-conflict.md)
-- [../api/classifier-yaml.md](../api/classifier-yaml.md)
-- [../development/observability.md](../development/observability.md)
-- [../development/troubleshooting.md](../development/troubleshooting.md)
+- [first-launch.md](first-launch.md)
+- [../user-guide/settings.md](../user-guide/settings.md)
+- [../product/privacy.md](../product/privacy.md)
+- [../architecture/macos-frontend-architecture.md](../architecture/macos-frontend-architecture.md)

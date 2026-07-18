@@ -127,7 +127,7 @@ pub fn import_file(...) -> CoreResult<FileEntry> { ... }
 
 ### `scripts/dev_tools/swiftformat.conf`
 
-```
+```text
 --swiftversion 5.9
 --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData
 --indent 4
@@ -180,7 +180,7 @@ identifier_name:
 
 ### 模块组织
 
-```
+```text
 AreaMatrix/
 ├── App/        # AreaMatrixApp.swift, AppDelegate.swift
 ├── Models/     # @Observable stores
@@ -327,7 +327,7 @@ flowchart TB
 
 简短：[Conventional Commits](https://www.conventionalcommits.org/)：
 
-```
+```text
 feat(classify): 关键词匹配支持大小写折叠
 fix(storage): 修复 staging 残留清理时的 race
 docs(adr): 增补 0010 关于全文搜索的决策

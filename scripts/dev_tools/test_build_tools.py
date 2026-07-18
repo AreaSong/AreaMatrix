@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
+import os
+import subprocess
 import tempfile
 import unittest
 from contextlib import redirect_stderr
@@ -20,6 +23,10 @@ class BuildToolsTest(unittest.TestCase):
     def _write_enterprise_governance_fixture(self, root: Path, *, dependency_status: str = "deferred") -> None:
         governance = root / "docs/governance"
         governance.mkdir(parents=True)
+        upstream = governance / "upstream/ASW-EWF-001-1.0.0.txt"
+        upstream.parent.mkdir(parents=True)
+        upstream.write_text("ASW-EWF-001\nversion: 1.0.0\n", encoding="utf-8")
+        upstream_hash = hashlib.sha256(upstream.read_bytes()).hexdigest()
         rows = "\n".join(f"| {number} Domain | 满足 | evidence |" for number in range(1, 38))
         (governance / "enterprise-workflow-baseline.md").write_text(
             "# Baseline\n\n" + " ".join(f"G{gate}" for gate in range(9)) + "\n" + rows + "\n",
@@ -61,7 +68,10 @@ class BuildToolsTest(unittest.TestCase):
 upstream:
   spec_id: ASW-EWF-001
   version: 1.0.0
-  sha256: ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1
+  source_path: docs/governance/upstream/ASW-EWF-001-1.0.0.txt
+  sha256: """
+            + upstream_hash
+            + """
   adoption: adapted-complete
 raci:
   accountable: "@AreaSong"
@@ -431,6 +441,20 @@ documents:
 
             self.assertGreaterEqual(failures.count, 4)
 
+    def test_enterprise_governance_baseline_rejects_modified_upstream_snapshot(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root)
+            snapshot = root / "docs/governance/upstream/ASW-EWF-001-1.0.0.txt"
+            snapshot.write_text("modified\n", encoding="utf-8")
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("upstream snapshot hash mismatch", stderr.getvalue())
+
     def test_ai_runtime_environment_contract_matches_repository(self) -> None:
         failures = checks.FailureCollector()
 
@@ -462,10 +486,14 @@ documents:
             (root / "README.md").write_text("[Docs](docs/README.md)\n", encoding="utf-8")
             (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
             (root / "docs/README.md").write_text(
-                "[Page](page.md)\n\n```markdown\n[Example](missing.md)\n```\n",
+                "# Docs\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n[Page](page.md)\n\n"
+                "```markdown\n[Example](missing.md)\n```\n\n## Related\n\n- [Page](page.md)\n",
                 encoding="utf-8",
             )
-            (root / "docs/page.md").write_text("# Page\n", encoding="utf-8")
+            (root / "docs/page.md").write_text(
+                "# Page\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n## Related\n\n- [Docs](README.md)\n",
+                encoding="utf-8",
+            )
 
             self.assertEqual(checks.run_docs_check(root), 0)
 
@@ -475,8 +503,15 @@ documents:
             (root / "docs").mkdir()
             (root / "README.md").write_text("[Docs](docs/README.md)\n", encoding="utf-8")
             (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
-            (root / "docs/README.md").write_text("[Missing](missing.md)\n", encoding="utf-8")
-            (root / "docs/orphan.md").write_text("# Orphan\n", encoding="utf-8")
+            (root / "docs/README.md").write_text(
+                "# Docs\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n[Missing](missing.md)\n\n"
+                "## Related\n\n- [Missing](missing.md)\n",
+                encoding="utf-8",
+            )
+            (root / "docs/orphan.md").write_text(
+                "# Orphan\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n## Related\n\n- [Docs](README.md)\n",
+                encoding="utf-8",
+            )
 
             self.assertEqual(checks.run_docs_check(root), 1)
 
@@ -486,9 +521,59 @@ documents:
             (root / "docs").mkdir()
             (root / "README.md").write_text("[Docs](docs/README.md)\n`.codex/runtime/`\n", encoding="utf-8")
             (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
-            (root / "docs/README.md").write_text("# Docs\n", encoding="utf-8")
+            (root / "docs/README.md").write_text(
+                "# Docs\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n## Related\n\n- [Root](../README.md)\n",
+                encoding="utf-8",
+            )
 
             self.assertEqual(checks.run_docs_check(root), 1)
+
+    def test_docs_check_rejects_missing_summary_related_and_fence_language(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / "README.md").write_text("[Docs](docs/README.md)\n", encoding="utf-8")
+            (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
+            (root / "docs/README.md").write_text("# Docs\n\n```\nexample\n```\n", encoding="utf-8")
+
+            self.assertEqual(checks.run_docs_check(root), 1)
+
+    def test_diff_check_rejects_whitespace_in_committed_range(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            self._initialize_git_repository(root)
+            base = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=root, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            (root / "fixture.txt").write_text("bad trailing space \n", encoding="utf-8")
+            subprocess.run(["git", "add", "fixture.txt"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "bad whitespace"], cwd=root, check=True, capture_output=True)
+
+            with patch.dict(os.environ, {"AREAMATRIX_DIFF_BASE": base}, clear=False):
+                self.assertNotEqual(checks.run_diff_check(root), 0)
+
+    def test_diff_check_accepts_clean_committed_range(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._initialize_git_repository(root)
+            base = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=root, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            (root / "fixture.txt").write_text("clean\n", encoding="utf-8")
+            subprocess.run(["git", "add", "fixture.txt"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "clean change"], cwd=root, check=True, capture_output=True)
+
+            with patch.dict(os.environ, {"AREAMATRIX_DIFF_BASE": base}, clear=False):
+                self.assertEqual(checks.run_diff_check(root), 0)
+
+    @staticmethod
+    def _initialize_git_repository(root: Path) -> None:
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.name", "AreaMatrix Tests"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.email", "tests@example.invalid"], cwd=root, check=True)
+        (root / "fixture.txt").write_text("baseline\n", encoding="utf-8")
+        subprocess.run(["git", "add", "fixture.txt"], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-m", "baseline"], cwd=root, check=True, capture_output=True)
 
     def test_macos_prerequisites_reports_all_missing_tools(self) -> None:
         completed = type(
@@ -665,6 +750,28 @@ documents:
             self.assertTrue(any(hit.term == "RELEASE GATE" for hit in hits))
             self.assertTrue(any(hit.term == "SPRINT" for hit in hits))
             self.assertTrue(any(hit.term == "后续任务" for hit in hits))
+
+    def test_wording_audit_allows_only_registered_upstream_snapshot_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            registered = root / "docs/governance/upstream/ASW-EWF-001-1.0.0.txt"
+            sibling = root / "docs/governance/upstream/other.txt"
+            ordinary = root / "docs/README.md"
+            registered.parent.mkdir(parents=True)
+            registered.write_text("生命周期与阶段门禁\n", encoding="utf-8")
+            sibling.write_text("生命周期与阶段门禁\n", encoding="utf-8")
+            ordinary.write_text("生命周期与阶段门禁\n", encoding="utf-8")
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 3)
+            categories = {hit.rel_path: hit.category for hit in hits}
+            self.assertEqual(
+                categories["docs/governance/upstream/ASW-EWF-001-1.0.0.txt"],
+                "allowed-upstream-snapshot",
+            )
+            self.assertEqual(categories["docs/governance/upstream/other.txt"], "blocked")
+            self.assertEqual(categories["docs/README.md"], "blocked")
 
     def test_wording_audit_blocks_fixture_source_track_ids(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

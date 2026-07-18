@@ -153,6 +153,8 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
             11002
         case .removed:
             11003
+        case .modified:
+            11004
         }
     }
 

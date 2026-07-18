@@ -10,18 +10,18 @@
 
 ### 目标
 
-1. **用户看得懂**：不要直接展示“db error: busy”，要说人话。\n
-2. **用户能做事**：每个错误都提供下一步（重试/更换路径/导出诊断/查看帮助）。\n
-3. **不打断不该打断的**：低严重度用 toast，高严重度才 modal。\n
-4. **隐私安全**：默认不展示包含用户名的绝对路径，必要时脱敏（`~`）。\n
-5. **工程可定位**：每个错误页都有“诊断包/日志入口”，并附错误码（CoreError variant）。\n
+1. **用户看得懂**：不要直接展示“db error: busy”，要说人话。
+2. **用户能做事**：每个错误都提供下一步（重试/更换路径/导出诊断/查看帮助）。
+3. **不打断不该打断的**：低严重度用 toast，高严重度才 modal。
+4. **隐私安全**：默认不展示包含用户名的绝对路径，必要时脱敏（`~`）。
+5. **工程可定位**：每个错误页都有“诊断包/日志入口”，并附错误码（CoreError variant）。
 
 ### 成功标准（验收）
 
-- **E1**：同一错误在不同页面出现时，文案一致。\n
-- **E2**：iCloud 占位符错误能引导用户“下载/重试/换本地路径”。\n
-- **E3**：DB locked 错误不会让整个 App 死掉，用户能重试或导出诊断。\n
-- **E4**：Internal/崩溃路径提供“重启/导出诊断/提交 issue”入口。\n
+- **E1**：同一错误在不同页面出现时，文案一致。
+- **E2**：iCloud 占位符错误能引导用户“下载/重试/换本地路径”。
+- **E3**：DB locked 错误不会让整个 App 死掉，用户能重试或导出诊断。
+- **E4**：Internal/崩溃路径提供“重启/导出诊断/提交 issue”入口。
 
 ---
 
@@ -40,11 +40,11 @@
 
 ## 通用文案规则（必须遵守）
 
-1. **标题一句话**：先说发生了什么，不说原因。\n
-2. **原因第二句**：用可能原因列表，不要堆技术栈。\n
-3. **主操作只有一个**：避免“按钮太多不敢点”。\n
-4. **永远提供退路**：至少一个“更换路径/返回/取消”。\n
-5. **不展示敏感数据**：绝对路径脱敏为 `~`，hash 只显示前 8 位。\n
+1. **标题一句话**：先说发生了什么，不说原因。
+2. **原因第二句**：用可能原因列表，不要堆技术栈。
+3. **主操作只有一个**：避免“按钮太多不敢点”。
+4. **永远提供退路**：至少一个“更换路径/返回/取消”。
+5. **不展示敏感数据**：绝对路径脱敏为 `~`，hash 只显示前 8 位。
 
 ---
 
@@ -75,13 +75,13 @@
 
 #### 常见子类（文案要区分）
 
-- 磁盘空间不足（ENOSPC）\n
-- 资源忙（EBUSY）\n
-- 文件损坏/不可读\n
+- 磁盘空间不足（ENOSPC）
+- 资源忙（EBUSY）
+- 文件损坏/不可读
 
 #### Banner（medium）示例
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 文件操作失败                                                                    │
 │ 可能原因：磁盘空间不足，或文件正在被其他应用占用。                               │
@@ -91,7 +91,7 @@
 
 #### Alert（high）示例（磁盘满）
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 磁盘空间不足                                                                    │
 │ AreaMatrix 需要至少 1GB 可用空间来完成导入与 staging。                           │
@@ -116,19 +116,19 @@
 
 UI 形态：List/Detail 内联错误卡 + Retry，不阻断 Tree。
 
-```
+```text
 无法加载数据：数据库被占用（database is locked）。
 [ Retry ] [ Collect diagnostics… ]
 ```
 
-主动作：Retry（指数退避可由工程实现）\n
-次动作：Collect diagnostics\n
+主动作：Retry（指数退避可由工程实现）
+次动作：Collect diagnostics
 
 #### 2.2 DB corrupted（critical）
 
 UI 形态：全屏 blocking（repoError），必须修复或换 repo。
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 资料库索引损坏                                                                  │
 │ 你的文件仍在资料库目录中，但索引数据库无法读取。                                 │
@@ -140,21 +140,21 @@ UI 形态：全屏 blocking（repoError），必须修复或换 repo。
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Repair（修复）最小实现策略（产品侧）：\n
-- 当前可先提供“Full rescan”按钮（重扫重建索引）\n
+Repair（修复）最小实现策略（产品侧）：
+- 当前可先提供“Full rescan”按钮（重扫重建索引）
 
 ---
 
 ### 3) CoreError::Config（配置错误，classifier.yaml）
 
-UI 形态：sheet（不阻断主界面，但阻断“规则生效”）。\n
+UI 形态：sheet（不阻断主界面，但阻断“规则生效”）。
 
-必须包含：\n
-- 错误位置（行号）\n
-- `Open rules`（打开 editor）\n
-- `Revert to last valid`\n
+必须包含：
+- 错误位置（行号）
+- `Open rules`（打开 editor）
+- `Revert to last valid`
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 分类规则无效                                                                    │
 │ categories[2].slug 重复（line 47）                                              │
@@ -167,9 +167,9 @@ UI 形态：sheet（不阻断主界面，但阻断“规则生效”）。\n
 
 ### 4) CoreError::ICloudPlaceholder（iCloud 占位符）
 
-UI 形态：sheet（用户需要选择“下载/换路径”）。\n
+UI 形态：sheet（用户需要选择“下载/换路径”）。
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 文件尚未从 iCloud 下载                                                         │
 │ 该文件当前是占位符（.icloud）。需要下载后才能导入/计算 hash。                   │
@@ -178,40 +178,40 @@ UI 形态：sheet（用户需要选择“下载/换路径”）。\n
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-产品策略：\n
-- Download & retry 触发协调读取并显示进度\n
-- Switch to local repo 跳到 first-launch 的 choosePath\n
+产品策略：
+- Download & retry 触发协调读取并显示进度
+- Switch to local repo 跳到 first-launch 的 choosePath
 
 ---
 
 ### 5) CoreError::DuplicateFile / Conflict（导入冲突）
 
-这类错误原则上应该在 ImportSheet 内解决（见 `dedup-conflict.md`），不应在导入完成后才以 toast 抛给用户。\n
+这类错误原则上应该在 ImportSheet 内解决（见 `dedup-conflict.md`），不应在导入完成后才以 toast 抛给用户。
 
-若仍发生：\n
-- 用 sheet 展示“本次导入已跳过 N 个冲突项”，并提供“查看详情”。\n
+若仍发生：
+- 用 sheet 展示“本次导入已跳过 N 个冲突项”，并提供“查看详情”。
 
 ---
 
 ### 6) CoreError::PermissionDenied（权限）
 
-两类：\n
-- 单个文件无权限（medium）：toast + 跳过该项\n
-- repo 目录无权限（critical）：全屏阻断 + 换路径\n
+两类：
+- 单个文件无权限（medium）：toast + 跳过该项
+- repo 目录无权限（critical）：全屏阻断 + 换路径
 
-单文件 toast：\n
-- “无法读取该文件（权限不足），已跳过。”\n
+单文件 toast：
+- “无法读取该文件（权限不足），已跳过。”
 
-repo blocking：\n
-- “无法写入资料库位置，请选择其他文件夹。”\n
+repo blocking：
+- “无法写入资料库位置，请选择其他文件夹。”
 
 ---
 
 ### 7) CoreError::Internal（内部错误）
 
-UI 形态：全屏 blocking（critical），并引导导出诊断包。\n
+UI 形态：全屏 blocking（critical），并引导导出诊断包。
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 遇到内部错误                                                                    │
 │ AreaMatrix 遇到了未知问题。你可以重启应用，或导出诊断包提交给维护者。            │
@@ -224,12 +224,12 @@ UI 形态：全屏 blocking（critical），并引导导出诊断包。\n
 
 ## 诊断入口统一规范
 
-所有 medium+ 错误必须提供至少一个诊断入口：\n
-- `Collect diagnostics…`：导出 zip（见 `docs/development/observability.md`）\n
-- `Open logs`：打开 Console 的过滤提示（或展示命令）\n
+所有 medium+ 错误必须提供至少一个诊断入口：
+- `Collect diagnostics…`：导出 zip（见 `docs/development/observability.md`）
+- `Open logs`：打开 Console 的过滤提示（或展示命令）
 
-隐私说明必须出现一次：\n
-> 诊断信息保存在你的本地，不会自动上传。\n
+隐私说明必须出现一次：
+> 诊断信息保存在你的本地，不会自动上传。
 
 ---
 
@@ -251,12 +251,12 @@ UI 形态：全屏 blocking（critical），并引导导出诊断包。\n
 
 ## 测试用例（产品验收清单）
 
-- [ ] Import 中遇到单个文件权限不足：跳过并 toast，不中断批量\n
-- [ ] DB locked：List 内联错误可 Retry，Tree 可继续操作\n
-- [ ] DB corrupted：全屏 blocking，能 Open in Finder/Collect diagnostics\n
-- [ ] Config YAML 无效：sheet 显示行号，可 Revert\n
-- [ ] iCloud placeholder：sheet 提供 Download & retry 与 Switch local\n
-- [ ] Internal：全屏页含 Restart 与诊断入口\n
+- [ ] Import 中遇到单个文件权限不足：跳过并 toast，不中断批量
+- [ ] DB locked：List 内联错误可 Retry，Tree 可继续操作
+- [ ] DB corrupted：全屏 blocking，能 Open in Finder/Collect diagnostics
+- [ ] Config YAML 无效：sheet 显示行号，可 Revert
+- [ ] iCloud placeholder：sheet 提供 Download & retry 与 Switch local
+- [ ] Internal：全屏页含 Restart 与诊断入口
 
 ---
 

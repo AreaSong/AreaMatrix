@@ -20,12 +20,12 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         model.consumePendingExternalCreatedFileSignals()
 
         XCTAssertEqual(
-            model.externalCreatedEvent(for: opening),
-            MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/removed.pdf", fsEventID: 10100)
+            model.externalCreatedEvents(for: opening),
+            [MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/removed.pdf", fsEventID: 10100)]
         )
-        let handledEvent = try XCTUnwrap(model.externalCreatedEvent(for: opening))
-        model.finishExternalCreatedFileEvent(handledEvent)
-        XCTAssertNil(model.externalCreatedEvent(for: opening))
+        let handledEvents = model.externalCreatedEvents(for: opening)
+        model.finishExternalCreatedFileEvents(handledEvents)
+        XCTAssertEqual(model.externalCreatedEvents(for: opening), [])
     }
 
     func testDetailLogSyncExternalRemovedCoreWatcherBuildsRemovedSignalForUserFileOnly() {

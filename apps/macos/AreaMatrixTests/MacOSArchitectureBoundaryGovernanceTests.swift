@@ -295,7 +295,7 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
                         #"\bAppKitInteractionFeedbackPerformer\s*\("#,
                         #"\bBundleAppVersionReader\s*\("#,
                         #"\bFileImportBatchSessionStore\s*\("#,
-                        #"\bLocalWelcomeHelpOpener\s*\("#,
+                        #"\bWelcomeHelpOpener\s*\("#,
                         #"\bLocalRootOverviewFileInspector\s*\("#,
                         #"\bLocalSystemCapabilities\s*\("#,
                         #"\bNSApplicationKeyWindowCloser\s*\("#,

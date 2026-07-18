@@ -1,665 +1,142 @@
 # 真相源策略
 
-> 当 SQLite 元数据与文件系统状态不一致时，谁说了算？AreaMatrix 选择**混合策略**：DB 是元数据真相、FS 是文件本身的真相，FSEvents 让两者最终一致。
+> 定义 AreaMatrix 在用户文件、SQLite 元数据、笔记 sidecar、生成内容和外部变化之间的权威边界。
 >
-> 阅读时长：约 14 分钟。
+> 阅读时长：约 8 分钟。
 
 ---
 
-## 问题：两个真相源
+## 核心结论
 
-资料库的"状态"由两个独立来源构成：
+AreaMatrix 使用分域真相源，不把文件系统或数据库解释为唯一权威：
+
+| 数据 | 权威来源 | 当前行为 |
+|---|---|---|
+| 用户文件内容、存在性和物理路径 | 文件系统 | Core 读取现状并更新索引，不用 DB 覆盖外部修改 |
+| 文件分类 | 文件系统路径派生 | 顶层目录映射为 category |
+| 文件 hash 和 size | DB 中的最近一次已确认快照 | create、modify、rename 和 reindex 时从文件重新计算并持久化 |
+| 标签、搜索、Undo/Redo、历史 | SQLite | 不从文件系统重建 |
+| 笔记 | SQLite 与受管 sidecar 的一致合同 | 仅 Core note API 同步写入；不接受静默分叉 |
+| FSEvents cursor | SQLite `fs_event_cursor` | 只在可重放边界成功后单调推进 |
+| 自动概览 | DB 派生 | 默认只写 `.areamatrix/generated/` |
+| 用户 `README.md` | 文件系统 | 应用不得覆盖 |
+
+删除 `.areamatrix/` 不会删除用户文件，但会丢失无法从文件恢复的标签、历史、配置和其他元数据。
+恢复或重建必须由用户确认，不能把自动推测当成完整恢复。
+
+## 文件安全不变量
+
+- 接管已有目录不移动、不重命名、不删除、不覆盖已有用户文件。
+- 外部同步只登记已经发生的文件变化，不执行物理 rename、move 或 delete。
+- 自动生成内容默认只写入 `.areamatrix/generated/`。
+- 应用不得覆盖用户已有 `README.md`。
+- iCloud placeholder 不触发隐式下载。
+- DB、overview 或 cursor 失败时，事件必须可以安全重放。
+
+## 外部变化调用链
 
 ```mermaid
 flowchart LR
-    DB[(SQLite<br/>元数据真相)]
-    FS[(文件系统<br/>文件真相)]
-    DB <-->|应该一致| FS
+    fsevents["FSEventStream"]
+    watcher["Swift watcher"]
+    tracker["InFlight tracker"]
+    model["Repository model"]
+    core["sync_external_changes"]
+    db["SQLite"]
+    overview["Generated overview"]
+
+    fsevents --> watcher
+    tracker --> watcher
+    watcher --> model
+    model --> core
+    core --> db
+    core --> overview
 ```
 
-理想状态下两者一致。但有多个场景会让它们短暂不一致：
+Swift 平台层负责 FSEvents、路径过滤、200ms 合并、InFlight 过滤和恢复路由。Core 只接收规范化事件，保持平台无关。
 
-- 用户在 Finder 改资料库（FS 变了，DB 没变）
-- 应用 import 中崩溃（FS 半成品，DB 半成品）
-- iCloud 同步在远端动了文件
-- 第三方工具（命令行 / 备份软件）改了资料库
+## 事件语义
 
----
+### Created
 
-## 三种可能的策略
+- 读取现存普通文件的 metadata、SHA-256 和 size。
+- 新路径写入 `origin=external`、`storage_mode=indexed` 的 active row。
+- active 同路径事件幂等跳过。
+- deleted 同路径重新出现时，复用原 row 并更新 metadata、清除 `deleted_at`、恢复为 active。
+- staging 同路径属于冲突，不能覆盖。
+- change log action 为 `external_modified`，detail 中记录 `kind=create`。
 
-| 策略 | 行为 | 优点 | 缺点 |
-|---|---|---|---|
-| A: DB 优先 | 冲突以 DB 为准，外部修改被回滚 | 内部一致性强 | 用户在 Finder 的修改被吞 |
-| B: FS 优先 | 冲突以 FS 为准，DB 同步到 FS | 用户操作被尊重 | 元数据（笔记、标签）易丢 |
-| C: 混合 ✅ | 不同维度选不同策略 | 平衡性最优 | 实现复杂 |
+### Renamed
 
-详见 [../adr/0003-source-of-truth-strategy.md](../adr/0003-source-of-truth-strategy.md)。
+- Swift 不通过 inode 配对旧路径和新路径。
+- Core 对新路径计算 hash，并在 active rows 中寻找唯一候选。
+- 唯一候选更新同一 file ID 的 path、name 和 category；零个或多个候选返回 Conflict。
+- 同批对应的 removed 计划会被抑制，避免先 rename 后 soft delete 同一 row。
+- change log action 为 `renamed`。
 
----
+### Modified
 
-## 决策矩阵
+- 已登记文件在 hash 或 size 变化时更新 metadata，并写 `external_modified`。
+- hash 和 size 都未变化时幂等跳过。
+- 现存路径没有 active row 时按 Created 处理。
 
-| 维度 | 真相源 | 理由 |
-|---|---|---|
-| 文件内容 | FS | 用户视角文件就是真相 |
-| 文件存在性 | FS（FS 删 = DB 软删） | 用户在 Finder 删除是有意的 |
-| 文件位置（path） | FS（rename / move 通过 hash 识别） | 通过 hash 识别 rename / move |
-| 元数据：分类 | FS-derived（由 path 派生） | 顶层目录就是分类 |
-| 元数据：笔记 | DB ↔ FS 双向同步 | 给用户一致体验 |
-| 元数据：标签 | DB | FS 不存标签 |
-| 改动历史 | DB | FS 不存历史 |
-| Hash | 实时计算 | 不存（缓存除外） |
-| 用户 `README.md` | FS | 视为普通用户/项目文件，应用不覆盖、不插入标记块 |
-| AreaMatrix 概览 | DB-derived | 派生自 DB，默认写入 `.areamatrix/generated/`，可选 `AREAMATRIX.md` |
+### Removed
 
-核心规则：
+- 只有路径已经不存在时才 soft-delete active row。
+- 不存在 active row 时幂等跳过。
+- change log action 为 `deleted`。
 
-> **DB 是元数据真相、FS 是文件本身的真相。FSEvents 让 DB 跟随 FS 变化更新元数据，DB 不能否决用户在 FS 的操作。**
+## 受管笔记 sidecar
 
----
+笔记 sidecar 路径为 `<filename>.md`，与基础文件同目录。它只在以下条件同时成立时被识别为受管 sidecar：
 
-## 9 种外部变化场景全览
+1. 去掉 `.md` 后的基础路径对应 active file row。
+2. 该 file ID 在 `notes` 表中存在记录。
 
-```mermaid
-flowchart TB
-    Event[FSEvent received]
-    Filter[InFlight filter]
-    Classify[classify event]
+受管 sidecar 的 watcher 重放只推进 cursor，不把 sidecar 登记成普通 external 文件。没有上述合同的普通 Markdown 文件仍按普通文件处理。
 
-    CaseRename[1 rename 同分类]
-    CaseMove[2 move 跨分类]
-    CaseDelete[3 delete]
-    CaseModify[4 modify content]
-    CaseCreate[5 create new file]
-    CaseDeleteCategory[6 delete category dir]
-    CaseEditOverview[7 edit overview / README]
-    CaseEditCompanion[8 edit companion .md]
-    CaseDbLost[9 DB lost / .areamatrix gone]
+外部编辑 sidecar 不会自动回写 DB。`read_note` 要求 DB 与 sidecar 内容一致；`write_note` 在写入前也验证旧状态：
 
-    Event --> Filter
-    Filter --> Classify
-    Classify --> CaseRename
-    Classify --> CaseMove
-    Classify --> CaseDelete
-    Classify --> CaseModify
-    Classify --> CaseCreate
-    Classify --> CaseDeleteCategory
-    Classify --> CaseEditOverview
-    Classify --> CaseEditCompanion
-    Classify --> CaseDbLost
-```
+- DB 和 sidecar 都不存在：可以创建。
+- 两者存在且内容一致：可以替换。
+- 只有一侧存在或内容不一致：返回错误，不覆盖用户内容。
+- sidecar 先原子写入；DB note 与 `edited_note` change log 在同一事务写入。
+- DB 写入失败时恢复旧 sidecar。
 
----
+## Cursor 与重放
 
-## 场景 1：rename 同分类
+Core 对收到的全部合法 event ID 计算最大值，包括最终被判定为受管 sidecar或幂等跳过的事件。
 
-### 流程
+正常批次顺序：
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant Finder
-    participant Watcher
-    participant Sync
-    participant DB
-    User->>Finder: rename a.pdf → b.pdf
-    Finder->>Watcher: removed a.pdf, created b.pdf
-    Watcher->>Watcher: debounce 200ms
-    Watcher->>Sync: events batch
-    Sync->>Sync: hash b.pdf
-    Sync->>DB: find_by_hash(hash)
-    DB-->>Sync: existing record (path=docs/a.pdf)
-    Sync->>DB: UPDATE path=docs/b.pdf, current_name=b.pdf
-    Sync->>DB: INSERT change_log(external_modified, kind=rename)
-```
+1. 规划事件。
+2. 在一个 SQLite 事务中提交 files 和 change log。
+3. 更新受影响 overview。
+4. 将批次最大 event ID 单调写入 `fs_event_cursor`。
 
-### 伪代码
+Swift watcher 还保留批次 `cursorWatermark`，即该次 FSEvents 回调窗口观察到的最大 event ID：
 
-```rust
-fn handle_rename(repo: &Path, removed: &Path, created: &Path) -> CoreResult<()> {
-    let new_hash = sha256_file(created)?;
-    let new_size = std::fs::metadata(created)?.len() as i64;
+- 有业务信号时，每个信号携带同一个批次 watermark。
+- Core 成功后，如果 watermark 大于实际提交事件的最大 ID，Swift 补写 cursor。
+- 全部事件在 Swift 层被 InFlight 或路径规则过滤时，Swift 直接单调确认 watermark。
+- 补写失败会进入确认重扫，不会静默丢弃历史。
 
-    let existing = db::find_active_by_hash(repo, &new_hash)?;
-    let removed_rel = removed.strip_prefix(repo)?.to_string_lossy();
+DB 事务失败时 metadata 和 change log 回滚；overview 或 cursor 失败时 cursor 不推进。DB 已提交但后续失败的批次必须依靠幂等规则安全重放。
 
-    match existing {
-        Some(e) if e.path == removed_rel => {
-            let new_rel = created.strip_prefix(repo)?.to_string_lossy();
-            db::with_repo(repo, |conn| {
-                let tx = conn.transaction()?;
-                db::update_path(&tx, e.id, &new_rel, file_name(created))?;
-                db::insert_change(&tx, e.id, ChangeAction::ExternalModified, json!({
-                    "kind": "rename",
-                    "from_path": removed_rel,
-                    "to_path": new_rel,
-                    "by": "external",
-                }))?;
-                tx.commit()?;
-                Ok(())
-            })
-        }
-        _ => handle_unmatched_create(repo, created, &new_hash, new_size)
-    }
-}
-```
+## 启动与恢复
 
----
+- 有 cursor：FSEventStream 从该 event ID 启动。
+- 无 cursor：请求用户确认全量重扫，不从 `SinceNow` 静默开始。
+- dropped、wrapped 或 must-scan flags：停止 stream，并进入确认重扫。
+- RootChanged：停止 stream，并要求重新连接资料库路径。
+- 重扫完成后写入预先记录的 resume seed，再重新打开资料库和 watcher。
 
-## 场景 2：move 跨分类
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Finder
-    participant Watcher
-    participant Sync
-    User->>Finder: drag docs/x.pdf to code/
-    Finder->>Watcher: removed docs/x.pdf, created code/x.pdf
-    Watcher->>Sync: events
-    Sync->>Sync: hash code/x.pdf
-    Sync->>Sync: 比较 path 前缀（docs vs code）
-    Sync->>DB: UPDATE path=code/x.pdf, category=code
-    Sync->>DB: INSERT change_log(external_modified, kind=move)
-```
-
-### 伪代码
-
-```rust
-fn handle_move_cross_category(
-    repo: &Path,
-    existing: &FileEntry,
-    new_path: &Path,
-) -> CoreResult<()> {
-    let new_rel = new_path.strip_prefix(repo)?.to_string_lossy().to_string();
-    let new_category = top_level_dir(&new_rel)
-        .unwrap_or_else(|| "__root__".into());
-
-    db::with_repo(repo, |conn| {
-        let tx = conn.transaction()?;
-        db::update_path_and_category(&tx, existing.id, &new_rel, &new_category, &existing.current_name)?;
-        db::insert_change(&tx, existing.id, ChangeAction::ExternalModified, json!({
-            "kind": "move",
-            "from_path": existing.path,
-            "to_path": new_rel,
-            "from_category": existing.category,
-            "to_category": new_category,
-            "by": "external",
-        }))?;
-        tx.commit()?;
-        Ok(())
-    })
-}
-```
-
-如果 `new_category` 不在 `classifier.yaml` 中：照样写入 path。`category` 字段直接存目录名，UI 显示时若 classifier 没匹配则按 Subdir 渲染。详见 [../modules/tree-scan.md](../modules/tree-scan.md)。
-
----
-
-## 场景 3：delete
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Finder
-    participant Watcher
-    participant Sync
-    User->>Finder: ⌘Delete x.pdf (移到废纸篓)
-    Finder->>Watcher: removed x.pdf
-    Watcher->>Sync: events
-    Sync->>FS: x.pdf 是否存在 → 否
-    Sync->>DB: 找 path 匹配的 active 记录
-    Sync->>DB: UPDATE status='deleted', deleted_at=now
-    Sync->>DB: INSERT change_log(deleted, by=external)
-```
-
-### 决策树
-
-```mermaid
-flowchart TB
-    Removed[FSEvent: removed path]
-    Wait[等 200ms 看是否伴随 created]
-    Pair{paired created?}
-    SameHash{same hash 存在?}
-    SameDir{在同分类?}
-
-    Removed --> Wait
-    Wait --> Pair
-    Pair -->|"yes"| SameHash
-    Pair -->|"no"| Delete[场景 3: 软删除]
-
-    SameHash -->|yes| SameDir
-    SameHash -->|no| BothEvents[拆为 删 + 增]
-
-    SameDir -->|yes| Rename[场景 1: rename]
-    SameDir -->|no| Move[场景 2: move]
-```
-
-### 伪代码
-
-```rust
-fn handle_delete(repo: &Path, removed_path: &Path) -> CoreResult<()> {
-    let rel = removed_path.strip_prefix(repo)?.to_string_lossy().to_string();
-    let existing = db::find_active_by_path(repo, &rel)?;
-    let Some(e) = existing else { return Ok(()); };
-
-    db::with_repo(repo, |conn| {
-        let tx = conn.transaction()?;
-        db::soft_delete(&tx, e.id)?;
-        db::insert_change(&tx, e.id, ChangeAction::Deleted, json!({
-            "hard": false, "by": "external",
-        }))?;
-        tx.commit()?;
-        Ok(())
-    })
-}
-```
-
----
-
-## 场景 4：modify content
-
-文件路径不变，内容变化（mtime / size / hash 变了）。
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Editor
-    participant Watcher
-    participant Sync
-    User->>Editor: edit x.pdf, save
-    Editor->>Watcher: modified x.pdf
-    Watcher->>Sync: events
-    Sync->>FS: hash x.pdf
-    Sync->>DB: find by path
-    Sync->>Sync: 比较 hash
-    Sync->>DB: UPDATE hash_sha256, size_bytes, updated_at
-    Sync->>DB: INSERT change_log(external_modified, kind=content)
-```
-
-```rust
-fn handle_content_modify(
-    repo: &Path,
-    path: &Path,
-    existing: &FileEntry,
-) -> CoreResult<()> {
-    let new_hash = sha256_file(path)?;
-    if new_hash == existing.hash_sha256 {
-        return Ok(());
-    }
-    let size = std::fs::metadata(path)?.len() as i64;
-    db::with_repo(repo, |conn| {
-        let tx = conn.transaction()?;
-        db::update_hash(&tx, existing.id, &new_hash, size)?;
-        db::insert_change(&tx, existing.id, ChangeAction::ExternalModified, json!({
-            "kind": "content",
-            "hash_before": existing.hash_sha256,
-            "hash_after": new_hash,
-            "by": "external",
-        }))?;
-        tx.commit()?;
-        Ok(())
-    })
-}
-```
-
----
-
-## 场景 5：create new file（用户在 Finder 直接放入）
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Finder
-    participant Watcher
-    participant Sync
-    User->>Finder: drag external file → docs/
-    Finder->>Watcher: created docs/new.pdf
-    Watcher->>Sync: events
-    Sync->>FS: hash new.pdf
-    Sync->>DB: find by hash → 无
-    Sync->>DB: INSERT files (storage_mode=indexed, origin=external, source_path=NULL)
-    Sync->>DB: INSERT change_log(imported, by=external)
-```
-
-```rust
-fn handle_external_create(
-    repo: &Path,
-    path: &Path,
-    hash: &str,
-    size: i64,
-) -> CoreResult<()> {
-    let rel = path.strip_prefix(repo)?.to_string_lossy().to_string();
-    let category = top_level_dir(&rel).unwrap_or_else(|| "__root__".into());
-    let original_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("unnamed").to_string();
-
-    db::with_repo(repo, |conn| {
-        let tx = conn.transaction()?;
-        let id = db::insert_active(&tx, NewFileRow {
-            path: rel.clone(),
-            original_name: original_name.clone(),
-            current_name: original_name,
-            category,
-            size_bytes: size,
-            hash_sha256: hash.into(),
-            storage_mode: StorageMode::Indexed,
-            origin: FileOrigin::External,
-            source_path: None,
-            imported_at: chrono::Utc::now().timestamp(),
-        })?;
-        db::insert_change(&tx, id, ChangeAction::Imported, json!({
-            "mode": "indexed",
-            "source": "external",
-            "by": "external",
-        }))?;
-        tx.commit()?;
-        Ok(())
-    })
-}
-```
-
----
-
-## 场景 6：delete category dir
-
-用户在 Finder 把整个 `docs/` 目录拖到废纸篓。
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Finder
-    participant Watcher
-    participant Sync
-    User->>Finder: delete docs/
-    Finder->>Watcher: 多个 removed 事件 (docs/a.pdf, docs/b.pdf, ...)
-    Watcher->>Sync: batch
-    Sync->>Sync: 检测到整个目录消失
-    Sync->>UI: warning sheet
-    UI->>User: "确认删除分类 docs (12 文件)?"
-    User->>UI: 确认
-    UI->>Sync: proceed
-    Sync->>DB: UPDATE status='deleted' for all
-    Sync->>DB: INSERT change_log * N
-```
-
-### 启发式判断
-
-```rust
-fn detect_category_drop(events: &[FsEvent]) -> Option<String> {
-    let removed: Vec<&str> = events.iter()
-        .filter(|e| e.kind == FsEventKind::Removed)
-        .map(|e| e.path.as_str())
-        .collect();
-
-    if removed.len() < 5 { return None; }
-
-    let mut top_dirs: HashMap<&str, usize> = HashMap::new();
-    for path in &removed {
-        if let Some(top) = path.split('/').next() {
-            *top_dirs.entry(top).or_insert(0) += 1;
-        }
-    }
-
-    top_dirs.iter()
-        .max_by_key(|(_, n)| *n)
-        .filter(|(_, n)| **n >= 5)
-        .map(|(k, _)| k.to_string())
-}
-```
-
-警告但**不强制**：用户的删除是有意的，warning 仅做防误触。下次 reindex 不会自动恢复。
-
----
-
-## 场景 7：edit overview / README
-
-详见 [../modules/overview-gen.md](../modules/overview-gen.md)。
-
-简短：
-
-- 用户编辑已有 `README.md`：视为普通文件修改，不触发概览重生成，也不被应用覆盖
-- 用户编辑 `.areamatrix/generated/*.md`：视为派生文件，下次重生成会覆盖
-- 用户启用并编辑根目录 `AREAMATRIX.md`：应用只维护标记块，标记块外内容保留
-
-派生概览不写 change_log；用户 `README.md` 若在索引范围内，则按普通文件内容变更处理。
-
----
-
-## 场景 8：edit companion `.md`
-
-伴生笔记 `<filename>.md` 是 DB ↔ FS 双向同步。
-
-```mermaid
-flowchart TB
-    Edit{编辑来源?}
-    AppEdit[应用内编辑]
-    ExtEdit[Finder/编辑器编辑]
-
-    AppEdit --> WriteDB[写 DB notes 表]
-    AppEdit --> InFlight[InFlight.mark]
-    InFlight --> WriteFS[写 .md 文件]
-    InFlight --> Unmark[InFlight.unmark]
-
-    ExtEdit --> Watcher[Watcher 检测]
-    Watcher --> CheckInFlight{在 InFlight?}
-    CheckInFlight -->|yes| Skip[忽略]
-    CheckInFlight -->|no| ReadFS[读 FS]
-    ReadFS --> CmpDB[比较 DB content]
-    CmpDB -->|不同| UpdateDB[UPDATE notes content]
-    UpdateDB --> Log[change_log: edited_note, by=external]
-```
-
-```rust
-fn handle_companion_edit(repo: &Path, md_path: &Path) -> CoreResult<()> {
-    let rel = md_path.strip_prefix(repo)?.to_string_lossy().to_string();
-
-    let parent_path_str = rel.trim_end_matches(".md");
-    let parent_file = db::find_active_by_path(repo, parent_path_str)?;
-    let Some(file) = parent_file else { return Ok(()); };
-
-    let fs_content = std::fs::read_to_string(md_path)?;
-    let db_content = db::read_note(repo, file.id)?.unwrap_or_default();
-    if fs_content == db_content { return Ok(()); }
-
-    db::with_repo(repo, |conn| {
-        let tx = conn.transaction()?;
-        db::upsert_note(&tx, file.id, &fs_content)?;
-        db::insert_change(&tx, file.id, ChangeAction::EditedNote, json!({
-            "length_before": db_content.len(),
-            "length_after": fs_content.len(),
-            "by": "external",
-        }))?;
-        tx.commit()?;
-        Ok(())
-    })
-}
-```
-
----
-
-## 场景 9：DB lost / `.areamatrix` 被删
-
-启动检测 → 弹用户对话 → reindex。
-
-```mermaid
-flowchart TB
-    Start[应用启动]
-    Check{.areamatrix/index.db 存在?}
-    Init[正常加载]
-    Wizard[弹窗：未找到索引]
-    Choice{用户选择?}
-    Reindex[reindex_from_filesystem]
-    Cancel[退出应用]
-
-    Start --> Check
-    Check -->|yes| Init
-    Check -->|no| Wizard
-    Wizard --> Choice
-    Choice -->|重建| Reindex
-    Choice -->|取消| Cancel
-    Reindex --> Init
-```
-
-**用户文件完全不丢**。change_log 全部丢失（无可恢复）。
-
----
-
-## 9 场景速查表
-
-| 场景 | 触发 | DB 动作 | change_log action | by |
-|---|---|---|---|---|
-| 1 rename | 同分类内改名 | UPDATE path, current_name | external_modified, kind=rename | external |
-| 2 move | 跨分类移动 | UPDATE path, category | external_modified, kind=move | external |
-| 3 delete | 移废纸篓 / 删除 | UPDATE status='deleted' | deleted, by=external | external |
-| 4 modify content | 内容变化 | UPDATE hash, size | external_modified, kind=content | external |
-| 5 external create | 新文件出现 | INSERT files(origin=external) | imported, source=external | external |
-| 6 category drop | 整个分类被删 | 多条 UPDATE status='deleted' | 多条 deleted | external |
-| 7 overview / README edit | 改派生概览或用户 README | 概览不动 DB；用户 README 按普通文件处理 | — / external_modified | — / external |
-| 8 note edit | 改 .md 文件 | UPDATE notes | edited_note, by=external | external |
-| 9 DB lost | 删 `.areamatrix/` | reindex 重建(origin=external) | imported * N | startup_reconcile |
-
----
-
-## 冲突决策树（多事件同时到达）
-
-```mermaid
-flowchart TB
-    Batch[event batch]
-    Pair[配对 removed-created]
-    Has{有配对?}
-    DigBatch[逐个处理]
-
-    YesPair[配对成功]
-    HashMatch{hash 匹配 DB existing?}
-    SamePath{path == old path?}
-
-    Rename[scen 1: rename]
-    Move[scen 2: move]
-    Modify[scen 4: modify content]
-    Create[scen 5: create]
-    Delete[scen 3: delete]
-
-    Batch --> Pair
-    Pair --> Has
-    Has -->|yes| YesPair
-    Has -->|no| DigBatch
-
-    YesPair --> HashMatch
-    HashMatch -->|yes| SamePath
-    HashMatch -->|no| Modify
-    SamePath -->|yes| Modify
-    SamePath -->|no| MovOrRen{same category?}
-
-    MovOrRen -->|yes| Rename
-    MovOrRen -->|no| Move
-
-    DigBatch --> Created{created?}
-    DigBatch --> Removed{removed?}
-    DigBatch --> Modified{modified?}
-
-    Created --> Create
-    Removed --> Delete
-    Modified --> Modify
-```
-
-实现见 [fs-watcher.md](fs-watcher.md) 的 `pair_events` 章节。
-
----
-
-## 一致性检查（启动时）
-
-```mermaid
-flowchart TB
-    Start[应用启动]
-    Recovery[recover_on_startup<br/>清 staging]
-    Cursor{cursor 存在?}
-    SinceCursor[FSEventStream sinceEventId=cursor]
-    SinceNow[FSEventStream sinceEventId=Now]
-    Reconcile[全量 reconcile<br/>FS vs DB diff]
-    Watch[启动 Watcher]
-
-    Start --> Recovery
-    Recovery --> Cursor
-    Cursor -->|是| SinceCursor
-    Cursor -->|否| SinceNow
-    SinceNow --> Reconcile
-    SinceCursor --> Watch
-    Reconcile --> Watch
-```
-
-`reconcile` 工作量与文件数成正比（10 万文件下约 5-10s）。仅在 cursor 不存在或损坏时全量做。
-
-### reconcile 算法
-
-```rust
-pub fn reconcile_full(repo: &Path) -> CoreResult<ReconcileReport> {
-    let mut report = ReconcileReport::default();
-    let fs_files = walk_repo(repo)?;
-    let db_files = db::list_all_active(repo)?;
-
-    let fs_by_path: HashMap<&str, &FsFile> = fs_files.iter().map(|f| (f.rel.as_str(), f)).collect();
-    let db_by_path: HashMap<&str, &FileEntry> = db_files.iter().map(|f| (f.path.as_str(), f)).collect();
-
-    for fs in &fs_files {
-        match db_by_path.get(fs.rel.as_str()) {
-            None => { handle_external_create(repo, &fs.abs, &fs.hash, fs.size)?; report.created += 1; }
-            Some(db) if db.hash_sha256 != fs.hash => {
-                handle_content_modify(repo, &fs.abs, db)?;
-                report.content_modified += 1;
-            }
-            Some(_) => {}
-        }
-    }
-
-    for db in &db_files {
-        if !fs_by_path.contains_key(db.path.as_str()) {
-            handle_delete(repo, &repo.join(&db.path))?;
-            report.deleted += 1;
-        }
-    }
-
-    Ok(report)
-}
-```
-
----
-
-## 不变量校验
-
-CI 集成测试覆盖：
-
-| 检查 | 描述 |
-|---|---|
-| FS 中每个文件在 DB 有 active 记录 | 启动 reconcile 后应满足 |
-| DB 中每个 active 记录对应 FS 文件 | 同上 |
-| hash 匹配 | path / size / hash 三个字段一致 |
-| 没有孤立的 staging 行 | recover 后 status='staging' 行数为 0 |
-| change_log 单调 | occurred_at 单调递增 |
-
-`fsck` 命令：用户可主动跑一致性检查并打印报告。
-
----
-
-## 与产品承诺的一致性
-
-[PRD 第 7 节](../product/prd.md) 第 4 条："真相在文件系统"。
-
-这与本文"DB 是元数据真相"看似矛盾，实际是不同视角：
-
-- **产品视角**（用户能感知到）：删除 `.areamatrix/` 不丢文件 = 文件是真相
-- **架构视角**（实现层面）：日常运行时元数据靠 DB = DB 是元数据真相
-
-两者协同：DB 是高效的索引层，FS 是兜底的真相层。一旦 DB 出问题可从 FS 重建（丢历史但不丢文件）。
-
----
+当前没有通用 `reconcile_full` 或用户可调用的 `fsck` API。文件系统重建走受支持的 repair/reindex 流程，并保留用户确认、诊断快照和文件安全边界。
 
 ## Related
 
-- [overview.md](overview.md)
-- [adopt-existing-folders.md](adopt-existing-folders.md)
-- [data-model.md](data-model.md)
-- [fs-watcher.md](fs-watcher.md)
-- [transactional-import.md](transactional-import.md)
-- [../adr/0003-source-of-truth-strategy.md](../adr/0003-source-of-truth-strategy.md)
-- [../modules/change-log.md](../modules/change-log.md)
+- [文件监听与外部变化同步](fs-watcher.md)
+- [事务式导入](transactional-import.md)
+- [数据模型](data-model.md)
+- [Core API](../api/core-api.md)
+- [真相源 ADR](../adr/0003-source-of-truth-strategy.md)

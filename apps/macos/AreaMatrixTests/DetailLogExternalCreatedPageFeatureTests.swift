@@ -3,16 +3,18 @@ import XCTest
 
 final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     @MainActor
-    func testDetailLogSyncExternalCreatedCoreWatcherLifecycleIsIdempotent() throws {
+    func testDetailLogSyncExternalCreatedCoreWatcherLifecycleIsIdempotent() async throws {
         let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalCreatedWatcherTests")
         defer { removeTestTemporaryItems(repoURL) }
-        let watcher = MainExternalCreatedFileWatcher()
+        let watcher = await MainExternalCreatedFileWatcher(
+            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 10)
+        )
 
-        watcher.start(repoPath: "  \n")
-        watcher.start(repoPath: repoURL.path)
-        watcher.start(repoPath: repoURL.path)
-        watcher.stop()
-        watcher.stop()
+        await watcher.start(repoPath: "  \n")
+        await watcher.start(repoPath: repoURL.path)
+        await watcher.start(repoPath: repoURL.path)
+        await watcher.stop()
+        await watcher.stop()
     }
 
     @MainActor
@@ -32,12 +34,12 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         model.consumePendingExternalCreatedFileSignals()
 
         XCTAssertEqual(
-            model.externalCreatedEvent(for: opening),
-            MainExternalCreatedFileEvent(relativePath: "docs/external-created.pdf", fsEventID: 7100)
+            model.externalCreatedEvents(for: opening),
+            [MainExternalCreatedFileEvent(relativePath: "docs/external-created.pdf", fsEventID: 7100)]
         )
-        let handledEvent = try XCTUnwrap(model.externalCreatedEvent(for: opening))
-        model.finishExternalCreatedFileEvent(handledEvent)
-        XCTAssertNil(model.externalCreatedEvent(for: opening))
+        let handledEvents = model.externalCreatedEvents(for: opening)
+        model.finishExternalCreatedFileEvents(handledEvents)
+        XCTAssertEqual(model.externalCreatedEvents(for: opening), [])
     }
 
     @MainActor
@@ -57,7 +59,27 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         )
         model.consumePendingExternalCreatedFileSignals()
 
-        XCTAssertNil(model.externalCreatedEvent(for: opening))
+        XCTAssertEqual(model.externalCreatedEvents(for: opening), [])
+    }
+
+    func testDetailLogSyncExternalCreatedCoreWatcherMapsModifiedAndMissingRenameSignals() {
+        let modified = MainExternalCreatedFileWatcher.signal(
+            repoPath: "/tmp/repo",
+            absolutePath: "/tmp/repo/docs/edited.pdf",
+            flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemModified),
+            eventID: 7107,
+            pathExists: true
+        )
+        let removedRename = MainExternalCreatedFileWatcher.signal(
+            repoPath: "/tmp/repo",
+            absolutePath: "/tmp/repo/docs/old.pdf",
+            flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemRenamed),
+            eventID: 7108,
+            pathExists: false
+        )
+
+        XCTAssertEqual(modified?.kind, .modified)
+        XCTAssertEqual(removedRename?.kind, .removed)
     }
 
     func testDetailLogSyncExternalCreatedCoreWatcherBuildsCreatedSignalForUserFileOnly() {

@@ -6994,28 +6994,49 @@ let result = try await Task.detached {
     try AreaMatrix.syncExternalChanges(repoPath: repoPath, events: coreEvents)
 }.value
 
-print("created: \(result.detectedCreates), renamed: \(result.detectedRenames), deleted: \(result.detectedDeletes)")
+print(
+    "created: \(result.detectedCreates), renamed: \(result.detectedRenames), " +
+        "deleted: \(result.detectedDeletes), modified: \(result.detectedModifies)"
+)
 appState.refreshList()
 ```
 
 应用调用方在去抖 + InFlight 过滤后传入。详见 [../architecture/source-of-truth.md](../architecture/source-of-truth.md)。
 
+事件行为：
+
+- `Created`：登记新的 external/indexed row；不复制或移动用户文件。
+- `Renamed`：按唯一 hash 候选更新同一 file ID 的 path、name 和 category；支持跨分类外部移动。
+- `Removed`：只在路径已不存在时 soft-delete 对应 active row。
+- `Modified`：更新已有 row 的 size/hash；未登记的现存路径按 external create 处理。
+
+整批规划成功后，Core 先在一个 SQLite 事务中提交 files/change_log，再更新受影响概览，最后单独
+持久化最大 `fs_event_id`。overview 或 cursor 失败时 cursor 不推进；DB 可能已经幂等提交，因此调用方
+应允许同一批事件重放。
+
 ### `get_fs_event_cursor(repoPath) throws -> Int64?`
 
 ```swift
 let cursor = try AreaMatrix.getFsEventCursor(repoPath: repoPath)
-let stream = startFSEventStream(sinceWhen: cursor ?? .now)
+guard let cursor else {
+    requestConfirmedFullRescan()
+    return
+}
+let stream = startFSEventStream(sinceWhen: cursor)
 ```
 
-启动时调用，决定 FSEventStream 从哪个 event id 开始重放。
+启动时调用，决定 FSEventStream 从哪个 event id 开始重放。缺少 cursor 时不得静默从 `SinceNow`
+开始；平台层应进入用户可见的全量重扫恢复。
 
 ### `set_fs_event_cursor(repoPath, lastEventId) throws`
 
 ```swift
-try AreaMatrix.setFsEventCursor(repoPath: repoPath, lastEventId: lastBatch.maxEventId)
+try AreaMatrix.setFsEventCursor(repoPath: repoPath, lastEventId: confirmedRescanSeed)
 ```
 
-每批 sync 完成后保存 cursor，断电后下次启动差量重放。
+该 API 用于资料库初始化或已确认全量重扫后的恢复 seed。正常 watcher 批次不应在 Swift 侧额外调用；
+`sync_external_changes` 在 DB 和 overview 成功后负责推进 cursor。写入使用单调最大值，较旧 seed 不会
+使 cursor 回退。
 
 ### `record_watcher_health(repoPath, signal) throws -> PlatformWatcherSnapshot`
 

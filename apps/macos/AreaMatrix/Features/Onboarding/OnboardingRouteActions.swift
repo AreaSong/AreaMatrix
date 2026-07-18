@@ -245,8 +245,12 @@ extension OnboardingModel {
 
             try await recoverStartupResidue(repoPath: repoPath)
             if finishInitializationCancellationIfRequested() { return }
+            let watcherSeed = MainExternalCreatedFileWatcher.currentEventID()
             startInitializationProgressPolling(repoPath: repoPath, mode: mode)
             try await initializeRepository(repoPath: repoPath, mode: mode)
+            if let watcherSeed {
+                try await externalChangesSyncer.setFSEventCursor(repoPath: repoPath, lastEventID: watcherSeed)
+            }
             if finishInitializationCancellationIfRequested() { return }
             settingsWriter.saveConfiguredRepoPath(repoPath)
             initializationOpenErrorMapping = nil

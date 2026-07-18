@@ -7,7 +7,7 @@ upstream:
   spec_id: ASW-EWF-001
   version: 1.0.0
   source_task_id: 019f63ff-b316-79d2-a0cd-215090bcea1e
-  local_source: /Users/as/Documents/New project 2/docs/governance/ASW-EWF-001-enterprise-workflow-baseline.md
+  source_path: docs/governance/upstream/ASW-EWF-001-1.0.0.txt
   sha256: ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1
   adoption: adapted-complete
 

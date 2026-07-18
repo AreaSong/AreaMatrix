@@ -1,5 +1,9 @@
 # Secret Scan Runbook
 
+> 本文说明提交前和维护审计场景下的 gitleaks 扫描范围、判定和处置方式。
+>
+> 阅读时长：约 3 分钟。
+
 维护者在合并路径脱敏与 gitleaks 门禁后，按可见性执行扫描并归档结果（不要提交含真实 secret 的报告到 Git）。
 
 ## 默认：只扫当前变更（diff 模式）
@@ -9,7 +13,7 @@
 扫描范围：
 
 1. 未提交的 staged / unstaged 变更（`gitleaks protect`）
-2. 相对 `origin/main` 尚未 push 的 commit（`gitleaks detect --log-opts=<merge-base>..HEAD`）
+2. 相对 `origin/main` 尚未合并的 commit（`gitleaks detect --log-opts=<merge-base>..HEAD`）
 
 ```bash
 ./dev check secrets
@@ -44,3 +48,10 @@ AREAMATRIX_GITLEAKS_MODE=history GITLEAKS_LOG_OPTS="--all" ./dev check secrets
 | `generic-api-key` 误报 | 测试 fixture / build log：在 `.gitleaks.toml` allowlist 或改占位符 |
 
 历史审计结果属于一次性证据，应保存在对应审计记录中，不写入长期 runbook。重写公开 Git 历史会改变所有 commit，只有确认真实 secret 泄露且完成密钥轮换、协作者协调和回滚方案后才能执行。
+
+## Related
+
+- [CI 治理](ci-governance.md)
+- [Git 工作流](git-workflow.md)
+- [安全政策](../../SECURITY.md)
+- [企业工作流治理基线](../governance/enterprise-workflow-baseline.md)

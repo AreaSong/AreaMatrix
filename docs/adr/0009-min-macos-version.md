@@ -25,19 +25,18 @@
 
 具体配置：
 
-```xml
-<!-- AreaMatrix/Info.plist -->
-<key>LSMinimumSystemVersion</key>
-<string>14.0</string>
-```
-
-```bash
-# Xcode project: macOS Deployment Target = 14.0
+```text
+GENERATE_INFOPLIST_FILE = YES
+MACOSX_DEPLOYMENT_TARGET = 14.0
 ```
 
 ```rust
 // ./dev build core: MACOSX_DEPLOYMENT_TARGET=14.0
 ```
+
+macOS target 使用 Xcode 生成的 Info.plist，仓库没有手写的 app `Info.plist` 作为最低版本源事实。
+生成产物中的最低系统版本由 `MACOSX_DEPLOYMENT_TARGET` 推导；评审和 CI 应检查 Xcode Build
+Settings，而不是检查不存在的静态 plist。
 
 不向 macOS 13 及以下提供构建。公开发布后，**每年 WWDC 后**（即 macOS 17 发布时）评估是否提升至 macOS 15 / 16。
 

@@ -44,6 +44,14 @@ fn created(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
     }
 }
 
+fn removed(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
+    ExternalEvent {
+        path: relative_path.to_owned(),
+        kind: ExternalEventKind::Removed,
+        fs_event_id,
+    }
+}
+
 fn default_file_filter() -> FileFilter {
     FileFilter {
         category: None,
@@ -258,6 +266,40 @@ fn sync_external_created_implementation_is_idempotent_for_duplicate_created_even
     let changes =
         list_changes(path_string(repo.path()), default_change_filter()).expect("list changes");
     assert_eq!(changes.len(), 1);
+}
+
+#[test]
+fn sync_external_created_implementation_reactivates_deleted_path() {
+    let repo = initialized_repo();
+    let relative_path = "docs/recreated.pdf";
+    write_repo_file(repo.path(), relative_path, b"first content");
+    sync_external_changes(path_string(repo.path()), vec![created(relative_path, 60)])
+        .expect("sync original external file");
+    let original = list_files(path_string(repo.path()), default_file_filter())
+        .expect("list original file")
+        .remove(0);
+    fs::remove_file(repo.path().join(relative_path)).expect("remove external file");
+    sync_external_changes(path_string(repo.path()), vec![removed(relative_path, 61)])
+        .expect("sync external removal");
+
+    write_repo_file(repo.path(), relative_path, b"replacement content");
+    let result = sync_external_changes(path_string(repo.path()), vec![created(relative_path, 62)])
+        .expect("sync recreated external file");
+
+    assert_eq!(result.detected_creates, 1);
+    assert_eq!(
+        get_fs_event_cursor(path_string(repo.path())).unwrap(),
+        Some(62)
+    );
+    let recreated = list_files(path_string(repo.path()), default_file_filter())
+        .expect("list recreated file")
+        .remove(0);
+    assert_eq!(recreated.id, original.id);
+    assert_eq!(recreated.path, relative_path);
+    assert_ne!(recreated.hash_sha256, original.hash_sha256);
+    assert_eq!(recreated.size_bytes, 19);
+    assert_eq!(recreated.origin, FileOrigin::External);
+    assert_eq!(recreated.storage_mode, StorageMode::Indexed);
 }
 
 #[test]

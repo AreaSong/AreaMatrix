@@ -20,12 +20,12 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         model.consumePendingExternalCreatedFileSignals()
 
         XCTAssertEqual(
-            model.externalCreatedEvent(for: opening),
-            MainExternalCreatedFileEvent(kind: .renamed, relativePath: "docs/renamed.pdf", fsEventID: 9100)
+            model.externalCreatedEvents(for: opening),
+            [MainExternalCreatedFileEvent(kind: .renamed, relativePath: "docs/renamed.pdf", fsEventID: 9100)]
         )
-        let handledEvent = try XCTUnwrap(model.externalCreatedEvent(for: opening))
-        model.finishExternalCreatedFileEvent(handledEvent)
-        XCTAssertNil(model.externalCreatedEvent(for: opening))
+        let handledEvents = model.externalCreatedEvents(for: opening)
+        model.finishExternalCreatedFileEvents(handledEvents)
+        XCTAssertEqual(model.externalCreatedEvents(for: opening), [])
     }
 
     func testDetailLogSyncExternalRenamedCoreWatcherBuildsRenamedSignalForUserFileOnly() {

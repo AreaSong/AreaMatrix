@@ -11,40 +11,61 @@ private struct ExternalSyncCall: Equatable {
 actor RecordingExternalChangesSyncer: CoreExternalChangesSyncing {
     private let result: Swift.Result<SyncResultSnapshot, Error>
     private var calls: [ExternalSyncCall] = []
+    private var batches: [[ExternalSyncCall]] = []
+    private var cursor: Int64?
+    private var cursorWrites: [Int64] = []
 
-    init(result: Swift.Result<SyncResultSnapshot, Error>) {
+    init(result: Swift.Result<SyncResultSnapshot, Error>, cursor: Int64? = 1) {
         self.result = result
+        self.cursor = cursor
     }
 
-    func syncExternalCreated(
+    func syncExternalChanges(
         repoPath: String,
-        relativePath: String,
-        fsEventID: Int64
+        events: [MainExternalCreatedFileEvent]
     ) async throws -> SyncResultSnapshot {
-        try recordAndResolve(kind: .created, repoPath: repoPath, relativePath: relativePath, fsEventID: fsEventID)
-    }
-
-    func syncExternalRenamed(
-        repoPath: String,
-        relativePath: String,
-        fsEventID: Int64
-    ) async throws -> SyncResultSnapshot {
-        try recordAndResolve(kind: .renamed, repoPath: repoPath, relativePath: relativePath, fsEventID: fsEventID)
-    }
-
-    func syncExternalRemoved(
-        repoPath: String,
-        relativePath: String,
-        fsEventID: Int64
-    ) async throws -> SyncResultSnapshot {
-        try recordAndResolve(kind: .removed, repoPath: repoPath, relativePath: relativePath, fsEventID: fsEventID)
+        let batch = events.map {
+            ExternalSyncCall(
+                kind: $0.kind,
+                repoPath: repoPath,
+                relativePath: $0.relativePath,
+                fsEventID: $0.fsEventID
+            )
+        }
+        batches.append(batch)
+        calls.append(contentsOf: batch)
+        return try result.get()
     }
 
     func getFSEventCursor(repoPath _: String) async throws -> Int64? {
-        nil
+        cursor
     }
 
-    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
+    func setFSEventCursor(repoPath _: String, lastEventID: Int64) async throws {
+        cursor = lastEventID
+        cursorWrites.append(lastEventID)
+    }
+
+    func recordedCursorWrites() -> [Int64] {
+        cursorWrites
+    }
+
+    func assertSyncedExternalEvents(
+        repoPath: String,
+        events: [MainExternalCreatedFileEvent],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let expectedBatch = events.map {
+            ExternalSyncCall(
+                kind: $0.kind,
+                repoPath: repoPath,
+                relativePath: $0.relativePath,
+                fsEventID: $0.fsEventID
+            )
+        }
+        XCTAssertEqual(batches, [expectedBatch], file: file, line: line)
+    }
 
     func assertSyncedExternalEvent(
         kind: MainExternalSyncEventKind,
@@ -140,18 +161,11 @@ actor RecordingExternalChangesSyncer: CoreExternalChangesSyncing {
         XCTAssertEqual(calls, [], file: file, line: line)
     }
 
-    private func recordAndResolve(
-        kind: MainExternalSyncEventKind,
-        repoPath: String,
-        relativePath: String,
-        fsEventID: Int64
-    ) throws -> SyncResultSnapshot {
-        calls.append(ExternalSyncCall(
-            kind: kind,
-            repoPath: repoPath,
-            relativePath: relativePath,
-            fsEventID: fsEventID
-        ))
-        return try result.get()
+    func assertCursorWrites(
+        _ expected: [Int64],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(cursorWrites, expected, file: file, line: line)
     }
 }

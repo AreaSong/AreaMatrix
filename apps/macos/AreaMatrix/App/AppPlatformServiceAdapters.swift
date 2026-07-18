@@ -113,22 +113,20 @@ struct AppKitInteractionFeedbackPerformer: AppInteractionFeedbackPerforming {
     }
 }
 
-struct LocalWelcomeHelpOpener: WelcomeHelpOpening {
-    private let localURLOpener: any LocalFileURLOpening
+struct WelcomeHelpOpener: WelcomeHelpOpening {
+    static let userGuideURL =
+        "https://github.com/AreaSong/AreaMatrix/blob/main/docs/user-guide/getting-started.md"
 
-    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
-        self.localURLOpener = localURLOpener
+    private let externalURLOpener: any ExternalURLStringOpening
+
+    init(externalURLOpener: any ExternalURLStringOpening = AppPlatformServices.externalURLStringOpener) {
+        self.externalURLOpener = externalURLOpener
     }
 
     @MainActor
     func openWelcomeHelp() throws {
-        let docsURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            .appendingPathComponent("docs/product/prd.md")
-
         do {
-            try localURLOpener.openExisting(docsURL, requiresDirectory: false)
-        } catch LocalFileURLOpenError.openRejected(_) {
-            return
+            try externalURLOpener.openHTTPSURLString(Self.userGuideURL)
         } catch {
             throw WelcomeHelpError.helpDocumentUnavailable
         }

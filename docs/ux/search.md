@@ -10,19 +10,19 @@
 
 ### 目标
 
-1. **比 Finder 更“知道我想找什么”**：默认按“最近导入/最近修改”对齐资料管理任务。\n
-2. **范围明确**：用户知道自己是在搜“当前分类”还是“全库”。\n
-3. **可组合**：关键词 + 过滤 + 排序能覆盖 80% 场景。\n
-4. **可复用**：常用查询可以保存为“智能列表”。\n
-5. **范围清晰**：正式搜索覆盖文件名、笔记和已索引元数据；全文内容索引和 OCR 仅在具备明确产品合同时提供。\n
+1. **比 Finder 更“知道我想找什么”**：默认按“最近导入/最近修改”对齐资料管理任务。
+2. **范围明确**：用户知道自己是在搜“当前分类”还是“全库”。
+3. **可组合**：关键词 + 过滤 + 排序能覆盖 80% 场景。
+4. **可复用**：常用查询可以保存为“智能列表”。
+5. **范围清晰**：正式搜索覆盖文件名、笔记和已索引元数据；全文内容索引和 OCR 仅在具备明确产品合同时提供。
 
 ### 成功标准（验收）
 
-- **Q1**：⌘F 聚焦搜索框，输入即出结果（debounce）。\n
-- **Q2**：用户可一键切换“当前分类/全库”。\n
-- **Q3**：支持基本过滤：category/type/date/tag。\n
-- **Q4**：支持保存搜索并在侧边栏显示“智能列表”。\n
-- **Q5**：高级查询语法可选（不强迫），错误时有提示。\n
+- **Q1**：⌘F 聚焦搜索框，输入即出结果（debounce）。
+- **Q2**：用户可一键切换“当前分类/全库”。
+- **Q3**：支持基本过滤：category/type/date/tag。
+- **Q4**：支持保存搜索并在侧边栏显示“智能列表”。
+- **Q5**：高级查询语法可选（不强迫），错误时有提示。
 
 ---
 
@@ -30,19 +30,19 @@
 
 ### 入口
 
-- Toolbar 右侧提供 Search field\n
-- 快捷键：`⌘F`\n
-- Cmd+K 命令面板：`Search…`\n
+- Toolbar 右侧提供 Search field
+- 快捷键：`⌘F`
+- Cmd+K 命令面板：`Search…`
 
 ### 搜索框（ASCII）
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ Toolbar: [Repo ▾]  [ 🔍 Search in: All ▾  query… ]   [Filters]               │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-“Search in: All/Current” 下拉必须可见，避免用户误解范围。\n
+“Search in: All/Current” 下拉必须可见，避免用户误解范围。
 
 ---
 
@@ -53,7 +53,7 @@
 | Current node | 当前 Tree 选中节点范围 | 当用户已在某分类且开始输入时默认 |
 | All repo | 全库 | 当用户从空态或快捷键进入时默认 |
 
-切换 scope 不清空 query（只刷新结果）。\n
+切换 scope 不清空 query（只刷新结果）。
 
 ---
 
@@ -61,24 +61,24 @@
 
 ### 必须支持
 
-- 文件名（name）\n
-- 相对路径（path）\n
-- 伴生笔记（note content）\n
-- 分类（category）\n
+- 文件名（name）
+- 相对路径（path）
+- 伴生笔记（note content）
+- 分类（category）
 
 ### 可选支持（元数据）
 
-- 导入时间（imported_at）\n
-- 修改时间（modified_at）\n
-- 文件类型（extension/type）\n
-- 大小（size）\n
-- hash 前缀（debug）\n
+- 导入时间（imported_at）
+- 修改时间（modified_at）
+- 文件类型（extension/type）
+- 大小（size）
+- hash 前缀（debug）
 
 ### 明确不支持（后续智能化才支持）
 
-- PDF/图片 OCR\n
-- 文件内容全文\n
-- 语义相似检索\n
+- PDF/图片 OCR
+- 文件内容全文
+- 语义相似检索
 
 ---
 
@@ -86,31 +86,31 @@
 
 ### 基本呈现
 
-搜索结果仍使用 List 表格，但顶部显示“搜索模式”banner：\n
+搜索结果仍使用 List 表格，但顶部显示“搜索模式”banner：
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 搜索：\"合同\"  范围：全库  结果：42  [Clear]                                   │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-结果行高亮命中片段（文件名/路径），笔记命中显示摘要（1-2 行）。\n
+结果行高亮命中片段（文件名/路径），笔记命中显示摘要（1-2 行）。
 
 ### 排序默认值
 
-默认排序建议：`imported_at desc`，并提供下拉：\n
-- relevance（若有）\n
-- newest imported\n
-- newest modified\n
-- name A→Z\n
+默认排序建议：`imported_at desc`，并提供下拉：
+- relevance（若有）
+- newest imported
+- newest modified
+- name A→Z
 
 ---
 
 ## Filters（过滤器）
 
-Filters 按钮打开 popover：\n
+Filters 按钮打开 popover：
 
-```
+```text
 Category: [All ▾]
 Type:     [All ▾]
 Date:     [Any ▾]  (Last 7 days / Last 30 days / Custom…)
@@ -118,7 +118,7 @@ Tags:     [Any ▾]
 [ Reset filters ]
 ```
 
-过滤器变化应立即生效，不需要“Apply”。\n
+过滤器变化应立即生效，不需要“Apply”。
 
 ---
 
@@ -126,15 +126,15 @@ Tags:     [Any ▾]
 
 ### 目标
 
-把常用查询固定到侧边栏（类似 Finder 的 Smart Folder）。\n
+把常用查询固定到侧边栏（类似 Finder 的 Smart Folder）。
 
 ### 入口
 
-在搜索 banner 上提供：`Save…`\n
+在搜索 banner 上提供：`Save…`
 
 ### Save 对话框（ASCII）
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 保存搜索                                                                       │
 │                                                                              │
@@ -145,11 +145,11 @@ Tags:     [Any ▾]
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-保存后侧边栏出现 “Smart Lists” 分组：\n
-- 最近合同\n
-- 本周发票\n
+保存后侧边栏出现 “Smart Lists” 分组：
+- 最近合同
+- 本周发票
 
-（Smart Lists 的详细交互在 `deep-features.md` 扩展。）\n
+（Smart Lists 的详细交互在 `deep-features.md` 扩展。）
 
 ---
 
@@ -157,8 +157,8 @@ Tags:     [Any ▾]
 
 ### 设计原则
 
-- **不强迫用户学习**：UI 有 filters 与 scope，语法是 power-user bonus。\n
-- **语法可提示**：输入 `kind:` 时弹补全。\n
+- **不强迫用户学习**：UI 有 filters 与 scope，语法是 power-user bonus。
+- **语法可提示**：输入 `kind:` 时弹补全。
 
 ### 建议语法（示例）
 
@@ -173,20 +173,20 @@ Tags:     [Any ▾]
 
 ### 错误提示
 
-输入无法解析时：\n
-- 不要清空结果\n
-- banner 提示：`无法解析：after:2026-13-01（月份应为 01-12）`\n
+输入无法解析时：
+- 不要清空结果
+- banner 提示：`无法解析：after:2026-13-01（月份应为 01-12）`
 
 ---
 
 ## 空结果（No results）规范
 
-必须给“下一步”：\n
-- `Clear filters`\n
-- `Search in All`（若当前 scope=Current）\n
-- `Create note`（若用户搜索笔记内容，可选）\n
+必须给“下一步”：
+- `Clear filters`
+- `Search in All`（若当前 scope=Current）
+- `Create note`（若用户搜索笔记内容，可选）
 
-```
+```text
 没有结果
 尝试：清除过滤器 / 切换到全库 / 检查拼写
 [ Clear filters ] [ Search in All ]
@@ -209,11 +209,11 @@ Tags:     [Any ▾]
 
 ## 测试用例（产品验收清单）
 
-- [ ] ⌘F 聚焦搜索框，输入 debounce 更新结果\n
-- [ ] scope 切换 All/Current 生效\n
-- [ ] Filters popover 可设置 category/type/date\n
-- [ ] 保存搜索后侧边栏出现 Smart List\n
-- [ ] 高级语法补全与错误提示\n
+- [ ] ⌘F 聚焦搜索框，输入 debounce 更新结果
+- [ ] scope 切换 All/Current 生效
+- [ ] Filters popover 可设置 category/type/date
+- [ ] 保存搜索后侧边栏出现 Smart List
+- [ ] 高级语法补全与错误提示
 
 ---
 

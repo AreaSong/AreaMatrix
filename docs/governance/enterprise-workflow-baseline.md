@@ -11,6 +11,10 @@ upstream: ASW-EWF-001@1.0.0
 
 # AreaMatrix 企业工作流治理基线
 
+> 本文定义 AreaMatrix 对 ASW-EWF-001 的可复核项目适配、生命周期门禁和责任边界。
+>
+> 阅读时长：约 8 分钟。
+
 ## 定位
 
 本文是 AreaMatrix 对 `ASW-EWF-001@1.0.0` 的项目适配源事实。上游规范定义通用企业治理要求；本文定义这些要求在本地优先桌面产品、单仓库和当前维护者结构中的唯一落点。
@@ -18,10 +22,10 @@ upstream: ASW-EWF-001@1.0.0
 上游来源：
 
 - 来源任务：`019f63ff-b316-79d2-a0cd-215090bcea1e`
-- 本地来源文件：`/Users/as/Documents/New project 2/docs/governance/ASW-EWF-001-enterprise-workflow-baseline.md`
+- 仓库快照：[ASW-EWF-001-1.0.0.txt](upstream/ASW-EWF-001-1.0.0.txt)
 - SHA-256：`ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1`
 
-仓库不得只依赖上述绝对路径。采用语义、裁剪、责任和偏差以本文及
+快照用于离线复核上游版本和 hash；AreaMatrix 的采用语义、裁剪、责任和偏差仍以本文及
 [`governance-register.yaml`](governance-register.yaml) 为准。
 
 ## 治理目标
@@ -120,3 +124,9 @@ L3/L4 缺少第二位合格复核者时必须保持 blocked，不允许由单人
 
 上游版本、hash、强制门禁、责任或引用方式变化时，必须重新执行适用性审查，更新本文和登记册，并在对应 workflow discussion 中记录兼容性与迁移动作。
 
+## Related
+
+- [项目章程](project-charter.md)
+- [治理登记册](governance-register.yaml)
+- [运行与能力生命周期](operations-lifecycle.md)
+- [AI 治理源事实](../../.ai-governance/README.md)

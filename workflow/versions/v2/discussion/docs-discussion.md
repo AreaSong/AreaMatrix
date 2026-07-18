@@ -34,4 +34,3 @@
 - All 37 ASW domains are classified as satisfied, adapted, or not applicable.
 - G0-G8, source facts, owners, RAID, external dependencies, review, CI, operations, and retirement are explicit.
 - Promotion remains preview-only with live mapping pending.
-

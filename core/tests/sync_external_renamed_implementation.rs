@@ -51,6 +51,10 @@ fn renamed(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
     event(relative_path, ExternalEventKind::Renamed, fs_event_id)
 }
 
+fn removed(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
+    event(relative_path, ExternalEventKind::Removed, fs_event_id)
+}
+
 fn default_file_filter() -> FileFilter {
     FileFilter {
         category: None,
@@ -174,6 +178,8 @@ fn sync_external_renamed_implementation_updates_file_log_and_cursor() {
     assert_eq!(detail["to_path"], "docs/renamed.pdf");
     assert_eq!(detail["from_name"], "original.pdf");
     assert_eq!(detail["to_name"], "renamed.pdf");
+    assert_eq!(detail["from_category"], "docs");
+    assert_eq!(detail["to_category"], "docs");
     assert_eq!(detail["by"], "external");
     assert_eq!(
         fs::read(repo.path().join("docs/renamed.pdf")).expect("renamed user file remains readable"),
@@ -235,9 +241,13 @@ fn sync_external_renamed_implementation_rejects_unpaired_target_without_state() 
 }
 
 #[test]
-fn sync_external_renamed_implementation_rejects_cross_category_move_scope() {
+fn sync_external_renamed_implementation_updates_cross_category_move() {
     let repo = initialized_repo();
     let entry = sync_created_file(repo.path(), "docs/original.pdf", b"move bytes");
+    let docs_overview = repo.path().join(".areamatrix/generated/nodes/docs.md");
+    assert!(fs::read_to_string(&docs_overview)
+        .expect("read source category overview")
+        .contains("original.pdf"));
     fs::create_dir_all(repo.path().join("finance")).expect("create target category directory");
     fs::rename(
         repo.path().join("docs/original.pdf"),
@@ -248,19 +258,65 @@ fn sync_external_renamed_implementation_rejects_cross_category_move_scope() {
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("finance/original.pdf", 20)],
+    )
+    .expect("sync external cross-category move");
+
+    assert_eq!(result.detected_renames, 1);
+    assert_eq!(fs_cursor(repo.path()), Some(20));
+    let moved = get_file(path_string(repo.path()), entry.id).expect("get moved DB row");
+    assert_eq!(moved.path, "finance/original.pdf");
+    assert_eq!(moved.category, "finance");
+    assert_eq!(count_changes_with_action(repo.path(), "renamed"), 1);
+    let detail = change_detail(
+        &listed_changes(repo.path())
+            .into_iter()
+            .find(|change| change.action == "renamed")
+            .expect("cross-category move log"),
     );
-
-    assert!(matches!(result, Err(CoreError::Conflict { .. })));
-
-    assert_eq!(fs_cursor(repo.path()), Some(1));
-    let unchanged = get_file(path_string(repo.path()), entry.id).expect("get original DB row");
-    assert_eq!(unchanged.path, "docs/original.pdf");
-    assert_eq!(count_changes_with_action(repo.path(), "renamed"), 0);
+    assert_eq!(detail["from_category"], "docs");
+    assert_eq!(detail["to_category"], "finance");
+    assert!(!fs::read_to_string(&docs_overview)
+        .expect("read refreshed source category overview")
+        .contains("original.pdf"));
+    assert!(
+        fs::read_to_string(repo.path().join(".areamatrix/generated/nodes/finance.md"))
+            .expect("read target category overview")
+            .contains("original.pdf")
+    );
     assert_eq!(
         fs::read(repo.path().join("finance/original.pdf"))
             .expect("moved user file remains readable"),
         b"move bytes"
     );
+}
+
+#[test]
+fn sync_external_renamed_implementation_pairs_missing_source_with_target_without_soft_delete() {
+    let repo = initialized_repo();
+    let entry = sync_created_file(repo.path(), "docs/original.pdf", b"paired rename");
+    fs::rename(
+        repo.path().join("docs/original.pdf"),
+        repo.path().join("docs/renamed.pdf"),
+    )
+    .expect("simulate paired external rename");
+
+    let result = sync_external_changes(
+        path_string(repo.path()),
+        vec![
+            removed("docs/original.pdf", 30),
+            renamed("docs/renamed.pdf", 31),
+        ],
+    )
+    .expect("sync paired rename events");
+
+    assert_eq!(result.detected_renames, 1);
+    assert_eq!(result.detected_deletes, 0);
+    assert_eq!(fs_cursor(repo.path()), Some(31));
+    let renamed_entry =
+        get_file(path_string(repo.path()), entry.id).expect("get paired renamed row");
+    assert_eq!(renamed_entry.path, "docs/renamed.pdf");
+    assert_eq!(count_changes_with_action(repo.path(), "renamed"), 1);
+    assert_eq!(count_changes_with_action(repo.path(), "deleted"), 0);
 }
 
 #[test]

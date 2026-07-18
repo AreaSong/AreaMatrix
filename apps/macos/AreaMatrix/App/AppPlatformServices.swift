@@ -74,7 +74,7 @@ enum AppPlatformServices {
     }
 
     static var helpOpener: any WelcomeHelpOpening {
-        LocalWelcomeHelpOpener()
+        WelcomeHelpOpener()
     }
 
     static var directoryPicker: any RepositoryDirectoryPicking {

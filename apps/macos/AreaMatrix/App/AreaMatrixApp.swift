@@ -13,6 +13,15 @@ struct AreaMatrixApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(after: .sidebar) {
+                Button("Import...") {
+                    AreaMatrixImportCommandRelay.publish()
+                }
+                .keyboardShortcut("i", modifiers: [.command])
+                Button("Settings") {
+                    AreaMatrixSettingsCommandRelay.publish()
+                }
+                .keyboardShortcut(",", modifiers: [.command])
+                Divider()
                 Button("Command Palette") {
                     AreaMatrixCommandPaletteCommandRelay.publish()
                 }
@@ -23,6 +32,24 @@ struct AreaMatrixApp: App {
                 .keyboardShortcut("z", modifiers: [.command, .option])
             }
         }
+    }
+}
+
+@MainActor
+enum AreaMatrixImportCommandRelay {
+    static let notification = Notification.Name("AreaMatrixImportCommandRelay.notification")
+
+    static func publish() {
+        NotificationCenter.default.post(name: notification, object: nil)
+    }
+}
+
+@MainActor
+enum AreaMatrixSettingsCommandRelay {
+    static let notification = Notification.Name("AreaMatrixSettingsCommandRelay.notification")
+
+    static func publish() {
+        NotificationCenter.default.post(name: notification, object: nil)
     }
 }
 
@@ -305,8 +332,13 @@ enum AreaMatrixExternalCreatedFileRelay {
             fsEventID: fsEventID
         ) else { return }
 
-        pendingSignals.append(signal)
-        NotificationCenter.default.post(name: notification, object: signal)
+        publish([signal])
+    }
+
+    static func publish(_ signals: [MainExternalCreatedFileSignal]) {
+        guard !signals.isEmpty else { return }
+        pendingSignals.append(contentsOf: signals)
+        NotificationCenter.default.post(name: notification, object: signals)
     }
 
     static func takePendingSignals() -> [MainExternalCreatedFileSignal] {
@@ -328,9 +360,6 @@ enum AreaMatrixExternalCreatedFileRelay {
         return matchingSignals
     }
 
-    static func finishPendingSignal(_ handledSignal: MainExternalCreatedFileSignal) {
-        pendingSignals.removeAll { $0 == handledSignal }
-    }
 }
 
 final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {

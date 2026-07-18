@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -179,6 +180,53 @@ def _local_markdown_target(root: Path, source: Path, target: str) -> Path | None
     return (source.parent / decoded).resolve()
 
 
+def _check_markdown_structure(path: Path, text: str, failures: FailureCollector) -> None:
+    relative = path.as_posix()
+    in_fence = False
+    fence_marker = ""
+    h1_lines: list[int] = []
+    related_found = False
+
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        stripped = line.lstrip()
+        marker = "```" if stripped.startswith("```") else "~~~" if stripped.startswith("~~~") else ""
+        if marker:
+            if in_fence and marker == fence_marker:
+                in_fence = False
+                fence_marker = ""
+            elif not in_fence:
+                if not stripped[len(marker) :].strip():
+                    failures.fail(f"{relative}:{line_number} opening code fence is missing a language")
+                in_fence = True
+                fence_marker = marker
+            continue
+        if in_fence:
+            continue
+        if re.match(r"^#\s+\S", line):
+            h1_lines.append(line_number)
+        if line.strip() == "## Related":
+            related_found = True
+
+    if in_fence:
+        failures.fail(f"{relative} has an unclosed code fence")
+    if len(h1_lines) != 1:
+        failures.fail(f"{relative} must contain exactly one H1 outside code fences, found {len(h1_lines)}")
+    else:
+        lines = text.splitlines()
+        first_content = next(
+            (line.strip() for line in lines[h1_lines[0] :] if line.strip()),
+            "",
+        )
+        if not first_content.startswith(">"):
+            failures.fail(f"{relative} must place a blockquote summary immediately after its H1")
+    if not related_found:
+        failures.fail(f"{relative} is missing a top-level ## Related section")
+    if not text.endswith("\n"):
+        failures.fail(f"{relative} must end with a newline")
+    elif text.endswith("\n\n"):
+        failures.fail(f"{relative} has a blank line at EOF")
+
+
 def run_docs_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     failures = FailureCollector()
@@ -188,6 +236,8 @@ def run_docs_check(root: Path | None = None) -> int:
             failures.fail(f"missing documentation entry point: {path.relative_to(root)}")
 
     markdown_files = sorted(path for path in (root / "docs").rglob("*.md") if path.is_file())
+    for path in markdown_files:
+        _check_markdown_structure(path.relative_to(root), _read(path), failures)
     checked_files = [path for path in roots if path.is_file()] + markdown_files
     local_links: dict[Path, set[Path]] = {}
     for source in checked_files:
@@ -462,6 +512,7 @@ def _check_ai_runtime_environment_contract(root: Path, failures: FailureCollecto
 def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector) -> None:
     from .changes import ChangeYAMLError, parse_yaml_subset
 
+    root = root.resolve()
     baseline_path = root / "docs/governance/enterprise-workflow-baseline.md"
     register_path = root / "docs/governance/governance-register.yaml"
     if not baseline_path.is_file() or not register_path.is_file():
@@ -488,7 +539,6 @@ def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector
     expected_upstream = {
         "spec_id": "ASW-EWF-001",
         "version": "1.0.0",
-        "sha256": "ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1",
         "adoption": "adapted-complete",
     }
     if not isinstance(upstream, dict):
@@ -497,6 +547,32 @@ def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector
         for key, value in expected_upstream.items():
             if str(upstream.get(key)) != value:
                 failures.fail(f"enterprise governance register upstream.{key} must be {value}")
+        source_path = upstream.get("source_path")
+        source_hash = upstream.get("sha256")
+        if not isinstance(source_path, str) or not source_path:
+            failures.fail("enterprise governance register upstream.source_path must be repo-relative")
+        else:
+            source = Path(source_path)
+            if source.is_absolute() or ".." in source.parts:
+                failures.fail("enterprise governance register upstream.source_path must stay inside the repository")
+            else:
+                resolved = (root / source).resolve()
+                try:
+                    resolved.relative_to(root)
+                except ValueError:
+                    failures.fail("enterprise governance register upstream.source_path resolves outside the repository")
+                else:
+                    if not resolved.is_file():
+                        failures.fail(f"enterprise governance upstream snapshot does not exist: {source_path}")
+                    elif not isinstance(source_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", source_hash):
+                        failures.fail("enterprise governance register upstream.sha256 must be a lowercase SHA-256")
+                    else:
+                        actual_hash = hashlib.sha256(resolved.read_bytes()).hexdigest()
+                        if actual_hash != source_hash:
+                            failures.fail(
+                                "enterprise governance upstream snapshot hash mismatch: "
+                                f"expected {source_hash}, found {actual_hash}"
+                            )
 
     raci = register.get("raci")
     if not isinstance(raci, dict) or raci.get("accountable") != "@AreaSong":
@@ -1133,9 +1209,66 @@ def run_codex_os_check(root: Path | None = None) -> int:
     return 0
 
 
+def _github_event_diff_base() -> str | None:
+    event_path = os.environ.get("GITHUB_EVENT_PATH")
+    if not event_path:
+        return None
+    try:
+        event = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    pull_request = event.get("pull_request")
+    if isinstance(pull_request, dict):
+        base = pull_request.get("base")
+        if isinstance(base, dict):
+            sha = base.get("sha")
+            if isinstance(sha, str) and sha:
+                return sha
+    before = event.get("before")
+    if isinstance(before, str) and before and before != "0" * 40:
+        return before
+    return None
+
+
+def _resolve_diff_base(root: Path) -> str | None:
+    candidates = [
+        os.environ.get("AREAMATRIX_DIFF_BASE"),
+        _github_event_diff_base(),
+    ]
+    github_base_ref = os.environ.get("GITHUB_BASE_REF")
+    if github_base_ref:
+        candidates.append(f"origin/{github_base_ref}")
+    candidates.append(os.environ.get("AREAMATRIX_DIFF_UPSTREAM", "origin/main"))
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        if _git_text(root, "rev-parse", "--verify", f"{candidate}^{{commit}}") is None:
+            continue
+        merge_base = _git_text(root, "merge-base", "HEAD", candidate)
+        if merge_base:
+            return merge_base
+    return None
+
+
 def run_diff_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
-    return run_step(["git", "diff", "--check"], cwd=root, check=False).returncode
+    for argv in (["git", "diff", "--check"], ["git", "diff", "--cached", "--check"]):
+        proc = run_step(argv, cwd=root, check=False)
+        if proc.returncode != 0:
+            return proc.returncode
+
+    base = _resolve_diff_base(root)
+    if base is None:
+        print(
+            "ERROR: unable to resolve committed diff base; set AREAMATRIX_DIFF_BASE or fetch origin/main.",
+            file=os.sys.stderr,
+        )
+        return 1
+    head = _git_text(root, "rev-parse", "HEAD")
+    if head == base:
+        return 0
+    return run_step(["git", "diff", "--check", base], cwd=root, check=False).returncode
 
 
 def _task_path(root: Path, label: str) -> Path:

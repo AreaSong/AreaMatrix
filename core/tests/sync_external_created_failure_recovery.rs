@@ -132,6 +132,43 @@ fn sync_external_created_failure_recovery_replays_after_missing_file_without_par
     assert_eq!(paths, vec!["docs/good.pdf", "docs/missing.pdf"]);
 }
 
+#[test]
+fn sync_external_created_failure_recovery_overview_failure_defers_cursor_and_replay_repairs_output()
+{
+    let repo = initialized_repo();
+    write_repo_file(repo.path(), "docs/external.pdf", b"external bytes");
+    let generated_nodes = repo.path().join(".areamatrix/generated/nodes");
+    fs::create_dir_all(generated_nodes.parent().expect("generated parent"))
+        .expect("create generated parent directory");
+    fs::write(&generated_nodes, b"block generated node directory")
+        .expect("install generated output blocker");
+
+    let failed = sync_external_changes(
+        path_string(repo.path()),
+        vec![created("docs/external.pdf", 115)],
+    );
+
+    assert!(matches!(failed, Err(CoreError::Io { .. })));
+    assert_eq!(active_file_count(repo.path()), 1);
+    assert_eq!(fs_cursor(repo.path()), None);
+
+    fs::remove_file(&generated_nodes).expect("remove generated output blocker");
+    fs::create_dir_all(&generated_nodes).expect("restore generated nodes directory");
+    let replayed = sync_external_changes(
+        path_string(repo.path()),
+        vec![created("docs/external.pdf", 115)],
+    )
+    .expect("replay event after generated output recovers");
+
+    assert_eq!(replayed.detected_creates, 0);
+    assert_eq!(active_file_count(repo.path()), 1);
+    assert_eq!(fs_cursor(repo.path()), Some(115));
+    assert!(repo
+        .path()
+        .join(".areamatrix/generated/nodes/docs.md")
+        .is_file());
+}
+
 #[cfg(unix)]
 #[test]
 fn sync_external_created_failure_recovery_permission_denied_keeps_files_db_and_cursor_unchanged() {

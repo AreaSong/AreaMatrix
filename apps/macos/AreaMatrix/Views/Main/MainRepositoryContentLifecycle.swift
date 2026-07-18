@@ -65,10 +65,11 @@ extension MainRepositoryContentView {
                 guard state == .list else { return }
                 await syncConflictEntryModel.loadIfNeeded()
             }
-            .task(id: externalCreatedEvent?.id) {
-                guard let externalCreatedEvent else { return }
-                await fileListModel.syncExternalCreated(externalCreatedEvent)
-                onExternalCreatedEventHandled(externalCreatedEvent)
+            .task(id: externalSyncTaskID) {
+                guard !externalCreatedEvents.isEmpty else { return }
+                if await fileListModel.syncExternalChanges(externalCreatedEvents) {
+                    onExternalCreatedEventsHandled(externalCreatedEvents)
+                }
             }
             .task(id: pendingTagSuggestionFocus?.id) {
                 await applyPendingTagSuggestionFocus()
@@ -76,6 +77,10 @@ extension MainRepositoryContentView {
             .onChange(of: selectedFileIDs) { previousIDs, ids in
                 handleSelectedFileIDsChange(previousIDs: previousIDs, ids: ids)
             }
+    }
+
+    private var externalSyncTaskID: String {
+        externalCreatedEvents.map(\.id).joined(separator: "|")
     }
 
     func applyMainRepositoryContentDialogs(to content: some View) -> some View {

@@ -32,4 +32,3 @@
 - `queue`: version-local governance authoring entry only.
 - `promotion`: preview-only, live mapping pending.
 - `execution`: blocked until a separate execution cutover is approved.
-

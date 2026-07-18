@@ -44,7 +44,7 @@ gitGraph
 
 只用 `main` + 功能分支，跳过 `develop`：
 
-```
+```text
 main
  ├── feat/classify-engine
  ├── feat/storage-ops
@@ -80,7 +80,7 @@ main
 
 遵循 [Conventional Commits 1.0](https://www.conventionalcommits.org/)：
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -129,7 +129,7 @@ scope 可以省略：`docs: 修正 README 拼写`。
 
 ### 完整示例
 
-```
+```text
 feat(classify): 关键词匹配支持大小写折叠
 
 之前 "Invoice.pdf" 能命中 invoice 关键词，但 "INVOICE.pdf" 不能，
@@ -142,7 +142,7 @@ feat(classify): 关键词匹配支持大小写折叠
 Closes #42
 ```
 
-```
+```text
 fix(storage): 修复 staging 残留清理时的 race
 
 启动 recover_on_startup 时若 watcher 已启动，可能在我们删除 staging 文件
@@ -283,7 +283,7 @@ git push --force-with-lease  # 已推过的分支用 force-with-lease
 
 ## .gitignore 关键内容
 
-```
+```gitignore
 # Rust
 target/
 Cargo.lock              # 应用 binary 仓库可保留；库 crate 通常不提

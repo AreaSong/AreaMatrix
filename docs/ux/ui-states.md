@@ -10,19 +10,19 @@
 
 ### 目标
 
-1. **状态可预测**：用户在任何时刻都知道“我现在看的是哪个范围、为什么看不到文件、下一步能做什么”。\n
-2. **跨模块一致**：Tree 选中、List 选中、Detail 展示之间不打架，避免“选中错位”。\n
-3. **快与稳**：加载/同步/导入过程中 UI 不抖动、不闪烁；大库也能渐进渲染。\n
-4. **键盘友好**：不依赖鼠标即可完成核心操作（选中、预览、删除、改分类）。\n
-5. **错误不阻断**：单条错误不导致全 UI 失效；错误必须可恢复。\n
+1. **状态可预测**：用户在任何时刻都知道“我现在看的是哪个范围、为什么看不到文件、下一步能做什么”。
+2. **跨模块一致**：Tree 选中、List 选中、Detail 展示之间不打架，避免“选中错位”。
+3. **快与稳**：加载/同步/导入过程中 UI 不抖动、不闪烁；大库也能渐进渲染。
+4. **键盘友好**：不依赖鼠标即可完成核心操作（选中、预览、删除、改分类）。
+5. **错误不阻断**：单条错误不导致全 UI 失效；错误必须可恢复。
 
 ### 成功标准（验收）
 
-- **UIM1**：无 repo / 未配置时，主界面不出现，必走首次启动向导（见 `first-launch.md`）。\n
-- **UIM2**：repo 已打开但无文件时：Tree 有分类节点，List 显示空态引导“拖入文件”。\n
-- **UIM3**：导入进行中：List 可见“导入中”条目或顶部进度条；仍可浏览其他分类。\n
-- **UIM4**：外部修改（FSEvents）回流：List 中对应条目稳定更新，不丢选中。\n
-- **UIM5**：DB 锁/损坏：UI 显示错误态并提供“重试/导出诊断/重建索引（若支持）”。\n
+- **UIM1**：无 repo / 未配置时，主界面不出现，必走首次启动向导（见 `first-launch.md`）。
+- **UIM2**：repo 已打开但无文件时：Tree 有分类节点，List 显示空态引导“拖入文件”。
+- **UIM3**：导入进行中：List 可见“导入中”条目或顶部进度条；仍可浏览其他分类。
+- **UIM4**：外部修改（FSEvents）回流：List 中对应条目稳定更新，不丢选中。
+- **UIM5**：DB 锁/损坏：UI 显示错误态并提供“重试/导出诊断/重建索引（若支持）”。
 
 ---
 
@@ -30,17 +30,17 @@
 
 ### UI 区域
 
-- Tree：侧边栏树状视图（分类/目录）\n
-- List：文件列表（当前 Tree 选中的节点范围）\n
-- Detail：详情面板（当前 List 选中的文件或多选摘要）\n
+- Tree：侧边栏树状视图（分类/目录）
+- List：文件列表（当前 Tree 选中的节点范围）
+- Detail：详情面板（当前 List 选中的文件或多选摘要）
 
 ### 关键状态
 
-- repoState：未选择/打开中/已打开/错误\n
-- treeSelection：当前选中节点（category 或 path node）\n
-- listSelection：当前选中条目（单选/多选/空）\n
-- detailTab：元数据/改动/笔记\n
-- operationState：导入中/扫描中/空闲\n
+- repoState：未选择/打开中/已打开/错误
+- treeSelection：当前选中节点（category 或 path node）
+- listSelection：当前选中条目（单选/多选/空）
+- detailTab：元数据/改动/笔记
+- operationState：导入中/扫描中/空闲
 
 ---
 
@@ -57,17 +57,17 @@ stateDiagram-v2
     ready --> repoError: fatalDbError
 ```
 
-说明：\n
-- `noRepo`：不渲染主界面，展示向导/选择 repo。\n
-- `opening`：展示全屏 loading（避免局部 UI 半成品）。\n
-- `ready`：主界面三件套激活。\n
-- `repoError`：全屏错误页，提供恢复动作。\n
+说明：
+- `noRepo`：不渲染主界面，展示向导/选择 repo。
+- `opening`：展示全屏 loading（避免局部 UI 半成品）。
+- `ready`：主界面三件套激活。
+- `repoError`：全屏错误页，提供恢复动作。
 
 ---
 
 ## 主界面布局（ASCII）
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ Toolbar: [RepoName ▾] [Search ⌘F] [Import…] [Settings] [Progress]             │
 ├───────────────┬───────────────────────────────────────────────┬──────────────┤
@@ -98,15 +98,15 @@ stateDiagram-v2
 
 ### Tree 选中规则
 
-1. 启动后默认选中 `inbox`（新用户最友好）\n
-2. 若用户上次退出时有 selection，恢复该 selection（若仍存在）\n
-3. selection 不存在（目录被删）：回退到 `inbox` 并提示一次\n
+1. 启动后默认选中 `inbox`（新用户最友好）
+2. 若用户上次退出时有 selection，恢复该 selection（若仍存在）
+3. selection 不存在（目录被删）：回退到 `inbox` 并提示一次
 
 ### Tree 的拖拽行为
 
-作为 drop target：\n
-- drag item 悬停在某分类节点上 → 节点高亮\n
-- drop 到节点 → 目标分类 = 该节点（覆盖 classifier 推荐）\n
+作为 drop target：
+- drag item 悬停在某分类节点上 → 节点高亮
+- drop 到节点 → 目标分类 = 该节点（覆盖 classifier 推荐）
 
 （与 `drag-import-flow.md` 对齐）
 
@@ -127,12 +127,12 @@ stateDiagram-v2
 
 ### 空态（listEmpty）规范
 
-空态必须给“下一步”：\n
-- 主按钮：`Import…`\n
-- 次按钮：`Drag files here`\n
-- 说明：当前分类名 + 该分类用途（从 classifier.yaml 显示名/描述中取）\n
+空态必须给“下一步”：
+- 主按钮：`Import…`
+- 次按钮：`Drag files here`
+- 说明：当前分类名 + 该分类用途（从 classifier.yaml 显示名/描述中取）
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ docs                                                                            │
 │                                                                                │
@@ -147,15 +147,15 @@ stateDiagram-v2
 
 #### 排序
 
-默认排序建议：`imported_at desc`（最符合“找最近导入”场景）。\n
-可选：name/size/modified_at。\n
+默认排序建议：`imported_at desc`（最符合“找最近导入”场景）。
+可选：name/size/modified_at。
 
 #### 选择保持（关键）
 
-当外部事件或导入导致 list 刷新时：\n
-- 如果选中的 fileId 仍存在：保持选中\n
-- 若已删除：清空选中并在 Detail 显示“该文件已删除/移动”提示\n
-- 若重命名：保持选中（靠 fileId）并平滑更新行内容\n
+当外部事件或导入导致 list 刷新时：
+- 如果选中的 fileId 仍存在：保持选中
+- 若已删除：清空选中并在 Detail 显示“该文件已删除/移动”提示
+- 若重命名：保持选中（靠 fileId）并平滑更新行内容
 
 ---
 
@@ -197,9 +197,9 @@ stateDiagram-v2
 
 ### “跳转到新位置”规范
 
-当选中文件在外部移动后：\n
-- Detail 显示 banner：`该文件已移动到 <category/path> [Go to]`\n
-- 点击 Go to：Tree 选中目标节点，List 高亮该文件\n
+当选中文件在外部移动后：
+- Detail 显示 banner：`该文件已移动到 <category/path> [Go to]`
+- 点击 Go to：Tree 选中目标节点，List 高亮该文件
 
 ---
 
@@ -207,11 +207,11 @@ stateDiagram-v2
 
 ### DB locked（常见）
 
-List 的错误不应把 Tree 变灰：\n
-- Tree 仍可切换节点\n
-- List 显示 inline 错误卡 + Retry\n
+List 的错误不应把 Tree 变灰：
+- Tree 仍可切换节点
+- List 显示 inline 错误卡 + Retry
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 无法加载列表                                                                    │
 │ 数据库被占用（database is locked）。可能同时打开了两个 AreaMatrix 实例。          │
@@ -221,9 +221,9 @@ List 的错误不应把 Tree 变灰：\n
 
 ### 文件缺失（Index-only / 外部删除）
 
-Detail 显示“缺失”状态：\n
-- Meta：显示源路径\n
-- 操作：`Locate…`（让用户重新定位） / `Remove from index`\n
+Detail 显示“缺失”状态：
+- Meta：显示源路径
+- 操作：`Locate…`（让用户重新定位） / `Remove from index`
 
 ---
 
@@ -231,11 +231,11 @@ Detail 显示“缺失”状态：\n
 
 ### 焦点模型
 
-- Tree / List / Detail 三个区域都可获得焦点。\n
-- `Tab` 在三个区域间循环。\n
-- `↑↓` 在当前区域内移动。\n
-- `Enter`：在 Tree 选中节点、在 List 打开/预览（可选）。\n
-- `Space`：快速预览（可选）。\n
+- Tree / List / Detail 三个区域都可获得焦点。
+- `Tab` 在三个区域间循环。
+- `↑↓` 在当前区域内移动。
+- `Enter`：在 Tree 选中节点、在 List 打开/预览（可选）。
+- `Space`：快速预览（可选）。
 
 ### 建议快捷键
 
@@ -254,29 +254,29 @@ Detail 显示“缺失”状态：\n
 
 ### 大库策略（10 万文件）
 
-产品侧可接受：\n
-- Tree 先渲染分类节点，再渐进渲染子目录（若支持）\n
-- List 分页/虚拟化（滚动到末尾加载）\n
-- Detail 的 Log/Note 懒加载（切 Tab 才加载）\n
+产品侧可接受：
+- Tree 先渲染分类节点，再渐进渲染子目录（若支持）
+- List 分页/虚拟化（滚动到末尾加载）
+- Detail 的 Log/Note 懒加载（切 Tab 才加载）
 
 ### “保持稳定”原则
 
-任何后台刷新（FSEvents/同步）都必须：\n
-- 不清空用户正在看的列表\n
-- 不抢焦点\n
-- 只做局部更新（行更新/计数更新）\n
+任何后台刷新（FSEvents/同步）都必须：
+- 不清空用户正在看的列表
+- 不抢焦点
+- 只做局部更新（行更新/计数更新）
 
 ---
 
 ## 测试用例（产品验收清单）
 
-- [ ] repo ready：默认选中 inbox，List 空态可导入\n
-- [ ] 切换 Tree 节点：List skeleton，加载完展示\n
-- [ ] 外部重命名：List 行更新且保持选中\n
-- [ ] 外部移动：Detail 出现“已移动”banner，可 Go to\n
-- [ ] DB locked：List error 可重试，Tree 仍可切换\n
-- [ ] 多选：Detail 进入 multi 摘要\n
-- [ ] 键盘：Tab 循环区域，⌘F 聚焦搜索\n
+- [ ] repo ready：默认选中 inbox，List 空态可导入
+- [ ] 切换 Tree 节点：List skeleton，加载完展示
+- [ ] 外部重命名：List 行更新且保持选中
+- [ ] 外部移动：Detail 出现“已移动”banner，可 Go to
+- [ ] DB locked：List error 可重试，Tree 仍可切换
+- [ ] 多选：Detail 进入 multi 摘要
+- [ ] 键盘：Tab 循环区域，⌘F 聚焦搜索
 
 ---
 
@@ -306,7 +306,7 @@ Detail 显示“缺失”状态：\n
 
 ## 附录 B：Detail Multi 视图建议（ASCII）
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 已选择 12 个文件                                                               │
 │                                                                              │

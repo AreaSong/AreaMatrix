@@ -1,677 +1,146 @@
-# 模块：资料库概览生成（overview）
+# 概览生成模块
 
-> AreaMatrix 默认在 `.areamatrix/generated/` 内生成资料库概览，并可选维护根目录 `AREAMATRIX.md`。本模块不写入、不覆盖、不插入用户已有的 `README.md`。
+> 记录 AreaMatrix 当前 generated overview 的输出、触发、原子写入和用户文件边界。
 >
-> 阅读时长：约 10 分钟。
+> 阅读时长：约 6 分钟。
 
 ---
 
-## 设计目标
+## 输出
 
-1. 用户在 Finder / VSCode 中能查看 AreaMatrix 专属概览（不依赖应用）
-2. 接管已有 GitHub 项目时不污染或覆盖项目自己的 `README.md`
-3. 可选根目录 `AREAMATRIX.md` 用作显式的外部导览入口
-4. 用户在 `AREAMATRIX.md` 标记块外手动添加的备注在重生成时**不丢**
-5. 性能：单顶层节点概览重生成 < 50ms（< 1000 文件）
-
----
-
-## 何时重生成
-
-| 触发 | 重生成范围 |
-|---|---|
-| import_file | 目标顶层节点概览 + 根概览 |
-| rename_file | 所在顶层节点概览 + 根概览 |
-| move_to_category | 旧顶层节点概览 + 新顶层节点概览 + 根概览 |
-| delete_file | 所在顶层节点概览 + 根概览 |
-| 笔记编辑 | 不重生成（不影响文件清单） |
-| sync external 检测到变化 | 受影响顶层节点概览 + 根概览 |
-| 用户手动触发 | 全部 |
-
----
-
-## 输出位置
-
-| 输出 | 默认 | 路径 | 说明 |
-|---|---|---|---|
-| 根概览 | 是 | `.areamatrix/generated/root.md` | 应用内部与外部工具都可读 |
-| 顶层节点概览 | 是 | `.areamatrix/generated/nodes/<slug>.md` | 系统分类或用户一级目录；不写入用户目录 |
-| 根目录入口 | 否 | `AREAMATRIX.md` | 用户在设置中显式启用后维护 |
-| 用户 README | 否 | `README.md` / `*/README.md` | 永不作为自动输出目标 |
-
----
-
-## 标记块协议
-
-`.areamatrix/generated/*.md` 是全文件托管，不需要保留用户内容。`AREAMATRIX.md` 是可选文件，若存在用户内容，托管区域用配对标记包裹：
+默认输出：
 
 ```text
-<!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->
-...受应用控制的内容...
-<!-- AREAMATRIX:END -->
+<repo>/.areamatrix/generated/
+├── root.md
+└── nodes/
+    └── <category>.md
 ```
 
-**关键约束**：
+当资料库配置为 `RootAreaMatrixFile` 时，同时维护：
 
-- BEGIN 行必须以 `<!-- AREAMATRIX:BEGIN` 开头
-- END 行必须包含完整 `<!-- AREAMATRIX:END -->`
-- 标记之间的所有内容每次重生成都被替换
-- 标记之外的所有内容永远保留
-
-```mermaid
-flowchart TB
-    Read[读取现有 AREAMATRIX.md]
-    HasMarker{有 BEGIN/END?}
-    Replace[替换标记块内容]
-    Append[末尾追加托管段 + 警告]
-    NoFile{文件不存在?}
-    Create[用模板新建]
-    Write[原子写回]
-
-    Read --> HasMarker
-    HasMarker -->|yes| Replace
-    HasMarker -->|no| Append
-    Read -->|file missing| NoFile
-    NoFile --> Create
-    Replace --> Write
-    Append --> Write
-    Create --> Write
+```text
+<repo>/AREAMATRIX.md
 ```
 
----
+AreaMatrix 不生成或覆盖 `README.md`。
 
-## 顶层节点概览结构
-
-```markdown
-# 文档 (docs)
-
-> 这个分类目录存放标准文档（PDF / DOCX / Markdown）。
-
-<!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->
-
-**统计**：12 个文件，总 24.5 MB · 最近导入：2026-04-25
-
-## 文件列表
-
-| 文件 | 大小 | 导入时间 |
-|---|---|---|
-| [Q1_报告.pdf](Q1_%E6%8A%A5%E5%91%8A.pdf) | 2.1 MB | 2026-04-25 |
-| [契约.docx](%E5%A5%91%E7%BA%A6.docx) | 0.8 MB | 2026-04-23 |
-
-## 近 30 天改动
-
-- 2026-04-25 imported `Q1_报告.pdf`
-- 2026-04-23 renamed `合同.pdf` → `契约.docx`
-- 2026-04-20 deleted `旧版.pdf`
-
-<!-- AREAMATRIX:END -->
-
-```
-
----
-
-## 根概览结构
-
-```markdown
-# AreaMatrix 资料库
-
-> 自动维护，请勿删除 .areamatrix/ 目录。
-
-<!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->
-
-**总览**：156 个文件 · 1.2 GB · 6 个分类
-
-| 分类 | 文件数 | 大小 | 最近导入 |
-|---|---|---|---|
-| [文档 (docs)](docs/) | 12 | 24.5 MB | 2026-04-25 |
-| [代码 (code)](code/) | 89 | 320 MB | 2026-04-26 |
-
-## 近 7 天跨分类改动
-
-- 2026-04-26 imported `code/main.rs`
-- 2026-04-25 imported `docs/Q1_报告.pdf`
-
-<!-- AREAMATRIX:END -->
-```
-
----
-
-## 文件布局
+## 当前模块结构
 
 ```text
 core/src/overview/
-├── mod.rs        // regenerate_for_node / regenerate_root
-├── markers.rs    // AREAMATRIX.md 标记块解析与替换
-├── template.rs   // 文案模板（locale-aware）
-├── format.rs     // 字节、日期、url 编码
-└── i18n.rs       // 文案翻译表
+├── mod.rs
+└── atomic_write.rs
 ```
 
----
+- `mod.rs`：查询 overview 数据、格式化 Markdown、维护 managed block、校验 node slug。
+- `atomic_write.rs`：`WritePlan`、写前快照和多文件失败回滚。
+
+当前没有独立 `markers.rs`、`template.rs`、`format.rs`、`i18n.rs`，也没有 Tokio debounce 服务。
 
 ## 入口
 
-```rust
-// core/src/overview/mod.rs
-mod format;
-mod i18n;
-mod markers;
-mod template;
+主要入口：
 
-use std::path::Path;
-use crate::db;
-use crate::error::CoreResult;
-use crate::repo::RepoLayout;
+- `write_generated_root`：资料库初始化时创建 generated root。
+- `write_root_areamatrix_file`：用户选择 root output 时创建根 `AREAMATRIX.md`。
+- `regenerate_after_import`：成功导入后按 entry category 更新。
+- `regenerate_for_node`：更新一个分类，同时更新 generated root 和可选根文件。
 
-pub fn regenerate_for_node(repo: &Path, node_slug: &str) -> CoreResult<()> {
-    let out_path = RepoLayout::for_repo(repo)
-        .generated_dir()
-        .join("nodes")
-        .join(format!("{}.md", node_slug));
-    let locale = current_locale(repo)?;
-    let content = template::build_node_overview(repo, node_slug, &locale)?;
+`regenerate_for_node` 是当前统一刷新入口。调用方必须传入经过校验的 category slug。
 
-    write_atomic(&out_path, &content)?;
-    regenerate_root(repo)?;
-    Ok(())
-}
+## 数据来源
 
-pub fn regenerate_root(repo: &Path) -> CoreResult<()> {
-    let layout = RepoLayout::for_repo(repo);
-    let generated_path = layout.generated_dir().join("root.md");
-    let locale = current_locale(repo)?;
-    let content = template::build_root_overview(repo, &locale)?;
+概览从 SQLite 读取：
 
-    write_atomic(&generated_path, &content)?;
+- 当前分类的 active files。
+- 当前分类最近 change log。
+- 各分类的文件数、总大小和最近导入时间。
+- 根级最近 change log。
+- 当前资料库 locale 和 overview output 配置。
 
-    if db::get_repo_config(repo)?.overview_output == OverviewOutput::RootAreaMatrixFile {
-        let root_entry = repo.join("AREAMATRIX.md");
-        let final_content = match std::fs::read_to_string(&root_entry) {
-            Ok(existing) => markers::merge(&existing, &content),
-            Err(_) => content,
-        };
-        write_atomic(&root_entry, &final_content)?;
-    }
-    Ok(())
-}
+node 文件默认最多列出 200 个文件；最近变更使用固定时间窗口和条数上限，避免概览无限增长。
 
-fn current_locale(repo: &Path) -> CoreResult<String> {
-    let cfg = db::get_repo_config(repo)?;
-    Ok(cfg.locale.unwrap_or_else(|| "zh-Hans".into()))
-}
+## 写入计划
 
-fn write_atomic(path: &Path, content: &str) -> CoreResult<()> {
-    let tmp = path.with_extension("md.tmp");
-    std::fs::write(&tmp, content)?;
-    std::fs::rename(&tmp, path)?;
-    Ok(())
-}
+一次 `regenerate_for_node` 生成以下 `WritePlan`：
+
+1. `.areamatrix/generated/nodes/<category>.md`
+2. `.areamatrix/generated/root.md`
+3. 可选的根 `AREAMATRIX.md`
+
+`write_plans_with_rollback` 在写入前捕获每个目标：
+
+- 原文件字节。
+- 文件缺失状态。
+- 非普通文件状态。
+
+任一原子替换失败时，按逆序恢复已捕获目标。缺失目标会被删除，已有普通文件恢复原字节；非普通文件不会被强制覆盖。
+
+## AREAMATRIX.md managed block
+
+根文件使用明确标记：
+
+```markdown
+<!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->
+...
+<!-- AREAMATRIX:END -->
 ```
 
----
+规则：
 
-## markers 模块（标记块解析器）
+- 文件缺失时创建完整 AreaMatrix 入口。
+- 已有合法 managed block 时只替换标记内内容。
+- 已有用户内容但无 managed block 时保留用户内容并附加管理块。
+- 目标不是普通文件或内容无法安全处理时返回错误。
+- `README.md` 始终不参与该流程。
 
-```rust
-// core/src/overview/markers.rs
-const BEGIN_PREFIX: &str = "<!-- AREAMATRIX:BEGIN";
-const END_FULL: &str = "<!-- AREAMATRIX:END -->";
+## 触发点
 
-pub fn merge(existing: &str, new_managed_block: &str) -> String {
-    match find_block(existing) {
-        Some((before, _, after)) => {
-            let mut out = String::with_capacity(existing.len() + new_managed_block.len());
-            out.push_str(before);
-            out.push_str(new_managed_block);
-            out.push_str(after);
-            out
-        }
-        None => append_block(existing, new_managed_block),
-    }
-}
+当前已连接的触发包括：
 
-fn find_block(existing: &str) -> Option<(&str, &str, &str)> {
-    let begin = existing.find(BEGIN_PREFIX)?;
-    let end_search_start = begin + BEGIN_PREFIX.len();
-    let end_rel = existing[end_search_start..].find(END_FULL)?;
-    let end = end_search_start + end_rel + END_FULL.len();
+- 资料库初始化。
+- 单文件导入成功。
+- repo-owned 文件重命名成功。
+- 外部 created、renamed、removed、modified 批次。
 
-    Some((&existing[..begin], &existing[begin..end], &existing[end..]))
-}
+外部跨分类移动会同时刷新来源分类和目标分类，避免旧分类概览保留已移动文件。
 
-fn append_block(existing: &str, new_managed: &str) -> String {
-    let mut out = existing.trim_end().to_string();
-    if !out.is_empty() {
-        out.push_str("\n\n");
-    }
-    out.push_str(new_managed);
-    out.push('\n');
-    out
-}
+未连接到 `regenerate_for_node` 的业务操作不能在文档中宣称会自动刷新概览；新增触发必须同时补实现和测试。
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+## 失败语义
 
-    #[test]
-    fn replaces_existing_block() {
-        let input = "# Title\n\n<!-- AREAMATRIX:BEGIN x -->\nold\n<!-- AREAMATRIX:END -->\n\n## User\n";
-        let new_block = "<!-- AREAMATRIX:BEGIN y -->\nnew\n<!-- AREAMATRIX:END -->";
-        let out = merge(input, new_block);
-        assert!(out.contains("new"));
-        assert!(!out.contains("old"));
-        assert!(out.contains("## User"));
-    }
+- 导入或 repo-owned rename 的 overview 失败进入对应业务回滚路径。
+- 外部同步的 DB batch 先提交；overview 失败时 cursor 不推进，重放会修复生成物。
+- 原子写失败不得留下多份概览彼此不一致。
+- 概览错误不能通过覆盖用户文档进行恢复。
 
-    #[test]
-    fn appends_when_no_block() {
-        let input = "# Title\n\n## User content\n";
-        let new_block = "<!-- AREAMATRIX:BEGIN z -->\nx\n<!-- AREAMATRIX:END -->";
-        let out = merge(input, new_block);
-        assert!(out.contains("## User content"));
-        assert!(out.contains(new_block));
-    }
+## locale
 
-    #[test]
-    fn handles_crlf_line_endings() {
-        let input = "# Title\r\n\r\n<!-- AREAMATRIX:BEGIN x -->\r\nold\r\n<!-- AREAMATRIX:END -->\r\n\r\n## User\r\n";
-        let new_block = "<!-- AREAMATRIX:BEGIN y -->\nnew\n<!-- AREAMATRIX:END -->";
-        let out = merge(input, new_block);
-        assert!(out.contains("new"));
-        assert!(!out.contains("old"));
-    }
+locale 控制 generated overview 和树相关显示文本。当前支持配置值由 `RepoConfig` 决定；它不是整个 macOS UI 的运行时语言开关。
 
-    #[test]
-    fn malformed_begin_no_end_treated_as_no_block() {
-        let input = "# Title\n<!-- AREAMATRIX:BEGIN orphan\nstuff\n";
-        let new_block = "<!-- AREAMATRIX:BEGIN x -->\nnew\n<!-- AREAMATRIX:END -->";
-        let out = merge(input, new_block);
-        assert!(out.contains("# Title"));
-        assert!(out.contains("orphan"));
-        assert!(out.contains("new"));
-    }
-}
-```
+## 性能
 
----
+概览生成是同步 Core 工作：
 
-## template + i18n 模块
+- 查询有条数上限。
+- 同一次 node 刷新会合并 root 输出。
+- 当前没有后台 debounce 或异步 flush queue。
+- 高频调用的节流由上层事件合并或业务批次负责。
 
-```rust
-// core/src/overview/i18n.rs
-pub fn t(key: &str, locale: &str) -> &'static str {
-    match (locale, key) {
-        ("zh-Hans", "stats") => "统计",
-        ("zh-Hans", "files") => "文件列表",
-        ("zh-Hans", "recent") => "近 30 天改动",
-        ("zh-Hans", "size") => "大小",
-        ("zh-Hans", "imported") => "导入时间",
-        ("zh-Hans", "user_section") => "用户备注（手动添加）",
-        ("zh-Hans", "summary") => "总览",
-        ("zh-Hans", "category") => "节点",
-        ("zh-Hans", "category_count") => "文件数",
-        ("zh-Hans", "do_not_edit") => "请勿编辑标记之间内容，会被自动覆盖",
+## 验证重点
 
-        ("en", "stats") => "Statistics",
-        ("en", "files") => "Files",
-        ("en", "recent") => "Recent changes (30 days)",
-        ("en", "size") => "Size",
-        ("en", "imported") => "Imported",
-        ("en", "user_section") => "User Notes (manual)",
-        ("en", "summary") => "Overview",
-        ("en", "category") => "Node",
-        ("en", "category_count") => "Files",
-        ("en", "do_not_edit") => "Do not edit between markers; will be overwritten",
-
-        (_, k) => k,
-    }
-}
-
-pub fn node_display(node_slug: &str, locale: &str) -> String {
-    match (locale, node_slug) {
-        ("zh-Hans", "docs") => "文档".into(),
-        ("zh-Hans", "code") => "代码".into(),
-        ("zh-Hans", "media") => "媒体".into(),
-        ("zh-Hans", "finance") => "财务".into(),
-        ("zh-Hans", "inbox") => "收件箱".into(),
-        ("en", _) => capitalize(node_slug),
-        _ => node_slug.to_string(),
-    }
-}
-
-fn capitalize(s: &str) -> String {
-    let mut c = s.chars();
-    c.next().map(|f| f.to_uppercase().to_string() + c.as_str()).unwrap_or_default()
-}
-```
-
-```rust
-// core/src/overview/template.rs
-use std::path::Path;
-use crate::db;
-use crate::error::CoreResult;
-use crate::overview::{format, i18n};
-
-const BEGIN_TAG: &str = "<!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->";
-const END_TAG: &str = "<!-- AREAMATRIX:END -->";
-
-pub fn build_node_overview(repo: &Path, node_slug: &str, locale: &str) -> CoreResult<String> {
-    let files = db::list_active_in_node(repo, node_slug)?;
-    let recent = db::recent_changes_for_node(repo, node_slug, 30)?;
-
-    let total: i64 = files.iter().map(|f| f.size_bytes).sum();
-    let latest = files.iter().map(|f| f.imported_at).max().unwrap_or(0);
-
-    let mut out = String::new();
-    out.push_str(BEGIN_TAG);
-    out.push('\n');
-    out.push('\n');
-    out.push_str(&format!(
-        "**{}**: {} · {} · {}\n\n",
-        i18n::t("stats", locale),
-        format::file_count(files.len(), locale),
-        format::bytes(total),
-        format::date(latest, locale),
-    ));
-    out.push_str(&format!("## {}\n\n", i18n::t("files", locale)));
-    out.push_str(&format!("| {} | {} | {} |\n|---|---|---|\n",
-        i18n::t("category", locale),
-        i18n::t("size", locale),
-        i18n::t("imported", locale)));
-    for f in &files {
-        out.push_str(&format!(
-            "| [{}]({}) | {} | {} |\n",
-            f.current_name,
-            format::url_encode(&f.current_name),
-            format::bytes(f.size_bytes),
-            format::date(f.imported_at, locale),
-        ));
-    }
-    out.push_str(&format!("\n## {}\n\n", i18n::t("recent", locale)));
-    for c in &recent {
-        out.push_str(&format!(
-            "- {} {} `{}`\n",
-            format::date(c.occurred_at, locale),
-            describe_action(&c.action),
-            c.filename,
-        ));
-    }
-    out.push('\n');
-    out.push_str(END_TAG);
-    Ok(out)
-}
-
-pub fn build_root_overview(repo: &Path, locale: &str) -> CoreResult<String> {
-    let summary = db::list_nodes_summary(repo)?;
-    let recent = db::recent_changes(repo, 7)?;
-
-    let total_files: i64 = summary.iter().map(|s| s.file_count).sum();
-    let total_bytes: i64 = summary.iter().map(|s| s.total_bytes).sum();
-
-    let mut out = String::new();
-    out.push_str(BEGIN_TAG);
-    out.push('\n');
-    out.push('\n');
-    out.push_str(&format!(
-        "**{}**: {} · {} · {} {}\n\n",
-        i18n::t("summary", locale),
-        format::file_count(total_files as usize, locale),
-        format::bytes(total_bytes),
-        summary.len(),
-        i18n::t("category", locale),
-    ));
-    out.push_str(&format!(
-        "| {} | {} | {} | {} |\n|---|---|---|---|\n",
-        i18n::t("category", locale),
-        i18n::t("category_count", locale),
-        i18n::t("size", locale),
-        i18n::t("imported", locale),
-    ));
-    for s in &summary {
-        let display = i18n::node_display(&s.slug, locale);
-        out.push_str(&format!(
-            "| [{} ({})]({}/) | {} | {} | {} |\n",
-            display, s.slug, s.slug, s.file_count, format::bytes(s.total_bytes),
-            format::date(s.last_imported_at, locale),
-        ));
-    }
-    out.push_str(&format!("\n## {}\n\n", i18n::t("recent", locale)));
-    for c in &recent {
-        out.push_str(&format!(
-            "- {} {} `{}/{}`\n",
-            format::date(c.occurred_at, locale),
-            describe_action(&c.action),
-            c.category, c.filename,
-        ));
-    }
-    out.push('\n');
-    out.push_str(END_TAG);
-    Ok(out)
-}
-
-pub fn default_root_entry_template(locale: &str, managed: &str) -> String {
-    let title = match locale {
-        "zh-Hans" => "AreaMatrix 资料库",
-        _ => "AreaMatrix Repository",
-    };
-    format!("# {}\n\n> Auto-managed.\n\n{}\n", title, managed)
-}
-
-fn describe_action(action: &str) -> &'static str {
-    match action {
-        "imported" => "imported",
-        "renamed" => "renamed",
-        "deleted" => "deleted",
-        "moved" => "moved",
-        "external_modified" => "modified",
-        "external_added" => "added",
-        "external_removed" => "removed",
-        _ => "changed",
-    }
-}
-```
-
----
-
-## format 工具
-
-```rust
-// core/src/overview/format.rs
-pub fn bytes(n: i64) -> String {
-    const KB: f64 = 1024.0;
-    const MB: f64 = KB * 1024.0;
-    const GB: f64 = MB * 1024.0;
-    let n = n as f64;
-    if n >= GB {
-        format!("{:.1} GB", n / GB)
-    } else if n >= MB {
-        format!("{:.1} MB", n / MB)
-    } else if n >= KB {
-        format!("{:.0} KB", n / KB)
-    } else {
-        format!("{} B", n as i64)
-    }
-}
-
-pub fn date(ts: i64, locale: &str) -> String {
-    if ts == 0 { return "—".into(); }
-    let dt = chrono::DateTime::<chrono::Utc>::from_timestamp(ts, 0)
-        .unwrap_or_else(|| chrono::DateTime::<chrono::Utc>::from_timestamp(0, 0).unwrap());
-    let local: chrono::DateTime<chrono::Local> = dt.into();
-    match locale {
-        "en" => local.format("%Y-%m-%d").to_string(),
-        _ => local.format("%Y-%m-%d").to_string(),
-    }
-}
-
-pub fn file_count(n: usize, locale: &str) -> String {
-    match locale {
-        "zh-Hans" => format!("{} 个文件", n),
-        _ => format!("{} files", n),
-    }
-}
-
-pub fn url_encode(s: &str) -> String {
-    use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-    utf8_percent_encode(s, NON_ALPHANUMERIC).to_string()
-}
-```
-
----
-
-## 用户内容与输出位置测试
-
-```rust
-#[cfg(test)]
-mod tests_protection {
-    use super::*;
-    use std::path::PathBuf;
-
-    fn fixture_repo() -> (tempfile::TempDir, PathBuf) {
-        let d = tempfile::tempdir().unwrap();
-        let p = d.path().to_path_buf();
-        crate::api::init_repo(
-            p.to_string_lossy().into(),
-            RepoInitOptions::adopt_existing_generated_only(),
-        ).unwrap();
-        std::fs::create_dir_all(p.join("docs")).unwrap();
-        (d, p)
-    }
-
-    #[test]
-    fn does_not_touch_existing_readme() {
-        let (_d, p) = fixture_repo();
-        let readme = p.join("docs/README.md");
-        std::fs::write(&readme, "# Project\n\n用户自己的 README\n").unwrap();
-
-        regenerate_for_node(&p, "docs").unwrap();
-        let new_content = std::fs::read_to_string(&readme).unwrap();
-        assert_eq!(new_content, "# Project\n\n用户自己的 README\n");
-    }
-
-    #[test]
-    fn node_overview_goes_to_generated_dir() {
-        let (_d, p) = fixture_repo();
-
-        regenerate_for_node(&p, "docs").unwrap();
-        let content = std::fs::read_to_string(
-            p.join(".areamatrix/generated/nodes/docs.md")
-        ).unwrap();
-        assert!(content.contains("AREAMATRIX:BEGIN"));
-        assert!(content.contains("AREAMATRIX:END"));
-    }
-
-    #[test]
-    fn locale_switch_updates_text() {
-        let (_d, p) = fixture_repo();
-        crate::api::set_locale(p.to_string_lossy().into(), "en".into()).unwrap();
-        regenerate_for_node(&p, "docs").unwrap();
-        let content = std::fs::read_to_string(
-            p.join(".areamatrix/generated/nodes/docs.md")
-        ).unwrap();
-        assert!(content.contains("Statistics"));
-        assert!(!content.contains("统计"));
-    }
-
-    #[test]
-    fn root_areamatrix_file_preserves_user_content() {
-        let (_d, p) = fixture_repo();
-        crate::api::set_overview_output(
-            p.to_string_lossy().into(),
-            OverviewOutput::RootAreaMatrixFile,
-        ).unwrap();
-        std::fs::write(p.join("AREAMATRIX.md"), "# My overview\n\nuser\n").unwrap();
-
-        regenerate_root(&p).unwrap();
-        let content = std::fs::read_to_string(p.join("AREAMATRIX.md")).unwrap();
-        assert!(content.contains("# My overview"));
-        assert!(content.contains("user"));
-        assert!(content.contains("AREAMATRIX:BEGIN"));
-    }
-
-    #[test]
-    fn generated_root_summary_correct() {
-        let (_d, p) = fixture_repo();
-        regenerate_root(&p).unwrap();
-        let content = std::fs::read_to_string(p.join(".areamatrix/generated/root.md")).unwrap();
-        assert!(content.contains("AREAMATRIX:BEGIN"));
-        assert!(content.contains("AREAMATRIX:END"));
-    }
-}
-```
-
----
-
-## 性能与去抖
-
-每次重生成 = 2 次 SQL 查询（list + changes）+ 1 次文件写。1000 文件下 < 30ms。
-
-批量导入场景（一次性 50 个文件）下，重生成可能被触发 50 次。当前默认接受这个开销；
-高频写入场景再加 debounce：
-
-```rust
-pub struct OverviewRegenScheduler {
-    pending: Arc<Mutex<HashSet<String>>>,
-    flush_interval: Duration,
-}
-
-impl OverviewRegenScheduler {
-    pub fn schedule(&self, node_slug: &str) {
-        self.pending.lock().unwrap().insert(node_slug.into());
-    }
-    pub async fn flush_loop(&self, repo: PathBuf) {
-        loop {
-            tokio::time::sleep(self.flush_interval).await;
-            let snapshot: Vec<_> = {
-                let mut p = self.pending.lock().unwrap();
-                p.drain().collect()
-            };
-            for node in snapshot {
-                let _ = regenerate_for_node(&repo, &node);
-            }
-        }
-    }
-}
-```
-
----
-
-## 边界情况速查
-
-| 情况 | 行为 |
-|---|---|
-| 分类目录被用户删除 | regenerate 检测目录不存在 → 生成空/缺失提示或跳过 |
-| `.areamatrix/generated/*.md` 被改 | 下次重生成整文件覆盖 |
-| `AREAMATRIX.md` 被改成无标记 | 在末尾追加托管段 + 标记 |
-| 用户修改 `AREAMATRIX.md` 标记块内 | 下次重生成被覆盖（已有警告） |
-| 用户修改/重命名 `README.md` | 视为普通用户文件，应用不重建、不覆盖 |
-| 文件名含 emoji / unicode | url_encode 后写入链接，浏览器/IDE 正常显示 |
-| 文件清单超 1000 行 | 按 imported_at DESC 截断前 200 + 提示「另有 N 项」 |
-| 有循环符号链接 | walkdir 的 follow_links=false 已规避 |
-| `AREAMATRIX.md` / generated 文件本身被记入 files 表 | reindex 用 `is_managed_file` 过滤 |
-
----
-
-## i18n 扩展
-
-新增 locale（如 `ja`）：
-
-1. 在 `i18n::t` 加一组分支
-2. 在 `node_display` 加该 locale 的翻译
-3. 在 `format::date` / `format::file_count` 视情况调整
-4. 在 `apps/macos/Localizations/` 添加对应的 SwiftUI strings
-
-不需要改概览模板结构。
-
----
+- 默认只写 `.areamatrix/generated/`。
+- `README.md` 保持不变。
+- managed block 外用户内容保持不变。
+- 多目标写失败时所有目标恢复。
+- 外部跨分类移动刷新来源和目标概览。
+- overview 失败不推进 FSEvent cursor。
 
 ## Related
 
-- [../architecture/overview.md](../architecture/overview.md)
-- [../architecture/adopt-existing-folders.md](../architecture/adopt-existing-folders.md)
-- [../adr/0010-adopt-existing-folders-and-overviews.md](../adr/0010-adopt-existing-folders-and-overviews.md)
-- [../adr/0007-readme-granularity.md](../adr/0007-readme-granularity.md)
-- [../adr/0008-naming-and-i18n.md](../adr/0008-naming-and-i18n.md)
+- [../architecture/source-of-truth.md](../architecture/source-of-truth.md)
+- [../architecture/fs-watcher.md](../architecture/fs-watcher.md)
+- [../architecture/transactional-import.md](../architecture/transactional-import.md)
 - [storage.md](storage.md)
-- [tree-scan.md](tree-scan.md)
 - [change-log.md](change-log.md)

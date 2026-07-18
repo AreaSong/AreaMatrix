@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MainWindow: View {
     @StateObject private var model: OnboardingModel
-    @StateObject private var externalCreatedFileWatcher = MainExternalCreatedFileWatcher()
+    @StateObject private var externalCreatedFileWatcher: MainExternalCreatedFileWatcher
     private let importProgressControlState: ImportProgressControlState
     private let windowCloser: any WindowClosing
 
@@ -11,6 +11,9 @@ struct MainWindow: View {
         windowCloser: any WindowClosing = AppPlatformServices.windowCloser
     ) {
         _model = StateObject(wrappedValue: model)
+        _externalCreatedFileWatcher = StateObject(wrappedValue: MainExternalCreatedFileWatcher(
+            cursorStore: model.externalChangesSyncer
+        ))
         importProgressControlState = model.importProgressControlState
         self.windowCloser = windowCloser
     }
@@ -80,16 +83,25 @@ extension MainWindow {
         .onReceive(NotificationCenter.default.publisher(for: AreaMatrixDockOpenRelay.notification)) { _ in
             model.consumePendingDockOpenRequests()
         }
+        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixImportCommandRelay.notification)) { _ in
+            model.handleImportMenuCommand()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixSettingsCommandRelay.notification)) { _ in
+            model.handleSettingsMenuCommand()
+        }
         .onReceive(
             NotificationCenter.default.publisher(for: AreaMatrixExternalCreatedFileRelay.notification),
             perform: handleExternalCreatedFileRelayNotification
         )
         .task(id: activeMainRepositoryPath) {
             if let activeMainRepositoryPath {
-                externalCreatedFileWatcher.start(repoPath: activeMainRepositoryPath)
+                await externalCreatedFileWatcher.start(repoPath: activeMainRepositoryPath)
             } else {
                 externalCreatedFileWatcher.stop()
             }
+        }
+        .onChange(of: externalCreatedFileWatcher.recoveryRequest) { _, request in
+            if let request { model.handleExternalWatcherRecovery(request) }
         }
         .sheet(item: $model.pendingImportEntry) { request in
             ImportEntrySheetView(
@@ -188,12 +200,12 @@ extension MainWindow {
     }
 
     private func handleExternalCreatedFileRelayNotification(_ notification: Notification) {
-        if let signal = notification.object as? MainExternalCreatedFileSignal,
-           model.handleExternalCreatedFile(signal) {
-            AreaMatrixExternalCreatedFileRelay.finishPendingSignal(signal)
-        } else {
-            model.consumePendingExternalCreatedFileSignals()
+        if let signals = notification.object as? [MainExternalCreatedFileSignal] {
+            _ = model.handleExternalCreatedFiles(signals)
+            _ = AreaMatrixExternalCreatedFileRelay.takePendingSignals(matchingRepoPath: activeMainRepositoryPath)
+            return
         }
+        model.consumePendingExternalCreatedFileSignals()
     }
 
     private func importRetryContextHandler(for request: ImportEntryRequest) -> (

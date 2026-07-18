@@ -9,18 +9,39 @@ extension MainFileListModel {
         if let selectedFileID = selection.singleFileID { await loadChangeLog(fileID: selectedFileID) }
     }
 
-    func syncExternalCreated(_ event: MainExternalCreatedFileEvent) async {
-        detailExternalCreateSyncState = .syncing(event: event)
+    @discardableResult
+    func syncExternalCreated(_ event: MainExternalCreatedFileEvent) async -> Bool {
+        await syncExternalChanges([event])
+    }
+
+    @discardableResult
+    func syncExternalChanges(_ events: [MainExternalCreatedFileEvent]) async -> Bool {
+        guard let focusEvent = events.last else { return true }
+        detailExternalCreateSyncState = .syncing(event: focusEvent)
         do {
-            let result = try await syncExternalChange(event)
-            try validateExternalSyncResult(result, event: event)
-            let fileID = try await refreshAfterExternalSync(event, result: result)
-            detailExternalCreateSyncState = .synced(event: event, fileID: fileID, result)
+            let result = try await externalChangesSyncer.syncExternalChanges(repoPath: repoPath, events: events)
+            try validateExternalSyncResult(result, event: focusEvent)
+            try await advanceExternalSyncCursorIfNeeded(events)
+            if result.hasNoDetectedChanges {
+                detailExternalCreateSyncState = .synced(event: focusEvent, fileID: nil, result)
+                return true
+            }
+            let fileID = try await refreshAfterExternalSync(focusEvent, result: result)
+            detailExternalCreateSyncState = .synced(event: focusEvent, fileID: fileID, result)
             await openChangeLogForSyncedFile(fileID)
+            return true
         } catch {
             let mappedError = await mapCoreError(error)
-            detailExternalCreateSyncState = .failed(event: event, mappedError)
+            detailExternalCreateSyncState = .failed(event: focusEvent, mappedError)
+            return false
         }
+    }
+
+    private func advanceExternalSyncCursorIfNeeded(_ events: [MainExternalCreatedFileEvent]) async throws {
+        guard let syncedEventID = events.map(\.fsEventID).max(),
+              let cursorWatermark = events.map(\.cursorWatermark).max(),
+              cursorWatermark > syncedEventID else { return }
+        try await externalChangesSyncer.setFSEventCursor(repoPath: repoPath, lastEventID: cursorWatermark)
     }
 
     func loadChangeLog(fileID: Int64) async {
@@ -48,29 +69,6 @@ extension MainFileListModel {
         await loadChangeLog(fileID: fileID)
         if case let .loaded(loadedFileID, _) = detailLogState, loadedFileID == fileID {
             detailTabRequest = .automatic(.log)
-        }
-    }
-
-    private func syncExternalChange(_ event: MainExternalCreatedFileEvent) async throws -> SyncResultSnapshot {
-        switch event.kind {
-        case .created:
-            try await externalChangesSyncer.syncExternalCreated(
-                repoPath: repoPath,
-                relativePath: event.relativePath,
-                fsEventID: event.fsEventID
-            )
-        case .renamed:
-            try await externalChangesSyncer.syncExternalRenamed(
-                repoPath: repoPath,
-                relativePath: event.relativePath,
-                fsEventID: event.fsEventID
-            )
-        case .removed:
-            try await externalChangesSyncer.syncExternalRemoved(
-                repoPath: repoPath,
-                relativePath: event.relativePath,
-                fsEventID: event.fsEventID
-            )
         }
     }
 
@@ -146,6 +144,12 @@ extension MainFileListModel {
             isLoading = false
             throw error
         }
+    }
+}
+
+private extension SyncResultSnapshot {
+    var hasNoDetectedChanges: Bool {
+        detectedCreates == 0 && detectedRenames == 0 && detectedDeletes == 0 && detectedModifies == 0
     }
 }
 

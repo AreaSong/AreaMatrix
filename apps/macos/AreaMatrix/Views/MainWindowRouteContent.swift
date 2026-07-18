@@ -217,9 +217,7 @@ private extension MainWindowRouteContent {
             onCancel: {
                 model.returnFromDatabaseRepair(repairRoute)
             },
-            onRepairSucceeded: {
-                await model.retryMainRepositoryFromError(repoPath: repairRoute.repoPath)
-            },
+            onRepairSucceeded: { await model.finishWatcherRecoveryRescan(repoPath: repairRoute.repoPath) },
             onOpenRepositoryInFinder: {
                 model.revealMainRepositoryFolder(repoPath: repairRoute.repoPath)
             }
@@ -339,8 +337,8 @@ private extension MainWindowRouteContent {
             onOpenChangeCategoryPermissionRecovery: {
                 model.revealMainRepositoryFolder(repoPath: opening.config.repoPath)
             },
-            externalCreatedEvent: model.externalCreatedEvent(for: opening),
-            onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent,
+            externalCreatedEvents: model.externalCreatedEvents(for: opening),
+            onExternalCreatedEventsHandled: model.finishExternalCreatedFileEvents,
             pendingTagSuggestionFocus: model.pendingTagSuggestionFocus,
             onPendingTagSuggestionFocusConsumed: model.consumePendingTagSuggestionFocus,
             importProgressPresentation: importProgressPresentation

@@ -28,6 +28,11 @@ macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.
 它还会核对 Core 与 macOS 之间的 `AREAMATRIX_*_RUNTIME` key 合同，防止新增或改名 runtime 后只有一侧更新。
 它同时检查 `docs/governance/` 的固定源事实、上游版本/hash、owner、复审字段、RAID、G0-G8、PR 模板字段，以及 promotion apply / execution / runner 仍被 shim 阻断。
 
+`./dev check docs` 除了相对链接和导航可达性，还检查每篇 Markdown 的唯一一级标题、摘要、阅读时长、
+标题层级、代码块语言和 `Related`。`./dev check governance` 对固定上游规范快照执行登记册 SHA-256
+校验；`./dev check diff` 同时检查 unstaged、staged 和 merge-base 到 HEAD 的 committed diff，避免只检查
+当前工作区而漏掉已提交空白错误。
+
 ## 本地等价检查
 
 提交前至少运行与改动范围匹配的检查：
@@ -133,6 +138,11 @@ cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftform
 ```
 
 检查会把允许项单独分类：事务式 `staging`、Xcode `Build Phase`、Apple/macOS beta 测试、系统临时文件、治理规则中的受控词清单，以及集中历史证据测试。其他长期源事实命中必须改成长期产品、架构、API、UX、测试或发布语义。
+
+唯一固定上游快照 `docs/governance/upstream/ASW-EWF-001-1.0.0.txt` 以
+`allowed-upstream-snapshot` 分类显示。它是完整的外部规范副本，不代表 AreaMatrix 当前产品口径；
+该例外只匹配精确路径，且文件内容必须继续通过治理登记册 SHA-256 校验。相邻文件或其他
+`docs/governance/upstream/` 内容不会自动获得豁免。
 
 ## Secret Scan Checkout
 

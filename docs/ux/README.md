@@ -8,7 +8,7 @@
 
 ## 推荐阅读顺序（按用户旅程）
 
-```
+```text
 docs/ux/first-launch.md
   → docs/ux/drag-import-flow.md
   → docs/ux/ui-states.md

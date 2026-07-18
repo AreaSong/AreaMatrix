@@ -375,6 +375,7 @@
 		0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */; };
 		0A00000000000000000008EE /* DetailTagFilterIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008EF /* DetailTagFilterIntegrationTests.swift */; };
 		0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */; };
+		0A00000000000000000003F0 /* MainExternalCreatedFileWatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000003F1 /* MainExternalCreatedFileWatcherTests.swift */; };
 		0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */; };
 		0A0000000000000000000206 /* DetailLogExternalRemovedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */; };
 		0A0000000000000000000230 /* DetailLogPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */; };
@@ -1137,6 +1138,7 @@
 		0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008EF /* DetailTagFilterIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailTagFilterIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalCreatedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A00000000000000000003F1 /* MainExternalCreatedFileWatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainExternalCreatedFileWatcherTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRenamedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRemovedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
@@ -2305,8 +2307,9 @@
 					0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */,
 					0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */,
 					0A00000000000000000008EF /* DetailTagFilterIntegrationTests.swift */,
-					0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */,
-					0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */,
+						0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */,
+						0A00000000000000000003F1 /* MainExternalCreatedFileWatcherTests.swift */,
+						0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */,
 					0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */,
 					0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */,
 				0A000000000000000000024B /* DetailNotePageFeatureTests.swift */,
@@ -3189,8 +3192,9 @@
 					0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000008EE /* DetailTagFilterIntegrationTests.swift in Sources */,
-					0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */,
-					0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */,
+						0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */,
+						0A00000000000000000003F0 /* MainExternalCreatedFileWatcherTests.swift in Sources */,
+						0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000206 /* DetailLogExternalRemovedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000230 /* DetailLogPageIntegrationVerifyTests.swift in Sources */,
 					0A000000000000000000024A /* DetailNotePageFeatureTests.swift in Sources */,

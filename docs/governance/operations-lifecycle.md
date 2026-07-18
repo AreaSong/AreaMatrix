@@ -10,6 +10,10 @@ review_cycle: quarterly
 
 # AreaMatrix 运行与能力生命周期
 
+> 本文定义桌面产品的运行健康、事故处置、能力状态和安全退役门禁。
+>
+> 阅读时长：约 4 分钟。
+
 ## 桌面运行模型
 
 AreaMatrix 不以在线服务可用率作为当前 SLO。运行健康由以下可验证信号组成：
@@ -54,3 +58,10 @@ G8 完成必须证明：
 - 架构、用户文档、发布记录和治理登记册已同步。
 
 删除 `.areamatrix/` 不得导致用户原文件丢失；退役 AreaMatrix 不能以删除用户资料库内容作为清理方式。
+
+## Related
+
+- [企业工作流治理基线](enterprise-workflow-baseline.md)
+- [项目章程](project-charter.md)
+- [发布流程](../development/release.md)
+- [恢复说明](../development/recovery.md)

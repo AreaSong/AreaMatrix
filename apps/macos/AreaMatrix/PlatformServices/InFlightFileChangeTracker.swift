@@ -9,25 +9,52 @@ protocol InFlightFileChangeTracking: Sendable {
 actor InFlightFileChangeTracker: InFlightFileChangeTracking {
     static let shared = InFlightFileChangeTracker()
 
-    private var counts: [InFlightFileChangeKey: Int] = [:]
+    private struct Entry {
+        var count: Int
+        var expiresAt: Date
+    }
+
+    private var entries: [InFlightFileChangeKey: Entry] = [:]
+    private let ttl: TimeInterval
+
+    init(ttl: TimeInterval = 60) {
+        self.ttl = ttl
+    }
 
     func mark(repoPath: String, relativePath: String) async {
         let key = InFlightFileChangeKey(repoPath: repoPath, relativePath: relativePath)
-        counts[key, default: 0] += 1
+        let expiresAt = Date().addingTimeInterval(ttl)
+        if var entry = entries[key] {
+            entry.count += 1
+            entry.expiresAt = expiresAt
+            entries[key] = entry
+        } else {
+            entries[key] = Entry(count: 1, expiresAt: expiresAt)
+        }
     }
 
     func unmark(repoPath: String, relativePath: String) async {
         let key = InFlightFileChangeKey(repoPath: repoPath, relativePath: relativePath)
-        guard let count = counts[key] else { return }
-        if count <= 1 {
-            counts.removeValue(forKey: key)
+        guard var entry = entries[key] else { return }
+        if entry.count <= 1 {
+            entry.count = 0
+            entry.expiresAt = Date().addingTimeInterval(ttl)
+            entries[key] = entry
         } else {
-            counts[key] = count - 1
+            entry.count -= 1
+            entry.expiresAt = Date().addingTimeInterval(ttl)
+            entries[key] = entry
         }
     }
 
     func contains(repoPath: String, relativePath: String) async -> Bool {
-        counts[InFlightFileChangeKey(repoPath: repoPath, relativePath: relativePath)] != nil
+        let key = InFlightFileChangeKey(repoPath: repoPath, relativePath: relativePath)
+        guard let entry = entries[key] else { return false }
+        guard entry.expiresAt > Date() else {
+            entries.removeValue(forKey: key)
+            return false
+        }
+        return true
     }
 }
 
