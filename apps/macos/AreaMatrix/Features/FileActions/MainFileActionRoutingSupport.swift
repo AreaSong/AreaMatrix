@@ -53,7 +53,7 @@ extension MainRepositoryContentView {
             onOpenAIRecoverySettings: onOpenAISettings,
             onDelete: submitDelete,
             onApplyICloudConflict: applyICloudConflict,
-            onCollectDiagnostics: { Task { await fileListModel.collectCurrentListDiagnostics() } }
+            onCollectDiagnostics: fileListModel.requestCurrentListDiagnostics
         )
     }
 

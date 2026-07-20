@@ -5,7 +5,7 @@ extension MainRepositoryContentView {
         if fileListModel.searchState.isActive {
             return "\(fileListModel.searchState.page?.totalCount ?? Int64(visibleFiles.count)) results"
         }
-        return "\(visibleFiles.count) files"
+        return "\(visibleFiles.count) files loaded"
     }
 
     var visibleFiles: [FileEntrySnapshot] {

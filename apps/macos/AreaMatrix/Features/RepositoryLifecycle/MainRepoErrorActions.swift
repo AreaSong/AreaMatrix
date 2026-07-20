@@ -36,7 +36,9 @@ extension OnboardingModel {
 
     private func shouldRouteInterruptedImportSession(repoPath: String) async -> Bool {
         do {
-            _ = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            _ = try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {
+                try await self.startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            }
             return true
         } catch {
             return false

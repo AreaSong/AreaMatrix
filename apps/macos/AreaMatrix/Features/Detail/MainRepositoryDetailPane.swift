@@ -13,6 +13,7 @@ struct MainRepositoryDetailPane: View {
     let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
     let detailTagEditorState: DetailTagEditorState
     let detailTagSuggestionState: DetailTagSuggestionState
+    let missingFileRelinkState: MainMissingFileRelinkState
     let tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     let detailTagUndoToast: DetailTagUndoToast?
     let detailTabRequest: MainDetailTabRequest?
@@ -31,9 +32,11 @@ struct MainRepositoryDetailPane: View {
     let onBatchRenameApplied: (BatchRenameReportSnapshot) -> Void
     let onBatchCategoryCreateNewCategory: (BatchChangeCategoryNewCategoryHandoff) -> Void
     let onRetrySelectedFileDetail: () -> Void
+    let onRetryExternalSync: () -> Void
     let tagActions: MainRepositoryDetailPaneTagActions
     let onCopyPaths: ([String]) -> Void
     let onOpenNoteFile: (String) -> Void
+    let onLocateMissingFile: (Int64) -> Void
     let onRefreshChangeLog: () -> Void
     let onRequestDetailLogDiagnostics: () -> Void
     let onConfirmDetailLogDiagnostics: () -> Void
@@ -74,10 +77,13 @@ extension MainRepositoryDetailPane {
                     detailLogDiagnosticsState: detailLogDiagnosticsState,
                     detailExternalCreateSyncState: detailExternalCreateSyncState,
                     onRetry: onRetrySelectedFileDetail,
+                    onRetryExternalSync: onRetryExternalSync,
                     onRefreshChangeLog: onRefreshChangeLog,
                     onRequestDetailLogDiagnostics: onRequestDetailLogDiagnostics,
                     onConfirmDetailLogDiagnostics: onConfirmDetailLogDiagnostics,
                     onCancelDetailLogDiagnostics: onCancelDetailLogDiagnostics,
+                    missingFileRelinkState: missingFileRelinkState,
+                    onLocateMissingFile: onLocateMissingFile,
                     onBeginDeleteFile: onBeginDeleteFile,
                     canPerformWriteAction: canPerformWriteAction
                 )
@@ -123,17 +129,20 @@ extension MainRepositoryDetailPane {
             detailExternalCreateSyncState: detailExternalCreateSyncState,
             detailTagEditorState: detailTagEditorState,
             detailTagSuggestionState: detailTagSuggestionState,
+            missingFileRelinkState: missingFileRelinkState,
             tagSuggestionPresentationRequest: tagSuggestionPresentationRequest,
             detailTagUndoToast: detailTagUndoToast,
             repoPath: repoPath,
             tagActions: tagActions,
             onRequestTabChange: requestDetailTabChange,
             onRetrySelectedFileDetail: onRetrySelectedFileDetail,
+            onRetryExternalSync: onRetryExternalSync,
             onRefreshChangeLog: onRefreshChangeLog,
             onRequestDetailLogDiagnostics: onRequestDetailLogDiagnostics,
             onConfirmDetailLogDiagnostics: onConfirmDetailLogDiagnostics,
             onCancelDetailLogDiagnostics: onCancelDetailLogDiagnostics,
             onOpenNoteFile: onOpenNoteFile,
+            onLocateMissingFile: onLocateMissingFile,
             onBeginRenameFile: onBeginRenameFile,
             onBeginChangeCategoryFile: onBeginChangeCategoryFile,
             onBeginClassifierCorrectionFile: onBeginClassifierCorrectionFile,

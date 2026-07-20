@@ -10,6 +10,42 @@ protocol CoreRepositoryTreeListing: Sendable {
     func listTree(repoPath: String, locale: String) async throws -> RepositoryTreeNodeSnapshot
 }
 
+enum CoreRepositoryTreeLocaleResolver {
+    static func resolve(_ locale: String, preferredLanguages: [String]) -> String {
+        let normalizedLocale = normalize(locale)
+        guard normalizedLocale == "system" else {
+            return supportedLocale(for: normalizedLocale) ?? "en"
+        }
+
+        for language in preferredLanguages {
+            if let supportedLocale = supportedLocale(for: normalize(language)) {
+                return supportedLocale
+            }
+        }
+        return "en"
+    }
+
+    private static func normalize(_ locale: String) -> String {
+        locale
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "_", with: "-")
+            .lowercased()
+    }
+
+    private static func supportedLocale(for normalizedLocale: String) -> String? {
+        if normalizedLocale == "zh-cn"
+            || normalizedLocale.hasPrefix("zh-cn-")
+            || normalizedLocale == "zh-hans"
+            || normalizedLocale.hasPrefix("zh-hans-") {
+            return "zh-Hans"
+        }
+        if normalizedLocale == "en" || normalizedLocale.hasPrefix("en-") {
+            return "en"
+        }
+        return nil
+    }
+}
+
 extension CoreEmptyRepositoryOpening {
     func openConfiguredRepository(repoPath: String) async throws -> RepositoryOpeningResult {
         try await openAdoptedRepository(repoPath: repoPath)
@@ -248,7 +284,11 @@ extension CoreBridge: CoreEmptyRepositoryOpening, CoreRepositoryTreeListing {
     }
 
     func listTree(repoPath: String, locale: String) async throws -> RepositoryTreeNodeSnapshot {
-        let treeJSON = try await listTreeJSON(repoPath: repoPath, locale: locale)
+        let coreLocale = CoreRepositoryTreeLocaleResolver.resolve(
+            locale,
+            preferredLanguages: Locale.preferredLanguages
+        )
+        let treeJSON = try await listTreeJSON(repoPath: repoPath, locale: coreLocale)
         return try decodeOpeningTreeSnapshot(treeJSON)
     }
 }

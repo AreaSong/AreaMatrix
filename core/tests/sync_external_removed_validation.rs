@@ -206,7 +206,7 @@ fn sync_external_removed_validation_existing_path_is_error_without_state_change(
         vec![removed("docs/present.pdf", 711)],
     );
 
-    assert!(matches!(result, Err(CoreError::Io { .. })));
+    assert_eq!(result, Err(CoreError::conflict("docs/present.pdf")));
 
     assert_eq!(fs_cursor(repo.path()), Some(710));
     assert_eq!(
@@ -255,7 +255,7 @@ fn sync_external_removed_validation_db_failure_rolls_back_status_log_and_cursor(
 }
 
 #[test]
-fn sync_external_removed_validation_does_not_claim_modified_event_scope() {
+fn sync_external_removed_validation_coalesces_modified_signal_for_missing_path() {
     let repo = initialized_repo();
     let entry = sync_created_file(repo.path(), "docs/scope.txt", b"scope bytes", 730);
     fs::remove_file(repo.path().join("docs/scope.txt")).expect("simulate external deletion");
@@ -267,11 +267,11 @@ fn sync_external_removed_validation_does_not_claim_modified_event_scope() {
             modified("docs/scope.txt", 732),
         ],
     )
-    .expect("sync only the bound removed capability");
+    .expect("sync coalesced removed and modified signals");
 
     assert_eq!(result.detected_deletes, 1);
     assert_eq!(result.detected_modifies, 0);
-    assert_eq!(fs_cursor(repo.path()), Some(730));
+    assert_eq!(fs_cursor(repo.path()), Some(732));
     assert!(matches!(
         get_file(path_string(repo.path()), entry.id),
         Err(CoreError::FileNotFound { .. })
@@ -305,7 +305,7 @@ fn sync_external_removed_validation_rejects_bad_paths_without_state() {
 
     assert_eq!(
         placeholder,
-        Err(CoreError::icloud_placeholder("icloud placeholder"))
+        Err(CoreError::icloud_placeholder("docs/waiting.pdf.icloud"))
     );
     assert_eq!(fs_cursor(repo.path()), None);
     assert!(listed_files(repo.path(), include_deleted_file_filter()).is_empty());

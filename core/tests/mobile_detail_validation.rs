@@ -231,7 +231,11 @@ fn mobile_detail_validation_locks_core_api_udl_rust_and_test_evidence() {
 }
 
 fn assert_task_docs_and_testing_alignment() {
-    for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {
+    for fragment in [
+        "## Rust Core",
+        "Core 测试位于：",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+    ] {
         assert_contains(TESTING_DOC, fragment);
     }
 }
@@ -262,8 +266,8 @@ fn assert_core_api_udl_and_rust_alignment() {
         "metadata 行仍返回 `FileAvailabilityStatus.Missing`",
         "### `list_changes(repoPath, filter) throws -> [ChangeLogEntry]`",
         "### `read_note(repoPath, fileId) throws -> String?`",
-        "无笔记时返回 `nil`。",
-        "| `read_note(repo, file_id)` | note | √ | Io |",
+        "DB 中没有 note row 时返回 `nil`",
+        "| `read_note(repo, file_id)` | note | √ | InvalidPath / FileNotFound / PermissionDenied / Io / Db |",
     ] {
         assert_contains(CORE_API, fragment);
     }

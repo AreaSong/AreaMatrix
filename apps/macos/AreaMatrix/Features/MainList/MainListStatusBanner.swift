@@ -3,6 +3,7 @@ import Foundation
 enum MainListStatusBanner: Equatable {
     case renamedPreservedSelection(fileID: Int64)
     case removedSelectedFile(fileID: Int64)
+    case relinkedMissingFile(fileID: Int64)
     case unsavedNoteDraftPreserved(fileID: Int64)
     case movedFileToTrash(fileID: Int64)
     case removedFileFromIndex(fileID: Int64)
@@ -20,6 +21,8 @@ enum MainListStatusBanner: Equatable {
             return "File renamed. The same file remains selected."
         case .removedSelectedFile:
             return "Selected file is missing or was removed outside AreaMatrix."
+        case .relinkedMissingFile:
+            return "Missing file relinked. AreaMatrix updated metadata without moving or modifying the selected file."
         case .unsavedNoteDraftPreserved:
             return "无法保存笔记。草稿已保留，返回该文件的 Note tab 后可继续重试。"
         case .movedFileToTrash:
@@ -59,7 +62,8 @@ enum MainListStatusBanner: Equatable {
             "arrow.triangle.2.circlepath"
         case .removedSelectedFile, .unsavedNoteDraftPreserved, .changedCategoryTreeRefreshFailed:
             "exclamationmark.triangle"
-        case .movedFileToTrash, .removedFileFromIndex, .batchDeleted, .changedCategory, .correctedClassification,
+        case .relinkedMissingFile, .movedFileToTrash, .removedFileFromIndex, .batchDeleted, .changedCategory,
+             .correctedClassification,
              .savedClassifierRule, .changedBatchCategory, .resolvedICloudConflict:
             "checkmark.circle"
         }

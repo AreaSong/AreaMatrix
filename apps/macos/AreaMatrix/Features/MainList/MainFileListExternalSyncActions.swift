@@ -1,6 +1,29 @@
 import Foundation
 
+private struct MainSelectedExternalRemovalRefresh {
+    let event: MainExternalCreatedFileEvent?
+    let snapshot: FileEntrySnapshot?
+    let loadedFiles: [FileEntrySnapshot]
+    let selectedFileID: Int64?
+    let selectionGeneration: Int
+    let result: SyncResultSnapshot
+    let isRetry: Bool
+}
+
 extension MainFileListModel {
+    func scheduleExternalSyncDrain(
+        windows: [MainExternalSyncWindow],
+        onWindowCompleted: @escaping @MainActor (MainExternalSyncWindow) -> Void
+    ) {
+        guard externalSyncDrainTask == nil, let window = windows.first else { return }
+        externalSyncDrainTask = Task { [weak self] in
+            guard let self else { return }
+            let committed = await syncExternalWindow(window)
+            externalSyncDrainTask = nil
+            if committed { onWindowCompleted(window) }
+        }
+    }
+
     func loadSelectedFileChangeLog() async {
         if let selectedFileID = selection.singleFileID { await loadChangeLog(fileID: selectedFileID) }
     }
@@ -16,32 +39,103 @@ extension MainFileListModel {
 
     @discardableResult
     func syncExternalChanges(_ events: [MainExternalCreatedFileEvent]) async -> Bool {
-        guard let focusEvent = events.last else { return true }
-        detailExternalCreateSyncState = .syncing(event: focusEvent)
+        guard let cursorWatermark = events.map(\.cursorWatermark).max(),
+              let window = MainExternalSyncWindow(
+                  repoPath: repoPath,
+                  events: events,
+                  cursorWatermark: cursorWatermark
+              ) else { return events.isEmpty }
+        return await syncExternalWindow(window)
+    }
+
+    @discardableResult
+    func syncExternalWindow(_ window: MainExternalSyncWindow) async -> Bool {
+        let normalizedRepoPath = URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL.path
+        guard window.repoPath == normalizedRepoPath else { return false }
+        let isRetryingWindow = failedExternalSyncWindowID == window.id
+        guard let focusEvent = window.events.last else { return await acknowledgeFilteredWindow(window) }
+
+        let selectedFileIDBeforeSync = selection.singleFileID
+        let selectionGeneration = detailGeneration
+        let detailTargetFileIDBeforeSync = detailTargetFileID(in: window)
+        if let detailTargetFileIDBeforeSync {
+            detailExternalCreateSyncState = .syncing(fileID: detailTargetFileIDBeforeSync, event: focusEvent)
+        } else {
+            detailExternalCreateSyncState = .idle
+        }
+        let result: SyncResultSnapshot
         do {
-            let result = try await externalChangesSyncer.syncExternalChanges(repoPath: repoPath, events: events)
-            try validateExternalSyncResult(result, event: focusEvent)
-            try await advanceExternalSyncCursorIfNeeded(events)
-            if result.hasNoDetectedChanges {
-                detailExternalCreateSyncState = .synced(event: focusEvent, fileID: nil, result)
-                return true
-            }
-            let fileID = try await refreshAfterExternalSync(focusEvent, result: result)
-            detailExternalCreateSyncState = .synced(event: focusEvent, fileID: fileID, result)
-            await openChangeLogForSyncedFile(fileID)
-            return true
+            result = try await commitExternalWindow(
+                window,
+                focusEvent: focusEvent,
+                isRetry: isRetryingWindow
+            )
         } catch {
             let mappedError = await mapCoreError(error)
-            detailExternalCreateSyncState = .failed(event: focusEvent, mappedError)
+            if let detailTargetFileIDBeforeSync,
+               canApplyExternalSelectionUpdate(
+                   fileID: detailTargetFileIDBeforeSync,
+                   generation: selectionGeneration
+               ) {
+                detailExternalCreateSyncState = .failed(
+                    fileID: detailTargetFileIDBeforeSync,
+                    event: focusEvent,
+                    mappedError
+                )
+            }
+            markExternalSyncFailure(window, mapping: mappedError)
             return false
+        }
+
+        await refreshPresentationAfterCommittedWindow(
+            window,
+            result: result,
+            selectedFileID: selectedFileIDBeforeSync,
+            selectionGeneration: selectionGeneration,
+            isRetry: isRetryingWindow
+        )
+        clearExternalSyncFailure()
+        return true
+    }
+
+    private func commitExternalWindow(
+        _ window: MainExternalSyncWindow,
+        focusEvent: MainExternalCreatedFileEvent,
+        isRetry: Bool
+    ) async throws -> SyncResultSnapshot {
+        try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {
+            let result = try await self.externalChangesSyncer.syncExternalChanges(
+                repoPath: self.repoPath,
+                events: window.events
+            )
+            try self.validateExternalSyncResult(result, event: focusEvent)
+            try self.validateSelectedExternalRemoval(result, window: window, allowsReplayNoOp: isRetry)
+            if let syncedEventID = window.events.map(\.fsEventID).max(),
+               window.cursorWatermark > syncedEventID {
+                try await self.externalChangesSyncer.setFSEventCursor(
+                    repoPath: self.repoPath,
+                    lastEventID: window.cursorWatermark
+                )
+            }
+            return result
         }
     }
 
-    private func advanceExternalSyncCursorIfNeeded(_ events: [MainExternalCreatedFileEvent]) async throws {
-        guard let syncedEventID = events.map(\.fsEventID).max(),
-              let cursorWatermark = events.map(\.cursorWatermark).max(),
-              cursorWatermark > syncedEventID else { return }
-        try await externalChangesSyncer.setFSEventCursor(repoPath: repoPath, lastEventID: cursorWatermark)
+    private func acknowledgeFilteredWindow(_ window: MainExternalSyncWindow) async -> Bool {
+        do {
+            try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {
+                try await self.externalChangesSyncer.setFSEventCursor(
+                    repoPath: self.repoPath,
+                    lastEventID: window.cursorWatermark
+                )
+            }
+            clearExternalSyncFailure()
+            return true
+        } catch {
+            let mappedError = await mapCoreError(error)
+            markExternalSyncFailure(window, mapping: mappedError)
+            return false
+        }
     }
 
     func loadChangeLog(fileID: Int64) async {
@@ -64,298 +158,275 @@ extension MainFileListModel {
         }
     }
 
-    private func openChangeLogForSyncedFile(_ fileID: Int64?) async {
+    private func refreshChangeLogForSyncedFile(_ fileID: Int64?) async {
         guard let fileID else { return }
         await loadChangeLog(fileID: fileID)
-        if case let .loaded(loadedFileID, _) = detailLogState, loadedFileID == fileID {
-            detailTabRequest = .automatic(.log)
+    }
+
+    private func refreshPresentationAfterCommittedWindow(
+        _ window: MainExternalSyncWindow,
+        result: SyncResultSnapshot,
+        selectedFileID: Int64?,
+        selectionGeneration: Int,
+        isRetry: Bool
+    ) async {
+        guard let focusEvent = window.events.last else { return }
+        if result.hasNoDetectedChanges, !isRetry {
+            setExternalSyncSucceeded(fileID: selectedFileID, event: focusEvent, result: result)
+            return
+        }
+
+        let selectedRemoval = window.events.reversed().first { event in
+            guard event.kind == .removed, let selectedFileID else { return false }
+            return selectedFileIDForExternalRemoval(path: event.relativePath) == selectedFileID
+        }
+        let removedSnapshot = selectedRemoval.flatMap { event in
+            selectedFileID.flatMap { missingSnapshot(fileID: $0, fallbackPath: event.relativePath) }
+        }
+
+        do {
+            guard let loadedFiles = try await reloadFilesForExternalSync() else {
+                setExternalSyncSucceeded(fileID: selectedFileID, event: focusEvent, result: result)
+                return
+            }
+            if await restoreSelectedExternalRename(
+                in: window,
+                files: loadedFiles,
+                selectedID: selectedFileID,
+                selectionGeneration: selectionGeneration,
+                result: result
+            ) {
+                return
+            }
+            let removalRefresh = MainSelectedExternalRemovalRefresh(
+                event: selectedRemoval,
+                snapshot: removedSnapshot,
+                loadedFiles: loadedFiles,
+                selectedFileID: selectedFileID,
+                selectionGeneration: selectionGeneration,
+                result: result,
+                isRetry: isRetry
+            )
+            if await applySelectedExternalRemoval(removalRefresh) {
+                return
+            }
+            await preserveSelectionAfterExternalSync(
+                in: window,
+                files: loadedFiles,
+                selectedFileID: selectedFileID,
+                selectionGeneration: selectionGeneration,
+                result: result
+            )
+        } catch {
+            errorMapping = await mapCoreError(error)
+            setExternalSyncSucceeded(fileID: selectedFileID, event: focusEvent, result: result)
         }
     }
 
-    private func refreshAfterExternalSync(
-        _ event: MainExternalCreatedFileEvent,
+    private func applySelectedExternalRemoval(_ refresh: MainSelectedExternalRemovalRefresh) async -> Bool {
+        guard let event = refresh.event,
+              let selectedFileID = refresh.selectedFileID,
+              refresh.result.detectedDeletes > 0 || refresh.isRetry,
+              canApplyExternalSelectionUpdate(
+                  fileID: selectedFileID,
+                  generation: refresh.selectionGeneration
+              ) else {
+            return false
+        }
+        files = refresh.loadedFiles.filter { $0.id != selectedFileID }
+        selection = .single(selectedFileID)
+        selectedFileDetail = refresh.snapshot
+        selectedFileNoteWriteBlock = refresh.snapshot.flatMap { noteWriteBlock(for: $0) }
+        detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: selectedFileID)
+        isDetailLoading = false; detailTagEditorState = .notLoaded; detailTagSuggestionState = .idle
+        statusBanner = .removedSelectedFile(fileID: selectedFileID)
+        detailExternalCreateSyncState = .synced(fileID: selectedFileID, event: event, refresh.result)
+        await refreshChangeLogForSyncedFile(selectedFileID)
+        return true
+    }
+
+    private func preserveSelectionAfterExternalSync(
+        in window: MainExternalSyncWindow,
+        files loadedFiles: [FileEntrySnapshot],
+        selectedFileID: Int64?,
+        selectionGeneration: Int,
         result: SyncResultSnapshot
-    ) async throws -> Int64? {
-        if event.kind == .removed {
-            return try await refreshAfterExternalRemovedSync(event, result: result)
+    ) async {
+        guard let focusEvent = window.events.last else { return }
+        guard let selectedFileID,
+              canApplyExternalSelectionUpdate(fileID: selectedFileID, generation: selectionGeneration),
+              let selectedFile = loadedFiles.first(where: { $0.id == selectedFileID }) else {
+            setExternalSyncSucceeded(fileID: selectedFileID, event: focusEvent, result: result)
+            return
         }
 
-        let loadedFiles = try await reloadFilesForExternalSync()
-        guard let file = loadedFiles.first(where: { $0.path == event.relativePath }) else {
-            throw MainExternalSyncRefreshValidationError(
-                rawContext: "\(event.kind.displayName) file was not visible after sync: \(event.relativePath)"
-            )
-        }
-
-        selection = .single(file.id)
-        selectedFileDetail = file
-        selectedFileNoteWriteBlock = noteWriteBlock(for: file)
+        selectedFileDetail = selectedFile
+        selectedFileNoteWriteBlock = noteWriteBlock(for: selectedFile)
         detailErrorMapping = nil
+        guard let selectedEvent = window.events.reversed().first(where: { event in
+            event.kind != .removed && event.relativePath == selectedFile.path
+        }) else {
+            detailExternalCreateSyncState = .idle
+            return
+        }
+
         isDetailLoading = true
-        await loadDetail(id: file.id)
-        guard selectedFileDetail?.id == file.id, detailErrorMapping == nil else {
-            throw MainExternalSyncRefreshValidationError(
-                rawContext: "\(event.kind.displayName) file detail was not visible after sync: \(event.relativePath)"
-            )
-        }
-        if event.kind == .renamed { statusBanner = .renamedPreservedSelection(fileID: file.id) }
-        return file.id
+        let expectedDetailGeneration = detailGeneration + 1
+        await loadDetail(id: selectedFileID)
+        guard detailGeneration == expectedDetailGeneration,
+              selection.singleFileID == selectedFileID else { return }
+        detailExternalCreateSyncState = .synced(fileID: selectedFileID, event: selectedEvent, result)
+        await refreshChangeLogForSyncedFile(selectedFileID)
     }
 
-    private func refreshAfterExternalRemovedSync(
-        _ event: MainExternalCreatedFileEvent,
+    private func restoreSelectedExternalRename(
+        in window: MainExternalSyncWindow,
+        files loadedFiles: [FileEntrySnapshot],
+        selectedID selectedFileID: Int64?,
+        selectionGeneration: Int,
         result: SyncResultSnapshot
-    ) async throws -> Int64? {
-        let removedFileID = selectedFileIDForExternalRemoval(path: event.relativePath)
-        let removedSnapshot = removedFileID.flatMap { missingSnapshot(fileID: $0, fallbackPath: event.relativePath) }
-        let loadedFiles = try await reloadFilesForExternalSync()
-        guard let removedFileID else { return nil }
-        guard result.detectedDeletes > 0 else {
-            throw MainExternalSyncRefreshValidationError(
-                rawContext: "removed event \(event.fsEventID) did not report a detected delete: \(event.relativePath)"
-            )
+    ) async -> Bool {
+        let renamedEvents = window.events.filter { $0.kind == .renamed }
+        guard let selectedFileID,
+              !renamedEvents.isEmpty,
+              canApplyExternalSelectionUpdate(fileID: selectedFileID, generation: selectionGeneration) else {
+            return false
+        }
+        if let selectedFile = loadedFiles.first(where: { $0.id == selectedFileID }),
+           !renamedEvents.contains(where: { $0.relativePath == selectedFile.path }) {
+            return false
         }
 
-        files = loadedFiles.filter { $0.id != removedFileID }
-        selection = .single(removedFileID)
-        selectedFileDetail = removedSnapshot
-        selectedFileNoteWriteBlock = removedSnapshot.flatMap { noteWriteBlock(for: $0) }
-        detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: removedFileID)
-        isDetailLoading = false
-        detailTagEditorState = .notLoaded
-        detailTagSuggestionState = .idle
-        statusBanner = .removedSelectedFile(fileID: removedFileID)
-        return removedFileID
+        isDetailLoading = true
+        let expectedDetailGeneration = detailGeneration + 1
+        await loadDetail(id: selectedFileID)
+        guard detailGeneration == expectedDetailGeneration,
+              selection.singleFileID == selectedFileID else { return true }
+        if let movedFile = selectedFileDetail,
+           detailErrorMapping == nil,
+           let renamedEvent = renamedEvents.last(where: { $0.relativePath == movedFile.path }) {
+            setPendingExternalSelectionUpdate(.moved(movedFile))
+            statusBanner = .renamedPreservedSelection(fileID: selectedFileID)
+            detailExternalCreateSyncState = .synced(fileID: selectedFileID, event: renamedEvent, result)
+            await refreshChangeLogForSyncedFile(selectedFileID)
+            return true
+        }
+        return false
     }
 
-    private func reloadFilesForExternalSync() async throws -> [FileEntrySnapshot] {
+    private func validateSelectedExternalRemoval(
+        _ result: SyncResultSnapshot,
+        window: MainExternalSyncWindow,
+        allowsReplayNoOp: Bool
+    ) throws {
+        guard !allowsReplayNoOp,
+              window.events.count == 1,
+              let event = window.events.first,
+              event.kind == .removed,
+              selectedFileIDForExternalRemoval(path: event.relativePath) != nil,
+              result.detectedDeletes == 0 else { return }
+        throw MainExternalSyncRefreshValidationError(
+            rawContext: "removed event \(event.fsEventID) did not report a detected delete: \(event.relativePath)"
+        )
+    }
+
+    private func markExternalSyncFailure(
+        _ window: MainExternalSyncWindow,
+        mapping: CoreErrorMappingSnapshot
+    ) {
+        failedExternalSyncWindowID = window.id
+        failedExternalSyncRelativePath = placeholderRelativePath(in: window, mapping: mapping)
+        setExternalSyncErrorMapping(mapping)
+    }
+
+    private func clearExternalSyncFailure() {
+        failedExternalSyncWindowID = nil
+        failedExternalSyncRelativePath = nil
+        clearExternalSyncRecoveryMessage()
+        setExternalSyncErrorMapping(nil)
+    }
+
+    private func placeholderRelativePath(
+        in window: MainExternalSyncWindow,
+        mapping: CoreErrorMappingSnapshot
+    ) -> String? {
+        guard mapping.kind == .iCloudPlaceholder else { return nil }
+        return window.events.first { event in
+            mapping.rawContext == event.relativePath || mapping.rawContext.hasSuffix("/\(event.relativePath)")
+        }?.relativePath
+    }
+
+    private func reloadFilesForExternalSync() async throws -> [FileEntrySnapshot]? {
+        guard !searchState.isActive else { return nil }
+        loadGeneration += 1
+        let generation = loadGeneration
+        let category = currentCategory
+        let reloadLimit = max(Self.fileListPageSize, nextFilePageOffset)
+        var filter = FileFilterSnapshot.currentCategory(category)
+        filter.limit = reloadLimit
+        filter.offset = 0
         isLoading = true
         do {
             let loadedFiles = try await fileLister.listFiles(
                 repoPath: repoPath,
-                filter: .currentCategory(currentCategory)
+                filter: filter
             )
+            guard canApplyExternalListReload(generation: generation, category: category) else { return nil }
             files = loadedFiles
+            nextFilePageOffset = Int64(loadedFiles.count); hasMore = loadedFiles.count == Int(reloadLimit)
+            isLoadingMore = false
+            loadMoreErrorMapping = nil
             errorMapping = nil
             isLoading = false
             return loadedFiles
         } catch {
-            errorMapping = await mapCoreError(error)
+            guard canApplyExternalListReload(generation: generation, category: category) else { return nil }
+            let mapping = await mapCoreError(error)
+            guard canApplyExternalListReload(generation: generation, category: category) else { return nil }
+            errorMapping = mapping
             isLoading = false
             throw error
         }
     }
-}
 
-private extension SyncResultSnapshot {
-    var hasNoDetectedChanges: Bool {
-        detectedCreates == 0 && detectedRenames == 0 && detectedDeletes == 0 && detectedModifies == 0
-    }
-}
-
-extension MainFileListModel {
-    var aiTagBatchSuggestionActions: AITagBatchSuggestionActions {
-        AITagBatchSuggestionActions(
-            load: { [weak self] files in Task { await self?.loadBatchAITagSuggestions(files: files) } },
-            retry: { [weak self] in Task { await self?.retryBatchAITagSuggestions() } },
-            toggle: { [weak self] fileID, suggestionID in
-                self?.toggleBatchAITagSuggestion(fileID: fileID, suggestionID: suggestionID)
-            },
-            startEditing: { [weak self] fileID, suggestionID in
-                self?.startEditingBatchAITagSuggestion(fileID: fileID, suggestionID: suggestionID)
-            },
-            cancelEditing: { [weak self] fileID in
-                self?.cancelEditingBatchAITagSuggestion(fileID: fileID)
-            },
-            editDisplayName: { [weak self] fileID, suggestionID, displayName in
-                self?.updateBatchAITagSuggestionDisplayName(
-                    fileID: fileID,
-                    suggestionID: suggestionID,
-                    displayName: displayName
-                )
-            },
-            editSlug: { [weak self] fileID, suggestionID, slug in
-                self?.updateBatchAITagSuggestionSlug(fileID: fileID, suggestionID: suggestionID, slug: slug)
-            },
-            regenerateSlug: { [weak self] fileID, suggestionID in
-                self?.regenerateBatchAITagSuggestionSlug(fileID: fileID, suggestionID: suggestionID)
-            },
-            selectHighConfidence: { [weak self] in self?.selectHighConfidenceBatchAITagSuggestions() },
-            clearSelection: { [weak self] in self?.clearBatchAITagSuggestions() },
-            confirm: { [weak self] in self?.confirmBatchAITagSuggestions() },
-            cancelConfirmation: { [weak self] in self?.cancelBatchAITagSuggestionConfirmation() },
-            apply: { [weak self] in Task { await self?.applyBatchAITagSuggestions() } },
-            cancel: { [weak self] in self?.cancelBatchAITagSuggestions() }
-        )
+    private func canApplyExternalListReload(generation: Int, category: String?) -> Bool {
+        generation == loadGeneration && currentCategory == category && !searchState.isActive
     }
 
-    func loadBatchAITagSuggestions(files: [FileEntrySnapshot]) async {
-        let selectedIDs = selection.multipleFileIDs
-        let selectedFiles = files.filter { selectedIDs.contains($0.id) }
-        guard selectedFiles.count > 1 else { return }
-
-        aiTagBatchSuggestionState = .loading(AITagBatchSuggestionAction.initialReview(
-            files: selectedFiles,
-            reports: [:]
-        ))
-        let review = await loadBatchAITagSuggestionReports(files: selectedFiles, selectedIDs: selectedIDs)
-        guard selection.multipleFileIDs == selectedIDs else { return }
-        aiTagBatchSuggestionState = .reviewing(review)
+    private func canApplyExternalSelectionUpdate(fileID: Int64, generation: Int) -> Bool {
+        generation == detailGeneration && selection.singleFileID == fileID
     }
 
-    func retryBatchAITagSuggestions() async {
-        guard let files = aiTagBatchSuggestionState.review?.files, !files.isEmpty else { return }
-        await loadBatchAITagSuggestions(files: files)
-    }
-
-    func toggleBatchAITagSuggestion(fileID: Int64, suggestionID: String) {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.toggling(
-            fileID: fileID,
-            suggestionID: suggestionID,
-            in: aiTagBatchSuggestionState
-        )
-    }
-
-    func selectHighConfidenceBatchAITagSuggestions() {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.selectingHighConfidence(in: aiTagBatchSuggestionState)
-    }
-
-    func startEditingBatchAITagSuggestion(fileID: Int64, suggestionID: String) {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.startingEdit(
-            fileID: fileID,
-            suggestionID: suggestionID,
-            in: aiTagBatchSuggestionState,
-            disabledReason: writeActionDisabledMessage(fileID: fileID)
-        )
-    }
-
-    func cancelEditingBatchAITagSuggestion(fileID: Int64) {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.cancelingEdit(
-            fileID: fileID,
-            in: aiTagBatchSuggestionState
-        )
-    }
-
-    func updateBatchAITagSuggestionDisplayName(fileID: Int64, suggestionID: String, displayName: String) {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.updatingDisplayName(
-            fileID: fileID,
-            suggestionID: suggestionID,
-            displayName: displayName,
-            in: aiTagBatchSuggestionState,
-            disabledReason: writeActionDisabledMessage(fileID: fileID)
-        )
-    }
-
-    func updateBatchAITagSuggestionSlug(fileID: Int64, suggestionID: String, slug: String) {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.updatingSlug(
-            fileID: fileID,
-            suggestionID: suggestionID,
-            slug: slug,
-            in: aiTagBatchSuggestionState,
-            disabledReason: writeActionDisabledMessage(fileID: fileID)
-        )
-    }
-
-    func regenerateBatchAITagSuggestionSlug(fileID: Int64, suggestionID: String) {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.regeneratingSlug(
-            fileID: fileID,
-            suggestionID: suggestionID,
-            in: aiTagBatchSuggestionState,
-            disabledReason: writeActionDisabledMessage(fileID: fileID)
-        )
-    }
-
-    func clearBatchAITagSuggestions() {
-        aiTagBatchSuggestionState = AITagBatchSuggestionAction.clearingSelection(in: aiTagBatchSuggestionState)
-    }
-
-    func confirmBatchAITagSuggestions() {
-        guard let review = aiTagBatchSuggestionState.review, review.canApply else { return }
-        aiTagBatchSuggestionState = .confirming(review)
-    }
-
-    func cancelBatchAITagSuggestionConfirmation() {
-        guard case let .confirming(review) = aiTagBatchSuggestionState else { return }
-        aiTagBatchSuggestionState = .reviewing(review)
-    }
-
-    func applyBatchAITagSuggestions() async {
-        guard case var .confirming(review) = aiTagBatchSuggestionState else { return }
-        let selectedIDs = selection.multipleFileIDs
-        guard selectedIDs == Set(review.files.map(\.id)), review.canApply else { return }
-
-        aiTagBatchSuggestionState = .applying(review)
-        review.applyReports = [:]
-        review.applyFailures = [:]
-        for file in review.files {
-            let result = await applyBatchAITagSuggestions(fileID: file.id, review: review)
-            if let applyReport = result.applyReport {
-                review.applyReports[file.id] = applyReport
-                review.selectedIDsByFileID[file.id] = failedSuggestionIDs(in: applyReport)
-                review.editSessionsByFileID[file.id] = nil
-            }
-            if let failure = result.failure {
-                review.applyFailures[file.id] = failure
-            }
+    private func setExternalSyncSucceeded(
+        fileID: Int64?,
+        event: MainExternalCreatedFileEvent,
+        result: SyncResultSnapshot
+    ) {
+        guard let fileID,
+              selection.singleFileID == fileID,
+              eventTargetsSelectedDetail(event, fileID: fileID) else {
+            detailExternalCreateSyncState = .idle
+            return
         }
-        guard selection.multipleFileIDs == selectedIDs else { return }
-        aiTagBatchSuggestionState = .applied(review)
-        await loadSelectedFileChangeLog()
+        detailExternalCreateSyncState = .synced(fileID: fileID, event: event, result)
     }
 
-    func cancelBatchAITagSuggestions() {
-        aiTagBatchSuggestionState = .idle
-    }
-
-    private func loadBatchAITagSuggestionReports(
-        files: [FileEntrySnapshot],
-        selectedIDs: Set<Int64>
-    ) async -> AITagBatchSuggestionReview {
-        var reports: [Int64: AiTagSuggestionReport] = [:]
-        var failures: [Int64: CoreErrorMappingSnapshot] = [:]
-        for file in files {
-            do {
-                reports[file.id] = try await suggestAITagsWithPrivacyGate(
-                    fileID: file.id,
-                    file: file,
-                    candidateTags: []
-                )
-            } catch {
-                failures[file.id] = await mapCoreError(error)
-            }
-            guard selection.multipleFileIDs == selectedIDs else {
-                return AITagBatchSuggestionAction.initialReview(files: files, reports: reports, loadFailures: failures)
-            }
+    private func detailTargetFileID(in window: MainExternalSyncWindow) -> Int64? {
+        guard let fileID = selection.singleFileID,
+              window.events.contains(where: { eventTargetsSelectedDetail($0, fileID: fileID) }) else {
+            return nil
         }
-        return AITagBatchSuggestionAction.initialReview(files: files, reports: reports, loadFailures: failures)
+        return fileID
     }
 
-    private func applyBatchAITagSuggestions(
-        fileID: Int64,
-        review: AITagBatchSuggestionReview
-    ) async -> (applyReport: AiTagSuggestionApplyReport?, failure: CoreErrorMappingSnapshot?) {
-        guard let report = review.reports[fileID] else { return (nil, nil) }
-        let items = review.applyItems(fileID: fileID)
-        guard !items.isEmpty, canPerformWriteAction(fileID: fileID) else { return (nil, nil) }
-
-        do {
-            let applyReport = try await aiTagSuggestionStore.applyAITagSuggestions(
-                repoPath: repoPath,
-                request: ApplyAiTagSuggestionsRequest(
-                    fileId: fileID,
-                    suggestions: items,
-                    callLogId: report.callLogId,
-                    privacyRuleId: report.privacyRuleId,
-                    confirmed: true
-                )
-            )
-            return (applyReport, nil)
-        } catch {
-            return await (nil, mapCoreError(error))
+    private func eventTargetsSelectedDetail(
+        _ event: MainExternalCreatedFileEvent,
+        fileID: Int64
+    ) -> Bool {
+        if event.kind == .removed {
+            return selectedFileIDForExternalRemoval(path: event.relativePath) == fileID
         }
-    }
-
-    private func failedSuggestionIDs(in report: AiTagSuggestionApplyReport) -> Set<String> {
-        Set(report.itemResults.compactMap { $0.status == .failed ? $0.suggestionId : nil })
+        let selectedPath = selectedFileDetail?.id == fileID ? selectedFileDetail?.path : cachedFile(id: fileID)?.path
+        return selectedPath == event.relativePath
     }
 }

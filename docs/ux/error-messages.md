@@ -1,6 +1,6 @@
 # 错误文案与恢复路径（Error Messages & Recovery）
 
-> 把工程侧 `CoreError`（见 `docs/api/error-codes.md`）映射为用户可理解、可执行、可恢复的 UI 反馈：toast/banner/alert/sheet/fullscreen。本文定义每类错误的“呈现形态 + 文案 + 主操作/次操作 + 诊断入口”，并约束隐私（不泄露绝对路径/用户名）。
+> 把工程侧 `CoreError`（见 `docs/api/error-codes.md`）映射为用户可理解、可执行、可恢复的 UI 反馈：toast、banner、alert、sheet 或 blocking page。本文定义每类错误的呈现、动作和诊断入口，并约束敏感上下文展示。
 >
 > 阅读时长：约 20 分钟。
 
@@ -14,14 +14,16 @@
 2. **用户能做事**：每个错误都提供下一步（重试/更换路径/导出诊断/查看帮助）。
 3. **不打断不该打断的**：低严重度用 toast，高严重度才 modal。
 4. **隐私安全**：默认不展示包含用户名的绝对路径，必要时脱敏（`~`）。
-5. **工程可定位**：每个错误页都有“诊断包/日志入口”，并附错误码（CoreError variant）。
+5. **工程可定位**：需要诊断的错误页提供当前可用的 snapshot、脱敏报告或路径入口，并附错误码
+   （CoreError variant）。
 
 ### 成功标准（验收）
 
 - **E1**：同一错误在不同页面出现时，文案一致。
 - **E2**：iCloud 占位符错误能引导用户“下载/重试/换本地路径”。
 - **E3**：DB locked 错误不会让整个 App 死掉，用户能重试或导出诊断。
-- **E4**：Internal/崩溃路径提供“重启/导出诊断/提交 issue”入口。
+- **E4**：Internal 默认提供 Leave flow、Collect diagnostics 和 Open Issue；只有存在真实 restart
+  动作时才显示 Restart。
 
 ---
 
@@ -34,7 +36,7 @@
 | low | toast | 3s 自动消失，可点击“详情” | 单个文件失败但不影响其他 |
 | medium | banner | 可关闭，不阻断 | 可恢复异常、提示风险 |
 | high | alert（modal） | 必须选择按钮 | 需要用户决策（Replace、Move 默认等） |
-| critical | fullscreen blocking | 必须修复/换 repo | repo 无法打开、DB 损坏严重 |
+| critical | blocking page/modal | 必须离开当前失败流程或进入恢复 | repo 无法打开、DB 损坏、内部不变量失败 |
 
 ---
 
@@ -55,17 +57,20 @@
 | CoreError | Severity | 触发场景 | UI 形态 | 主操作 | 次操作 |
 |---|---|---|---|---|---|
 | Io | medium | 文件读写失败、磁盘满 | banner/alert | Retry | Collect diagnostics |
-| Db | medium/critical | DB locked/corrupt | banner/fullscreen | Retry / Repair | Collect diagnostics |
-| Config | medium | YAML 无效 | sheet | Open rules | Revert |
-| Classify | low/medium | 分类失败 | toast/banner | Use inbox | Report |
+| Db | medium/critical | DB locked/corrupt | banner/blocking page | Retry / Repair | Collect diagnostics |
+| Config | medium | 配置无效 | sheet | Open rules | Revert（仅 last-valid backup 存在时） |
+| Validation | low | 输入或编辑草稿无效 | inline/toast | Fix input | — |
+| Classify | low | 分类失败 | toast/banner | Use inbox | Report |
 | Conflict | medium | 目标路径冲突 | sheet | Auto-rename | Rename… |
-| DuplicateFile | low/medium | 内容重复 | sheet | Skip | Keep both |
-| FileNotFound | low | 外部删除 | toast | Remove from index | Locate… |
-| RepoNotInitialized | critical | repo 不完整 | fullscreen | Re-initialize | Change repo |
-| InvalidPath | medium | 路径非法 | alert | Change path | — |
+| DuplicateFile | low | 内容重复 | sheet | Skip | Keep both |
+| FileNotFound | low | 外部删除 | inline error/toast | Retry / Locate… | Remove from index |
+| ExpiredAction | low | Undo/Redo token 已不可用 | toast | Refresh history | — |
+| RepoNotInitialized | high | repo 不完整 | blocking page | Re-initialize | Change repo |
+| InvalidPath | low | 路径非法 | inline/toast | Change path | — |
 | ICloudPlaceholder | medium | iCloud 未下载 | sheet | Download & retry | Switch to local |
-| PermissionDenied | medium/critical | 无权限 | alert/fullscreen | Choose folder | Help |
-| Internal | critical | panic/未知错误 | fullscreen | Restart | Collect diagnostics |
+| StagingRecoveryRequired | high | 导入暂存必须先恢复 | blocking recovery | Open recovery | Cancel |
+| PermissionDenied | high | 无权限 | alert/blocking page | Choose folder | Help |
+| Internal | critical | 未预期内部失败 | current-page blocking recovery | Collect diagnostics | Leave flow / Open Issue |
 
 ---
 
@@ -94,7 +99,7 @@
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 磁盘空间不足                                                                    │
-│ AreaMatrix 需要至少 1GB 可用空间来完成导入与 staging。                           │
+│ 当前资料库位置没有足够空间完成这次操作。                                         │
 │                                                                              │
 │ [ Choose another folder… ]                                 [ OK ]            │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -150,16 +155,22 @@ Repair（修复）最小实现策略（产品侧）：
 UI 形态：sheet（不阻断主界面，但阻断“规则生效”）。
 
 必须包含：
-- 错误位置（行号）
+- 经过控制的 reason；Swift 不解析 reason 来决定动作或位置
 - `Open rules`（打开 editor）
-- `Revert to last valid`
+- 仅当 last-valid backup 存在时显示 `Revert to last valid`
+
+位置和语义呈现规则：
+
+- 只有 Core 明确提供 parse location 时，才显示行号/列号；UI 不从 reason 正则提取或猜测位置。
+- YAML 文件解析错误可以显示 Core 提供的 line/column。
+- 可视化 editor 的语义校验错误显示 field/rule + reason，不要求行号，也不得伪造源码位置。
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 分类规则无效                                                                    │
-│ categories[2].slug 重复（line 47）                                              │
+│ 规则“Receipts”的字段 slug 重复。                                                │
 │                                                                              │
-│ [ Open rules… ]  [ Revert to last valid ]                                      │
+│ [ Open rules… ]  [ Revert to last valid ]  （仅有有效备份时）                  │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -179,7 +190,8 @@ UI 形态：sheet（用户需要选择“下载/换路径”）。
 ```
 
 产品策略：
-- Download & retry 触发协调读取并显示进度
+- 只有用户点击 Download & retry 后，macOS 平台层才请求下载并显示进度
+- Core、watcher 和普通 Retry 都不得隐式触发 iCloud 下载
 - Switch to local repo 跳到 first-launch 的 choosePath
 
 ---
@@ -207,16 +219,27 @@ repo blocking：
 
 ---
 
-### 7) CoreError::Internal（内部错误）
+### 7) CoreError::Validation / ExpiredAction / StagingRecoveryRequired
 
-UI 形态：全屏 blocking（critical），并引导导出诊断包。
+- `Validation`：在对应输入控件附近显示原因；修正输入后才允许重新提交。
+- `ExpiredAction`：提示操作已过期并刷新 Undo History；不得猜测性执行反向文件操作。
+- `StagingRecoveryRequired`：留在 import/startup recovery 上下文，展示 residue 路径的受控摘要；
+  不自动删除 staging 文件，也不跳过恢复继续导入。
+
+### 8) CoreError::Internal（内部错误）
+
+UI 形态：当前页面或流程的 blocking recovery（critical）。资料库打开失败可以使用全屏页面；
+sheet 内部失败应留在 sheet 上下文，不能假设存在统一全局重启页。
+
+默认动作是 Leave flow、Collect diagnostics 和 Open Issue。Restart 不是默认兜底；只有当前页面接入真实、
+可执行且经过验证的 restart 动作时才显示该按钮，不能用关闭 sheet、重载 view 或占位 callback 冒充重启。
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 遇到内部错误                                                                    │
-│ AreaMatrix 遇到了未知问题。你可以重启应用，或导出诊断包提交给维护者。            │
+│ AreaMatrix 遇到了未知问题。请保留当前状态并收集诊断材料。                        │
 │                                                                              │
-│ [ Restart ]   [ Collect diagnostics… ]   [ Open Issue… ]                      │
+│ [ Leave flow ]   [ Collect diagnostics… ]   [ Open Issue… ]                   │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -224,9 +247,15 @@ UI 形态：全屏 blocking（critical），并引导导出诊断包。
 
 ## 诊断入口统一规范
 
-所有 medium+ 错误必须提供至少一个诊断入口：
-- `Collect diagnostics…`：导出 zip（见 `docs/development/observability.md`）
-- `Open logs`：打开 Console 的过滤提示（或展示命令）
+支持 diagnostics 的 medium+ 错误至少提供一个真实入口：
+
+- repository diagnostics：创建 `.areamatrix/diagnostics/index-*.db`，并按存在性复制 WAL/SHM。
+  该 snapshot 不含用户文件正文，但包含路径、文件名、标签、笔记和其他 metadata；不能称为全文脱敏。
+- About diagnostics：在 Application Support 下创建按专用合同脱敏的文本目录。
+- `Open logs`：只打开已存在的 `.areamatrix/logs/`；当前不保证应用会创建或写入该目录。
+
+当前没有统一 zip diagnostics bundle、自动 OSLog 收集或自动上传。
+repository diagnostics 分享前必须由用户审阅 snapshot 及其 companion files。
 
 隐私说明必须出现一次：
 > 诊断信息保存在你的本地，不会自动上传。
@@ -239,10 +268,10 @@ UI 形态：全屏 blocking（critical），并引导导出诊断包。
 |---|---|---|
 | action.retry | 重试 | Retry |
 | action.cancel | 取消 | Cancel |
-| action.collectDiagnostics | 导出诊断包… | Collect diagnostics… |
+| action.collectDiagnostics | 收集诊断材料… | Collect diagnostics… |
 | action.changeRepo | 更换资料库… | Change repository… |
 | action.openFinder | 在 Finder 中打开 | Open in Finder |
-| action.restart | 重启 | Restart |
+| action.leaveFlow | 离开当前流程 | Leave flow |
 | action.openIssue | 打开 Issue… | Open Issue… |
 | action.downloadRetry | 下载并重试 | Download & retry |
 | action.switchLocal | 切换到本地资料库… | Switch to local repo… |
@@ -254,9 +283,14 @@ UI 形态：全屏 blocking（critical），并引导导出诊断包。
 - [ ] Import 中遇到单个文件权限不足：跳过并 toast，不中断批量
 - [ ] DB locked：List 内联错误可 Retry，Tree 可继续操作
 - [ ] DB corrupted：全屏 blocking，能 Open in Finder/Collect diagnostics
-- [ ] Config YAML 无效：sheet 显示行号，可 Revert
+- [ ] Config 始终显示受控 reason；仅 Core 提供 parse location 时显示行列
+- [ ] 可视化规则语义错误显示 field/rule + reason，不要求行号
+- [ ] Config 仅在 last-valid backup 存在时可 Revert；Swift 不解析 reason 决定动作
 - [ ] iCloud placeholder：sheet 提供 Download & retry 与 Switch local
-- [ ] Internal：全屏页含 Restart 与诊断入口
+- [ ] Validation：输入位置显示原因，不提交无效草稿
+- [ ] ExpiredAction：刷新 Undo History，不猜测性执行
+- [ ] StagingRecoveryRequired：进入恢复上下文，不自动删除 residue
+- [ ] Internal：当前失败页面含 Leave flow、Collect diagnostics 和 Open Issue；Restart 仅在真实动作存在时显示
 
 ---
 

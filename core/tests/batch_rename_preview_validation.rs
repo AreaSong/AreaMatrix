@@ -301,7 +301,11 @@ fn batch_rename_validation_locks_core_api_udl_and_rust_alignment() {
     }
     assert_preview(preview_batch_rename);
     assert_apply(batch_rename);
-    for fragment in ["`core/tests/`", "重命名（合法名 / 非法名）", "集成测试"] {
+    for fragment in [
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+        "文件安全能力至少覆盖正常路径、DB 失败、文件系统失败、重复执行、边界路径和用户文件不变量。",
+        "集成测试",
+    ] {
         assert_contains(TESTING_DOC, fragment);
     }
 

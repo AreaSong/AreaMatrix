@@ -232,7 +232,8 @@ git checkout main && git pull
 
 # 3. 更新版本号
 # - core/Cargo.toml
-# - apps/macos/AreaMatrix/Info.plist
+# - apps/macos/AreaMatrix.xcodeproj/project.pbxproj
+#   MARKETING_VERSION / CURRENT_PROJECT_VERSION（Info.plist 由 Xcode 生成）
 # - CHANGELOG.md（[Unreleased] → [X.Y.Z] - YYYY-MM-DD）
 
 # 4. 提交版本 bump

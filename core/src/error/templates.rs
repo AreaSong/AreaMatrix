@@ -101,7 +101,7 @@ static INVALID_PATH_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
 static ICLOUD_PLACEHOLDER_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
     user_message: "iCloud 文件未下载",
     severity: ErrorSeverity::Medium,
-    suggested_action: "请等待文件下载完成后自动重试",
+    suggested_action: "请手动下载文件后重试，或选择 Download & retry",
     recoverability: ErrorRecoverability::Retryable,
 };
 

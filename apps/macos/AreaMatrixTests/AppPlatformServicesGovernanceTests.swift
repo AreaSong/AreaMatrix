@@ -15,6 +15,7 @@ private let expectedAppPlatformServiceSurface = [
     "App/AppPlatformServices.swift:static var importResultExporter",
     "App/AppPlatformServices.swift:static var interactionFeedback",
     "App/AppPlatformServices.swift:static var localFileURLOpener",
+    "App/AppPlatformServices.swift:static var missingFilePicker",
     "App/AppPlatformServices.swift:static var pasteboardStringWriter",
     "App/AppPlatformServices.swift:static var pathCopier",
     "App/AppPlatformServices.swift:static var rootOverviewInspector",
@@ -85,6 +86,22 @@ private let expectedFeaturePlatformServiceSurface = [
 ]
 
 final class AppPlatformServicesGovernanceTests: MacOSGovernanceTestCase {
+    func testRepositoryWriteCoordinatorStaysInPlatformServices() throws {
+        let implementationFiles = try productionSwiftFiles().filter {
+            relativeProductionPath(for: $0) == "PlatformServices/RepositoryWriteCoordinator.swift"
+        }
+        let actual = try countedRegexMatches(
+            in: implementationFiles,
+            pattern: #"\bactor RepositoryWriteCoordinator\b"#
+        )
+
+        XCTAssertEqual(
+            actual,
+            ["PlatformServices/RepositoryWriteCoordinator.swift:actor RepositoryWriteCoordinator:1"],
+            "Repository write serialization must stay in PlatformServices instead of App assembly."
+        )
+    }
+
     func testAppPlatformServicesDefaultSurfaceStaysInventoried() throws {
         let appPlatformServicesFile = try XCTUnwrap(productionSwiftFiles().first {
             relativeProductionPath(for: $0) == "App/AppPlatformServices.swift"

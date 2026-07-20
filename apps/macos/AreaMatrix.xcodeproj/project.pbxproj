@@ -20,6 +20,9 @@
 		0A0000000000000000000006 /* AppShellModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000018 /* AppShellModel.swift */; };
 		0A0000000000000000000FE4 /* AppShellBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FE5 /* AppShellBootstrap.swift */; };
 		0A9990000000000000000010 /* AppCoreServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9990000000000000000011 /* AppCoreServices.swift */; };
+		7F1A2B3C4D5E6F708192A030 /* RepositoryWriteCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A031 /* RepositoryWriteCoordinator.swift */; };
+		7F1A2B3C4D5E6F708192A032 /* ICloudPlaceholderDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A033 /* ICloudPlaceholderDownloader.swift */; };
+		7F1A2B3C4D5E6F708192A034 /* RepositoryRemediationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A035 /* RepositoryRemediationTests.swift */; };
 		0A0000000000000000000007 /* CoreBridgeUnavailableState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000019 /* CoreBridgeUnavailableState.swift */; };
 		0A0000000000000000000008 /* AreaMatrixShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000001A /* AreaMatrixShellTests.swift */; };
 		0A00000000000000000008F6 /* AreaMatrixShellValidatePathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008F7 /* AreaMatrixShellValidatePathTests.swift */; };
@@ -114,6 +117,9 @@
 		0A0000000000000000001020 /* MainFileListLoadingActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001021 /* MainFileListLoadingActions.swift */; };
 		0A0000000000000000001022 /* MainFileListDetailActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001023 /* MainFileListDetailActions.swift */; };
 		0A0000000000000000001024 /* MainFileListInteractionActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001025 /* MainFileListInteractionActions.swift */; };
+		0A0000000000000000001028 /* MainFileListBatchAITagActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001029 /* MainFileListBatchAITagActions.swift */; };
+		0A000000000000000000102A /* ConfirmInitStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000102B /* ConfirmInitStepView.swift */; };
+		0A000000000000000000102C /* MainExternalCreatedFileWatcherTransitionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000102D /* MainExternalCreatedFileWatcherTransitionTests.swift */; };
 		0A0000000000000000001026 /* MainFileActionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001027 /* MainFileActionState.swift */; };
 		0A0000000000000000001040 /* MainFileBatchActionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001041 /* MainFileBatchActionState.swift */; };
 		7F1A2B3C4D5E6F708192A014 /* MainFileActionRoutingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A015 /* MainFileActionRoutingState.swift */; };
@@ -376,6 +382,8 @@
 		0A00000000000000000008EE /* DetailTagFilterIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008EF /* DetailTagFilterIntegrationTests.swift */; };
 		0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */; };
 		0A00000000000000000003F0 /* MainExternalCreatedFileWatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000003F1 /* MainExternalCreatedFileWatcherTests.swift */; };
+		7F1A2B3C4D5E6F708192A020 /* MainExternalCreatedFileWatcherLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A021 /* MainExternalCreatedFileWatcherLifecycleTests.swift */; };
+		7F1A2B3C4D5E6F708192A022 /* ExternalSyncWindowDrainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A023 /* ExternalSyncWindowDrainTests.swift */; };
 		0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */; };
 		0A0000000000000000000206 /* DetailLogExternalRemovedPageFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */; };
 		0A0000000000000000000230 /* DetailLogPageIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */; };
@@ -888,6 +896,9 @@
 		0A0000000000000000000123 /* OnboardingModelInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/OnboardingModelInputs.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000125 /* AppPlatformServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppPlatformServices.swift; sourceTree = SOURCE_ROOT; };
 		0A9990000000000000000011 /* AppCoreServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppCoreServices.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A031 /* RepositoryWriteCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/RepositoryWriteCoordinator.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A033 /* ICloudPlaceholderDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/ICloudPlaceholderDownloader.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A035 /* RepositoryRemediationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositoryRemediationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000127 /* MainRepositoryContentFileTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainRepositoryContentFileTable.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000129 /* ImportEntrySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntrySheetView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000F65 /* FileDropAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/FileDropAdapter.swift; sourceTree = SOURCE_ROOT; };
@@ -913,6 +924,9 @@
 		0A0000000000000000001021 /* MainFileListLoadingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainFileListLoadingActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001023 /* MainFileListDetailActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainFileListDetailActions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001025 /* MainFileListInteractionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainFileListInteractionActions.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000001029 /* MainFileListBatchAITagActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/MainList/MainFileListBatchAITagActions.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000102B /* ConfirmInitStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/ConfirmInitStepView.swift; sourceTree = SOURCE_ROOT; };
+		0A000000000000000000102D /* MainExternalCreatedFileWatcherTransitionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainExternalCreatedFileWatcherTransitionTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001027 /* MainFileActionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileActionState.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001041 /* MainFileBatchActionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileBatchActionState.swift; sourceTree = SOURCE_ROOT; };
 		7F1A2B3C4D5E6F708192A015 /* MainFileActionRoutingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileActionRoutingState.swift; sourceTree = SOURCE_ROOT; };
@@ -1139,6 +1153,8 @@
 		0A00000000000000000008EF /* DetailTagFilterIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailTagFilterIntegrationTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalCreatedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000003F1 /* MainExternalCreatedFileWatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainExternalCreatedFileWatcherTests.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A021 /* MainExternalCreatedFileWatcherLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainExternalCreatedFileWatcherLifecycleTests.swift; sourceTree = SOURCE_ROOT; };
+		7F1A2B3C4D5E6F708192A023 /* ExternalSyncWindowDrainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ExternalSyncWindowDrainTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRenamedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogExternalRemovedPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/DetailLogPageIntegrationVerifyTests.swift; sourceTree = SOURCE_ROOT; };
@@ -1573,6 +1589,8 @@
 					0A0000000000000000000FCF /* AdvancedSettingsPlatformServices.swift */,
 					0A0000000000000000000229 /* MainExternalCreatedFileWatcher.swift */,
 					0A0000000000000000000221 /* MainExternalSyncEvents.swift */,
+					7F1A2B3C4D5E6F708192A031 /* RepositoryWriteCoordinator.swift */,
+					7F1A2B3C4D5E6F708192A033 /* ICloudPlaceholderDownloader.swift */,
 					0A0000000000000000000243 /* InFlightFileChangeTracker.swift */,
 					0A0000000000000000000FCD /* ClassifierRulesPlatformServices.swift */,
 					0A0000000000000000001991 /* ExternalURLPolicy.swift */,
@@ -1708,6 +1726,7 @@
 					0A0000000000000000000F5F /* DatabaseRepairConfirmSupportViews.swift */,
 					0A00000000000000000002F2 /* DatabaseRepairConfirmView.swift */,
 					0A00000000000000000000F5 /* InitFailedStepView.swift */,
+					0A000000000000000000102B /* ConfirmInitStepView.swift */,
 					0A00000000000000000000B2 /* InitializationFailureActions.swift */,
 					0A0000000000000000000F5D /* InitDoneStepView.swift */,
 					0A00000000000000000000A0 /* InitializingStepView.swift */,
@@ -1914,6 +1933,7 @@
 					0A0000000000000000001021 /* MainFileListLoadingActions.swift */,
 					0A0000000000000000001023 /* MainFileListDetailActions.swift */,
 					0A0000000000000000001025 /* MainFileListInteractionActions.swift */,
+					0A0000000000000000001029 /* MainFileListBatchAITagActions.swift */,
 					0A0000000000000000000311 /* MainFileListDiagnosticsActions.swift */,
 					0A0000000000000000000261 /* MainFileListDetailSupport.swift */,
 					0A0000000000000000000223 /* MainFileListState.swift */,
@@ -2281,6 +2301,7 @@
 					0A0000000000000000000179 /* ImportSingleFilePageIntegrationVerifyTests.swift */,
 					0A00000000000000000001ED /* ImportSingleFileNameConflictCoreTests.swift */,
 						0A0000000000000000000133 /* MainListFilesTests.swift */,
+						7F1A2B3C4D5E6F708192A035 /* RepositoryRemediationTests.swift */,
 						0A00000000000000000010A3 /* MainListFixtures.swift */,
 						0A00000000000000000002BF /* RenameFilePageFeatureTests.swift */,
 						0A00000000000000000008A5 /* RenameFilePageTestSupport.swift */,
@@ -2307,9 +2328,12 @@
 					0A0000000000000000000253 /* DetailMultiPageIntegrationVerifyTests.swift */,
 					0A0000000000000000000263 /* DetailIntegrationVerifyTests.swift */,
 					0A00000000000000000008EF /* DetailTagFilterIntegrationTests.swift */,
-						0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */,
-						0A00000000000000000003F1 /* MainExternalCreatedFileWatcherTests.swift */,
-						0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */,
+					0A0000000000000000000203 /* DetailLogExternalCreatedPageFeatureTests.swift */,
+					0A00000000000000000003F1 /* MainExternalCreatedFileWatcherTests.swift */,
+					7F1A2B3C4D5E6F708192A021 /* MainExternalCreatedFileWatcherLifecycleTests.swift */,
+					0A000000000000000000102D /* MainExternalCreatedFileWatcherTransitionTests.swift */,
+					7F1A2B3C4D5E6F708192A023 /* ExternalSyncWindowDrainTests.swift */,
+					0A0000000000000000000205 /* DetailLogExternalRenamedPageFeatureTests.swift */,
 					0A0000000000000000000207 /* DetailLogExternalRemovedPageFeatureTests.swift */,
 					0A0000000000000000000231 /* DetailLogPageIntegrationVerifyTests.swift */,
 				0A000000000000000000024B /* DetailNotePageFeatureTests.swift */,
@@ -2574,6 +2598,7 @@
 					0A0000000000000000000006 /* AppShellModel.swift in Sources */,
 					0A0000000000000000000FE4 /* AppShellBootstrap.swift in Sources */,
 					0A9990000000000000000010 /* AppCoreServices.swift in Sources */,
+					7F1A2B3C4D5E6F708192A030 /* RepositoryWriteCoordinator.swift in Sources */,
 					0A000000000000000000014E /* OnboardingRoute.swift in Sources */,
 					0A0000000000000000000007 /* CoreBridgeUnavailableState.swift in Sources */,
 					0A0000000000000000000FF2 /* CoreErrorMappingSnapshots.swift in Sources */,
@@ -2589,6 +2614,7 @@
 				0A0000000000000000001020 /* MainFileListLoadingActions.swift in Sources */,
 				0A0000000000000000001022 /* MainFileListDetailActions.swift in Sources */,
 				0A0000000000000000001024 /* MainFileListInteractionActions.swift in Sources */,
+				0A0000000000000000001028 /* MainFileListBatchAITagActions.swift in Sources */,
 				0A0000000000000000001026 /* MainFileActionState.swift in Sources */,
 				0A0000000000000000001040 /* MainFileBatchActionState.swift in Sources */,
 				7F1A2B3C4D5E6F708192A014 /* MainFileActionRoutingState.swift in Sources */,
@@ -2882,6 +2908,7 @@
 				0A000000000000000000000C /* InitializingStepView.swift in Sources */,
 				0A0000000000000000000F5C /* InitDoneStepView.swift in Sources */,
 				0A00000000000000000000F4 /* InitFailedStepView.swift in Sources */,
+				0A000000000000000000102A /* ConfirmInitStepView.swift in Sources */,
 				0A00000000000000000000F0 /* OnboardingIntroStepViews.swift in Sources */,
 				0A0000000000000000000F01 /* WelcomeStepView.swift in Sources */,
 				0A0000000000000000000F60 /* WelcomeStepSupportViews.swift in Sources */,
@@ -2962,6 +2989,7 @@
 				0A0000000000000000000310 /* MainFileListDiagnosticsActions.swift in Sources */,
 				0A0000000000000000000938 /* SemanticSearchFallbackStatus.swift in Sources */,
 				0A0000000000000000000220 /* MainExternalSyncEvents.swift in Sources */,
+				7F1A2B3C4D5E6F708192A032 /* ICloudPlaceholderDownloader.swift in Sources */,
 				0A0000000000000000000D42 /* MainDetailExternalCreateSyncState.swift in Sources */,
 				0A0000000000000000000226 /* SemanticSearchActions.swift in Sources */,
 				0A0000000000000000000742 /* SemanticSearchPresentation.swift in Sources */,
@@ -3138,6 +3166,7 @@
 					0A0000000000000000000178 /* ImportSingleFilePageIntegrationVerifyTests.swift in Sources */,
 							0A00000000000000000001EC /* ImportSingleFileNameConflictCoreTests.swift in Sources */,
 							0A0000000000000000000132 /* MainListFilesTests.swift in Sources */,
+							7F1A2B3C4D5E6F708192A034 /* RepositoryRemediationTests.swift in Sources */,
 							0A00000000000000000010A2 /* MainListFixtures.swift in Sources */,
 						0A00000000000000000002BE /* RenameFilePageFeatureTests.swift in Sources */,
 					0A00000000000000000008A4 /* RenameFilePageTestSupport.swift in Sources */,
@@ -3192,9 +3221,12 @@
 					0A0000000000000000000252 /* DetailMultiPageIntegrationVerifyTests.swift in Sources */,
 					0A0000000000000000000262 /* DetailIntegrationVerifyTests.swift in Sources */,
 					0A00000000000000000008EE /* DetailTagFilterIntegrationTests.swift in Sources */,
-						0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */,
-						0A00000000000000000003F0 /* MainExternalCreatedFileWatcherTests.swift in Sources */,
-						0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */,
+					0A0000000000000000000202 /* DetailLogExternalCreatedPageFeatureTests.swift in Sources */,
+					0A00000000000000000003F0 /* MainExternalCreatedFileWatcherTests.swift in Sources */,
+					7F1A2B3C4D5E6F708192A020 /* MainExternalCreatedFileWatcherLifecycleTests.swift in Sources */,
+					0A000000000000000000102C /* MainExternalCreatedFileWatcherTransitionTests.swift in Sources */,
+					7F1A2B3C4D5E6F708192A022 /* ExternalSyncWindowDrainTests.swift in Sources */,
+					0A0000000000000000000204 /* DetailLogExternalRenamedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000206 /* DetailLogExternalRemovedPageFeatureTests.swift in Sources */,
 					0A0000000000000000000230 /* DetailLogPageIntegrationVerifyTests.swift in Sources */,
 					0A000000000000000000024A /* DetailNotePageFeatureTests.swift in Sources */,

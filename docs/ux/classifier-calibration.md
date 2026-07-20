@@ -1,6 +1,6 @@
 # 分类器调教（Classifier Calibration）
 
-> 定义用户如何“纠正错误分类”、如何理解“为什么分到这里”、以及如何把纠正动作沉淀为可复用规则（`classifier.yaml`）。本文只规定 UX 与产品策略，不重复实现细节。
+> 定义用户如何纠正分类、选择 metadata-only 或物理移动、理解当前分类来源，以及通过可视化编辑器把纠正沉淀为 `classifier.yaml` 规则。
 >
 > 阅读时长：约 18 分钟。
 
@@ -10,19 +10,20 @@
 
 ### 目标
 
-1. **纠错成本极低**：用户发现分错 → 2 次点击内完成纠正。
-2. **规则可沉淀**：每次纠正都可以选择“仅这一次”或“以后都这样”。
-3. **可解释**：用户能看到“命中了哪些规则/关键词/扩展名”。
-4. **安全**：任何规则变更都可撤销、可预览影响范围，避免“一改全乱”。
-5. **兼容两类用户**：新手只点按钮；高级用户可编辑 YAML。
+1. **纠错成本低**：用户从 Detail 打开纠正页，选择目标分类并应用。
+2. **副作用可控**：Indexed、missing、adopted 和 external 文件默认只更新 metadata；可移动的 Imported 文件由用户决定是否移动。
+3. **规则单独确认**：纠正当前文件与保存未来规则是两个动作，不能由一个 Apply 隐式同时完成。
+4. **解释可见**：界面展示分类来源、目标分类和 confidence，不伪造 Core 没有返回的命中值或 priority。
+5. **影响可预览**：预览已有文件的潜在变化时保持只读；保存规则默认只影响未来分类。
 
 ### 成功标准（验收）
 
-- **纠错生效**：用户在 Detail 面板点击“分类不对？”→ 选择目标分类 → 立刻生效。
-- **规则沉淀**：用户勾选“记住这个规则”→ 系统在 `classifier.yaml` 写入/更新规则（或给出预览并确认）。
-- **解释可见**：“为什么分到这里”能展示：扩展名命中/关键词命中/优先级/兜底。
-- **影响预览**：规则变更后提供“预览影响：将影响 N 个文件（可查看）”。
-- **校验回滚**：YAML 校验失败时给出可定位错误（行号/字段）与回滚按钮。
+- **纠错生效**：Apply 更新分类 metadata；只有允许且启用“Move file”时才移动 repo-owned 文件。
+- **规则沉淀**：“Remember this correction”生成 rule draft，用户进入 Edit rule 后显式保存。
+- **解释可见**：展示 keyword、extension、AI 或 default 来源、目标分类和 confidence。
+- **影响预览**：Preview impact 展示 existing files 的 current/new category 和计划动作，但不保存或应用。
+- **校验恢复**：规则保存先经 Core 校验；失败不替换有效配置，并可 Reload；仅存在 last-valid backup
+  时可 Revert。
 
 ---
 
@@ -44,14 +45,14 @@
 ### 入口 3：设置 → 分类规则
 
 面向高级用户：
-- `Settings → 分类规则`（见 `settings-panel.md`）
-- 提供 YAML 编辑、Schema 校验、示例模板、导入导出
+- `Settings → 分类规则`（见 `settings-panel.md`）。
+- 主界面是可视化 Core rule editor，可编辑 category、extension、keyword、priority 和 naming template。
+- 文件级入口可以打开 `classifier.yaml` 或在 Finder 中显示；应用内不提供原始 YAML 文本编辑器。
 
 ### 入口 4：命令面板（Cmd+K）
 
-提供命令：
-- `Calibrate classifier for current file…`
-- `Open classifier rules…`
+当前命令面板提供 `Open classifier rules…`，路由到 `classifier-rule-editor`。当前没有
+`Calibrate classifier for current file…` 命令；单文件纠正从 Detail 进入。
 
 ---
 
@@ -66,7 +67,8 @@
 │  当前：docs                                                                    │
 │  改为： [ finance ▾ ]                                                          │
 │                                                                              │
-│  说明：这会把文件移动到 finance/ 并更新改动日志。                               │
+│  [✓] Move file to the new category folder                                     │
+│  说明：不支持移动时只更新分类 metadata。                                        │
 │                                                                              │
 │  [ Cancel ]                                                   [ Apply ]      │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -75,9 +77,9 @@
 ### 结果反馈
 
 Apply 后：
-- List 中该文件从当前分类移除，目标分类计数更新
-- Detail 显示 banner：`已移动到 finance  [Go to]`
-- change_log 追加 `Moved`（或 equivalent action）
+- 分类 metadata 和 change log 更新，列表按当前筛选刷新。
+- 可用的 Imported、非 Indexed 文件在启用 Move 时移动到目标分类目录。
+- Indexed、missing、adopted 和 external 文件不移动物理路径，只更新 metadata。
 
 ---
 
@@ -92,16 +94,21 @@ Apply 后：
 │  当前：docs                                                                    │
 │  改为： [ finance ▾ ]                                                          │
 │                                                                              │
-│  [✓] 记住这个规则（以后类似文件自动归到 finance）                               │
-│      规则依据： (●) 扩展名 .pdf   ( ) 关键词…   ( ) 仅本文件名…                │
+│  [✓] Remember this correction as a rule                                       │
+│      候选：关键词、扩展名与 priority                                            │
 │                                                                              │
-│  [ Preview impact… ]                                                          │
+│  [ Edit rule... ] [ Preview impact ]                                          │
 │                                                                              │
 │  [ Cancel ]                                                   [ Apply ]      │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 规则依据（可选项解释）
+Apply 只纠正当前文件。启用 Remember 后，用户必须进入 Edit rule 或 Preview impact：
+
+- Edit rule 选择 keyword/extension candidate 和 priority，校验后显式保存。
+- Preview impact 只读取影响报告，不保存 rule，也不修改已有文件。
+
+### 规则依据
 
 | 选项 | 含义 | 风险 |
 |---|---|---|
@@ -109,9 +116,7 @@ Apply 后：
 | 关键词 | 对含关键词的文件名生效 | 🟡 合理 |
 | 仅本文件名 | 精确匹配当前文件名 | 🟢 安全但收益小 |
 
-产品策略建议：
-- 默认选择 **关键词**（从当前文件名抽取候选关键词）
-- 扩展名规则必须二次确认（防止“所有 pdf 都进 finance”）
+候选由当前文件名和路径生成；extension-only 规则和过宽影响必须经过 Core 的影响确认门禁。
 
 ---
 
@@ -141,13 +146,12 @@ Apply 后：
 
 ### 规则生效时机
 
-用户确认后：
-- 规则写入 `classifier.yaml`
-- **立即**对受影响文件提供“批量重分类”建议：
-  - `Apply now (reclassify 37 files)`
-  - `Later`（仅对未来导入生效）
+当前 Preview impact 是只读页面：
 
-这能同时满足“我想马上整齐”与“我只想以后生效”的两类用户。
+- 显示受影响数量、current/new category、move/metadata-only action 和状态。
+- `Save rule only` 与 `Save and apply to existing files` 在该页保持禁用。
+- 用户返回 Edit rule 后可以保存规则；保存只影响未来分类。
+- 当前没有批量重分类、批量移动或“Apply now”合同。
 
 ---
 
@@ -155,7 +159,7 @@ Apply 后：
 
 ### 触发入口
 
-在 ImportSheet 与 Detail Meta 中，分类旁提供 `（为什么？）`。
+Import 预览提供 `为什么？`；Detail 纠正页显示 `Classification source`。
 
 ### UI（popover）
 
@@ -163,13 +167,9 @@ Apply 后：
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ 为什么归到 docs？                                                               │
 │                                                                              │
-│  命中：扩展名规则                                                              │
-│    • .pdf → docs （priority=80）                                               │
-│                                                                              │
-│  命中：关键词规则                                                              │
-│    • “报告” → docs（priority=60）                                              │
-│                                                                              │
-│  选择：扩展名优先级更高，因此结果为 docs。                                     │
+│  来源：Matched extension rule                                                 │
+│  结果：docs                                                                   │
+│  Confidence: 80%                                                             │
 │                                                                              │
 │  [ Change rules… ]                                                            │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -177,43 +177,52 @@ Apply 后：
 
 ### 解释字段约定（产品侧）
 
-解释必须包含：
-- 命中类型（extension/keyword/fallback）
-- 命中内容（`.pdf` / `合同`）
-- priority
-- 决策原因（冲突如何解决）
+当前解释字段包括：
+
+- reason：keyword、extension、AI prediction 或 default。
+- category。
+- confidence；default 可以不显示百分比。
+
+当前 Core 结果不返回具体命中值、规则 priority 或冲突决策链，UI 不得自行推断这些字段。
 
 实现细节参见：`docs/modules/classify.md` 与 `docs/api/classifier-yaml.md`。
 
 ---
 
-## YAML 编辑模式（高级）
+## 规则编辑与 YAML 文件边界
 
 ### Settings → 分类规则 页面（概念，细节在 settings-panel.md）
 
-必须提供：
-- 语法高亮
-- JSON Schema 校验
-- 错误提示带行列号
-- 一键恢复上次有效版本
+应用内提供：
+
+- 可视化 category 列表与 detail editor。
+- extension、keyword、priority、description 和 naming template 编辑。
+- Validate、Preview impact、Save、条件式 Revert 和受确认保护的删除/影响操作。
+- `classifier.yaml` 的 Open 与 Reveal in Finder 文件入口。
+
+校验失败必须显示 Core 提供的受控 reason。可视化 editor 的语义错误显示 field/rule + reason，
+不要求行号；只有 Core 对外部 YAML 解析失败明确提供 parse location 时才显示行号/列号。Swift 不解析
+reason 字符串来推断字段、规则、位置或恢复动作。Revert 只在 last-valid backup 存在时显示并可用。
+
+应用内不承诺 YAML 语法高亮、JSON Schema 文本编辑器或行列式源码编辑体验。
 
 ### YAML 保存策略（产品侧）
 
-1. 用户点击 Save → 先校验
-2. 校验失败 → 不写入生效文件，停留编辑页
-3. 校验成功 → 写入并提示“规则已更新，对未来导入生效”
-4. 可选：提供“立即重新分类（N 个文件）”按钮
+1. 用户点击 Save，Swift 先做草稿校验，再提交 Core editor request。
+2. Core 执行规则校验和影响确认；失败不替换有效配置。
+3. 成功后原子写入 `classifier.yaml`，提示规则已保存。
+4. 保存只影响未来分类；不自动 reclassify、move、rename、delete 或 reindex 已有文件。
 
 ---
 
 ## 规则写入策略（产品侧，不涉及实现）
 
-规则写入不应直接把用户的手工 YAML 结构“打乱”。建议：
+`classifier.yaml` 是用户拥有的配置文件，不使用 managed block 或自动追加区块：
 
-- 如果用户开启“自动维护规则”（默认关）：系统可追加一个 `areamatrix_auto_rules:` 区块
-- 如果关闭：系统只给出建议并让用户复制粘贴（更尊重高级用户）
-
-（具体实现与 marker 类似，可借鉴 overview-gen 的 BEGIN/END 协议，但是否采用由工程决定。）
+- 初始化只在文件缺失时创建默认 YAML，不覆盖已有内容。
+- 可视化编辑器通过 Core API 修改规则，并按保存合同原子替换文件。
+- 用户在外部手工编辑后，下次读取重新解析；当前没有 classifier cache。
+- Revert 只在存在最近有效备份时可用，并需要确认。
 
 ---
 
@@ -225,7 +234,7 @@ Apply 后：
 | calibrate.remember | 记住这个规则 | Remember this rule |
 | calibrate.preview | 预览影响… | Preview impact… |
 | calibrate.apply | 应用 | Apply |
-| calibrate.confirmRule | 确认规则变更 | Confirm rule change |
+| calibrate.editRule | 编辑规则… | Edit rule… |
 | explain.why | 为什么？ | Why? |
 | explain.changeRules | 修改规则… | Change rules… |
 | explain.reason | 选择：%s | Decision: %s |
@@ -235,11 +244,13 @@ Apply 后：
 ## 测试用例（产品验收清单）
 
 - [ ] Detail 面板可打开“纠正分类”弹窗
-- [ ] 仅本次纠错：Apply 后文件移动并记录 change_log
-- [ ] 勾选记住规则：能预览影响 N 个文件
-- [ ] 规则确认后：提示“对未来导入生效/是否立即重分类”
-- [ ] 为什么面板：展示命中规则与 priority
-- [ ] YAML 校验失败：显示行号并可恢复上次有效版本
+- [ ] metadata-only 纠错不移动 Indexed、missing、adopted 或 external 文件
+- [ ] 可移动 Imported 文件仅在 Move toggle 开启时改变物理路径
+- [ ] Remember 生成 rule draft；Apply 当前文件不会隐式保存规则
+- [ ] Preview impact 只读，不能批量应用到 existing files
+- [ ] Classification source 展示 reason、category 和 confidence
+- [ ] 可视化编辑器语义校验失败显示 field/rule + reason，不要求行号，也不替换有效 YAML
+- [ ] 仅 Core 提供 parse location 时显示行列；仅 last-valid backup 存在时可 Revert
 
 ---
 
@@ -256,15 +267,15 @@ Apply 后：
 
 ## 附录：默认关键词提取策略（产品侧建议）
 
-当用户选择“关键词”为规则依据时，UI 需要给出候选关键词（可勾选多个）。建议策略：
+规则 handoff 会从当前文件名和路径生成最多 5 个候选关键词或 extension：
 
 1. 取文件名（不含扩展名）
 2. 以分隔符切分：空格、下划线、短横线、中文标点
-3. 过滤掉纯数字、长度 1 的 token
-4. 对中文不做分词（先用 contains），给出 2-4 字的连续片段候选（可选）
+3. 过滤长度小于 2、过长、重复或包含不安全路径字符的 token
+4. 候选只用于 rule draft；保存前仍需用户选择和 Core 校验
 
 示例：
 
 - `合同_2026Q1_客户A.pdf` → 候选：`合同`、`客户A`、`2026Q1`（数字可选）
 
-（实现细节参见 `docs/modules/classify.md` 的 normalize/tokenize 章节。）
+实现细节参见 `docs/modules/classify.md` 与 Swift `ClassifierCorrectionRuleState`。

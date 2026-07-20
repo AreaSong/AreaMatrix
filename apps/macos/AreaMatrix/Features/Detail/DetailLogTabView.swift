@@ -5,15 +5,20 @@ struct DetailLogTabView: View {
     let detailLogState: MainDetailLogState
     let diagnosticsState: MainDetailLogDiagnosticsState
     let externalCreateSyncState: MainDetailExternalCreateSyncState
+    let onRetryExternalSync: () -> Void
     let onRefreshChangeLog: () -> Void
     let onRequestDiagnostics: () -> Void
     let onConfirmDiagnostics: () -> Void
     let onCancelDiagnostics: () -> Void
 
     var body: some View {
+        let currentExternalCreateSyncState = externalCreateSyncState.isolated(to: selection.singleFileID)
         VStack(alignment: .leading, spacing: 12) {
             header
-            DetailExternalCreateSyncStatusView(state: externalCreateSyncState)
+            DetailExternalCreateSyncStatusView(
+                state: currentExternalCreateSyncState,
+                onRetry: onRetryExternalSync
+            )
             content
         }
         .task(id: selection.singleFileID) {
@@ -33,7 +38,10 @@ struct DetailLogTabView: View {
             }
             Spacer()
             Button("Refresh", action: onRefreshChangeLog)
-                .disabled(detailLogState.isLoading || externalCreateSyncState.isSyncing)
+                .disabled(
+                    detailLogState.isLoading ||
+                        externalCreateSyncState.isolated(to: selection.singleFileID).isSyncing
+                )
         }
     }
 
@@ -98,10 +106,14 @@ struct DetailLogTabView: View {
                     Button("Collect Diagnostics...", action: onRequestDiagnostics)
                         .disabled(isCollectingDiagnostics)
                 }
-                Text("Diagnostics redact paths and usernames, exclude user file contents, and are not uploaded.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Repository diagnostics may include paths, file names, tags, notes, and other sensitive " +
+                        "metadata. Original file contents are not copied, and diagnostics are not uploaded " +
+                        "automatically. Review the snapshot before sharing."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 diagnosticsStatus(fileID: fileID)
                 DisclosureGroup("Technical Details") {
                     Text(mapping.rawContext)
@@ -119,16 +131,19 @@ struct DetailLogTabView: View {
             EmptyView()
         case let .confirmingPrivacy(stateFileID) where stateFileID == fileID:
             VStack(alignment: .leading, spacing: 6) {
-                Text("Create a redacted diagnostics package for this change log error?")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Create a repository diagnostics snapshot for this error? It may contain sensitive " +
+                        "metadata. Review the snapshot before sharing."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 HStack {
                     Button("Create diagnostics", action: onConfirmDiagnostics)
                     Button("Cancel", action: onCancelDiagnostics)
                 }
             }
         case let .collecting(stateFileID) where stateFileID == fileID:
-            Label("Preparing redacted diagnostics...", systemImage: "arrow.clockwise")
+            Label("Preparing repository diagnostics...", systemImage: "arrow.clockwise")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case let .collected(stateFileID, snapshot) where stateFileID == fileID:

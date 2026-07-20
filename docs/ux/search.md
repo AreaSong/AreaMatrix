@@ -38,7 +38,7 @@
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ Toolbar: [Repo ▾]  [ 🔍 Search in: All ▾  query… ]   [Filters]               │
+│ Toolbar: [Repo ▾] [Search…] [Normal|Semantic] [All|Current] [Sort] [Filters] │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,11 +74,18 @@
 - 大小（size）
 - hash 前缀（debug）
 
-### 明确不支持（后续智能化才支持）
+### 明确不支持
 
 - PDF/图片 OCR
 - 文件内容全文
-- 语义相似检索
+
+### 语义搜索
+
+- 工具栏提供 Normal / Semantic segmented control。
+- Semantic 模式使用单独的语义索引，并把 semantic matches 与 normal matches 分组展示。
+- 索引未就绪时提供显式 Build index；取消、失败和部分完成都有结构化状态。
+- 远程 indexing 只有在远程 AI 已明确启用、provider 可用且 privacy rule 允许时使用。
+- privacy、provider 或索引条件不满足时显示原因，并保留普通搜索回退；不得伪造语义结果。
 
 ---
 
@@ -158,7 +165,7 @@ Tags:     [Any ▾]
 ### 设计原则
 
 - **不强迫用户学习**：UI 有 filters 与 scope，语法是 power-user bonus。
-- **语法可提示**：输入 `kind:` 时弹补全。
+- **语法有帮助**：Query help 列出支持字段；解析失败时显示位置、问题和可安全应用的纠错建议。
 
 ### 建议语法（示例）
 
@@ -213,7 +220,8 @@ Tags:     [Any ▾]
 - [ ] scope 切换 All/Current 生效
 - [ ] Filters popover 可设置 category/type/date
 - [ ] 保存搜索后侧边栏出现 Smart List
-- [ ] 高级语法补全与错误提示
+- [ ] 高级语法 Query help、位置提示与安全纠错建议
+- [ ] Semantic 模式覆盖索引确认、隐私门、分组结果、失败与普通搜索回退
 
 ---
 

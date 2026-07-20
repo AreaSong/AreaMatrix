@@ -87,12 +87,15 @@ Core 不持有 macOS watcher，不调用 AppKit，也不启动内部 Tokio worke
 
 ## SQLite
 
-Core 通常为每次 DB helper 打开连接。写连接配置：
+Core 通常为每次 DB helper 打开连接。写连接的完整配置为：
 
 ```sql
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 PRAGMA synchronous = NORMAL;
+PRAGMA temp_store = MEMORY;
+PRAGMA mmap_size = 268435456;
+PRAGMA cache_size = -65536;
 PRAGMA busy_timeout = 5000;
 ```
 
@@ -133,7 +136,14 @@ overview 或 cursor 失败时 cursor 不推进，下一次会重放事件。由�
 
 macOS watcher 在 MainActor 接收回调，将事件按路径合并并在 200ms 后发布。InFlight tracker 是独立 actor，使用引用计数和 TTL 过滤 AreaMatrix 自身产生的文件事件。
 
-watcher 不直接调用 Core；relay 把有序事件交给当前资料库 model，model 再以单批调用 Core。
+watcher 不直接调用 Core；relay 把有序窗口交给当前资料库 model，model 严格一次只处理队首一个窗口。
+每个窗口携带整个回调窗口的 `cursorWatermark`；即使业务事件全部被路径规则或 InFlight 过滤，
+也会把空窗口排入同一队列，不能越过更早窗口直接确认 cursor。
+
+业务窗口先调用 Core；Core 成功后，如果 `cursorWatermark` 高于实际业务 signal 的最大 event ID，Swift 再
+补写 cursor。filtered-only 窗口到达队首后直接确认 watermark。Core 或 cursor 失败时保留队首并阻塞后续
+窗口，显式重试仍从同一窗口开始。Core batch 和 cursor 已提交后，列表或详情 reload 失败只记录呈现错误并
+消费该窗口，不重新提交已经完成的 Core batch。
 
 ## 取消、超时与恢复
 
@@ -149,6 +159,8 @@ watcher 不直接调用 Core；relay 把有序事件交给当前资料库 model�
 - 多 `CoreBridge` 实例下 DB 事务仍正确。
 - DB busy/失败不会留下部分 metadata。
 - 外部同步重放幂等，cursor 不越过失败批次。
+- ordered window 严格串行 drain，filtered-only watermark 不越过失败的队首窗口。
+- 已提交外部同步后的 UI reload 失败不重放 Core batch。
 - 批量导入停止后不启动下一项。
 - InFlight 引用计数和 TTL 不误丢其他路径事件。
 

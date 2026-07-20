@@ -1,134 +1,107 @@
-# ADR-0005: 文件系统监听用 FSEventStream
+# ADR-0005: 文件系统监听使用 FSEventStream
 
-> macOS 端使用 **FSEventStream**（CoreServices）监听仓库目录，配合 200ms 去抖与 InFlight 过滤。
+> macOS 平台层使用 FSEventStream 监听资料库，Core 保持平台无关并处理规范化事件。
 >
-> 状态：Accepted
-> 日期：2026-04-26
-> 影响范围：apps/macos/Watcher / core/sync
-> 关联 ADR：[0003 真相源](0003-source-of-truth-strategy.md)、[0006 iCloud](0006-icloud-support.md)
+> 阅读时长：约 5 分钟。
+
+---
+
+## 状态
+
+- 状态：Accepted
+- 日期：2026-04-26
+- 影响范围：`apps/macos/AreaMatrix/PlatformServices`、`core/src/sync`
 
 ## 上下文
 
-[ADR-0003](0003-source-of-truth-strategy.md) 决定 FS 是文件内容真相源，DB 通过监听 FS 变化保持同步。需要选一个监听机制。要求：
+用户可以在 Finder、终端或同步工具中修改资料库。AreaMatrix 需要递归观察 macOS 文件事件，持久化可恢复
+cursor，并避免把应用自身写入再次解释为外部变化。
 
-- **覆盖整个仓库目录**（包括子孙目录递归）
-- **低 CPU 占用**：用户机器上后台常驻
-- **支持持久化游标**：应用退出再启动，能拿到关闭期间的事件
-- **不漏事件**：批量操作（unzip 1000 文件）不能丢
-- **支持 iCloud Drive 占位符**
+Core 不能依赖 macOS API，因此 watcher、iCloud 下载和平台 flags 必须留在 Swift 平台层。
 
 ## 决定
 
-采用 macOS 原生 **FSEventStream**（CoreServices framework），具体配置：
+macOS 使用 CoreServices `FSEventStream`，当前配置：
 
 ```swift
-let flags: FSEventStreamCreateFlags =
-    UInt32(kFSEventStreamCreateFlagFileEvents) |
-    UInt32(kFSEventStreamCreateFlagWatchRoot) |
-    UInt32(kFSEventStreamCreateFlagNoDefer)
-
-let stream = FSEventStreamCreate(
-    nil,
-    callback,
-    &context,
-    [repoPath] as CFArray,
-    sinceWhen, // 从 DB 持久化的 last_event_id 恢复
-    0.0,       // latency: 立即触发，去抖在应用层做
-    flags
+let flags = FSEventStreamCreateFlags(
+    kFSEventStreamCreateFlagFileEvents |
+        kFSEventStreamCreateFlagUseCFTypes |
+        kFSEventStreamCreateFlagWatchRoot |
+        kFSEventStreamCreateFlagNoDefer
 )
+
+let latency: CFTimeInterval = 0.2
 ```
 
-加上：
+stream 投递到 main dispatch queue。应用层另使用可取消 Task 做 200ms flush，将同一路径事件合并后提交
+Core。
 
-- **200ms 去抖** 在 Swift 层 `Debouncer` actor 中合并同路径事件
-- **InFlightTracker** 过滤应用自己造成的事件
-- **DB 持久化** `meta` 表的 `last_event_id`，下次启动从这里恢复
+cursor 保存在 SQLite `fs_event_cursor` 表：
 
-## 理由
+- 有 cursor：从该 event ID 启动。
+- 无 cursor：要求用户确认全量重扫，不从 `SinceNow` 静默开始。
+- `MustScanSubDirs`、`UserDropped`、`KernelDropped`、`EventIdsWrapped`：停止 stream 并请求确认重扫。
+- `RootChanged`：停止 stream 并要求重新连接资料库路径。
 
-1. **macOS 原生 + 内核级**：CPU / 内存占用极低，是 Spotlight、Finder、Time Machine 共用的机制
-2. **支持游标恢复**：`sinceWhen` 参数是事件 ID，重启后能拿到关闭期间事件
-3. **递归监听免费**：传根目录就行，无需逐级注册
-4. **kFSEventStreamCreateFlagFileEvents** 标志能拿到文件级事件（默认是目录级，粒度太粗）
-5. **iCloud Drive 兼容**：占位符变化也会触发事件
-6. **生态验证**：所有 Mac 上严肃的文件管理工具都用它
+## 事件边界
 
-## 考虑过的备选
+- Swift 处理 flags、目录/metadata 过滤、资料库内路径归一化和 InFlight 过滤。
+- Core 接收 Created/Renamed/Modified/Removed，不调用 FSEvents。
+- Swift 不使用 inode 配对 rename；Core 用唯一 hash 候选判断同一 row。
+- iCloud placeholder 不隐式下载；下载和 retry 必须由用户触发的平台动作执行。
 
-### A. kqueue + kevent
+每个 FSEvents 回调窗口记录最大 event ID 作为 `cursorWatermark`：
 
-- 优点：跨 BSD 通用、底层
-- 缺点：
-  - 需要为每个文件描述符注册（递归监听几万文件资源占用大）
-  - 不支持跨进程事件合并
-  - 不持久化游标
-- **为什么没选**：性能差、不支持游标
+- 有业务 signal 时，每个 signal 携带相同 watermark。
+- Core 成功后，Swift 在 watermark 更大时补写 cursor。
+- 全部事件被 Swift 过滤时，Swift 直接确认 watermark。
+- cursor 写入失败保持失败/pending 状态，不把事件静默丢弃。
 
-### B. 轮询（每 N 秒 stat 一次）
+## InFlight
 
-- 优点：跨平台、最简单
-- 缺点：
-  - 大目录下扫描慢（10 万文件需要数秒）
-  - 实时性差
-  - CPU 占用持续高
-- **为什么没选**：用户体验差，不可接受
+应用自身文件动作按 `(repoPath, relativePath)` 标记：
 
-### C. notify crate（Rust 跨平台）
+- 引用计数支持嵌套动作。
+- 默认 TTL 60 秒。
+- 最后一次 unmark 后 count 置 0，但 entry 保留完整 TTL grace，吸收延迟回流。
+- InFlight 只是反馈回路保护，Core 幂等和 transaction 仍是最终一致性边界。
 
-- 优点：Rust 生态、跨平台抽象
-- 缺点：
-  - 在 macOS 上底层仍是 FSEvents，但封装层引入额外延迟
-  - 不支持游标持久化
-  - 对 iCloud 占位符行为没有特化处理
-- **为什么没选**：相比直接调用 FSEvents 没有优势，且失去 iCloud 兼容能力
+## 备选
 
-### D. fswatch（开源 CLI 工具）
+### kqueue
 
-- 优点：现成可用
-- 缺点：
-  - 进程外工具，IPC 增加复杂度
-  - 用户体验上多一个进程
-- **为什么没选**：嵌入应用更可控
+需要递归维护大量 descriptor，没有持久化 FSEvents cursor，未采用。
 
-### E. macOS Endpoint Security framework
+### 轮询
 
-- 优点：内核级、最强大
-- 缺点：
-  - 需要系统扩展权限（代价巨大）
-  - 用于安全软件场景，杀鸡用牛刀
-- **为什么没选**：超出需求
+跨平台但需要重复全量扫描，实时性和成本不适合作为 macOS 默认 watcher。
+
+### Rust notify 抽象
+
+Core 需要保持平台无关，但 macOS cursor、recovery flags 和 iCloud 路由仍需平台特化。当前直接在 Swift
+封装可让这些边界保持显式。
 
 ## 后果
 
-### 正面
+正面：
 
-- 实时性好，事件 < 1 秒到达
-- CPU 占用 < 1%
-- 支持持久化游标，能恢复跨会话事件
-- 对 iCloud / Time Machine 等场景兼容性好
-- 代码量小（核心 < 200 行 Swift）
+- watcher 平台能力与 Core 业务同步分层清楚。
+- cursor、watermark、filtered-only ack 和恢复 flags 可独立测试。
+- 不需要为每个子目录注册 watcher。
 
-### 负面 / 代价
+代价：
 
-- **平台锁定**：仅 macOS。Linux 用 inotify，Windows 用 ReadDirectoryChangesW，每平台单独实现
-- **事件可能合并**：高频小操作时 FSEvents 会自己合并，应用看到的是 "summary"（缓解：拿到事件后用应用层逻辑确认实际状态）
-- **kFSEventStreamEventIdSinceNow 的语义**：有时不能 100% 保证不漏（缓解：周期性 reindex 兜底）
-- **iCloud 占位符的特殊性**：详见 [ADR-0006](0006-icloud-support.md)
-- **InFlight 过滤增加复杂度**：应用自己改 FS 时要标记 + 排除（缓解：[fs-watcher.md](../architecture/fs-watcher.md) 实现统一封装）
+- macOS watcher 不能直接复用到其他平台。
+- 事件会合并、重复或延迟，必须依赖 Core 幂等和安全重放。
+- FSEvents 历史不完整时必须进入用户可见重扫，不能自动假设一致。
 
-### 风险
+## 重审条件
 
-- macOS 升级后 FSEventStream API 行为变化（历史上 macOS 10.13 → 10.14 有过细节变化）
-  - 缓解：CI 在新 macOS beta 跑一次完整测试
-- 极端高频场景下事件溢出（缓解：检测溢出标志位 → 触发全量 reindex）
-- 用户禁用 Spotlight 索引可能影响 FSEvents（缓解：检测 + 友好提示）
-
-## 何时重审
-
-- 加 Linux 端时，inotify 实现要单独评估（不会影响本 ADR）
-- 加 iOS 端时，沙盒模型不同，可能要换方案
-- macOS 出现新的更优 API（如 Apple 推出官方 watcher 替代品）
-- 性能 profile 显示 Watcher 是瓶颈
+- macOS watcher API 或 deployment target 变化。
+- 需要新的跨平台 watcher backend。
+- cursor/watermark 恢复合同变化。
+- 性能证据表明 watcher/flush 成为瓶颈。
 
 ## Related
 

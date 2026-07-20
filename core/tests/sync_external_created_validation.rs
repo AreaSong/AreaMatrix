@@ -197,7 +197,7 @@ fn sync_external_created_validation_rejects_negative_created_event_id_without_st
 }
 
 #[test]
-fn sync_external_created_validation_does_not_claim_cursor_for_unimplemented_event_kinds() {
+fn sync_external_created_validation_coalesces_created_and_modified_for_same_path() {
     let repo = initialized_repo();
     write_repo_file(repo.path(), "docs/created.txt", b"created");
 
@@ -208,11 +208,11 @@ fn sync_external_created_validation_does_not_claim_cursor_for_unimplemented_even
             event("docs/created.txt", ExternalEventKind::Modified, 231),
         ],
     )
-    .expect("sync created event without claiming adjacent event kinds");
+    .expect("sync created and modified signals for the same path");
 
     assert_eq!(result.detected_creates, 1);
     assert_eq!(result.detected_modifies, 0);
-    assert_eq!(fs_cursor(repo.path()), None);
+    assert_eq!(fs_cursor(repo.path()), Some(231));
     assert_eq!(listed_files(repo.path()).len(), 1);
     assert_eq!(listed_changes(repo.path()).len(), 1);
 }

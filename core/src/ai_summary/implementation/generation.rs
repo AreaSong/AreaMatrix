@@ -34,6 +34,7 @@ pub(in crate::ai_summary) fn generate_ai_summary(
             &file,
             AiSummarySkipReason::AiDisabled,
             "AI summaries are off",
+            false,
             None,
         );
     }
@@ -43,6 +44,7 @@ pub(in crate::ai_summary) fn generate_ai_summary(
             &file,
             AiSummarySkipReason::FeatureDisabled,
             "Auto summaries feature is off",
+            false,
             None,
         );
     }
@@ -52,6 +54,7 @@ pub(in crate::ai_summary) fn generate_ai_summary(
             &file,
             AiSummarySkipReason::PrivacyRule,
             "Skipped by privacy rule",
+            true,
             privacy_rule_id(&request),
         );
     }
@@ -71,6 +74,7 @@ pub(in crate::ai_summary) fn generate_ai_summary(
             &file,
             AiSummarySkipReason::NoEligibleInput,
             "No eligible AI summary input is available",
+            true,
             None,
         );
     }

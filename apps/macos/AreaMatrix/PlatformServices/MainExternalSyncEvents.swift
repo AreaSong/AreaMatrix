@@ -1,3 +1,4 @@
+import CoreServices
 import Foundation
 
 enum ICloudConflictListPlatformServices {
@@ -27,6 +28,24 @@ enum MainExternalSyncEventKind: String, Equatable, Hashable {
         case .modified:
             "modified"
         }
+    }
+}
+
+struct MainExternalCreatedFileWatcherEvent {
+    let path: String
+    let flags: FSEventStreamEventFlags
+    let eventID: FSEventStreamEventId
+
+    func hasFlag(_ flag: FSEventStreamEventFlags) -> Bool {
+        flags & flag != 0
+    }
+
+    func merging(_ other: MainExternalCreatedFileWatcherEvent) -> MainExternalCreatedFileWatcherEvent {
+        MainExternalCreatedFileWatcherEvent(
+            path: path,
+            flags: flags | other.flags,
+            eventID: max(eventID, other.eventID)
+        )
     }
 }
 
@@ -105,6 +124,91 @@ struct MainExternalCreatedFileSignal: Equatable, Hashable {
         let trimmedPath = repoPath.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedPath.isEmpty else { return "" }
         return URL(fileURLWithPath: trimmedPath, isDirectory: true).standardizedFileURL.path
+    }
+}
+
+struct MainExternalSyncWindow: Equatable, Identifiable {
+    let repoPath: String
+    let events: [MainExternalCreatedFileEvent]
+    let cursorWatermark: Int64
+
+    var id: String {
+        let eventIDs = events.map(\.id).joined(separator: "|")
+        return "\(repoPath):\(cursorWatermark):\(eventIDs)"
+    }
+
+    init?(repoPath: String, events: [MainExternalCreatedFileEvent], cursorWatermark: Int64) {
+        let normalizedRepoPath = URL(
+            fileURLWithPath: repoPath,
+            isDirectory: true
+        ).standardizedFileURL.path
+        guard !normalizedRepoPath.isEmpty,
+              cursorWatermark > 0,
+              events.allSatisfy({ $0.fsEventID <= cursorWatermark }) else { return nil }
+
+        self.repoPath = normalizedRepoPath
+        var latestByPath: [String: MainExternalCreatedFileEvent] = [:]
+        let orderedEvents = events.enumerated().sorted { lhs, rhs in
+            if lhs.element.fsEventID == rhs.element.fsEventID { return lhs.offset < rhs.offset }
+            return lhs.element.fsEventID < rhs.element.fsEventID
+        }.map(\.element)
+        for event in orderedEvents {
+            if let existing = latestByPath[event.relativePath],
+               event.kind == .modified,
+               existing.kind != .modified {
+                latestByPath[event.relativePath] = event.withKind(existing.kind)
+            } else {
+                latestByPath[event.relativePath] = event
+            }
+        }
+        self.events = latestByPath.values.sorted { lhs, rhs in
+            if lhs.fsEventID == rhs.fsEventID { return lhs.relativePath < rhs.relativePath }
+            return lhs.fsEventID < rhs.fsEventID
+        }
+        self.cursorWatermark = cursorWatermark
+    }
+
+    init?(signals: [MainExternalCreatedFileSignal]) {
+        guard let first = signals.first,
+              signals.allSatisfy({
+                  $0.repoPath == first.repoPath && $0.cursorWatermark == first.cursorWatermark
+              }) else { return nil }
+        let events = signals.compactMap { signal in
+            MainExternalCreatedFileEvent(
+                kind: signal.kind,
+                relativePath: signal.relativePath,
+                fsEventID: signal.fsEventID,
+                cursorWatermark: signal.cursorWatermark
+            )
+        }
+        guard events.count == signals.count else { return nil }
+        self.init(repoPath: first.repoPath, events: events, cursorWatermark: first.cursorWatermark)
+    }
+
+    func merging(_ other: MainExternalSyncWindow) -> MainExternalSyncWindow? {
+        guard repoPath == other.repoPath, cursorWatermark == other.cursorWatermark else { return nil }
+        return MainExternalSyncWindow(
+            repoPath: repoPath,
+            events: events + other.events,
+            cursorWatermark: cursorWatermark
+        )
+    }
+}
+
+private extension MainExternalCreatedFileEvent {
+    func withKind(_ retainedKind: MainExternalSyncEventKind) -> Self {
+        MainExternalCreatedFileEvent(
+            kind: retainedKind,
+            relativePath: relativePath,
+            fsEventID: fsEventID,
+            cursorWatermark: cursorWatermark
+        ) ?? self
+    }
+}
+
+extension SyncResultSnapshot {
+    var hasNoDetectedChanges: Bool {
+        detectedCreates + detectedRenames + detectedDeletes + detectedModifies == 0
     }
 }
 

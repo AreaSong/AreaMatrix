@@ -12,6 +12,24 @@ final class SwiftFileSizeGovernanceTests: MacOSGovernanceTestCase {
             splitTrigger: "Before any growth beyond the current inventory, extract another scan family "
                 + "or shared assertion helper into a feature-local governance support file.",
             maximumLineCount: 459
+        ),
+        NearLimitSwiftFile(
+            path: "AreaMatrixTests/DetailMetaPageFeatureTests.swift",
+            owner: "missing-file detail and relink feature tests",
+            rationale: "Keeps the Locate cancellation, hash safety, pagination, and selection-race "
+                + "regressions together at the detail feature boundary.",
+            splitTrigger: "Before any growth beyond the current inventory, move recovery test doubles "
+                + "into DetailMetaTestSupport.swift and retain only feature assertions here.",
+            maximumLineCount: 500
+        ),
+        NearLimitSwiftFile(
+            path: "AreaMatrixTests/MainListFilesTests.swift",
+            owner: "main-list pagination feature tests",
+            rationale: "Keeps first-page, Load More, retry, deduplication, and search isolation "
+                + "regressions together at the list feature boundary.",
+            splitTrigger: "Before any growth beyond the current inventory, move pagination listers and "
+                + "fixture builders into a feature-local support file.",
+            maximumLineCount: 497
         )
     ]
 

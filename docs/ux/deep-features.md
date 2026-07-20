@@ -26,16 +26,18 @@
 - Finder、终端、同步工具产生的外部变化会进入 change log，但不自动生成可执行 Undo。
 - 批量操作的 Undo 以批次 token 为边界，不能只恢复其中一部分后仍宣称整批成功。
 
-`Option-Command-Z` 打开 Undo History。主资料库内容获得按键处理时，`Command-Z` 打开 Undo 流程，`Shift-Command-Z` 打开 Redo/历史流程。
+`Option-Command-Z` 打开 Undo History。主资料库内容获得按键处理时，`Command-Z` 打开 Undo 流程，
+`Shift-Command-Z` 加载并执行最新可用 Redo；无可用项或执行失败时打开 Undo History 显示原因。
 
 ## 标签
 
-标签支持单文件和批量操作：
+标签支持单文件编辑和批量添加：
 
 - Detail Meta 展示当前标签。
 - Add Tag 支持已有标签建议和新标签输入。
 - Remove Tag 只移除文件与标签的关联。
-- 批量 Add/Remove 使用预览或明确选择范围，并返回可逆 action token。
+- 批量 Add 使用预览和明确选择范围，并返回可逆 action token。
+- 当前没有批量 Remove Tag API；移除标签仍在单文件 Detail 中完成。
 
 标签不会改变文件分类或物理路径。标签写入失败时，列表、详情和 action log 必须保持一致或明确进入可重试错误状态。
 
@@ -47,7 +49,7 @@
 |---|---|---|
 | Change category | 目标分类和路径预览 | repo-owned 文件可能移动；indexed 文件只更新 metadata |
 | Rename | 新名称预览和冲突检查 | 只处理所选文件，冲突时不静默覆盖 |
-| Add/Remove tag | 标签和选择范围 | 不改变文件路径 |
+| Add tags | 标签和选择范围 | 不改变文件路径；当前不提供批量 Remove Tag |
 | Delete | 删除影响确认 | repo-owned 文件进入 Trash；indexed 文件按合同移除索引 |
 
 批量执行返回逐项结果。部分失败不能被压缩为整批成功；结果页必须区分 succeeded、failed、skipped 和 pending。
@@ -69,7 +71,7 @@
 
 | 快捷键 | 动作 |
 |---|---|
-| `Command-O` | 打开本地文件夹选择器 |
+| `Command-O` | 进入 Choose Path；Browse 才打开目录选择器 |
 
 ### 主资料库上下文
 
@@ -78,7 +80,7 @@
 | `Command-F` | 进入搜索输入 |
 | `Command-K` | 切换 Command Palette |
 | `Command-Z` | 打开 Undo 流程 |
-| `Shift-Command-Z` | 打开 Redo/历史流程 |
+| `Shift-Command-Z` | 执行最新可用 Redo；失败时进入 Undo History |
 
 各 sheet 的 Return、Escape 等按键使用 SwiftUI default/cancel action，只在该 sheet 内生效。
 
@@ -93,7 +95,7 @@
 - Import 和资料库操作。
 - 搜索、Saved Search 和 Smart List 入口。
 - 当前选择可用的文件动作。
-- Settings、Help、日志和诊断入口。
+- Settings 和 Help 入口；日志与诊断继续从 Settings 的对应页面进入。
 
 不可执行项应禁用或不展示，并给出原因。命令面板不能绕过批量预览、Replace 确认、Trash 确认、恢复确认或 AI 隐私同意。
 
@@ -112,7 +114,8 @@ Saved Search 保存查询、过滤器和显示名称。Smart List 是侧栏中�
 - 文件动作失败时保留逐项状态和结构化错误。
 - Undo/Redo token 过期或状态冲突时不执行猜测性恢复。
 - 批量失败后允许刷新列表、详情和 change log。
-- 诊断导出不包含用户文件正文，并在写出前进行隐私确认。
+- About 文本诊断不包含用户文件正文；repository snapshot 可能包含路径、文件名、标签、笔记和其他
+  metadata。两者写出前都进行隐私确认，且不会自动上传。
 - 只读资料库禁用写动作，但保留搜索、查看和安全诊断入口。
 
 ## 验证重点

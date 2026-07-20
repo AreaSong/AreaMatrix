@@ -264,18 +264,37 @@ enum UndoHistoryActionLog {
 }
 
 extension MainFileListModel {
-    func collectCurrentListDiagnostics() async {
+    func requestCurrentListDiagnostics() {
         guard diagnosticsState != .collecting else { return }
+        diagnosticsGeneration += 1
+        diagnosticsState = .confirmingPrivacy
+    }
 
+    func cancelCurrentListDiagnostics() {
+        guard diagnosticsState == .confirmingPrivacy || diagnosticsState == .collecting else { return }
+        diagnosticsGeneration += 1
+        diagnosticsState = .idle
+    }
+
+    func collectCurrentListDiagnostics() async {
+        guard diagnosticsState == .confirmingPrivacy else { return }
+
+        diagnosticsGeneration += 1
+        let generation = diagnosticsGeneration
         diagnosticsState = .collecting
         do {
-            diagnosticsState = try await .collected(diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath))
+            let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
+            guard diagnosticsGeneration == generation else { return }
+            diagnosticsState = .collected(snapshot)
         } catch {
-            diagnosticsState = await .failed(mapCoreError(error))
+            let mapping = await mapCoreError(error)
+            guard diagnosticsGeneration == generation else { return }
+            diagnosticsState = .failed(mapping)
         }
     }
 
     func clearDiagnosticsState() {
+        diagnosticsGeneration += 1
         diagnosticsState = .idle
     }
 }

@@ -177,9 +177,9 @@ pub fn assert_not_contains(haystack: &str, needle: &str) {
 
 pub fn assert_validation_docs_alignment() {
     for fragment in [
-        "集成测试目录",
-        "测试断言 `assert!(true)` 类废话",
-        "测试间共享全局状态",
+        "Core 测试位于：",
+        "只断言无错误，不检查 FS/DB/状态结果。",
+        "共享可变全局 fixture。",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

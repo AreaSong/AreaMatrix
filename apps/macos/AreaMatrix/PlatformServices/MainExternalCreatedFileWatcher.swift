@@ -9,8 +9,12 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
 
     private var stream: FSEventStreamRef?
     private var watchedRepoPath: String?
+    private(set) var activeCallbackContext: MainExternalWatcherCallbackContext?
     private var pendingEvents: [String: MainExternalCreatedFileWatcherEvent] = [:]
     private var flushTask: Task<Void, Never>?
+    private var flushTaskGeneration: UInt64?
+    private var flushRevision: UInt64 = 0
+    private var lifecycleGeneration: UInt64 = 0
     private let cursorStore: any CoreExternalChangesSyncing
     private let inFlightTracker: any InFlightFileChangeTracking
     private let flushDelay: Duration
@@ -33,18 +37,29 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
         }
         guard watchedRepoPath != normalizedPath || stream == nil else { return }
 
-        stop()
+        let generation = beginLifecycleTransition()
+        stopCurrentStreamAndPending(clearRepoPath: true)
         watchedRepoPath = normalizedPath
         do {
             guard let cursor = try await cursorStore.getFSEventCursor(repoPath: normalizedPath) else {
+                guard isCurrent(generation: generation, repoPath: normalizedPath) else { return }
                 requestRescan(repoPath: normalizedPath, reason: "No filesystem event cursor is available.")
                 return
             }
-            try startStream(repoPath: normalizedPath, sinceWhen: Self.streamEventID(cursor))
+            guard isCurrent(generation: generation, repoPath: normalizedPath) else { return }
+            try startStream(
+                repoPath: normalizedPath,
+                sinceWhen: Self.streamEventID(cursor),
+                generation: generation
+            )
+            guard isCurrent(generation: generation, repoPath: normalizedPath) else {
+                stopCurrentStreamAndPending(clearRepoPath: true)
+                return
+            }
             recoveryRequest = nil
         } catch {
-            stopStream(clearRepoPath: false)
-            recoveryRequest = MainExternalWatcherRecoveryRequest(
+            guard isCurrent(generation: generation, repoPath: normalizedPath) else { return }
+            enterRecovery(
                 kind: .startupFailed,
                 repoPath: normalizedPath,
                 resumeEventID: nil,
@@ -54,20 +69,25 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
     }
 
     func stop() {
-        stopStream(clearRepoPath: true)
-        pendingEvents.removeAll()
-        flushTask?.cancel()
-        flushTask = nil
+        _ = beginLifecycleTransition()
+        stopCurrentStreamAndPending(clearRepoPath: true)
     }
 
     func handle(events: [MainExternalCreatedFileWatcherEvent]) {
         guard let repoPath = watchedRepoPath else { return }
+        receiveCallbackEvents(events, repoPath: repoPath, generation: lifecycleGeneration)
+    }
+
+    fileprivate func receiveCallbackEvents(
+        _ events: [MainExternalCreatedFileWatcherEvent],
+        repoPath: String,
+        generation: UInt64
+    ) {
+        guard isCurrentLifecycle(generation: generation, repoPath: repoPath) else { return }
         if events.contains(where: {
             $0.hasFlag(FSEventStreamEventFlags(kFSEventStreamEventFlagRootChanged))
         }) {
-            stopStream(clearRepoPath: false)
-            pendingEvents.removeAll()
-            recoveryRequest = MainExternalWatcherRecoveryRequest(
+            enterRecovery(
                 kind: .rootChanged,
                 repoPath: repoPath,
                 resumeEventID: nil,
@@ -95,6 +115,203 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
         scheduleFlush(repoPath: repoPath)
     }
 
+    private func startStream(
+        repoPath: String,
+        sinceWhen: FSEventStreamEventId,
+        generation: UInt64
+    ) throws {
+        let callbackContext = MainExternalWatcherCallbackContext(
+            watcher: self,
+            repoPath: repoPath,
+            generation: generation
+        )
+        activeCallbackContext = callbackContext
+        var context = FSEventStreamContext(
+            version: 0,
+            info: Unmanaged.passUnretained(callbackContext).toOpaque(),
+            retain: mainExternalWatcherContextRetain,
+            release: mainExternalWatcherContextRelease,
+            copyDescription: nil
+        )
+        let flags = FSEventStreamCreateFlags(kFSEventStreamCreateFlagFileEvents)
+            | FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes)
+            | FSEventStreamCreateFlags(kFSEventStreamCreateFlagWatchRoot)
+            | FSEventStreamCreateFlags(kFSEventStreamCreateFlagNoDefer)
+
+        stream = FSEventStreamCreate(
+            kCFAllocatorDefault,
+            mainExternalCreatedFileWatcherCallback,
+            &context,
+            [repoPath] as CFArray,
+            sinceWhen,
+            0.2,
+            flags
+        )
+        guard let stream else {
+            activeCallbackContext = nil
+            throw MainExternalWatcherStartError.creationFailed
+        }
+        FSEventStreamSetDispatchQueue(stream, DispatchQueue.main)
+        guard FSEventStreamStart(stream) else {
+            stopStream(clearRepoPath: false)
+            throw MainExternalWatcherStartError.startFailed
+        }
+        streamStartEventID = Int64(sinceWhen)
+    }
+
+    private func requestRescan(repoPath: String, reason: String) {
+        enterRecovery(
+            kind: .rescanRequired,
+            repoPath: repoPath,
+            resumeEventID: Self.currentEventID(),
+            reason: reason
+        )
+    }
+
+    private func scheduleFlush(repoPath: String) {
+        guard !pendingEvents.isEmpty else { return }
+        let generation = lifecycleGeneration
+        flushRevision &+= 1
+        guard flushTask == nil else { return }
+        flushTaskGeneration = generation
+        flushTask = Task { [weak self] in
+            guard let self else { return }
+            await runFlushLoop(repoPath: repoPath, generation: generation)
+        }
+    }
+
+    private func runFlushLoop(repoPath: String, generation: UInt64) async {
+        defer { finishFlushTask(generation: generation) }
+        while canContinueFlush(generation: generation, repoPath: repoPath) {
+            let debounceRevision = flushRevision
+            do {
+                try await Task.sleep(for: flushDelay)
+            } catch {
+                return
+            }
+            guard canContinueFlush(generation: generation, repoPath: repoPath) else { return }
+            guard debounceRevision == flushRevision else { continue }
+
+            let events = takePendingEvents()
+            guard !events.isEmpty else { return }
+            await publish(events: events, repoPath: repoPath, generation: generation)
+            guard canContinueFlush(generation: generation, repoPath: repoPath) else { return }
+            if pendingEvents.isEmpty { return }
+        }
+    }
+
+    private func takePendingEvents() -> [MainExternalCreatedFileWatcherEvent] {
+        let events = pendingEvents.values.sorted { lhs, rhs in
+            if lhs.eventID == rhs.eventID { return lhs.path < rhs.path }
+            return lhs.eventID < rhs.eventID
+        }
+        pendingEvents.removeAll()
+        return events
+    }
+
+    private func publish(
+        events: [MainExternalCreatedFileWatcherEvent],
+        repoPath: String,
+        generation: UInt64
+    ) async {
+        guard let cursorWatermark = events.last.map({ Int64($0.eventID) }) else { return }
+
+        var signals: [MainExternalCreatedFileSignal] = []
+        for event in events {
+            let pathExists = FileManager.default.fileExists(atPath: event.path)
+            guard let signal = Self.signal(
+                repoPath: repoPath,
+                absolutePath: event.path,
+                flags: event.flags,
+                eventID: event.eventID,
+                pathExists: pathExists
+            ) else { continue }
+            if await inFlightTracker.contains(repoPath: signal.repoPath, relativePath: signal.relativePath) {
+                continue
+            }
+            guard canContinueFlush(generation: generation, repoPath: repoPath) else { return }
+            signals.append(signal)
+        }
+        let watermarkedSignals = signals.compactMap { $0.withCursorWatermark(cursorWatermark) }
+        let syncEvents = watermarkedSignals.compactMap { signal in
+            MainExternalCreatedFileEvent(
+                kind: signal.kind,
+                relativePath: signal.relativePath,
+                fsEventID: signal.fsEventID,
+                cursorWatermark: cursorWatermark
+            )
+        }
+        guard canContinueFlush(generation: generation, repoPath: repoPath),
+              let window = MainExternalSyncWindow(
+                  repoPath: repoPath,
+                  events: syncEvents,
+                  cursorWatermark: cursorWatermark
+              ) else { return }
+        AreaMatrixExternalCreatedFileRelay.publish(window)
+    }
+
+    private func finishFlushTask(generation: UInt64) {
+        guard flushTaskGeneration == generation else { return }
+        flushTask = nil
+        flushTaskGeneration = nil
+    }
+
+    private func stopStream(clearRepoPath: Bool) {
+        if let stream {
+            FSEventStreamStop(stream)
+            FSEventStreamInvalidate(stream)
+            FSEventStreamRelease(stream)
+            self.stream = nil
+        }
+        streamStartEventID = nil
+        activeCallbackContext = nil
+        if clearRepoPath { watchedRepoPath = nil }
+    }
+
+    private func stopCurrentStreamAndPending(clearRepoPath: Bool) {
+        stopStream(clearRepoPath: clearRepoPath)
+        pendingEvents.removeAll()
+        flushTask?.cancel()
+        flushTask = nil
+        flushTaskGeneration = nil
+        flushRevision &+= 1
+    }
+
+    private func enterRecovery(
+        kind: MainExternalWatcherRecoveryKind,
+        repoPath: String,
+        resumeEventID: Int64?,
+        reason: String
+    ) {
+        _ = beginLifecycleTransition()
+        stopCurrentStreamAndPending(clearRepoPath: false)
+        recoveryRequest = MainExternalWatcherRecoveryRequest(
+            kind: kind,
+            repoPath: repoPath,
+            resumeEventID: resumeEventID,
+            reason: reason
+        )
+    }
+
+    private func beginLifecycleTransition() -> UInt64 {
+        lifecycleGeneration &+= 1
+        return lifecycleGeneration
+    }
+
+    private func isCurrent(generation: UInt64, repoPath: String) -> Bool {
+        isCurrentLifecycle(generation: generation, repoPath: repoPath) && !Task.isCancelled
+    }
+
+    private func isCurrentLifecycle(generation: UInt64, repoPath: String) -> Bool {
+        generation == lifecycleGeneration && watchedRepoPath == repoPath
+    }
+
+    private func canContinueFlush(generation: UInt64, repoPath: String) -> Bool {
+        isCurrentLifecycle(generation: generation, repoPath: repoPath) && !Task.isCancelled
+    }
+}
+
+extension MainExternalCreatedFileWatcher {
     nonisolated static func signal(
         repoPath: String,
         absolutePath: String,
@@ -146,116 +363,6 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
         return Int64(eventID)
     }
 
-    private func startStream(repoPath: String, sinceWhen: FSEventStreamEventId) throws {
-        var context = FSEventStreamContext(
-            version: 0,
-            info: Unmanaged.passUnretained(self).toOpaque(),
-            retain: nil,
-            release: nil,
-            copyDescription: nil
-        )
-        let flags = FSEventStreamCreateFlags(kFSEventStreamCreateFlagFileEvents)
-            | FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes)
-            | FSEventStreamCreateFlags(kFSEventStreamCreateFlagWatchRoot)
-            | FSEventStreamCreateFlags(kFSEventStreamCreateFlagNoDefer)
-
-        stream = FSEventStreamCreate(
-            kCFAllocatorDefault,
-            mainExternalCreatedFileWatcherCallback,
-            &context,
-            [repoPath] as CFArray,
-            sinceWhen,
-            0.2,
-            flags
-        )
-        guard let stream else { throw MainExternalWatcherStartError.creationFailed }
-        FSEventStreamSetDispatchQueue(stream, DispatchQueue.main)
-        guard FSEventStreamStart(stream) else {
-            stopStream(clearRepoPath: false)
-            throw MainExternalWatcherStartError.startFailed
-        }
-        streamStartEventID = Int64(sinceWhen)
-    }
-
-    private func requestRescan(repoPath: String, reason: String) {
-        stopStream(clearRepoPath: false)
-        pendingEvents.removeAll()
-        flushTask?.cancel()
-        flushTask = nil
-        recoveryRequest = MainExternalWatcherRecoveryRequest(
-            kind: .rescanRequired,
-            repoPath: repoPath,
-            resumeEventID: Self.currentEventID(),
-            reason: reason
-        )
-    }
-
-    private func scheduleFlush(repoPath: String) {
-        guard !pendingEvents.isEmpty else { return }
-        flushTask?.cancel()
-        flushTask = Task { [weak self] in
-            guard let self else { return }
-            try? await Task.sleep(for: flushDelay)
-            guard !Task.isCancelled else { return }
-            await flush(repoPath: repoPath)
-        }
-    }
-
-    private func flush(repoPath: String) async {
-        guard watchedRepoPath == repoPath else { return }
-        let events = pendingEvents.values.sorted { lhs, rhs in
-            if lhs.eventID == rhs.eventID { return lhs.path < rhs.path }
-            return lhs.eventID < rhs.eventID
-        }
-        pendingEvents.removeAll()
-        flushTask = nil
-        guard let cursorWatermark = events.last.map({ Int64($0.eventID) }) else { return }
-
-        var signals: [MainExternalCreatedFileSignal] = []
-        for event in events {
-            let pathExists = FileManager.default.fileExists(atPath: event.path)
-            guard let signal = Self.signal(
-                repoPath: repoPath,
-                absolutePath: event.path,
-                flags: event.flags,
-                eventID: event.eventID,
-                pathExists: pathExists
-            ) else { continue }
-            if await inFlightTracker.contains(repoPath: signal.repoPath, relativePath: signal.relativePath) {
-                continue
-            }
-            signals.append(signal)
-        }
-        if signals.isEmpty {
-            await advanceFilteredEventCursor(repoPath: repoPath, cursorWatermark: cursorWatermark)
-            return
-        }
-        let watermarkedSignals = signals.compactMap { $0.withCursorWatermark(cursorWatermark) }
-        AreaMatrixExternalCreatedFileRelay.publish(watermarkedSignals)
-    }
-
-    private func advanceFilteredEventCursor(repoPath: String, cursorWatermark: Int64) async {
-        do {
-            try await cursorStore.setFSEventCursor(repoPath: repoPath, lastEventID: cursorWatermark)
-        } catch {
-            requestRescan(
-                repoPath: repoPath,
-                reason: "Filesystem watcher could not persist the filtered event cursor."
-            )
-        }
-    }
-
-    private func stopStream(clearRepoPath: Bool) {
-        if let stream {
-            FSEventStreamStop(stream)
-            FSEventStreamInvalidate(stream)
-            FSEventStreamRelease(stream)
-            self.stream = nil
-        }
-        streamStartEventID = nil
-        if clearRepoPath { watchedRepoPath = nil }
-    }
-
     private nonisolated static func relativePath(repoPath: String, absolutePath: String) -> String? {
         let repoURL = URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL
         let fileURL = URL(fileURLWithPath: absolutePath).standardizedFileURL
@@ -275,21 +382,23 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
     }
 }
 
-struct MainExternalCreatedFileWatcherEvent {
-    let path: String
-    let flags: FSEventStreamEventFlags
-    let eventID: FSEventStreamEventId
+final class MainExternalWatcherCallbackContext {
+    weak var watcher: MainExternalCreatedFileWatcher?
+    let repoPath: String
+    let generation: UInt64
 
-    func hasFlag(_ flag: FSEventStreamEventFlags) -> Bool {
-        flags & flag != 0
+    init(watcher: MainExternalCreatedFileWatcher, repoPath: String, generation: UInt64) {
+        self.watcher = watcher
+        self.repoPath = repoPath
+        self.generation = generation
     }
 
-    func merging(_ other: MainExternalCreatedFileWatcherEvent) -> MainExternalCreatedFileWatcherEvent {
-        MainExternalCreatedFileWatcherEvent(
-            path: path,
-            flags: flags | other.flags,
-            eventID: max(eventID, other.eventID)
-        )
+    func deliver(_ events: [MainExternalCreatedFileWatcherEvent]) {
+        let repoPath = repoPath
+        let generation = generation
+        Task { @MainActor [weak watcher] in
+            watcher?.receiveCallbackEvents(events, repoPath: repoPath, generation: generation)
+        }
     }
 }
 
@@ -305,6 +414,16 @@ private enum MainExternalWatcherStartError: LocalizedError {
     }
 }
 
+private let mainExternalWatcherContextRetain: CFAllocatorRetainCallBack = { info in
+    guard let info else { return nil }
+    return UnsafeRawPointer(Unmanaged<MainExternalWatcherCallbackContext>.fromOpaque(info).retain().toOpaque())
+}
+
+private let mainExternalWatcherContextRelease: CFAllocatorReleaseCallBack = { info in
+    guard let info else { return }
+    Unmanaged<MainExternalWatcherCallbackContext>.fromOpaque(info).release()
+}
+
 private let mainExternalCreatedFileWatcherCallback: FSEventStreamCallback = { _, info, count, paths, flags, ids in
     guard let info else { return }
     let pathArray = unsafeBitCast(paths, to: NSArray.self) as? [String] ?? []
@@ -312,6 +431,6 @@ private let mainExternalCreatedFileWatcherCallback: FSEventStreamCallback = { _,
     let events = (0 ..< eventCount).map { index in
         MainExternalCreatedFileWatcherEvent(path: pathArray[index], flags: flags[index], eventID: ids[index])
     }
-    let watcher = Unmanaged<MainExternalCreatedFileWatcher>.fromOpaque(info).takeUnretainedValue()
-    Task { @MainActor in watcher.handle(events: events) }
+    let context = Unmanaged<MainExternalWatcherCallbackContext>.fromOpaque(info).takeUnretainedValue()
+    context.deliver(events)
 }

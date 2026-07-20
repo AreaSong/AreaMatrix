@@ -240,7 +240,11 @@ pub fn assert_ai_privacy_rules_validation_alignment() {
 }
 
 fn assert_testing_doc_alignment() {
-    for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {
+    for fragment in [
+        "## Rust Core",
+        "Core 测试位于：",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+    ] {
         assert_contains(TESTING_DOC, fragment);
     }
 }

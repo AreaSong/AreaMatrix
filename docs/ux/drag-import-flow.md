@@ -12,7 +12,9 @@
 
 - 应用菜单 `Import...`，快捷键为 `Command-I`。
 - 主资料库工具栏的 Import。
-- 主窗口或侧栏支持的文件拖放区域。
+- Dock/Open Files 请求；资料库尚未可用时排队，打开资料库后再消费。
+- 主窗口或侧栏支持的文件拖放区域：根节点和 Smart List 映射到 repository root，分类及子目录映射到
+  顶层分类，列表区沿用当前侧栏目标，空资料库映射到 auto classify。
 - 文件选择器选择一个或多个文件、文件夹。
 
 所有入口先形成统一的 `ImportEntryRequest`，再进入预览。拖放本身不直接写文件或 DB。
@@ -29,6 +31,15 @@
 
 预览是只读操作。Apply 之前不得创建最终资料库文件、移动来源文件或写入活动 DB 行。
 
+### 文件夹预扫描
+
+文件夹导入先递归预扫描，再允许执行：
+
+- 默认不包含隐藏文件，也不跟随 symlink。
+- `.DS_Store`、`.git/`、`.areamatrix/`、`node_modules/` 等排除项显示汇总。
+- 扫描错误会阻止导入，用户只能 Retry scan 或 Cancel。
+- 切换“包含隐藏文件”或“跟随符号链接”后重新扫描，不复用旧结果。
+
 ## 存储模式
 
 | 模式 | 来源文件 | 资料库文件 | DB |
@@ -37,7 +48,8 @@
 | Move | 成功后从来源位置移除 | 成功后创建 repo-owned 文件 | 记录 Moved |
 | Index-only | 保留在原位置 | 不创建副本 | 记录 Indexed 和来源路径 |
 
-Move 和 Replace 属于高风险动作，必须在执行前显示影响并得到确认。Index-only 必须提示来源移动会导致条目缺失。
+Move 和 Replace 都必须在执行前显示影响。选择 Move 后，用户通过执行 Import 确认风险，当前没有独立的二次
+modal；Replace 始终需要单独二次确认。Index-only 必须提示来源移动会导致条目缺失。
 
 ## Duplicate 与同名冲突
 
@@ -75,7 +87,7 @@ duplicate 以内容 hash 为基础，策略包括 Skip、Ask、Keep Both 和经�
 
 进度页显示：
 
-- completed、failed、remaining 和 pending 数量。
+- completed、failed、remaining、pending 和 stopped 数量。
 - 当前目标路径。
 - 每一行的 importing、imported、failed、skipped 或 pending 状态。
 - 查看详情、停止、重试当前项、停止并查看结果、诊断等上下文动作。
@@ -92,7 +104,9 @@ AreaMatrix 当前不提供 `Run in background`。关闭进度上下文不能把�
 
 停止请求不会中断正在进行的文件系统/DB 提交。当前条目返回后，Swift 循环标记 stopped，并不再启动下一项。
 
-停止后结果页必须区分 imported、failed、stopped 和 pending。若 session 已到可安全结束条件，应用清除 app-owned session 摘要；底层 staging 与 DB 恢复仍由 Core 恢复合同负责。
+停止后结果摘要区分 imported、failed、stopped 和 pending。结果表当前把未开始的 stopped 行显示为
+`Skipped`，没有独立的 stopped 行状态。若 session 已到可安全结束条件，应用清除 app-owned session 摘要；
+底层 staging 与 DB 恢复仍由 Core 恢复合同负责。
 
 ## 失败与重试
 
@@ -108,7 +122,8 @@ AreaMatrix 当前不提供 `Run in background`。关闭进度上下文不能把�
 
 结果页展示：
 
-- 成功、失败、跳过、停止和待处理数量。
+- 成功、失败、停止和待处理四个汇总数量。
+- 每行状态为 Imported、Skipped、Failed 或 Pending；停止前未开始的行使用 Skipped，并保留原因。
 - 最后导入路径。
 - 未解决 duplicate 和 iCloud 数量。
 - 脱敏详情导出。

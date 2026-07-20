@@ -79,30 +79,37 @@ fn recovery_scenarios_link_current_docs_and_recovery_invariants() {
     assert_all_contains(
         TESTING,
         &[
-            "## 崩溃测试",
-            "SIGKILL",
-            "recover_on_startup",
-            "手工冒烟清单",
+            "## 文件安全测试矩阵",
+            "transaction failure",
+            "staging recovery",
+            "手工冒烟",
         ],
     );
     assert_all_contains(
         TROUBLESHOOTING,
         &[
-            "R4. iCloud 文件无法导入",
-            "R6. 写权限被拒",
-            "D1. SQLITE_BUSY: database is locked",
-            "D3. PRAGMA integrity_check 报错",
-            "Staging / 事务",
+            "## 资料库未初始化",
+            "`RepoNotInitialized` 不会自动执行 `init_repo` 或重建 DB",
+            "## 权限被拒",
+            "权限错误不自动重试",
+            "## SQLite busy 或损坏",
+            "优先从 UI 触发 diagnostics snapshot 和 repair",
+            "PRAGMA integrity_check",
+            "## Staging recovery",
+            "不要直接 `rm -rf .areamatrix/staging/*`",
+            "## iCloud placeholder",
+            "watcher/Core 不自动下载",
         ],
     );
     assert_all_contains(
         TRANSACTIONAL_IMPORT,
         &[
-            "INV-1",
-            "INV-2",
-            "失败的 import 不留下 DB 记录或最终目录中的半文件",
-            "各失败场景处理",
-            "Indexed 失败只回滚本次 DB staging 行",
+            "## 核心不变量",
+            "成功导入后，资料库文件和 active DB row 同时可见",
+            "失败导入不得留下最终目录半成品",
+            "Indexed 不复制、移动、删除或覆盖外部源文件",
+            "## 失败状态",
+            "恢复和补偿不得删除无法证明属于本次导入的文件",
         ],
     );
 

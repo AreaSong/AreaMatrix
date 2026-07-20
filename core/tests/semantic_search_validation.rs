@@ -139,7 +139,11 @@ fn semantic_search_validation_locks_api_udl_and_rust_surface() {
 }
 
 fn assert_task_and_docs_alignment() {
-    for fragment in ["Rust 单元测试", "集成测试目录", "tempfile::TempDir"] {
+    for fragment in [
+        "## Rust Core",
+        "Core 测试位于：",
+        "临时目录、fixture 和 dependency injection 用于隔离",
+    ] {
         assert_contains(TESTING_DOC, fragment);
     }
 }

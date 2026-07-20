@@ -235,7 +235,7 @@ fn sync_external_renamed_validation_ambiguous_hash_match_is_conflict_without_sta
 }
 
 #[test]
-fn sync_external_renamed_validation_does_not_claim_cursor_for_unimplemented_event_kinds() {
+fn sync_external_renamed_validation_coalesces_modified_signal_at_target() {
     let repo = initialized_repo();
     let entry = sync_created_file(repo.path(), "docs/original.txt", b"scope boundary", 530);
     rename_user_file(repo.path(), "docs/original.txt", "docs/renamed.txt");
@@ -247,12 +247,12 @@ fn sync_external_renamed_validation_does_not_claim_cursor_for_unimplemented_even
             modified("docs/renamed.txt", 532),
         ],
     )
-    .expect("sync only the bound renamed capability");
+    .expect("sync coalesced rename and modified signals");
 
     assert_eq!(result.detected_renames, 1);
     assert_eq!(result.detected_modifies, 0);
     assert_eq!(result.detected_deletes, 0);
-    assert_eq!(fs_cursor(repo.path()), Some(530));
+    assert_eq!(fs_cursor(repo.path()), Some(532));
     assert_eq!(
         get_file(path_string(repo.path()), entry.id)
             .expect("get renamed file")

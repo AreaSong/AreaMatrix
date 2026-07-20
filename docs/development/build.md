@@ -34,7 +34,8 @@ flowchart LR
 ## Core 构建入口
 
 `./dev build core` 是仓库根目录 `./dev` 的 CLI 子命令，不是独立脚本文件。
-命令定义在 `scripts/dev_tools/cli.py`，构建实现位于 `scripts/dev_tools/build.py`。
+根入口 `dev` 先进入 `scripts.task_loop.console`；非交互子命令再由 console 转交
+`scripts.dev_tools.cli`。构建实现位于 `scripts/dev_tools/build.py`。
 
 ```bash
 ./dev build core --help
@@ -222,9 +223,9 @@ panic = "abort"
 
 CI 在 macos-14 runner 上执行：
 
-1. `cargo fmt --check`
-2. `cargo clippy -- -D warnings`
-3. `cargo test --workspace`
+1. `cargo fmt --all -- --check`
+2. `cargo clippy --all-targets --all-features -- -D warnings`
+3. `cargo test --all-features --workspace`
 4. `cargo llvm-cov --fail-under-lines 70`
 5. `./dev build core`
 6. `./dev test macos`
@@ -246,7 +247,8 @@ PR 要全绿才能合并。
 更新：
 
 - `core/Cargo.toml` 的 `version`
-- `apps/macos/AreaMatrix/Info.plist` 的 `CFBundleShortVersionString` / `CFBundleVersion`
+- `apps/macos/AreaMatrix.xcodeproj/project.pbxproj` 的 `MARKETING_VERSION` /
+  `CURRENT_PROJECT_VERSION`；app `Info.plist` 由 Xcode 生成
 - `CHANGELOG.md` 的 `[Unreleased]` 段落改为 `[x.y.z] - YYYY-MM-DD`
 
 ### 签名 + 公证（用户分发版）
@@ -333,13 +335,11 @@ cargo install uniffi-bindgen --force --version <匹配 Cargo.toml 的版本>
 
 `area_matrix.swift` 没被加进 target。检查 Xcode 项目导航中文件是否在 AreaMatrix target 下。
 
-### Spotlight 频繁锁 SQLite
+### SQLite busy / locked
 
-```bash
-sudo mdutil -d ~/AreaMatrix-dev/.areamatrix/index.db
-```
-
-或在用户配置中将 `.areamatrix/` 加到 Spotlight 隐私列表。
+Core 可写连接已设置 WAL 和 5 秒 `busy_timeout`。持续锁冲突时先确认没有同时运行的 AreaMatrix、测试进程
+或手工 `sqlite3` 会话。不要对正在运行的资料库执行会写入的 SQLite 命令；需要人工检查时先退出应用并
+保留 `index.db`、WAL 和 SHM。
 
 ---
 

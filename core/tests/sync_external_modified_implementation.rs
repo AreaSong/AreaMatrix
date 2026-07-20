@@ -289,6 +289,7 @@ fn sync_external_modified_implementation_overview_failure_defers_cursor_and_repl
 
     fs::remove_file(&generated_nodes).expect("remove generated output blocker");
     fs::create_dir_all(&generated_nodes).expect("restore generated nodes directory");
+    fs::remove_file(&file_path).expect("simulate a later external removal before replay");
     let replayed = sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Modified, 2)],
@@ -301,10 +302,17 @@ fn sync_external_modified_implementation_overview_failure_defers_cursor_and_repl
         Some(2)
     );
     assert!(generated_nodes.join("docs.md").is_file());
-    assert_eq!(
-        fs::read(&file_path).expect("modified user file remains readable"),
-        b"after content"
-    );
+    assert!(!file_path.exists());
+
+    let removed = sync_external_changes(
+        path_string(repo.path()),
+        vec![event(relative_path, ExternalEventKind::Removed, 3)],
+    )
+    .expect("process the later removal after replay advances the cursor");
+    assert_eq!(removed.detected_deletes, 1);
+    assert!(list_files(path_string(repo.path()), file_filter())
+        .expect("list active files after removal")
+        .is_empty());
 }
 
 #[test]

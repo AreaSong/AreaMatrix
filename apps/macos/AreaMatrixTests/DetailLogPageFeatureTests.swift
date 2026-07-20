@@ -75,9 +75,9 @@ final class DetailLogPageFeatureTests: XCTestCase {
         let detail = FileEntrySnapshot.detailMetaFixture(id: 20, currentName: "diagnostics.pdf")
         let mapping = CoreErrorMappingSnapshot.detailLogDb()
         let snapshot = DiagnosticsSnapshotSnapshot.testFixture(
-            snapshotPath: "/tmp/repo/.areamatrix/diagnostics/detail-log.zip",
+            snapshotPath: "/tmp/repo/.areamatrix/diagnostics/detail-log.db",
             createdAt: 1_700_000_300,
-            warnings: ["paths redacted", "usernames redacted"]
+            warnings: ["index.db-wal disappeared during snapshot"]
         )
         let diagnosticsCollector = ShellRecordingDiagnosticsCollector(result: .success(snapshot))
         let model = MainFileListModel(

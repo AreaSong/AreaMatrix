@@ -25,6 +25,7 @@ pub(crate) struct AiCallLogInsertRecord {
     pub(crate) model: Option<String>,
     pub(crate) status: String,
     pub(crate) sent_fields_json: String,
+    pub(crate) privacy_rules_checked: bool,
     pub(crate) privacy_rule_id: Option<String>,
     pub(crate) result_summary: String,
     pub(crate) error_code: Option<String>,
@@ -130,7 +131,6 @@ fn insert_ai_call_log_record_tx(
     tx: &rusqlite::Transaction<'_>,
     record: AiCallLogInsertRecord,
 ) -> CoreResult<i64> {
-    let privacy_rules_checked = record.privacy_rule_id.is_some();
     let scope = default_scope(&record.feature);
     tx.execute(
         "INSERT INTO ai_call_log (
@@ -149,7 +149,7 @@ fn insert_ai_call_log_record_tx(
             record.model,
             record.status,
             record.sent_fields_json,
-            bool_to_db(privacy_rules_checked),
+            bool_to_db(record.privacy_rules_checked),
             record.privacy_rule_id,
             record.result_summary,
             record.error_code,

@@ -22,7 +22,7 @@ AreaMatrix 只有一个顶层 `WindowGroup`。产品任务通过窗口内路由�
 | 资料库初始化 | 创建元数据或接管已有目录 | 初始化步骤、扫描进度、失败重试、完成打开 | Core repository API、扫描会话 | 只创建 AreaMatrix 状态，不改变已有文件 |
 | 资料库加载 | 打开资料库并构建主视图状态 | 加载配置、树、文件列表和恢复状态 | CoreBridge repository opening | 错误必须转入可恢复状态 |
 | 资料库工作区 | 浏览和整理资料 | 目录树、文件列表、详情、搜索、导入和批量操作 | Core 查询、平台服务和 UI state | 文件写入进入对应专项确认 |
-| 资料库错误与修复 | 恢复不可用资料库 | 重试、诊断、元数据修复和重新选择 | Core recovery/repair、脱敏诊断 | 只修复 `.areamatrix`，不得删除用户文件 |
+| 资料库错误与修复 | 恢复不可用资料库 | 重试、诊断、元数据修复和重新选择 | Core recovery/repair、repository snapshot 或 About 脱敏文本诊断 | 只修复 `.areamatrix`，不得删除用户文件 |
 
 ## 主工作区区域
 

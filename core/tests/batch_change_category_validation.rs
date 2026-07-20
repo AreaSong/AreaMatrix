@@ -390,10 +390,10 @@ fn batch_change_category_validation_locks_core_api_udl_and_rust_alignment() {
     }
 
     for fragment in [
-        "集成测试目录",
-        "`core/tests/`",
-        "关键测试场景",
-        "跨分类移动",
+        "Core 测试位于：",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+        "文件安全测试矩阵",
+        "Copy/Move/Indexed import",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

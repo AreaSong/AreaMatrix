@@ -23,7 +23,7 @@
 - 重试读取。
 - 查看用户可理解的错误和建议动作。
 - 选择其他资料库。
-- 生成脱敏诊断。
+- 生成 repository metadata snapshot，或从 About 导出脱敏文本诊断；导出前查看隐私说明。
 - 在满足条件时进入 metadata repair。
 
 ## 元数据修复

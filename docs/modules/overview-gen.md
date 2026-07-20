@@ -25,6 +25,9 @@
 
 AreaMatrix 不生成或覆盖 `README.md`。
 
+`.areamatrix/generated/**` 是 AreaMatrix-owned 全文件输出；刷新时会替换完整文件，用户直接修改这些文件的
+内容可能在下一次生成时被覆盖。只有可选根 `AREAMATRIX.md` 使用 managed block，并保留标记块外的用户内容。
+
 ## 当前模块结构
 
 ```text
@@ -59,7 +62,11 @@ core/src/overview/
 - 根级最近 change log。
 - 当前资料库 locale 和 overview output 配置。
 
-node 文件默认最多列出 200 个文件；最近变更使用固定时间窗口和条数上限，避免概览无限增长。
+node 文件默认最多列出 200 个文件。node 最近变更窗口为 30 天，root 最近变更窗口为 7 天，两者最多列出
+20 条，避免概览无限增长。
+
+文件和节点 Markdown 链接对 UTF-8 bytes 执行 percent-encoding，保留 `/` 作为路径分隔符；空格、Unicode、
+emoji 和其他非 unreserved bytes 使用大写十六进制 `%XX` 表示。
 
 ## 写入计划
 
@@ -91,8 +98,9 @@ node 文件默认最多列出 200 个文件；最近变更使用固定时间窗�
 
 - 文件缺失时创建完整 AreaMatrix 入口。
 - 已有合法 managed block 时只替换标记内内容。
-- 已有用户内容但无 managed block 时保留用户内容并附加管理块。
-- 目标不是普通文件或内容无法安全处理时返回错误。
+- 用户在设置中显式确认启用 `RootAreaMatrixFile` 后，已有用户内容但无合法 managed block 时会保留原内容并
+  附加管理块；不完整的 marker 不会被当作可替换的合法 block。
+- 目标不是普通文件、不可读或不能以 UTF-8 处理时返回错误。
 - `README.md` 始终不参与该流程。
 
 ## 触发点
@@ -131,6 +139,7 @@ locale 控制 generated overview 和树相关显示文本。当前支持配置�
 ## 验证重点
 
 - 默认只写 `.areamatrix/generated/`。
+- generated 文件允许完整替换，根 `AREAMATRIX.md` 只替换合法 managed block。
 - `README.md` 保持不变。
 - managed block 外用户内容保持不变。
 - 多目标写失败时所有目标恢复。

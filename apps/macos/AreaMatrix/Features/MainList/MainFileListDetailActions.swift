@@ -7,6 +7,7 @@ extension MainFileListModel {
         guard ids.count == 1, let id = ids.first else {
             selection = .multiple(ids)
             selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
+            missingFileRelinkState = .idle
             detailTagEditorState = .notLoaded
             detailTagSuggestionState = .idle
             isDetailLoading = true
@@ -22,6 +23,7 @@ extension MainFileListModel {
         guard let id else { clearDetail(); return }
 
         selection = .single(id); selectedFileDetail = cachedFile(id: id)
+        missingFileRelinkState = .idle
         selectedFileNoteWriteBlock = selectedFileDetail.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = nil
         isDetailLoading = true
@@ -52,8 +54,7 @@ extension MainFileListModel {
 
         do {
             let loadedFile = try await fileDetailer.getFile(repoPath: repoPath, fileID: id)
-            guard generation == detailGeneration else { return }
-            selection = .single(loadedFile.id)
+            guard generation == detailGeneration, selection.singleFileID == id else { return }
             selectedFileDetail = loadedFile
             selectedFileNoteWriteBlock = noteWriteBlock(for: loadedFile)
             files = files.map { $0.id == loadedFile.id ? loadedFile : $0 }
@@ -63,7 +64,7 @@ extension MainFileListModel {
             detailTagSuggestionState = .idle
         } catch {
             let mappedError = await mapCoreError(error)
-            guard generation == detailGeneration else { return }
+            guard generation == detailGeneration, selection.singleFileID == id else { return }
             selectedFileDetail = missingDetailSnapshotIfNeeded(error, fileID: id) ??
                 selectedFileDetail ??
                 cachedFile(id: id)
@@ -101,6 +102,7 @@ extension MainFileListModel {
         detailGeneration += 1
         selection = .none
         selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
+        missingFileRelinkState = .idle
         detailTagEditorState = .notLoaded
         detailTagSuggestionState = .idle
         clearTagFilterRegistry()
@@ -116,5 +118,98 @@ extension MainFileListModel {
         detailExternalCreateSyncState = .idle
         detailTabRequest = nil
         iCloudConflictResolutionState = .idle
+    }
+}
+
+extension MainFileListModel {
+    func locateMissingFile(fileID: Int64) async {
+        guard canStartMissingFileRelink(fileID: fileID) else { return }
+        missingFileRelinkState = .loading(fileID: fileID)
+
+        do {
+            let recoveryState = try await missingFileRecoverer.missingFileState(
+                repoPath: repoPath,
+                fileID: fileID
+            )
+            guard canApplyMissingFileRelinkResult(fileID: fileID) else { return }
+            guard recoveryState.canLocate else {
+                missingFileRelinkState = .unavailable(
+                    fileID: fileID,
+                    message: "AreaMatrix cannot relink this missing file from its current state."
+                )
+                return
+            }
+            guard let selectedURL = missingFilePicker.chooseReplacementFile(
+                lastKnownPath: recoveryState.lastKnownPath
+            ) else {
+                missingFileRelinkState = .idle
+                return
+            }
+            guard !ImportPlatformServices.isICloudPlaceholder(selectedURL) else {
+                missingFileRelinkState = .unavailable(
+                    fileID: fileID,
+                    message: "Download the selected file in Finder, then choose Locate again."
+                )
+                return
+            }
+
+            missingFileRelinkState = .relinking(fileID: fileID)
+            let report = try await missingFileRecoverer.relinkMissingFile(
+                repoPath: repoPath,
+                fileID: fileID,
+                newPath: selectedURL.path
+            )
+            try await applyMissingFileRelinkReport(report, fileID: fileID)
+        } catch {
+            guard canApplyMissingFileRelinkResult(fileID: fileID) else { return }
+            let mapping = await mapCoreError(error)
+            guard canApplyMissingFileRelinkResult(fileID: fileID) else { return }
+            missingFileRelinkState = .failed(fileID: fileID, mapping)
+        }
+    }
+
+    private func applyMissingFileRelinkReport(
+        _ report: MissingFileRecoveryReportSnapshot,
+        fileID: Int64
+    ) async throws {
+        switch report.status {
+        case .relinked where report.hashMatched && !report.fileDeleted:
+            if missingFileRelinkState.isBusy(for: fileID) {
+                missingFileRelinkState = .idle
+            }
+            let loadedFile = try await fileDetailer.getFile(repoPath: repoPath, fileID: fileID)
+            files = files.map { $0.id == loadedFile.id ? loadedFile : $0 }
+            guard canApplyMissingFileRelinkResult(fileID: fileID) else { return }
+
+            selectedFileDetail = loadedFile
+            selectedFileNoteWriteBlock = noteWriteBlock(for: loadedFile)
+            detailErrorMapping = nil
+            statusBanner = .relinkedMissingFile(fileID: fileID)
+            await loadSelectedFileChangeLog()
+        case .hashMismatch:
+            guard canApplyMissingFileRelinkResult(fileID: fileID) else { return }
+            missingFileRelinkState = .hashMismatch(
+                fileID: fileID,
+                message: report.message ?? "The selected file does not match the stored file hash."
+            )
+        case .missing, .present, .relinked, .recordRemoved, .blocked:
+            guard canApplyMissingFileRelinkResult(fileID: fileID) else { return }
+            missingFileRelinkState = .unavailable(
+                fileID: fileID,
+                message: report.message ?? "The selected file could not be relinked."
+            )
+        }
+    }
+
+    private func canStartMissingFileRelink(fileID: Int64) -> Bool {
+        let isCurrentSelection = selection.singleFileID == fileID || selectedFileDetail?.id == fileID
+        return isCurrentSelection &&
+            selectedFileDetail?.availability == .missing &&
+            canPerformWriteAction(fileID: fileID) &&
+            !missingFileRelinkState.isBusy(for: fileID)
+    }
+
+    private func canApplyMissingFileRelinkResult(fileID: Int64) -> Bool {
+        selection.singleFileID == fileID && selectedFileDetail?.id == fileID
     }
 }

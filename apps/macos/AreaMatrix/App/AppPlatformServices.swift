@@ -85,6 +85,10 @@ enum AppPlatformServices {
         NSOpenPanelRepositoryImportPicker()
     }
 
+    static var missingFilePicker: any RepositoryMissingFilePicking {
+        NSOpenPanelRepositoryMissingFilePicker()
+    }
+
     static var windowCloser: any WindowClosing {
         NSApplicationKeyWindowCloser()
     }

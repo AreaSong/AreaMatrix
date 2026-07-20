@@ -106,6 +106,13 @@ extension MainRepositoryContentView {
     }
 
     private var fileTableContent: some View {
+        VStack(spacing: 8) {
+            normalFileTable
+            normalListPaginationControls
+        }
+    }
+
+    private var normalFileTable: some View {
         Table(visibleFiles, selection: $selectedFileIDs, sortOrder: $tableSortOrder) {
             TableColumn("Name", sortUsing: KeyPathComparator(\FileEntrySnapshot.currentName)) { file in
                 Text(file.currentName)
@@ -141,6 +148,41 @@ extension MainRepositoryContentView {
             contextMenu(for: selection)
         } primaryAction: { selection in
             selectedFileIDs = selection
+        }
+    }
+
+    @ViewBuilder
+    private var normalListPaginationControls: some View {
+        if !fileListModel.searchState.isActive {
+            if let error = fileListModel.loadMoreErrorMapping {
+                HStack(spacing: 10) {
+                    Text(error.userMessage)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                    Button {
+                        Task { await fileListModel.loadMoreCurrentCategory() }
+                    } label: {
+                        Label("Retry", systemImage: "arrow.clockwise")
+                    }
+                    .accessibilityIdentifier("main-list-retry-load-more")
+                }
+            } else if fileListModel.isLoadingMore {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Loading more files...")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            } else if fileListModel.hasMore {
+                Button {
+                    Task { await fileListModel.loadMoreCurrentCategory() }
+                } label: {
+                    Label("Load More", systemImage: "arrow.down.circle")
+                }
+                .accessibilityIdentifier("main-list-load-more")
+            }
         }
     }
 }

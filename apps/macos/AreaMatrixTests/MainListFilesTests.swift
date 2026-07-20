@@ -24,6 +24,9 @@ final class MainListFilesTests: XCTestCase {
             FileListRequest(repoPath: "/tmp/repo", filter: .currentCategory("docs"))
         ])
         XCTAssertEqual(model.files, [docsFile])
+        XCTAssertFalse(model.hasMore)
+        XCTAssertFalse(model.isLoadingMore)
+        XCTAssertNil(model.loadMoreErrorMapping)
         XCTAssertNil(model.errorMapping)
         XCTAssertFalse(model.isLoading)
     }
@@ -267,6 +270,213 @@ final class MainListFilesTests: XCTestCase {
         XCTAssertEqual(tree.sidebarRow(id: "docs/contracts")?.categoryForFileList, "docs")
         XCTAssertEqual(tree.sidebarRow(id: "docs/contracts")?.pathFilterPrefix, "docs/contracts")
     }
+}
+
+extension MainListFilesTests {
+    @MainActor
+    func testMainListFullFirstPageUsesStablePageSizeAndExposesLoadMore() async {
+        let firstPage = mainListPage(0 ..< 50)
+        let lister = MainListRecordingFileLister(results: [.success(firstPage)])
+        let model = makePaginationModel(fileLister: lister)
+
+        await model.loadCurrentCategory("docs")
+
+        await lister.assertFileListFilters([mainListPageFilter(offset: 0)])
+        XCTAssertEqual(model.files, firstPage)
+        XCTAssertTrue(model.hasMore)
+        XCTAssertFalse(model.isLoadingMore)
+        XCTAssertNil(model.loadMoreErrorMapping)
+    }
+
+    @MainActor
+    func testMainListLoadsSecondPageAndStopsAfterShortLastPage() async {
+        let firstPage = mainListPage(0 ..< 50)
+        let lastPage = mainListPage(50 ..< 52)
+        let lister = MainListRecordingFileLister(results: [.success(firstPage), .success(lastPage)])
+        let model = makePaginationModel(fileLister: lister)
+
+        await model.loadCurrentCategory("docs")
+        await model.loadMoreCurrentCategory()
+        await model.loadMoreCurrentCategory()
+
+        await lister.assertFileListFilters([
+            mainListPageFilter(offset: 0),
+            mainListPageFilter(offset: 50)
+        ])
+        XCTAssertEqual(model.files, firstPage + lastPage)
+        XCTAssertFalse(model.hasMore)
+        XCTAssertFalse(model.isLoadingMore)
+    }
+
+    @MainActor
+    func testMainListDeduplicatesOverlappingPageByFileID() async {
+        let firstPage = mainListPage(0 ..< 50)
+        var updatedDuplicate = firstPage[49]
+        updatedDuplicate.currentName = "updated-49.pdf"
+        let newFile = FileEntrySnapshot.mainListFixture(
+            id: 50,
+            path: "docs/50.pdf",
+            category: "docs",
+            currentName: "50.pdf"
+        )
+        let lister = MainListRecordingFileLister(results: [
+            .success(firstPage),
+            .success([updatedDuplicate, newFile])
+        ])
+        let model = makePaginationModel(fileLister: lister)
+
+        await model.loadCurrentCategory("docs")
+        await model.loadMoreCurrentCategory()
+
+        XCTAssertEqual(model.files.count, 51)
+        XCTAssertEqual(Set(model.files.map(\.id)).count, 51)
+        XCTAssertEqual(model.files.first(where: { $0.id == 49 })?.currentName, "updated-49.pdf")
+        XCTAssertEqual(model.files.last, newFile)
+        XCTAssertFalse(model.hasMore)
+    }
+
+    @MainActor
+    func testMainListLoadMoreFailurePreservesRowsAndRetriesSameOffset() async {
+        let firstPage = mainListPage(0 ..< 50)
+        let recoveredFile = mainListPage(50 ..< 51)[0]
+        let mapping = CoreErrorMappingSnapshot.mainListDbFixture(rawContext: "page locked")
+        let mapper = StaticCoreErrorMapper(mapping: mapping)
+        let lister = MainListRecordingFileLister(results: [
+            .success(firstPage),
+            .failure(CoreError.Db(message: "page locked")),
+            .success([recoveredFile])
+        ])
+        let model = makePaginationModel(fileLister: lister, errorMapper: mapper)
+
+        await model.loadCurrentCategory("docs")
+        await model.loadMoreCurrentCategory()
+
+        XCTAssertEqual(model.files, firstPage)
+        XCTAssertTrue(model.hasMore)
+        XCTAssertEqual(model.loadMoreErrorMapping, mapping)
+        XCTAssertFalse(model.isLoadingMore)
+
+        await model.loadMoreCurrentCategory()
+
+        await lister.assertFileListFilters([
+            mainListPageFilter(offset: 0),
+            mainListPageFilter(offset: 50),
+            mainListPageFilter(offset: 50)
+        ])
+        XCTAssertEqual(model.files, firstPage + [recoveredFile])
+        XCTAssertFalse(model.hasMore)
+        XCTAssertNil(model.loadMoreErrorMapping)
+        await mapper.assertMappedCoreErrors([CoreError.Db(message: "page locked")])
+    }
+
+    @MainActor
+    func testMainListIgnoresInFlightLoadMoreSuccessWhenSearchIsLoaded() async {
+        let firstPage = mainListPage(0 ..< 50)
+        let staleFile = mainListPage(50 ..< 51)[0]
+        let searchFile = firstPage[0]
+        let lister = MainListSuspendedResultLister(result: .success([staleFile]))
+        let model = makePaginationModel(fileLister: lister, currentCategoryFiles: firstPage)
+
+        let loadMoreTask = Task { await model.loadMoreCurrentCategory() }
+        await lister.waitForRequest()
+        let request = SearchQueryRequestSnapshot.testFixture(query: "match")
+        model.searchState = .loaded(request: request, page: .testFixture(query: "match"))
+        model.files = [searchFile]
+        await lister.finish()
+        await loadMoreTask.value
+
+        XCTAssertEqual(model.files, [searchFile])
+        XCTAssertEqual(model.nextFilePageOffset, 50)
+        XCTAssertTrue(model.hasMore)
+        XCTAssertFalse(model.isLoadingMore)
+        XCTAssertNil(model.loadMoreErrorMapping)
+    }
+
+    @MainActor
+    func testMainListIgnoresInFlightLoadMoreFailureBeforeMappingWhenSearchIsLoaded() async {
+        let firstPage = mainListPage(0 ..< 50)
+        let searchFile = firstPage[0]
+        let mapper = StaticCoreErrorMapper(mapping: .mainListDbFixture(rawContext: "unused"))
+        let lister = MainListSuspendedResultLister(result: .failure(CoreError.Db(message: "stale page")))
+        let model = makePaginationModel(fileLister: lister, currentCategoryFiles: firstPage, errorMapper: mapper)
+
+        let loadMoreTask = Task { await model.loadMoreCurrentCategory() }
+        await lister.waitForRequest()
+        let request = SearchQueryRequestSnapshot.testFixture(query: "match")
+        model.searchState = .loaded(request: request, page: .testFixture(query: "match"))
+        model.files = [searchFile]
+        await lister.finish()
+        await loadMoreTask.value
+
+        XCTAssertEqual(model.files, [searchFile])
+        XCTAssertEqual(model.nextFilePageOffset, 50)
+        XCTAssertTrue(model.hasMore)
+        XCTAssertFalse(model.isLoadingMore)
+        XCTAssertNil(model.loadMoreErrorMapping)
+        await mapper.assertMappedCoreErrors([])
+    }
+}
+
+private actor MainListSuspendedResultLister: CoreFileListing {
+    private let result: Result<[FileEntrySnapshot], Error>
+    private var continuation: CheckedContinuation<Void, Never>?
+    private var didReceiveRequest = false
+
+    init(result: Result<[FileEntrySnapshot], Error>) {
+        self.result = result
+    }
+
+    func listFiles(repoPath _: String, filter _: FileFilterSnapshot) async throws -> [FileEntrySnapshot] {
+        didReceiveRequest = true
+        await withCheckedContinuation { continuation = $0 }
+        return try result.get()
+    }
+
+    func waitForRequest() async {
+        _ = await waitForActorTestValue(
+            on: self,
+            failureMessage: { "Timed out waiting for paginated file list request" },
+            value: { didReceiveRequest ? true : nil }
+        )
+    }
+
+    func finish() {
+        continuation?.resume()
+        continuation = nil
+    }
+}
+
+@MainActor
+private func makePaginationModel(
+    fileLister: any CoreFileListing,
+    currentCategoryFiles: [FileEntrySnapshot] = [],
+    errorMapper: any CoreErrorMapping = StaticCoreErrorMapper(
+        mapping: .mainListDbFixture(rawContext: "unused")
+    )
+) -> MainFileListModel {
+    MainFileListModel(
+        opening: .mainListFixture(repoPath: "/tmp/repo", currentCategoryFiles: currentCategoryFiles),
+        fileLister: fileLister,
+        fileDetailer: RecordingFileDetailer(results: []),
+        errorMapper: errorMapper
+    )
+}
+
+private func mainListPage(_ range: Range<Int64>) -> [FileEntrySnapshot] {
+    range.map { id in
+        FileEntrySnapshot.mainListFixture(
+            id: id,
+            path: "docs/\(id).pdf",
+            category: "docs",
+            currentName: "\(id).pdf"
+        )
+    }
+}
+
+private func mainListPageFilter(offset: Int64) -> FileFilterSnapshot {
+    var filter = FileFilterSnapshot.currentCategory("docs")
+    filter.offset = offset
+    return filter
 }
 
 private func makeMainListTemporaryRepositoryURL() throws -> URL {

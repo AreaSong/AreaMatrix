@@ -312,9 +312,9 @@ private extension FileFilterSnapshot {
 
 private extension DiagnosticsSnapshotSnapshot {
     static let databaseRepairIntegrationDiagnostics = DiagnosticsSnapshotSnapshot.testFixture(
-        snapshotPath: ".areamatrix/diagnostics/database-repair-diagnostics.zip",
+        snapshotPath: ".areamatrix/diagnostics/database-repair-diagnostics.db",
         createdAt: 1_778_000_000,
-        warnings: ["paths redacted"]
+        warnings: ["index.db-wal disappeared during snapshot"]
     )
 }
 

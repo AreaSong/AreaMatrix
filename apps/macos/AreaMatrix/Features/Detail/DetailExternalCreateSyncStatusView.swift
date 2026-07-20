@@ -2,28 +2,29 @@ import SwiftUI
 
 struct DetailExternalCreateSyncStatusView: View {
     let state: MainDetailExternalCreateSyncState
+    let onRetry: () -> Void
 
     var body: some View {
         switch state {
         case .idle:
             EmptyView()
-        case let .syncing(event):
+        case let .syncing(_, event):
             Label(
                 "Syncing external \(event.kind.displayName) file: \(event.relativePath)",
                 systemImage: "arrow.triangle.2.circlepath"
             )
             .font(.caption)
             .foregroundStyle(.secondary)
-        case let .synced(event, fileID, result):
+        case let .synced(fileID, event, result):
             syncedStatus(event: event, fileID: fileID, result: result)
-        case let .failed(event, mapping):
+        case let .failed(_, event, mapping):
             failedStatus(event: event, mapping: mapping)
         }
     }
 
     private func syncedStatus(
         event: MainExternalCreatedFileEvent,
-        fileID: Int64?,
+        fileID: Int64,
         result: SyncResultSnapshot
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -52,6 +53,8 @@ struct DetailExternalCreateSyncStatusView: View {
                 Text(mapping.userMessage)
                 Text(mapping.suggestedAction)
                     .foregroundStyle(.secondary)
+                Button("Retry", action: onRetry)
+                    .accessibilityIdentifier("external-sync-retry")
             }
             .font(.caption)
         }
@@ -59,13 +62,13 @@ struct DetailExternalCreateSyncStatusView: View {
 
     private func summary(
         event: MainExternalCreatedFileEvent,
-        fileID: Int64?,
+        fileID: Int64,
         result: SyncResultSnapshot
     ) -> String {
-        let fileText = fileID.map { "file #\($0)" } ?? "file not selected"
-        return """
-        \(event.relativePath) · \(fileText) · created \(result.detectedCreates) · \
-        renamed \(result.detectedRenames) · deleted \(result.detectedDeletes)
+        """
+        \(event.relativePath) · file #\(fileID) · created \(result.detectedCreates) · \
+        renamed \(result.detectedRenames) · deleted \(result.detectedDeletes) · \
+        modified \(result.detectedModifies)
         """
     }
 }

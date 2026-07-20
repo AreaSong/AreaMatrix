@@ -125,6 +125,7 @@ struct AiLogRow {
     route: Option<String>,
     model: Option<String>,
     sent_fields_json: String,
+    privacy_rules_checked: bool,
     privacy_rule_id: Option<String>,
     result_summary: String,
     error_code: Option<String>,
@@ -135,8 +136,8 @@ fn ai_log_row(repo: &Path, id: i64) -> AiLogRow {
         Connection::open(repo.join(".areamatrix/index.db")).expect("open repository database");
     connection
         .query_row(
-            "SELECT status, route, model, sent_fields_json, privacy_rule_id, result_summary,
-                    error_code
+            "SELECT status, route, model, sent_fields_json, privacy_rules_checked,
+                    privacy_rule_id, result_summary, error_code
              FROM ai_call_log WHERE id = ?1",
             params![id],
             |row| {
@@ -145,9 +146,10 @@ fn ai_log_row(repo: &Path, id: i64) -> AiLogRow {
                     route: row.get(1)?,
                     model: row.get(2)?,
                     sent_fields_json: row.get(3)?,
-                    privacy_rule_id: row.get(4)?,
-                    result_summary: row.get(5)?,
-                    error_code: row.get(6)?,
+                    privacy_rules_checked: row.get(4)?,
+                    privacy_rule_id: row.get(5)?,
+                    result_summary: row.get(6)?,
+                    error_code: row.get(7)?,
                 })
             },
         )
@@ -224,6 +226,8 @@ fn ai_classification_suggestion_implementation_returns_local_draft_without_chang
     assert_eq!(log.model.as_deref(), Some("areamatrix-local-classifier"));
     assert!(log.sent_fields_json.contains("filename"));
     assert!(log.sent_fields_json.contains("repo_relative_path"));
+    assert!(log.privacy_rules_checked);
+    assert_eq!(log.privacy_rule_id, None);
     assert!(log.result_summary.contains("finance"));
 }
 
@@ -325,6 +329,7 @@ fn ai_classification_suggestion_implementation_maps_runtime_failure_to_fallback_
     );
     assert_eq!(log.status, "failed");
     assert_eq!(log.route.as_deref(), Some("local"));
+    assert!(log.privacy_rules_checked);
     assert_eq!(log.error_code.as_deref(), Some("RuntimeFailed"));
 }
 
@@ -349,6 +354,7 @@ fn ai_classification_suggestion_implementation_skips_when_ai_is_disabled() {
     );
     assert_eq!(log.status, "skipped");
     assert_eq!(log.sent_fields_json, "[]");
+    assert!(!log.privacy_rules_checked);
 }
 
 #[test]
@@ -384,6 +390,7 @@ fn ai_classification_suggestion_implementation_skips_privacy_without_sent_fields
     );
     assert_eq!(log.status, "skipped");
     assert_eq!(log.sent_fields_json, "[]");
+    assert!(log.privacy_rules_checked);
     assert_eq!(log.privacy_rule_id.as_deref(), Some("rule:private-folder"));
 }
 

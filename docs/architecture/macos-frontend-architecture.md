@@ -163,28 +163,23 @@ classification、tags、summary 的 local / remote runtime 由外部集成提供
 remote provider probe 已退出 runtime 环境合同。Core 新增或重命名 runtime key 时，
 `./dev check governance` 必须失败，不能让跨 Rust / Swift 的环境变量合同静默漂移。
 
-## 渐进迁移顺序
+## 架构演进规则
 
-1. 规则先固定：`apps/macos/AGENTS.md`、本文和治理测试保持一致。
-2. 已起步 feature 持续样板化：MainList、FileActions、Search、CommandPalette、
-   SyncConflicts、AI、Import。
-3. 下一批优先治理高风险或高膨胀 owner：Settings、Onboarding。
-4. 触达平台副作用时收敛到 `PlatformServices/` 或保留明确退出条件。
-5. 当多个 feature 跑通同一种 state / action / routing / validation 模式后，再抽共享支撑。
+- Feature owner、职责、风险边界和验证重点由 `MacOSFeatureOwnershipGovernanceTests` 维护。
+- 受控迁移区的文件、owner 和退出条件由 `MacOSMigrationZoneGovernanceTests` 维护。
+- 触达平台副作用时收敛到 `PlatformServices/`，或在治理测试中保留明确的风险归属与退出条件。
+- 共享 state、action、routing 或 validation 支撑至少应有两个真实调用方，不按迁移排期预先抽象。
 
 ## 文件规模治理
 
 - 手写 Swift 文件达到 450 行后进入 `SwiftFileSizeGovernanceTests` 精确清单，必须记录 owner、继续保留的理由和下一次增长前的拆分触发条件。
-- 清单记录当前行数上界；已进入清单的文件不能继续增长，优先按完整职责族拆分，而不是拆散同一语义。
+- `SwiftFileSizeGovernanceTests` 是近阈值文件、行数上界和拆分触发条件的可执行 inventory；长期文档不重复具体文件名或行数。
+- 已进入清单的文件不能超过登记上界，优先按完整职责族拆分，而不是拆散同一语义。
 - 500 行是手写 Swift 文件硬上限。`Bridge/Generated/` 与 `Bridge/UniFFI/` 的 UniFFI 生成绑定不适用手写文件阈值，但由生成产物与 bindings drift 门禁单独约束。
-- 当前 450 行近阈值清单只登记 459 行的 `MacOSArchitectureBoundaryGovernanceTests.swift`，并冻结其继续增长；
-  `RepoConfigSnapshot` fixture family 与 Local File URL platform adapter family 已分别按完整职责迁出，
-  架构治理测试的共享扫描能力也已提取到 `MacOSGovernanceFileSystemTestSupport.swift`。下一次扩展
-  architecture governance 扫描前，必须继续提取独立扫描族或 shared assertion helper。
 
 ## 不做
 
-- 不一次性移动 200+ Swift 文件。
+- 不以目录整理为由进行缺少独立计划、风险说明和验证的大规模文件搬迁。
 - 不为了目录漂亮改 UI 行为。
 - 不把所有状态塞进单个巨大 store。
 - 不在本治理中修改 Core API / UDL，除非发现明确漂移并单独评审。

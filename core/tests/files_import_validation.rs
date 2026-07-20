@@ -288,10 +288,10 @@ fn assert_task_docs_and_testing_alignment() {
     assert_files_page_alignment();
     assert_replace_page_alignment();
     for fragment in [
-        "Rust 单元测试",
-        "集成测试目录",
-        "`core/tests/`",
-        "关键测试场景",
+        "## Rust Core",
+        "Core 测试位于：",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+        "文件安全测试矩阵",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

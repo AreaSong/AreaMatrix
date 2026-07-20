@@ -249,7 +249,12 @@ extension OnboardingModel {
             startInitializationProgressPolling(repoPath: repoPath, mode: mode)
             try await initializeRepository(repoPath: repoPath, mode: mode)
             if let watcherSeed {
-                try await externalChangesSyncer.setFSEventCursor(repoPath: repoPath, lastEventID: watcherSeed)
+                try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {
+                    try await self.externalChangesSyncer.setFSEventCursor(
+                        repoPath: repoPath,
+                        lastEventID: watcherSeed
+                    )
+                }
             }
             if finishInitializationCancellationIfRequested() { return }
             settingsWriter.saveConfiguredRepoPath(repoPath)

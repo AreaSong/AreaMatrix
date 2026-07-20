@@ -28,14 +28,16 @@
 | 错误域 | Core 来源 | 用户可见文案 / UI | 恢复动作 | 诊断入口 | 阻断级别与证据 |
 |---|---|---|---|---|---|
 | repo path | `InvalidPath`、`RepoNotInitialized`、`FileNotFound` | `路径不合法`、`资料库未初始化`、`Folder is missing`、首次启动向导或 main repo error | 重新选择资料库、重新初始化、Reconnect folder、刷新列表 | `ValidatePathErrorMappingSmokeTests.swift`、`MainRepoErrorMappingTests.swift`、troubleshooting 运行时章节 | P1 watch：`RepoNotInitialized` 在 Core mapping 是 High，但 UX blocking 语义是 critical；消费页必须继续覆盖。 |
-| permission | `PermissionDenied` | `无访问权限`、repo blocking 或单文件 toast | 选择其他文件夹、打开系统设置、重试前先修复权限 | R6：`docs/development/troubleshooting.md#r6-写权限被拒`、diagnostics export | 已有 Core/Swift 证据：`error_mapping_failure_recovery_permission_denied_never_becomes_retryable`、`testConfiguredRepoOpenFailureRoutesMappedErrorMappingCoreErrorToMainRepoError`。 |
-| DB | `Db` | DB locked：inline/banner + Retry；DB corrupted：blocking repair | locked 只能 Retry；corrupt 进入 Repair index / Open repo in Finder / Collect diagnostics | D1：`docs/development/troubleshooting.md#d1-sqlite_busy-database-is-locked`、D2/D3、`PRAGMA integrity_check`、diagnostics export | **P1-ER-001 已关闭**：真实 Core mapping 通过 `Db.message` 区分 locked retryable 与 corrupt fatal；证据见 `error_mapping_validation_db_locked_and_corrupted_have_distinct_recovery_paths`、`error_recovery_matrix_error_mapping_records_db_subsemantic_closure`、`testDefaultCoreBridgeMapsDbLockedAndCorruptedToDistinctRecoveryActions`。 |
-| IO | `Io`、`FileNotFound` | `文件操作失败`、`文件不存在` | Retry、刷新列表、Remove from index、Locate | Console log、Collect diagnostics、troubleshooting R3/T3 | 已有证据：`error_mapping_contract_api_maps_each_error_to_stable_ui_metadata`、`MainFileListDetailSupport` 映射路径。 |
-| iCloud placeholder | `ICloudPlaceholder` | `iCloud 文件未下载`、`iCloud file is not downloaded` | Download & retry、Switch to local repo、Cancel | R4：`docs/development/troubleshooting.md#r4-icloud-文件无法导入`、`mdls`、`brctl download` | P1 watch：Core suggested action 文案偏自动等待，UX 要用户可控 Download & retry；Swift main repo 和 import flow 已有页面证据，后续不得退化为静默下载。 |
+| permission | `PermissionDenied` | `无访问权限`、repo blocking 或单文件 toast | 选择其他文件夹、打开系统设置、重试前先修复权限 | `docs/development/troubleshooting.md#权限被拒`、diagnostics export | 已有 Core/Swift 证据：`error_mapping_failure_recovery_permission_denied_never_becomes_retryable`、`testConfiguredRepoOpenFailureRoutesMappedErrorMappingCoreErrorToMainRepoError`。 |
+| DB | `Db` | DB locked：inline/banner + Retry；DB corrupted：blocking repair | locked 只能 Retry；corrupt 进入 Repair index / Open repo in Finder / Collect diagnostics | `docs/development/troubleshooting.md#sqlite-busy-或损坏`、`PRAGMA integrity_check`、diagnostics export | **P1-ER-001 已关闭**：真实 Core mapping 通过 `Db.message` 区分 locked retryable 与 corrupt fatal；证据见 `error_mapping_validation_db_locked_and_corrupted_have_distinct_recovery_paths`、`error_recovery_matrix_error_mapping_records_db_subsemantic_closure`、`testDefaultCoreBridgeMapsDbLockedAndCorruptedToDistinctRecoveryActions`。 |
+| validation | `Validation` | 输入无效、草稿字段提示 | 修正输入后重新提交 | 页面 validation state、error mapping contract | Low；不得把无效输入提交给文件或 DB 写路径。 |
+| IO | `Io`、`FileNotFound` | `文件操作失败`、`文件不存在` | Retry、刷新列表、Remove from index、Locate | 页面 error state、repository/About diagnostics、troubleshooting | 已有证据：`error_mapping_contract_api_maps_each_error_to_stable_ui_metadata`、`MainFileListDetailSupport` 映射路径。 |
+| expired action | `ExpiredAction` | `操作已过期` | 刷新 Undo History | action log / undo history state | Low；不得猜测性 Undo/Redo 或直接重放 UI 点击。 |
+| iCloud placeholder | `ICloudPlaceholder` | `iCloud 文件未下载`、`iCloud file is not downloaded` | 用户触发 Download & retry、Switch to local repo、Cancel | `docs/development/troubleshooting.md#icloud-placeholder`、`mdls`、平台下载结果 | 已对齐：Core suggested action、UX 和平台入口均要求用户触发；watcher/Core 不隐式下载。真实 iCloud 环境证据仍由 release residual 管理。 |
 | duplicate | `DuplicateFile` | `文件已存在` | Skip、Overwrite、Keep both、Cancel | import result / change_log / diagnostics | 已有证据：`detect_duplicate_failure_recovery_moved_ask_restores_source_without_final_side_effects`、`detect_duplicate_failure_recovery_overwrite_db_failure_can_be_retried`。 |
 | conflict | `Conflict` | `路径冲突` | Auto-rename、Rename...、Retry | import conflict sheet、change_log、diagnostics | 已有证据：`resolve_name_conflict_failure_recovery_import_db_failure_removes_numbered_final`、`resolve_name_conflict_failure_recovery_moved_exhaustion_restores_source_and_retries`。 |
-| staging recovery | `recover_on_startup` 返回 `RecoveryReport`；失败时走 `Db`、`Io`、`PermissionDenied` | `Startup recovery complete` / `Startup recovery failed` | Retry startup recovery；fatal DB 路由到 repair；不得自动执行高风险修复 | recovery report、`.areamatrix/staging`、DB staging rows、diagnostics export | 当前无 P0 缺口；用户原文件安全由 `recover_on_startup_integration_verify_real_report_drives_consumers_without_user_file_loss` 和 moved residue 测试证明。 |
-| internal | `Internal` | `应用内部错误` | Restart、Collect diagnostics、Open Issue | trace id、OSLog、diagnostics export | Critical；不得自动重试。已有证据：`error_mapping_failure_recovery_retry_policy_stays_structured_by_kind` 和 mapped error view tests。 |
+| staging recovery | `StagingRecoveryRequired`；`recover_on_startup` 返回 `RecoveryReport`；底层失败可走 `Db`、`Io`、`PermissionDenied` | `导入暂存需要恢复` / `Startup recovery failed` | 打开或重试 startup recovery；fatal DB 路由到 repair；不得自动删除 residue | recovery report、`.areamatrix/staging`、DB staging rows、diagnostics export | 当前无 P0 缺口；用户原文件安全由 `recover_on_startup_integration_verify_real_report_drives_consumers_without_user_file_loss` 和 moved residue 测试证明。 |
+| internal | `Internal` | `应用内部错误` | Leave flow、Collect diagnostics、Open Issue；只有真实 restart 动作存在时显示 Restart；资料库打开失败可进入 blocking page | mapped error context、repository snapshot 或 About 脱敏报告 | Critical；不得自动重试。已有证据：`error_mapping_failure_recovery_retry_policy_stays_structured_by_kind` 和 mapped error view tests。 |
 
 ## 3. Core / UX 覆盖检查
 
@@ -45,21 +47,25 @@ Core `CoreError` variant 覆盖状态：
 |---|---|---|---|---|
 | `Io` | `文件操作失败` | Retry | Collect diagnostics | 已覆盖 |
 | `Db` | DB locked：`数据库暂时被占用`；DB corrupted：`资料库索引损坏` | Retry / Repair | `PRAGMA integrity_check`、diagnostics | 已覆盖：locked 为 `Retryable` + medium；corrupt 为 `Fatal` + critical。 |
-| `Config` | `配置错误` | Open rules / Revert | settings diagnostics | 已覆盖 |
+| `Config` | `配置错误` + 受控 reason；语义错误显示 field/rule + reason；仅 Core 提供时显示 parse location | Open rules / Revert（仅 last-valid backup 存在时） | settings diagnostics | 已覆盖；Swift 不解析 reason 推断位置或动作。 |
+| `Validation` | `输入无效` | Fix input | 页面 validation state | 已覆盖 |
 | `Classify` | `分类失败` | Use inbox / Report | logs | 已覆盖 |
 | `Conflict` | `路径冲突` | Auto-rename / Rename | import details | 已覆盖 |
 | `DuplicateFile` | `文件已存在` | Skip / Overwrite / Keep both | import details | 已覆盖 |
 | `FileNotFound` | `文件不存在` | Refresh / Remove from index | list/detail logs | 已覆盖 |
+| `ExpiredAction` | `操作已过期` | Refresh Undo History | action log / history state | 已覆盖 |
 | `RepoNotInitialized` | `资料库未初始化` | First launch / Repair | repo open diagnostics | P1 watch |
 | `InvalidPath` | `路径不合法` | Change path | validate-path diagnostics | 已覆盖 |
-| `ICloudPlaceholder` | `iCloud 文件未下载` | Download & retry / Switch local | mdls / brctl / diagnostics | P1 watch |
+| `ICloudPlaceholder` | `iCloud 文件未下载` | Download & retry / Switch local | mdls / platform download result / diagnostics | 已覆盖；真实环境发布证据单独保留。 |
+| `StagingRecoveryRequired` | `导入暂存需要恢复` | Open / Retry recovery | recovery report / staging rows | 已覆盖 |
 | `PermissionDenied` | `无访问权限` | Choose folder / Help | R6 checks / diagnostics | 已覆盖 |
-| `Internal` | `应用内部错误` | Restart / Collect diagnostics | trace id / OSLog | 已覆盖 |
+| `Internal` | `应用内部错误` | Leave flow / Collect diagnostics / Open Issue；真实动作存在时才显示 Restart | mapped error context / diagnostics | 已覆盖 |
 
 无主项检查：
 
 - 未发现没有 Core 来源的用户错误页面；DB locked/corrupted、磁盘满、EBUSY 属于 `Db`/`Io` 的子语义。
-- 未发现没有 UX 文案的 Core variant；全部 variant 在 `docs/api/error-codes.md` 和 `docs/ux/error-messages.md` 有文案。
+- 未发现没有 UX 文案的 Core variant；15 个 variant 均在 `docs/api/error-codes.md` 和
+  `docs/ux/error-messages.md` 有文案与恢复方向。
 - `Db` 子语义已在真实 Core mapping 中区分：locked 可重试、corrupt 阻断并进入 repair。
 
 ## 4. 事务式导入失败路径
@@ -94,10 +100,16 @@ Core `CoreError` variant 覆盖状态：
 - 残余约束：不得把任意 `Db` 默认当成可重试；未知 DB 错误仍走 high +
   `UserActionRequired`，避免误导用户执行自动修复。
 
-### P1 watch: Repo / iCloud 上下文语义
+### 上下文呈现约束
 
 - `RepoNotInitialized` 在 Core mapping 为 High，但 UX 页面语义是 first-launch 或 blocking repair。当前消费页面已有路由测试，后续不能只看 Core severity。
-- `ICloudPlaceholder` 的 Core suggested action 倾向“等待自动重试”，UX 要用户可控 `Download & retry` / `Switch to local repo`。当前 main repo / import flow 已有页面动作测试，后续不能退化为静默下载。
+- `ICloudPlaceholder` 的 Core suggested action、UX 和平台入口统一为用户可控
+  `Download & retry` / `Switch to local repo`；后续不能退化为静默下载或后台自动重试。
+- `Internal` 使用当前失败页面的阻断恢复动作；只有资料库无法打开时才需要全屏 route。
+- `Internal` 默认动作固定为 Leave flow、Collect diagnostics 和 Open Issue；Restart 只有连接真实、可执行、
+  经过验证的 restart 行为时才能出现。
+- `Config` 始终携带受控 reason。Swift 不解析 reason；只有 Core 提供 parse location 才显示行列，可视化
+  editor 的语义错误显示 field/rule + reason。Revert 仅在 last-valid backup 存在时可用。
 
 ## 6. 维护与验证
 

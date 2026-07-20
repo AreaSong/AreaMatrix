@@ -158,6 +158,11 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
         XCTAssertEqual(model.record, record)
         await lister.assertFirstAICallLogListRequest(feature: .classification)
     }
+
+    func testCallLogPrivacyRulesCheckedLabelDoesNotInferUserContent() {
+        XCTAssertEqual(aiCallLogPrivacyRulesCheckedLabel(true), "yes")
+        XCTAssertEqual(aiCallLogPrivacyRulesCheckedLabel(false), "not recorded")
+    }
 }
 
 private enum AICategorySuggestionCategoryMoveRequest: Equatable {

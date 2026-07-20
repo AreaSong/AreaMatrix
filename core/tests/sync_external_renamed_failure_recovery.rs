@@ -6,6 +6,7 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
+use serde_json::Value;
 
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
@@ -45,6 +46,14 @@ fn renamed(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
     ExternalEvent {
         path: relative_path.to_owned(),
         kind: ExternalEventKind::Renamed,
+        fs_event_id,
+    }
+}
+
+fn removed(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
+    ExternalEvent {
+        path: relative_path.to_owned(),
+        kind: ExternalEventKind::Removed,
         fs_event_id,
     }
 }
@@ -120,6 +129,42 @@ fn install_file_path_update_failure(repo: &Path) {
              END;",
         )
         .expect("install file path update failure trigger");
+}
+
+fn block_node_overview(repo: &Path, node: &str) -> std::path::PathBuf {
+    let overview = repo.join(format!(".areamatrix/generated/nodes/{node}.md"));
+    fs::remove_file(&overview).expect("remove node overview");
+    fs::create_dir(&overview).expect("block node overview replacement");
+    overview
+}
+
+fn restore_node_overview_path(overview: &Path) {
+    fs::remove_dir(overview).expect("remove node overview blocker");
+}
+
+fn convert_latest_rename_to_legacy_format(repo: &Path) {
+    let connection = open_db(repo);
+    let (change_id, detail): (i64, String) = connection
+        .query_row(
+            "SELECT id, detail_json FROM change_log WHERE action = 'renamed' ORDER BY id DESC LIMIT 1",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .expect("read latest rename detail");
+    let mut value: Value = serde_json::from_str(&detail).expect("parse latest rename detail");
+    value
+        .as_object_mut()
+        .expect("rename detail object")
+        .remove("event_id");
+    connection
+        .execute(
+            "UPDATE change_log SET detail_json = ?2 WHERE id = ?1",
+            rusqlite::params![change_id, value.to_string()],
+        )
+        .expect("write legacy rename detail");
+    connection
+        .execute("DROP TABLE external_sync_receipts", [])
+        .expect("simulate database created before durable receipts");
 }
 
 #[test]
@@ -221,6 +266,105 @@ fn sync_external_renamed_failure_recovery_db_update_failure_rolls_back_row_log_a
     );
 }
 
+#[test]
+fn sync_external_renamed_failure_recovery_replay_refreshes_source_category_overview() {
+    let repo = initialized_repo();
+    let file_id = sync_created_file(repo.path(), "zzz/original.pdf", b"overview replay", 30);
+    fs::create_dir_all(repo.path().join("aaa")).expect("create target category");
+    fs::rename(
+        repo.path().join("zzz/original.pdf"),
+        repo.path().join("aaa/original.pdf"),
+    )
+    .expect("simulate cross-category external rename");
+
+    let source_overview = repo.path().join(".areamatrix/generated/nodes/zzz.md");
+    fs::remove_file(&source_overview).expect("remove source overview");
+    fs::create_dir(&source_overview).expect("block source overview replacement");
+
+    let failed = sync_external_changes(
+        path_string(repo.path()),
+        vec![renamed("aaa/original.pdf", 31)],
+    );
+
+    assert!(matches!(failed, Err(CoreError::Io { .. })));
+    assert_eq!(fs_cursor(repo.path()), Some(30));
+    assert_eq!(
+        get_file(path_string(repo.path()), file_id)
+            .expect("metadata committed before overview failure")
+            .path,
+        "aaa/original.pdf"
+    );
+
+    fs::remove_dir(&source_overview).expect("remove source overview blocker");
+    fs::remove_file(repo.path().join("aaa/original.pdf"))
+        .expect("simulate a later external removal before replay");
+    let replayed = sync_external_changes(
+        path_string(repo.path()),
+        vec![renamed("aaa/original.pdf", 31)],
+    )
+    .expect("replay rename after overview output recovers");
+
+    assert_eq!(replayed.detected_renames, 0);
+    assert_eq!(fs_cursor(repo.path()), Some(31));
+    assert!(!fs::read_to_string(&source_overview)
+        .expect("read repaired source overview")
+        .contains("original.pdf"));
+    assert!(
+        fs::read_to_string(repo.path().join(".areamatrix/generated/nodes/aaa.md"))
+            .expect("read target overview")
+            .contains("original.pdf")
+    );
+
+    let removed = sync_external_changes(
+        path_string(repo.path()),
+        vec![removed("aaa/original.pdf", 32)],
+    )
+    .expect("process the later removal after replay advances the cursor");
+    assert_eq!(removed.detected_deletes, 1);
+    assert!(active_paths(repo.path()).is_empty());
+}
+
+#[test]
+fn sync_external_renamed_failure_recovery_replays_legacy_log_without_target_file() {
+    let repo = initialized_repo();
+    let file_id = sync_created_file(repo.path(), "zzz/legacy.pdf", b"legacy replay", 40);
+    fs::create_dir_all(repo.path().join("aaa")).expect("create target category");
+    fs::rename(
+        repo.path().join("zzz/legacy.pdf"),
+        repo.path().join("aaa/legacy.pdf"),
+    )
+    .expect("simulate cross-category external rename");
+    let source_overview = block_node_overview(repo.path(), "zzz");
+
+    let failed = sync_external_changes(
+        path_string(repo.path()),
+        vec![renamed("aaa/legacy.pdf", 41)],
+    );
+    assert!(matches!(failed, Err(CoreError::Io { .. })));
+    assert_eq!(fs_cursor(repo.path()), Some(40));
+    assert_eq!(change_log_count(repo.path(), "renamed"), 1);
+
+    restore_node_overview_path(&source_overview);
+    convert_latest_rename_to_legacy_format(repo.path());
+    fs::remove_file(repo.path().join("aaa/legacy.pdf"))
+        .expect("simulate later removal before legacy replay");
+    let replayed = sync_external_changes(
+        path_string(repo.path()),
+        vec![renamed("aaa/legacy.pdf", 41)],
+    )
+    .expect("replay legacy rename after overview output recovers");
+
+    assert_eq!(replayed.detected_renames, 0);
+    assert_eq!(fs_cursor(repo.path()), Some(41));
+    assert_eq!(change_log_count(repo.path(), "renamed"), 1);
+    assert_eq!(
+        get_file(path_string(repo.path()), file_id)
+            .expect("get legacy-renamed file")
+            .path,
+        "aaa/legacy.pdf"
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn sync_external_renamed_failure_recovery_permission_denied_keeps_db_cursor_and_file_intact() {
@@ -255,7 +399,7 @@ fn sync_external_renamed_failure_recovery_permission_denied_keeps_db_cursor_and_
 
     assert_eq!(
         result,
-        Err(CoreError::permission_denied("permission denied"))
+        Err(CoreError::permission_denied("docs/renamed.pdf"))
     );
     assert_eq!(fs_cursor(repo.path()), Some(20));
     let unchanged = get_file(path_string(repo.path()), file_id).expect("get unchanged file");

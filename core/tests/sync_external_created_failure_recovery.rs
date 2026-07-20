@@ -41,6 +41,14 @@ fn created(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
     }
 }
 
+fn removed(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
+    ExternalEvent {
+        path: relative_path.to_owned(),
+        kind: ExternalEventKind::Removed,
+        fs_event_id,
+    }
+}
+
 fn file_filter() -> FileFilter {
     FileFilter {
         category: None,
@@ -64,6 +72,16 @@ fn active_file_count(repo: &Path) -> i64 {
             |row| row.get(0),
         )
         .expect("count active file rows")
+}
+
+fn external_change_count(repo: &Path) -> i64 {
+    open_db(repo)
+        .query_row(
+            "SELECT COUNT(*) FROM change_log WHERE action = 'external_modified'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("count external change-log rows")
 }
 
 fn fs_cursor(repo: &Path) -> Option<i64> {
@@ -105,7 +123,7 @@ fn sync_external_created_failure_recovery_replays_after_missing_file_without_par
         ],
     );
 
-    assert!(matches!(failed, Err(CoreError::Io { .. })));
+    assert_eq!(failed, Err(CoreError::file_not_found("docs/missing.pdf")));
 
     assert_eq!(active_file_count(repo.path()), 0);
     assert_eq!(fs_cursor(repo.path()), None);
@@ -169,6 +187,115 @@ fn sync_external_created_failure_recovery_overview_failure_defers_cursor_and_rep
         .is_file());
 }
 
+#[test]
+fn sync_external_created_failure_recovery_cursor_failure_replays_without_duplicate_business_log() {
+    let repo = initialized_repo();
+    let relative_path = "docs/external.pdf";
+    write_repo_file(repo.path(), relative_path, b"external bytes");
+    open_db(repo.path())
+        .execute_batch(
+            "CREATE TRIGGER fail_fs_event_cursor_write
+             BEFORE INSERT ON fs_event_cursor
+             BEGIN
+                 SELECT RAISE(FAIL, 'forced cursor write failure');
+             END;",
+        )
+        .expect("install cursor write failure trigger");
+
+    let failed = sync_external_changes(path_string(repo.path()), vec![created(relative_path, 116)]);
+
+    assert!(matches!(failed, Err(CoreError::Db { .. })));
+    assert_eq!(active_file_count(repo.path()), 1);
+    assert_eq!(external_change_count(repo.path()), 1);
+    assert_eq!(fs_cursor(repo.path()), None);
+    let overview = fs::read_to_string(repo.path().join(".areamatrix/generated/nodes/docs.md"))
+        .expect("read overview committed before cursor failure");
+    assert!(overview.contains("external.pdf"));
+
+    open_db(repo.path())
+        .execute("DROP TRIGGER fail_fs_event_cursor_write", [])
+        .expect("remove cursor write failure trigger");
+    fs::write(repo.path().join(relative_path), b"changed after commit")
+        .expect("simulate a later external modification before replay");
+    let replayed =
+        sync_external_changes(path_string(repo.path()), vec![created(relative_path, 116)])
+            .expect("replay batch after cursor persistence recovers");
+
+    assert_eq!(replayed.detected_creates, 0);
+    assert_eq!(active_file_count(repo.path()), 1);
+    assert_eq!(external_change_count(repo.path()), 1);
+    assert_eq!(fs_cursor(repo.path()), Some(116));
+    assert_eq!(
+        fs::read(repo.path().join(relative_path)).expect("user file remains readable"),
+        b"changed after commit"
+    );
+}
+
+#[test]
+fn sync_external_created_failure_recovery_reactivation_log_failure_restores_deleted_row() {
+    let repo = initialized_repo();
+    let relative_path = "docs/reappeared.pdf";
+    write_repo_file(repo.path(), relative_path, b"before");
+    sync_external_changes(path_string(repo.path()), vec![created(relative_path, 1)])
+        .expect("sync initial external file");
+    fs::remove_file(repo.path().join(relative_path)).expect("simulate external deletion");
+    sync_external_changes(path_string(repo.path()), vec![removed(relative_path, 2)])
+        .expect("sync external deletion");
+    let before = open_db(repo.path())
+        .query_row(
+            "SELECT id, status, hash_sha256, size_bytes, deleted_at FROM files WHERE path = ?1",
+            [relative_path],
+            |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, i64>(3)?,
+                    row.get::<_, Option<i64>>(4)?,
+                ))
+            },
+        )
+        .expect("read deleted row before reactivation");
+    write_repo_file(repo.path(), relative_path, b"after content");
+    open_db(repo.path())
+        .execute_batch(
+            "CREATE TRIGGER fail_external_reactivation_log
+             BEFORE INSERT ON change_log
+             WHEN NEW.action = 'external_modified'
+              AND json_extract(NEW.detail_json, '$.kind') = 'create'
+             BEGIN
+                 SELECT RAISE(FAIL, 'forced reactivation log failure');
+             END;",
+        )
+        .expect("install reactivation log failure trigger");
+
+    let result = sync_external_changes(path_string(repo.path()), vec![created(relative_path, 3)]);
+
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+    assert_eq!(fs_cursor(repo.path()), Some(2));
+    let after = open_db(repo.path())
+        .query_row(
+            "SELECT id, status, hash_sha256, size_bytes, deleted_at FROM files WHERE path = ?1",
+            [relative_path],
+            |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, i64>(3)?,
+                    row.get::<_, Option<i64>>(4)?,
+                ))
+            },
+        )
+        .expect("read deleted row after failed reactivation");
+    assert_eq!(after, before);
+    assert_eq!(after.1, "deleted");
+    assert_eq!(
+        fs::read(repo.path().join(relative_path)).expect("reappeared user file remains readable"),
+        b"after content"
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn sync_external_created_failure_recovery_permission_denied_keeps_files_db_and_cursor_unchanged() {
@@ -203,7 +330,7 @@ fn sync_external_created_failure_recovery_permission_denied_keeps_files_db_and_c
 
     assert_eq!(
         result,
-        Err(CoreError::permission_denied("permission denied"))
+        Err(CoreError::permission_denied("docs/blocked.pdf"))
     );
     assert_eq!(active_file_count(repo.path()), 0);
     assert_eq!(fs_cursor(repo.path()), None);

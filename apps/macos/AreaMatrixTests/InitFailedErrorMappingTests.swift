@@ -15,6 +15,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
             pathValidator: StaticRepositoryPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.createdFixture())),
             scanSessionReader: StaticScanSessionReader(),
             errorMapper: errorMapper,
             helpOpener: NoopWelcomeHelpOpener()
@@ -139,9 +140,9 @@ final class InitFailedErrorMappingTests: XCTestCase {
     @MainActor
     func testInitializationFailureCollectsDiagnosticsWithoutSavingRepositorySelection() async {
         let snapshot = DiagnosticsSnapshotSnapshot.testFixture(
-            snapshotPath: "/tmp/diagnostics/redacted.zip",
+            snapshotPath: "/tmp/diagnostics/index-initialization.db",
             createdAt: 1_700_000_000,
-            warnings: ["paths redacted"]
+            warnings: ["index.db-wal disappeared during snapshot"]
         )
         let collector = InitFailedRecordingDiagnosticsCollector(result: .success(snapshot))
         let writer = InitFailedRecordingSettingsWriter()

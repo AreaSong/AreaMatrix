@@ -8,6 +8,7 @@ extension MainFileListModel {
               canPerformWriteAction(fileID: fileID) else { return false }
 
         let returnTargetCategory = renameState.changeCategoryReturnTarget(for: fileID)
+        let selectionGeneration = detailGeneration
         renameState = renameState.renamingState(fileID: fileID, targetCategory: returnTargetCategory)
         do {
             let renamedFile = try await fileRenamer.renameFile(
@@ -15,7 +16,7 @@ extension MainFileListModel {
                 fileID: fileID,
                 newName: newName
             )
-            applyRenamedFile(renamedFile)
+            applyRenamedFile(renamedFile, selectionGeneration: selectionGeneration)
             renameState = .idle
             if let returnTargetCategory {
                 changeCategoryState = .idle
@@ -46,11 +47,12 @@ extension MainFileListModel {
         }
     }
 
-    private func applyRenamedFile(_ renamedFile: FileEntrySnapshot) {
+    private func applyRenamedFile(_ renamedFile: FileEntrySnapshot, selectionGeneration: Int) {
         files = files.map { file in
             file.id == renamedFile.id ? renamedFile : file
         }
-        selection = .single(renamedFile.id)
+        guard detailGeneration == selectionGeneration,
+              selection.singleFileID == renamedFile.id else { return }
         selectedFileDetail = renamedFile
         selectedFileNoteWriteBlock = noteWriteBlock(for: renamedFile)
         detailErrorMapping = nil

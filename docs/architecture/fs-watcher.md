@@ -42,7 +42,12 @@ watcher 启动前调用 `get_fs_event_cursor(repoPath)`：
 
 重扫请求记录当前 `FSEventsGetCurrentEventId()` 作为 resume seed。用户确认并完成重扫后，应用通过 `set_fs_event_cursor` 写入该 seed，再重新打开资料库和 watcher。
 
-正常事件批次不由 Swift 额外写 cursor；Core 在成功完成 DB batch 和 overview 后写入最大 event ID。
+正常业务批次先由 Core 在 DB batch 和 overview 成功后写入实际 signal 的最大 event ID。Swift 同时保留
+整个回调窗口的 `cursorWatermark`。每次 flush 都发布一个有序同步窗口：业务窗口在 Core 成功后补写更高
+watermark；全部事件被过滤时发布空窗口，并在它到达队首后确认 watermark。
+
+watcher 的启动、停止和资料库切换使用 generation token。异步读取旧资料库 cursor 后若 generation 或当前
+资料库已经变化，旧启动结果不得创建 stream、覆盖新 stream、发布事件或推进新资料库 cursor。
 
 ## FSEventStream 配置
 
@@ -92,16 +97,30 @@ watcher 忽略：
 
 同一路径在窗口内的 flags 合并，event ID 取最大值。flush 前按 event ID、路径排序。
 
+Core 收到一批事件后再次按 `fs_event_id` 和原输入顺序归一化同一路径事件：后到的 Created、Removed 或
+Renamed 覆盖更早的业务 kind；Modified 只推进该路径 watermark，不覆盖已经观察到的业务 kind。这样
+Removed→Created、Created→Removed 和 Renamed→Removed 都以较晚事实为准，同时保留整批最大 cursor。
+
 ## Rename 配对
 
 Swift 不使用 inode 配对旧路径和新路径。Core 对新路径计算 hash，并在 active rows 中查找唯一候选：
 
 - 唯一候选：更新同一 file ID 的 path、name 和 category。
-- 无候选或多个候选：返回 Conflict，不猜测。
+- 候选旧路径必须已经不存在；仍存在说明可能是同 hash copy，返回 Conflict。
+- 目标路径的 active、staging 或 deleted row 均参与冲突检查；无候选或多个候选也返回 Conflict，不猜测。
 - 同批出现旧路径 Removed 和新路径 Renamed 时，Core 在配对成功后抑制同一 file ID 的 soft delete。
 - 跨分类移动同时更新 category，并刷新来源与目标分类概览。
 
 Core 不执行物理 rename；它只登记 Finder、终端或同步工具已经完成的外部变化。
+
+## Created 与重新激活
+
+- active 同路径 row：幂等跳过。
+- 没有同路径 row：创建 `origin=external`、`storage_mode=indexed` 的 active row。
+- deleted 同路径 row：复用原 file ID，更新 hash/size/name/category，清除 `deleted_at` 并恢复 active。
+- staging 同路径 row：返回 Conflict，不覆盖未完成导入状态。
+
+外部 create 写入 `external_modified`，detail 中记录 `kind=create`。
 
 ## Modified
 
@@ -110,6 +129,8 @@ Core 不执行物理 rename；它只登记 Finder、终端或同步工具已经�
 - hash/size 未变化：幂等跳过。
 - 内容变化：更新 metadata 并写 `external_modified` change log。
 - 路径存在但没有 active row：按外部 create 登记。
+- 文件在读取期间继续变化时最多重试稳定快照；Unix/macOS 同时校验打开句柄与最终路径的
+  device/inode identity，防止同 size/mtime 的原子替换提交旧句柄 hash。仍不稳定则返回 Conflict，等待后续事件重放。
 
 Core 只读取用户明确存在的本地文件；不修改文件正文。
 
@@ -118,7 +139,8 @@ Core 只读取用户明确存在的本地文件；不修改文件正文。
 AreaMatrix 自身文件动作在平台层标记 `(repoPath, relativePath)`：
 
 - actor 内使用引用计数，支持嵌套 mark/unmark。
-- 每次 mark 或剩余引用 unmark 后刷新过期时间。
+- 每次 mark 或仍有引用的 unmark 后刷新过期时间。
+- 最后一次 unmark 把 count 置 0，但 entry 继续保留完整 TTL grace，吸收延迟到达的自身事件。
 - 默认 TTL 为 60 秒，防止异常路径永久屏蔽外部变化。
 - 只过滤匹配路径，不丢弃同批其他路径。
 
@@ -133,6 +155,23 @@ watcher 在收到事件后启动可取消的 200ms flush task。新事件到达�
 - flush 后一次性发布信号列表。
 - 当前资料库 model 再合并同路径的较新 event ID，并以单个 Core batch 提交。
 
+flush 取当前窗口最大 event ID 作为 `cursorWatermark`：
+
+- 有 signal 时，窗口携带排序并按路径去重后的业务事件。
+- 全部事件被路径规则或 InFlight 过滤时，窗口的事件列表为空。
+- relay notification 只负责唤醒；消费端一次取出该资料库的完整 backlog，不使用 notification object 替代队列。
+- 当前资料库只处理队首窗口。业务窗口完成 Core 后按需补写 watermark；空窗口在队首直接确认 watermark。
+- Core 或 cursor 失败时保留队首并阻断后续窗口；已经提交后的 UI reload 失败不会重新提交同一 Core batch。
+
+## 受管 note sidecar
+
+`<filename>.md` 只有在基础文件存在 active row 且 `notes` 表已有该 file ID 时才是受管 sidecar。
+
+- 受管 sidecar 的 watcher 重放只参与 cursor/watermark 确认。
+- 不把它登记成普通 external Markdown 文件。
+- 外部编辑不会自动回写 DB；后续 `read_note` / `write_note` 发现不一致时返回错误。
+- 不满足受管合同的普通 Markdown 文件继续按普通文件同步。
+
 ## Core 提交顺序
 
 `sync_external_changes`：
@@ -141,7 +180,7 @@ watcher 在收到事件后启动可取消的 200ms flush task。新事件到达�
 2. 规划 Created、Renamed、Removed、Modified。
 3. 在一个 SQLite 事务中写 files 和 change_log。
 4. 更新所有受影响分类和 root overview。
-5. 单独持久化批次最大 cursor。
+5. 单独持久化业务事件最大 cursor；Swift 按需补写回调窗口 watermark。
 
 DB 事务失败时 metadata 和 change log 全部回滚，cursor 不推进。overview 或 cursor 失败时 cursor 仍不推进；下一次重放必须安全。
 
@@ -172,9 +211,13 @@ DB 事务失败时 metadata 和 change log 全部回滚，cursor 不推进。ove
 - dropped/wrapped flags 全部停止 stream 并请求重扫。
 - RootChanged 进入重新连接。
 - HistoryDone 不产生业务事件。
-- burst 合并保持不同路径并按 event ID 排序。
-- InFlight 引用计数、TTL 和逐路径过滤正确。
+- burst 合并保持不同路径并按 event ID 排序，所有 signal 携带同一 watermark。
+- filtered-only window 只在前序窗口完成后单调确认 watermark，失败时保留队首并阻断后续 ack。
+- 快速切换资料库时，旧 cursor read / flush 不得覆盖新 stream 或向新资料库发布事件。
+- InFlight 引用计数、count=0 TTL grace 和逐路径过滤正确。
 - 单批进入 Core，DB 失败保持原子，overview 失败不推进 cursor。
+- managed sidecar 重放只推进 cursor，不登记普通文件。
+- created deleted-row reactivation 保持原 file ID。
 - rename、modified、removed 和跨分类概览均可重放。
 - iCloud placeholder 不发生隐式下载或用户文件写入。
 

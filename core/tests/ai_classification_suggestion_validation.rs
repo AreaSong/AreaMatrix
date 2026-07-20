@@ -346,11 +346,11 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
     assert_signature(suggest_category_with_ai);
 
     for fragment in [
-        "`core/tests/`，每个文件独立编译",
-        "## 关键测试场景",
-        "### Classify 模块",
-        "无效 yaml 时保留旧规则",
-        "`core/tests/` 下，全场景从 init_repo",
+        "## Rust Core",
+        "Core 测试位于：",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+        "文件安全能力至少覆盖正常路径、DB 失败、文件系统失败、重复执行、边界路径和用户文件不变量。",
+        "cargo test --all-features --workspace",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

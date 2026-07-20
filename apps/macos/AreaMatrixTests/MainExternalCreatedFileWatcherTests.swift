@@ -4,211 +4,70 @@ import XCTest
 
 final class MainExternalCreatedFileWatcherTests: XCTestCase {
     @MainActor
-    func testStartsFromCursorAndRequestsRescanWhenCursorIsMissing() async throws {
-        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalWatcherCursorTests")
-        defer { removeTestTemporaryItems(repoURL) }
-
-        let cursorWatcher = MainExternalCreatedFileWatcher(
-            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 42)
-        )
-        await cursorWatcher.start(repoPath: repoURL.path)
-
-        XCTAssertEqual(cursorWatcher.streamStartEventID, 42)
-        XCTAssertNil(cursorWatcher.recoveryRequest)
-        cursorWatcher.stop()
-
-        let missingCursorWatcher = MainExternalCreatedFileWatcher(
-            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: nil)
-        )
-        await missingCursorWatcher.start(repoPath: repoURL.path)
-
-        XCTAssertNil(missingCursorWatcher.streamStartEventID)
-        XCTAssertEqual(missingCursorWatcher.recoveryRequest?.kind, .rescanRequired)
-        XCTAssertEqual(missingCursorWatcher.recoveryRequest?.repoPath, repoURL.standardizedFileURL.path)
-        XCTAssertNotNil(missingCursorWatcher.recoveryRequest?.resumeEventID)
-        missingCursorWatcher.stop()
-    }
-
-    @MainActor
-    func testRoutesRecoveryFlagsAndIgnoresHistoryBoundary() async throws {
-        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalWatcherRecoveryTests")
-        defer { removeTestTemporaryItems(repoURL) }
-        let watcher = MainExternalCreatedFileWatcher(
-            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 50),
-            flushDelay: .milliseconds(1)
-        )
-        await watcher.start(repoPath: repoURL.path)
-
-        watcher.handle(events: [MainExternalCreatedFileWatcherEvent(
-            path: repoURL.path,
-            flags: FSEventStreamEventFlags(kFSEventStreamEventFlagHistoryDone),
-            eventID: 51
-        )])
-        XCTAssertNil(watcher.recoveryRequest)
-        XCTAssertEqual(AreaMatrixExternalCreatedFileRelay.takePendingSignals(), [])
-
-        let rescanFlags = [
-            kFSEventStreamEventFlagMustScanSubDirs,
-            kFSEventStreamEventFlagUserDropped,
-            kFSEventStreamEventFlagKernelDropped,
-            kFSEventStreamEventFlagEventIdsWrapped
-        ]
-        for (offset, flag) in rescanFlags.enumerated() {
-            await watcher.start(repoPath: repoURL.path)
-            watcher.handle(events: [MainExternalCreatedFileWatcherEvent(
-                path: repoURL.path,
-                flags: FSEventStreamEventFlags(flag),
-                eventID: FSEventStreamEventId(52 + offset)
-            )])
-            XCTAssertEqual(watcher.recoveryRequest?.kind, .rescanRequired)
-            XCTAssertNil(watcher.streamStartEventID)
-        }
-
-        await watcher.start(repoPath: repoURL.path)
-        watcher.handle(events: [MainExternalCreatedFileWatcherEvent(
-            path: repoURL.path,
-            flags: FSEventStreamEventFlags(kFSEventStreamEventFlagRootChanged),
-            eventID: 56
-        )])
-        XCTAssertEqual(watcher.recoveryRequest?.kind, .rootChanged)
-        XCTAssertNil(watcher.streamStartEventID)
-        watcher.stop()
-    }
-
-    @MainActor
-    func testCoalescesBurstAndPublishesEventIDOrder() async throws {
-        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalWatcherBurstTests")
-        defer { removeTestTemporaryItems(repoURL) }
-        let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
-        try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
-        let firstURL = docsURL.appendingPathComponent("first.pdf")
-        let secondURL = docsURL.appendingPathComponent("second.pdf")
-        try Data("first".utf8).write(to: firstURL)
-        try Data("second".utf8).write(to: secondURL)
+    func testRelayDrainKeepsBacklogOrderAndOtherRepositoryWindows() throws {
         _ = AreaMatrixExternalCreatedFileRelay.takePendingSignals()
+        let repoA = "/tmp/repo-a"
+        let repoB = "/tmp/repo-b"
+        let a100 = try XCTUnwrap(try MainExternalSyncWindow(
+            repoPath: repoA,
+            events: [XCTUnwrap(MainExternalCreatedFileEvent(relativePath: "docs/a.pdf", fsEventID: 100))],
+            cursorWatermark: 100
+        ))
+        let b101 = try XCTUnwrap(try MainExternalSyncWindow(
+            repoPath: repoB,
+            events: [XCTUnwrap(MainExternalCreatedFileEvent(relativePath: "docs/b.pdf", fsEventID: 101))],
+            cursorWatermark: 101
+        ))
+        let a102 = try XCTUnwrap(try MainExternalSyncWindow(
+            repoPath: repoA,
+            events: [XCTUnwrap(MainExternalCreatedFileEvent(relativePath: "docs/c.pdf", fsEventID: 102))],
+            cursorWatermark: 102
+        ))
+        AreaMatrixExternalCreatedFileRelay.publish(a100)
+        AreaMatrixExternalCreatedFileRelay.publish(b101)
+        AreaMatrixExternalCreatedFileRelay.publish(a102)
 
-        let watcher = MainExternalCreatedFileWatcher(
-            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 100),
-            flushDelay: .milliseconds(1)
+        XCTAssertEqual(
+            AreaMatrixExternalCreatedFileRelay.takePendingWindows(matchingRepoPath: repoA),
+            [a100, a102]
         )
-        await watcher.start(repoPath: repoURL.path)
-        watcher.handle(events: [
-            MainExternalCreatedFileWatcherEvent(
-                path: firstURL.path,
-                flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemCreated),
-                eventID: 200
-            ),
-            MainExternalCreatedFileWatcherEvent(
-                path: secondURL.path,
-                flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemModified),
-                eventID: 150
-            ),
-            MainExternalCreatedFileWatcherEvent(
-                path: firstURL.path,
-                flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemModified),
-                eventID: 250
-            )
-        ])
-
-        let observedSignals = await waitForWatcherSignals(failureMessage: "Timed out waiting for watcher burst flush")
-        let signals = try XCTUnwrap(observedSignals)
-        let expectedModified = try XCTUnwrap(MainExternalCreatedFileSignal(
-            kind: .modified,
-            repoPath: repoURL.path,
-            relativePath: "docs/second.pdf",
-            fsEventID: 150,
-            cursorWatermark: 250
-        ))
-        let expectedCreated = try XCTUnwrap(MainExternalCreatedFileSignal(
-            kind: .created,
-            repoPath: repoURL.path,
-            relativePath: "docs/first.pdf",
-            fsEventID: 250,
-            cursorWatermark: 250
-        ))
-        XCTAssertEqual(signals, [expectedModified, expectedCreated])
-        watcher.stop()
+        XCTAssertEqual(
+            AreaMatrixExternalCreatedFileRelay.takePendingWindows(matchingRepoPath: repoB),
+            [b101]
+        )
     }
 
     @MainActor
-    func testFiltersInFlightPathsWithoutDroppingOtherEvents() async throws {
-        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalWatcherInFlightTests")
-        defer { removeTestTemporaryItems(repoURL) }
-        let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
-        try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
-        let filteredURL = docsURL.appendingPathComponent("filtered.pdf")
-        let deliveredURL = docsURL.appendingPathComponent("delivered.pdf")
-        try Data("filtered".utf8).write(to: filteredURL)
-        try Data("delivered".utf8).write(to: deliveredURL)
+    func testSameWatermarkMergesFilteredAckWithBusinessWindow() throws {
         _ = AreaMatrixExternalCreatedFileRelay.takePendingSignals()
-
-        let tracker = InFlightFileChangeTracker()
-        await tracker.mark(repoPath: repoURL.path, relativePath: "docs/filtered.pdf")
-        let watcher = MainExternalCreatedFileWatcher(
-            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 300),
-            inFlightTracker: tracker,
-            flushDelay: .milliseconds(1)
-        )
-        await watcher.start(repoPath: repoURL.path)
-        watcher.handle(events: [
-            MainExternalCreatedFileWatcherEvent(
-                path: filteredURL.path,
-                flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemCreated),
-                eventID: 303
-            ),
-            MainExternalCreatedFileWatcherEvent(
-                path: deliveredURL.path,
-                flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemCreated),
-                eventID: 302
-            )
-        ])
-
-        let observedSignals = await waitForWatcherSignals(
-            failureMessage: "Timed out waiting for in-flight filtered watcher flush"
-        )
-        let signals = try XCTUnwrap(observedSignals)
-        let expectedSignal = try XCTUnwrap(MainExternalCreatedFileSignal(
-            repoPath: repoURL.path,
-            relativePath: "docs/delivered.pdf",
-            fsEventID: 302,
-            cursorWatermark: 303
+        let repoPath = "/tmp/repo-same-watermark"
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(
+            relativePath: "docs/business.pdf",
+            fsEventID: 900,
+            cursorWatermark: 900
         ))
-        XCTAssertEqual(signals, [expectedSignal])
-        await tracker.unmark(repoPath: repoURL.path, relativePath: "docs/filtered.pdf")
-        watcher.stop()
-    }
+        let filtered = try XCTUnwrap(MainExternalSyncWindow(
+            repoPath: repoPath,
+            events: [],
+            cursorWatermark: 900
+        ))
+        let business = try XCTUnwrap(MainExternalSyncWindow(
+            repoPath: repoPath,
+            events: [event],
+            cursorWatermark: 900
+        ))
 
-    @MainActor
-    func testFilteredOnlyBatchAdvancesCursorWithoutPublishingSignal() async throws {
-        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalWatcherFilteredCursorTests")
-        defer { removeTestTemporaryItems(repoURL) }
-        let docsURL = repoURL.appendingPathComponent("docs", isDirectory: true)
-        try FileManager.default.createDirectory(at: docsURL, withIntermediateDirectories: true)
-        let filteredURL = docsURL.appendingPathComponent("filtered.pdf")
-        try Data("filtered".utf8).write(to: filteredURL)
-        _ = AreaMatrixExternalCreatedFileRelay.takePendingSignals()
-
-        let tracker = InFlightFileChangeTracker()
-        await tracker.mark(repoPath: repoURL.path, relativePath: "docs/filtered.pdf")
-        let syncer = RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 400)
-        let watcher = MainExternalCreatedFileWatcher(
-            cursorStore: syncer,
-            inFlightTracker: tracker,
-            flushDelay: .milliseconds(1)
+        AreaMatrixExternalCreatedFileRelay.publish(filtered)
+        AreaMatrixExternalCreatedFileRelay.publish(business)
+        XCTAssertEqual(
+            AreaMatrixExternalCreatedFileRelay.takePendingWindows(matchingRepoPath: repoPath),
+            [business]
         )
-        await watcher.start(repoPath: repoURL.path)
-        watcher.handle(events: [
-            MainExternalCreatedFileWatcherEvent(
-                path: filteredURL.path,
-                flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemCreated),
-                eventID: 401
-            )
-        ])
 
-        try await Task.sleep(for: .milliseconds(20))
-        await syncer.assertCursorWrites([401])
-        XCTAssertEqual(AreaMatrixExternalCreatedFileRelay.takePendingSignals(), [])
-        watcher.stop()
+        let opening = RepositoryOpeningResult.detailMetaFixture(repoPath: repoPath, files: [])
+        let shell = makeShellMainListFixture(opening: opening, model: makeShellOnboardingModel())
+        XCTAssertTrue(shell.model.handleExternalSyncWindows([filtered, business]))
+        XCTAssertEqual(shell.model.externalSyncWindows(for: opening), [business])
     }
 
     @MainActor
@@ -221,18 +80,21 @@ final class MainExternalCreatedFileWatcherTests: XCTestCase {
             XCTUnwrap(MainExternalCreatedFileSignal(
                 repoPath: "/tmp/repo",
                 relativePath: "docs/second.pdf",
-                fsEventID: 320
+                fsEventID: 320,
+                cursorWatermark: 330
             )),
             XCTUnwrap(MainExternalCreatedFileSignal(
                 repoPath: "/tmp/repo",
                 relativePath: "docs/first.pdf",
-                fsEventID: 310
+                fsEventID: 310,
+                cursorWatermark: 330
             )),
             XCTUnwrap(MainExternalCreatedFileSignal(
                 kind: .modified,
                 repoPath: "/tmp/repo",
                 relativePath: "docs/first.pdf",
-                fsEventID: 330
+                fsEventID: 330,
+                cursorWatermark: 330
             ))
         ]
 
@@ -241,7 +103,8 @@ final class MainExternalCreatedFileWatcherTests: XCTestCase {
             MainExternalCreatedFileEvent(
                 kind: .created,
                 relativePath: "docs/second.pdf",
-                fsEventID: 320
+                fsEventID: 320,
+                cursorWatermark: 330
             ),
             MainExternalCreatedFileEvent(
                 kind: .modified,
@@ -321,91 +184,5 @@ final class MainExternalCreatedFileWatcherTests: XCTestCase {
         await expiredTracker.mark(repoPath: "/tmp/repo", relativePath: "docs/expired.pdf")
         let expired = await expiredTracker.contains(repoPath: "/tmp/repo", relativePath: "docs/expired.pdf")
         XCTAssertFalse(expired)
-    }
-
-    @MainActor
-    func testSubmitsBurstAsSingleCoreBatch() async throws {
-        var created = FileEntrySnapshot.detailMetaFixture(id: 26, currentName: "created.pdf")
-        created.origin = "External"
-        var modified = FileEntrySnapshot.detailMetaFixture(id: 27, currentName: "modified.pdf")
-        modified.origin = "External"
-        let events = try [
-            XCTUnwrap(MainExternalCreatedFileEvent(
-                kind: .created,
-                relativePath: created.path,
-                fsEventID: 340
-            )),
-            XCTUnwrap(MainExternalCreatedFileEvent(
-                kind: .modified,
-                relativePath: modified.path,
-                fsEventID: 341,
-                cursorWatermark: 342
-            ))
-        ]
-        let syncer = RecordingExternalChangesSyncer(result: .success(SyncResultSnapshot(
-            detectedCreates: 1,
-            detectedRenames: 0,
-            detectedDeletes: 0,
-            detectedModifies: 1,
-            errors: []
-        )))
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
-            fileLister: RecordingFileLister(files: [created, modified]),
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(modified)),
-            changeLogLister: DetailLogRecordingLister(results: [.success([
-                .detailLogFixture(fileID: modified.id, action: "external_modified")
-            ])]),
-            externalChangesSyncer: syncer,
-            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
-        )
-
-        let synced = await model.syncExternalChanges(events)
-        XCTAssertTrue(synced)
-        await syncer.assertSyncedExternalEvents(repoPath: "/tmp/repo", events: events)
-        await syncer.assertCursorWrites([342])
-        XCTAssertEqual(model.selection, .single(modified.id))
-    }
-
-    @MainActor
-    func testNoOpExternalBatchCompletesWithoutSelectingIgnoredPath() async throws {
-        let event = try XCTUnwrap(MainExternalCreatedFileEvent(
-            kind: .modified,
-            relativePath: "docs/report.pdf.md",
-            fsEventID: 350
-        ))
-        let syncer = RecordingExternalChangesSyncer(result: .success(SyncResultSnapshot(
-            detectedCreates: 0,
-            detectedRenames: 0,
-            detectedDeletes: 0,
-            detectedModifies: 0,
-            errors: []
-        )))
-        let model = MainFileListModel(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
-            fileLister: RecordingFileLister(files: []),
-            fileDetailer: RecordingFileDetailer(results: []),
-            externalChangesSyncer: syncer,
-            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
-        )
-
-        let synced = await model.syncExternalChanges([event])
-
-        XCTAssertTrue(synced)
-        XCTAssertEqual(model.selection, MainFileSelectionState.none)
-        await syncer.assertSyncedExternalEvents(repoPath: "/tmp/repo", events: [event])
-    }
-
-    @MainActor
-    private func waitForWatcherSignals(failureMessage: String) async -> [MainExternalCreatedFileSignal]? {
-        await waitForMainActorTestValue(
-            attempts: 100,
-            delayNanoseconds: 1_000_000,
-            failureMessage: { failureMessage },
-            value: {
-                let signals = AreaMatrixExternalCreatedFileRelay.takePendingSignals()
-                return signals.isEmpty ? nil : signals
-            }
-        )
     }
 }

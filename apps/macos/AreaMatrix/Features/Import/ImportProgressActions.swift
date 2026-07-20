@@ -92,7 +92,9 @@ extension OnboardingModel {
         guard let context = state.retryContext else { return }
 
         do {
-            let report = try await startupRecoverer.recoverOnStartup(repoPath: context.repoPath)
+            let report = try await repositoryWriteCoordinator.withWriteAccess(repoPath: context.repoPath) {
+                try await self.startupRecoverer.recoverOnStartup(repoPath: context.repoPath)
+            }
             guard case let .importProgress(latestState) = route else { return }
             route = .importProgress(latestState
                 .withRecoveryCheck(.retryAllowed(report.hasVisibleDetails ? report : nil)))

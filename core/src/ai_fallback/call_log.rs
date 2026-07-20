@@ -12,6 +12,7 @@ pub(super) fn insert_fallback_call_log(
     repo: &Path,
     status: &AiFallbackStatus,
     provider_error_code: Option<&str>,
+    privacy_rules_checked: bool,
 ) -> CoreResult<i64> {
     db::insert_ai_call_log_record(
         repo,
@@ -23,6 +24,7 @@ pub(super) fn insert_fallback_call_log(
             model: status.route.as_ref().map(model_name),
             status: log_status(status).to_owned(),
             sent_fields_json: "[]".to_owned(),
+            privacy_rules_checked,
             privacy_rule_id: status.privacy_rule_id.clone(),
             result_summary: status.message.clone(),
             error_code: Some(

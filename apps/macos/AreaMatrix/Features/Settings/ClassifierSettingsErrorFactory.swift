@@ -59,17 +59,14 @@ enum ClassifierSettingsErrorFactory {
         if let context = await mapper.mapCoreErrorContextIfPresent(error) {
             if context.kind == .config {
                 return ClassifierSettingsValidationError(
-                    message: ClassifierValidationErrorFormatter.message(
-                        coreReason: context.rawContext,
-                        mappedMessage: context.mapping.userMessage
-                    ),
-                    recovery: "Open classifier.yaml and fix the reported line and field."
+                    message: context.mapping.userMessage,
+                    recovery: "Open classifier.yaml and fix the reported configuration error."
                 )
             }
 
             return ClassifierSettingsValidationError(
                 message: context.mapping.userMessage,
-                recovery: "Open classifier.yaml and fix the reported line."
+                recovery: "Review the reported error, then validate classifier.yaml again."
             )
         }
 

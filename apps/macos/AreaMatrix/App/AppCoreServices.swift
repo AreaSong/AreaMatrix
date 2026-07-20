@@ -1,6 +1,8 @@
 import Foundation
 
 enum AppCoreServices {
+    static let repositoryWriteCoordinator = RepositoryWriteCoordinator.shared
+
     static var treeLister: any CoreRepositoryTreeListing {
         coreBridge()
     }
@@ -38,6 +40,10 @@ enum AppCoreServices {
     }
 
     static var fileDetailer: any CoreFileDetailing {
+        coreBridge()
+    }
+
+    static var missingFileRecoverer: any CoreMissingFileRecovering {
         coreBridge()
     }
 
@@ -265,6 +271,7 @@ struct MainRepositoryContentAssembly {
         redoActionStore: any CoreRedoActionLogging = AppCoreServices.redoActionStore,
         changeLogLister: any CoreChangeLogListing = AppCoreServices.changeLogLister,
         externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer,
+        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
         noteStore: any CoreNoteReadingWriting = AppCoreServices.noteStore,
         dropCategoryPredictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
@@ -300,6 +307,7 @@ struct MainRepositoryContentAssembly {
                 redoActionStore: redoActionStore,
                 changeLogLister: changeLogLister,
                 externalChangesSyncer: externalChangesSyncer,
+                repositoryWriteCoordinator: repositoryWriteCoordinator,
                 errorMapper: errorMapper,
                 diagnosticsCollector: diagnosticsCollector
             ),
@@ -352,6 +360,7 @@ struct MainRepositoryContentAssembly {
         redoActionStore: any CoreRedoActionLogging,
         changeLogLister: any CoreChangeLogListing,
         externalChangesSyncer: any CoreExternalChangesSyncing,
+        repositoryWriteCoordinator: RepositoryWriteCoordinator,
         errorMapper: any CoreErrorMapping,
         diagnosticsCollector: any CoreDiagnosticsCollecting
     ) -> () -> MainFileListModel {
@@ -380,6 +389,7 @@ struct MainRepositoryContentAssembly {
                 redoActionStore: redoActionStore,
                 changeLogLister: changeLogLister,
                 externalChangesSyncer: externalChangesSyncer,
+                repositoryWriteCoordinator: repositoryWriteCoordinator,
                 errorMapper: errorMapper,
                 diagnosticsCollector: diagnosticsCollector
             )

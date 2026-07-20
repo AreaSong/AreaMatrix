@@ -422,11 +422,11 @@ fn redo_action_log_validation_locks_persistence_and_testing_evidence() {
     assert_all_contains(
         TESTING_DOC,
         &[
-            "集成测试目录",
-            "`core/tests/`",
-            "关键测试场景",
-            "DB / Migration",
-            "崩溃测试",
+            "Core 测试位于：",
+            "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+            "文件安全测试矩阵",
+            "migration/repair",
+            "transaction failure",
         ],
     );
 }

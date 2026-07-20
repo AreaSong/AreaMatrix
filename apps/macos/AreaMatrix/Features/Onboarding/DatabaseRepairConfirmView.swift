@@ -29,6 +29,7 @@ struct DBRepairConfirmView: View {
         lastOpenedAt: Int64? = nil,
         metadataRepairer: any CoreMetadataRepairing = CoreBridge(),
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
+        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
         diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         onCancel: @escaping () -> Void,
@@ -42,6 +43,7 @@ struct DBRepairConfirmView: View {
             lastOpenedAt: lastOpenedAt,
             metadataRepairer: metadataRepairer,
             startupRecoverer: startupRecoverer,
+            repositoryWriteCoordinator: repositoryWriteCoordinator,
             diagnosticsCollector: diagnosticsCollector,
             errorMapper: errorMapper
         ))
@@ -77,8 +79,9 @@ struct DBRepairConfirmView: View {
             }
         } message: {
             Text(
-                "Diagnostics do not include user file contents, are not uploaded automatically, " +
-                    "and paths and usernames are redacted before display."
+                "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
+                    "notes, and other sensitive metadata. Original file contents are not copied, and " +
+                    "diagnostics are not uploaded automatically. Review the snapshot before sharing."
             )
         }
         .task {
@@ -169,7 +172,7 @@ struct DBRepairConfirmView: View {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            Label("Preparing redacted diagnostics...", systemImage: "arrow.clockwise")
+            Label("Preparing repository diagnostics...", systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):

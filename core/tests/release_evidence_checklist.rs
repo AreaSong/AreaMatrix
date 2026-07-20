@@ -315,7 +315,7 @@ fn release_checklist_cites_existing_blocker_evidence() {
     assert_contains(RECOVERY_SCENARIOS, "manual_evidence_status: pass");
     assert_contains(RECOVERY_SCENARIOS, "manual_evidence_status: blocked");
     assert_contains(RECOVERY_SCENARIOS, "Stage 1 发布不通过");
-    assert_contains(TESTING, "## 手工冒烟清单");
+    assert_contains(TESTING, "## 手工冒烟");
     assert_contains(CHECKLIST, "真实 Release `.app` 启动到首屏证据已补齐");
     assert_contains(CHECKLIST, "M-01 Copy 中断恢复手工证据已通过");
     assert_contains(

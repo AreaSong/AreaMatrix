@@ -94,8 +94,7 @@ enum GeneralSettingsLocale: String, CaseIterable, Equatable, Identifiable {
         case "system":
             self = .system
         case "zh-Hans":
-            // Core's older default was zh-Hans; general-settings now treats the default as following the system.
-            self = .system
+            self = .zhCN
         default:
             self = .system
         }

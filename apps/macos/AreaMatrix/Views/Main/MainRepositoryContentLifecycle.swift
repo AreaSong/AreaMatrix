@@ -65,11 +65,14 @@ extension MainRepositoryContentView {
                 guard state == .list else { return }
                 await syncConflictEntryModel.loadIfNeeded()
             }
-            .task(id: externalSyncTaskID) {
-                guard !externalCreatedEvents.isEmpty else { return }
-                if await fileListModel.syncExternalChanges(externalCreatedEvents) {
-                    onExternalCreatedEventsHandled(externalCreatedEvents)
-                }
+            .task(id: externalSyncQueueRevision) {
+                fileListModel.scheduleExternalSyncDrain(
+                    windows: externalSyncWindows,
+                    onWindowCompleted: onExternalSyncWindowCompleted
+                )
+            }
+            .task(id: fileListModel.pendingExternalSelectionUpdate?.id) {
+                await applyPendingExternalSelectionUpdate()
             }
             .task(id: pendingTagSuggestionFocus?.id) {
                 await applyPendingTagSuggestionFocus()
@@ -79,14 +82,49 @@ extension MainRepositoryContentView {
             }
     }
 
-    private var externalSyncTaskID: String {
-        externalCreatedEvents.map(\.id).joined(separator: "|")
+    private var externalSyncQueueRevision: String {
+        "\(externalSyncWindows.first?.id ?? "empty"):\(fileListModel.externalSyncAttemptRevision)"
+    }
+
+    private func applyPendingExternalSelectionUpdate() async {
+        guard let update = fileListModel.pendingExternalSelectionUpdate else { return }
+        switch update {
+        case let .moved(file):
+            await refreshTreeAndFocusMovedFile(file)
+        case .cleared:
+            selectedFileIDs = []
+        }
+        fileListModel.consumeExternalSelectionUpdate(update)
     }
 
     func applyMainRepositoryContentDialogs(to content: some View) -> some View {
         applyMainRepositorySemanticIndexDialogs(
-            to: applyMainRepositorySummaryDialog(to: content)
+            to: applyMainRepositoryDiagnosticsDialog(
+                to: applyMainRepositorySummaryDialog(to: content)
+            )
         )
+    }
+
+    func applyMainRepositoryDiagnosticsDialog(to content: some View) -> some View {
+        content.confirmationDialog(
+            "Collect repository diagnostics?",
+            isPresented: Binding(
+                get: { fileListModel.diagnosticsState == .confirmingPrivacy },
+                set: { if !$0 { fileListModel.cancelCurrentListDiagnostics() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Cancel", role: .cancel, action: fileListModel.cancelCurrentListDiagnostics)
+            Button("Collect diagnostics") {
+                Task { await fileListModel.collectCurrentListDiagnostics() }
+            }
+        } message: {
+            Text(
+                "Repository diagnostics may include paths, file names, tags, notes, and other sensitive " +
+                    "metadata. Original file contents are not copied, and diagnostics are not uploaded " +
+                    "automatically. Review the snapshot before sharing."
+            )
+        }
     }
 
     func applyMainRepositorySummaryDialog(to content: some View) -> some View {

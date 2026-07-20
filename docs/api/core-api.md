@@ -227,9 +227,11 @@ namespace area_matrix {
     );
 
     // replace confirmation may compose this existing deletion contract only for
-    // recoverable repo-owned discarded versions. There is no hard-delete flag;
-    // platforms must disable Replace when Trash or a documented safety backup
-    // is unavailable.
+    // recoverable repo-owned discarded versions. Swift owns the host availability
+    // probe and dangerous confirmation; Core owns the actual Trash mutation,
+    // metadata/change-log/Undo commit, and failure rollback. There is no
+    // hard-delete flag; platforms must disable Replace when Trash or a documented
+    // safety backup is unavailable.
     [Throws=CoreError]
     void delete_file(string repo_path, i64 file_id);
 
@@ -2692,11 +2694,11 @@ interface CoreError {
 | `acknowledge_onedrive_risk_notice(repo)` | cloud | √ | ICloudPlaceholder / PermissionDenied / Io |
 | `preview_import_conflict_batch(repo, request)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
 | `apply_import_conflict_batch(repo, request, preview_token)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
-| `read_note(repo, file_id)` | note | √ | Io |
-| `write_note(repo, file_id, content)` | note | √ | Io |
-| `sync_external_changes(repo, events)` | sync | √ | Db |
-| `get_fs_event_cursor(repo)` | sync | √ | Db |
-| `set_fs_event_cursor(repo, id)` | sync | √ | Db |
+| `read_note(repo, file_id)` | note | √ | InvalidPath / FileNotFound / PermissionDenied / Io / Db |
+| `write_note(repo, file_id, content)` | note | √ | InvalidPath / FileNotFound / PermissionDenied / Io / Db |
+| `sync_external_changes(repo, events)` | sync | √ | InvalidPath / RepoNotInitialized / FileNotFound / ICloudPlaceholder / Conflict / PermissionDenied / Io / Db |
+| `get_fs_event_cursor(repo)` | sync | √ | InvalidPath / RepoNotInitialized / ICloudPlaceholder / PermissionDenied / Io / Db |
+| `set_fs_event_cursor(repo, id)` | sync | √ | InvalidPath / RepoNotInitialized / ICloudPlaceholder / PermissionDenied / Io / Db |
 | `record_watcher_health(repo, signal)` | sync/watcher | √ | Db / Io |
 | `map_core_error(input)` | error | × | — |
 
@@ -3572,6 +3574,10 @@ AI call log 的 AI 调用日志读取入口，服务 `AI call log surface ai-cal
 - `sent_fields` 只包含字段类型：`FileName`、`RepoRelativePath`、`Extension`、
   `ExtractedTextExcerpt`、`AiSummary`、`NoteSummary`、`TagCategoryContext`。
 - `privacy_rules_checked`、`privacy_rule_id`、`privacy_rule_name`、`matched_field_type`。
+- `privacy_rules_checked` 表示 producer 已完成 privacy gate 评估，和是否命中规则相互独立；允许但未命中规则的
+  调用仍为 `true`。`privacy_rule_id` / name / matched field 只在命中规则时存在。
+- 兼容旧 schema 时，非空 rule id 可证明 checked；rule id 为空的历史行只能保守返回 `false`，表示
+  “没有可证明的检查记录”，不能据此断言旧调用绕过了规则。
 - `result_summary` 是脱敏摘要，不得包含完整 prompt、完整输出或原始 provider 响应。
 
 隐私和副作用边界：
@@ -3582,6 +3588,8 @@ AI call log 的 AI 调用日志读取入口，服务 `AI call log surface ai-cal
   配置、编辑隐私规则、删除 AI 结果或触碰用户文件。
 - 隐私规则命中记录必须能表达 `Skipped`、sent fields none、rule id/name、feature、
   file/batch、provider gate 和 result `No AI call was made`。
+- AI/feature 在 privacy gate 之前被禁用的记录使用 `privacy_rules_checked = false`；成功、失败、no-input、
+  privacy skip 等已经经过 gate 的记录使用 `true`。
 
 错误：
 
@@ -4552,8 +4560,9 @@ final 文件、写 DB、写导入日志、刷新生成概览，再尝试移除�
 结果必须标记 `Retained`，UI 显示 `Imported, original retained`，并且不得把
 该项标记为完整 Move。
 
-Replace 仍属于 replace confirmation / `replace confirmation surface`，Trash / Recycle Bin 能力检测、文件夹批量、
-拖拽入口和多项进度仍由平台/UI 层处理。
+Replace 仍属于 replace confirmation / `replace confirmation surface`。Swift 平台/UI 层负责宿主 Trash / Recycle
+Bin availability probe、危险确认、文件夹展开、拖拽入口和多项进度；确认后的实际 Trash mutation、DB/change
+log/Undo 写入及失败回滚由 Core 负责。
 
 可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `PermissionDenied` / `Internal`。
 
@@ -4581,7 +4590,8 @@ func deleteFile(_ entry: FileEntry) async {
 `delete_file` 是用户确认后的 repo-owned 删除入口：仅用于 `Copied` / `Moved`
 等 AreaMatrix 管理的 active 条目。成功时 Core 必须把目标文件移入系统 Trash，
 将对应 metadata 标记为 `files.status = deleted`，刷新 `deleted_at` / `updated_at`，
-并写入 `change_log.action = deleted`。
+写入 `change_log.action = deleted`，并创建可撤销状态。Swift 在调用前只负责宿主 availability
+probe、危险确认和 UI 状态，不得自行移动文件、写 DB/change log 或拼装 Undo。
 
 副作用边界：
 
@@ -4590,6 +4600,8 @@ func deleteFile(_ entry: FileEntry) async {
 - 不清空 notes / tags 等关联 metadata。
 - Indexed、Adopted、External 或 Missing 条目的索引移除必须使用
   `remove_index_entry`。
+- 如果 Trash mutation 已发生，但 metadata、change log 或 Undo 持久化失败，Core 必须尝试把文件恢复到
+  原 repo 路径并回滚本次 DB 变更；回滚失败必须返回明确错误，不得报告成功或留下无 Undo 的已删除状态。
 
 错误：
 
@@ -5450,8 +5462,8 @@ batch delete 的只读批量删除预览入口，服务 `batch delete confirmati
 - `delete_mode`：回显本次预览模式，避免 UI 混淆 Trash 删除和 index-only 移除。
 - `preview_token`：绑定本次选择集、模式、Trash 可用性和已检查文件状态的确认令牌；执行
   API 必须带回该值。
-- `trash_available`：系统 Trash 是否可用于 repo-owned 删除；为 `false` 时 UI 必须禁用
-  `Move to Trash`，不得提供永久删除替代。
+- `trash_available`：Core 对当前 repo-owned 删除请求执行安全复核后的 Trash 可用状态；Swift 仍须先做
+  宿主 availability probe。任一侧为 `false` 时 UI 必须禁用 `Move to Trash`，不得提供永久删除替代。
 - `undo_available`：本次可处理项是否能创建 undo action log；为 `false` 时 batch delete confirmation
   必须显示 Undo 不可用确认区。
 - `will_trash_count`：确认后会移动到 Trash 的 repo-owned 文件数。
@@ -5467,7 +5479,8 @@ batch delete 的只读批量删除预览入口，服务 `batch delete confirmati
 
 副作用边界：
 
-- 只读检查 DB、文件状态、Trash 可用性和权限。
+- 只读检查 DB、文件状态、操作级 Trash 前置条件和权限；Swift 的宿主 availability probe 只用于 UI
+  gate，不能替代 Core 执行前复核。
 - 不移动文件到 Trash，不移除 index row，不写 `files`、`change_log`、`undo_actions`、
   notes、tags、saved searches、generated overview 或任何用户文件。
 - 不提供永久删除，不清空 Trash，不删除外部源文件，不触发 iCloud placeholder 下载。
@@ -5498,6 +5511,8 @@ batch delete 的批量删除执行入口，服务 `batch delete confirmation` �
 `Move to Trash` / `Remove from index`，并向 `undo toast` / undo action log 提供可撤销操作状态。
 输入必须带回用户刚确认的 `preview_token`，并与 preview 状态一致；如果选择集、模式、
 Trash 可用性或 inspected state 变化，Core 必须拒绝不安全写入并让 UI 重新 Preview。
+Swift 负责 availability probe、危险确认和报告呈现；不得在调用前后自行执行 Trash mutation、
+DB/change log 写入或 Undo 拼装。
 
 输出 `BatchDeleteReport`：
 
@@ -6943,7 +6958,15 @@ if let note = try AreaMatrix.readNote(repoPath: repoPath, fileId: entry.id) {
 }
 ```
 
-无笔记时返回 `nil`。
+DB 中没有 note row 时返回 `nil`，不会自动接管同名 Markdown 文件。DB 存在时，Core 同时读取
+`<filename>.md`；只有两者内容一致才返回笔记。sidecar 缺失、无法读取或内容与 DB 不一致时返回错误，
+不用任一侧静默覆盖另一侧。
+
+外部编辑受管 sidecar 不会自动回写 DB。watcher 只把该事件作为可确认 cursor 的受管事件跳过，下一次
+`read_note` 或 `write_note` 会暴露不一致。
+
+sidecar 或其父目录的读取权限不足时返回 `PermissionDenied`；其他文件系统读取失败返回 `Io`，note
+metadata 查询失败返回 `Db`。这些错误都不会修改 DB、sidecar 或用户文件。
 
 ### `write_note(repoPath, fileId, contentMd) throws`
 
@@ -6975,6 +6998,15 @@ func saveNote(_ entry: FileEntry, content: String) async {
 
 `InFlightTracker` 标记避免 watcher 把这次写视为外部变化（详见 [../architecture/fs-watcher.md](../architecture/fs-watcher.md)）。
 
+写入前 Core 校验旧状态：
+
+- DB 与 sidecar 都不存在：允许创建。
+- 两者存在且内容一致：允许替换。
+- 只有一侧存在或内容不一致：返回错误，不覆盖用户内容。
+
+sidecar 先通过同目录临时文件原子落位；`notes` row 与 `edited_note` change log 在同一 transaction 中提交。
+DB 提交失败时恢复旧 sidecar。
+
 ---
 
 ## sync API
@@ -7001,18 +7033,32 @@ print(
 appState.refreshList()
 ```
 
-应用调用方在去抖 + InFlight 过滤后传入。详见 [../architecture/source-of-truth.md](../architecture/source-of-truth.md)。
+应用调用方在去抖 + InFlight 过滤后传入按路径归一化的事件。rename 只携带新路径；旧/新路径配对由
+Core 根据稳定 hash 完成，平台层不提供 inode 或路径配对。详见
+[../architecture/source-of-truth.md](../architecture/source-of-truth.md)。
 
 事件行为：
 
-- `Created`：登记新的 external/indexed row；不复制或移动用户文件。
-- `Renamed`：按唯一 hash 候选更新同一 file ID 的 path、name 和 category；支持跨分类外部移动。
+- `Created`：登记新的 external/indexed row；active 同路径幂等跳过，deleted 同路径复用原 file ID 并恢复
+  active，staging 同路径返回 Conflict；不复制或移动用户文件。
+- `Renamed`：Core 按稳定 hash 选择唯一 active 候选，并确认候选旧路径已消失后，更新同一 file ID 的
+  path、name、category 和稳定 metadata 快照；零个或多个候选、旧路径仍存在、或目标路径被 active、
+  staging、deleted 任一 row 占用时都返回 Conflict，不猜测、不降级为其他事件组合。
 - `Removed`：只在路径已不存在时 soft-delete 对应 active row。
-- `Modified`：更新已有 row 的 size/hash；未登记的现存路径按 external create 处理。
+- `Modified`：稳定读取后更新已有 row 的 size/hash；未登记的现存路径按 external create 处理。读取期间
+  文件持续变化时返回可重放 Conflict，不推进 cursor。
 
 整批规划成功后，Core 先在一个 SQLite 事务中提交 files/change_log，再更新受影响概览，最后单独
 持久化最大 `fs_event_id`。overview 或 cursor 失败时 cursor 不推进；DB 可能已经幂等提交，因此调用方
 应允许同一批事件重放。
+
+受管 note sidecar 事件不登记为普通 external 文件，但合法 event ID 仍计入批次 cursor。Swift watcher 还
+把每次 flush 记录为有序同步窗口并携带 `cursorWatermark`：Core 成功后可补写高于实际 signal 最大值的
+watermark；全部事件在 Swift 层被过滤时形成空窗口，并在前序窗口完成后确认 watermark。Core 或 cursor
+失败必须保留队首并阻断后续窗口，不能静默跳过。
+
+资料库尚未初始化时返回 `RepoNotInitialized`；该错误不创建 `.areamatrix/`、DB 或 cursor，也不触碰用户
+文件。
 
 ### `get_fs_event_cursor(repoPath) throws -> Int64?`
 
@@ -7025,8 +7071,12 @@ guard let cursor else {
 let stream = startFSEventStream(sinceWhen: cursor)
 ```
 
-启动时调用，决定 FSEventStream 从哪个 event id 开始重放。缺少 cursor 时不得静默从 `SinceNow`
-开始；平台层应进入用户可见的全量重扫恢复。
+启动时从已初始化资料库的 `.areamatrix/index.db` 读取。返回 `nil` 只表示 `fs_event_cursor` 尚无持久化
+row，不表示资料库可以未初始化；平台层不得静默从 `SinceNow` 开始，而应进入用户可见的全量重扫恢复。
+
+无效资料库路径返回 `InvalidPath`，缺少 AreaMatrix metadata 返回 `RepoNotInitialized`，placeholder-shaped
+路径返回 `ICloudPlaceholder`，路径检查受权限阻断返回 `PermissionDenied`，其他文件系统检查失败返回
+`Io`，SQLite 打开或查询失败返回 `Db`。
 
 ### `set_fs_event_cursor(repoPath, lastEventId) throws`
 
@@ -7034,9 +7084,13 @@ let stream = startFSEventStream(sinceWhen: cursor)
 try AreaMatrix.setFsEventCursor(repoPath: repoPath, lastEventId: confirmedRescanSeed)
 ```
 
-该 API 用于资料库初始化或已确认全量重扫后的恢复 seed。正常 watcher 批次不应在 Swift 侧额外调用；
-`sync_external_changes` 在 DB 和 overview 成功后负责推进 cursor。写入使用单调最大值，较旧 seed 不会
-使 cursor 回退。
+该 API 用于已初始化资料库的初始 cursor、已确认全量重扫后的恢复 seed，以及 watcher 的 watermark 确认。
+`sync_external_changes` 在 DB 和 overview 成功后负责推进实际业务事件的最大 cursor；Swift 可以在 Core
+成功后补写更高的回调窗口 watermark，或在 filtered-only 窗口到达有序队首时确认 watermark。写入使用
+单调最大值，较旧 seed 不会使 cursor 回退，负 `lastEventId` 返回 `InvalidPath`。
+
+cursor 只写入 `.areamatrix/index.db`。资料库路径校验还可能返回 `InvalidPath`、`RepoNotInitialized`、
+`ICloudPlaceholder`、`PermissionDenied` 或 `Io`；SQLite 打开、transaction 或写入失败返回 `Db`。
 
 ### `record_watcher_health(repoPath, signal) throws -> PlatformWatcherSnapshot`
 
@@ -7092,7 +7146,7 @@ watcher status 页面渲染状态卡、禁用条件、错误摘要和诊断预�
 - 不触发 `sync_external_changes`，不推进 fs event cursor；事件失败不应推进 cursor。
 - 不启动手动 rescan，不调用 `reindex_from_filesystem`，`Run rescan now` 必须进入
   `rescan confirmation`，由 manual rescan 处理确认和扫描。
-- 不打开 Explorer / 文件管理器，不导出诊断包；这些动作属于平台层或独立能力。
+- 不打开 Explorer / 文件管理器，不创建 diagnostics snapshot 或脱敏报告；这些动作属于平台层或独立能力。
 - 不读取用户文件正文，不触发 iCloud/OneDrive 下载，不修改系统 watcher/inotify 设置。
 
 错误：

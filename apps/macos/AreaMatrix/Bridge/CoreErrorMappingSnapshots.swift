@@ -302,7 +302,7 @@ private extension ErrorMappingInput {
         case let .FileNotFound(path):
             self.init(kind: .fileNotFound, path: path, reason: nil, message: nil)
         case let .ExpiredAction(actionId):
-            self.init(kind: .expiredAction, path: nil, reason: actionId, message: nil)
+            self.init(kind: .expiredAction, path: actionId, reason: nil, message: nil)
         case let .RepoNotInitialized(path):
             self.init(kind: .repoNotInitialized, path: path, reason: nil, message: nil)
         case let .InvalidPath(path):

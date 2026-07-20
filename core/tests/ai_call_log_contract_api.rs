@@ -257,10 +257,17 @@ fn ai_call_log_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "CREATE TABLE IF NOT EXISTS ai_call_log",
-        "idx_ai_call_log_time",
-        "idx_ai_call_log_feature_time",
-        "files ||--o{ ai_call_log",
+        "### `ai_call_log`",
+        "不属于\n`INITIAL_SCHEMA`",
+        "读取和\n空清理不会仅为查询创建该表",
+        "`success`、`failed`、`skipped`、`unavailable`",
+        "`ON DELETE SET NULL` 引用 `files.id`",
+        "`sent_fields_json` 保存字段类别标识",
+        "`privacy_rules_checked` 只允许 `0` 或 `1`",
+        "`batch_id`、`scope`、`duration_ms`",
+        "`occurred_at DESC`",
+        "`(feature, occurred_at DESC)`",
+        "schema 没有自动过期 trigger",
     ] {
         assert_contains(DATA_MODEL, fragment);
     }

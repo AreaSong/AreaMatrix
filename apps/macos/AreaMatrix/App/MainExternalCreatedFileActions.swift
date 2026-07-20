@@ -3,10 +3,14 @@ import Foundation
 extension OnboardingModel {
     @MainActor
     func consumePendingExternalCreatedFileSignals() {
-        let signals = AreaMatrixExternalCreatedFileRelay.takePendingSignals(
-            matchingRepoPath: currentMainRepositoryPath
+        consumePendingExternalSyncWindows(repoPath: currentMainRepositoryPath)
+    }
+
+    @MainActor
+    func consumePendingExternalSyncWindows(repoPath: String?) {
+        _ = handleExternalSyncWindows(
+            AreaMatrixExternalCreatedFileRelay.takePendingWindows(matchingRepoPath: repoPath)
         )
-        _ = handleExternalCreatedFiles(signals)
     }
 
     @MainActor
@@ -18,47 +22,58 @@ extension OnboardingModel {
     @MainActor
     @discardableResult
     func handleExternalCreatedFiles(_ signals: [MainExternalCreatedFileSignal]) -> Bool {
-        let pending = signals.compactMap(MainPendingExternalCreatedFileEvent.init(signal:))
-            .filter { currentMainRepositoryPath == $0.repoPath }
-        guard !pending.isEmpty else { return false }
+        var windows: [MainExternalSyncWindow] = []
+        for signal in signals {
+            guard let window = MainExternalSyncWindow(signals: [signal]) else { continue }
+            Self.mergeExternalSyncWindow(window, into: &windows)
+        }
+        return handleExternalSyncWindows(windows)
+    }
 
-        for item in pending {
-            if let index = pendingExternalCreatedFileEvents.firstIndex(where: {
-                $0.repoPath == item.repoPath && $0.event.relativePath == item.event.relativePath
-            }) {
-                if pendingExternalCreatedFileEvents[index].event.fsEventID <= item.event.fsEventID {
-                    pendingExternalCreatedFileEvents[index] = item
-                }
-            } else {
-                pendingExternalCreatedFileEvents.append(item)
-            }
+    @MainActor
+    @discardableResult
+    func handleExternalSyncWindows(_ windows: [MainExternalSyncWindow]) -> Bool {
+        guard let currentMainRepositoryPath else { return false }
+        let accepted = windows.filter { $0.repoPath == currentMainRepositoryPath }
+        guard !accepted.isEmpty else { return false }
+
+        for window in accepted {
+            Self.mergeExternalSyncWindow(window, into: &pendingExternalSyncWindows)
         }
-        pendingExternalCreatedFileEvents.sort { lhs, rhs in
-            if lhs.event.fsEventID == rhs.event.fsEventID { return lhs.event.relativePath < rhs.event.relativePath }
-            return lhs.event.fsEventID < rhs.event.fsEventID
-        }
+        pendingExternalSyncWindows = pendingExternalSyncWindows.enumerated().sorted { lhs, rhs in
+            if lhs.element.cursorWatermark == rhs.element.cursorWatermark { return lhs.offset < rhs.offset }
+            return lhs.element.cursorWatermark < rhs.element.cursorWatermark
+        }.map(\.element)
         toastMessage = nil
         return true
     }
 
     @MainActor
-    func externalCreatedEvents(for opening: RepositoryOpeningResult) -> [MainExternalCreatedFileEvent] {
+    func externalSyncWindows(for opening: RepositoryOpeningResult) -> [MainExternalSyncWindow] {
         let repoPath = normalizedMainRepositoryPath(opening.config.repoPath)
-        return pendingExternalCreatedFileEvents
-            .filter { $0.repoPath == repoPath }
-            .map(\.event)
+        return pendingExternalSyncWindows.filter { $0.repoPath == repoPath }
+    }
+
+    @MainActor
+    func finishExternalSyncWindow(_ window: MainExternalSyncWindow) {
+        pendingExternalSyncWindows.removeAll { $0.id == window.id }
+    }
+
+    @MainActor
+    func externalCreatedEvents(for opening: RepositoryOpeningResult) -> [MainExternalCreatedFileEvent] {
+        externalSyncWindows(for: opening).first?.events ?? []
     }
 
     @MainActor
     func finishExternalCreatedFileEvents(_ events: [MainExternalCreatedFileEvent]) {
-        let handled = Set(events)
-        pendingExternalCreatedFileEvents.removeAll { handled.contains($0.event) }
+        guard let window = pendingExternalSyncWindows.first(where: { $0.events == events }) else { return }
+        finishExternalSyncWindow(window)
     }
 
     @MainActor
     func handleExternalWatcherRecovery(_ request: MainExternalWatcherRecoveryRequest) {
         guard currentMainRepositoryPath == request.repoPath else { return }
-        pendingExternalCreatedFileEvents.removeAll { $0.repoPath == request.repoPath }
+        pendingExternalSyncWindows.removeAll { $0.repoPath == request.repoPath }
 
         switch request.kind {
         case .rescanRequired:
@@ -88,10 +103,12 @@ extension OnboardingModel {
         if let seed = pendingWatcherRescanSeed,
            seed.repoPath == normalizedMainRepositoryPath(repoPath) {
             do {
-                try await externalChangesSyncer.setFSEventCursor(
-                    repoPath: repoPath,
-                    lastEventID: seed.eventID
-                )
+                try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {
+                    try await self.externalChangesSyncer.setFSEventCursor(
+                        repoPath: repoPath,
+                        lastEventID: seed.eventID
+                    )
+                }
                 pendingWatcherRescanSeed = nil
             } catch {
                 let mapping = await openingFailureMapping(for: error)
@@ -117,5 +134,18 @@ extension OnboardingModel {
 
     private func normalizedMainRepositoryPath(_ repoPath: String) -> String {
         URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL.path
+    }
+
+    private static func mergeExternalSyncWindow(
+        _ window: MainExternalSyncWindow,
+        into windows: inout [MainExternalSyncWindow]
+    ) {
+        if let index = windows.firstIndex(where: { existing in
+            existing.repoPath == window.repoPath && existing.cursorWatermark == window.cursorWatermark
+        }), let merged = windows[index].merging(window) {
+            windows[index] = merged
+        } else if !windows.contains(where: { $0.id == window.id }) {
+            windows.append(window)
+        }
     }
 }

@@ -1,307 +1,163 @@
 # 架构总览
 
-> AreaMatrix 采用 Core + Shell 架构：平台无关的 Rust 核心库 + 各平台原生 UI。本文给出整体分层、数据流、目录结构和关键运行时序。
+> AreaMatrix 是 Rust Core、UniFFI、Swift 平台层和 SwiftUI macOS 应用组成的本地优先资料管理工具。
 >
 > 阅读时长：约 8 分钟。
 
 ---
 
-## 设计原则（按优先级）
+## 设计原则
 
-1. **核心与平台分离**：业务逻辑写一次，UI 每个平台各写各的
-2. **真相分明**：文件存在性、内容和位置以文件系统为准，AreaMatrix 元数据以 DB 为准，外部变化通过 FSEvents 回流
-3. **任何中断不丢数据**：所有写操作走事务式 staging 流程
-4. **本地优先**：默认完全离线，AI/网络是可选项
-5. **可观测**：所有关键操作有结构化日志和 change_log 双重记录
+1. Core 平台无关；AppKit、FSEvents、iCloud 和 Finder 能力留在 Swift。
+2. 用户文件、SQLite metadata、note sidecar 和 generated output 使用分域真相源。
+3. 文件系统与 DB 通过短 transaction、staging 和补偿 guard 保持一致，不假设跨资源原子 transaction。
+4. 默认本地运行；AI/网络能力需要显式配置、隐私规则和 provider 边界。
+5. 用户文件安全优先于自动修复、覆盖和静默推测。
+6. 可观测性以 change log、错误状态和 diagnostics 为主，不宣称未接入的日志或 metrics 能力。
 
----
-
-## 整体分层
+## 四层结构
 
 ```mermaid
 flowchart TB
-    subgraph UILayer ["UI 层 (SwiftUI, macOS 14+)"]
-        Window[主窗口]
-        Sidebar[侧边栏树状图]
-        Table[文件列表]
-        Detail[详情面板]
-        Sheet[导入 Sheet]
-        Settings[设置]
-    end
+    ui["SwiftUI Views / feature models"]
+    platform["Swift PlatformServices / CoreBridge"]
+    ffi["UniFFI UDL / generated bindings"]
+    core["Rust API / domain / storage / db / sync"]
+    files["用户文件系统"]
+    metadata[".areamatrix/index.db"]
 
-    subgraph PlatformLayer ["平台适配层 (Swift)"]
-        Bridge[CoreBridge]
-        Watcher[FSWatcher]
-        Coord[ICloudCoordinator]
-        DragDrop[DragDrop Adapter]
-    end
-
-    subgraph FFILayer ["FFI 桥接 (UniFFI)"]
-        Bindings[Generated Swift Bindings]
-    end
-
-    subgraph CoreLib ["Rust 核心库"]
-        API[api/* FFI 边界]
-        Domain[domain 类型]
-        Storage[storage 文件操作]
-        Classify[classify 分类引擎]
-        Overview[overview 概览生成]
-        Tree[tree 扫描]
-        Sync[sync 外部变化协调]
-        DB[db SQLite 访问]
-        Config[config 配置]
-        Errors[error 错误体系]
-    end
-
-    Repo[("资料库 任意用户选择目录")]
-    SQLite[(.areamatrix/index.db)]
-
-    UILayer --> PlatformLayer
-    PlatformLayer --> FFILayer
-    FFILayer --> API
-    API --> Domain
-    API --> Storage
-    API --> Classify
-    API --> Overview
-    API --> Tree
-    API --> Sync
-    Storage --> DB
-    Storage --> Repo
-    DB --> SQLite
-    Watcher -->|监听| Repo
-    Watcher -->|事件| Sync
-    Sync --> DB
-    Coord --> Repo
+    ui --> platform
+    platform --> ffi
+    ffi --> core
+    platform --> files
+    core --> files
+    core --> metadata
 ```
 
-## 模块职责
+| 层 | 主要职责 |
+|---|---|
+| SwiftUI | 页面渲染、交互、状态路由和恢复反馈 |
+| Swift 平台层 | `CoreBridge`、FSEvents、iCloud 下载、Finder、Trash availability probe/危险确认/UI、权限和 diagnostics UI |
+| UniFFI | UDL 类型/函数合同及生成绑定 |
+| Rust Core | 业务规则、文件安全、实际 Trash mutation、SQLite/change log/Undo、分类、搜索、sync、overview 和 repair |
 
-| 层 | 模块 | 职责 |
-|---|---|---|
-| UI | SwiftUI Views | 视图渲染、用户交互 |
-| UI | Stores (`@Observable`) | UI 状态 |
-| 平台 | CoreBridge | 包装 UniFFI 调用，提供 Swift 友好 API |
-| 平台 | FSWatcher | FSEventStream 监听 + 去抖 + InFlight 过滤 |
-| 平台 | ICloudCoordinator | NSFileCoordinator 占位符下载协调 |
-| 平台 | DragDrop Adapter | NSItemProvider → URL 列表 |
-| FFI | UniFFI | 自动生成 Swift bindings |
-| Core | api/* | 暴露给 Swift 的所有函数（FFI 边界） |
-| Core | domain | 跨边界类型（FileEntry / Category / ...） |
-| Core | storage | 事务式文件操作（move / copy / index / hash / dedup） |
-| Core | classify | 规则引擎（扩展名 + 关键词），未来加 AI |
-| Core | overview | 资料库概览生成，默认写入 `.areamatrix/generated/`，可选根目录 `AREAMATRIX.md` |
-| Core | tree | 资料库扫描，按接管规则区分系统分类、用户文件夹与根目录，输出 tree JSON |
-| Core | sync | 处理外部变化事件（重命名 / 新增 / 删除） |
-| Core | db | SQLite CRUD + migrations |
-| Core | config | 配置加载与持久化 |
+## 关键模块
 
-详见 [layered-design.md](layered-design.md) 与 [core-internal-architecture.md](core-internal-architecture.md)。
+Rust Core：
 
-## 关键数据流：用户拖入文件
+- `core/src/api/**`：公开 FFI 门面。
+- `core/src/domain/**`：跨边界 DTO 与 enum。
+- `core/src/storage/**`：导入、rename、move、delete、hash、dedup 和补偿 guard。
+- `core/src/db/**`：SQLite schema、transaction 和 read models。
+- `core/src/repo_scan/**`：adopt/reindex scan sessions。
+- `core/src/sync/**`：外部 Created/Renamed/Modified/Removed 规划。
+- `core/src/tree/mod.rs`：每次调用读取文件系统并构造 tree JSON。
+- `core/src/overview/**`：generated overview。
+- `core/src/repair.rs`：metadata snapshot、integrity check 和 replacement DB repair。
+
+macOS：
+
+- `App/**`：app 入口和依赖装配。
+- `Bridge/**`：CoreBridge、snapshot 和 error mapping。
+- `PlatformServices/**`：FSEvents、iCloud、Finder、Trash availability probe/危险确认/UI、security bookmark
+  和 diagnostics 平台能力；不执行确认后的 Trash mutation。
+- `Features/**`：按功能组织的 model/action/view support。
+- `Views/**`：窗口和页面组合。
+
+## 导入调用链
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant UI as SwiftUI Window
-    participant Bridge as CoreBridge
-    participant Tracker as InFlightTracker
-    participant Core as Rust Core
-    participant FS as 文件系统
-    participant DB as SQLite
-    participant Watcher as FSWatcher
+    actor user as 用户
+    participant ui as Import UI
+    participant bridge as CoreBridge
+    participant core as Rust import
+    participant fs as 文件系统
+    participant db as SQLite
 
-    User->>UI: 拖入 contract.pdf
-    UI->>UI: 弹 ImportSheet
-    User->>UI: 确认 (mode=Copy)
-    UI->>Bridge: importFile(src, mode)
-    Bridge->>Tracker: mark(staging path + final path)
-    Bridge->>Core: import_file(...)
-    Core->>FS: 1. 复制到 staging/uuid
-    Core->>Core: 2. 计算 SHA256
-    Core->>DB: 3. 检查重复
-    Core->>DB: 4. BEGIN TX
-    Core->>DB: INSERT files (status=staging)
-    Core->>DB: INSERT change_log (imported)
-    Core->>FS: 5. rename staging → docs/contract.pdf
-    Core->>DB: UPDATE files SET path=...
-    Core->>DB: COMMIT
-    Core->>Core: 6. 更新 AreaMatrix 概览
-    Core-->>Bridge: FileEntry
-    Bridge->>Tracker: unmark
-    Bridge-->>UI: FileEntry
-    UI->>UI: 刷新列表与树
-    Note over Watcher: FSEvents 触发但被 InFlight 过滤
+    user->>ui: 选择 Copy / Move / Index
+    ui->>bridge: import request
+    bridge->>core: import_file_with_result
+    alt Copy 或 Move
+        core->>fs: copy + hash 到 internal staging
+        core->>db: commit staging row
+        core->>fs: no-replace 落到最终路径
+        core->>db: commit active row + imported log
+        core->>fs: 更新 generated overview
+        core->>fs: Move 最后尝试删除源文件
+    else Indexed
+        core->>fs: 只读 source metadata/hash
+        core->>db: commit active row + imported log
+        core->>fs: 更新 generated overview
+    end
+    core-->>bridge: ImportResult
+    bridge-->>ui: 刷新列表/树/反馈
 ```
 
-## 关键数据流：外部修改回流
+具体补偿边界见 [transactional-import.md](transactional-import.md)。
+
+## 外部变化调用链
 
 ```mermaid
 sequenceDiagram
-    actor External as 外部 (Finder/Terminal)
-    participant FS as 文件系统
-    participant Watcher as FSWatcher
-    participant Debouncer as Debouncer
-    participant Tracker as InFlightTracker
-    participant Bridge as CoreBridge
-    participant Core as Rust Core
-    participant DB as SQLite
-    participant UI as SwiftUI
+    actor external as Finder/Terminal
+    participant watcher as MainExternalCreatedFileWatcher
+    participant tracker as InFlightFileChangeTracker
+    participant relay as External change relay
+    participant model as MainFileListModel
+    participant core as sync_external_changes
+    participant db as SQLite
 
-    External->>FS: rename docs/a.pdf → docs/b.pdf
-    FS-->>Watcher: FSEvent (delete a + create b)
-    Watcher->>Debouncer: enqueue
-    Note over Debouncer: 200ms 窗口合并
-    Debouncer->>Tracker: 是否在 InFlight？
-    Tracker-->>Debouncer: 否
-    Debouncer->>Bridge: notifyExternalChanges(events)
-    Bridge->>Core: sync_external_changes(events)
-    Core->>FS: 计算 b.pdf 的 hash
-    Core->>DB: 找到 hash 匹配的 a.pdf 行
-    Core->>DB: UPDATE path = docs/b.pdf
-    Core->>DB: INSERT change_log (external_modified, rename)
-    Core->>Core: 更新 AreaMatrix 概览
-    Core-->>Bridge: SyncResult
-    Bridge->>UI: emit RepoChanged event
-    UI->>UI: 刷新列表与树
+    external->>watcher: FSEvents callback
+    watcher->>watcher: 200ms flush + watermark
+    watcher->>tracker: 逐路径 InFlight 检查
+    watcher->>relay: signals / filtered-only ack
+    relay->>model: 合并 pending events
+    model->>core: 单批 sync
+    core->>db: files + change_log transaction
+    core->>core: generated overview + cursor
+    model->>model: 补写 watermark / 刷新 UI
 ```
 
-## 仓库目录结构
+Core 不执行外部物理 rename/delete，只登记已经发生的文件系统变化。受管 note sidecar replay 只确认 cursor，
+不登记普通 external 文件。
 
-```text
-AreaMatrix/                            # Git 仓库
-├── core/                              # Rust 核心库（Cargo crate）
-│   ├── Cargo.toml
-│   ├── build.rs                       # UniFFI / staticlib 构建入口
-│   ├── area_matrix.udl                # UniFFI 接口定义
-│   ├── src/                           # 平台无关业务逻辑
-│   ├── tests/                         # Core API / 行为 / 回归测试
-│   ├── benches/                       # 性能基线
-│   └── resources/                     # 默认配置资源
-│
-├── apps/                              # 平台原生应用
-│   ├── macos/                         # SwiftUI Xcode 项目（当前主目标）
-│   ├── ios/                           # iOS / Share Extension surface
-│   ├── windows/                       # Windows surface
-│   └── linux/                         # Linux surface
-│
-├── assets/                            # 项目级静态资产
-│   ├── brand/                         # 品牌资产；final/ 是权威可引用版本
-│   └── prototypes/                    # landing / workspace 视觉原型，非源事实
-│
-├── docs/                              # 产品、架构、API、UX、开发与路线图源事实
-│   ├── product/
-│   ├── architecture/
-│   ├── api/
-│   ├── ux/
-│   ├── modules/
-│   ├── development/
-│   ├── adr/
-│   └── roadmap/
-│
-├── scripts/                           # ./dev 与 task-loop 支撑脚本
-├── workflow/                          # 版本讨论、计划、预览、execution 和 closeout
-│   └── versions/
-│       ├── <archived-version>/        # completed execution archive
-│       └── v-template/                # template reference, not a product version
-│
-├── tasks/                             # lightweight task progress and backlog
-├── .ai-governance/                    # AI 协作规则源事实
-├── .codex/                            # Codex-only skills, references, runtime material
-├── .agents/skills/                    # repo-local skill discovery projection
-├── dev                                # 本地开发控制台入口
-└── task-loop                          # prompt task-loop runner 入口
-```
+用户发起的 repo-owned 删除不属于外部变化同步：Swift 先完成 Trash availability probe 和危险确认，Core
+再执行实际 Trash mutation，并原子协调 metadata、change log、Undo 与失败回滚。
 
-## 资料库目录结构（用户实际看到的）
+## 数据与恢复
 
-```text
-<repo>/                                # 用户选择的资料库根，可为空目录，也可已有大量内容
-├── README.md                          # 用户原有文件，应用不覆盖
-├── project-a/                         # 用户已有目录，UI 作为“文件夹”显示
-├── docs/                              # 可由 AreaMatrix 创建；也可能是用户已有目录
-│   ├── README.md                      # 用户原有文件，应用不覆盖
-│   ├── contract.pdf
-│   └── contract.pdf.md                # 用户手动伴生笔记（可选）
-├── code/                              # UI 显示「代码」
-├── design/                            # UI 显示「设计」
-├── media/                             # UI 显示「媒体」
-├── finance/                           # UI 显示「财务」
-├── inbox/                             # UI 显示「未分类」（兜底）
-├── AREAMATRIX.md                      # 可选根目录概览，默认不创建
-└── .areamatrix/
-    ├── index.db                       # SQLite
-    ├── config.json                    # 用户配置
-    ├── classifier.yaml                # 分类规则
-    ├── ignore.yaml                    # 首次扫描 / reindex / watcher 共用忽略规则
-    ├── generated/                     # 自动概览产物
-    │   ├── root.md
-    │   └── nodes/
-    └── staging/                       # 事务中转区
-```
-
-## 关键不变量
-
-为保证系统正确性，下列不变量在任何代码路径下都必须满足：
-
-| 不变量 | 描述 |
-|---|---|
-| INV-1 | 任何成功导入的文件都同时在文件系统和 DB 中可见 |
-| INV-2 | 任何失败的导入不留下 DB 记录或最终目录中的文件 |
-| INV-3 | `.areamatrix/staging/` 内的文件不出现在用户视图 |
-| INV-4 | 应用关闭后再打开，资料库视图与上次完全一致 |
-| INV-5 | 同一 hash 的文件在 DB 中最多只有一行 active 记录 |
-| INV-6 | 应用自身的写操作不触发外部变化处理 |
-| INV-7 | 删除 `.areamatrix/` 不会丢失任何用户文件本身 |
-| INV-8 | 接管非空目录时不移动、不重命名、不删除、不覆盖任何已有用户文件 |
-| INV-9 | 自动概览产物只能写入 `.areamatrix/generated/` 或用户显式启用的 `AREAMATRIX.md` |
-
-不变量违反 = bug。所有重要的代码路径在测试中都要验证至少一个不变量。
-
-## 错误处理总策略
-
-- **Rust core**：所有 fallible 函数返回 `CoreResult<T>`
-- **FFI 边界**：错误用 UniFFI Error enum 暴露
-- **Swift 侧**：用 `do/try/catch`，UI 层用 toast 显示错误
-- **不静默失败**：任何错误必须有日志或 UI 反馈
-- **不中止应用**：单个文件操作失败不能让整个 import 流程崩溃
-
-详见 [../api/error-codes.md](../api/error-codes.md)。
-
-## 性能基线
-
-| 场景 | 目标 |
-|---|---|
-| 冷启动到主窗口可交互 | < 1.5s |
-| 拖入单个 100MB 文件到落位 | < 1s（含 hash） |
-| 树状图首屏渲染（10 万节点） | < 500ms |
-| FSEvents → UI 更新 | < 1s |
-| SQLite 单次写 | < 5ms |
-| 内存（10 万文件下） | < 400MB |
-
-详见 [../development/testing.md#性能测试](../development/testing.md)。
+- 用户文件内容和路径以文件系统为准。
+- tags、history、saved searches、Undo/Redo 等以 SQLite 为准。
+- note 使用 DB 与 sidecar 一致合同，分叉时 fail closed。
+- generated output 默认只写 `.areamatrix/generated/`。
+- startup recovery 只处理可证明属于 staging 的状态。
+- repair 可保存 `.areamatrix/diagnostics/` snapshot 并重建 metadata；不能恢复 DB-only 数据。
+- 删除 `.areamatrix/` 不删除用户文件，但会丢失 DB-only metadata。
 
 ## 可观测性
 
-- **结构化日志**：tracing crate（Rust）+ os_log（Swift），写入 `~/Library/Logs/AreaMatrix/`
-- **Change Log**：所有改动写入 SQLite `change_log` 表（用户可见）
-- **Metrics**：本地 Prometheus 风格的统计（导入耗时、失败率），不上传；按后续观测需求启用
+当前证据面包括：
 
-## 能力演进
+- SQLite `change_log`，覆盖定义明确的 mutation。
+- 页面 error mapping、watcher/platform/local-model status DTO。
+- repository DB/WAL/SHM diagnostics snapshot。
+- About 页脱敏版本报告。
 
-架构演进优先提升资料库可靠性、搜索与组织效率、AI 隐私控制和可恢复性。其他平台客户端、同步协议、SDK 与插件只有在形成完整产品合同、实现和验证后，才进入正式产品范围。
+Core `init_logging` 只校验 level；Swift 未接入 OSLog wrapper；当前没有自动 metrics 或远程 telemetry。详见
+[可观测性与诊断](../development/observability.md)。
 
-详见 [能力方向](../product/capability-direction.md)。
+## 性能
+
+真实基线由 `core_hot_paths.rs` 和 `AreaMatrixPerfTests` 提供。普通 CI 不自动执行全部性能门禁；命令、
+阈值和证据限制见 [性能工程](../development/performance.md)。
 
 ## Related
 
-- [tech-stack.md](tech-stack.md)
 - [layered-design.md](layered-design.md)
-- [adopt-existing-folders.md](adopt-existing-folders.md)
-- [data-model.md](data-model.md)
-- [ffi-design.md](ffi-design.md)
-- [fs-watcher.md](fs-watcher.md)
-- [transactional-import.md](transactional-import.md)
+- [tech-stack.md](tech-stack.md)
 - [source-of-truth.md](source-of-truth.md)
-- [concurrency.md](concurrency.md)
-- [migration.md](migration.md)
-- [../adr/0001-tech-stack.md](../adr/0001-tech-stack.md)
+- [transactional-import.md](transactional-import.md)
+- [fs-watcher.md](fs-watcher.md)
+- [core-internal-architecture.md](core-internal-architecture.md)
+- [macos-frontend-architecture.md](macos-frontend-architecture.md)

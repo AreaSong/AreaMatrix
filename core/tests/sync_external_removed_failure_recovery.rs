@@ -160,7 +160,7 @@ fn sync_external_removed_failure_recovery_replays_after_batch_path_state_is_fixe
         vec![removed("docs/first.pdf", 3), removed("docs/second.pdf", 4)],
     );
 
-    assert!(matches!(failed, Err(CoreError::Io { .. })));
+    assert_eq!(failed, Err(CoreError::conflict("docs/second.pdf")));
 
     assert_eq!(fs_cursor(repo.path()), Some(2));
     assert_eq!(file_status(repo.path(), first.id).0, "active");
@@ -284,7 +284,7 @@ fn sync_external_removed_failure_recovery_permission_denied_keeps_metadata_and_c
 
     assert_eq!(
         result,
-        Err(CoreError::permission_denied("permission denied"))
+        Err(CoreError::permission_denied("blocked/secret.pdf"))
     );
     assert_eq!(fs_cursor(repo.path()), Some(30));
     assert_eq!(file_status(repo.path(), entry.id).0, "active");

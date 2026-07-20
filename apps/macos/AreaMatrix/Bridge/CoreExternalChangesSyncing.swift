@@ -84,7 +84,6 @@ extension CoreBridge: CoreExternalChangesSyncing {
             try setCoreFSEventCursor(repoPath: repoPath, lastEventID: lastEventID)
         }.value
     }
-
 }
 
 private extension ExternalEvent {

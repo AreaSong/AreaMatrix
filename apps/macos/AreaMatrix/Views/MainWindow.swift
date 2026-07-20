@@ -94,11 +94,12 @@ extension MainWindow {
             perform: handleExternalCreatedFileRelayNotification
         )
         .task(id: activeMainRepositoryPath) {
-            if let activeMainRepositoryPath {
-                await externalCreatedFileWatcher.start(repoPath: activeMainRepositoryPath)
-            } else {
+            guard let activeMainRepositoryPath else {
                 externalCreatedFileWatcher.stop()
+                return
             }
+            model.consumePendingExternalSyncWindows(repoPath: activeMainRepositoryPath)
+            await externalCreatedFileWatcher.start(repoPath: activeMainRepositoryPath)
         }
         .onChange(of: externalCreatedFileWatcher.recoveryRequest) { _, request in
             if let request { model.handleExternalWatcherRecovery(request) }
@@ -199,13 +200,8 @@ extension MainWindow {
         }
     }
 
-    private func handleExternalCreatedFileRelayNotification(_ notification: Notification) {
-        if let signals = notification.object as? [MainExternalCreatedFileSignal] {
-            _ = model.handleExternalCreatedFiles(signals)
-            _ = AreaMatrixExternalCreatedFileRelay.takePendingSignals(matchingRepoPath: activeMainRepositoryPath)
-            return
-        }
-        model.consumePendingExternalCreatedFileSignals()
+    private func handleExternalCreatedFileRelayNotification(_: Notification) {
+        model.consumePendingExternalSyncWindows(repoPath: activeMainRepositoryPath)
     }
 
     private func importRetryContextHandler(for request: ImportEntryRequest) -> (

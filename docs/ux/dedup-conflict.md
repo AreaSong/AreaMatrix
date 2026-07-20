@@ -103,7 +103,7 @@ Replace 是唯一可能造成用户“丢数据”的选择（即使有回收站
 │                                                                              │
 │  说明：                                                                        │
 │  • 该操作会写入改动日志。                                                      │
-│  • 旧文件将移到回收站（推荐）或保留为版本（若启用）。                            │
+│  • 旧文件必须进入系统 Trash 或由安全 guard 保持可恢复。                         │
 │                                                                              │
 │  [ Cancel ]                                          [ Replace ]            │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -111,9 +111,9 @@ Replace 是唯一可能造成用户“丢数据”的选择（即使有回收站
 
 ### Replace 的后果（产品侧约束）
 
-- 当前默认：旧文件至少移到系统 Trash（不直接删除）。
+- 旧文件必须移到系统 Trash；Trash 不可用时禁用 Replace，不提供永久删除替代。
 - change_log 必须记录 Replace/Deleted/Restored 等（见 `modules/change-log.md`）。
-- 若启用“版本保留”：旧文件移动到 `.areamatrix/versions/` 并可回滚。
+- AreaMatrix 不维护 `.areamatrix/versions/` 版本仓库；可逆性来自 Trash、rollback guard 和 undo token。
 
 ---
 
@@ -126,10 +126,10 @@ Replace 是唯一可能造成用户“丢数据”的选择（即使有回收站
 - 重复（hash dup）：`Skip`（默认）/ `Keep both` / `Replace`（危险）
 - 重名不同内容：`Keep both (auto-number)`（默认）/ `Ask per item` / `Replace`
 
-### “Ask per item” 何时使用
+### “Ask per item” 行为
 
-- 当冲突数量 ≤ 5 时，允许逐项弹窗。
-- 当冲突数量 > 5 时，强制走“列表逐项处理”（不弹窗）。
+`Ask per item` 始终进入 ImportSheet 内的逐项队列/列表，不为每个文件连续弹 modal。是否可进入由 Core
+preview 中的 included、blocked 和 actionable 状态决定，不使用固定数量阈值。
 
 ### 批量结果摘要
 
@@ -155,8 +155,9 @@ Replace 是唯一可能造成用户“丢数据”的选择（即使有回收站
 
 ### 冲突解决入口
 
-- Detail 面板提供按钮：`Resolve conflict…`
-- 点击后打开对比页；可先简化为“选择保留哪一个”。
+- 主入口是 Settings → Integrations → Review conflicts。
+- 冲突列表展示两个候选版本，并可打开单项 resolver。
+- 当前文件详情识别到 conflict signal 时可以路由到同一 resolver，但不维护第二套解决流程。
 
 ### 冲突解决最小版
 
@@ -187,7 +188,7 @@ Replace 是唯一可能造成用户“丢数据”的选择（即使有回收站
 - 在顶部显示 banner：`发现资料库不一致，需要修复索引 [Repair…]`
 - Repair 页提供：
   - `Full rescan`（整库重扫）
-  - `Collect diagnostics`（导出诊断包）
+  - `Collect diagnostics`（创建 repository snapshot 或脱敏诊断材料）
 
 实现与算法参见：`docs/architecture/source-of-truth.md`。
 

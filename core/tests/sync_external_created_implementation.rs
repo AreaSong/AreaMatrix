@@ -198,7 +198,7 @@ fn sync_external_created_implementation_rolls_back_batch_and_cursor_on_failure()
         ],
     );
 
-    assert!(matches!(result, Err(CoreError::Io { .. })));
+    assert_eq!(result, Err(CoreError::file_not_found("docs/missing.pdf")));
 
     assert_eq!(active_file_count(repo.path()), 0);
     assert_eq!(
@@ -236,7 +236,7 @@ fn sync_external_created_implementation_rejects_icloud_placeholder_marker() {
 
     assert_eq!(
         result,
-        Err(CoreError::icloud_placeholder("icloud placeholder"))
+        Err(CoreError::icloud_placeholder("docs/waiting.pdf.icloud"))
     );
     assert_eq!(active_file_count(repo.path()), 0);
 }
@@ -315,6 +315,24 @@ fn sync_external_created_implementation_cursor_api_roundtrips_without_file_mutat
 
     assert_eq!(
         get_fs_event_cursor(path_string(repo.path())).expect("read updated cursor"),
+        Some(99)
+    );
+    assert_eq!(
+        fs::read(repo.path().join("docs/user.txt")).expect("user file remains readable"),
+        b"untouched"
+    );
+}
+
+#[test]
+fn sync_external_created_implementation_cursor_does_not_regress_to_lower_value() {
+    let repo = initialized_repo();
+    write_repo_file(repo.path(), "docs/user.txt", b"untouched");
+
+    set_fs_event_cursor(path_string(repo.path()), 99).expect("set high cursor");
+    set_fs_event_cursor(path_string(repo.path()), 42).expect("replay lower cursor");
+
+    assert_eq!(
+        get_fs_event_cursor(path_string(repo.path())).expect("read monotonic cursor"),
         Some(99)
     );
     assert_eq!(

@@ -6,10 +6,6 @@ protocol ImportSingleFilePreflighting: Sendable {
     ) async -> ImportSingleFilePreflightResult
 }
 
-protocol ICloudPlaceholderDownloading: Sendable {
-    func downloadPlaceholder(at sourceURL: URL) async throws
-}
-
 struct ImportSingleFilePreflightRequest: Equatable {
     var repoPath: String
     var sourceURL: URL

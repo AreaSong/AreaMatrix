@@ -107,11 +107,11 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     }
 
     for fragment in [
-        "测试金字塔",
-        "`core/classify` | ≥ 90%",
-        "集成测试目录",
-        "`core/tests/`，每个文件独立编译",
-        "关键测试场景",
+        "## 原则",
+        "Core line coverage：70%",
+        "Core 测试位于：",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+        "文件安全测试矩阵",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

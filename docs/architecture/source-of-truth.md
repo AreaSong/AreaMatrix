@@ -13,8 +13,8 @@ AreaMatrix 使用分域真相源，不把文件系统或数据库解释为唯一
 | 数据 | 权威来源 | 当前行为 |
 |---|---|---|
 | 用户文件内容、存在性和物理路径 | 文件系统 | Core 读取现状并更新索引，不用 DB 覆盖外部修改 |
-| 文件分类 | 文件系统路径派生 | 顶层目录映射为 category |
-| 文件 hash 和 size | DB 中的最近一次已确认快照 | create、modify、rename 和 reindex 时从文件重新计算并持久化 |
+| 文件分类 | SQLite `files.category` | 路径提供默认派生值；显式 metadata-only correction 可覆盖当前分类而不移动文件 |
+| 文件 hash 和 size | DB 中的最近一次已确认快照 | import、create、modify、rename 和 reindex 时从文件重新计算并持久化 |
 | 标签、搜索、Undo/Redo、历史 | SQLite | 不从文件系统重建 |
 | 笔记 | SQLite 与受管 sidecar 的一致合同 | 仅 Core note API 同步写入；不接受静默分叉 |
 | FSEvents cursor | SQLite `fs_event_cursor` | 只在可重放边界成功后单调推进 |
@@ -23,6 +23,11 @@ AreaMatrix 使用分域真相源，不把文件系统或数据库解释为唯一
 
 删除 `.areamatrix/` 不会删除用户文件，但会丢失无法从文件恢复的标签、历史、配置和其他元数据。
 恢复或重建必须由用户确认，不能把自动推测当成完整恢复。
+
+路径是分类的默认派生来源，不是当前分类的最终权威。导入、接管、外部 create/rename 和其他明确需要
+重算分类的流程可以从路径或用户选择生成 `files.category`；列表、筛选和详情读取数据库中的当前值。
+显式 metadata-only correction 只更新分类 metadata 和 change log，保持 `files.path` 与用户文件位置不变。
+只有用户明确选择且文件属于可移动的 Imported Copied/Moved 模式时，分类纠正才同时移动文件。
 
 ## 文件安全不变量
 
@@ -70,13 +75,16 @@ Swift 平台层负责 FSEvents、路径过滤、200ms 合并、InFlight 过滤�
 
 - Swift 不通过 inode 配对旧路径和新路径。
 - Core 对新路径计算 hash，并在 active rows 中寻找唯一候选。
-- 唯一候选更新同一 file ID 的 path、name 和 category；零个或多个候选返回 Conflict。
+- 唯一候选只有在旧路径确实不存在时才更新同一 file ID 的 path、name、category 和最新稳定快照；旧路径仍存在按同 hash copy 返回 Conflict。
+- 目标路径被任何 active、staging 或 deleted row 占用时返回 Conflict；零个或多个 hash 候选也返回 Conflict。
 - 同批对应的 removed 计划会被抑制，避免先 rename 后 soft delete 同一 row。
 - change log action 为 `renamed`。
 
 ### Modified
 
-- 已登记文件在 hash 或 size 变化时更新 metadata，并写 `external_modified`。
+- 已登记文件在稳定读取的 hash 或 size 变化时更新 metadata，并写 `external_modified`。
+- hash 前后 size/mtime 变化时重试；在 Unix/macOS 还比较打开句柄与最终路径的 device/inode identity，
+  同 size/mtime 的原子替换也必须判定为变化。连续变化返回可重放 Conflict，不写 DB、overview 或 cursor。
 - hash 和 size 都未变化时幂等跳过。
 - 现存路径没有 active row 时按 Created 处理。
 
@@ -105,7 +113,7 @@ Swift 平台层负责 FSEvents、路径过滤、200ms 合并、InFlight 过滤�
 
 ## Cursor 与重放
 
-Core 对收到的全部合法 event ID 计算最大值，包括最终被判定为受管 sidecar或幂等跳过的事件。
+Core 对收到的全部合法 event ID 计算最大值，包括最终被判定为受管 sidecar 或幂等跳过的事件。
 
 正常批次顺序：
 
@@ -116,10 +124,11 @@ Core 对收到的全部合法 event ID 计算最大值，包括最终被判定�
 
 Swift watcher 还保留批次 `cursorWatermark`，即该次 FSEvents 回调窗口观察到的最大 event ID：
 
-- 有业务信号时，每个信号携带同一个批次 watermark。
-- Core 成功后，如果 watermark 大于实际提交事件的最大 ID，Swift 补写 cursor。
-- 全部事件在 Swift 层被 InFlight 或路径规则过滤时，Swift 直接单调确认 watermark。
-- 补写失败会进入确认重扫，不会静默丢弃历史。
+- 每次 watcher flush 形成一个有序 `MainExternalSyncWindow`；有业务信号时携带事件，全部被过滤时事件列表为空。
+- relay 只负责唤醒，窗口完整进入当前资料库的 pending 队列，并严格按 watermark 顺序逐个处理。
+- 业务窗口先完成 Core 提交；如果 watermark 大于实际提交事件的最大 ID，再补写 cursor。
+- filtered-only 窗口只有到达队首时才单调确认 watermark，不能越过更早的业务窗口。
+- Core 或 cursor 失败会保留当前窗口并阻止后续窗口推进；UI reload 失败只显示呈现错误，不重放已经提交的 Core 批次。
 
 DB 事务失败时 metadata 和 change log 回滚；overview 或 cursor 失败时 cursor 不推进。DB 已提交但后续失败的批次必须依靠幂等规则安全重放。
 

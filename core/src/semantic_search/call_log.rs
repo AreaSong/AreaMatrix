@@ -17,6 +17,7 @@ pub(super) struct SearchLog<'a> {
     sent_fields: Vec<&'static str>,
     result_summary: String,
     error_code: Option<&'static str>,
+    privacy_rules_checked: bool,
     privacy_rule_id: Option<&'a str>,
 }
 
@@ -28,6 +29,7 @@ impl<'a> SearchLog<'a> {
             sent_fields: semantic_sent_fields(candidate_count),
             result_summary: format!("Returned {candidate_count} semantic search candidates"),
             error_code: None,
+            privacy_rules_checked: true,
             privacy_rule_id: None,
         }
     }
@@ -39,6 +41,7 @@ impl<'a> SearchLog<'a> {
             sent_fields: Vec::new(),
             result_summary: fallback.message.to_owned(),
             error_code: Some(reason_code(&fallback.reason)),
+            privacy_rules_checked: fallback.privacy_rules_checked,
             privacy_rule_id: fallback.privacy_rule_id.as_deref(),
         }
     }
@@ -63,6 +66,7 @@ impl<'a> SearchLog<'a> {
                 "Built semantic index metadata for {processed_count} files; {failed_count} failed"
             ),
             error_code,
+            privacy_rules_checked: true,
             privacy_rule_id,
         }
     }
@@ -74,6 +78,7 @@ impl<'a> SearchLog<'a> {
             sent_fields: Vec::new(),
             result_summary: fallback.message.to_owned(),
             error_code: Some(reason_code(&fallback.reason)),
+            privacy_rules_checked: fallback.privacy_rules_checked,
             privacy_rule_id: None,
         }
     }
@@ -102,6 +107,7 @@ impl SearchLog<'_> {
             model: self.route.map(model_name),
             status: self.status.to_owned(),
             sent_fields_json,
+            privacy_rules_checked: self.privacy_rules_checked,
             privacy_rule_id: self.privacy_rule_id.map(str::to_owned),
             result_summary: self.result_summary,
             error_code: self.error_code.map(str::to_owned),
