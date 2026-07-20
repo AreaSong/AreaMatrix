@@ -738,6 +738,107 @@ def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector
     _require_text(root, failures, "workflow/versions/v2/promotion/approval.yaml", r"approved:\s+false", "v2 promotion approval block")
 
 
+_REPO_DOMAIN_AUTHORITIES = {
+    "source-fact",
+    "contract",
+    "code",
+    "test",
+    "generated-verified",
+    "build-config",
+    "adapter",
+    "assets",
+    "task-records",
+    "archived-readonly",
+    "meta",
+}
+
+
+def _check_repo_domain_coverage(root: Path, failures: FailureCollector) -> None:
+    """Every tracked file must resolve to exactly one registered repo domain."""
+
+    from .changes import ChangeYAMLError, parse_yaml_subset
+
+    root = root.resolve()
+    register_path = root / "docs/governance/governance-register.yaml"
+    if not register_path.is_file():
+        return
+    try:
+        register = parse_yaml_subset(_read(register_path), register_path)
+    except ChangeYAMLError:
+        # The enterprise baseline check already reports the parse failure.
+        return
+    if not isinstance(register, dict):
+        return
+
+    domains = register.get("repo_domains")
+    if not isinstance(domains, list) or not domains:
+        failures.fail("enterprise governance register repo_domains must be non-empty")
+        return
+
+    patterns: dict[str, str] = {}
+    seen_domains: set[str] = set()
+    for entry in domains:
+        if not isinstance(entry, dict):
+            failures.fail("repo domain entry must be a mapping")
+            continue
+        for key in ["domain", "owner", "status", "authority", "verification", "review_triggers", "paths"]:
+            if not entry.get(key):
+                failures.fail(f"repo domain entry is missing {key}")
+        domain = entry.get("domain")
+        if not isinstance(domain, str) or not domain:
+            continue
+        if domain in seen_domains:
+            failures.fail(f"repo domain repeats {domain}")
+            continue
+        seen_domains.add(domain)
+        authority = entry.get("authority")
+        if authority and authority not in _REPO_DOMAIN_AUTHORITIES:
+            failures.fail(f"repo domain {domain} has unknown authority: {authority}")
+        paths = entry.get("paths")
+        if not isinstance(paths, list):
+            continue
+        for pattern in paths:
+            if not isinstance(pattern, str) or not pattern:
+                failures.fail(f"repo domain {domain} has an empty path pattern")
+                continue
+            if pattern.startswith("/") or ".." in Path(pattern).parts:
+                failures.fail(f"repo domain {domain} path must stay inside the repository: {pattern}")
+                continue
+            if pattern in patterns:
+                failures.fail(f"repo domain path is registered twice: {pattern}")
+                continue
+            patterns[pattern] = domain
+
+    tracked = _git_text(root, "-c", "core.quotepath=off", "ls-files")
+    if tracked is None:
+        # Outside a git checkout only the schema above can be validated.
+        return
+    tracked_files = [line for line in tracked.splitlines() if line]
+    winning_patterns: set[str] = set()
+    unowned: list[str] = []
+    for rel_path in tracked_files:
+        best: str | None = None
+        for pattern in patterns:
+            if pattern.endswith("/"):
+                if not rel_path.startswith(pattern):
+                    continue
+            elif rel_path != pattern:
+                continue
+            if best is None or len(pattern) > len(best):
+                best = pattern
+        if best is None:
+            unowned.append(rel_path)
+        else:
+            winning_patterns.add(best)
+
+    for rel_path in unowned[:20]:
+        failures.fail(f"repo domain coverage is missing an owner for {rel_path}")
+    if len(unowned) > 20:
+        failures.fail(f"repo domain coverage is missing owners for {len(unowned) - 20} more file(s)")
+    for pattern in sorted(set(patterns) - winning_patterns):
+        failures.fail(f"repo domain path matches no tracked file: {pattern}")
+
+
 def run_governance_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     failures = FailureCollector()
@@ -774,6 +875,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _check_ai_runtime_environment_contract(root, failures)
     _check_feature_evolution_evidence(root, failures)
     _check_enterprise_governance_baseline(root, failures)
+    _check_repo_domain_coverage(root, failures)
 
     _require_text(root, failures, "SECURITY.md", "GitHub Security Advisory", "private security advisory reporting")
     _forbid_text(root, failures, "SECURITY.md", "security@<your-domain>", "placeholder security email")
@@ -964,6 +1066,34 @@ def _check_skill_dir(failures: FailureCollector, path: Path) -> None:
         failures.fail(f"missing directory: {path}")
 
 
+SKILL_MD_MAX_LINES = 100
+
+
+def _check_skill_markdown_links(root: Path, failures: FailureCollector, source: Path) -> None:
+    for target in _markdown_link_targets(_read(source)):
+        resolved = _local_markdown_target(root, source, target)
+        if resolved is None:
+            continue
+        try:
+            resolved.relative_to(root)
+        except ValueError:
+            failures.fail(f"{source.relative_to(root)} links outside repository: {target}")
+            continue
+        if not resolved.exists():
+            failures.fail(f"{source.relative_to(root)} has broken link: {target}")
+
+
+def _check_skill_routing_table(root: Path, failures: FailureCollector, names: list[str]) -> None:
+    agents_file = root / "AGENTS.md"
+    if not agents_file.is_file():
+        failures.fail("missing file: AGENTS.md (skill routing table)")
+        return
+    text = _read(agents_file)
+    for name in names:
+        if name not in text:
+            failures.fail(f"AGENTS.md skill routing table is missing {name}")
+
+
 def run_skills_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     skill_root = root / ".codex/skills-src"
@@ -973,11 +1103,13 @@ def run_skills_check(root: Path | None = None) -> int:
     _check_skill_dir(failures, discovery_root)
 
     found = 0
+    names: list[str] = []
     for skill_dir in sorted(skill_root.glob("areamatrix-*")) if skill_root.is_dir() else []:
         if not skill_dir.is_dir():
             continue
         found += 1
         name = skill_dir.name
+        names.append(name)
         skill_file = skill_dir / "SKILL.md"
         openai_file = skill_dir / "agents/openai.yaml"
         references_dir = skill_dir / "references"
@@ -1009,6 +1141,16 @@ def run_skills_check(root: Path | None = None) -> int:
                     failures.fail(f"missing description in {skill_file}")
             except SimpleYAMLError as exc:
                 failures.fail(f"invalid SKILL.md: {exc}")
+            line_count = len(_read(skill_file).splitlines())
+            if line_count > SKILL_MD_MAX_LINES:
+                failures.fail(
+                    f"{skill_file.relative_to(root)} has {line_count} lines; "
+                    f"split content into references/ (max {SKILL_MD_MAX_LINES})"
+                )
+            _check_skill_markdown_links(root, failures, skill_file)
+        if references_dir.is_dir():
+            for reference_file in sorted(references_dir.glob("*.md")):
+                _check_skill_markdown_links(root, failures, reference_file)
 
         if openai_file.is_file():
             try:
@@ -1037,6 +1179,8 @@ def run_skills_check(root: Path | None = None) -> int:
 
     if found == 0:
         failures.fail(f"no AreaMatrix skills found under {skill_root}")
+    else:
+        _check_skill_routing_table(root, failures, names)
 
     if failures.count:
         print(f"skill health: FAILED ({failures.count} issue(s))", file=os.sys.stderr)

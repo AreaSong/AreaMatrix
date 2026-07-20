@@ -140,6 +140,17 @@ documents:
             + document_entries
             + "document_domains:\n"
             + domain_entries
+            + """repo_domains:
+  - domain: docs-source-facts
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: docs check
+    review_triggers:
+      - changed
+    paths:
+      - docs/
+"""
             + "raid:\n"
             + raid_entries,
             encoding="utf-8",
@@ -611,6 +622,133 @@ documents:
             self.assertEqual(failures.count, 1)
             self.assertIn("document domain is unregistered: docs/security", stderr.getvalue())
 
+    def _write_repo_domain_git_fixture(
+        self,
+        root: Path,
+        *,
+        register_extra_file: bool = True,
+        include_dead_pattern: bool = False,
+        duplicate_pattern: bool = False,
+        authority: str = "source-fact",
+    ) -> None:
+        docs = root / "docs"
+        docs.mkdir(parents=True)
+        (docs / "guide.md").write_text("# Guide\n", encoding="utf-8")
+        (root / "notes.txt").write_text("tracked\n", encoding="utf-8")
+        extra_paths = ""
+        if register_extra_file:
+            extra_paths += "      - notes.txt\n"
+        if include_dead_pattern:
+            extra_paths += "      - missing/\n"
+        if duplicate_pattern:
+            extra_paths += "      - docs/\n"
+        (root / "governance-register.yaml").write_text("placeholder\n", encoding="utf-8")
+        governance = root / "docs/governance"
+        governance.mkdir(parents=True)
+        (governance / "governance-register.yaml").write_text(
+            f"""schema_version: 1
+repo_domains:
+  - domain: fixture-domain
+    owner: "@AreaSong"
+    status: active
+    authority: {authority}
+    verification: fixture check
+    review_triggers:
+      - changed
+    paths:
+      - docs/
+      - governance-register.yaml
+"""
+            + extra_paths,
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "init", "--quiet", str(root)], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(root), "add", "-A"], check=True, capture_output=True)
+
+    def test_repo_domain_coverage_accepts_registered_tree(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root)
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_unowned_tracked_file(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root, register_extra_file=False)
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("missing an owner for notes.txt", stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_pattern_without_tracked_files(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root, include_dead_pattern=True)
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("matches no tracked file: missing/", stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_duplicate_pattern(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root, duplicate_pattern=True)
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("registered twice: docs/", stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_unknown_authority(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root, authority="mystery")
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("unknown authority: mystery", stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_missing_section(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            governance = root / "docs/governance"
+            governance.mkdir(parents=True)
+            (governance / "governance-register.yaml").write_text(
+                "schema_version: 1\n", encoding="utf-8"
+            )
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("repo_domains must be non-empty", stderr.getvalue())
+
+    def test_repo_domain_coverage_matches_repository(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(Path(__file__).resolve().parents[2], failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
     def test_ai_runtime_environment_contract_matches_repository(self) -> None:
         failures = checks.FailureCollector()
 
@@ -877,6 +1015,97 @@ documents:
                 path.write_text(text, encoding="utf-8")
 
             self.assertEqual(checks.run_quality_check(root), 1)
+
+    def _write_skills_fixture(self, root: Path, *, name: str = "areamatrix-example") -> Path:
+        skill_dir = root / ".codex/skills-src" / name
+        (skill_dir / "references").mkdir(parents=True)
+        (skill_dir / "agents").mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            "\n".join(
+                [
+                    "---",
+                    f"name: {name}",
+                    'description: "Use when the task involves the example area."',
+                    "---",
+                    "",
+                    "# Example",
+                    "",
+                    "See [reference](references/guide.md).",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        (skill_dir / "references/guide.md").write_text("# Guide\n", encoding="utf-8")
+        (skill_dir / "agents/openai.yaml").write_text(
+            "\n".join(
+                [
+                    "interface:",
+                    '  display_name: "Example"',
+                    '  short_description: "Example skill"',
+                    f'  default_prompt: "Use ${name} to test."',
+                    "policy:",
+                    "  allow_implicit_invocation: true",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        discovery = root / ".agents/skills"
+        discovery.mkdir(parents=True)
+        os.symlink(f"../../.codex/skills-src/{name}", discovery / name)
+        (root / "AGENTS.md").write_text(f"## Skill 路由\n\n| example | `{name}` |\n", encoding="utf-8")
+        return skill_dir
+
+    def test_skills_check_passes_minimal_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_skills_fixture(root)
+            self.assertEqual(checks.run_skills_check(root), 0)
+
+    def test_skills_check_rejects_broken_markdown_link(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = self._write_skills_fixture(root)
+            skill_md = skill_dir / "SKILL.md"
+            skill_md.write_text(
+                skill_md.read_text(encoding="utf-8").replace(
+                    "references/guide.md", "references/missing.md"
+                ),
+                encoding="utf-8",
+            )
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(checks.run_skills_check(root), 1)
+
+    def test_skills_check_rejects_broken_reference_link(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = self._write_skills_fixture(root)
+            (skill_dir / "references/guide.md").write_text(
+                "# Guide\n\n[gone](../../missing-runbook.md)\n", encoding="utf-8"
+            )
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(checks.run_skills_check(root), 1)
+
+    def test_skills_check_rejects_oversized_skill_md(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = self._write_skills_fixture(root)
+            skill_md = skill_dir / "SKILL.md"
+            padding = "\n".join(f"- filler line {index}" for index in range(checks.SKILL_MD_MAX_LINES + 1))
+            skill_md.write_text(
+                skill_md.read_text(encoding="utf-8") + padding + "\n", encoding="utf-8"
+            )
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(checks.run_skills_check(root), 1)
+
+    def test_skills_check_rejects_missing_routing_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_skills_fixture(root)
+            (root / "AGENTS.md").write_text("## Skill 路由\n\n| 无 | 无 |\n", encoding="utf-8")
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(checks.run_skills_check(root), 1)
 
     def test_wording_audit_blocks_long_term_track_terms(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

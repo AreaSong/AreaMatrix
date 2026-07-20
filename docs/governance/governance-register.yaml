@@ -144,6 +144,261 @@ document_domains:
     review_triggers:
       - interaction-or-surface-changed
 
+repo_domains:
+  - domain: root-policy
+    owner: "@AreaSong"
+    status: active
+    authority: meta
+    verification: ./dev check governance and ./dev check docs
+    review_triggers:
+      - root-policy-or-entry-doc-changed
+    paths:
+      - AGENTS.md
+      - README.md
+      - README.zh-CN.md
+      - CHANGELOG.md
+      - LICENSE
+      - COMMERCIAL_LICENSE.md
+      - CODE_OF_CONDUCT.md
+      - CONTRIBUTING.md
+      - CODE_REVIEW.md
+      - SECURITY.md
+      - .gitignore
+      - .gitleaks.toml
+  - domain: tooling-cli
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: python3 -m unittest over scripts.dev_tools and ./dev check quality
+    review_triggers:
+      - dev-cli-or-check-behavior-changed
+    paths:
+      - dev
+      - task-loop
+      - scripts/
+  - domain: docs-source-facts
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: ./dev check docs plus document_domains coverage
+    review_triggers:
+      - any-docs-authority-changed
+    paths:
+      - docs/
+  - domain: ai-collaboration-rules
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: ./dev check governance
+    review_triggers:
+      - ai-collaboration-rule-changed
+    paths:
+      - .ai-governance/
+  - domain: codex-adapters
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: ./dev check skills and ./dev check codex-os
+    review_triggers:
+      - skill-or-codex-runtime-changed
+    paths:
+      - .codex/
+      - .agents/
+  - domain: github-adapters
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: ./dev check governance
+    review_triggers:
+      - ci-or-review-template-changed
+    paths:
+      - .github/
+  - domain: editor-config
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: manual review on change
+    review_triggers:
+      - editor-config-changed
+    paths:
+      - .vscode/
+  - domain: areaflow-projection
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: ./dev check governance authoring shim assertions
+    review_triggers:
+      - shim-lifecycle-changed
+    paths:
+      - .areaflow/
+  - domain: core-crate-config
+    owner: "@AreaSong"
+    status: active
+    authority: build-config
+    verification: cargo fmt clippy and test across the workspace
+    review_triggers:
+      - dependency-or-build-config-changed
+    paths:
+      - core/
+  - domain: core-api-contract
+    owner: "@AreaSong"
+    status: active
+    authority: contract
+    verification: ./dev bindings verify and core contract tests
+    review_triggers:
+      - core-api-or-udl-changed
+    paths:
+      - core/area_matrix.udl
+  - domain: core-source
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: cargo fmt clippy and test across the workspace
+    review_triggers:
+      - core-module-behavior-changed
+    paths:
+      - core/src/
+  - domain: core-tests
+    owner: "@AreaSong"
+    status: active
+    authority: test
+    verification: cargo test across the workspace
+    review_triggers:
+      - core-validation-coverage-changed
+    paths:
+      - core/tests/
+      - core/benches/
+  - domain: macos-app
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: ./dev test macos with SwiftLint and SwiftFormat
+    review_triggers:
+      - macos-feature-or-platform-boundary-changed
+    paths:
+      - apps/macos/AreaMatrix/
+      - apps/macos/AGENTS.md
+  - domain: macos-generated-bindings
+    owner: "@AreaSong"
+    status: active
+    authority: generated-verified
+    verification: ./dev bindings verify
+    review_triggers:
+      - udl-or-bindgen-version-changed
+    paths:
+      - apps/macos/AreaMatrix/Bridge/UniFFI/
+  - domain: macos-tests
+    owner: "@AreaSong"
+    status: active
+    authority: test
+    verification: ./dev test macos
+    review_triggers:
+      - macos-governance-or-page-tests-changed
+    paths:
+      - apps/macos/AreaMatrixTests/
+  - domain: macos-project-config
+    owner: "@AreaSong"
+    status: active
+    authority: build-config
+    verification: xcodebuild plus governance test membership check
+    review_triggers:
+      - target-membership-or-build-settings-changed
+    paths:
+      - apps/macos/AreaMatrix.xcodeproj/
+  - domain: ios-port
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: platform test suite runs on demand
+    review_triggers:
+      - shared-contract-or-port-scope-changed
+    paths:
+      - apps/ios/
+  - domain: linux-port
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: platform test suite runs on demand
+    review_triggers:
+      - shared-contract-or-port-scope-changed
+    paths:
+      - apps/linux/
+  - domain: windows-port
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: platform test suite runs on demand
+    review_triggers:
+      - shared-contract-or-port-scope-changed
+    paths:
+      - apps/windows/
+  - domain: brand-assets
+    owner: "@AreaSong"
+    status: active
+    authority: assets
+    verification: brand generator scripts and manual review
+    review_triggers:
+      - brand-or-prototype-assets-changed
+    paths:
+      - assets/
+  - domain: task-records
+    owner: "@AreaSong"
+    status: active
+    authority: task-records
+    verification: ./dev check codex-os registry checks
+    review_triggers:
+      - task-registry-format-changed
+    paths:
+      - tasks/
+  - domain: workflow-system
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: ./dev workflow doctor
+    review_triggers:
+      - workflow-lifecycle-rules-changed
+    paths:
+      - workflow/
+      - workflow/versions/README.md
+      - workflow/versions/source-docs-guide.md
+  - domain: workflow-templates
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: ./dev workflow doctor template checks
+    review_triggers:
+      - workflow-template-contract-changed
+    paths:
+      - workflow/templates/
+      - workflow/versions/v-template/
+  - domain: workflow-active-version
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: ./dev workflow doctor for the active version
+    review_triggers:
+      - active-version-gate-changed
+    paths:
+      - workflow/versions/v2/
+  - domain: workflow-sealed-versions
+    owner: "@AreaSong"
+    status: active
+    authority: archived-readonly
+    verification: read-only guard with audit access only
+    review_triggers:
+      - sealed-record-audit-requested
+    paths:
+      - workflow/versions/
+  - domain: residual-ledger
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: residual cross-check via governance review
+    review_triggers:
+      - residual-item-opened-or-closed
+    paths:
+      - workflow/residuals/
+
 raid:
   - id: AM-RISK-001
     type: risk
