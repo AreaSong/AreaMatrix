@@ -45,6 +45,7 @@ AGENTS.md / .ai-governance
 - `workflows/prompt-task-runtime.md`：Quick / Change / Mission-Critical 任务运行方式。
 - `workflows/external-capability-admission.md`：Vibe-Skills、Codex 官方能力、插件、MCP、subagent pattern 等外部能力的接入门禁。
 - `workflows/subagent-boundaries.md`：Codex subagents 的只读探索、写入实现、live runner 禁区和主 agent 复核责任。
+- `workflows/cursor-adapter-layer.md`：Cursor 适配层（`.cursor/` rules、skills、commands、hooks、plans 与工作区级 canvas）的投影边界、静默触发表和 hooks 约束。
 
 ## 参考入口
 

@@ -25,36 +25,16 @@ struct InitDoneStepView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .center, spacing: 14) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(.green)
-                .padding(.bottom, 8)
-
-            Text("资料库已准备好")
-                .font(.system(size: 32, weight: .semibold))
-                .accessibilityAddTraits(.isHeader)
-
-            Text("AreaMatrix 已完成初始化。\n你现在可以浏览资料库，或把文件拖进窗口开始归档。")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
-        }
+        AreaMatrixStepHeader(
+            systemImage: "checkmark.circle.fill",
+            tint: .green,
+            title: "资料库已准备好",
+            subtitle: "AreaMatrix 已完成初始化。\n你现在可以浏览资料库，或把文件拖进窗口开始归档。"
+        )
     }
 
     private var pathBox: some View {
-        VStack(alignment: .center, spacing: 8) {
-            Text(result.repoPath)
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .lineLimit(2)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-        }
+        AreaMatrixPathBox(path: result.repoPath)
     }
 
     private var summarySection: some View {
@@ -68,8 +48,7 @@ struct InitDoneStepView: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+            .areaMatrixGlassCard()
         }
     }
 

@@ -45,22 +45,12 @@ struct InitFailedStepView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .center, spacing: 14) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(.orange)
-                .padding(.bottom, 8)
-
-            Text("初始化未完成")
-                .font(.system(size: 32, weight: .semibold))
-                .accessibilityAddTraits(.isHeader)
-
-            Text("AreaMatrix 没能完成资料库初始化。\n你的原始文件没有被移动、重命名、删除或覆盖。")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
-        }
+        AreaMatrixStepHeader(
+            systemImage: "exclamationmark.triangle",
+            tint: .orange,
+            title: "初始化未完成",
+            subtitle: "AreaMatrix 没能完成资料库初始化。\n你的原始文件没有被移动、重命名、删除或覆盖。"
+        )
     }
 
     private var errorSummary: some View {
@@ -86,8 +76,7 @@ struct InitFailedStepView: View {
         .font(.callout)
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+        .areaMatrixGlassCard()
     }
 
     private var recoveryAdvice: some View {
@@ -132,8 +121,7 @@ struct InitFailedStepView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+        .areaMatrixGlassCard()
     }
 
     private func failedDiagnostics(_ mapping: CoreErrorMappingSnapshot) -> some View {

@@ -139,9 +139,10 @@ fn classifier_rule_save_contract_documents_consumer_state_and_scope_boundaries()
         "`extensions`",
         "`keywords`",
         "`priority`",
-        "Extension 匹配",
-        "`keywords` 优先级整体高于 `extensions`",
-        "校验失败 = **不替换**当前规则",
+        "### Extension",
+        "Keyword 命中后不再检查 extension",
+        "两类入口都执行各自的规则校验",
+        "再原子替换 YAML",
     ] {
         assert_contains(CLASSIFIER_YAML, fragment);
     }

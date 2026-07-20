@@ -129,11 +129,11 @@ fn install_share_metadata_failure(repo: &Path) {
 #[test]
 fn share_extension_import_failure_edge_docs_require_explicit_failure_semantics() {
     for fragment in [
-        "失败的 import 不留下 DB 记录或最终目录中的半文件",
-        "ROLLBACK",
-        "StagingGuard",
-        "最终目录无变化",
-        "Indexed 失败只回滚本次 DB staging 行",
+        "失败导入不得留下最终目录半成品",
+        "`StagingFileGuard`",
+        "`DbStagingRowGuard`",
+        "| staging row transaction | 源文件保留；无最终文件 |",
+        "overview 或 replacement 保护失败时执行专用 DB rollback",
     ] {
         assert!(
             TRANSACTIONAL_IMPORT.contains(fragment),

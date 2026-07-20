@@ -110,14 +110,12 @@ struct DBRepairConfirmView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Repository")
                 .font(.headline)
-            Text(model.repoPath)
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .lineLimit(3)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            AreaMatrixPathBox(
+                path: model.repoPath,
+                style: .plain,
+                lineLimit: 3,
+                alignment: .leading
+            )
             if let mapping = model.initialMapping {
                 Text("Error: \(mapping.kind.rawValue)")
                     .font(.callout)

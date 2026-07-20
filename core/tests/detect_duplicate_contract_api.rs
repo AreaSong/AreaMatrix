@@ -123,8 +123,8 @@ fn detect_duplicate_contract_api_docs_udl_and_rust_error_carry_existing_path() {
 
     for fragment in [
         "`DuplicateFile { existing_path }`",
-        "用户决策",
-        "跳过 / 覆盖 / 保留两份",
+        "UserActionRequired",
+        "Skip、Keep both 或经确认 Replace",
     ] {
         assert_contains(ERROR_CODES, fragment);
     }

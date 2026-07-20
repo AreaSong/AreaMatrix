@@ -32,6 +32,21 @@
 
 同会话每个新任务都重新匹配本表；上下文被压缩或清空后，重读本文件与命中的 SKILL.md，不凭记忆沿用上一个任务的路由结论。
 
+## Cursor 适配层
+
+统一语义见 [.ai-governance/workflows/cursor-adapter-layer.md](.ai-governance/workflows/cursor-adapter-layer.md)；`.cursor/` 只是 Cursor 形态的投影层，不替代本文件、`.ai-governance/` 或上方 Skill 路由表。
+
+| 路径 | 职责 |
+|---|---|
+| `.cursor/rules/` | Cursor 注入规则，仅承载本文件未覆盖的 Cursor 工作流语义 |
+| `.cursor/skills/` | Cursor Agent 静默规程（session-bootstrap / closeout / plan-sync / pre-push-review） |
+| `.cursor/commands/` | 斜杠兼容镜像，不要求用户手打 |
+| `.cursor/hooks/` | sessionStart / stop / beforeShellExecution 兜底钩子 |
+| `.cursor/plans/` | Cursor 会话级进行中计划（不入库，不替代 `tasks/` 与 workflow execution） |
+| Cursor 工作区级 `canvases/` | residual ledger 与产品能力的只读可视化面板（不在仓库内） |
+
+静默约定：新对话执行 `areamatrix-session-bootstrap`；宣称完成前执行 `areamatrix-closeout`；不少于 3 步的任务用 `areamatrix-plan-sync` 维护 `.cursor/plans/`；push / PR 前执行 `areamatrix-pre-push-review`。到点直接执行，禁止要求用户手打斜杠；命中业务语义时仍按上方 Skill 路由表交接。
+
 ## 源事实
 
 - 产品、架构、API、开发规范的权威来源是 `docs/`。

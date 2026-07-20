@@ -73,14 +73,12 @@ struct ConfirmInitStepView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("资料库路径")
                 .font(.headline)
-            Text(draft.validation.repoPath)
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .lineLimit(3)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            AreaMatrixPathBox(
+                path: draft.validation.repoPath,
+                style: .plain,
+                lineLimit: 3,
+                alignment: .leading
+            )
         }
     }
 

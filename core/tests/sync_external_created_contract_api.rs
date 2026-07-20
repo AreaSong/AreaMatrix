@@ -112,7 +112,7 @@ fn sync_external_created_contract_api_documents_errors_side_effects_and_scope() 
         "skip `.areamatrix/`",
         "generated overview output",
         "delete, rename, overwrite, copy, or download",
-        "Cursor persistence is part of the batch success contract",
+        "persists the maximum event cursor last",
         "Returns `CoreError::InvalidPath { path }`",
         "`CoreError::ICloudPlaceholder { path }`",
         "`CoreError::Io { message }`",

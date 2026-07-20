@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".cursor/hooks/session-bootstrap.sh"
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/stop-closeout.sh",
+        "loop_limit": 1
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/guard-live-mainline.sh",
+        "timeout": 10
+      }
+    ]
+  }
+}

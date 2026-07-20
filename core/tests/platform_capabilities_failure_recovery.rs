@@ -198,22 +198,22 @@ fn platform_capabilities_failure_docs_record_recovery_and_scope_boundaries() {
     }
 
     for fragment in [
-        "| `Config { reason }` | classifier.yaml 解析失败、必填字段缺失",
-        "CoreError::Config { reason }",
+        "| `Config { reason }` | 配置无效或保存失败",
+        "`Config { reason }` 必须始终提供经过控制、可向用户解释的 reason",
     ] {
         assert!(ERROR_CODES.contains(fragment));
     }
 
     for fragment in [
-        "失败的 import 不留下 DB 记录或最终目录中的半文件",
-        "任何步骤失败：`ROLLBACK` + `StagingGuard` 自动删除 staging 文件",
+        "失败导入不得留下最终目录半成品",
+        "`StagingFileGuard` | 本次内部 staging 文件 | best-effort 删除本次文件",
     ] {
         assert!(TRANSACTIONAL_IMPORT.contains(fragment));
     }
 
     for fragment in [
-        "CoreError.PermissionDenied",
-        "CoreError.Db(\"database is locked\")",
+        "`PermissionDenied` 需要先确定被阻断的是资料库目录",
+        "Core 已使用 WAL 和 5 秒 busy timeout",
     ] {
         assert!(TROUBLESHOOTING.contains(fragment));
     }

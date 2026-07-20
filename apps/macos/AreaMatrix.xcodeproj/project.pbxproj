@@ -82,6 +82,8 @@
 		0A0000000000000000000D0E /* AreaMatrixWorkflowDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */; };
 		0A0000000000000000000D20 /* ReasonStatusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D21 /* ReasonStatusCard.swift */; };
 		0A0000000000000000000D22 /* TintedStatusBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D23 /* TintedStatusBanner.swift */; };
+		0A0000000000000000001B10 /* AreaMatrixGlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001B11 /* AreaMatrixGlassCard.swift */; };
+		0A0000000000000000001B12 /* AreaMatrixStepHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001B13 /* AreaMatrixStepHeader.swift */; };
 		0A0000000000000000000D24 /* NeutralSummaryPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D25 /* NeutralSummaryPanel.swift */; };
 		0A0000000000000000000D26 /* NeutralCapsuleChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D27 /* NeutralCapsuleChip.swift */; };
 		0A0000000000000000000D28 /* TintedCapsuleBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D29 /* TintedCapsuleBadge.swift */; };
@@ -837,6 +839,8 @@
 		0A0000000000000000000D25 /* NeutralSummaryPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/NeutralSummaryPanel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D27 /* NeutralCapsuleChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/NeutralCapsuleChip.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D29 /* TintedCapsuleBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/TintedCapsuleBadge.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000001B11 /* AreaMatrixGlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixGlassCard.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000001B13 /* AreaMatrixStepHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixStepHeader.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D2B /* LocalModelStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/LocalModelStatusView.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D2D /* DetailMetadataRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Detail/DetailMetadataRows.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D2F /* SemanticSearchDetailBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Search/SemanticSearchDetailBanner.swift; sourceTree = SOURCE_ROOT; };
@@ -1638,6 +1642,8 @@
 					0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */,
 					0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */,
 					0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */,
+					0A0000000000000000001B11 /* AreaMatrixGlassCard.swift */,
+					0A0000000000000000001B13 /* AreaMatrixStepHeader.swift */,
 					0A0000000000000000000D21 /* ReasonStatusCard.swift */,
 					0A0000000000000000000D23 /* TintedStatusBanner.swift */,
 					0A0000000000000000000D25 /* NeutralSummaryPanel.swift */,
@@ -2931,6 +2937,8 @@
 					0A0000000000000000000D0C /* AreaMatrixProtectionDiorama.swift in Sources */,
 					0A0000000000000000000D0D /* AreaMatrixTimelineDiorama.swift in Sources */,
 					0A0000000000000000000D0E /* AreaMatrixWorkflowDiorama.swift in Sources */,
+					0A0000000000000000001B10 /* AreaMatrixGlassCard.swift in Sources */,
+					0A0000000000000000001B12 /* AreaMatrixStepHeader.swift in Sources */,
 					0A0000000000000000000D20 /* ReasonStatusCard.swift in Sources */,
 					0A0000000000000000000D22 /* TintedStatusBanner.swift in Sources */,
 					0A0000000000000000000D24 /* NeutralSummaryPanel.swift in Sources */,

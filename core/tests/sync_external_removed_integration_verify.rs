@@ -232,7 +232,7 @@ fn assert_rust_entry_points_are_real_removed_wiring() {
         "ensure_path_absent",
         "find_active_file_by_path",
         "external_removed_detail",
-        "has_icloud_placeholder_marker",
+        "resolve_file_event_path",
     ] {
         assert_contains(SYNC_PLANS_RS, fragment);
     }

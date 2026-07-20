@@ -32,36 +32,18 @@ struct InitializingStepView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .center, spacing: 14) {
+        AreaMatrixStepHeader(
+            title: isCreateMode ? "正在创建资料库" : "正在接管已有目录",
+            subtitle: detailText
+        ) {
             ProgressView()
                 .controlSize(.large)
                 .accessibilityLabel(accessibilityProgressLabel)
-                .padding(.bottom, 8)
-
-            Text(isCreateMode ? "正在创建资料库" : "正在接管已有目录")
-                .font(.system(size: 32, weight: .semibold))
-                .accessibilityAddTraits(.isHeader)
-
-            Text(detailText)
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
         }
     }
 
     private var pathBox: some View {
-        VStack(alignment: .center, spacing: 8) {
-            Text(draft.validation.repoPath)
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .lineLimit(2)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-        }
+        AreaMatrixPathBox(path: draft.validation.repoPath)
     }
 
     private var progressSection: some View {
@@ -76,8 +58,7 @@ struct InitializingStepView: View {
             .font(.callout)
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+            .areaMatrixGlassCard()
         }
     }
 
@@ -97,8 +78,7 @@ struct InitializingStepView: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+            .areaMatrixGlassCard()
             .accessibilityElement(children: .combine)
         }
     }
@@ -115,8 +95,7 @@ struct InitializingStepView: View {
             .accessibilityElement(children: .combine)
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+            .areaMatrixGlassCard()
         }
     }
 
