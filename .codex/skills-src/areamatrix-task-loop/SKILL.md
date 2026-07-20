@@ -1,6 +1,6 @@
 ---
 name: areamatrix-task-loop
-description: "Use when Codex needs to start, monitor, resume, or explain the AreaMatrix silent task loop that runs copy-ready prompts, verify-ready prompts, retry-on-fail repair, progress tracking, and risk gates."
+description: "Use when the task involves the AreaMatrix silent task loop: starting, monitoring, resuming, or explaining `./task-loop` runs, copy-ready / verify-ready prompts, retry-on-fail repair, progress tracking, run summaries, or risk gates. Trigger phrases include 跑任务循环 / 继续执行队列 / 任务卡住了 / stale progress / failed verify / blocked task."
 ---
 
 # AreaMatrix Task Loop

@@ -11,7 +11,7 @@ docs_refs:
     excerpt: 本文是 AreaMatrix 对 `ASW-EWF-001@1.0.0` 的项目适配源事实。
   - file: docs/governance/governance-register.yaml
     line_start: 1
-    line_end: 483
+    line_end: 1213
     heading: AM-GOV-REGISTER-001
     excerpt: "id: AM-GOV-REGISTER-001"
   - file: docs/governance/project-charter.md

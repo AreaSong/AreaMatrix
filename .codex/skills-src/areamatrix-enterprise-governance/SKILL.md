@@ -1,6 +1,6 @@
 ---
 name: areamatrix-enterprise-governance
-description: "Use when Codex needs to review or update AreaMatrix enterprise governance rules for code review, security, dependency policy, CI, CODEOWNERS, PR templates, or governance drift."
+description: "Use when the task reviews or updates AreaMatrix enterprise governance: code review, security, dependency policy, CI workflows, CODEOWNERS, PR templates, or governance drift. Trigger phrases include 代码评审 / 安全审查 / 依赖审查 / 能不能合并 / merge readiness / CI 门禁 / supply-chain review."
 ---
 
 # AreaMatrix Enterprise Governance

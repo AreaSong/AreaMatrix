@@ -23,6 +23,8 @@ AreaMatrix/
 
 `.codex/skills-src/`、`.agents/skills/`、`workflow/`、`dev`
 和 `task-loop` 是固定工具入口，目录收紧时不得为了视觉简洁而移动或重命名。
+根 `AGENTS.md` 持有任务到 repo-local skill 的路由表；新增或删除 skill 时必须同步该表，
+一致性由 `./dev check skills` 校验。
 v1 历史 prompt 执行队列已完成并归档在
 `workflow/versions/v1-mvp/execution/`；不得为了整理状态重写历史
 `progress.json`、task-loop logs、checkpoint 或 evidence。未来真实版本必须先通过

@@ -1,6 +1,6 @@
 ---
 name: areamatrix-codex-os
-description: "Use when Codex needs to run, explain, validate, recover, or improve the AreaMatrix Codex Operating System task lifecycle, including intake, local task registry, preflight, context, resume, validation recommendation, evidence, closeout, finish, dashboard, health score, weekly review, and archive recommendations."
+description: "Use when the task operates the AreaMatrix Codex Operating System lifecycle: intake, local task registry, preflight, context, resume, validation recommendation, evidence, closeout, finish, dashboard, health score, weekly review, or archive recommendations. Trigger phrases include codex-os / start-flow / close-flow / 收尾 / 台账 / 健康分 / weekly review."
 ---
 
 # AreaMatrix Codex OS

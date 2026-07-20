@@ -607,8 +607,28 @@ documents:
 
             checks._check_enterprise_governance_baseline(root, failures)
 
-            self.assertEqual(failures.count, 1)
+            self.assertEqual(failures.count, 2)
             self.assertIn("threat model must be registered in documents", stderr.getvalue())
+            self.assertIn(
+                "docs page is not registered in documents: docs/security/threat-model.md",
+                stderr.getvalue(),
+            )
+
+    def test_enterprise_governance_baseline_rejects_unregistered_docs_page(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root)
+            (root / "docs/governance/orphan.md").write_text("# Orphan\n", encoding="utf-8")
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn(
+                "docs page is not registered in documents: docs/governance/orphan.md",
+                stderr.getvalue(),
+            )
 
     def test_enterprise_governance_baseline_rejects_unregistered_docs_domain(self) -> None:
         stderr = io.StringIO()
@@ -748,6 +768,143 @@ repo_domains:
             checks._check_repo_domain_coverage(Path(__file__).resolve().parents[2], failures)
 
             self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def _write_core_api_sync_fixture(
+        self,
+        root: Path,
+        *,
+        embedded_matches: bool = True,
+        include_table_entry: bool = True,
+        include_heading: bool = True,
+    ) -> None:
+        udl_text = "namespace area_matrix {\n    string get_version();\n};\n"
+        (root / "core").mkdir(parents=True)
+        (root / "core/area_matrix.udl").write_text(udl_text, encoding="utf-8")
+        embedded = udl_text if embedded_matches else udl_text.replace("string", "sequence<string>")
+        table_row = "| `get_version()` | meta | × | — |\n" if include_table_entry else ""
+        heading = "### `get_version() -> String`\n" if include_heading else ""
+        (root / "docs/api").mkdir(parents=True)
+        (root / "docs/api/core-api.md").write_text(
+            "# Core API\n\n```idl\n" + embedded + "```\n\n## 函数总览\n\n"
+            "| 函数 | 类别 | Throws | 主要错误 |\n|---|---|---|---|\n"
+            + table_row
+            + "\n"
+            + heading,
+            encoding="utf-8",
+        )
+
+    def test_core_api_contract_sync_matches_repository(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(Path(__file__).resolve().parents[2], failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_core_api_contract_sync_accepts_matching_fixture(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_core_api_sync_fixture(root)
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(root, failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_core_api_contract_sync_rejects_embedded_udl_drift(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_core_api_sync_fixture(root, embedded_matches=False)
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("embedded UDL differs", stderr.getvalue())
+
+    def test_core_api_contract_sync_rejects_missing_inventory_row(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_core_api_sync_fixture(root, include_table_entry=False)
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("overview table is missing UDL function: get_version", stderr.getvalue())
+
+    def test_core_api_contract_sync_rejects_missing_contract_section(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_core_api_sync_fixture(root, include_heading=False)
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("no contract section for UDL function: get_version", stderr.getvalue())
+
+    def _write_data_model_sync_fixture(
+        self,
+        root: Path,
+        *,
+        document_notes_table: bool = True,
+        document_ghost_table: bool = False,
+    ) -> None:
+        (root / "core/src").mkdir(parents=True)
+        (root / "core/src/schema.rs").write_text(
+            'const A: &str = "CREATE TABLE IF NOT EXISTS files (id INTEGER)";\n'
+            'const B: &str = "CREATE TABLE notes (id INTEGER)";\n',
+            encoding="utf-8",
+        )
+        rows = "| `files` | index |\n"
+        if document_notes_table:
+            rows += "| `notes` | notes |\n"
+        if document_ghost_table:
+            rows += "| `ghost` | never created |\n"
+        (root / "docs/architecture").mkdir(parents=True)
+        (root / "docs/architecture/data-model.md").write_text(
+            "# Data model\n\n| 表 | 用途 |\n|---|---|\n" + rows,
+            encoding="utf-8",
+        )
+
+    def test_data_model_schema_sync_matches_repository(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            failures = checks.FailureCollector()
+
+            checks._check_data_model_schema_sync(Path(__file__).resolve().parents[2], failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_data_model_schema_sync_rejects_undocumented_table(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_data_model_sync_fixture(root, document_notes_table=False)
+            failures = checks.FailureCollector()
+
+            checks._check_data_model_schema_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("missing a table created in core/src: notes", stderr.getvalue())
+
+    def test_data_model_schema_sync_rejects_phantom_doc_table(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_data_model_sync_fixture(root, document_ghost_table=True)
+            failures = checks.FailureCollector()
+
+            checks._check_data_model_schema_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("documents a table never created in core/src: ghost", stderr.getvalue())
 
     def test_ai_runtime_environment_contract_matches_repository(self) -> None:
         failures = checks.FailureCollector()

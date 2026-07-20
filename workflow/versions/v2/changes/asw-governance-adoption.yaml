@@ -39,10 +39,10 @@ features:
       - file: docs/governance/governance-register.yaml
         operation: create
         line_start: 1
-        line_end: 483
+        line_end: 1213
         heading: AM-GOV-REGISTER-001
         excerpt: "id: AM-GOV-REGISTER-001"
-        summary: Record owners, document metadata, document domains, repo-wide domain ownership, RAID probability/impact/scope, external dependencies, and capability lifecycle.
+        summary: Record owners, per-file document registration, document domains, repo-wide domain ownership, RAID probability/impact/scope, external dependencies, and capability lifecycle.
         depends_on: []
         tasks:
           - authoring

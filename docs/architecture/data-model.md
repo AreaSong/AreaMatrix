@@ -24,7 +24,7 @@
 
 ## Schema version 2 初始表
 
-新资料库由 `core/src/db/schema.rs::INITIAL_SCHEMA` 创建以下 10 张表：
+新资料库由 `core/src/db/schema.rs::INITIAL_SCHEMA` 创建以下 11 张表：
 
 | 表 | 用途 |
 |---|---|
@@ -35,9 +35,13 @@
 | `tags` | 文件标签多值关系 |
 | `undo_actions` | token 化 Undo 状态和 inverse payload |
 | `fs_event_cursor` | FSEvents 已确认的单调 cursor |
+| `external_sync_receipts` | 外部同步事件的幂等回执，`(event_id, kind, path)` 主键 |
 | `scan_sessions` | adopt/reindex 进度、计数和错误 |
 | `repo_config` | 资料库级 key/value 配置 |
 | `saved_searches` | 保存的搜索条件和侧边栏状态 |
+
+`external_sync_receipts` 同时由 `core/src/db/sync/receipts.rs::ensure_external_sync_receipts`
+以 `CREATE TABLE IF NOT EXISTS` 兜底，保证在初始 schema 早于该表的既有资料库上按需补建。
 
 ### files
 

@@ -1,6 +1,6 @@
 ---
 name: areamatrix-validation-driver
-description: "Use when Codex needs to choose, run, or report the smallest sufficient AreaMatrix validation set for prompt tasks, scripts, Rust core, macOS app, docs-only changes, or mixed changes."
+description: "Use when the task needs to choose, run, or report the smallest sufficient AreaMatrix validation set for prompt tasks, scripts, Rust core, macOS app, docs-only changes, or mixed changes. Trigger phrases include 跑哪些检查 / 怎么验证 / 验证通过了吗 / 算不算完成 / which checks to run / validation evidence / PASS FAIL BLOCKED."
 ---
 
 # AreaMatrix Validation Driver

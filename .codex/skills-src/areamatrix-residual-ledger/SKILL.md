@@ -1,6 +1,6 @@
 ---
 name: areamatrix-residual-ledger
-description: "Use when Codex needs to inspect, explain, update, or cross-check AreaMatrix residual items such as release blockers, accepted exceptions, historical references, template-only blockers, closed backlog packages, or docs terms that look unfinished but are product states."
+description: "Use when the question is what remains unresolved in AreaMatrix: release blockers, accepted exceptions, historical references, template-only blockers, closed backlog packages, or docs terms that look unfinished but are product states. Trigger phrases include 还有什么没解决 / 还剩什么没做 / 未完成 / 遗留问题 / residual items / blocker 状态."
 ---
 
 # AreaMatrix Residual Ledger

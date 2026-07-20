@@ -605,9 +605,20 @@ def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector
                     failures.fail(f"enterprise governance document entry is missing {key}")
             path = entry.get("path")
             if isinstance(path, str):
+                if path in registered_document_paths:
+                    failures.fail(f"enterprise governance document is registered twice: {path}")
                 registered_document_paths.add(path)
                 if not (root / path).is_file():
                     failures.fail(f"enterprise governance document does not exist: {path}")
+
+    docs_root = root / "docs"
+    if docs_root.is_dir():
+        for md_path in sorted(docs_root.rglob("*.md")):
+            if not md_path.is_file():
+                continue
+            rel = md_path.relative_to(root).as_posix()
+            if rel not in registered_document_paths:
+                failures.fail(f"docs page is not registered in documents: {rel}")
 
     threat_model_rel = "docs/security/threat-model.md"
     threat_model_path = root / threat_model_rel
@@ -736,6 +747,86 @@ def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector
         failures.fail(f"v2 execution must remain README-only, found {[str(path) for path in execution_files]}")
     _require_text(root, failures, "workflow/versions/v2/promotion/promotion.yaml", r"live_mapping:\s+pending", "v2 pending live mapping")
     _require_text(root, failures, "workflow/versions/v2/promotion/approval.yaml", r"approved:\s+false", "v2 promotion approval block")
+
+
+def _udl_namespace_functions(udl_text: str) -> list[str] | None:
+    """Extract function names declared inside the leading namespace block."""
+
+    if not udl_text.startswith("namespace area_matrix {"):
+        return None
+    end = udl_text.find("\n};")
+    if end < 0:
+        return None
+    names: list[str] = []
+    for line in udl_text[:end].splitlines():
+        stripped = line.strip()
+        if stripped.startswith("//") or stripped.startswith("["):
+            continue
+        match = re.match(
+            r"^(?:[A-Za-z0-9_?<> ]+\s)?([a-z][a-z0-9_]*)\(",
+            stripped.replace(" (", "("),
+        )
+        if match:
+            names.append(match.group(1))
+    return names
+
+
+def _check_core_api_contract_sync(root: Path, failures: FailureCollector) -> None:
+    """core-api.md embedded UDL and function inventory must match the real UDL."""
+
+    api_path = root / "docs/api/core-api.md"
+    udl_path = root / "core/area_matrix.udl"
+    if not api_path.is_file() or not udl_path.is_file():
+        return
+    api_text = _read(api_path)
+    udl_text = _read(udl_path)
+
+    match = re.search(r"(?ms)^```idl\n(.*?)^```$", api_text)
+    if match is None:
+        failures.fail("core-api.md must embed the full UDL in an idl code block")
+    elif match.group(1).rstrip("\n") != udl_text.rstrip("\n"):
+        failures.fail("core-api.md embedded UDL differs from core/area_matrix.udl")
+
+    udl_names = _udl_namespace_functions(udl_text)
+    if udl_names is None:
+        failures.fail("core/area_matrix.udl namespace block could not be parsed")
+        return
+    udl_set = set(udl_names)
+    if len(udl_names) != len(udl_set):
+        failures.fail("core/area_matrix.udl namespace declares duplicate function names")
+
+    table_names = set(re.findall(r"(?m)^\|\s*`([a-z][a-z0-9_]*)\(", api_text))
+    heading_names = set(re.findall(r"(?m)^###\s+`([a-z][a-z0-9_]*)\(", api_text))
+    for name in sorted(udl_set - table_names):
+        failures.fail(f"core-api.md function overview table is missing UDL function: {name}")
+    for name in sorted(table_names - udl_set):
+        failures.fail(f"core-api.md function overview table lists unknown function: {name}")
+    for name in sorted(udl_set - heading_names):
+        failures.fail(f"core-api.md has no contract section for UDL function: {name}")
+    for name in sorted(heading_names - udl_set):
+        failures.fail(f"core-api.md documents a function missing from the UDL: {name}")
+
+
+def _check_data_model_schema_sync(root: Path, failures: FailureCollector) -> None:
+    """Every table created in core/src must be documented in data-model.md and vice versa."""
+
+    doc_path = root / "docs/architecture/data-model.md"
+    src_root = root / "core/src"
+    if not doc_path.is_file() or not src_root.is_dir():
+        return
+    doc_tables = set(re.findall(r"(?m)^\|\s*`([a-z][a-z0-9_]*)`\s*\|", _read(doc_path)))
+    created_tables: set[str] = set()
+    for rust_path in sorted(src_root.rglob("*.rs")):
+        created_tables.update(
+            re.findall(r"CREATE TABLE (?:IF NOT EXISTS )?([a-z][a-z0-9_]*)", _read(rust_path))
+        )
+    if not created_tables:
+        failures.fail("no CREATE TABLE statements found under core/src")
+        return
+    for table in sorted(created_tables - doc_tables):
+        failures.fail(f"data-model.md is missing a table created in core/src: {table}")
+    for table in sorted(doc_tables - created_tables):
+        failures.fail(f"data-model.md documents a table never created in core/src: {table}")
 
 
 _REPO_DOMAIN_AUTHORITIES = {
@@ -876,6 +967,8 @@ def run_governance_check(root: Path | None = None) -> int:
     _check_feature_evolution_evidence(root, failures)
     _check_enterprise_governance_baseline(root, failures)
     _check_repo_domain_coverage(root, failures)
+    _check_core_api_contract_sync(root, failures)
+    _check_data_model_schema_sync(root, failures)
 
     _require_text(root, failures, "SECURITY.md", "GitHub Security Advisory", "private security advisory reporting")
     _forbid_text(root, failures, "SECURITY.md", "security@<your-domain>", "placeholder security email")

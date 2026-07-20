@@ -13,6 +13,25 @@
 2. 再按目标路径读取最近的局部 `AGENTS.md`；当前已有 `core/AGENTS.md`、`apps/macos/AGENTS.md` 与 `workflow/AGENTS.md`。
 3. 再读与任务匹配的 `docs/` 文档、`.ai-governance/` 规则和 `workflow/versions/<version>/execution/` 任务文件。
 
+## Skill 路由
+
+命中下表任一行时，先读对应 `.agents/skills/<skill>/SKILL.md`（源文件在 `.codex/skills-src/`），按其 Read first 顺序补齐上下文；完整职责与交接边界见 `.codex/skills-src/README.md` 的 Owner 边界表。
+
+| 任务特征 | Skill |
+|---|---|
+| `./task-loop` 运行、copy-ready / verify-ready 执行、progress、失败恢复 | `areamatrix-task-loop` |
+| PASS 后 commit / push、dirty worktree、checkpoint 失败恢复 | `areamatrix-git-checkpoint` |
+| 选择最小验证集、报告 PASS / FAIL / BLOCKED 证据 | `areamatrix-validation-driver` |
+| docs、Core API / UDL、README、prompt 材料漂移同步 | `areamatrix-doc-sync` |
+| 用户文件、`.areamatrix/` 元数据、DB、staging、FSEvents / iCloud 安全 | `areamatrix-file-safety` |
+| v* 版本规划、discussion gate、middle-layer、promotion preview | `areamatrix-workflow-planning` |
+| code review、安全、依赖、CI、CODEOWNERS 治理 | `areamatrix-enterprise-governance` |
+| 「还有什么没解决」、blocker / exception / reference 遗留项 | `areamatrix-residual-ledger` |
+| Codex OS intake、preflight、evidence、closeout、dashboard | `areamatrix-codex-os` |
+| 其他未列出任务 | 不强制 skill；按本文件与最近局部 `AGENTS.md` 执行 |
+
+同会话每个新任务都重新匹配本表；上下文被压缩或清空后，重读本文件与命中的 SKILL.md，不凭记忆沿用上一个任务的路由结论。
+
 ## 源事实
 
 - 产品、架构、API、开发规范的权威来源是 `docs/`。

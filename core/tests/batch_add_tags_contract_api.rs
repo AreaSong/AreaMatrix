@@ -7,6 +7,7 @@ use pretty_assertions::assert_eq;
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DATA_MODEL: &str = include_str!("../../docs/architecture/data-model.md");
 const ERROR_CODES: &str = include_str!("../../docs/api/error-codes.md");
+const SCHEMA_RS: &str = include_str!("../src/db/schema.rs");
 const TAGS_RS: &str = include_str!("../src/tags.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
@@ -159,9 +160,13 @@ fn batch_add_tags_contract_docs_api_udl_and_control_map_stay_aligned() {
         "inverse_json TEXT NOT NULL",
         "CHECK (status IN ('pending', 'executed', 'expired', 'blocked'))",
         "CREATE INDEX IF NOT EXISTS idx_undo_actions_status_time",
-        "### undo_actions: INSERT",
-        "### undo_actions: SELECT pending",
-        "### undo_actions: MARK",
+    ] {
+        assert_contains(SCHEMA_RS, fragment);
+    }
+
+    for fragment in [
+        "| `undo_actions` | token 化 Undo 状态和 inverse payload |",
+        "`tags` 使用 `(file_id, tag)` 复合主键",
     ] {
         assert_contains(DATA_MODEL, fragment);
     }
