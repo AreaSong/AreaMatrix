@@ -22,6 +22,9 @@ decisions:
   - id: operations-model
     status: accepted
     summary: Use a desktop product operations model, not a fictitious SaaS availability model.
+  - id: governance-audit-2026-07
+    status: accepted
+    summary: Adopt the 2026-07-20 audit outcome; keep the upstream snapshot byte-identical, add the threat model and document domains as governed source facts, register structural tailoring, and extend the authoring ledger to all five governance docs.
 open_questions:
   - id: none
     status: none

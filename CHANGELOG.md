@@ -13,11 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 记录 v1 分发证据归档中的内部验证产物与未公证测试者预览产物，并保存 checksum。
 - 补充 iCloud placeholder、Developer ID / notarization 后续补证模板，并记录同机首启交互 smoke。
 - 记录 GitHub immutable release / tag 规则对测试者预览产物编号复用的限制。
+- 新增 `docs/security/threat-model.md` 威胁模型：信任边界、威胁主体、数据分类、控制映射与复审触发。
+- 治理登记册新增 `document_domains` 域级 owner 与复审登记，覆盖 `docs/` 全部顶层文档域。
 
 ### Changed
 - v1 release notes 调整为内部验证说明，不再暗示正式分发。
 - 本地验证打包命令改为显式 ad-hoc bundle signing、静态链接 Rust core，并在构建后验证
   bundle 签名和自包含链接状态，避免测试包依赖开发机 dylib。
+- 企业治理基线按 2026-07 审计结论修订：上游快照保持与原始文件逐字节一致、补充结构裁剪记录、
+  RAID 增加 probability/impact/impact_scope 维度；治理检查同步强化威胁模型、文档域覆盖与
+  快照 hash 漂移校验；v2 治理账本补齐 charter/ops/威胁模型登记并重新钉扎 baseline。
 
 ### Deprecated
 - N/A

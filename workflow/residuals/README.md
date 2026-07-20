@@ -23,6 +23,7 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 |---|---|---|---|
 | v1-mvp distribution evidence | `blocked-external` / `blocked-decision` / `deferred` | [../versions/v1-mvp/residuals/](../versions/v1-mvp/residuals/) | v1 分发证据和分发决策未关闭；其中 `v1-ref-003-1-task-05` 走分发证据 review。 |
 | v1-mvp checkpoint gaps | `accepted-exception` | [../versions/v1-mvp/residuals/accepted-exceptions.md](../versions/v1-mvp/residuals/accepted-exceptions.md) | 35 个历史 checkpoint gaps 已接受为 closeout exceptions，不回填历史。 |
+| v2 governance | `open` / `deferred` | [../versions/v2/residuals/](../versions/v2/residuals/) | 独立复核风险、execution authorization 与 remote merge controls 保持真实状态；均不是 executable task。 |
 | closed product contract corrections | `closed` | [Core API](../../docs/api/core-api.md) / [macOS architecture](../../docs/architecture/macos-frontend-architecture.md) | 无效的独立恢复合同已移除；metadata reader 已收紧为只读打开。 |
 | AreaFlow | `reference-only` | [non-current-references.md](non-current-references.md) | 历史愿景材料，不是当前产品范围或 active backlog。 |
 | v-template | `template-only` | [non-current-references.md](non-current-references.md) | 模板参考实例，blocked-by-design，不是真版本未完成。 |
@@ -40,6 +41,9 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 | `v1-rl-006` | `blocked-decision` | `release-evidence` | v1 distribution not cleared | Alpha feedback issue template 和 route evidence 已存在，且 `closes_residual: false`；可信测试者名单、tester invitation side effect、正式公告 / Discussion 链接、反馈分流和 triage owner 决策未记录。 |
 | `v1-ref-003-1-task-05` | `deferred` | `release-evidence` | v1 distribution not cleared | release-gate review record 已结构化，当前 `closes_residual: false`；分发 review item 走 fresh release evidence review，不补造 task-loop verify evidence。 |
 | `v1-ex-001` | `accepted-exception` | `closeout-exception` | none | 35 个历史 checkpoint gaps 已接受为 closeout exceptions。 |
+| `v2-risk-001` | `open` | `governance-risk` | L3/L4 and high-risk review blocked when no independent reviewer exists | 独立复核必须由合格 reviewer 完成，不能由同一维护者自证关闭。 |
+| `v2-dep-003` | `deferred` | `governance-dependency` | v2 live execution not authorized | governance authoring 不授权 promotion apply、execution 写入或 runner。 |
+| `v2-dep-004` | `deferred` | `governance-dependency` | merge readiness requires remote evidence | 本地检查不能替代 remote CI 和 branch protection evidence。 |
 | `global-product-restore-file-contract` | `closed` | `product-contract-gap` | none | 公开 `restore_file` 合同已移除；受支持的恢复统一使用 token 化 Undo/Redo。 |
 | `global-product-metadata-reader-write-flags` | `closed` | `file-safety-gap` | none | Metadata reader 仅使用只读 SQLite 打开策略，不创建 sidecar，也不修改 `index.db` 或 WAL。 |
 | `global-ref-areaflow` | `reference-only` | `historical-reference` | none | AreaFlow 历史愿景材料，不是当前 AreaMatrix 产品范围或 active task。 |
@@ -77,6 +81,7 @@ Version residual 的登记顺序是：先更新权威源文件，再写版本 re
 ## Related
 
 - [v1-mvp residuals](../versions/v1-mvp/residuals/)
+- [v2 residuals](../versions/v2/residuals/)
 - [tasks residual index](../../tasks/indexes/residuals.md)
 - [workflow versions](../versions/)
 - [docs navigation](../../docs/README.md)

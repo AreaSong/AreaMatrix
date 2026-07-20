@@ -18,6 +18,7 @@
 - `docs/governance/project-charter.md`
 - `docs/governance/governance-register.yaml`
 - `docs/governance/operations-lifecycle.md`
+- `docs/security/threat-model.md`
 
 ### Sync Targets
 - `CODE_REVIEW.md`

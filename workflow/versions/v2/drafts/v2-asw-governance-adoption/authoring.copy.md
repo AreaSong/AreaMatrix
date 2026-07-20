@@ -15,6 +15,7 @@
 - `docs/governance/project-charter.md`
 - `docs/governance/governance-register.yaml`
 - `docs/governance/operations-lifecycle.md`
+- `docs/security/threat-model.md`
 
 ## 必须同步检查
 - `CODE_REVIEW.md`

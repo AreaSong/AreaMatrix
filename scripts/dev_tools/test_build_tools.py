@@ -20,7 +20,21 @@ from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
-    def _write_enterprise_governance_fixture(self, root: Path, *, dependency_status: str = "deferred") -> None:
+    def _write_enterprise_governance_fixture(
+        self,
+        root: Path,
+        *,
+        dependency_status: str | None = None,
+        missing_raid_field: str | None = None,
+        probability: str = "high",
+        impact: str = "high",
+        severity: str = "high",
+        duplicate_raid_id: bool = False,
+        stated_baseline_hash: str | None = None,
+        include_threat_model: bool = True,
+        register_threat_model: bool = True,
+        include_security_domain: bool = True,
+    ) -> None:
         governance = root / "docs/governance"
         governance.mkdir(parents=True)
         upstream = governance / "upstream/ASW-EWF-001-1.0.0.txt"
@@ -29,14 +43,33 @@ class BuildToolsTest(unittest.TestCase):
         upstream_hash = hashlib.sha256(upstream.read_bytes()).hexdigest()
         rows = "\n".join(f"| {number} Domain | 满足 | evidence |" for number in range(1, 38))
         (governance / "enterprise-workflow-baseline.md").write_text(
-            "# Baseline\n\n" + " ".join(f"G{gate}" for gate in range(9)) + "\n" + rows + "\n",
+            "# Baseline\n\n"
+            + " ".join(f"G{gate}" for gate in range(9))
+            + "\n"
+            + f"snapshot sha256 `{stated_baseline_hash or upstream_hash}`\n"
+            + rows
+            + "\n",
             encoding="utf-8",
         )
         for name in ["project-charter.md", "operations-lifecycle.md"]:
             (governance / name).write_text(f"# {name}\n", encoding="utf-8")
+        security = root / "docs/security"
+        security.mkdir(parents=True)
+        if include_threat_model:
+            (security / "threat-model.md").write_text(
+                "# Threat Model\n\n信任边界\n威胁主体\n数据分类\n控制映射\n复审触发\n",
+                encoding="utf-8",
+            )
+        document_paths = [
+            "docs/governance/enterprise-workflow-baseline.md",
+            "docs/governance/project-charter.md",
+            "docs/governance/operations-lifecycle.md",
+        ]
+        if register_threat_model:
+            document_paths.append("docs/security/threat-model.md")
         document_entries = "\n".join(
             f"""  - id: DOC-{index}
-    path: docs/governance/{path}
+    path: {path}
     authority: governance
     owner: "@AreaSong"
     status: accepted
@@ -45,24 +78,49 @@ class BuildToolsTest(unittest.TestCase):
     review_triggers:
       - changed
 """
-            for index, path in enumerate(
-                ["enterprise-workflow-baseline.md", "project-charter.md", "operations-lifecycle.md"],
-                start=1,
-            )
+            for index, path in enumerate(document_paths, start=1)
         )
+        domain_paths = ["docs/governance"]
+        if include_security_domain:
+            domain_paths.append("docs/security")
+        domain_entries = "\n".join(
+            f"""  - domain: {domain}
+    owner: "@AreaSong"
+    status: active
+    review_cycle: quarterly
+    review_triggers:
+      - changed
+"""
+            for domain in domain_paths
+        )
+        raid_contract = [
+            ("AM-RISK-001", "risk", "open"),
+            ("AM-DEP-001", "dependency", dependency_status or "blocked-external"),
+            ("AM-DEP-002", "dependency", dependency_status or "blocked-external"),
+            ("AM-DEP-003", "dependency", dependency_status or "deferred"),
+            ("AM-DEP-004", "dependency", dependency_status or "deferred"),
+        ]
+        if duplicate_raid_id:
+            raid_contract.append(("AM-DEP-004", "dependency", "deferred"))
         raid_entries = "\n".join(
             f"""  - id: {entry_id}
-    type: dependency
-    status: {"open" if entry_id == "AM-RISK-001" else dependency_status}
-    severity: high
+    type: {entry_type}
+    status: {entry_status}
+    severity: {severity}
+    probability: {probability}
+    impact: {impact}
+    impact_scope: governance-gate
     owner: "@AreaSong"
+    summary: governance fixture
     mitigation: fail closed
     due: ongoing
     escalation: gate review
     close_evidence: evidence
 """
-            for entry_id in ["AM-RISK-001", "AM-DEP-001", "AM-DEP-002", "AM-DEP-003", "AM-DEP-004"]
+            for entry_id, entry_type, entry_status in raid_contract
         )
+        if missing_raid_field:
+            raid_entries = raid_entries.replace(f"    {missing_raid_field}: high\n", "", 1)
         (governance / "governance-register.yaml").write_text(
             """schema_version: 1
 upstream:
@@ -80,6 +138,8 @@ raci:
 documents:
 """
             + document_entries
+            + "document_domains:\n"
+            + domain_entries
             + "raid:\n"
             + raid_entries,
             encoding="utf-8",
@@ -454,6 +514,102 @@ documents:
 
             self.assertEqual(failures.count, 1)
             self.assertIn("upstream snapshot hash mismatch", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_missing_raid_field(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, missing_raid_field="impact")
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("AM-RISK-001 is missing impact", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_invalid_raid_enum(self) -> None:
+        cases = [
+            ({"probability": "likely"}, "probability must be low, medium, or high"),
+            ({"impact": "extreme"}, "impact must be low, medium, high, or critical"),
+            ({"severity": "extreme"}, "severity must be low, medium, high, or critical"),
+        ]
+        for fixture_options, expected_message in cases:
+            with self.subTest(fixture_options=fixture_options):
+                stderr = io.StringIO()
+                with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+                    root = Path(tmp)
+                    self._write_enterprise_governance_fixture(root, **fixture_options)
+                    failures = checks.FailureCollector()
+
+                    checks._check_enterprise_governance_baseline(root, failures)
+
+                    self.assertEqual(failures.count, 5)
+                    self.assertIn(expected_message, stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_duplicate_raid_id(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, duplicate_raid_id=True)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("repeats id AM-DEP-004", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_stale_stated_hash(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, stated_baseline_hash="0" * 64)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 2)
+            self.assertIn("must state the upstream snapshot SHA-256", stderr.getvalue())
+            self.assertIn("states a stale SHA-256", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_missing_threat_model(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(
+                root,
+                include_threat_model=False,
+                register_threat_model=False,
+            )
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertGreaterEqual(failures.count, 1)
+            self.assertIn("threat model is missing", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_unregistered_threat_model(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, register_threat_model=False)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("threat model must be registered in documents", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_unregistered_docs_domain(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, include_security_domain=False)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("document domain is unregistered: docs/security", stderr.getvalue())
 
     def test_ai_runtime_environment_contract_matches_repository(self) -> None:
         failures = checks.FailureCollector()

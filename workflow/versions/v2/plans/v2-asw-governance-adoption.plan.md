@@ -16,8 +16,11 @@ Establish the complete AreaMatrix-specific enterprise governance baseline and it
 
 | File | Lines | Heading | Operation | Summary | Tasks |
 |---|---:|---|---|---|---|
-| `docs/governance/enterprise-workflow-baseline.md` | 1-122 | AreaMatrix 企业工作流治理基线 | create | Record applicability, G0-G8, source facts, tailoring, and upgrade policy. | `authoring` |
-| `docs/governance/governance-register.yaml` | 1-119 | AM-GOV-REGISTER-001 | create | Record owners, document metadata, RAID, external dependencies, and capability lifecycle. | `authoring` |
+| `docs/governance/enterprise-workflow-baseline.md` | 1-152 | AreaMatrix 企业工作流治理基线 | create | Record applicability, G0-G8, RAID assessment dimensions, source facts, tailoring, and upgrade policy. | `authoring` |
+| `docs/governance/governance-register.yaml` | 1-228 | AM-GOV-REGISTER-001 | create | Record owners, document metadata, document domains, RAID probability/impact/scope, external dependencies, and capability lifecycle. | `authoring` |
+| `docs/governance/project-charter.md` | 1-64 | AreaMatrix 项目章程 | create | Record mission, scope, non-goals, responsibility, cost boundary, and exit conditions. | `authoring` |
+| `docs/governance/operations-lifecycle.md` | 1-67 | AreaMatrix 运行与能力生命周期 | create | Record the desktop operations model, incident loop, capability states, and retirement gates. | `authoring` |
+| `docs/security/threat-model.md` | 1-82 | AreaMatrix 威胁模型 | create | Record trust boundaries, threat actors, data classification, and control mapping for the desktop product. | `authoring` |
 
 ## Middle-layer Ledger
 
@@ -30,6 +33,12 @@ Establish the complete AreaMatrix-specific enterprise governance baseline and it
 ### Linked Features
 - `v1-mvp` (preserves-history): V1 execution and release residual evidence remain read-only and are not closed by v2 governance authoring.
 
+### Durable Residuals
+- `v2-risk-001`: open independent-review governance risk.
+- `v2-dep-003`: deferred promotion/live-execution authorization dependency.
+- `v2-dep-004`: deferred remote CI/branch-protection dependency.
+- Source: `docs/governance/governance-register.yaml`; all remain `executable_task: false`.
+
 ### Slice Plan
 - `authoring`: Establish the complete adapted governance baseline, authoring boundary, adapters, checks, and v2 planning evidence.
 
@@ -38,6 +47,7 @@ Establish the complete AreaMatrix-specific enterprise governance baseline and it
 - `docs/governance/project-charter.md`
 - `docs/governance/governance-register.yaml`
 - `docs/governance/operations-lifecycle.md`
+- `docs/security/threat-model.md`
 
 ## Sync Targets
 - `CODE_REVIEW.md`
@@ -67,6 +77,7 @@ Establish the complete AreaMatrix-specific enterprise governance baseline and it
 - Governance authoring only; product behavior and public contracts remain unchanged.
 - Promotion apply, execution state, progress, logs, checkpoints, and runner commands remain blocked.
 - External dependencies retain real blocked or deferred status.
+- Baseline or queue readiness must not close v2 durable residuals or treat them as executable tasks.
 
 ## Task Split
 - `v2-asw-governance-adoption/authoring`: Implement and verify the approved ASW governance authoring baseline.

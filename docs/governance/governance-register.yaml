@@ -62,12 +62,96 @@ documents:
       - remote-service-added
       - release-channel-changed
       - incident-control-changed
+  - id: AM-SEC-001
+    path: docs/security/threat-model.md
+    authority: security-threat-model
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: quarterly
+    review_triggers:
+      - remote-service-added
+      - new-user-file-write-path
+      - new-external-input-parser
+      - privacy-boundary-changed
+
+document_domains:
+  - domain: docs/adr
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - domain: docs/api
+    owner: "@AreaSong"
+    status: active
+    review_cycle: quarterly
+    review_triggers:
+      - core-api-or-udl-changed
+  - domain: docs/architecture
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - domain: docs/development
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - domain: docs/governance
+    owner: "@AreaSong"
+    status: active
+    review_cycle: quarterly
+    review_triggers:
+      - upstream-spec-changed
+      - governance-gates-changed
+  - domain: docs/modules
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - core-module-behavior-changed
+  - domain: docs/product
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - domain: docs/roadmap
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - capability-direction-changed
+  - domain: docs/security
+    owner: "@AreaSong"
+    status: active
+    review_cycle: quarterly
+    review_triggers:
+      - threat-model-or-data-classification-changed
+  - domain: docs/user-guide
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - domain: docs/ux
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
 
 raid:
   - id: AM-RISK-001
     type: risk
     status: open
     severity: high
+    probability: high
+    impact: high
+    impact_scope: independent-review-and-L3-L4-governance-gates
     owner: "@AreaSong"
     summary: Single-maintainer role concentration can prevent independent review.
     mitigation: Keep L3/L4 changes blocked until a qualified independent reviewer is recorded.
@@ -78,6 +162,9 @@ raid:
     type: dependency
     status: blocked-external
     severity: high
+    probability: high
+    impact: high
+    impact_scope: formal-apple-distribution
     owner: "@AreaSong"
     summary: Formal Apple distribution requires external signing and notarization capability.
     mitigation: Keep formal distribution residuals open and do not relabel previews as releases.
@@ -88,6 +175,9 @@ raid:
     type: dependency
     status: blocked-external
     severity: medium
+    probability: high
+    impact: medium
+    impact_scope: trusted-preview-participation-and-feedback-operations
     owner: "@AreaSong"
     summary: Trusted preview participant invitation and feedback operations require external participants.
     mitigation: Keep the related v1 feedback residual open until real invitation and triage evidence exists.
@@ -98,6 +188,9 @@ raid:
     type: dependency
     status: deferred
     severity: high
+    probability: high
+    impact: high
+    impact_scope: v2-promotion-and-live-execution
     owner: "@AreaSong"
     summary: AreaFlow execution cutover and live mapping are not authorized.
     mitigation: Permit governance authoring only; block promotion apply, execution and task-loop writes.
@@ -108,6 +201,9 @@ raid:
     type: dependency
     status: deferred
     severity: medium
+    probability: high
+    impact: medium
+    impact_scope: remote-ci-and-branch-protection
     owner: "@AreaSong"
     summary: GitHub remote CI and branch protection are external merge controls.
     mitigation: Run local equivalent gates and require remote CI before merge.

@@ -13,6 +13,10 @@
 - [治理登记册](governance/governance-register.yaml)
 - [运行与能力生命周期](governance/operations-lifecycle.md)
 
+## 安全
+
+- [威胁模型](security/threat-model.md)
+
 ## 开始使用
 
 - [用户指南](user-guide/README.md)

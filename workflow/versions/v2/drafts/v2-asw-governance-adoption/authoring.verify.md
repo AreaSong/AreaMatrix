@@ -17,6 +17,7 @@
 - `docs/governance/project-charter.md`
 - `docs/governance/governance-register.yaml`
 - `docs/governance/operations-lifecycle.md`
+- `docs/security/threat-model.md`
 
 ## 验收清单
 - task 实现必须能回到 Source change、Exact Docs 和 Manifest draft 逐项证明。

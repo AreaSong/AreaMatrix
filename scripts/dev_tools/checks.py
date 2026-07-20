@@ -573,6 +573,15 @@ def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector
                                 "enterprise governance upstream snapshot hash mismatch: "
                                 f"expected {source_hash}, found {actual_hash}"
                             )
+                        baseline_hashes = re.findall(r"\b[0-9a-f]{64}\b", baseline)
+                        if source_hash not in baseline_hashes:
+                            failures.fail("enterprise governance baseline must state the upstream snapshot SHA-256")
+                        for stated_hash in baseline_hashes:
+                            if stated_hash != source_hash:
+                                failures.fail(
+                                    "enterprise governance baseline states a stale SHA-256: "
+                                    f"{stated_hash}"
+                                )
 
     raci = register.get("raci")
     if not isinstance(raci, dict) or raci.get("accountable") != "@AreaSong":
@@ -582,6 +591,7 @@ def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector
         if not isinstance(independent, dict) or independent.get("missing_reviewer_behavior") != "blocked":
             failures.fail("enterprise governance independent review must fail closed")
 
+    registered_document_paths: set[str] = set()
     documents = register.get("documents")
     if not isinstance(documents, list) or len(documents) < 3:
         failures.fail("enterprise governance register must contain at least three source documents")
@@ -594,27 +604,115 @@ def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector
                 if not entry.get(key):
                     failures.fail(f"enterprise governance document entry is missing {key}")
             path = entry.get("path")
-            if isinstance(path, str) and not (root / path).is_file():
-                failures.fail(f"enterprise governance document does not exist: {path}")
+            if isinstance(path, str):
+                registered_document_paths.add(path)
+                if not (root / path).is_file():
+                    failures.fail(f"enterprise governance document does not exist: {path}")
+
+    threat_model_rel = "docs/security/threat-model.md"
+    threat_model_path = root / threat_model_rel
+    if not threat_model_path.is_file():
+        failures.fail(f"enterprise governance threat model is missing: {threat_model_rel}")
+    else:
+        threat_model = _read(threat_model_path)
+        for anchor in ["信任边界", "威胁主体", "数据分类", "控制映射", "复审触发"]:
+            if anchor not in threat_model:
+                failures.fail(f"enterprise governance threat model is missing section: {anchor}")
+        if threat_model_rel not in registered_document_paths:
+            failures.fail("enterprise governance threat model must be registered in documents")
+
+    domains = register.get("document_domains")
+    if not isinstance(domains, list) or not domains:
+        failures.fail("enterprise governance register document_domains must be non-empty")
+    else:
+        covered_domains: set[str] = set()
+        for entry in domains:
+            if not isinstance(entry, dict):
+                failures.fail("enterprise governance document domain entry must be a mapping")
+                continue
+            for key in ["domain", "owner", "status", "review_cycle", "review_triggers"]:
+                if not entry.get(key):
+                    failures.fail(f"enterprise governance document domain entry is missing {key}")
+            domain = entry.get("domain")
+            if not isinstance(domain, str) or not domain:
+                continue
+            if domain in covered_domains:
+                failures.fail(f"enterprise governance document domain repeats {domain}")
+            covered_domains.add(domain)
+            if not (root / domain).is_dir():
+                failures.fail(f"enterprise governance document domain does not exist: {domain}")
+        docs_root = root / "docs"
+        if docs_root.is_dir():
+            actual_domains = {
+                f"docs/{child.name}" for child in docs_root.iterdir() if child.is_dir()
+            }
+            for missing_domain in sorted(actual_domains - covered_domains):
+                failures.fail(f"enterprise governance document domain is unregistered: {missing_domain}")
 
     raid = register.get("raid")
     if not isinstance(raid, list) or not raid:
         failures.fail("enterprise governance register RAID must be non-empty")
     else:
-        by_id = {str(entry.get("id")): entry for entry in raid if isinstance(entry, dict)}
-        required_ids = ["AM-RISK-001", "AM-DEP-001", "AM-DEP-002", "AM-DEP-003", "AM-DEP-004"]
-        for entry_id in required_ids:
+        expected_entries = {
+            "AM-RISK-001": ("risk", "open"),
+            "AM-DEP-001": ("dependency", "blocked-external"),
+            "AM-DEP-002": ("dependency", "blocked-external"),
+            "AM-DEP-003": ("dependency", "deferred"),
+            "AM-DEP-004": ("dependency", "deferred"),
+        }
+        by_id: dict[str, dict[str, object]] = {}
+        for entry in raid:
+            if not isinstance(entry, dict):
+                failures.fail("enterprise governance RAID entry must be a mapping")
+                continue
+            entry_id = entry.get("id")
+            if not isinstance(entry_id, str) or not entry_id:
+                failures.fail("enterprise governance RAID entry is missing id")
+                continue
+            if entry_id in by_id:
+                failures.fail(f"enterprise governance RAID repeats id {entry_id}")
+                continue
+            by_id[entry_id] = entry
+
+        for entry_id, (expected_type, expected_status) in expected_entries.items():
             entry = by_id.get(entry_id)
             if not isinstance(entry, dict):
                 failures.fail(f"enterprise governance RAID is missing {entry_id}")
                 continue
-            for key in ["type", "status", "severity", "owner", "mitigation", "due", "escalation", "close_evidence"]:
+            for key in [
+                "type",
+                "status",
+                "severity",
+                "probability",
+                "impact",
+                "impact_scope",
+                "owner",
+                "summary",
+                "mitigation",
+                "due",
+                "escalation",
+                "close_evidence",
+            ]:
                 if not entry.get(key):
                     failures.fail(f"enterprise governance RAID {entry_id} is missing {key}")
-        for entry_id in required_ids[1:]:
-            entry = by_id.get(entry_id, {})
-            if entry.get("status") not in {"blocked-external", "deferred"}:
-                failures.fail(f"enterprise dependency {entry_id} must remain blocked-external or deferred")
+            if entry.get("type") != expected_type or entry.get("status") != expected_status:
+                failures.fail(
+                    f"enterprise governance RAID {entry_id} must remain "
+                    f"{expected_type}/{expected_status}"
+                )
+            probability = entry.get("probability")
+            if probability and probability not in {"low", "medium", "high"}:
+                failures.fail(
+                    f"enterprise governance RAID {entry_id}.probability "
+                    "must be low, medium, or high"
+                )
+            for key in ["impact", "severity"]:
+                value = entry.get(key)
+                if value and value not in {"low", "medium", "high", "critical"}:
+                    failures.fail(
+                        f"enterprise governance RAID {entry_id}.{key} "
+                        "must be low, medium, high, or critical"
+                    )
 
     status_path = root / ".areaflow/status.json"
     try:
@@ -663,6 +761,7 @@ def run_governance_check(root: Path | None = None) -> int:
         "docs/governance/project-charter.md",
         "docs/governance/governance-register.yaml",
         "docs/governance/operations-lifecycle.md",
+        "docs/security/threat-model.md",
         "workflow/versions/v2/discussion/decisions.yaml",
         "workflow/versions/v2/promotion/promotion.yaml",
         "workflow/versions/v2/promotion/approval.yaml",

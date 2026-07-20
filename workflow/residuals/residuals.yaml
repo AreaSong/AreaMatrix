@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-15"
+updated: "2026-07-18"
 scope: global
 authority: index-only
 source_of_truth:
@@ -115,3 +115,10 @@ version_residuals:
       - deferred
       - accepted-exception
     summary: V1 distribution remains uncleared by distribution evidence and decisions; technical queue is complete.
+  - version: v2
+    source: workflow/versions/v2/residuals/residuals.yaml
+    status: mixed-blocked
+    status_breakdown:
+      - open
+      - deferred
+    summary: V2 governance authoring remains bounded by independent review, execution authorization, and remote merge-control evidence.

@@ -6,14 +6,29 @@ status: ready
 docs_refs:
   - file: docs/governance/enterprise-workflow-baseline.md
     line_start: 1
-    line_end: 122
+    line_end: 152
     heading: AreaMatrix 企业工作流治理基线
     excerpt: 本文是 AreaMatrix 对 `ASW-EWF-001@1.0.0` 的项目适配源事实。
   - file: docs/governance/governance-register.yaml
     line_start: 1
-    line_end: 132
+    line_end: 228
     heading: AM-GOV-REGISTER-001
     excerpt: "id: AM-GOV-REGISTER-001"
+  - file: docs/governance/project-charter.md
+    line_start: 1
+    line_end: 64
+    heading: AreaMatrix 项目章程
+    excerpt: 本文固定 AreaMatrix 的使命、产品边界、成功条件、责任和退出条件。
+  - file: docs/governance/operations-lifecycle.md
+    line_start: 1
+    line_end: 67
+    heading: AreaMatrix 运行与能力生命周期
+    excerpt: 本文定义桌面产品的运行健康、事故处置、能力状态和安全退役门禁。
+  - file: docs/security/threat-model.md
+    line_start: 1
+    line_end: 82
+    heading: AreaMatrix 威胁模型
+    excerpt: 本文定义 AreaMatrix 桌面产品的信任边界、威胁主体、数据分类和控制映射，是安全事实的权威来源。
 insertions:
   - target: AreaMatrix enterprise governance source-of-truth and workflow gates
     reason: Map the upstream enterprise baseline into existing AreaMatrix governance without creating a parallel product source.
@@ -42,6 +57,7 @@ dependencies:
     - docs/governance/project-charter.md
     - docs/governance/governance-register.yaml
     - docs/governance/operations-lifecycle.md
+    - docs/security/threat-model.md
   code:
     - scripts/areaflow_shim.py
     - scripts/dev_tools/checks.py
@@ -54,6 +70,7 @@ slice_plan:
       - approved v2 discussion decisions
     outputs:
       - AreaMatrix governance source facts
+      - v2 durable governance residual index
       - authoring-only shim boundary
       - review and CI enforcement
       - promotion preview with pending live mapping
@@ -66,3 +83,4 @@ risk_boundaries:
   - Do not modify Rust Core, Swift/macOS product code, UDL, DB schema, runtime configuration, or user files.
   - Do not write v2 execution state or historical v1 execution and evidence.
   - Do not authorize promotion apply or task-loop execution.
+  - Do not convert v2 governance residuals into executable tasks.

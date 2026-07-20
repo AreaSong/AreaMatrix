@@ -23,7 +23,7 @@ upstream: ASW-EWF-001@1.0.0
 
 - 来源任务：`019f63ff-b316-79d2-a0cd-215090bcea1e`
 - 仓库快照：[ASW-EWF-001-1.0.0.txt](upstream/ASW-EWF-001-1.0.0.txt)
-- SHA-256：`ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1`
+- 仓库快照与上游原始文件逐字节一致，SHA-256：`ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1`；该 hash 由 [`governance-register.yaml`](governance-register.yaml) 的 `upstream.sha256` 机器校验
 
 快照用于离线复核上游版本和 hash；AreaMatrix 的采用语义、裁剪、责任和偏差仍以本文及
 [`governance-register.yaml`](governance-register.yaml) 为准。
@@ -68,6 +68,17 @@ upstream: ASW-EWF-001@1.0.0
 
 L3/L4 缺少第二位合格复核者时必须保持 blocked，不允许由单人批准掩盖职责分离缺口。
 
+## RAID 评估维度
+
+治理登记册中的每个 risk/dependency 条目必须同时记录 `probability`（发生概率）、`impact`
+（影响等级）和 `impact_scope`（受影响的具体治理或交付边界）。`probability` 与 `impact`
+仅使用 `low`、`medium`、`high`；`impact_scope` 必须指向可复核的实际范围，不能用
+`project`、`workflow` 等无法判断关闭条件的泛化描述。
+
+五个基线 RAID ID 的 `type` 和 `status` 是受控合同：独立复核风险保持 `risk/open`；Apple
+分发与可信测试参与者依赖保持 `dependency/blocked-external`；execution authorization 与
+remote CI/branch protection 保持 `dependency/deferred`，直到各自的关闭证据成立。
+
 ## 适用性矩阵
 
 | ASW 章节 | AreaMatrix 状态 | 项目落点或裁剪 |
@@ -81,7 +92,7 @@ L3/L4 缺少第二位合格复核者时必须保持 blocked，不允许由单人
 | 7 追溯链 | 满足 | docs -> workflow -> review/CI -> evidence |
 | 8 生命周期门禁 | 满足 | G0-G8 表及机器检查 |
 | 9 源事实模型 | 满足 | `docs/`、`.ai-governance/`、workflow 分层 |
-| 10 推荐文档结构 | 适配满足 | 沿用现有结构，仅新增 `docs/governance/` |
+| 10 推荐文档结构 | 适配满足 | 沿用现有结构，新增 `docs/governance/` 与 `docs/security/` |
 | 11 文档判定 | 满足 | PR、review 和 doc-sync 规则 |
 | 12 功能强制项 | 满足 | 高风险边界和专项文档 |
 | 13 影响分析 | 满足 | PR 模板、review、workflow plan |
@@ -93,7 +104,7 @@ L3/L4 缺少第二位合格复核者时必须保持 blocked，不允许由单人
 | 19 发布门禁 | 满足 | release 文档和 v1 residuals |
 | 20 环境配置密钥 | 满足 | CI、secret scan、依赖与配置规则 |
 | 21 质量策略 | 满足 | Rust、macOS、governance CI |
-| 22 安全隐私 | 满足 | `SECURITY.md`、隐私文档、高风险触发 |
+| 22 安全隐私 | 满足 | `SECURITY.md`、[威胁模型](../security/threat-model.md)、隐私文档、高风险触发 |
 | 23 生产运行 | 适配满足 | 桌面运行模型，不适用在线服务值班 |
 | 24 事故闭环 | 满足 | Issue/Security Advisory/residual/复盘回写 |
 | 25 业务效果 | 适配满足 | 章程成功条件和发布观察 |
@@ -114,9 +125,18 @@ L3/L4 缺少第二位合格复核者时必须保持 blocked，不允许由单人
 
 - 产品、架构、API、UX、开发规范：`docs/**`。
 - 企业治理适配：`docs/governance/**`。
+- 威胁模型与数据分级：`docs/security/**`。
 - AI 协作和风险规则：`.ai-governance/**`。
 - 版本规划和执行追溯：`workflow/**`。
 - 评审、CI、PR 模板和 Codex skills 只是适配器，不得成为唯一源事实。
+
+## 裁剪记录
+
+按上游第 32 节允许的方式，AreaMatrix 记录以下结构裁剪；裁剪只合并载体，不删除责任与事实：
+
+- RFC 并入 ADR 轻量决策记录：候选方案讨论走版本 discussion 与 `decisions.yaml`，已生效决策落 `docs/adr/`，不维护独立 RFC 目录。
+- 数据字典并入 [数据模型](../architecture/data-model.md)：表、字段语义与迁移权威保持单一位置，不另建 `docs/data/`。
+- 文档元数据采用中央登记：owner、状态与复审条件由 `governance-register.yaml` 的 `documents` 与 `document_domains` 承载，内嵌 front-matter 随实质修改渐进补充。
 
 ## 偏差与升级
 

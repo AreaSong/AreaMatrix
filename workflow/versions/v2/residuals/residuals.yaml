@@ -1,0 +1,40 @@
+version: 1
+updated: "2026-07-18"
+scope: v2
+authority: index-only
+source_of_truth:
+  governance_register: docs/governance/governance-register.yaml
+items:
+  - id: v2-risk-001
+    status: open
+    type: governance-risk
+    title: Qualified independent review availability
+    source: docs/governance/governance-register.yaml
+    owner: "@AreaSong"
+    current_impact: L3-L4-and-high-risk-changes-remain-blocked-without-independent-review
+    executable_task: false
+    promotion_required: false
+    close_condition: A qualified independent reviewer is named and completed review evidence is recorded for the governed change.
+    notes: Indexes AM-RISK-001; same-maintainer self-review does not close the risk.
+  - id: v2-dep-003
+    status: deferred
+    type: governance-dependency
+    title: v2 promotion and live execution authorization
+    source: docs/governance/governance-register.yaml
+    owner: "@AreaSong"
+    current_impact: v2-live-execution-not-authorized
+    executable_task: false
+    promotion_required: true
+    close_condition: Explicit execution authorization, live mapping, recovery plan, and passing boundary tests are recorded.
+    notes: Indexes AM-DEP-003; authoring-only status does not authorize promotion apply or execution writes.
+  - id: v2-dep-004
+    status: deferred
+    type: governance-dependency
+    title: Remote CI and branch protection evidence
+    source: docs/governance/governance-register.yaml
+    owner: "@AreaSong"
+    current_impact: merge-readiness-requires-remote-evidence
+    executable_task: false
+    promotion_required: false
+    close_condition: Required GitHub checks and branch protection evidence are recorded for merge readiness.
+    notes: Indexes AM-DEP-004; local equivalent gates do not close remote merge controls.
