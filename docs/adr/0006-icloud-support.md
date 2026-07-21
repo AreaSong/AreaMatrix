@@ -2,10 +2,18 @@
 
 > 资料库可放在 iCloud Drive 中，应用通过 NSFileCoordinator/NSFilePresenter 处理占位符与并发。
 >
-> 状态：Accepted
+> 状态：Superseded by [ADR-0005](0005-fsevents-listener.md)
 > 日期：2026-04-26
-> 影响范围：apps/macos/Watcher / core/storage
+> 影响范围：apps/macos/AreaMatrix/PlatformServices / core/storage
 > 关联 ADR：[0003 真相源](0003-source-of-truth-strategy.md)、[0005 FSEvents](0005-fsevents-listener.md)
+
+> 现状更正（2026-07-21）：本 ADR 保留为历史记录。当前有效决策是：iCloud 路径可作为仓库，但占位符与文件 IO 协调机制按 [ADR-0005](0005-fsevents-listener.md) 的事件边界执行。逐条更正：
+>
+> - 「所有文件 IO 通过 NSFileCoordinator 协调」与「实现 NSFilePresenter」未实现：生产代码无任何 NSFileCoordinator / NSFilePresenter 引用。
+> - 「占位符访问元数据时按需下载」未实现，且与 ADR-0005 的「不隐式下载」边界矛盾。现行为：扫描明确跳过 `.icloud` 占位符（`core/src/repo_scan/ignore.rs`、`core/src/repo_scan/files.rs`），下载仅由用户触发的 `apps/macos/AreaMatrix/PlatformServices/ICloudPlaceholderDownloader.swift`（`FileManager.startDownloadingUbiquitousItem`）执行。
+> - 已实现并仍有效：conflicted copy 识别（`core/src/icloud_conflicts.rs`）。
+> - 「软删除保留 30 天」：软删除已实现（`core/src/db/sync.rs`），30 天保留 / 清理逻辑未实现，已列入残差跟踪。
+> - 影响范围原写 `apps/macos/Watcher`，该目录不存在；watcher 实际位于 `apps/macos/AreaMatrix/PlatformServices/MainExternalCreatedFileWatcher.swift`，上方影响范围已就地更正。
 
 ## 上下文
 
@@ -27,9 +35,9 @@
 **完整支持 iCloud Drive**：
 
 - 用户可以选择 `~/Library/Mobile Documents/com~apple~CloudDocs/AreaMatrix/` 作为仓库
-- 所有文件 IO 通过 **NSFileCoordinator** 协调，避免与 iCloud 守护进程并发
-- 实现 **NSFilePresenter** 对占位符和并发变更敏感
-- **占位符策略**：访问元数据（hash / size）时按需下载；用户未点击的文件不强制下载
+- 所有文件 IO 通过 **NSFileCoordinator** 协调，避免与 iCloud 守护进程并发（更正：未实现，见顶部现状说明）
+- 实现 **NSFilePresenter** 对占位符和并发变更敏感（更正：未实现，见顶部现状说明）
+- **占位符策略**：访问元数据（hash / size）时按需下载；用户未点击的文件不强制下载（更正：现行为跳过占位符、仅用户触发下载，见顶部现状说明与 ADR-0005）
 - **冲突文件**：`<name> (Conflicted Copy of <Mac>).pdf` 自动识别 → 在 UI 标 `🟠 conflict`，用户决定保留哪个
 
 ## 理由
@@ -101,7 +109,7 @@
 ### 风险
 
 - iCloud 账号未登录时仓库无法访问 → 给清晰错误提示
-- iCloud 服务故障时本地数据可能不一致 → 软删除保留 30 天
+- iCloud 服务故障时本地数据可能不一致 → 软删除保留 30 天（更正：软删除已实现，30 天保留期未实现，见顶部现状说明）
 - 用户多 Mac 用同一仓库导致频繁冲突 → UI 提示"建议同时只在一台设备编辑"
 - macOS 重大升级改变 iCloud API 行为（缓解：CI beta 测试 + 用户提前通知）
 

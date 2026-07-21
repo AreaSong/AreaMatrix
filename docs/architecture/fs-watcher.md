@@ -136,7 +136,9 @@ Core 只读取用户明确存在的本地文件；不修改文件正文。
 
 ## InFlight 过滤
 
-AreaMatrix 自身文件动作在平台层标记 `(repoPath, relativePath)`：
+平台层以 `(repoPath, relativePath)` 为 key 标记应用自身的文件写入；当前实际接入的是受管 note
+sidecar 写入路径（`MainDetailNoteState` 在写 sidecar 前后 mark/unmark），import、rename、move、
+delete 等其余自身动作暂未标记，回流事件由 Core 幂等与事务规则吸收：
 
 - actor 内使用引用计数，支持嵌套 mark/unmark。
 - 每次 mark 或仍有引用的 unmark 后刷新过期时间。
@@ -161,6 +163,8 @@ flush 取当前窗口最大 event ID 作为 `cursorWatermark`：
 - 全部事件被路径规则或 InFlight 过滤时，窗口的事件列表为空。
 - relay notification 只负责唤醒；消费端一次取出该资料库的完整 backlog，不使用 notification object 替代队列。
 - 当前资料库只处理队首窗口。业务窗口完成 Core 后按需补写 watermark；空窗口在队首直接确认 watermark。
+- 业务窗口的 Core 调用与空窗口的 watermark 确认都包在 `RepositoryWriteCoordinator.withWriteAccess`
+  内执行，与 import、repair 等其他 per-repo 写路径串行化。
 - Core 或 cursor 失败时保留队首并阻断后续窗口；已经提交后的 UI reload 失败不会重新提交同一 Core batch。
 
 ## 受管 note sidecar
@@ -176,18 +180,22 @@ flush 取当前窗口最大 event ID 作为 `cursorWatermark`：
 
 `sync_external_changes`：
 
-1. 校验整批 event ID 和路径。
+1. 校验整批 event ID 和路径，并按 `external_sync_receipts` 过滤掉已应用过的事件（同
+   `(event_id, kind, path)` 的重放直接计入结果，不再执行）。
 2. 规划 Created、Renamed、Removed、Modified。
-3. 在一个 SQLite 事务中写 files 和 change_log。
+3. 在一个 SQLite 事务中写 files、change_log 和本批事件的 receipts。
 4. 更新所有受影响分类和 root overview。
-5. 单独持久化业务事件最大 cursor；Swift 按需补写回调窗口 watermark。
+5. 单独持久化业务事件最大 cursor，并清理 cursor 之下的旧 receipts；Swift 按需补写回调窗口 watermark。
 
-DB 事务失败时 metadata 和 change log 全部回滚，cursor 不推进。overview 或 cursor 失败时 cursor 仍不推进；下一次重放必须安全。
+DB 事务失败时 metadata、change log 和 receipts 全部回滚，cursor 不推进。overview 或 cursor 失败时 cursor
+仍不推进；重放安全由 receipts 查重与各动作幂等规则共同保证（例如 rename 目标已被本事件结果占用时按
+receipt/change-log 判定为重放而不是 Conflict）。
 
 ## iCloud placeholder
 
 - watcher 只观察路径和 FSEvents metadata。
-- Core 发现 placeholder marker 时返回 `ICloudPlaceholder`。
+- Core 发现 placeholder marker 时先尝试物化回退：`.icloud` 占位文件已消失且对应真实文件存在时，
+  改用真实路径继续处理；无法解析时才返回 `ICloudPlaceholder`。
 - watcher 和 Core 都不触发下载。
 - `Download & retry` 属于用户触发的 macOS 平台动作。
 - placeholder 错误不推进 cursor，也不删除 marker、原文件或 conflicted copy。

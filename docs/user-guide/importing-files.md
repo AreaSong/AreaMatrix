@@ -8,7 +8,7 @@
 
 - 将文件或文件夹拖入主窗口。
 - 使用工具栏导入入口。
-- 从 Finder 或 Dock 将文件交给 AreaMatrix 打开。
+- 应用支持接收系统 open 事件（例如把文件交给 AreaMatrix 打开）；当前构建未注册文档类型关联，Finder“打开方式”列表可能不显示 AreaMatrix。
 
 ## 选择存储模式
 

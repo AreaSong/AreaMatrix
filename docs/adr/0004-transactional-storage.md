@@ -7,6 +7,12 @@
 > 影响范围：core/storage / db
 > 关联 ADR：[0003 真相源](0003-source-of-truth-strategy.md)
 
+> 现状更正（2026-07-21）：staging 区 + 两阶段提交仍是现行机制，以下细节按当前实现更正：
+>
+> - files 表无 `staging_path` 列：staging 相对路径直接写入 `files.path`，提交时一并更新 `path` 与 `status`（`core/src/storage/import.rs`）；staging 文件名为 `{prefix}-{uuid4}`（`core/src/storage/safe_move.rs`）。
+> - 「（后台）regenerate README」与恢复时「重新触发受影响分类的 README 生成」已不适用：README 自动写入被 [ADR-0010](0010-adopt-existing-folders-and-overviews.md) 取代，概览现输出 `.areamatrix/generated/`；`recover_on_startup` 只清理孤儿 staging 文件并回滚 staging 行（`core/src/recovery.rs`）。
+> - 「回滚 staging 行 = 删除文件 + 删除行」不完整：moved 模式恢复时会把文件还原回 `source_path` 而非删除（`core/src/recovery.rs`）。
+
 ## 上下文
 
 文件导入涉及多步操作：
@@ -40,11 +46,13 @@
 8. （后台）regenerate README
 ```
 
+（更正：步骤 3、6、8 与当前实现不一致，见顶部现状说明。）
+
 启动时调用 `recover_on_startup()`：
 
 - 清理孤儿 staging 文件（DB 中无 status='staging' 行的）
-- 回滚 status='staging' 的 DB 行（删除文件 + 删除行）
-- 重新触发受影响分类的 README 生成
+- 回滚 status='staging' 的 DB 行（删除文件 + 删除行）（更正：moved 模式还原回 `source_path` 而非删除，见顶部现状说明）
+- 重新触发受影响分类的 README 生成（更正：已不适用，见顶部现状说明）
 
 ## 理由
 

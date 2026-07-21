@@ -113,8 +113,8 @@ sequenceDiagram
     watcher->>tracker: 逐路径 InFlight 检查
     watcher->>relay: signals / filtered-only ack
     relay->>model: 合并 pending events
-    model->>core: 单批 sync
-    core->>db: files + change_log transaction
+    model->>core: 单批 sync（外层包 RepositoryWriteCoordinator）
+    core->>db: files + change_log + receipts transaction
     core->>core: generated overview + cursor
     model->>model: 补写 watermark / 刷新 UI
 ```

@@ -17,7 +17,7 @@ Establish the complete AreaMatrix-specific enterprise governance baseline and it
 | File | Lines | Heading | Operation | Summary | Tasks |
 |---|---:|---|---|---|---|
 | `docs/governance/enterprise-workflow-baseline.md` | 1-152 | AreaMatrix 企业工作流治理基线 | create | Record applicability, G0-G8, RAID assessment dimensions, source facts, tailoring, and upgrade policy. | `authoring` |
-| `docs/governance/governance-register.yaml` | 1-1213 | AM-GOV-REGISTER-001 | create | Record owners, per-file document registration, document domains, repo-wide domain ownership, RAID probability/impact/scope, external dependencies, and capability lifecycle. | `authoring` |
+| `docs/governance/governance-register.yaml` | 1-1222 | AM-GOV-REGISTER-001 | create | Record owners, per-file document registration, document domains, repo-wide domain ownership, RAID probability/impact/scope, external dependencies, and capability lifecycle. | `authoring` |
 | `docs/governance/project-charter.md` | 1-64 | AreaMatrix 项目章程 | create | Record mission, scope, non-goals, responsibility, cost boundary, and exit conditions. | `authoring` |
 | `docs/governance/operations-lifecycle.md` | 1-67 | AreaMatrix 运行与能力生命周期 | create | Record the desktop operations model, incident loop, capability states, and retirement gates. | `authoring` |
 | `docs/security/threat-model.md` | 1-82 | AreaMatrix 威胁模型 | create | Record trust boundaries, threat actors, data classification, and control mapping for the desktop product. | `authoring` |

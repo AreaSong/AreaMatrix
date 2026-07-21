@@ -67,6 +67,7 @@ UDL 只描述跨语言类型、函数和 `CoreError`。产品语义先写 Core A
 | `PlatformServices/MainExternalCreatedFileWatcher.swift` | FSEventStream、200ms flush、watermark |
 | `PlatformServices/InFlightFileChangeTracker.swift` | 标准化 key、引用计数、TTL 和 count=0 grace |
 | `PlatformServices/**ICloud**` | 用户触发下载、placeholder 与平台协调 |
+| `PlatformServices/RepositoryWriteCoordinator.swift` | per-repo 写访问串行化，覆盖 import、外部同步窗口、repair 等写路径 |
 | `PlatformServices/**` | Finder、Trash availability probe/危险确认/UI、路径、bookmark、diagnostics 和系统能力 |
 
 FSEventStream 回调投递 main dispatch queue。watcher 在 MainActor 上合并平台事件；耗时 Core 调用由 bridge/

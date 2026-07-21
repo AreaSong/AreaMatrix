@@ -28,6 +28,8 @@
 | `v2-risk-001` | `open` | 独立复核风险仍存在；`executable_task: false`，不能创建 lightweight task 或由同一维护者自证关闭。 | [v2 residuals](../../workflow/versions/v2/residuals/) |
 | `v2-dep-003` | `deferred` | v2 execution authorization 未成立；`executable_task: false`，不授权 promotion apply 或 runner。 | [v2 residuals](../../workflow/versions/v2/residuals/) |
 | `v2-dep-004` | `deferred` | remote CI / branch protection 证据未成立；`executable_task: false`，本地检查不能替代。 | [v2 residuals](../../workflow/versions/v2/residuals/) |
+| `global-product-soft-delete-retention` | `deferred` | ADR 承诺的软删除 30 天保留清理未实现；`executable_task: true`，可经 planning gate 转任务。 | [ADR-0003](../../docs/adr/0003-source-of-truth-strategy.md) |
+| `global-product-ui-localization` | `deferred` | ADR-0008 的 UI 本地化管线未实现；`executable_task: true`，可经 planning gate 转任务。 | [ADR-0008](../../docs/adr/0008-naming-and-i18n.md) |
 | `global-product-restore-file-contract` | `closed` | 公开 `restore_file` 合同已移除；受支持的恢复继续使用 Undo/Redo，不是 active task。 | [Core API](../../docs/api/core-api.md) |
 | `global-product-metadata-reader-write-flags` | `closed` | Metadata reader 已收紧为只读打开，不创建 sidecar，也不修改 `index.db` 或 WAL，不是 active task。 | [metadata reader](../../apps/macos/AreaMatrix/Bridge/CoreBridgeUnavailableState.swift) |
 | `global-ref-areaflow` | `reference-only` | 历史愿景，不是 AreaMatrix 当前任务。 | [non-current references](../../workflow/residuals/non-current-references.md) |

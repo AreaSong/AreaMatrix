@@ -88,8 +88,8 @@ Copy/Move 的 `staging` DB row 不进入普通文件列表、overview 或 comman
 - Copy staging row：只在路径通过 `.areamatrix/staging/**` 安全校验后删除内部文件，再删除 row。
 - Move staging row：优先把 staging 文件恢复到记录的原绝对路径。
 - 源路径已经存在、父目录缺失或路径不安全：保留 staging 文件与 row，并返回 warning。
-- 没有 DB row 的孤儿文件只自动清理受控的 `copy-import-*` 文件名。
-- 未分类文件、目录、符号链接和受保护路径保持不动并返回 warning。
+- 没有 DB row 的孤儿文件只自动清理受控的 `copy-import-*` 文件名（普通文件与符号链接同样处理）。
+- 未分类文件、目录和受保护路径保持不动并返回 warning。
 
 当前没有 24 小时 staging GC、每 6 小时 timer、成功导入后的 GC 或公开手工 cleanup API。恢复只在明确的
 startup recovery 调用中执行。

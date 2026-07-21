@@ -18,7 +18,7 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
 | `macos-ci.yml` | Core build、tracked Swift bindings drift、Xcode build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
-| `governance-ci.yml` | governance files、文档链接与导航、skills、quality smoke、品牌资产、Codex OS、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
+| `governance-ci.yml` | governance files、文档链接与导航、skills、quality smoke、品牌资产、Codex OS、wording audit、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 
 macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.yml` 必须先显式检查工程和源码目录；
 任一目录缺失都应立即失败，不得通过条件表达式跳过 build/test、SwiftLint 或 SwiftFormat。
@@ -28,8 +28,9 @@ macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.
 它还会核对 Core 与 macOS 之间的 `AREAMATRIX_*_RUNTIME` key 合同，防止新增或改名 runtime 后只有一侧更新。
 它同时检查 `docs/governance/` 的固定源事实、上游版本/hash、owner、复审字段、RAID、G0-G8、PR 模板字段，以及 promotion apply / execution / runner 仍被 shim 阻断。
 
-`./dev check docs` 除了相对链接和导航可达性，还检查每篇 Markdown 的唯一一级标题、摘要、阅读时长、
-标题层级、代码块语言和 `Related`。`./dev check governance` 对固定上游规范快照执行登记册 SHA-256
+`./dev check docs` 除了相对链接和 README 导航可达性，还检查每篇 Markdown 的唯一一级标题、
+H1 后紧跟的摘要引用、代码块语言与闭合、`## Related` 章节和文件末尾单个换行；阅读时长估算与
+标题层级不在其检查范围内，靠评审把关。`./dev check governance` 对固定上游规范快照执行登记册 SHA-256
 校验；`./dev check diff` 同时检查 unstaged、staged 和 merge-base 到 HEAD 的 committed diff，避免只检查
 当前工作区而漏掉已提交空白错误。
 

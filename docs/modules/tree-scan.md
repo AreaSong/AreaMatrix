@@ -54,7 +54,8 @@ WalkDir::new(repo)
 ## 错误
 
 - 资料库未初始化或 DB 不可读：返回对应 Core error。
-- classifier/ignore 读取失败：返回 IO/permission error；classifier 内容无效可回退内置配置。
+- classifier/ignore 读取失败：除 `RepoNotInitialized`/`Db` 外统一归一为 `Io` error（与
+  [core-api.md](../api/core-api.md) 的 tree 合同一致）；classifier 内容无效可回退内置配置。
 - WalkDir entry、metadata 或路径规范化失败：返回映射后的 Core error。
 - JSON 序列化失败：返回 IO error。
 

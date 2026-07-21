@@ -156,8 +156,8 @@ cargo llvm-cov --workspace --lcov --output-path lcov.info --fail-under-lines 70
 ```
 
 macOS CI 使用 `./dev build core`、`./dev bindings verify`、带 coverage gate 的 `./dev test macos`、
-SwiftLint 和 SwiftFormat。治理 CI 覆盖 docs、skills、quality、Codex OS、task-loop、prompts、diff 和
-secret scan。
+SwiftLint 和 SwiftFormat。治理 CI 覆盖 governance、docs、skills、quality、品牌资产、Codex OS、
+wording、task-loop、prompts、diff 和 secret scan。
 
 ## 反模式
 

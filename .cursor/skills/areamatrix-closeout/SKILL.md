@@ -18,7 +18,7 @@ description: Runs the AreaMatrix closeout routine after a feature or fix—scope
    - 长期源事实文本（`docs/**`、README、AGENTS、治理、skill）：`./dev check wording`，按需 `./dev check docs` / `./dev check governance`。
 2. 漂移检查按 `.agents/skills/areamatrix-doc-sync/SKILL.md`：docs、Core API / UDL、README、prompt 材料与代码同轮对齐，无「文档说有、代码没有」。
 3. 更新 `.cursor/plans/` 步骤状态；对应 plan 全部完成时删除该文件。
-4. residual 状态变化 → 先更新权威账本（`workflow/residuals/**` 流程），再同步工作区 canvas `areamatrix-residuals-dashboard.canvas.tsx` 快照；`docs/product/capabilities.md` 变化 → 同步 `areamatrix-capability-map.canvas.tsx` 快照。
+4. residual 状态变化 → 先更新权威账本（`workflow/residuals/**` 流程），再同步工作区 canvas `areamatrix-residuals-dashboard.canvas.tsx` 快照；`docs/product/capabilities.md` 变化 → 同步 `areamatrix-capability-map.canvas.tsx` 快照。编辑任何工作区 canvas 源码时不得用 JS 保留字（如 `import`）作对象字面量键名——canvas 转译器会产出指向下一行的 `Unexpected identifier` 错误，极难定位。
 5. 命中根 `AGENTS.md` 高风险边界的改动：确认已有影响、验证与回滚说明。
 
 ## AAR（30 秒，非琐碎任务必做）

@@ -35,6 +35,10 @@
 仓库当前没有 `core/src/db/migrations/` 目录、SQL migration 文件序列或 `MIGRATIONS` 数组。新增
 schema 版本时，应先在本文件定义兼容性、备份和恢复边界，再扩展 `schema.rs` 及测试。
 
+`run_schema_migrations` 之外还有一条按需建表路径：v2 新增的 `external_sync_receipts` 表在外部同步
+调用中由 `ensure_external_sync_receipts`（`core/src/db/sync/receipts.rs`）以 `CREATE TABLE IF NOT
+EXISTS` 兜底创建，旧资料库首次执行外部同步时自动补齐，不触发 schema version 变化或备份。
+
 ## 备份与失败语义
 
 - WAL checkpoint 失败：不进入 schema transaction。

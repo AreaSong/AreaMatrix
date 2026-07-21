@@ -47,7 +47,7 @@ dev dependency 为 `tempfile` 和 `pretty_assertions`。仓库当前没有 Crite
 ## Apple 框架
 
 手写 Swift 当前使用 Foundation、SwiftUI、AppKit、CoreServices、Combine 等系统能力，具体 import 以源码为
-准。FSEventStream、NSWorkspace、NSFileCoordinator、Pasteboard、security bookmark 和 window probing 都
+准。FSEventStream、NSWorkspace、Pasteboard、security bookmark 和 window probing 都
 留在平台层。
 
 当前手写 Swift 未接入 OSLog logger；不要把系统框架可用等同于产品已经实现结构化日志。

@@ -934,6 +934,15 @@ repo_domains:
     paths:
       - .codex/
       - .agents/
+  - domain: cursor-adapters
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: manual review on change
+    review_triggers:
+      - cursor-adapter-changed
+    paths:
+      - .cursor/
   - domain: github-adapters
     owner: "@AreaSong"
     status: active

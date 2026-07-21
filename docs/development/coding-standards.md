@@ -29,17 +29,11 @@ cargo clippy --all-targets --all-features -- -D warnings
 
 PR 不通过则不允许合并。
 
-### `rustfmt.toml`
+### rustfmt 配置
 
-```toml
-edition = "2021"
-max_width = 100
-hard_tabs = false
-tab_spaces = 4
-newline_style = "Unix"
-imports_granularity = "Crate"
-group_imports = "StdExternalCrate"
-```
+仓库不提供 `rustfmt.toml`，Rust 格式化使用 rustfmt 默认配置，一致性由 CI 的
+`cargo fmt --all -- --check` 强制。如后续需要偏离默认值，必须先提交配置文件并同步本节说明，
+不要依赖本地个人配置。
 
 ### 命名
 

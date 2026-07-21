@@ -67,6 +67,7 @@ main
 | `test/` | 加测试 | `test/sync-edge-cases` |
 | `chore/` | 工程化 | `chore/upgrade-uniffi` |
 | `perf/` | 性能 | `perf/tree-scan-incremental` |
+| `codex/` | 自动化 / Agent 会话分支（task-loop checkpoint、doc sync 等自动化流程创建） | `codex/areamatrix-doc-sync-checkpoint` |
 
 ### 描述部分
 
@@ -204,8 +205,9 @@ EOF
 
 ### 4. 合并
 
-- 默认用 squash merge（保持 main 历史线性）
-- 根据情况：feature → squash；refactor 大改 → rebase preserve
+- 推荐 squash merge，保持 main 历史易读
+- 当前 main 历史同时存在 GitHub PR 产生的 merge commits；用 merge 还是 squash 由维护者按
+  PR 内容选择，不强制单一方式
 
 合并后维护者：
 
@@ -267,7 +269,8 @@ git push --force-with-lease  # 已推过的分支用 force-with-lease
 
 ### main 进 PR
 
-当前只允许 squash merge。
+推荐 squash merge；当前 main 历史中也存在 PR merge commits，合并方式以维护者在 GitHub 上的
+实际选择为准。
 
 ---
 
@@ -284,10 +287,11 @@ git push --force-with-lease  # 已推过的分支用 force-with-lease
 
 ## .gitignore 关键内容
 
+摘自当前 `.gitignore` 的关键条目（完整清单以仓库根 `.gitignore` 为准）：
+
 ```gitignore
 # Rust
 target/
-Cargo.lock              # 应用 binary 仓库可保留；库 crate 通常不提
 **/*.rs.bk
 
 # Xcode
@@ -296,6 +300,7 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 *.xccheckout
+*.xcresult
 
 # Generated bindings (重新生成即可)
 apps/macos/AreaMatrix/Bridge/Generated/
@@ -303,12 +308,13 @@ apps/macos/AreaMatrix/Bridge/Generated/
 # macOS
 .DS_Store
 
-# IDE
+# IDE（.vscode 只保留共享的 settings.json）
 .idea/
-.vscode/                # 个人配置；项目级用 .vscode-shared/
+.vscode/*
+!.vscode/
+!.vscode/settings.json
 
 # 测试产物
-TestResults.xcresult
 lcov.info
 *.profraw
 
@@ -316,7 +322,8 @@ lcov.info
 AreaMatrix-dev/
 ```
 
-注：本项目 Cargo.lock 应该提交（应用，需可重现构建）。
+注：`Cargo.lock` 不在忽略清单中，`core/Cargo.lock` 已提交进仓库（应用需要可重现构建，
+UniFFI bindgen 版本也从中锁定）。
 
 ---
 

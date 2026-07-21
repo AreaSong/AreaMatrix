@@ -117,10 +117,10 @@ Core 对收到的全部合法 event ID 计算最大值，包括最终被判定�
 
 正常批次顺序：
 
-1. 规划事件。
-2. 在一个 SQLite 事务中提交 files 和 change log。
+1. 按 `external_sync_receipts` 过滤已应用事件后规划本批事件。
+2. 在一个 SQLite 事务中提交 files、change log 和本批 receipts。
 3. 更新受影响 overview。
-4. 将批次最大 event ID 单调写入 `fs_event_cursor`。
+4. 将批次最大 event ID 单调写入 `fs_event_cursor`，并清理 cursor 之下的旧 receipts。
 
 Swift watcher 还保留批次 `cursorWatermark`，即该次 FSEvents 回调窗口观察到的最大 event ID：
 
@@ -130,7 +130,8 @@ Swift watcher 还保留批次 `cursorWatermark`，即该次 FSEvents 回调窗�
 - filtered-only 窗口只有到达队首时才单调确认 watermark，不能越过更早的业务窗口。
 - Core 或 cursor 失败会保留当前窗口并阻止后续窗口推进；UI reload 失败只显示呈现错误，不重放已经提交的 Core 批次。
 
-DB 事务失败时 metadata 和 change log 回滚；overview 或 cursor 失败时 cursor 不推进。DB 已提交但后续失败的批次必须依靠幂等规则安全重放。
+DB 事务失败时 metadata、change log 和 receipts 一并回滚；overview 或 cursor 失败时 cursor 不推进。DB
+已提交但后续失败的批次重放时，`external_sync_receipts` 查重会跳过已应用事件，再由各动作幂等规则兜底。
 
 ## 启动与恢复
 

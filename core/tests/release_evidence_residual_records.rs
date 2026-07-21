@@ -260,7 +260,7 @@ fn residual_indexes_reference_structured_release_records_without_closing_them() 
         GLOBAL_RESIDUALS_README,
         "iCloud placeholder smoke record 和只读 metadata helper 已存在",
     );
-    assert_contains(GLOBAL_RESIDUALS_YAML, "updated: \"2026-07-18\"");
+    assert_contains(GLOBAL_RESIDUALS_YAML, "updated: \"2026-07-21\"");
     assert_contains(
         GLOBAL_RESIDUALS_YAML,
         "source: workflow/versions/v1-mvp/residuals/residuals.yaml",

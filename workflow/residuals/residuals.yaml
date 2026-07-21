@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-18"
+updated: "2026-07-21"
 scope: global
 authority: index-only
 source_of_truth:
@@ -57,6 +57,34 @@ items:
       - xcodebuild macOS build and test
       - file-safety acceptance evidence showing no DB creation or mutation on reads
     notes: Closed after read-only open-mode and negative-path verification. Existing SQLite shared-memory lock coordination may update index.db-shm during a read-only WAL read; the reader does not create sidecars or modify index.db or index.db-wal.
+  - id: global-product-soft-delete-retention
+    status: deferred
+    type: product-contract-gap
+    title: Soft-delete 30-day retention cleanup is not implemented
+    source: docs/adr/0003-source-of-truth-strategy.md
+    supporting_sources:
+      - docs/adr/0006-icloud-support.md
+      - core/src/db/sync.rs
+    owner: core-storage
+    current_impact: soft-deleted rows are retained indefinitely; no retention or cleanup job exists
+    executable_task: true
+    promotion_required: true
+    close_condition: Either implement the documented retention cleanup for soft-deleted rows with file-safety tests, or amend ADR-0003/ADR-0006 to remove the 30-day retention promise.
+    notes: Soft delete itself is implemented (status='deleted' plus deleted_at); only the retention/cleanup policy promised by the ADRs is missing.
+  - id: global-product-ui-localization
+    status: deferred
+    type: product-contract-gap
+    title: UI string localization pipeline from ADR-0008 is not implemented
+    source: docs/adr/0008-naming-and-i18n.md
+    supporting_sources:
+      - apps/macos/AreaMatrix/Features/Settings/GeneralSettingsState.swift
+      - apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift
+    owner: macos-frontend
+    current_impact: UI copy is hardcoded and mixes zh-Hans and English; no .lproj/Localizable.strings pipeline exists
+    executable_task: true
+    promotion_required: true
+    close_condition: Either ship the .lproj/Localizable.strings pipeline for UI copy, or amend ADR-0008 to scope localization to classifier display names only.
+    notes: Locale.preferredLanguages currently only drives repository config locale and classifier display_name (zh-Hans/en); it does not drive UI strings.
   - id: global-ref-areaflow
     status: reference-only
     type: historical-reference

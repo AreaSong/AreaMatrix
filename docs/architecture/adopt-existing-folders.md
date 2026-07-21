@@ -71,7 +71,8 @@
 
 自动分类时：
 
-- 命中 `docs` / `finance` / `code` 等系统分类，但目录不存在，则 ImportSheet 预告“将创建 `<slug>/`”。
+- 命中 `docs` / `finance` / `code` 等系统分类，但目录不存在，则由 Core 在导入落位时创建
+  `<slug>/`；当前 Import sheet 只展示“建议分类”，不单独预告目录创建。
 - 分类置信度低或未命中时，默认进入 `inbox/`；若 `inbox/` 不存在，则创建。
 - 用户可在 ImportSheet 改成任意已有目录或系统分类。
 
@@ -123,7 +124,8 @@ AREAMATRIX.md
 
 ```yaml
 version: 1
-patterns:
+ignore:
+  - ".DS_Store"
   - ".areamatrix/"
   - ".git/"
   - ".hg/"
@@ -136,10 +138,11 @@ patterns:
   - "dist/"
   - ".next/"
   - ".cache/"
-  - ".DS_Store"
   - "*.tmp"
   - "*.swp"
 ```
+
+matcher 兼容 `ignore:` 与 `patterns:` 两种顶层 key；`init_repo` 生成的默认文件使用 `ignore:`。
 
 文件位置：
 

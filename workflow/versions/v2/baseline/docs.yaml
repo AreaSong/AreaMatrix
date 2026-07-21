@@ -10,10 +10,10 @@ docs:
     source: 'changes:v2-asw-governance-adoption'
   - file: 'docs/governance/governance-register.yaml'
     line_start: 1
-    line_end: 1213
+    line_end: 1222
     heading: 'AM-GOV-REGISTER-001'
     excerpt: 'id: AM-GOV-REGISTER-001'
-    sha256: 'e3574e225544b62d60e8e108e098024fb6db76c3513290f9cff73773038c5c77'
+    sha256: '9457e094d50dd4bc9161e6603764042e985d05ee57cdd8832faf2da8e3d0abb5'
     source: 'changes:v2-asw-governance-adoption'
   - file: 'docs/governance/project-charter.md'
     line_start: 1

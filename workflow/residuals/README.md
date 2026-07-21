@@ -44,6 +44,8 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 | `v2-risk-001` | `open` | `governance-risk` | L3/L4 and high-risk review blocked when no independent reviewer exists | 独立复核必须由合格 reviewer 完成，不能由同一维护者自证关闭。 |
 | `v2-dep-003` | `deferred` | `governance-dependency` | v2 live execution not authorized | governance authoring 不授权 promotion apply、execution 写入或 runner。 |
 | `v2-dep-004` | `deferred` | `governance-dependency` | merge readiness requires remote evidence | 本地检查不能替代 remote CI 和 branch protection evidence。 |
+| `global-product-soft-delete-retention` | `deferred` | `product-contract-gap` | soft-deleted rows retained indefinitely | ADR-0003/0006 承诺的软删除 30 天保留清理未实现；软删除本身已实现。 |
+| `global-product-ui-localization` | `deferred` | `product-contract-gap` | UI copy hardcoded, zh/en mixed | ADR-0008 的 `.lproj`/Localizable.strings UI 本地化管线未实现；locale 目前只驱动 classifier display name。 |
 | `global-product-restore-file-contract` | `closed` | `product-contract-gap` | none | 公开 `restore_file` 合同已移除；受支持的恢复统一使用 token 化 Undo/Redo。 |
 | `global-product-metadata-reader-write-flags` | `closed` | `file-safety-gap` | none | Metadata reader 仅使用只读 SQLite 打开策略，不创建 sidecar，也不修改 `index.db` 或 WAL。 |
 | `global-ref-areaflow` | `reference-only` | `historical-reference` | none | AreaFlow 历史愿景材料，不是当前 AreaMatrix 产品范围或 active task。 |
