@@ -145,8 +145,13 @@ fn main() {
 ```
 
 `./dev bindings verify` 只在临时目录生成并比较 `area_matrix.swift`、`area_matrixFFI.h` 与
-`module.modulemap`，不会改写 tracked bindings。CI 在 Core build 后运行该命令，阻止 UDL、生成器
-输出与 Xcode 实际消费的 bindings 漂移。默认生成器固定为 `core/Cargo.lock` 中的 UniFFI 版本；
+`module.modulemap`，不会改写 tracked bindings。当仓库存在
+`apps/ios/Carea_matrixFFI/` 时，同一命令还会跑 **iOS subset** 校验：再生成 header 后，要求
+tracked iOS header 中的每个 `fn_func_*` ⊆ 生成物，且 `*CoreFFI.swift` 使用的 `fn_func_*` ⊆
+iOS header，同时 `module.modulemap` 指向有效 header。iOS **不做** macOS 式全量字节 diff
+（iOS 只跟踪 curated subset，不跟踪完整 `area_matrix.swift`）。
+
+CI 在 Core build 后运行该命令，阻止 UDL、生成器输出与 Xcode 实际消费的 bindings 漂移。默认生成器固定为 `core/Cargo.lock` 中的 UniFFI 版本；
 只有显式设置 `UNIFFI_BINDGEN` 或 `AREAMATRIX_UNIFFI_BINDGEN` 时才覆盖该版本。
 
 ### Bridging Header 配置

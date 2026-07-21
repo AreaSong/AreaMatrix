@@ -81,6 +81,14 @@
 - [概览生成](modules/overview-gen.md)
 - [目录扫描](modules/tree-scan.md)
 - [改动日志](modules/change-log.md)
+- [资料库初始化](modules/repo-init.md)
+- [导入冲突批处理](modules/import-conflict-batch.md)
+- [元数据修复](modules/repair.md)
+- [资料库扫描](modules/repo-scan.md)
+- [缺失文件恢复](modules/missing-file-recovery.md)
+- [批量删除](modules/batch-delete.md)
+- [同步冲突解决](modules/sync-conflict-resolve.md)
+- [语义搜索](modules/semantic-search.md)
 
 ## API 与配置
 

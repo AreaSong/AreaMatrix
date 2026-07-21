@@ -4192,13 +4192,10 @@ scope 和分页与普通搜索保持同一合同。
 - `deduped_normal_count`：被语义组折叠的普通搜索重复数量。
 - `index_status`：`Ready`、`NotReady`、`Building`、`Paused`、`Canceled`、`Failed` 或
   `Partial`。
-- `route`：`Local` 或 `Remote`；未进入 AI 路线时为 `nil`。当前实现尚未接通远程语义路线：
-  `RemoteFirst` / `route=Remote` 一律回退为 `ProviderUnavailable`，成功构建的 `provider_name`
-  恒为本地模型。
+- `route`：`Local` 或 `Remote`；未进入 AI 路线时为 `nil`。远程路线在 remote provider 已配置且 privacy / call-log 门禁均通过时执行外部 runtime；`RateLimited` / `Timeout` 由远程 runtime 映射为稳定 fallback。
 - `fallback_reason` / `fallback_message`：`AiDisabled`、`FeatureDisabled`、
   `ProviderUnavailable`、`PrivacyRule`、`SemanticIndexNotReady`、`CallLogUnavailable`、
   `NoEligibleInput`、`NormalSearchUnavailable`、`RateLimited` 或 `Timeout`。
-  `RateLimited` / `Timeout` 为合同预留值，当前实现不构造。
 - `call_log_id` / `privacy_rule_id`：跳转 AI call log surface / AI privacy rules surface 所需的追溯 id。
 - `low_confidence`：语义组存在低置信结果时为 true。
 
@@ -4271,7 +4268,8 @@ semantic search 的 embedding index 构建入口，服务 semantic search surfac
   AI call log；不得移动、删除、重命名、覆盖、Trash、导入或改写任何用户文件。
 - 远程 embedding 只在远程 AI 显式启用、SemanticSearch scope 允许、测试连接成功、隐私规则通过且
   call-log gate 可用后进入；隐私命中文件不得进入远程队列，sent fields 必须为 none。
-  当前实现尚未接通远程 embedding：请求远程路线时回退为 `ProviderUnavailable`，不发出网络请求。
+  远程路线通过 `AREAMATRIX_AI_SEMANTIC_REMOTE_RUNTIME` 外部 runtime 执行；`RateLimited` / `Timeout`
+  映射为稳定 fallback，不泄漏 provider 原始输出。
 - 取消、暂停、清理未提交 index batch 和远程队列停止语义由独立的 semantic search
   recovery / queue-management 合同承载；本合同只定义启动和报告形状。
 
@@ -4310,6 +4308,8 @@ func bootstrap(repoPath: String) async throws {
 ```
 
 应用启动必调（在 UI 显示前）。耗时与残留 staging 文件数成正比。
+
+副作用补充：启动 recovery 还会 purge `files.status = 'deleted'` 且 `deleted_at` 超过 30 天的元数据行（及相关 AreaMatrix 拥有 sidecar）；不硬删用户源文件、不二次清空系统 Trash。成功 purge 时会写入 `RecoveryReport.warnings` 说明。
 
 ### `preview_manual_rescan(repoPath: String) throws -> ManualRescanPreviewReport`
 

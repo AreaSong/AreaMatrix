@@ -239,6 +239,8 @@ fn assert_rust_implementation_alignment() {
         "load_indexed_files",
         "save_semantic_index",
         "insert_call_log",
+        "ensure_semantic_call_log_gate",
+        "execute_remote_search",
     ] {
         assert_contains(SEMANTIC_IMPL_RS, fragment);
     }
@@ -274,6 +276,7 @@ fn assert_existing_success_and_failure_tests_are_present() {
         "semantic_search_failure_permission_denied_on_content_read_is_structured_and_non_mutating",
         "semantic_search_failure_call_log_abort_rolls_back_index_metadata",
         "semantic_search_failure_privacy_skip_and_remote_gate_do_not_leak_key_material",
+        "semantic_search_failure_remote_call_log_gate_blocks_runtime_without_invocation",
     ] {
         assert_contains(&tests, fragment);
     }

@@ -53,6 +53,22 @@ impl SearchFallback {
         )
     }
 
+    pub(super) fn rate_limited() -> Self {
+        Self::new(
+            SemanticSearchFallbackReason::RateLimited,
+            "Semantic search provider rate limit reached",
+            true,
+        )
+    }
+
+    pub(super) fn timeout() -> Self {
+        Self::new(
+            SemanticSearchFallbackReason::Timeout,
+            "Semantic search request timed out",
+            true,
+        )
+    }
+
     fn new(
         reason: SemanticSearchFallbackReason,
         message: &'static str,
@@ -112,6 +128,22 @@ impl BuildFallback {
                 false,
             ),
             total_count,
+        )
+    }
+
+    pub(super) fn rate_limited() -> Self {
+        Self::new(
+            SemanticSearchFallbackReason::RateLimited,
+            "Semantic search provider rate limit reached",
+            false,
+        )
+    }
+
+    pub(super) fn timeout() -> Self {
+        Self::new(
+            SemanticSearchFallbackReason::Timeout,
+            "Semantic search request timed out",
+            false,
         )
     }
 

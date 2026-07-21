@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Soft-delete 30 天元数据清理：`recover_on_startup` 会 purge 过期 `files.status=deleted` 行（不硬删用户源文件）。
+- Classification / semantic search 远程路径前置 AI call-log gate；语义搜索远程 runtime 接通，并映射 `RateLimited` / `Timeout`。
+- `./dev bindings verify` 增加 iOS subset 符号校验（header ⊆ 生成物，`*CoreFFI.swift` ⊆ iOS header）。
+- 高风险 core 模块文档：`repo-init`、`import-conflict-batch`、`repair`、`repo-scan`、`missing-file-recovery`、`batch-delete`、`sync-conflict-resolve`、`semantic-search`。
+- macOS Settings / Onboarding `.lproj`/`Localizable.strings` 管线（en / zh-Hans；zh-Hant 镜像 en）。
 - 记录 v1 分发证据归档中的内部验证产物与未公证测试者预览产物，并保存 checksum。
 - 补充 iCloud placeholder、Developer ID / notarization 后续补证模板，并记录同机首启交互 smoke。
 - 记录 GitHub immutable release / tag 规则对测试者预览产物编号复用的限制。
@@ -21,10 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   全覆盖门禁：无主文件、未登记 docs 页、未登记模块/Feature、无归属测试文件、死亡路径与死亡测试族均拦截。
 - 契约面机械锁：`core-api.md` 内嵌 UDL 与 `core/area_matrix.udl` 逐字节一致 + 函数总览/合同章节三方名单校验；
   `data-model.md` 表清单与 `core/src` 全部 `CREATE TABLE` 双向对账。
-- 残差登记：软删除保留策略、UI 本地化、core 模块级文档缺口、iOS FFI 生成物校验缺口、
-  AI 分类远程调用日志 gate 缺口、远程语义搜索路线未接通六项进入全局台账。
 
 ### Changed
+- 关闭全局残差：`global-product-soft-delete-retention`、`global-product-ui-localization`、
+  `global-docs-core-module-doc-coverage`、`global-governance-ios-bindings-verify-gap`、
+  `global-ai-classification-call-log-gate`、`global-ai-semantic-search-remote-route`。
 - v1 release notes 调整为内部验证说明，不再暗示正式分发。
 - 本地验证打包命令改为显式 ad-hoc bundle signing、静态链接 Rust core，并在构建后验证
   bundle 签名和自包含链接状态，避免测试包依赖开发机 dylib。

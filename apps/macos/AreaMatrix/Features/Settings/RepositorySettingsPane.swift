@@ -112,7 +112,7 @@ extension RepositorySettingsPane {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: "Repository Settings", subtitle: model.repoPath) {
+        SettingsPageHeader(title: String(localized: "settings.page.repository"), subtitle: model.repoPath) {
             if model.isLoading {
                 SettingsHeaderProgressIndicator(label: "Checking repository configuration")
             } else {
@@ -138,12 +138,12 @@ extension RepositorySettingsPane {
     }
 
     private var loadingContent: some View {
-        SettingsPageLoadingContent(title: "Loading repository settings...")
+        SettingsPageLoadingContent(title: String(localized: "settings.loading.repository"))
     }
 
     private func loadErrorContent(_ error: RepositorySettingsLoadError) -> some View {
         SettingsPageErrorContent(
-            title: "Could not load repository status",
+            title: String(localized: "settings.error.loadRepository"),
             message: error.message,
             recovery: error.recovery
         ) {

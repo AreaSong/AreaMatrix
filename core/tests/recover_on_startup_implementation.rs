@@ -82,6 +82,32 @@ fn insert_file_row_with_storage(
     connection.last_insert_rowid()
 }
 
+fn mark_soft_deleted(repo: &Path, file_id: i64, deleted_at: i64) {
+    open_db(repo)
+        .execute(
+            "UPDATE files
+             SET status = 'deleted', deleted_at = ?2, updated_at = ?2
+             WHERE id = ?1",
+            params![file_id, deleted_at],
+        )
+        .expect("mark soft-deleted");
+}
+
+fn file_row_exists(repo: &Path, file_id: i64) -> bool {
+    open_db(repo)
+        .query_row(
+            "SELECT COUNT(*) FROM files WHERE id = ?1",
+            params![file_id],
+            |row| row.get::<_, i64>(0),
+        )
+        .expect("query file presence")
+        > 0
+}
+
+fn days_ago(days: i64) -> i64 {
+    chrono::Utc::now().timestamp() - days * 24 * 60 * 60
+}
+
 fn file_name(path: &str) -> String {
     Path::new(path)
         .file_name()
@@ -369,4 +395,95 @@ fn recover_on_startup_implementation_uninitialized_repo_does_not_create_metadata
         ))
     );
     assert!(!repo.path().join(".areamatrix").exists());
+}
+
+#[test]
+fn recover_on_startup_implementation_purges_expired_soft_deleted_metadata_only() {
+    let repo = initialized_repo();
+    let active_path = repo.path().join("finance/active-copied.pdf");
+    let indexed_path = repo.path().join("finance/indexed-kept.pdf");
+    let adopted_path = repo.path().join("finance/adopted-expired.pdf");
+    fs::create_dir_all(active_path.parent().expect("category parent"))
+        .expect("create category directory");
+    fs::write(&active_path, b"active copied bytes").expect("write active file");
+    fs::write(&indexed_path, b"indexed user bytes").expect("write indexed file");
+    fs::write(&adopted_path, b"adopted user bytes").expect("write adopted file");
+
+    let active_id = insert_file_row_with_storage(
+        repo.path(),
+        "finance/active-copied.pdf",
+        "active",
+        StorageMode::Copied,
+        None,
+    );
+    let recent_deleted_id = insert_file_row_with_storage(
+        repo.path(),
+        "finance/recent-deleted.pdf",
+        "active",
+        StorageMode::Moved,
+        None,
+    );
+    mark_soft_deleted(repo.path(), recent_deleted_id, days_ago(7));
+
+    let expired_copied_id = insert_file_row_with_storage(
+        repo.path(),
+        "finance/expired-copied.pdf",
+        "active",
+        StorageMode::Copied,
+        None,
+    );
+    mark_soft_deleted(repo.path(), expired_copied_id, days_ago(45));
+
+    let expired_indexed_id = insert_file_row_with_storage(
+        repo.path(),
+        "finance/indexed-kept.pdf",
+        "active",
+        StorageMode::Indexed,
+        None,
+    );
+    mark_soft_deleted(repo.path(), expired_indexed_id, days_ago(40));
+
+    let connection = open_db(repo.path());
+    connection
+        .execute(
+            "INSERT INTO files (
+                path, original_name, current_name, category, size_bytes,
+                hash_sha256, storage_mode, origin, source_path,
+                imported_at, updated_at, status
+             ) VALUES (
+                'finance/adopted-expired.pdf', 'adopted-expired.pdf', 'adopted-expired.pdf',
+                'finance', 18, 'hash-adopted-expired', 'copied', 'adopted', NULL,
+                1, 1, 'active'
+             )",
+            [],
+        )
+        .expect("insert adopted row");
+    let expired_adopted_id = connection.last_insert_rowid();
+    drop(connection);
+    mark_soft_deleted(repo.path(), expired_adopted_id, days_ago(50));
+
+    let report = recover_on_startup(path_string(repo.path())).expect("purge soft-deleted metadata");
+
+    assert!(report.warnings.iter().any(|warning| {
+        warning.contains("Purged 3 soft-deleted metadata rows older than 30 days")
+    }));
+    assert!(file_row_exists(repo.path(), active_id));
+    assert!(file_row_exists(repo.path(), recent_deleted_id));
+    assert!(!file_row_exists(repo.path(), expired_copied_id));
+    assert!(!file_row_exists(repo.path(), expired_indexed_id));
+    assert!(!file_row_exists(repo.path(), expired_adopted_id));
+    assert_eq!(
+        fs::read(&active_path).expect("active file bytes unchanged"),
+        b"active copied bytes"
+    );
+    assert_eq!(
+        fs::read(&indexed_path).expect("indexed user file bytes unchanged"),
+        b"indexed user bytes"
+    );
+    assert_eq!(
+        fs::read(&adopted_path).expect("adopted user file bytes unchanged"),
+        b"adopted user bytes"
+    );
+    assert_eq!(count_rows(repo.path(), "active"), 1);
+    assert_eq!(count_rows(repo.path(), "deleted"), 1);
 }

@@ -6,7 +6,7 @@ use crate::{
 };
 
 use super::{
-    call_log::{insert_call_log, CallLogDraft},
+    call_log::{ensure_classification_call_log_gate, insert_call_log, CallLogDraft},
     context::{build_context, AiSuggestionContext},
     executor::{execute_local, execute_remote, AiSuggestionDraft},
     AiCategorySuggestion, AiCategorySuggestionContextField, AiCategorySuggestionRequest,
@@ -77,6 +77,7 @@ pub(super) fn suggest_category_with_ai(
     else {
         return unavailable_provider(&repo, &file);
     };
+    ensure_classification_call_log_gate(&repo)?;
     let route_for_error = route.clone();
     let draft = match execute_suggestion(route, &repo, &context) {
         Ok(draft) => draft,

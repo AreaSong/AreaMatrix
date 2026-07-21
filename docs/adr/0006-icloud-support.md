@@ -12,7 +12,7 @@
 > - 「所有文件 IO 通过 NSFileCoordinator 协调」与「实现 NSFilePresenter」未实现：生产代码无任何 NSFileCoordinator / NSFilePresenter 引用。
 > - 「占位符访问元数据时按需下载」未实现，且与 ADR-0005 的「不隐式下载」边界矛盾。现行为：扫描明确跳过 `.icloud` 占位符（`core/src/repo_scan/ignore.rs`、`core/src/repo_scan/files.rs`），下载仅由用户触发的 `apps/macos/AreaMatrix/PlatformServices/ICloudPlaceholderDownloader.swift`（`FileManager.startDownloadingUbiquitousItem`）执行。
 > - 已实现并仍有效：conflicted copy 识别（`core/src/icloud_conflicts.rs`）。
-> - 「软删除保留 30 天」：软删除已实现（`core/src/db/sync.rs`），30 天保留 / 清理逻辑未实现，已列入残差跟踪。
+> - 「软删除保留 30 天」：软删除已实现（`core/src/db/sync.rs` 等）；30 天元数据清理已由 `recover_on_startup` 的 `purge_expired_soft_deleted_files` 落地（仅 purge 过期 soft-deleted DB 行，不硬删用户源文件）。
 > - 影响范围原写 `apps/macos/Watcher`，该目录不存在；watcher 实际位于 `apps/macos/AreaMatrix/PlatformServices/MainExternalCreatedFileWatcher.swift`，上方影响范围已就地更正。
 
 ## 上下文
@@ -109,7 +109,7 @@
 ### 风险
 
 - iCloud 账号未登录时仓库无法访问 → 给清晰错误提示
-- iCloud 服务故障时本地数据可能不一致 → 软删除保留 30 天（更正：软删除已实现，30 天保留期未实现，见顶部现状说明）
+- iCloud 服务故障时本地数据可能不一致 → 软删除保留 30 天（更正：软删除与 30 天元数据 purge 均已实现，见顶部现状说明）
 - 用户多 Mac 用同一仓库导致频繁冲突 → UI 提示"建议同时只在一台设备编辑"
 - macOS 重大升级改变 iCloud API 行为（缓解：CI beta 测试 + 用户提前通知）
 

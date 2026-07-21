@@ -44,12 +44,12 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 | `v2-risk-001` | `open` | `governance-risk` | L3/L4 and high-risk review blocked when no independent reviewer exists | 独立复核必须由合格 reviewer 完成，不能由同一维护者自证关闭。 |
 | `v2-dep-003` | `deferred` | `governance-dependency` | v2 live execution not authorized | governance authoring 不授权 promotion apply、execution 写入或 runner。 |
 | `v2-dep-004` | `deferred` | `governance-dependency` | merge readiness requires remote evidence | 本地检查不能替代 remote CI 和 branch protection evidence。 |
-| `global-product-soft-delete-retention` | `deferred` | `product-contract-gap` | soft-deleted rows retained indefinitely | ADR-0003/0006 承诺的软删除 30 天保留清理未实现；软删除本身已实现。 |
-| `global-product-ui-localization` | `deferred` | `product-contract-gap` | UI copy hardcoded, zh/en mixed | ADR-0008 的 `.lproj`/Localizable.strings UI 本地化管线未实现；locale 目前只驱动 classifier display name。 |
-| `global-docs-core-module-doc-coverage` | `deferred` | `product-doc-marker` | 45 modules lack module-level docs | 50 个 core 模块中仅 5 个有模块级文档；模块→文档→测试族映射已登记在 `core_modules` 并由治理检查强制，补写文档被有意延后。 |
-| `global-governance-ios-bindings-verify-gap` | `deferred` | `file-safety-gap` | iOS FFI artifacts can drift silently | macOS 生成绑定有 `./dev bindings verify` 兜底，被跟踪的 iOS header/modulemap 与 `*CoreFFI.swift` 垫层没有等价校验。 |
-| `global-ai-classification-call-log-gate` | `deferred` | `product-contract-gap` | remote classification may send before call-log gate | `suggest_category_with_ai` 合同要求前置调用日志 gate，实现先远程调用再写日志；summary/tags 已有前置 gate。高风险隐私边界，待确认后修代码。 |
-| `global-ai-semantic-search-remote-route` | `deferred` | `product-contract-gap` | remote semantic route unreachable | 远程语义搜索路线与 `RateLimited`/`Timeout` 回退未实现；请求远程一律回退 `ProviderUnavailable`。 |
+| `global-product-soft-delete-retention` | `closed` | `product-contract-gap` | none | 启动 recovery 已 purge 超过 30 天的 soft-deleted 元数据行（不硬删用户源文件）。 |
+| `global-product-ui-localization` | `closed` | `product-contract-gap` | none | Settings/Onboarding 已接入 `.lproj`/`Localizable.strings`（en/zh-Hans；zh-Hant 镜像 en）。 |
+| `global-docs-core-module-doc-coverage` | `closed` | `product-doc-marker` | none | 高风险模块文档已补写；其余模块以 core-api 为合同深度（见 core-internal-architecture）。 |
+| `global-governance-ios-bindings-verify-gap` | `closed` | `file-safety-gap` | none | `./dev bindings verify` 已含 iOS subset 符号校验。 |
+| `global-ai-classification-call-log-gate` | `closed` | `product-contract-gap` | none | classification 已有前置 call-log gate，gate 失败不调用远程。 |
+| `global-ai-semantic-search-remote-route` | `closed` | `product-contract-gap` | none | 远程语义搜索已接通，并映射 RateLimited/Timeout。 |
 | `global-product-restore-file-contract` | `closed` | `product-contract-gap` | none | 公开 `restore_file` 合同已移除；受支持的恢复统一使用 token 化 Undo/Redo。 |
 | `global-product-metadata-reader-write-flags` | `closed` | `file-safety-gap` | none | Metadata reader 仅使用只读 SQLite 打开策略，不创建 sidecar，也不修改 `index.db` 或 WAL。 |
 | `global-ref-areaflow` | `reference-only` | `historical-reference` | none | AreaFlow 历史愿景材料，不是当前 AreaMatrix 产品范围或 active task。 |

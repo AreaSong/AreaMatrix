@@ -7,8 +7,20 @@ use area_matrix_core::{
 };
 use pretty_assertions::assert_eq;
 
+#[path = "support/remote_provider_config_common.rs"]
+mod remote_common;
+#[path = "support/semantic_search_runtime.rs"]
+mod semantic_runtime;
 #[path = "support/semantic_search_common.rs"]
 mod semantic_search_common;
+
+use std::path::Path;
+
+use area_matrix_core::enable_remote_ai_provider;
+use remote_common::{
+    enable_request_for_endpoint, successful_provider_test, test_request_for_endpoint,
+};
+use semantic_runtime::SemanticAiRuntime;
 use semantic_search_common::*;
 
 #[test]
@@ -378,4 +390,171 @@ fn semantic_search_returns_config_for_unconfirmed_build() {
     let result = build_embedding_index(repo_path, scope);
 
     assert!(matches!(result, Err(CoreError::Config { .. })));
+}
+
+fn remote_semantic_ai_config(repo_path: String) -> area_matrix_core::AiConfig {
+    area_matrix_core::AiConfig {
+        repo_path,
+        ai_enabled: true,
+        provider_preference: area_matrix_core::AiProviderPreference::RemoteFirst,
+        local_ai_enabled: false,
+        remote_ai_allowed: true,
+        privacy_gate_enabled: true,
+        privacy_policy_ref: None,
+        feature_toggles: vec![
+            area_matrix_core::AiFeatureConfig {
+                feature: area_matrix_core::AiFeatureKind::ClassificationSuggestions,
+                enabled: false,
+                allow_remote: false,
+            },
+            area_matrix_core::AiFeatureConfig {
+                feature: area_matrix_core::AiFeatureKind::AutoSummaries,
+                enabled: false,
+                allow_remote: false,
+            },
+            area_matrix_core::AiFeatureConfig {
+                feature: area_matrix_core::AiFeatureKind::AutoTags,
+                enabled: false,
+                allow_remote: false,
+            },
+            area_matrix_core::AiFeatureConfig {
+                feature: area_matrix_core::AiFeatureKind::SemanticSearch,
+                enabled: true,
+                allow_remote: true,
+            },
+        ],
+    }
+}
+
+fn enable_remote_semantic_provider(repo: &Path, endpoint_url: &str) {
+    let repo_path = path_string(repo);
+    let test_result =
+        successful_provider_test(repo_path.clone(), test_request_for_endpoint(endpoint_url))
+            .expect("test remote provider");
+    let token = test_result
+        .verification_token
+        .expect("successful test returns verification token");
+    let mut enable_request = enable_request_for_endpoint(token, endpoint_url);
+    enable_request.feature_scope = vec![area_matrix_core::AiFeatureKind::SemanticSearch];
+    enable_remote_ai_provider(repo_path, enable_request).expect("enable remote semantic provider");
+}
+
+#[test]
+fn semantic_search_implementation_executes_remote_search_with_provider_metadata() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+    let invoice_id = insert_file(
+        repo.path(),
+        "finance/invoices/invoice-remote.txt",
+        "finance",
+        Some("remote invoice note"),
+    );
+    area_matrix_core::update_ai_config(
+        repo_path.clone(),
+        remote_semantic_ai_config(repo_path.clone()),
+    )
+    .expect("enable remote semantic search");
+    enable_remote_semantic_provider(repo.path(), "https://provider.example.test/semantic-search");
+    let runtime = SemanticAiRuntime::remote_search(invoice_id, 0.91, "remote semantic match");
+
+    let page = semantic_search(
+        repo_path,
+        "invoice".to_owned(),
+        default_filter(),
+        first_page(),
+    )
+    .expect("remote semantic search");
+
+    assert_eq!(page.fallback_reason, None);
+    assert_eq!(page.route, Some(SemanticSearchRoute::Remote));
+    assert_eq!(page.semantic_total_count, 1);
+    assert_eq!(page.semantic_matches[0].result.entry.id, invoice_id);
+    assert_eq!(page.semantic_matches[0].route, SemanticSearchRoute::Remote);
+    assert!(page.semantic_matches[0]
+        .matched_reason
+        .contains("remote semantic match"));
+    let payload = runtime.captured_payload();
+    assert!(payload.contains("\"operation\":\"search\""));
+    assert!(payload.contains("\"route\":\"remote\""));
+    assert!(!payload.contains("test-provider-secret"));
+
+    let log = ai_log_row(repo.path(), page.call_log_id.expect("search log id"));
+    assert_eq!(log.0, "success");
+    assert_eq!(log.1.as_deref(), Some("remote"));
+}
+
+#[test]
+fn semantic_search_implementation_executes_remote_build_with_provider_metadata() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+    insert_file(
+        repo.path(),
+        "finance/invoices/invoice-remote-build.txt",
+        "finance",
+        Some("remote build invoice"),
+    );
+    area_matrix_core::update_ai_config(
+        repo_path.clone(),
+        remote_semantic_ai_config(repo_path.clone()),
+    )
+    .expect("enable remote semantic search");
+    enable_remote_semantic_provider(repo.path(), "https://provider.example.test/semantic-build");
+    let runtime = SemanticAiRuntime::remote_build();
+    let mut scope = semantic_scope();
+    scope.route = Some(SemanticSearchRoute::Remote);
+
+    let report = build_embedding_index(repo_path, scope).expect("remote semantic build");
+    let payload = runtime.captured_payload();
+
+    assert_eq!(report.status, SemanticIndexStatus::Ready);
+    assert_eq!(report.route, Some(SemanticSearchRoute::Remote));
+    assert_eq!(report.provider_name.as_deref(), Some("gpt-4.1-mini"));
+    assert_eq!(report.fallback_reason, None);
+    assert!(payload.contains("\"operation\":\"build\""));
+    assert!(payload.contains("\"route\":\"remote\""));
+    assert!(!payload.contains("test-provider-secret"));
+
+    let log = ai_log_row(repo.path(), report.call_log_id.expect("build log id"));
+    assert_eq!(log.0, "success");
+    assert_eq!(log.1.as_deref(), Some("remote"));
+}
+
+#[test]
+fn semantic_search_implementation_maps_remote_timeout_and_rate_limit_to_fallbacks() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+    insert_file(repo.path(), "finance/invoice-timeout.txt", "finance", None);
+    area_matrix_core::update_ai_config(
+        repo_path.clone(),
+        remote_semantic_ai_config(repo_path.clone()),
+    )
+    .expect("enable remote semantic search");
+    enable_remote_semantic_provider(repo.path(), "https://provider.example.test/semantic-limit");
+
+    let _timeout_runtime = SemanticAiRuntime::timeout();
+    let timeout_page = semantic_search(
+        repo_path.clone(),
+        "invoice".to_owned(),
+        default_filter(),
+        first_page(),
+    )
+    .expect("timeout fallback page");
+    assert_eq!(
+        timeout_page.fallback_reason,
+        Some(SemanticSearchFallbackReason::Timeout)
+    );
+    drop(_timeout_runtime);
+
+    let _rate_runtime = SemanticAiRuntime::rate_limited();
+    let rate_page = semantic_search(
+        repo_path,
+        "invoice".to_owned(),
+        default_filter(),
+        first_page(),
+    )
+    .expect("rate limit fallback page");
+    assert_eq!(
+        rate_page.fallback_reason,
+        Some(SemanticSearchFallbackReason::RateLimited)
+    );
 }

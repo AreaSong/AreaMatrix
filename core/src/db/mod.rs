@@ -56,9 +56,10 @@ pub(crate) use connection::{
     open_repo_connection, open_repo_read_connection, path_exists, AREA_MATRIX_DIR,
 };
 pub(crate) use delete::{
-    insert_batch_delete_undo_action, remove_batch_delete_index_entry_row, remove_index_entry_row,
-    rollback_deleted_repo_owned_file, rollback_removed_index_entry_row,
-    soft_delete_batch_repo_owned_file, soft_delete_repo_owned_file, BatchDeleteUndoItem,
+    insert_batch_delete_undo_action, purge_expired_soft_deleted_files,
+    remove_batch_delete_index_entry_row, remove_index_entry_row, rollback_deleted_repo_owned_file,
+    rollback_removed_index_entry_row, soft_delete_batch_repo_owned_file,
+    soft_delete_repo_owned_file, BatchDeleteUndoItem,
 };
 pub(crate) use icloud_conflicts::{
     list_icloud_conflict_statuses, record_icloud_conflict_resolution,

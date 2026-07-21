@@ -20,7 +20,7 @@ struct GeneralSettingsLoadedContent: View {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: "通用", subtitle: model.repoPath) {
+        SettingsPageHeader(title: String(localized: "settings.page.general"), subtitle: model.repoPath) {
             if model.isSaving {
                 SettingsHeaderProgressIndicator(label: "Saving settings")
             }
@@ -127,7 +127,7 @@ struct GeneralSettingsLoadedContent: View {
             }
             .disabled(writesDisabled)
             Spacer()
-            Button("Close", action: onClose)
+            Button(String(localized: "settings.action.close"), action: onClose)
                 .keyboardShortcut(.cancelAction)
         }
         .padding(.horizontal, 34)
@@ -180,8 +180,8 @@ struct GeneralSettingsLoadingContent: View {
     let onClose: () -> Void
 
     var body: some View {
-        SettingsPageLoadingContent(title: "Loading settings...") {
-            Button("Close", action: onClose)
+        SettingsPageLoadingContent(title: String(localized: "settings.loading.settings")) {
+            Button(String(localized: "settings.action.close"), action: onClose)
                 .keyboardShortcut(.cancelAction)
                 .accessibilityIdentifier("general-settings-loading-close-settings")
         }

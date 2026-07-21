@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, path::Path};
 
 use crate::{CoreResult, SearchFileResult, SearchMatch, SearchMatchField, SearchMatchKind};
 
@@ -15,6 +15,44 @@ pub(super) struct SemanticGroups {
     pub(super) deduped_normal_count: i64,
     pub(super) semantic_total_count: i64,
     pub(super) low_confidence: bool,
+}
+
+pub(super) fn build_remote_groups(
+    semantic_total_count: i64,
+    matches: Vec<super::executor::RemoteSearchMatchDraft>,
+    repo: &Path,
+    route: SemanticSearchRoute,
+    call_log_id: Option<i64>,
+    normal_results: Vec<SearchFileResult>,
+) -> CoreResult<SemanticGroups> {
+    let normal_ids = normal_results
+        .iter()
+        .map(|row| row.entry.id)
+        .collect::<HashSet<_>>();
+    let semantic_matches = matches
+        .into_iter()
+        .filter_map(|draft| remote_match(repo, draft, route.clone(), call_log_id, &normal_ids))
+        .collect::<Vec<_>>();
+    let semantic_ids = semantic_matches
+        .iter()
+        .map(|row| row.result.entry.id)
+        .collect::<HashSet<_>>();
+    let deduped_normal_count = i64::try_from(
+        normal_results
+            .iter()
+            .filter(|row| semantic_ids.contains(&row.entry.id))
+            .count(),
+    )
+    .map_err(|error| crate::CoreError::db(error.to_string()))?;
+    Ok(SemanticGroups {
+        low_confidence: semantic_matches
+            .iter()
+            .any(|row| row.relevance < LOW_CONFIDENCE_THRESHOLD),
+        semantic_matches,
+        normal_matches: normal_matches(normal_results, &semantic_ids),
+        deduped_normal_count,
+        semantic_total_count,
+    })
 }
 
 pub(super) fn build_index_groups(
@@ -65,6 +103,32 @@ pub(super) fn normal_matches(
             result,
         })
         .collect()
+}
+
+fn remote_match(
+    repo: &Path,
+    draft: super::executor::RemoteSearchMatchDraft,
+    route: SemanticSearchRoute,
+    call_log_id: Option<i64>,
+    normal_ids: &HashSet<i64>,
+) -> Option<SemanticSearchMatch> {
+    let entry = crate::db::get_active_file_by_id(repo, draft.file_id).ok()?;
+    let file_id = entry.id;
+    Some(SemanticSearchMatch {
+        result: SearchFileResult {
+            entry,
+            score: draft.relevance,
+            matches: Vec::new(),
+            note_snippet: None,
+        },
+        relevance: draft.relevance,
+        matched_reason: draft.reason,
+        used_fields: Vec::new(),
+        route,
+        also_matched_normal_search: normal_ids.contains(&file_id),
+        call_log_id,
+        privacy_rule_id: None,
+    })
 }
 
 fn indexed_match(

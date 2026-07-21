@@ -412,6 +412,117 @@ documents:
             ):
                 build.run_bindings_verify(root)
 
+    def test_ios_bindings_subset_passes_when_symbols_are_covered(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            generated_header = root / "generated" / "area_matrixFFI.h"
+            ios_dir = root / "apps/ios/Carea_matrixFFI"
+            app_root = root / "apps/ios/AreaMatrix"
+            generated_header.parent.mkdir(parents=True)
+            ios_dir.mkdir(parents=True)
+            features = app_root / "Features/Library"
+            features.mkdir(parents=True)
+            generated_header.write_text(
+                "RustBuffer uniffi_area_matrix_core_fn_func_list_files(void);\n"
+                "RustBuffer uniffi_area_matrix_core_fn_func_get_version(void);\n",
+                encoding="utf-8",
+            )
+            (ios_dir / "area_matrixFFI.h").write_text(
+                "RustBuffer uniffi_area_matrix_core_fn_func_list_files(void);\n",
+                encoding="utf-8",
+            )
+            (ios_dir / "module.modulemap").write_text(
+                'module Carea_matrixFFI {\n    header "area_matrixFFI.h"\n    export *\n}\n',
+                encoding="utf-8",
+            )
+            (features / "MobileLibraryCoreFFI.swift").write_text(
+                "uniffi_area_matrix_core_fn_func_list_files(path, $0)\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                build._ios_bindings_subset_issues(generated_header, ios_dir, app_root),
+                [],
+            )
+
+    def test_ios_bindings_subset_reports_stale_header_and_missing_shim_symbols(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            generated_header = root / "generated" / "area_matrixFFI.h"
+            ios_dir = root / "apps/ios/Carea_matrixFFI"
+            app_root = root / "apps/ios/AreaMatrix"
+            generated_header.parent.mkdir(parents=True)
+            ios_dir.mkdir(parents=True)
+            features = app_root / "Features/Library"
+            features.mkdir(parents=True)
+            generated_header.write_text(
+                "RustBuffer uniffi_area_matrix_core_fn_func_list_files(void);\n",
+                encoding="utf-8",
+            )
+            (ios_dir / "area_matrixFFI.h").write_text(
+                "RustBuffer uniffi_area_matrix_core_fn_func_stale_only(void);\n",
+                encoding="utf-8",
+            )
+            (ios_dir / "module.modulemap").write_text(
+                'module Carea_matrixFFI {\n    header "missing.h"\n}\n',
+                encoding="utf-8",
+            )
+            (features / "MobileLibraryCoreFFI.swift").write_text(
+                "uniffi_area_matrix_core_fn_func_list_files(path, $0)\n",
+                encoding="utf-8",
+            )
+
+            issues = build._ios_bindings_subset_issues(generated_header, ios_dir, app_root)
+            self.assertTrue(any("symbols absent from regenerated" in issue for issue in issues))
+            self.assertTrue(any("missing from tracked iOS header" in issue for issue in issues))
+            self.assertTrue(any("modulemap header missing" in issue for issue in issues))
+
+    def test_bindings_verify_includes_ios_subset_when_tracked_ios_dir_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            udl, _, tracked_dir = self._write_bindings_fixture(root)
+            header = (
+                "RustBuffer uniffi_area_matrix_core_fn_func_list_files(void);\n"
+                "RustBuffer uniffi_area_matrix_core_fn_func_get_version(void);\n"
+            )
+            (tracked_dir / "area_matrix.swift").write_bytes(b"swift binding\n")
+            (tracked_dir / "area_matrixFFI.h").write_text(header, encoding="utf-8")
+            (tracked_dir / "module.modulemap").write_bytes(b"module map\n")
+
+            ios_dir = root / "apps/ios/Carea_matrixFFI"
+            app_root = root / "apps/ios/AreaMatrix/Features/Library"
+            ios_dir.mkdir(parents=True)
+            app_root.mkdir(parents=True)
+            (ios_dir / "area_matrixFFI.h").write_text(
+                "RustBuffer uniffi_area_matrix_core_fn_func_list_files(void);\n",
+                encoding="utf-8",
+            )
+            (ios_dir / "module.modulemap").write_text(
+                'module Carea_matrixFFI {\n    header "area_matrixFFI.h"\n}\n',
+                encoding="utf-8",
+            )
+            (app_root / "MobileLibraryCoreFFI.swift").write_text(
+                "uniffi_area_matrix_core_fn_func_list_files(path, $0)\n",
+                encoding="utf-8",
+            )
+
+            def fake_bindgen_run(argv: list[str | Path], **_: object) -> object:
+                args = [str(value) for value in argv]
+                out_dir = Path(args[args.index("--out-dir") + 1])
+                out_dir.mkdir(parents=True, exist_ok=True)
+                (out_dir / "area_matrix.swift").write_bytes(b"swift binding\n")
+                (out_dir / "area_matrixFFI.h").write_text(header, encoding="utf-8")
+                (out_dir / "area_matrixFFI.modulemap").write_bytes(b"module map\n")
+                return type("Completed", (), {"returncode": 0})()
+
+            with (
+                patch("scripts.dev_tools.build._host_triple", return_value="aarch64-apple-darwin"),
+                patch("scripts.dev_tools.build._uniffi_bindgen_command", return_value=["uniffi-bindgen"]),
+                patch("scripts.dev_tools.build._bindgen_udl_path", return_value=udl),
+                patch("scripts.dev_tools.build.run_step", side_effect=fake_bindgen_run),
+            ):
+                self.assertEqual(build.run_bindings_verify(root), 0)
+
     def test_check_all_core_build_uses_temp_generated_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

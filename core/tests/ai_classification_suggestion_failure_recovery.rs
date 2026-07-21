@@ -305,10 +305,10 @@ fn ai_classification_suggestion_failure_call_log_db_abort_preserves_file_state()
         .expect("install failing call-log trigger");
 
     let error = suggest_category_with_ai(repo_path, request(file_id))
-        .expect_err("late call log write failure must fail");
+        .expect_err("call log gate failure must fail before mutating file state");
 
-    assert_sanitized(&error, ErrorKind::Internal);
-    assert_eq!(error.raw_context(), "AI call log persistence failed");
+    assert_sanitized(&error, ErrorKind::Db);
+    assert_eq!(error.raw_context(), "AI call log unavailable");
     assert_eq!(active_category(repo.path(), file_id), "inbox");
     assert_eq!(
         repo_config_value(repo.path(), "ai_config").as_deref(),

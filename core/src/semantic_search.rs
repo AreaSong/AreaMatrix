@@ -8,6 +8,8 @@ use crate::{CoreError, CoreResult, SearchFileResult, SearchFilter, SearchPaginat
 
 #[path = "semantic_search/call_log.rs"]
 mod call_log;
+#[path = "semantic_search/executor.rs"]
+mod executor;
 #[path = "semantic_search/fallback.rs"]
 mod fallback;
 #[path = "semantic_search/implementation.rs"]

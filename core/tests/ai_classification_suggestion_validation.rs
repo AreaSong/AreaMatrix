@@ -216,6 +216,64 @@ fn assert_contains(haystack: &str, needle: &str) {
     );
 }
 
+fn remote_ai_config(repo_path: String) -> AiConfig {
+    let mut config = ai_config(repo_path);
+    config.provider_preference = AiProviderPreference::RemoteFirst;
+    config.local_ai_enabled = false;
+    config.remote_ai_allowed = true;
+    for toggle in &mut config.feature_toggles {
+        if toggle.feature == AiFeatureKind::ClassificationSuggestions {
+            toggle.allow_remote = true;
+        }
+    }
+    config
+}
+
+fn install_broken_ai_call_log_schema(repo: &Path) {
+    let connection = Connection::open(repo.join(".areamatrix/index.db")).expect("open database");
+    let _ = connection.execute("DROP TABLE IF EXISTS ai_call_log", []);
+    connection
+        .execute_batch("CREATE TABLE ai_call_log (id INTEGER PRIMARY KEY);")
+        .expect("install broken AI call log schema");
+}
+
+#[test]
+fn ai_classification_suggestion_validation_blocks_remote_runtime_when_call_log_gate_is_unavailable()
+{
+    #[path = "support/remote_provider_config_common.rs"]
+    mod remote_common;
+    use area_matrix_core::enable_remote_ai_provider;
+    use remote_common::{
+        enable_request_for_endpoint, successful_provider_test, test_request_for_endpoint,
+    };
+
+    let repo = initialized_repo();
+    fs::write(repo.path().join("README.md"), "user readme\n").expect("write user README");
+    let repo_path = path_string(repo.path());
+    let file_id = import_fixture(repo.path(), "invoice-2026.pdf", "inbox");
+    update_ai_config(repo_path.clone(), remote_ai_config(repo_path.clone()))
+        .expect("enable remote AI classification");
+    let endpoint_url = "https://provider.example.test/classify-gate";
+    let test_result =
+        successful_provider_test(repo_path.clone(), test_request_for_endpoint(endpoint_url))
+            .expect("test remote provider");
+    let token = test_result
+        .verification_token
+        .expect("successful test returns verification token");
+    let mut enable_request = enable_request_for_endpoint(token, endpoint_url);
+    enable_request.feature_scope = vec![AiFeatureKind::ClassificationSuggestions];
+    enable_remote_ai_provider(repo_path.clone(), enable_request).expect("enable remote provider");
+    install_broken_ai_call_log_schema(repo.path());
+    let remote_runtime = ai_common::RemoteRuntimeProbe::new();
+    let before = snapshot(repo.path(), file_id);
+
+    let result = suggest_category_with_ai(repo_path, request(file_id));
+
+    assert!(matches!(result, Err(CoreError::Db { .. })));
+    assert!(!remote_runtime.was_invoked());
+    assert_eq!(snapshot(repo.path(), file_id), before);
+}
+
 #[test]
 fn ai_classification_suggestion_validation_covers_ui_ready_success_path() {
     let repo = initialized_repo();
@@ -397,6 +455,7 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
         "privacy_blocks",
         "rule_result_is_confident",
         "select_route",
+        "ensure_classification_call_log_gate",
         "execute_suggestion",
         "unavailable_after_runtime_error",
         "insert_call_log",

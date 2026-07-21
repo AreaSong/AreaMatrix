@@ -47,7 +47,7 @@ UX 文档只定义“用户看见什么、点什么、如何恢复”。工程�
 
 历史 UI 核查时，应优先使用 [workflow source docs guide](../../workflow/versions/source-docs-guide.md) 中的归档索引、页面跳转图和单页规格读法；功能域 UX 文档用于追溯来源与校验长期事实。若归档规格中的内容需要长期保留，应同步回本目录的功能域 UX 文档，而不是把归档页面规格文件迁回 `docs/`。
 
-- `docs/modules/`：storage/classify/overview-gen/tree-scan/change-log
+- `docs/modules/`：storage/classify/overview-gen/tree-scan/change-log，以及高风险子集（repo-init、import-conflict-batch、repair、repo-scan、missing-file-recovery、batch-delete、sync-conflict-resolve、semantic-search）
 - `docs/api/`：core-api/error-codes/classifier-yaml/uniffi-recipes
 - `docs/architecture/`：adopt-existing-folders/transactional-import/source-of-truth/fs-watcher/concurrency/migration
 - `docs/development/`：observability/troubleshooting/performance

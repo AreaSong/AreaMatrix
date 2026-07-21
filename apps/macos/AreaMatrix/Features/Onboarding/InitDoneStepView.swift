@@ -28,8 +28,8 @@ struct InitDoneStepView: View {
         AreaMatrixStepHeader(
             systemImage: "checkmark.circle.fill",
             tint: .green,
-            title: "资料库已准备好",
-            subtitle: "AreaMatrix 已完成初始化。\n你现在可以浏览资料库，或把文件拖进窗口开始归档。"
+            title: String(localized: "onboarding.done.title"),
+            subtitle: String(localized: "onboarding.done.subtitle")
         )
     }
 
@@ -57,7 +57,7 @@ struct InitDoneStepView: View {
         if let errorMapping {
             TintedOutlinedStatusBanner(tint: .red) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("无法打开资料库", systemImage: "exclamationmark.triangle")
+                    Label(String(localized: "onboarding.done.cannotOpen"), systemImage: "exclamationmark.triangle")
                         .font(.headline)
                     Text(errorMapping.userMessage)
                     Text(errorMapping.suggestedAction)
@@ -70,7 +70,7 @@ struct InitDoneStepView: View {
 
     private var footer: some View {
         HStack {
-            Button("在 Finder 中打开") {
+            Button(String(localized: "onboarding.done.openInFinder")) {
                 Task {
                     await openInFinder()
                 }
@@ -87,7 +87,9 @@ struct InitDoneStepView: View {
             Spacer()
 
             Button(action: onOpenRepository) {
-                Text(errorMapping == nil ? "打开资料库" : "重试")
+                Text(errorMapping == nil
+                    ? String(localized: "onboarding.done.openRepository")
+                    : String(localized: "onboarding.done.retry"))
                     .font(.body.weight(.medium))
             }
             .keyboardShortcut(.defaultAction)

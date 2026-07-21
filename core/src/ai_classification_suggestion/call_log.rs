@@ -44,6 +44,27 @@ pub(super) fn insert_call_log(repo: &Path, draft: CallLogDraft<'_>) -> CoreResul
     Ok(Some(id))
 }
 
+pub(super) fn ensure_classification_call_log_gate(repo: &Path) -> CoreResult<()> {
+    db::ensure_ai_call_log_record_insertable(repo, classification_call_log_gate_record())
+        .map_err(map_gate_error)
+}
+
+fn classification_call_log_gate_record() -> db::AiCallLogInsertRecord {
+    db::AiCallLogInsertRecord {
+        feature: FEATURE_NAME.to_owned(),
+        file_id: None,
+        route: None,
+        provider: None,
+        model: None,
+        status: "unavailable".to_owned(),
+        sent_fields_json: "[]".to_owned(),
+        privacy_rules_checked: true,
+        privacy_rule_id: None,
+        result_summary: "AI classification call log gate".to_owned(),
+        error_code: Some("CallLogGate".to_owned()),
+    }
+}
+
 fn field_names(fields: &[AiCategorySuggestionContextField]) -> Vec<&'static str> {
     fields
         .iter()
@@ -85,6 +106,16 @@ fn map_call_log_error(error: CoreError) -> CoreError {
         CoreError::Db { .. } | CoreError::Io { .. } => {
             CoreError::internal("AI call log persistence failed")
         }
+        CoreError::RepoNotInitialized { .. } => {
+            CoreError::config("AI classification requires initialized repository metadata")
+        }
+        other => other,
+    }
+}
+
+fn map_gate_error(error: CoreError) -> CoreError {
+    match error {
+        CoreError::Db { .. } | CoreError::Io { .. } => CoreError::db("AI call log unavailable"),
         CoreError::RepoNotInitialized { .. } => {
             CoreError::config("AI classification requires initialized repository metadata")
         }

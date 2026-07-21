@@ -45,7 +45,7 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: "集成", subtitle: model.repoPath) {
+        SettingsPageHeader(title: String(localized: "settings.page.integrations"), subtitle: model.repoPath) {
             if model.loadState == .loading || model.isSaving {
                 SettingsHeaderProgressIndicator(
                     label: model.isSaving ? "Saving integration settings" : "Checking iCloud status"
@@ -76,12 +76,12 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var loadingContent: some View {
-        SettingsPageLoadingContent(title: "Checking integrations...")
+        SettingsPageLoadingContent(title: String(localized: "settings.loading.integrations"))
     }
 
     private func loadErrorContent(_ error: IntegrationsSettingsError) -> some View {
         SettingsPageErrorContent(
-            title: "Unable to load integrations",
+            title: String(localized: "settings.error.loadIntegrations"),
             message: error.message,
             recovery: error.recovery
         ) {

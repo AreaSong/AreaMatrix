@@ -33,7 +33,9 @@ struct InitializingStepView: View {
 
     private var header: some View {
         AreaMatrixStepHeader(
-            title: isCreateMode ? "正在创建资料库" : "正在接管已有目录",
+            title: isCreateMode
+                ? String(localized: "onboarding.initializing.createTitle")
+                : String(localized: "onboarding.initializing.adoptTitle"),
             subtitle: detailText
         ) {
             ProgressView()
@@ -48,7 +50,7 @@ struct InitializingStepView: View {
 
     private var progressSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("当前进度")
+            Text(String(localized: "onboarding.initializing.progress"))
                 .font(.headline)
             VStack(alignment: .leading, spacing: 6) {
                 Text(statusText)
@@ -123,7 +125,7 @@ struct InitializingStepView: View {
     }
 
     private var safetyText: some View {
-        Text("AreaMatrix 不会移动、重命名、删除或覆盖用户原文件。")
+        Text(String(localized: "onboarding.initializing.safety"))
             .font(.callout)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
@@ -137,14 +139,14 @@ struct InitializingStepView: View {
             if isCancellationRequested {
                 ProgressView()
                     .controlSize(.small)
-                Text("正在暂停...")
+                Text(String(localized: "onboarding.initializing.pausing"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.trailing, 8)
             }
 
             Button(action: onCancel) {
-                Text("取消")
+                Text(String(localized: "onboarding.initializing.cancel"))
                     .font(.body.weight(.medium))
             }
             .controlSize(.large)

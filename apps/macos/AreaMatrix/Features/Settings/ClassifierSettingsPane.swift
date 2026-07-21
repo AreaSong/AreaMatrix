@@ -47,7 +47,7 @@ extension ClassifierSettingsPane {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: "分类规则", subtitle: model.repoPath) {
+        SettingsPageHeader(title: String(localized: "settings.page.classifier"), subtitle: model.repoPath) {
             if model.isLoading {
                 SettingsHeaderProgressIndicator(label: "Checking classifier settings")
             } else if model.isSaving {
@@ -76,12 +76,12 @@ extension ClassifierSettingsPane {
     }
 
     private var loadingContent: some View {
-        SettingsPageLoadingContent(title: "Checking classifier settings...")
+        SettingsPageLoadingContent(title: String(localized: "settings.loading.classifier"))
     }
 
     private func loadErrorContent(_ error: ClassifierSettingsLoadError) -> some View {
         SettingsPageErrorContent(
-            title: "Unable to load classifier settings",
+            title: String(localized: "settings.error.loadClassifier"),
             message: error.message,
             recovery: error.recovery
         ) {

@@ -51,27 +51,29 @@ struct ConfirmInitStepView: View {
         .padding(.horizontal, 72)
         .padding(.vertical, 48)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .confirmationDialog("退出设置？", isPresented: $isCancelConfirmationPresented) {
-            Button("Quit", role: .destructive, action: onCancelSetup)
-            Button("Cancel", role: .cancel) {}
+        .confirmationDialog(String(localized: "onboarding.confirm.quitSetup"), isPresented: $isCancelConfirmationPresented) {
+            Button(String(localized: "onboarding.confirm.quit"), role: .destructive, action: onCancelSetup)
+            Button(String(localized: "settings.action.cancel"), role: .cancel) {}
         } message: {
-            Text("AreaMatrix 不会写入资料库，下次启动可重新选择。")
+            Text(String(localized: "onboarding.confirm.cancelSetupMessage"))
         }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(isCreateMode ? "将创建新的 AreaMatrix 资料库" : "将接管已有目录")
+            Text(isCreateMode
+                ? String(localized: "onboarding.confirm.createTitle")
+                : String(localized: "onboarding.confirm.adoptTitle"))
                 .font(.system(size: 34, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
-            Text("确认后才会开始写入 .areamatrix/ 元数据。")
+            Text(String(localized: "onboarding.confirm.subtitle"))
                 .font(.title3)
         }
     }
 
     private var pathBox: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("资料库路径")
+            Text(String(localized: "onboarding.confirm.repoPath"))
                 .font(.headline)
             AreaMatrixPathBox(
                 path: draft.validation.repoPath,
@@ -83,11 +85,16 @@ struct ConfirmInitStepView: View {
     }
 
     private var planSection: some View {
-        InitPlanList(title: isCreateMode ? "将创建" : "将执行", items: isCreateMode ? createItems : adoptItems)
+        InitPlanList(
+            title: isCreateMode
+                ? String(localized: "onboarding.confirm.willCreate")
+                : String(localized: "onboarding.confirm.willExecute"),
+            items: isCreateMode ? createItems : adoptItems
+        )
     }
 
     private var safetySection: some View {
-        InitPlanList(title: "不会执行", items: safetyItems, iconName: "checkmark.shield")
+        InitPlanList(title: String(localized: "onboarding.confirm.willNotExecute"), items: safetyItems, iconName: "checkmark.shield")
     }
 
     @ViewBuilder
@@ -106,7 +113,7 @@ struct ConfirmInitStepView: View {
     private var iCloudWarning: some View {
         if draft.validation.isICloudPath {
             Label(
-                "该路径位于 iCloud 管理范围内，请确认文件已在本机可用。",
+                String(localized: "onboarding.confirm.icloudWarning"),
                 systemImage: "icloud"
             )
             .font(.callout)
@@ -117,19 +124,24 @@ struct ConfirmInitStepView: View {
     private var footer: some View {
         HStack {
             if footerActions.contains(.back) {
-                Button("Back", action: onBack)
+                Button(String(localized: "onboarding.confirm.back"), action: onBack)
             }
             if footerActions.contains(.cancelSetup) {
-                Button("Cancel Setup") {
+                Button(String(localized: "onboarding.confirm.cancelSetup")) {
                     isCancelConfirmationPresented = true
                 }
             }
             if footerActions.contains(.changePath) {
-                Button("Change Path", action: onChangePath)
+                Button(String(localized: "onboarding.confirm.changePath"), action: onChangePath)
             }
             Spacer()
             if footerActions.contains(.primary) {
-                Button(isCreateMode ? "Create Repository" : "Adopt Folder", action: primaryAction)
+                Button(
+                    isCreateMode
+                        ? String(localized: "onboarding.confirm.createRepository")
+                        : String(localized: "onboarding.confirm.adoptFolder"),
+                    action: primaryAction
+                )
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
                     .disabled(!canRunPrimaryAction)
