@@ -135,8 +135,10 @@ fn assert_core_api_and_udl_contract() {
         "去抖 + InFlight 过滤后传入",
         "### `get_fs_event_cursor(repoPath) throws -> Int64?`",
         "### `set_fs_event_cursor(repoPath, lastEventId) throws`",
-        "最后单独\n持久化最大 `fs_event_id`",
+        "最后单独持久化最大 `fs_event_id`",
         "`sync_external_changes`（批量事件）",
+        "`external_sync_receipts`",
+        "收据保证幂等",
     ] {
         assert_contains(CORE_API, fragment);
     }

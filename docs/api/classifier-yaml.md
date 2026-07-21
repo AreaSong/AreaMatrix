@@ -54,7 +54,7 @@ Category 只允许：
 | `description` | optional map；value 最多 200 字符 |
 | `extensions` | optional；小写字母/数字，不含点，1–16 字符；category 内唯一 |
 | `keywords` | optional；trim 后非空，最多 32 字符；category 内唯一 |
-| `priority` | optional；`-1000..1000` |
+| `priority` | optional；`-1000..=1000` |
 | `naming_template` | optional；最多 200 字符 |
 
 locale key 当前作为普通 map key 保存，Core 不额外验证 BCP 47 格式。

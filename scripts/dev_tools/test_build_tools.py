@@ -769,6 +769,178 @@ repo_domains:
 
             self.assertEqual(failures.count, 0, stderr.getvalue())
 
+    def _write_code_correspondence_fixture(
+        self,
+        root: Path,
+        *,
+        register_note_module: bool = True,
+        note_doc_exists: bool = True,
+        register_orphan_test: bool = True,
+        register_feature: bool = True,
+        extra_module_entry: str = "",
+    ) -> None:
+        (root / "core/src").mkdir(parents=True)
+        (root / "core/src/lib.rs").write_text(
+            "pub mod note;\nmod storage;\n", encoding="utf-8"
+        )
+        tests_dir = root / "core/tests"
+        tests_dir.mkdir(parents=True)
+        (tests_dir / "read_write_note_validation.rs").write_text("// test\n", encoding="utf-8")
+        (tests_dir / "files_import_validation.rs").write_text("// test\n", encoding="utf-8")
+        if register_orphan_test:
+            (tests_dir / "orphan_probe_validation.rs").write_text("// test\n", encoding="utf-8")
+        feature_dir = root / "apps/macos/AreaMatrix/Features/Detail"
+        feature_dir.mkdir(parents=True)
+        docs_dir = root / "docs/api"
+        docs_dir.mkdir(parents=True)
+        if note_doc_exists:
+            (docs_dir / "core-api.md").write_text("# Core API\n", encoding="utf-8")
+        (root / "docs/ux").mkdir(parents=True)
+        (root / "docs/ux/ui-states.md").write_text("# UI\n", encoding="utf-8")
+
+        note_entry = ""
+        if register_note_module:
+            note_entry = (
+                "  - module: note\n"
+                '    owner: "@AreaSong"\n'
+                "    authority_docs:\n"
+                "      - docs/api/core-api.md\n"
+                "    test_families:\n"
+                "      - read_write_note\n"
+            )
+        orphan_family = "      - orphan_probe\n" if register_orphan_test else ""
+        feature_entry = ""
+        if register_feature:
+            feature_entry = (
+                "  - feature: Detail\n"
+                '    owner: "@AreaSong"\n'
+                "    authority_docs:\n"
+                "      - docs/ux/ui-states.md\n"
+            )
+        governance = root / "docs/governance"
+        governance.mkdir(parents=True)
+        (governance / "governance-register.yaml").write_text(
+            "schema_version: 1\n"
+            "core_modules:\n"
+            + note_entry
+            + "  - module: storage\n"
+            '    owner: "@AreaSong"\n'
+            "    authority_docs:\n"
+            "      - docs/api/core-api.md\n"
+            "    test_families:\n"
+            "      - files_import\n"
+            + orphan_family
+            + extra_module_entry
+            + "macos_features:\n"
+            + (feature_entry or "  - feature: Ghost\n    owner: \"@AreaSong\"\n    authority_docs:\n      - docs/ux/ui-states.md\n"),
+            encoding="utf-8",
+        )
+
+    def test_code_correspondence_accepts_registered_fixture(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_code_correspondence_rejects_unregistered_module(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root, register_note_module=False)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertGreaterEqual(failures.count, 1)
+            self.assertIn("core/src module is not registered in core_modules: note", stderr.getvalue())
+
+    def test_code_correspondence_rejects_missing_authority_doc(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root, note_doc_exists=False)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertIn(
+                "references a missing authority doc: docs/api/core-api.md",
+                stderr.getvalue(),
+            )
+
+    def test_code_correspondence_rejects_unclaimed_test_file(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root)
+            (root / "core/tests/rogue_capability_validation.rs").write_text("// test\n", encoding="utf-8")
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn(
+                "core/tests file has no registered capability family: rogue_capability_validation.rs",
+                stderr.getvalue(),
+            )
+
+    def test_code_correspondence_rejects_dead_test_family(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            extra = (
+                "  - module: ghost\n"
+                '    owner: "@AreaSong"\n'
+                "    coverage_note: fixture ghost module\n"
+                "    test_families:\n"
+                "      - ghost_family\n"
+            )
+            self._write_code_correspondence_fixture(root, extra_module_entry=extra)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertIn(
+                "registered test family matches no file in core/tests: ghost_family",
+                stderr.getvalue(),
+            )
+            self.assertIn(
+                "core_modules registers a module missing from core/src/lib.rs: ghost",
+                stderr.getvalue(),
+            )
+
+    def test_code_correspondence_rejects_unregistered_feature_dir(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root, register_feature=False)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertIn(
+                "macOS feature directory is not registered in macos_features: Detail",
+                stderr.getvalue(),
+            )
+            self.assertIn(
+                "macos_features registers a directory missing from Features/: Ghost",
+                stderr.getvalue(),
+            )
+
+    def test_code_correspondence_matches_repository(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(Path(__file__).resolve().parents[2], failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
     def _write_core_api_sync_fixture(
         self,
         root: Path,

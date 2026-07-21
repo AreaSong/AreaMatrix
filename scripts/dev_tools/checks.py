@@ -930,6 +930,123 @@ def _check_repo_domain_coverage(root: Path, failures: FailureCollector) -> None:
         failures.fail(f"repo domain path matches no tracked file: {pattern}")
 
 
+def _registered_families(entries: list, key: str, failures: FailureCollector, label: str) -> list[str]:
+    families: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        value = entry.get(key)
+        if isinstance(value, str) and value:
+            families.append(value)
+        elif isinstance(value, list):
+            families.extend(item for item in value if isinstance(item, str) and item)
+    duplicates = {family for family in families if families.count(family) > 1}
+    for family in sorted(duplicates):
+        failures.fail(f"{label} registers test family twice: {family}")
+    return families
+
+
+def _check_code_correspondence(root: Path, failures: FailureCollector) -> None:
+    """core/src modules and macOS Features must map to registered docs and test families."""
+
+    from .changes import ChangeYAMLError, parse_yaml_subset
+
+    register_path = root / "docs/governance/governance-register.yaml"
+    lib_path = root / "core/src/lib.rs"
+    if not register_path.is_file() or not lib_path.is_file():
+        return
+    try:
+        register = parse_yaml_subset(_read(register_path), register_path)
+    except ChangeYAMLError:
+        return
+    if not isinstance(register, dict):
+        return
+
+    modules_section = register.get("core_modules")
+    if not isinstance(modules_section, list) or not modules_section:
+        failures.fail("enterprise governance register core_modules must be non-empty")
+        return
+    features_section = register.get("macos_features")
+    if not isinstance(features_section, list) or not features_section:
+        failures.fail("enterprise governance register macos_features must be non-empty")
+        return
+    cross_section = register.get("cross_cutting_test_families")
+    if not isinstance(cross_section, list):
+        cross_section = []
+
+    lib_modules = set(re.findall(r"(?m)^(?:pub )?mod ([a-z][a-z0-9_]*);", _read(lib_path)))
+    registered_modules: set[str] = set()
+    for entry in modules_section:
+        if not isinstance(entry, dict):
+            failures.fail("core module entry must be a mapping")
+            continue
+        module = entry.get("module")
+        if not isinstance(module, str) or not module:
+            failures.fail("core module entry is missing module")
+            continue
+        if module in registered_modules:
+            failures.fail(f"core module is registered twice: {module}")
+            continue
+        registered_modules.add(module)
+        if not entry.get("owner"):
+            failures.fail(f"core module {module} is missing owner")
+        docs = entry.get("authority_docs")
+        docs = docs if isinstance(docs, list) else []
+        for doc in docs:
+            if not isinstance(doc, str) or not (root / doc).is_file():
+                failures.fail(f"core module {module} references a missing authority doc: {doc}")
+        if not docs and not entry.get("coverage_note"):
+            failures.fail(f"core module {module} needs authority_docs or a coverage_note")
+    for module in sorted(lib_modules - registered_modules):
+        failures.fail(f"core/src module is not registered in core_modules: {module}")
+    for module in sorted(registered_modules - lib_modules):
+        failures.fail(f"core_modules registers a module missing from core/src/lib.rs: {module}")
+
+    families = _registered_families(modules_section, "test_families", failures, "core_modules")
+    families += _registered_families(cross_section, "family", failures, "cross_cutting_test_families")
+    tests_dir = root / "core/tests"
+    test_stems = sorted(path.stem for path in tests_dir.glob("*.rs")) if tests_dir.is_dir() else []
+    if test_stems:
+        for family in sorted(set(families)):
+            if not any(stem.startswith(family) for stem in test_stems):
+                failures.fail(f"registered test family matches no file in core/tests: {family}")
+        for stem in test_stems:
+            if not any(stem.startswith(family) for family in families):
+                failures.fail(f"core/tests file has no registered capability family: {stem}.rs")
+
+    features_dir = root / "apps/macos/AreaMatrix/Features"
+    disk_features = (
+        {path.name for path in features_dir.iterdir() if path.is_dir()} if features_dir.is_dir() else set()
+    )
+    registered_features: set[str] = set()
+    for entry in features_section:
+        if not isinstance(entry, dict):
+            failures.fail("macos feature entry must be a mapping")
+            continue
+        feature = entry.get("feature")
+        if not isinstance(feature, str) or not feature:
+            failures.fail("macos feature entry is missing feature")
+            continue
+        if feature in registered_features:
+            failures.fail(f"macos feature is registered twice: {feature}")
+            continue
+        registered_features.add(feature)
+        if not entry.get("owner"):
+            failures.fail(f"macos feature {feature} is missing owner")
+        docs = entry.get("authority_docs")
+        if not isinstance(docs, list) or not docs:
+            failures.fail(f"macos feature {feature} must register authority_docs")
+            continue
+        for doc in docs:
+            if not isinstance(doc, str) or not (root / doc).is_file():
+                failures.fail(f"macos feature {feature} references a missing authority doc: {doc}")
+    if disk_features:
+        for feature in sorted(disk_features - registered_features):
+            failures.fail(f"macOS feature directory is not registered in macos_features: {feature}")
+        for feature in sorted(registered_features - disk_features):
+            failures.fail(f"macos_features registers a directory missing from Features/: {feature}")
+
+
 def run_governance_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     failures = FailureCollector()
@@ -967,6 +1084,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _check_feature_evolution_evidence(root, failures)
     _check_enterprise_governance_baseline(root, failures)
     _check_repo_domain_coverage(root, failures)
+    _check_code_correspondence(root, failures)
     _check_core_api_contract_sync(root, failures)
     _check_data_model_schema_sync(root, failures)
 
