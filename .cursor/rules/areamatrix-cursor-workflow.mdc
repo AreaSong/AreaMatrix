@@ -1,0 +1,38 @@
+---
+description: AreaMatrix Cursor 静默工作流——skills 自动执行、plans 生命周期、canvas 投影纪律
+alwaysApply: true
+---
+
+# AreaMatrix Cursor Workflow（静默）
+
+语义源事实：`.ai-governance/workflows/cursor-adapter-layer.md`。本规则只承载根 `AGENTS.md` 未覆盖的 Cursor 工作流语义；身份、入口顺序、Skill 路由、高风险边界、验证要求以根与局部 `AGENTS.md` 为准。
+
+## 静默 Skills
+
+`.cursor/skills/` 与 `.cursor/commands/` 是 Agent 内部剧本。触发时机到了直接执行对应 skill，禁止要求用户手打 `/closeout` 等斜杠。
+
+| 时机 | 静默执行 |
+|---|---|
+| 新对话、续做未完成工作 | `areamatrix-session-bootstrap` |
+| 功能或修复合完、宣称完成前 | `areamatrix-closeout`（不可跳过） |
+| 任务不少于 3 步、Plan 确认后、步骤完成时 | `areamatrix-plan-sync` |
+| 用户要求 push、开 PR、准备合并前 | `areamatrix-pre-push-review` |
+
+- 同会话新任务重判上表时机、重走对应 skill；「我已经读过了」不作数——上下文会压缩。
+- Cursor skills 只是操作规程；命中根 `AGENTS.md` Skill 路由表的业务语义时，仍读取 `.agents/skills/areamatrix-*` 对应 SKILL.md 并按其边界执行。
+
+## Plans 生命周期
+
+- 进行中任务只写 `.cursor/plans/`；不建 `tasks/` 之外的第二套任务目录，不写 workflow execution、progress、queue 或 checkpoint。
+- 计划全部步骤完成后删除该 plan 文件，勿只勾选不归档。
+- 需要长期追踪的工作按根 `AGENTS.md` 边界进入 `tasks/active/**` 或 `workflow/` 规划生命周期。
+
+## Canvas 投影
+
+- 工作区级 `canvases/` 面板是只读投影：residual 面板对应 `workflow/residuals/**`，能力面板对应 `docs/product/capabilities.md`；冲突时以仓库内源事实为准。
+- residual 状态或产品能力文档变化时，同轮更新对应 canvas 快照并刷新快照日期。
+
+## 模式与执行
+
+- 小改动直接执行；跨层、跨模块、涉及架构或高风险边界的任务先走 Plan Mode，确认后再执行。
+- 命中根 `AGENTS.md` 高风险边界时，先说明影响、风险、验证和回滚思路，再等待明确确认。

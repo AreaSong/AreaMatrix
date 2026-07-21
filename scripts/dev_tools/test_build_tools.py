@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
+import os
+import subprocess
 import tempfile
 import unittest
 from contextlib import redirect_stderr
@@ -17,6 +20,155 @@ from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
+    def _write_enterprise_governance_fixture(
+        self,
+        root: Path,
+        *,
+        dependency_status: str | None = None,
+        missing_raid_field: str | None = None,
+        probability: str = "high",
+        impact: str = "high",
+        severity: str = "high",
+        duplicate_raid_id: bool = False,
+        stated_baseline_hash: str | None = None,
+        include_threat_model: bool = True,
+        register_threat_model: bool = True,
+        include_security_domain: bool = True,
+    ) -> None:
+        governance = root / "docs/governance"
+        governance.mkdir(parents=True)
+        upstream = governance / "upstream/ASW-EWF-001-1.0.0.txt"
+        upstream.parent.mkdir(parents=True)
+        upstream.write_text("ASW-EWF-001\nversion: 1.0.0\n", encoding="utf-8")
+        upstream_hash = hashlib.sha256(upstream.read_bytes()).hexdigest()
+        rows = "\n".join(f"| {number} Domain | 满足 | evidence |" for number in range(1, 38))
+        (governance / "enterprise-workflow-baseline.md").write_text(
+            "# Baseline\n\n"
+            + " ".join(f"G{gate}" for gate in range(9))
+            + "\n"
+            + f"snapshot sha256 `{stated_baseline_hash or upstream_hash}`\n"
+            + rows
+            + "\n",
+            encoding="utf-8",
+        )
+        for name in ["project-charter.md", "operations-lifecycle.md"]:
+            (governance / name).write_text(f"# {name}\n", encoding="utf-8")
+        security = root / "docs/security"
+        security.mkdir(parents=True)
+        if include_threat_model:
+            (security / "threat-model.md").write_text(
+                "# Threat Model\n\n信任边界\n威胁主体\n数据分类\n控制映射\n复审触发\n",
+                encoding="utf-8",
+            )
+        document_paths = [
+            "docs/governance/enterprise-workflow-baseline.md",
+            "docs/governance/project-charter.md",
+            "docs/governance/operations-lifecycle.md",
+        ]
+        if register_threat_model:
+            document_paths.append("docs/security/threat-model.md")
+        document_entries = "\n".join(
+            f"""  - id: DOC-{index}
+    path: {path}
+    authority: governance
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-15"
+    review_cycle: quarterly
+    review_triggers:
+      - changed
+"""
+            for index, path in enumerate(document_paths, start=1)
+        )
+        domain_paths = ["docs/governance"]
+        if include_security_domain:
+            domain_paths.append("docs/security")
+        domain_entries = "\n".join(
+            f"""  - domain: {domain}
+    owner: "@AreaSong"
+    status: active
+    review_cycle: quarterly
+    review_triggers:
+      - changed
+"""
+            for domain in domain_paths
+        )
+        raid_contract = [
+            ("AM-RISK-001", "risk", "open"),
+            ("AM-DEP-001", "dependency", dependency_status or "blocked-external"),
+            ("AM-DEP-002", "dependency", dependency_status or "blocked-external"),
+            ("AM-DEP-003", "dependency", dependency_status or "deferred"),
+            ("AM-DEP-004", "dependency", dependency_status or "deferred"),
+        ]
+        if duplicate_raid_id:
+            raid_contract.append(("AM-DEP-004", "dependency", "deferred"))
+        raid_entries = "\n".join(
+            f"""  - id: {entry_id}
+    type: {entry_type}
+    status: {entry_status}
+    severity: {severity}
+    probability: {probability}
+    impact: {impact}
+    impact_scope: governance-gate
+    owner: "@AreaSong"
+    summary: governance fixture
+    mitigation: fail closed
+    due: ongoing
+    escalation: gate review
+    close_evidence: evidence
+"""
+            for entry_id, entry_type, entry_status in raid_contract
+        )
+        if missing_raid_field:
+            raid_entries = raid_entries.replace(f"    {missing_raid_field}: high\n", "", 1)
+        (governance / "governance-register.yaml").write_text(
+            """schema_version: 1
+upstream:
+  spec_id: ASW-EWF-001
+  version: 1.0.0
+  source_path: docs/governance/upstream/ASW-EWF-001-1.0.0.txt
+  sha256: """
+            + upstream_hash
+            + """
+  adoption: adapted-complete
+raci:
+  accountable: "@AreaSong"
+  independent_review:
+    missing_reviewer_behavior: blocked
+documents:
+"""
+            + document_entries
+            + "document_domains:\n"
+            + domain_entries
+            + """repo_domains:
+  - domain: docs-source-facts
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: docs check
+    review_triggers:
+      - changed
+    paths:
+      - docs/
+"""
+            + "raid:\n"
+            + raid_entries,
+            encoding="utf-8",
+        )
+        (root / ".areaflow").mkdir(parents=True)
+        (root / ".areaflow/status.json").write_text(
+            '{"compatibility":{"shim_lifecycle_state":"authoring_only_shim",'
+            '"blocked_commands":["./task-loop run","promotion apply","write execution"]}}\n',
+            encoding="utf-8",
+        )
+        execution = root / "workflow/versions/v2/execution"
+        execution.mkdir(parents=True)
+        (execution / "README.md").write_text("blocked\n", encoding="utf-8")
+        promotion = root / "workflow/versions/v2/promotion"
+        promotion.mkdir(parents=True)
+        (promotion / "promotion.yaml").write_text("live_mapping: pending\n", encoding="utf-8")
+        (promotion / "approval.yaml").write_text("approved: false\n", encoding="utf-8")
+
     def _write_macos_governance_membership_fixture(
         self,
         root: Path,
@@ -340,6 +492,592 @@ class BuildToolsTest(unittest.TestCase):
 
             self.assertEqual(failures.count, 1)
 
+    def test_enterprise_governance_baseline_accepts_complete_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 0)
+
+    def test_enterprise_governance_baseline_rejects_closed_external_dependency(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, dependency_status="closed")
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertGreaterEqual(failures.count, 4)
+
+    def test_enterprise_governance_baseline_rejects_modified_upstream_snapshot(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root)
+            snapshot = root / "docs/governance/upstream/ASW-EWF-001-1.0.0.txt"
+            snapshot.write_text("modified\n", encoding="utf-8")
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("upstream snapshot hash mismatch", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_missing_raid_field(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, missing_raid_field="impact")
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("AM-RISK-001 is missing impact", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_invalid_raid_enum(self) -> None:
+        cases = [
+            ({"probability": "likely"}, "probability must be low, medium, or high"),
+            ({"impact": "extreme"}, "impact must be low, medium, high, or critical"),
+            ({"severity": "extreme"}, "severity must be low, medium, high, or critical"),
+        ]
+        for fixture_options, expected_message in cases:
+            with self.subTest(fixture_options=fixture_options):
+                stderr = io.StringIO()
+                with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+                    root = Path(tmp)
+                    self._write_enterprise_governance_fixture(root, **fixture_options)
+                    failures = checks.FailureCollector()
+
+                    checks._check_enterprise_governance_baseline(root, failures)
+
+                    self.assertEqual(failures.count, 5)
+                    self.assertIn(expected_message, stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_duplicate_raid_id(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, duplicate_raid_id=True)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("repeats id AM-DEP-004", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_stale_stated_hash(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, stated_baseline_hash="0" * 64)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 2)
+            self.assertIn("must state the upstream snapshot SHA-256", stderr.getvalue())
+            self.assertIn("states a stale SHA-256", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_missing_threat_model(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(
+                root,
+                include_threat_model=False,
+                register_threat_model=False,
+            )
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertGreaterEqual(failures.count, 1)
+            self.assertIn("threat model is missing", stderr.getvalue())
+
+    def test_enterprise_governance_baseline_rejects_unregistered_threat_model(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, register_threat_model=False)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 2)
+            self.assertIn("threat model must be registered in documents", stderr.getvalue())
+            self.assertIn(
+                "docs page is not registered in documents: docs/security/threat-model.md",
+                stderr.getvalue(),
+            )
+
+    def test_enterprise_governance_baseline_rejects_unregistered_docs_page(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root)
+            (root / "docs/governance/orphan.md").write_text("# Orphan\n", encoding="utf-8")
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn(
+                "docs page is not registered in documents: docs/governance/orphan.md",
+                stderr.getvalue(),
+            )
+
+    def test_enterprise_governance_baseline_rejects_unregistered_docs_domain(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_enterprise_governance_fixture(root, include_security_domain=False)
+            failures = checks.FailureCollector()
+
+            checks._check_enterprise_governance_baseline(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("document domain is unregistered: docs/security", stderr.getvalue())
+
+    def _write_repo_domain_git_fixture(
+        self,
+        root: Path,
+        *,
+        register_extra_file: bool = True,
+        include_dead_pattern: bool = False,
+        duplicate_pattern: bool = False,
+        authority: str = "source-fact",
+    ) -> None:
+        docs = root / "docs"
+        docs.mkdir(parents=True)
+        (docs / "guide.md").write_text("# Guide\n", encoding="utf-8")
+        (root / "notes.txt").write_text("tracked\n", encoding="utf-8")
+        extra_paths = ""
+        if register_extra_file:
+            extra_paths += "      - notes.txt\n"
+        if include_dead_pattern:
+            extra_paths += "      - missing/\n"
+        if duplicate_pattern:
+            extra_paths += "      - docs/\n"
+        (root / "governance-register.yaml").write_text("placeholder\n", encoding="utf-8")
+        governance = root / "docs/governance"
+        governance.mkdir(parents=True)
+        (governance / "governance-register.yaml").write_text(
+            f"""schema_version: 1
+repo_domains:
+  - domain: fixture-domain
+    owner: "@AreaSong"
+    status: active
+    authority: {authority}
+    verification: fixture check
+    review_triggers:
+      - changed
+    paths:
+      - docs/
+      - governance-register.yaml
+"""
+            + extra_paths,
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "init", "--quiet", str(root)], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(root), "add", "-A"], check=True, capture_output=True)
+
+    def test_repo_domain_coverage_accepts_registered_tree(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root)
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_unowned_tracked_file(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root, register_extra_file=False)
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("missing an owner for notes.txt", stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_pattern_without_tracked_files(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root, include_dead_pattern=True)
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("matches no tracked file: missing/", stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_duplicate_pattern(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root, duplicate_pattern=True)
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("registered twice: docs/", stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_unknown_authority(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root, authority="mystery")
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("unknown authority: mystery", stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_missing_section(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            governance = root / "docs/governance"
+            governance.mkdir(parents=True)
+            (governance / "governance-register.yaml").write_text(
+                "schema_version: 1\n", encoding="utf-8"
+            )
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("repo_domains must be non-empty", stderr.getvalue())
+
+    def test_repo_domain_coverage_matches_repository(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(Path(__file__).resolve().parents[2], failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def _write_code_correspondence_fixture(
+        self,
+        root: Path,
+        *,
+        register_note_module: bool = True,
+        note_doc_exists: bool = True,
+        register_orphan_test: bool = True,
+        register_feature: bool = True,
+        extra_module_entry: str = "",
+    ) -> None:
+        (root / "core/src").mkdir(parents=True)
+        (root / "core/src/lib.rs").write_text(
+            "pub mod note;\nmod storage;\n", encoding="utf-8"
+        )
+        tests_dir = root / "core/tests"
+        tests_dir.mkdir(parents=True)
+        (tests_dir / "read_write_note_validation.rs").write_text("// test\n", encoding="utf-8")
+        (tests_dir / "files_import_validation.rs").write_text("// test\n", encoding="utf-8")
+        if register_orphan_test:
+            (tests_dir / "orphan_probe_validation.rs").write_text("// test\n", encoding="utf-8")
+        feature_dir = root / "apps/macos/AreaMatrix/Features/Detail"
+        feature_dir.mkdir(parents=True)
+        docs_dir = root / "docs/api"
+        docs_dir.mkdir(parents=True)
+        if note_doc_exists:
+            (docs_dir / "core-api.md").write_text("# Core API\n", encoding="utf-8")
+        (root / "docs/ux").mkdir(parents=True)
+        (root / "docs/ux/ui-states.md").write_text("# UI\n", encoding="utf-8")
+
+        note_entry = ""
+        if register_note_module:
+            note_entry = (
+                "  - module: note\n"
+                '    owner: "@AreaSong"\n'
+                "    authority_docs:\n"
+                "      - docs/api/core-api.md\n"
+                "    test_families:\n"
+                "      - read_write_note\n"
+            )
+        orphan_family = "      - orphan_probe\n" if register_orphan_test else ""
+        feature_entry = ""
+        if register_feature:
+            feature_entry = (
+                "  - feature: Detail\n"
+                '    owner: "@AreaSong"\n'
+                "    authority_docs:\n"
+                "      - docs/ux/ui-states.md\n"
+            )
+        governance = root / "docs/governance"
+        governance.mkdir(parents=True)
+        (governance / "governance-register.yaml").write_text(
+            "schema_version: 1\n"
+            "core_modules:\n"
+            + note_entry
+            + "  - module: storage\n"
+            '    owner: "@AreaSong"\n'
+            "    authority_docs:\n"
+            "      - docs/api/core-api.md\n"
+            "    test_families:\n"
+            "      - files_import\n"
+            + orphan_family
+            + extra_module_entry
+            + "macos_features:\n"
+            + (feature_entry or "  - feature: Ghost\n    owner: \"@AreaSong\"\n    authority_docs:\n      - docs/ux/ui-states.md\n"),
+            encoding="utf-8",
+        )
+
+    def test_code_correspondence_accepts_registered_fixture(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_code_correspondence_rejects_unregistered_module(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root, register_note_module=False)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertGreaterEqual(failures.count, 1)
+            self.assertIn("core/src module is not registered in core_modules: note", stderr.getvalue())
+
+    def test_code_correspondence_rejects_missing_authority_doc(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root, note_doc_exists=False)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertIn(
+                "references a missing authority doc: docs/api/core-api.md",
+                stderr.getvalue(),
+            )
+
+    def test_code_correspondence_rejects_unclaimed_test_file(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root)
+            (root / "core/tests/rogue_capability_validation.rs").write_text("// test\n", encoding="utf-8")
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn(
+                "core/tests file has no registered capability family: rogue_capability_validation.rs",
+                stderr.getvalue(),
+            )
+
+    def test_code_correspondence_rejects_dead_test_family(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            extra = (
+                "  - module: ghost\n"
+                '    owner: "@AreaSong"\n'
+                "    coverage_note: fixture ghost module\n"
+                "    test_families:\n"
+                "      - ghost_family\n"
+            )
+            self._write_code_correspondence_fixture(root, extra_module_entry=extra)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertIn(
+                "registered test family matches no file in core/tests: ghost_family",
+                stderr.getvalue(),
+            )
+            self.assertIn(
+                "core_modules registers a module missing from core/src/lib.rs: ghost",
+                stderr.getvalue(),
+            )
+
+    def test_code_correspondence_rejects_unregistered_feature_dir(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_code_correspondence_fixture(root, register_feature=False)
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(root, failures)
+
+            self.assertIn(
+                "macOS feature directory is not registered in macos_features: Detail",
+                stderr.getvalue(),
+            )
+            self.assertIn(
+                "macos_features registers a directory missing from Features/: Ghost",
+                stderr.getvalue(),
+            )
+
+    def test_code_correspondence_matches_repository(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            failures = checks.FailureCollector()
+
+            checks._check_code_correspondence(Path(__file__).resolve().parents[2], failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def _write_core_api_sync_fixture(
+        self,
+        root: Path,
+        *,
+        embedded_matches: bool = True,
+        include_table_entry: bool = True,
+        include_heading: bool = True,
+    ) -> None:
+        udl_text = "namespace area_matrix {\n    string get_version();\n};\n"
+        (root / "core").mkdir(parents=True)
+        (root / "core/area_matrix.udl").write_text(udl_text, encoding="utf-8")
+        embedded = udl_text if embedded_matches else udl_text.replace("string", "sequence<string>")
+        table_row = "| `get_version()` | meta | × | — |\n" if include_table_entry else ""
+        heading = "### `get_version() -> String`\n" if include_heading else ""
+        (root / "docs/api").mkdir(parents=True)
+        (root / "docs/api/core-api.md").write_text(
+            "# Core API\n\n```idl\n" + embedded + "```\n\n## 函数总览\n\n"
+            "| 函数 | 类别 | Throws | 主要错误 |\n|---|---|---|---|\n"
+            + table_row
+            + "\n"
+            + heading,
+            encoding="utf-8",
+        )
+
+    def test_core_api_contract_sync_matches_repository(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(Path(__file__).resolve().parents[2], failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_core_api_contract_sync_accepts_matching_fixture(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_core_api_sync_fixture(root)
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(root, failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_core_api_contract_sync_rejects_embedded_udl_drift(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_core_api_sync_fixture(root, embedded_matches=False)
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("embedded UDL differs", stderr.getvalue())
+
+    def test_core_api_contract_sync_rejects_missing_inventory_row(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_core_api_sync_fixture(root, include_table_entry=False)
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("overview table is missing UDL function: get_version", stderr.getvalue())
+
+    def test_core_api_contract_sync_rejects_missing_contract_section(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_core_api_sync_fixture(root, include_heading=False)
+            failures = checks.FailureCollector()
+
+            checks._check_core_api_contract_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("no contract section for UDL function: get_version", stderr.getvalue())
+
+    def _write_data_model_sync_fixture(
+        self,
+        root: Path,
+        *,
+        document_notes_table: bool = True,
+        document_ghost_table: bool = False,
+    ) -> None:
+        (root / "core/src").mkdir(parents=True)
+        (root / "core/src/schema.rs").write_text(
+            'const A: &str = "CREATE TABLE IF NOT EXISTS files (id INTEGER)";\n'
+            'const B: &str = "CREATE TABLE notes (id INTEGER)";\n',
+            encoding="utf-8",
+        )
+        rows = "| `files` | index |\n"
+        if document_notes_table:
+            rows += "| `notes` | notes |\n"
+        if document_ghost_table:
+            rows += "| `ghost` | never created |\n"
+        (root / "docs/architecture").mkdir(parents=True)
+        (root / "docs/architecture/data-model.md").write_text(
+            "# Data model\n\n| 表 | 用途 |\n|---|---|\n" + rows,
+            encoding="utf-8",
+        )
+
+    def test_data_model_schema_sync_matches_repository(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            failures = checks.FailureCollector()
+
+            checks._check_data_model_schema_sync(Path(__file__).resolve().parents[2], failures)
+
+            self.assertEqual(failures.count, 0, stderr.getvalue())
+
+    def test_data_model_schema_sync_rejects_undocumented_table(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_data_model_sync_fixture(root, document_notes_table=False)
+            failures = checks.FailureCollector()
+
+            checks._check_data_model_schema_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("missing a table created in core/src: notes", stderr.getvalue())
+
+    def test_data_model_schema_sync_rejects_phantom_doc_table(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_data_model_sync_fixture(root, document_ghost_table=True)
+            failures = checks.FailureCollector()
+
+            checks._check_data_model_schema_sync(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("documents a table never created in core/src: ghost", stderr.getvalue())
+
     def test_ai_runtime_environment_contract_matches_repository(self) -> None:
         failures = checks.FailureCollector()
 
@@ -371,10 +1109,14 @@ class BuildToolsTest(unittest.TestCase):
             (root / "README.md").write_text("[Docs](docs/README.md)\n", encoding="utf-8")
             (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
             (root / "docs/README.md").write_text(
-                "[Page](page.md)\n\n```markdown\n[Example](missing.md)\n```\n",
+                "# Docs\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n[Page](page.md)\n\n"
+                "```markdown\n[Example](missing.md)\n```\n\n## Related\n\n- [Page](page.md)\n",
                 encoding="utf-8",
             )
-            (root / "docs/page.md").write_text("# Page\n", encoding="utf-8")
+            (root / "docs/page.md").write_text(
+                "# Page\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n## Related\n\n- [Docs](README.md)\n",
+                encoding="utf-8",
+            )
 
             self.assertEqual(checks.run_docs_check(root), 0)
 
@@ -384,8 +1126,15 @@ class BuildToolsTest(unittest.TestCase):
             (root / "docs").mkdir()
             (root / "README.md").write_text("[Docs](docs/README.md)\n", encoding="utf-8")
             (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
-            (root / "docs/README.md").write_text("[Missing](missing.md)\n", encoding="utf-8")
-            (root / "docs/orphan.md").write_text("# Orphan\n", encoding="utf-8")
+            (root / "docs/README.md").write_text(
+                "# Docs\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n[Missing](missing.md)\n\n"
+                "## Related\n\n- [Missing](missing.md)\n",
+                encoding="utf-8",
+            )
+            (root / "docs/orphan.md").write_text(
+                "# Orphan\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n## Related\n\n- [Docs](README.md)\n",
+                encoding="utf-8",
+            )
 
             self.assertEqual(checks.run_docs_check(root), 1)
 
@@ -395,9 +1144,59 @@ class BuildToolsTest(unittest.TestCase):
             (root / "docs").mkdir()
             (root / "README.md").write_text("[Docs](docs/README.md)\n`.codex/runtime/`\n", encoding="utf-8")
             (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
-            (root / "docs/README.md").write_text("# Docs\n", encoding="utf-8")
+            (root / "docs/README.md").write_text(
+                "# Docs\n\n> Summary.\n>\n> 阅读时长：约 1 分钟。\n\n## Related\n\n- [Root](../README.md)\n",
+                encoding="utf-8",
+            )
 
             self.assertEqual(checks.run_docs_check(root), 1)
+
+    def test_docs_check_rejects_missing_summary_related_and_fence_language(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / "README.md").write_text("[Docs](docs/README.md)\n", encoding="utf-8")
+            (root / "README.zh-CN.md").write_text("[文档](docs/README.md)\n", encoding="utf-8")
+            (root / "docs/README.md").write_text("# Docs\n\n```\nexample\n```\n", encoding="utf-8")
+
+            self.assertEqual(checks.run_docs_check(root), 1)
+
+    def test_diff_check_rejects_whitespace_in_committed_range(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(io.StringIO()):
+            root = Path(tmp)
+            self._initialize_git_repository(root)
+            base = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=root, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            (root / "fixture.txt").write_text("bad trailing space \n", encoding="utf-8")
+            subprocess.run(["git", "add", "fixture.txt"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "bad whitespace"], cwd=root, check=True, capture_output=True)
+
+            with patch.dict(os.environ, {"AREAMATRIX_DIFF_BASE": base}, clear=False):
+                self.assertNotEqual(checks.run_diff_check(root), 0)
+
+    def test_diff_check_accepts_clean_committed_range(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._initialize_git_repository(root)
+            base = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=root, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            (root / "fixture.txt").write_text("clean\n", encoding="utf-8")
+            subprocess.run(["git", "add", "fixture.txt"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "clean change"], cwd=root, check=True, capture_output=True)
+
+            with patch.dict(os.environ, {"AREAMATRIX_DIFF_BASE": base}, clear=False):
+                self.assertEqual(checks.run_diff_check(root), 0)
+
+    @staticmethod
+    def _initialize_git_repository(root: Path) -> None:
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.name", "AreaMatrix Tests"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.email", "tests@example.invalid"], cwd=root, check=True)
+        (root / "fixture.txt").write_text("baseline\n", encoding="utf-8")
+        subprocess.run(["git", "add", "fixture.txt"], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-m", "baseline"], cwd=root, check=True, capture_output=True)
 
     def test_macos_prerequisites_reports_all_missing_tools(self) -> None:
         completed = type(
@@ -546,6 +1345,97 @@ class BuildToolsTest(unittest.TestCase):
 
             self.assertEqual(checks.run_quality_check(root), 1)
 
+    def _write_skills_fixture(self, root: Path, *, name: str = "areamatrix-example") -> Path:
+        skill_dir = root / ".codex/skills-src" / name
+        (skill_dir / "references").mkdir(parents=True)
+        (skill_dir / "agents").mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            "\n".join(
+                [
+                    "---",
+                    f"name: {name}",
+                    'description: "Use when the task involves the example area."',
+                    "---",
+                    "",
+                    "# Example",
+                    "",
+                    "See [reference](references/guide.md).",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        (skill_dir / "references/guide.md").write_text("# Guide\n", encoding="utf-8")
+        (skill_dir / "agents/openai.yaml").write_text(
+            "\n".join(
+                [
+                    "interface:",
+                    '  display_name: "Example"',
+                    '  short_description: "Example skill"',
+                    f'  default_prompt: "Use ${name} to test."',
+                    "policy:",
+                    "  allow_implicit_invocation: true",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        discovery = root / ".agents/skills"
+        discovery.mkdir(parents=True)
+        os.symlink(f"../../.codex/skills-src/{name}", discovery / name)
+        (root / "AGENTS.md").write_text(f"## Skill 路由\n\n| example | `{name}` |\n", encoding="utf-8")
+        return skill_dir
+
+    def test_skills_check_passes_minimal_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_skills_fixture(root)
+            self.assertEqual(checks.run_skills_check(root), 0)
+
+    def test_skills_check_rejects_broken_markdown_link(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = self._write_skills_fixture(root)
+            skill_md = skill_dir / "SKILL.md"
+            skill_md.write_text(
+                skill_md.read_text(encoding="utf-8").replace(
+                    "references/guide.md", "references/missing.md"
+                ),
+                encoding="utf-8",
+            )
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(checks.run_skills_check(root), 1)
+
+    def test_skills_check_rejects_broken_reference_link(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = self._write_skills_fixture(root)
+            (skill_dir / "references/guide.md").write_text(
+                "# Guide\n\n[gone](../../missing-runbook.md)\n", encoding="utf-8"
+            )
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(checks.run_skills_check(root), 1)
+
+    def test_skills_check_rejects_oversized_skill_md(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill_dir = self._write_skills_fixture(root)
+            skill_md = skill_dir / "SKILL.md"
+            padding = "\n".join(f"- filler line {index}" for index in range(checks.SKILL_MD_MAX_LINES + 1))
+            skill_md.write_text(
+                skill_md.read_text(encoding="utf-8") + padding + "\n", encoding="utf-8"
+            )
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(checks.run_skills_check(root), 1)
+
+    def test_skills_check_rejects_missing_routing_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_skills_fixture(root)
+            (root / "AGENTS.md").write_text("## Skill 路由\n\n| 无 | 无 |\n", encoding="utf-8")
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(checks.run_skills_check(root), 1)
+
     def test_wording_audit_blocks_long_term_track_terms(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -574,6 +1464,28 @@ class BuildToolsTest(unittest.TestCase):
             self.assertTrue(any(hit.term == "RELEASE GATE" for hit in hits))
             self.assertTrue(any(hit.term == "SPRINT" for hit in hits))
             self.assertTrue(any(hit.term == "后续任务" for hit in hits))
+
+    def test_wording_audit_allows_only_registered_upstream_snapshot_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            registered = root / "docs/governance/upstream/ASW-EWF-001-1.0.0.txt"
+            sibling = root / "docs/governance/upstream/other.txt"
+            ordinary = root / "docs/README.md"
+            registered.parent.mkdir(parents=True)
+            registered.write_text("生命周期与阶段门禁\n", encoding="utf-8")
+            sibling.write_text("生命周期与阶段门禁\n", encoding="utf-8")
+            ordinary.write_text("生命周期与阶段门禁\n", encoding="utf-8")
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 3)
+            categories = {hit.rel_path: hit.category for hit in hits}
+            self.assertEqual(
+                categories["docs/governance/upstream/ASW-EWF-001-1.0.0.txt"],
+                "allowed-upstream-snapshot",
+            )
+            self.assertEqual(categories["docs/governance/upstream/other.txt"], "blocked")
+            self.assertEqual(categories["docs/README.md"], "blocked")
 
     def test_wording_audit_blocks_fixture_source_track_ids(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

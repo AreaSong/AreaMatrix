@@ -15,6 +15,8 @@ use api_contract_source::API_RS;
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DB_SYNC_RS: &str = include_str!("../src/db/sync.rs");
 const SYNC_RS: &str = include_str!("../src/sync/mod.rs");
+const SYNC_PLANS_RS: &str = include_str!("../src/sync/plans.rs");
+const SYNC_SNAPSHOTS_RS: &str = include_str!("../src/sync/snapshots.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -189,7 +191,7 @@ fn assert_core_api_and_udl_contract() {
     for fragment in [
         "### `sync_external_changes(repoPath, events) throws -> SyncResult`",
         "去抖 + InFlight 过滤后传入",
-        "print(\"created: \\(result.detectedCreates), renamed: \\(result.detectedRenames)",
+        "created: \\(result.detectedCreates), renamed: \\(result.detectedRenames),",
         "sync_external_changes`（批量事件）",
     ] {
         assert_contains(CORE_API, fragment);
@@ -200,33 +202,41 @@ fn assert_core_consumers() {}
 
 fn assert_rust_entry_points_are_real_renamed_wiring() {
     for fragment in [
-        "external renamed sync owns the `ExternalEventKind::Renamed` contract",
-        "`files.path` and",
-        "`files.current_name` update",
-        "`updated_at` refresh",
-        "`change_log.action =",
-        "renamed`",
+        "Core owns rename pairing for the `ExternalEventKind::Renamed` contract",
+        "Core reads a stable target hash",
+        "requires exactly one active metadata row with that hash whose recorded old",
+        "path no longer exists. A target path already represented by any active",
+        "fails closed with `CoreError::Conflict { path }`",
+        "A successful rename updates `files.path`, `files.current_name`, category",
+        "size/hash, and `updated_at`, writes `change_log.action = renamed` with",
         "old/new path detail",
         "`SyncResult::detected_renames`",
-        "only confirms the new path exists",
         "must not",
-        "rename, move, delete, overwrite, copy, or download",
-        "removed + created",
+        "rename, move, delete, overwrite, copy, or",
+        "download a user file",
+        "Callers replay the same event after a recoverable",
     ] {
         assert_contains(API_RS, fragment);
     }
 
-    for fragment in [
-        "ExternalEventKind::Renamed =>",
-        "plan_renamed_event",
-        "map_renamed_target_metadata_error",
-        "find_external_rename_candidates_by_hash",
-        "external_rename_detail",
-        "CoreError::Conflict { path }",
-        "CoreError::FileNotFound { path }",
-    ] {
+    for fragment in ["ExternalEventKind::Renamed =>", "plan_renamed_event"] {
         assert_contains(SYNC_RS, fragment);
     }
+
+    for fragment in [
+        "plan_renamed_event",
+        "find_external_rename_candidates_by_hash",
+        "external_rename_detail",
+        "CoreError::conflict(resolved.relative_path)",
+        "CoreError::conflict(candidate.path.clone())",
+    ] {
+        assert_contains(SYNC_PLANS_RS, fragment);
+    }
+    assert_contains(SYNC_SNAPSHOTS_RS, "map_renamed_target_metadata_error");
+    assert_contains(
+        SYNC_SNAPSHOTS_RS,
+        "CoreError::file_not_found(relative_path)",
+    );
 
     for fragment in [
         "apply_external_sync_batch",
@@ -235,7 +245,6 @@ fn assert_rust_entry_points_are_real_renamed_wiring() {
         "current_name = ?3",
         "updated_at = strftime('%s', 'now')",
         "'renamed'",
-        "set_cursor(&tx, last_event_id)",
         "tx.commit()",
     ] {
         assert_contains(DB_SYNC_RS, fragment);
@@ -314,10 +323,10 @@ fn sync_external_renamed_integration_verify_boundaries_stay_transactional() {
             modified("docs/renamed.txt", 723),
         ],
     )
-    .expect("sync only renamed capability while preserving out-of-scope cursor");
+    .expect("sync coalesced rename and modified signals");
 
     assert_eq!(partial_scope.detected_renames, 1);
     assert_eq!(partial_scope.detected_modifies, 0);
     assert_eq!(partial_scope.detected_deletes, 0);
-    assert_eq!(fs_cursor(repo.path()), Some(720));
+    assert_eq!(fs_cursor(repo.path()), Some(723));
 }

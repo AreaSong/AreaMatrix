@@ -33,6 +33,7 @@ fn error_mapping_contract_api_exposes_structured_core_error_variants() {
         CoreError::io("io error"),
         CoreError::db("database error"),
         CoreError::config("configuration error"),
+        CoreError::validation("validation error"),
         CoreError::classify("classification error"),
         CoreError::conflict("path conflict"),
         CoreError::DuplicateFile {
@@ -47,7 +48,7 @@ fn error_mapping_contract_api_exposes_structured_core_error_variants() {
         CoreError::permission_denied("permission denied"),
         CoreError::internal("internal error"),
     ];
-    assert_eq!(documented_variants.len(), 14);
+    assert_eq!(documented_variants.len(), 15);
 }
 
 #[test]
@@ -80,6 +81,7 @@ fn error_mapping_contract_api_docs_control_map_and_udl_stay_aligned() {
         "Io(string message);",
         "Db(string message);",
         "Config(string reason);",
+        "Validation(string reason);",
         "Classify(string reason);",
         "Conflict(string path);",
         "DuplicateFile(string existing_path);",
@@ -102,6 +104,7 @@ fn error_mapping_contract_api_documents_severity_actions_and_side_effects() {
         "| `Io { message }` |",
         "| `Db { message }` |",
         "| `Config { reason }` |",
+        "| `Validation { reason }` |",
         "| `Classify { reason }` |",
         "| `Conflict { path }` |",
         "| `DuplicateFile { existing_path }` |",
@@ -117,8 +120,9 @@ fn error_mapping_contract_api_documents_severity_actions_and_side_effects() {
         "| medium | banner 可手动关闭 |",
         "| high | modal alert |",
         "| critical | blocking modal |",
-        "Swift 侧 AppError 映射",
-        "public func toAppError() -> AppError",
+        "Swift 侧映射",
+        "CoreErrorMappingSnapshot",
+        "AppSemanticError",
         "不要硬来",
         "用技术术语吓退用户",
         "把 `error.localizedDescription` 直接显示",
@@ -298,4 +302,14 @@ fn error_mapping_contract_api_exposes_side_effect_free_mapping_function() {
     assert_eq!(mapping.user_message, "无访问权限");
     assert_eq!(mapping.raw_context, "/restricted/repo");
     assert_contains(&mapping.suggested_action, "系统设置");
+}
+
+#[test]
+fn error_mapping_contract_api_keeps_icloud_download_user_initiated() {
+    let mapping = CoreError::icloud_placeholder("iCloud/report.pdf").to_error_mapping();
+
+    assert_contains(&mapping.suggested_action, "Download & retry");
+    assert!(!mapping.suggested_action.contains("自动"));
+    assert_contains(ERROR_CODES, "只有用户点击 `Download & retry`");
+    assert_contains(ERROR_CODES, "Core\n  和 watcher 都不触发下载");
 }

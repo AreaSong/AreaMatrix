@@ -3,20 +3,22 @@ import XCTest
 
 final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     @MainActor
-    func testDetailLogSyncExternalCreatedCoreWatcherLifecycleIsIdempotent() throws {
+    func testDetailLogSyncExternalCreatedCoreWatcherLifecycleIsIdempotent() async throws {
         let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalCreatedWatcherTests")
         defer { removeTestTemporaryItems(repoURL) }
-        let watcher = MainExternalCreatedFileWatcher()
+        let watcher = await MainExternalCreatedFileWatcher(
+            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 10)
+        )
 
-        watcher.start(repoPath: "  \n")
-        watcher.start(repoPath: repoURL.path)
-        watcher.start(repoPath: repoURL.path)
-        watcher.stop()
-        watcher.stop()
+        await watcher.start(repoPath: "  \n")
+        await watcher.start(repoPath: repoURL.path)
+        await watcher.start(repoPath: repoURL.path)
+        await watcher.stop()
+        await watcher.stop()
     }
 
     @MainActor
-    func testDetailLogSyncExternalCreatedCoreProductionRelayCreatesCurrentMainWindowEvent() throws {
+    func testDetailLogSyncExternalCreatedCoreProductionRelayCreatesCurrentMainWindowEvent() {
         let fixture = makeShellMainListFixture(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
             model: makeShellOnboardingModel()
@@ -32,12 +34,12 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         model.consumePendingExternalCreatedFileSignals()
 
         XCTAssertEqual(
-            model.externalCreatedEvent(for: opening),
-            MainExternalCreatedFileEvent(relativePath: "docs/external-created.pdf", fsEventID: 7100)
+            model.externalCreatedEvents(for: opening),
+            [MainExternalCreatedFileEvent(relativePath: "docs/external-created.pdf", fsEventID: 7100)]
         )
-        let handledEvent = try XCTUnwrap(model.externalCreatedEvent(for: opening))
-        model.finishExternalCreatedFileEvent(handledEvent)
-        XCTAssertNil(model.externalCreatedEvent(for: opening))
+        let handledEvents = model.externalCreatedEvents(for: opening)
+        model.finishExternalCreatedFileEvents(handledEvents)
+        XCTAssertEqual(model.externalCreatedEvents(for: opening), [])
     }
 
     @MainActor
@@ -57,7 +59,27 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         )
         model.consumePendingExternalCreatedFileSignals()
 
-        XCTAssertNil(model.externalCreatedEvent(for: opening))
+        XCTAssertEqual(model.externalCreatedEvents(for: opening), [])
+    }
+
+    func testDetailLogSyncExternalCreatedCoreWatcherMapsModifiedAndMissingRenameSignals() {
+        let modified = MainExternalCreatedFileWatcher.signal(
+            repoPath: "/tmp/repo",
+            absolutePath: "/tmp/repo/docs/edited.pdf",
+            flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemModified),
+            eventID: 7107,
+            pathExists: true
+        )
+        let removedRename = MainExternalCreatedFileWatcher.signal(
+            repoPath: "/tmp/repo",
+            absolutePath: "/tmp/repo/docs/old.pdf",
+            flags: FSEventStreamEventFlags(kFSEventStreamEventFlagItemRenamed),
+            eventID: 7108,
+            pathExists: false
+        )
+
+        XCTAssertEqual(modified?.kind, .modified)
+        XCTAssertEqual(removedRename?.kind, .removed)
     }
 
     func testDetailLogSyncExternalCreatedCoreWatcherBuildsCreatedSignalForUserFileOnly() {
@@ -94,7 +116,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testDetailLogSyncExternalCreatedCoreConsumesRealExternalCreatedEventThenRefreshesListDetailAndLog(
+    func testDetailLogSyncExternalCreatedCoreRefreshesListWithoutReplacingExistingSelection(
     ) async throws {
         let existing = FileEntrySnapshot.detailMetaFixture(id: 22, currentName: "selected.pdf")
         let created = FileEntrySnapshot.detailMetaFixture(
@@ -110,7 +132,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         let model = MainFileListModel(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [existing]),
             fileLister: fileLister,
-            fileDetailer: DetailMetaImmediateDetailer(result: .success(created)),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(existing)),
             changeLogLister: lister,
             externalChangesSyncer: syncer,
             errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
@@ -124,16 +146,11 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             filter: .currentCategory(nil)
         )])
-        XCTAssertEqual(model.selection, .single(created.id))
-        XCTAssertEqual(model.selectedFileDetail, created)
-        XCTAssertEqual(
-            model.detailExternalCreateSyncState,
-            .synced(event: event, fileID: created.id, .detailCreatedFixture())
-        )
-        await lister.assertChangeLogListRequests([
-            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: created.id))
-        ])
-        XCTAssertEqual(model.detailLogState, .loaded(fileID: created.id, entries: [entry]))
+        XCTAssertEqual(model.selection, .single(existing.id))
+        XCTAssertEqual(model.selectedFileDetail, existing)
+        XCTAssertEqual(model.detailExternalCreateSyncState, .idle)
+        await lister.assertChangeLogListRequests([])
+        XCTAssertEqual(model.detailLogState, .notLoaded)
     }
 
     @MainActor
@@ -161,7 +178,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         await model.selectFiles([existing.id])
         await model.syncExternalCreated(event)
 
-        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
+        XCTAssertEqual(model.detailExternalCreateSyncState, .idle)
         await mapper.assertMappedCoreErrors([CoreError.ICloudPlaceholder(path: event.relativePath)])
         await lister.assertChangeLogListRequests([])
         XCTAssertEqual(model.detailLogState, .notLoaded)
@@ -188,7 +205,7 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         let rawContext = "created event 7003 returned sync errors: \(syncResult.errors.joined(separator: "; "))"
         let mapping = CoreErrorMappingSnapshot.internalFailure(rawContext: rawContext)
 
-        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
+        XCTAssertEqual(model.detailExternalCreateSyncState, .idle)
         await mapper.assertMappedCoreErrors([])
         await lister.assertChangeLogListRequests([])
         XCTAssertTrue(mapping.rawContext.contains("created event 7003 returned sync errors"))
@@ -235,6 +252,75 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         XCTAssertEqual(detail.path, "docs/external-created.pdf")
         XCTAssertEqual(changes.map(\.action), ["external_modified"])
         XCTAssertEqual(cursor, 8001)
+    }
+
+    @MainActor
+    func testExternalSyncFailureBannerProvidesRetryRepairAndDiagnostics() async throws {
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: "docs/retry.pdf", fsEventID: 400))
+        let mapping = CoreErrorMappingSnapshot.testFixture(kind: .db, userMessage: "Sync failed")
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
+            fileLister: RecordingFileLister(files: []),
+            fileDetailer: RecordingFileDetailer(results: []),
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .failure(CoreError.Db(
+                message: "sync failed"
+            ))),
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
+        )
+        let didSync = await model.syncExternalChanges([event])
+        XCTAssertFalse(didSync)
+        var repairCount = 0
+        let actions = MainListErrorRecoveryActions(
+            retryFallback: {},
+            collectFallbackDiagnostics: {},
+            openRepair: { repairCount += 1 }
+        )
+        let view = MainExternalSyncErrorBanner(error: mapping, fileListModel: model, recoveryActions: actions)
+
+        assertTestMirrorDescription(
+            of: view.body,
+            contains: [
+                "External changes are paused",
+                "external-sync-error-banner",
+                "external-sync-global-retry",
+                "external-sync-open-repair",
+                "external-sync-collect-diagnostics"
+            ]
+        )
+        actions.openRepair()
+        XCTAssertEqual(repairCount, 1)
+        model.retryExternalSync()
+        XCTAssertEqual(model.externalSyncAttemptRevision, 1)
+    }
+
+    @MainActor
+    func testICloudDownloadRequestsExplicitPathThenRetriesWithoutAdvancingCursor() async throws {
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(relativePath: "docs/cloud.pdf", fsEventID: 410))
+        let mapping = CoreErrorMappingSnapshot.testFixture(
+            kind: .iCloudPlaceholder,
+            userMessage: "Download from iCloud",
+            rawContext: event.relativePath
+        )
+        let syncer = RecordingExternalChangesSyncer(
+            result: .failure(CoreError.ICloudPlaceholder(path: event.relativePath))
+        )
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
+            fileLister: RecordingFileLister(files: []),
+            fileDetailer: RecordingFileDetailer(results: []),
+            externalChangesSyncer: syncer,
+            errorMapper: StaticCoreErrorMapper(mapping: mapping)
+        )
+        let didSync = await model.syncExternalChanges([event])
+        XCTAssertFalse(didSync)
+        var requestedPaths: [String] = []
+
+        await model.downloadExternalSyncPlaceholder { requestedPaths.append($0) }
+
+        XCTAssertEqual(requestedPaths, [event.relativePath])
+        XCTAssertEqual(model.externalSyncAttemptRevision, 1)
+        XCTAssertTrue(model.hasRetryableExternalSyncFailure)
+        await syncer.assertCursorWrites([])
     }
 }
 

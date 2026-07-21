@@ -312,6 +312,7 @@ fn insert_apply_call_log(
             model: None,
             status: status.to_owned(),
             sent_fields_json: "[]".to_owned(),
+            privacy_rules_checked: false,
             privacy_rule_id: provenance.privacy_rule_id.clone(),
             result_summary: apply_result_summary(report, provenance),
             error_code: (report.failed_count > 0).then(|| "ApplyPartialFailure".to_owned()),

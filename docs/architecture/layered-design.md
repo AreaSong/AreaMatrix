@@ -1,308 +1,124 @@
 # 分层设计
 
-> AreaMatrix 采用四层架构：UI / 平台 / FFI / Core。每层职责单一、向上提供契约、向下不作假设。本文给出每层的边界、允许做什么、禁止做什么。
+> 定义 AreaMatrix 的 Rust Core、UniFFI、Swift 平台层和 SwiftUI 层之间允许与禁止的依赖。
 >
-> 阅读时长：约 6 分钟。
+> 阅读时长：约 7 分钟。
 
 ---
 
-## 分层全景
+## 依赖方向
 
 ```mermaid
 flowchart TB
-    subgraph L4 [UI 层 - SwiftUI]
-        Views[Views]
-        Stores[Stores @Observable]
-    end
-    subgraph L3 [平台层 - Swift / AppKit]
-        Bridge[CoreBridge]
-        FSWatcher[FSWatcher]
-        ICloud[ICloudCoordinator]
-        DragDrop[DragDrop Adapter]
-        Logging[OSLog wrapper]
-    end
-    subgraph L2 [FFI 桥接层 - UniFFI]
-        UDL[area_matrix.udl]
-        SwiftBindings[Swift bindings]
-        RustScaffolding[Rust scaffolding]
-    end
-    subgraph L1 [Core 层 - Rust]
-        APIRust[api/*]
-        Domain[domain]
-        Storage[storage]
-        Classify[classify]
-        Overview[overview]
-        Tree[tree]
-        Sync[sync]
-        DB[db]
-        Config[config]
-    end
+    ui["L4 SwiftUI / Features / Views"]
+    platform["L3 CoreBridge / PlatformServices"]
+    ffi["L2 UDL / generated bindings"]
+    core["L1 Rust Core"]
 
-    L4 --> L3
-    L3 --> L2
-    L2 --> L1
+    ui --> platform
+    platform --> ffi
+    ffi --> core
 ```
 
-依赖只能从上往下流。L1 不知道 L2 存在，L2 不知道 L3 存在，L3 不知道 L4 存在。
+依赖只向下。Core 不知道 Swift/UniFFI 调用方；UI 不直接读 SQLite 或调用生成绑定。
 
----
+## L1 Rust Core
 
-## L1 - Core 层
+职责：
 
-### 角色定位
+- `api/**`：与 UDL 同名的薄门面。
+- `domain/**`：DTO、enum 和业务状态。
+- `storage/**`：文件动作与补偿。
+- `db/**`：SQLite schema、transaction 和查询。
+- `repo_scan/**`、`repair.rs`、`recovery.rs`：扫描和恢复。
+- `sync/**`：外部事件规划和幂等提交。
+- classify/search/tags/AI/overview/tree 等业务模块。
 
-**纯业务逻辑**，与平台、UI 完全无关。任何平台特定的 API（`NSURL`、`UIView`、`fseventsd`）都不出现在 Core 中。
+允许标准文件 IO、SQLite、hash、序列化和平台中立业务逻辑。禁止 AppKit、SwiftUI、FSEvents、
+NSFileCoordinator、Finder、security-scoped bookmark 和 UI 决策。
 
-### 内部子模块
+配置按领域保存在 `repo_config`、`.areamatrix/*.yaml` 或对应 DB 表，不使用文档中另行假设的全局
+`config.json` 合同。
 
-| 模块 | 职责 |
-|---|---|
-| `api` | FFI 边界。所有暴露给 Swift 的函数按 surface 拆分在这里 |
-| `domain` | 跨边界类型（FileEntry / Category / StorageMode / FileOrigin / ChangeAction） |
-| `error` | 统一错误类型 `CoreError` 和 `CoreResult<T>` |
-| `config` | 加载 / 持久化 `~/Library/Application Support/AreaMatrix/config.json` |
-| `classify` | 规则引擎，输出 `(category, suggested_name)` |
-| `storage` | 事务式导入、move/copy/index、SHA256、冲突重命名、接管扫描 |
-| `overview` | 资料库概览生成；默认写入 `.areamatrix/generated/`，可选根目录 `AREAMATRIX.md` |
-| `tree` | 资料库目录扫描，按系统分类 / 用户文件夹生成 tree JSON |
-| `sync` | 处理外部变化事件（外部重命名 / 删除 / 新增） |
-| `db` | SQLite CRUD + migrations + schema 初始化 |
+## L2 UniFFI
 
-### 允许
+组成：
 
-- 文件 IO（std::fs）
-- SQLite 访问（rusqlite）
-- 哈希计算、序列化、日志（tracing）
-- 通过 `chrono` 处理时间
+- `core/area_matrix.udl`
+- `core/build.rs`
+- `apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift`
+- `apps/macos/AreaMatrix/Bridge/UniFFI/area_matrixFFI.h`
+- `apps/macos/AreaMatrix/Bridge/Generated/` 的本地构建产物
 
-### 禁止
-
-- 引用任何 macOS / iOS / Windows 特定 API
-- 引用 UniFFI 之外的 FFI 工具
-- 假设调用线程的属性（不要假设在主线程；不要 spawn UI 相关任务）
-- 弹窗 / 用户交互（必须返回错误让上层决定）
-- 网络 IO 默认不进通用 Core 路径；AI / provider 网络能力只能在专用模块内显式隔离
-
-### 测试策略
-
-- 单元测试覆盖 ≥ 80%
-- 集成测试通过临时目录模拟资料库
-- 不依赖 macOS 特定的 mock，可在 Linux CI 上运行
-
----
-
-## L2 - FFI 桥接层
-
-### 角色定位
-
-**类型转换**和**跨语言调用机制**。完全由 UniFFI 自动生成，无人工代码（除 `area_matrix.udl`）。
-
-### 文件清单
-
-- `core/area_matrix.udl`：手写的接口定义
-- `core/build.rs`：scaffolding 生成
-- `apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift`：Xcode 工程当前消费的 tracked Swift binding
-- `apps/macos/AreaMatrix/Bridge/UniFFI/area_matrixFFI.h`：Xcode 工程当前消费的 tracked C header
-- `apps/macos/AreaMatrix/Bridge/Generated/`：`.gitignore` 忽略的本地生成产物目录，用于检查
-  `./dev build core` 输出的 universal staticlib 与最新 bindings
-
-### 允许
-
-- UDL 中定义跨边界类型（dictionary / enum / interface / sequence / record）
-- 用 `[Throws=CoreError]` 标记 fallible 函数
-- 用 `[Async]` 标记已稳定的异步函数
-
-### 禁止
-
-- 在 UDL 中描述与平台耦合的类型
-- 修改自动生成文件（每次重新生成会丢失）
-- 在 UDL 中暴露大于 16 个参数的函数（应封装成 dict）
-
-### 重新生成
+UDL 只描述跨语言类型、函数和 `CoreError`。产品语义先写 Core API。生成 Swift/C 文件不得手工修改。
 
 ```bash
 ./dev build core
+./dev bindings verify
 ```
 
-详见 [ffi-design.md](ffi-design.md) 与 [core-internal-architecture.md](core-internal-architecture.md)。
+## L3 Swift 平台层
 
----
+真实落点：
 
-## L3 - 平台层（Swift）
-
-### 角色定位
-
-**适配 Core 与 UI 之间的差异**，处理所有平台特定逻辑。
-
-### 子模块
-
-| 模块 | 职责 |
+| 路径 | 职责 |
 |---|---|
-| `Bridge/CoreBridge.swift` | 包装 UniFFI 调用，提供 Swift 友好 API（async/throws、Combine publisher） |
-| `Watcher/FSWatcher.swift` | FSEventStream 封装 |
-| `Watcher/Debouncer.swift` | 200ms 事件去抖 |
-| `Watcher/InFlightTracker.swift` | 应用自身写操作的过滤 |
-| `Watcher/ICloudCoordinator.swift` | NSFileCoordinator 占位符下载 |
-| `Adapters/DragDropAdapter.swift` | NSItemProvider → URL[] |
-| `Logging/AppLogger.swift` | OSLog 封装 |
+| `Bridge/CoreBridge*.swift` | UniFFI 包装、snapshot 与 error mapping |
+| `PlatformServices/MainExternalCreatedFileWatcher.swift` | FSEventStream、200ms flush、watermark |
+| `PlatformServices/InFlightFileChangeTracker.swift` | 标准化 key、引用计数、TTL 和 count=0 grace |
+| `PlatformServices/**ICloud**` | 用户触发下载、placeholder 与平台协调 |
+| `PlatformServices/RepositoryWriteCoordinator.swift` | per-repo 写访问串行化，覆盖 import、外部同步窗口、repair 等写路径 |
+| `PlatformServices/**` | Finder、Trash availability probe/危险确认/UI、路径、bookmark、diagnostics 和系统能力 |
 
-### 允许
+FSEventStream 回调投递 main dispatch queue。watcher 在 MainActor 上合并平台事件；耗时 Core 调用由 bridge/
+model 放到异步任务，UI 更新回到 main actor。
 
-- 调用任何 Apple 框架（AppKit / CoreServices / Combine / OSLog）
-- 调用 Core（通过 CoreBridge）
-- 提供 async / throws / Publisher 风格的 Swift API 给 UI 层
-- 持有自己的内部状态（如 InFlightTracker 的 path set）
+平台层禁止：
 
-### 禁止
+- 绕过 `CoreBridge` 直接调用生成 UniFFI 函数。
+- 把文件 IO 放进 SwiftUI `body`。
+- 在没有 Core/API 合同的情况下修改 DB。
+- 隐式下载 iCloud placeholder 或覆盖用户文件。
+- 在 Swift 中执行确认后的 Trash mutation、写 delete metadata/change log 或自行拼装 Undo；这些操作及
+  失败回滚由 Core 统一负责。
 
-- 直接渲染 SwiftUI 视图（视图属于 UI 层）
-- 持有 UI 状态（用户选中、窗口大小这些不属于平台层）
-- 绕过 CoreBridge 直接调 UniFFI 生成函数（保持单一封装入口）
+当前没有 Swift OSLog wrapper；diagnostics 边界见 [observability.md](../development/observability.md)。
 
-### 线程模型
+## L4 SwiftUI 与 Features
 
-- FSEventStream 回调 → 通过 `DispatchQueue.global` 处理 → 调 Core → 主线程通知 UI
-- 所有 Core 调用通过 `Task.detached` 异步执行，不阻塞主线程
+`App/**` 负责装配，`Features/**` 负责 feature state/action，`Views/**` 负责组合和渲染。页面通过 model/store
+调用 bridge 或 platform protocol，不直接操作 SQLite 和用户文件。
 
-详见 [fs-watcher.md](fs-watcher.md)。
+规则：
 
----
+- 主线程只做 UI 状态和轻量组合。
+- IO/DB/hash/reindex 不在 `body` 中执行。
+- 所有失败映射为稳定 UI 状态、错误文案和恢复动作。
+- View 超过合理复杂度时拆成 feature support/model/subview，而不是把业务逻辑留在视图闭包。
 
-## L4 - UI 层（SwiftUI）
+## 数据所有权
 
-### 角色定位
-
-**视图与状态**。响应用户交互，展示数据。
-
-macOS 前端目录落位、feature 收拢、PlatformServices 边界和渐进迁移策略，详见
-[macos-frontend-architecture.md](macos-frontend-architecture.md)。本文继续定义跨层原则；
-具体 macOS SwiftUI 文件落点以后者为准。
-
-### 子模块
-
-| 模块 | 职责 |
+| 数据 | Owner |
 |---|---|
-| `App/AreaMatrixApp.swift` | App 入口、主菜单、命令 |
-| `App/AppDelegate.swift` | NSApplicationDelegate（必要的 AppKit 桥接） |
-| `Models/RepoStore.swift` | 资料库 UI 状态（@Observable） |
-| `Models/SettingsStore.swift` | 设置 UI 状态 |
-| `Views/MainWindow.swift` | 主窗口三栏 |
-| `Views/Sidebar/TreeSidebar.swift` | 侧边栏树状图 |
-| `Views/List/FileTable.swift` | 文件列表 |
-| `Views/Detail/DetailPane.swift` | 详情面板（三 Tab） |
-| `Views/Import/ImportSheet.swift` | 导入 Sheet |
-| `Views/Settings/SettingsView.swift` | 设置窗口 |
-| `Views/Onboarding/FirstLaunchView.swift` | 首次启动向导 |
+| 用户文件内容/路径 | 文件系统，Core/平台层按合同读写 |
+| SQLite metadata | Rust Core |
+| FSEvents cursor | Core DB + Swift watermark 协作 |
+| iCloud 下载动作 | Swift 平台层，用户触发 |
+| Trash availability probe、危险确认和 UI | Swift 平台层 |
+| 实际 Trash mutation、delete metadata/change log、Undo 与失败回滚 | Rust Core |
+| UI selection/navigation | Swift feature model |
+| generated overview | Rust Core，默认 `.areamatrix/generated/` |
 
-### 允许
+## 跨层变更门禁
 
-- 调用 L3 平台层（通过 CoreBridge / FSWatcher 封装的 Swift API）
-- 用 SwiftUI 视图、状态、动画、过渡
-- 用系统提供的对话框（NSSavePanel 等）
-
-### 禁止
-
-- 直接调用 UniFFI 生成代码（必须经过 CoreBridge）
-- 直接做文件 IO（必须经过 Core）
-- 持有大量业务状态（业务状态属于 Core / DB；UI store 只缓存当前展示需要的部分）
-- 阻塞主线程（任何 IO 必须 async）
-
-### 状态管理原则
-
-- `RepoStore` 用 `@Observable`（macOS 14+ 的新机制，比 `ObservableObject` 性能更好）
-- UI 通过 store 间接读取 Core 数据；不要在视图中直接 await CoreBridge
-- 写操作走 store 暴露的 method（保证有日志、错误处理、UI 状态过渡）
-
----
-
-## 跨层数据流约定
-
-### 读操作（UI → Core）
-
-```mermaid
-sequenceDiagram
-    participant View
-    participant Store
-    participant Bridge
-    participant Core
-
-    View->>Store: 读 repoData
-    Store->>Bridge: list_files(filter)
-    Bridge->>Core: list_files(filter)
-    Core-->>Bridge: Vec<FileEntry>
-    Bridge-->>Store: [FileEntry]
-    Store-->>View: 触发视图更新
-```
-
-### 写操作（UI → Core）
-
-```mermaid
-sequenceDiagram
-    participant View
-    participant Store
-    participant Bridge
-    participant Tracker
-    participant Core
-    participant FSWatcher
-
-    View->>Store: importFiles(urls, mode)
-    Store->>Bridge: importFiles(...)
-    Bridge->>Tracker: mark(paths)
-    Bridge->>Core: import_file(...)
-    Core-->>Bridge: FileEntry
-    Bridge-->>Store: 成功
-    Store->>Store: 更新内存视图
-    Note over FSWatcher: 收到 FSEvent，被 InFlightTracker 过滤
-    Tracker-->>FSWatcher: 自家事件，跳过
-```
-
-### 推操作（Core 通过 sync 自动通知 UI）
-
-```mermaid
-sequenceDiagram
-    participant FSWatcher
-    participant Bridge
-    participant Core
-    participant Store
-    participant View
-
-    FSWatcher->>Bridge: notify(events)
-    Bridge->>Core: sync_external_changes(events)
-    Core-->>Bridge: SyncResult
-    Bridge->>Store: post(.repoChanged, payload)
-    Store->>View: 触发视图更新
-```
-
----
-
-## 跨层错误传播
-
-```mermaid
-flowchart LR
-    Core["CoreError (Rust enum)"] -->|UniFFI| FFI["Swift CoreError (enum)"]
-    FFI -->|throws| Bridge[Bridge wrapper]
-    Bridge -->|throws AppError| Store
-    Store -->|userMessage| View
-```
-
-每层都有自己的错误抽象，向上层暴露语义化的错误。Core 层的 `CoreError::Conflict` 在 UI 层会变成 `AppError.duplicateFile(message)` 并触发用户提示。
-
----
-
-## 何时打破分层
-
-**永远不**。
-
-如果发现某个需求似乎需要打破分层（例如 UI 想直接读 SQLite），先思考是不是 Core 层缺一个 API。绝大多数情况下都是这样。
-
-如果一定要打破，必须：
-1. 在 PR 描述中明确说明
-2. 在受影响的代码处加注释 `// LAYERING-VIOLATION: <原因>`
-3. 创建对应 issue 跟踪如何回归正常分层
+公开合同变化按 `Core API -> UDL -> Rust -> Swift bridge -> UI/tests` 顺序。文件系统、DB、staging、reindex、
+FSEvents/iCloud 或破坏性 UDL 变化必须记录影响、风险、验证和回滚。
 
 ## Related
 
 - [overview.md](overview.md)
-- [tech-stack.md](tech-stack.md)
 - [ffi-design.md](ffi-design.md)
+- [core-internal-architecture.md](core-internal-architecture.md)
+- [macos-frontend-architecture.md](macos-frontend-architecture.md)
 - [fs-watcher.md](fs-watcher.md)
+- [../development/coding-standards.md](../development/coding-standards.md)

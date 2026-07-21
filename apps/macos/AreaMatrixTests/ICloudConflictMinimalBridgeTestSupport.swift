@@ -84,20 +84,10 @@ actor ICloudConflictMinimalRecordingMainCore: CoreFileListing,
         return [.iCloudConflictMinimalConflictResolved(fileID: filter.fileID)]
     }
 
-    func syncExternalCreated(repoPath _: String, relativePath _: String,
-                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        outOfScopeActions.append(.syncExternalChanges)
-        return .iCloudConflictMinimalEmptySyncResult()
-    }
-
-    func syncExternalRenamed(repoPath _: String, relativePath _: String,
-                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
-        outOfScopeActions.append(.syncExternalChanges)
-        return .iCloudConflictMinimalEmptySyncResult()
-    }
-
-    func syncExternalRemoved(repoPath _: String, relativePath _: String,
-                             fsEventID _: Int64) async throws -> SyncResultSnapshot {
+    func syncExternalChanges(
+        repoPath _: String,
+        events _: [MainExternalCreatedFileEvent]
+    ) async throws -> SyncResultSnapshot {
         outOfScopeActions.append(.syncExternalChanges)
         return .iCloudConflictMinimalEmptySyncResult()
     }

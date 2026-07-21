@@ -301,7 +301,11 @@ fn assert_task_docs_and_testing_alignment() {
 fn assert_task_and_capability_docs() {}
 
 fn assert_page_control_map_and_testing_docs() {
-    for fragment in ["Rust 单元测试", "集成测试目录", "`core/tests/`"] {
+    for fragment in [
+        "## Rust Core",
+        "Core 测试位于：",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+    ] {
         assert_contains(TESTING_DOC, fragment);
     }
 }

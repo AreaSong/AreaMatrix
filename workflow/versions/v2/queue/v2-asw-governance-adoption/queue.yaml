@@ -1,0 +1,19 @@
+version: v2
+feature: v2-asw-governance-adoption
+status: ready
+kind: queue-candidate
+promotion_gate: explicit-only
+live_queue_blocked: true
+tasks:
+  - id: v2-asw-governance-adoption/authoring
+    depends_on: []
+    draft_copy: workflow/versions/v2/drafts/v2-asw-governance-adoption/authoring.copy.md
+    draft_verify: workflow/versions/v2/drafts/v2-asw-governance-adoption/authoring.verify.md
+    validation:
+      - ./dev workflow discuss --version v2 doctor
+      - ./dev workflow doctor
+      - ./dev workflow check-template
+      - ./dev check governance
+      - ./dev check docs
+      - ./dev check task-loop
+      - ./dev check diff

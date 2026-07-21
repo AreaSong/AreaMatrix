@@ -60,7 +60,10 @@ struct ChoosePathStepView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .center, spacing: 14) {
+        AreaMatrixStepHeader(
+            title: "选择资料库位置",
+            subtitle: "资料库是一个普通文件夹，你可以随时在 Finder 中访问它。\n接管已有目录不会移动、重命名或删除你的任何原文件。"
+        ) {
             ZStack {
                 Image(systemName: "folder.badge.gearshape")
                     .font(.system(size: 58, weight: .bold))
@@ -72,17 +75,6 @@ struct ChoosePathStepView: View {
                     .font(.system(size: 48, weight: .light))
                     .foregroundStyle(.blue)
             }
-            .padding(.bottom, 8)
-
-            Text("选择资料库位置")
-                .font(.system(size: 32, weight: .semibold, design: .default))
-                .accessibilityAddTraits(.isHeader)
-
-            Text("资料库是一个普通文件夹，你可以随时在 Finder 中访问它。\n接管已有目录不会移动、重命名或删除你的任何原文件。")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
         }
         .opacity(isInputFocused ? 0.4 : 1.0)
         .animation(.easeInOut(duration: 0.3), value: isInputFocused)
@@ -96,8 +88,7 @@ struct ChoosePathStepView: View {
                     .focused($isInputFocused)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                    .areaMatrixGlassCard(cornerRadius: 10)
                     .accessibilityLabel("Repository path")
                     .disabled(isValidating)
 

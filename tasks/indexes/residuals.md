@@ -25,6 +25,15 @@
 | `v1-rl-006` | `blocked-decision` | Alpha feedback issue template 和 route evidence 已存在，且 `closes_residual: false`；可信测试者名单、tester invitation side effect、正式公告 / Discussion 链接、反馈分流和 triage owner 仍需要 release decision。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
 | `v1-ref-003-1-task-05` | `deferred` | release-gate review record 已结构化，当前 `closes_residual: false`；走 fresh release evidence review，不补造 task-loop verify evidence。 | [v1 release residuals](../../workflow/versions/v1-mvp/residuals/release-evidence.md) |
 | `v1-ex-001` | `accepted-exception` | 已接受 checkpoint gaps，不补造历史。 | [accepted exceptions](../../workflow/versions/v1-mvp/residuals/accepted-exceptions.md) |
+| `v2-risk-001` | `open` | 独立复核风险仍存在；`executable_task: false`，不能创建 lightweight task 或由同一维护者自证关闭。 | [v2 residuals](../../workflow/versions/v2/residuals/) |
+| `v2-dep-003` | `deferred` | v2 execution authorization 未成立；`executable_task: false`，不授权 promotion apply 或 runner。 | [v2 residuals](../../workflow/versions/v2/residuals/) |
+| `v2-dep-004` | `deferred` | remote CI / branch protection 证据未成立；`executable_task: false`，本地检查不能替代。 | [v2 residuals](../../workflow/versions/v2/residuals/) |
+| `global-product-soft-delete-retention` | `deferred` | ADR 承诺的软删除 30 天保留清理未实现；`executable_task: true`，可经 planning gate 转任务。 | [ADR-0003](../../docs/adr/0003-source-of-truth-strategy.md) |
+| `global-product-ui-localization` | `deferred` | ADR-0008 的 UI 本地化管线未实现；`executable_task: true`，可经 planning gate 转任务。 | [ADR-0008](../../docs/adr/0008-naming-and-i18n.md) |
+| `global-docs-core-module-doc-coverage` | `deferred` | 45 个 core 模块无模块级文档，映射已登记在治理注册表 `core_modules`；`executable_task: true`，可经 planning gate 转任务。 | [governance register](../../docs/governance/governance-register.yaml) |
+| `global-governance-ios-bindings-verify-gap` | `deferred` | 被跟踪的 iOS FFI 生成物缺少 bindings verify 等价兜底；`executable_task: true`，可经 planning gate 转任务。 | [governance register](../../docs/governance/governance-register.yaml) |
+| `global-ai-classification-call-log-gate` | `deferred` | AI 分类建议远程路线缺少合同要求的前置调用日志 gate；高风险隐私边界，`executable_task: true`，待确认后修代码。 | [Core API](../../docs/api/core-api.md) |
+| `global-ai-semantic-search-remote-route` | `deferred` | 远程语义搜索路线未接通；`executable_task: true`，可经 planning gate 转任务。 | [Core API](../../docs/api/core-api.md) |
 | `global-product-restore-file-contract` | `closed` | 公开 `restore_file` 合同已移除；受支持的恢复继续使用 Undo/Redo，不是 active task。 | [Core API](../../docs/api/core-api.md) |
 | `global-product-metadata-reader-write-flags` | `closed` | Metadata reader 已收紧为只读打开，不创建 sidecar，也不修改 `index.db` 或 WAL，不是 active task。 | [metadata reader](../../apps/macos/AreaMatrix/Bridge/CoreBridgeUnavailableState.swift) |
 | `global-ref-areaflow` | `reference-only` | 历史愿景，不是 AreaMatrix 当前任务。 | [non-current references](../../workflow/residuals/non-current-references.md) |

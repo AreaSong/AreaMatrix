@@ -455,7 +455,11 @@ fn assert_rust_surface_fragments() {
         assert_contains(BATCH_DELETE_PLAN_RS, fragment);
     }
     assert_contains(BATCH_DELETE_INSPECT_RS, "content_sha256");
-    for fragment in ["集成测试目录", "`core/tests/`", "删除（软 / 硬）+ 废纸篓"] {
+    for fragment in [
+        "Core 测试位于：",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+        "文件安全能力至少覆盖正常路径、DB 失败、文件系统失败、重复执行、边界路径和用户文件不变量。",
+    ] {
         assert_contains(TESTING_DOC, fragment);
     }
 }

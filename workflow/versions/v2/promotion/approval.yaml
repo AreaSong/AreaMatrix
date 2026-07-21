@@ -1,0 +1,16 @@
+version: v2
+status: blocked
+kind: promotion-approval
+approved: false
+gate_message: "promotion blocked: explicit execution authorization and live mapping are required"
+mode: approval-only
+target_kind: approval-only
+writes_live_queue: false
+template_reference: false
+apply_allowed: false
+tasks:
+  - semantic_id: v2-asw-governance-adoption/authoring
+    live_label: pending
+    task_file: pending
+    copy_ready: pending
+    verify_ready: pending

@@ -78,7 +78,20 @@ Swift 调用 Rust Core 的手写入口是 `Bridge/`。
 - `CoreError` 应尽量在 Bridge 或 model 边界映射成 App/UI 语义错误；View 不应承担错误分类。
 - `Bridge/Generated/` 和 `Bridge/UniFFI/` 保持纯生成绑定。
 
-受控例外必须明确：例如 SQLite metadata reader 应记录原因、风险和退出条件。名称和职责为只读的 reader 必须使用 `SQLITE_OPEN_READONLY`，不得以 fallback 创建、迁移或修改 `.areamatrix/index.db`；需要写入或修复时必须进入独立的用户确认路径。
+受控例外必须明确。名称和职责为只读的 reader 必须使用 `SQLITE_OPEN_READONLY`，不得以 fallback
+创建、迁移或修改 `.areamatrix/index.db`；需要写入或修复时必须进入独立的用户确认路径。
+
+### SQLite 只读 reader 例外
+
+当前登记两个 Bridge 层 SQLite 只读 reader：
+
+| Reader | 用途 | 打开策略 | 失败与退出条件 |
+|---|---|---|---|
+| `SQLiteExistingRepositoryMetadataReader` | Core 正常打开前读取 schema version、repo path、last opened time | 有 WAL/SHM sidecar 时以 `SQLITE_OPEN_READONLY` 打开 live DB；无 sidecar 时使用 `immutable=1` URI | DB 缺失、损坏、schema 为空或高于支持上限时失败，不创建、迁移或修复；当 Core 提供等价的不可用态只读合同后移除例外 |
+| `SQLiteAISummaryMetadataReader` | 读取已保存 AI summary 展示数据 | `SQLITE_OPEN_READONLY`，查询表存在性后读取单行 | 表缺失返回无数据；未知 route/context 或 DB 错误显式失败；当 Core summary read API 覆盖该展示合同后移除例外 |
+
+两个 reader 都不能回退到 writable connection。live WAL 只读打开可能参与 SQLite 共享内存锁协调，
+但 reader 不创建 metadata schema，不修改 `index.db` 或 `index.db-wal`，也不承担 repair/migration。
 
 ## 默认 Core 服务装配
 
@@ -101,9 +114,9 @@ inventory。保留项必须落入下列专项之一，并在收口时补充对�
 |---|---|---|---|---|
 | App shell 仓库生命周期 | `App/AppShellModel.swift` | 初始化、真实导入、startup recovery、外部变化同步会触碰用户文件、`.areamatrix/` 或 DB / FS 一致性 | 读校验、写初始化、导入、恢复、外部同步的默认能力分开装配；写路径仍能清楚暴露风险边界 | `AreaMatrixShellTests`、`AreaMatrixShellValidatePathTests`、`InitializingStepIntegrationTests`、相关 file-safety 测试 |
 | Import 执行与预检 | `Features/Import/ImportEntrySheetView.swift`、`ImportBatchCopyImportModel.swift` | copy / move / index、duplicate / name conflict、iCloud placeholder 与导入 session 可能影响源文件、最终目录和 DB | 只读预览能力可集中；写入导入、冲突批处理、duplicate 预检必须由导入专项验证覆盖后再收口 | Import page / integration tests、duplicate / iCloud / storage-mode tests、file-safety acceptance evidence |
-| DB repair 与 recovery | `Features/Onboarding/DatabaseRepairConfirmModel.swift`、`DatabaseRepairConfirmView.swift` | metadata repair、startup recovery 和 diagnostics 关系到 DB、`.areamatrix/` 与恢复语义 | repair、recovery、diagnostics 的默认能力分别声明；收口不改变确认、重试、诊断隐私门槛 | `DatabaseRepairConfirmPageFeatureTests`、startup recovery tests、DB / recovery file-safety evidence |
+| DB repair 与 recovery | `Features/Onboarding/DatabaseRepairConfirmView.swift` | metadata repair、startup recovery 和 diagnostics 关系到 DB、`.areamatrix/` 与恢复语义 | repair、recovery、diagnostics 的默认能力分别声明；收口不改变确认、重试、诊断隐私门槛 | `DatabaseRepairConfirmPageFeatureTests`、startup recovery tests、DB / recovery file-safety evidence |
 | AI 隐私与远程 provider | `Features/AI/AIPrivacyRulesModel.swift`、`RemoteProviderConfigModel.swift`、`RemoteProviderConfigState.swift` | 隐私规则写入、provider 启停、credential lifecycle 和远程能力涉及用户数据离开本机的边界 | 只读状态读取可集中；隐私规则写入、provider 修改、credential 操作保持单独边界和同意路径 | `AIPrivacyRulesPageIntegrationVerifyTests`、`RemoteProviderConfigFeatureTests`、credential lifecycle tests |
-| Sync / iCloud conflict | `Features/SyncConflicts/ICloudConflictMinimalValidation.swift`、`SyncConflictReviewModel.swift` | conflict detect / preview / resolve / apply 可能影响外部变化回流、iCloud 副本和用户文件选择 | list / read-only 状态可集中；preview、resolve、apply 继续分离，并保留 replace / confirmation 防线 | SyncConflict / ICloudConflict page tests、replace confirmation tests、file-action integration tests |
+| Sync / iCloud conflict | `Features/SyncConflicts/SyncConflictReviewModel.swift` | conflict detect / preview / resolve / apply 可能影响外部变化回流、iCloud 副本和用户文件选择 | list / read-only 状态可集中；preview、resolve、apply 继续分离，并保留 replace / confirmation 防线 | SyncConflict / ICloudConflict page tests、replace confirmation tests、file-action integration tests |
 
 ## Platform Services 边界
 
@@ -150,28 +163,23 @@ classification、tags、summary 的 local / remote runtime 由外部集成提供
 remote provider probe 已退出 runtime 环境合同。Core 新增或重命名 runtime key 时，
 `./dev check governance` 必须失败，不能让跨 Rust / Swift 的环境变量合同静默漂移。
 
-## 渐进迁移顺序
+## 架构演进规则
 
-1. 规则先固定：`apps/macos/AGENTS.md`、本文和治理测试保持一致。
-2. 已起步 feature 持续样板化：MainList、FileActions、Search、CommandPalette、
-   SyncConflicts、AI、Import。
-3. 下一批优先治理高风险或高膨胀 owner：Settings、Onboarding。
-4. 触达平台副作用时收敛到 `PlatformServices/` 或保留明确退出条件。
-5. 当多个 feature 跑通同一种 state / action / routing / validation 模式后，再抽共享支撑。
+- Feature owner、职责、风险边界和验证重点由 `MacOSFeatureOwnershipGovernanceTests` 维护。
+- 受控迁移区的文件、owner 和退出条件由 `MacOSMigrationZoneGovernanceTests` 维护。
+- 触达平台副作用时收敛到 `PlatformServices/`，或在治理测试中保留明确的风险归属与退出条件。
+- 共享 state、action、routing 或 validation 支撑至少应有两个真实调用方，不按迁移排期预先抽象。
 
 ## 文件规模治理
 
 - 手写 Swift 文件达到 450 行后进入 `SwiftFileSizeGovernanceTests` 精确清单，必须记录 owner、继续保留的理由和下一次增长前的拆分触发条件。
-- 清单记录当前行数上界；已进入清单的文件不能继续增长，优先按完整职责族拆分，而不是拆散同一语义。
+- `SwiftFileSizeGovernanceTests` 是近阈值文件、行数上界和拆分触发条件的可执行 inventory；长期文档不重复具体文件名或行数。
+- 已进入清单的文件不能超过登记上界，优先按完整职责族拆分，而不是拆散同一语义。
 - 500 行是手写 Swift 文件硬上限。`Bridge/Generated/` 与 `Bridge/UniFFI/` 的 UniFFI 生成绑定不适用手写文件阈值，但由生成产物与 bindings drift 门禁单独约束。
-- 当前 450 行近阈值清单只登记 459 行的 `MacOSArchitectureBoundaryGovernanceTests.swift`，并冻结其继续增长；
-  `RepoConfigSnapshot` fixture family 与 Local File URL platform adapter family 已分别按完整职责迁出，
-  架构治理测试的共享扫描能力也已提取到 `MacOSGovernanceFileSystemTestSupport.swift`。下一次扩展
-  architecture governance 扫描前，必须继续提取独立扫描族或 shared assertion helper。
 
 ## 不做
 
-- 不一次性移动 200+ Swift 文件。
+- 不以目录整理为由进行缺少独立计划、风险说明和验证的大规模文件搬迁。
 - 不为了目录漂亮改 UI 行为。
 - 不把所有状态塞进单个巨大 store。
 - 不在本治理中修改 Core API / UDL，除非发现明确漂移并单独评审。
@@ -189,7 +197,7 @@ xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destinat
 
 只改文档时可不跑 macOS build，但需要说明未运行原因。涉及 docs / skills / governance / prompts 时按对应治理门禁补充检查。
 
-## 相关文档
+## Related
 
 - [layered-design.md](layered-design.md)
 - [ffi-design.md](ffi-design.md)

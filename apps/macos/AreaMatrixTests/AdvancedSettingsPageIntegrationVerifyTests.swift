@@ -216,7 +216,7 @@ private func makeAdvancedSettingsIntegrationContext() async throws -> AdvancedSe
     let diagnosticsSnapshot = DiagnosticsSnapshotSnapshot.testFixture(
         snapshotPath: advancedSettingsDiagnosticsPath(repoURL: repoURL),
         createdAt: 1_778_000_000,
-        warnings: ["paths redacted"]
+        warnings: ["index.db-wal disappeared during snapshot"]
     )
     let diagnosticsCollector = ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot))
     let logsOpener = RecordingAdvancedSettingsLogsOpener(logsPath: advancedSettingsLogsPath(repoURL: repoURL))
@@ -295,7 +295,7 @@ private func advancedSettingsDiagnosticsPath(repoURL: URL) -> String {
     repoURL
         .appendingPathComponent(".areamatrix", isDirectory: true)
         .appendingPathComponent("diagnostics", isDirectory: true)
-        .appendingPathComponent("advanced-settings-diagnostics.zip")
+        .appendingPathComponent("advanced-settings-diagnostics.db")
         .path
 }
 
@@ -303,7 +303,7 @@ private func advancedSettingsDiagnosticsPath(repoURL: URL) -> String {
 private func loadedAdvancedSettingsModel(
     diagnosticsCollector: any CoreDiagnosticsCollecting = ShellRecordingDiagnosticsCollector(result: .success(
         DiagnosticsSnapshotSnapshot.testFixture(
-            snapshotPath: "/tmp/repo/.areamatrix/diagnostics/advanced-settings-diagnostics.zip",
+            snapshotPath: "/tmp/repo/.areamatrix/diagnostics/advanced-settings-diagnostics.db",
             createdAt: 1_778_000_000
         )
     )),

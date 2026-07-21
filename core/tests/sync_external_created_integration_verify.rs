@@ -14,7 +14,10 @@ mod api_contract_source;
 use api_contract_source::API_RS;
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DB_SYNC_RS: &str = include_str!("../src/db/sync.rs");
+const SYNC_EVENTS_RS: &str = include_str!("../src/sync/events.rs");
+const SYNC_PLANS_RS: &str = include_str!("../src/sync/plans.rs");
 const SYNC_RS: &str = include_str!("../src/sync/mod.rs");
+const SYNC_SNAPSHOTS_RS: &str = include_str!("../src/sync/snapshots.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -132,8 +135,10 @@ fn assert_core_api_and_udl_contract() {
         "去抖 + InFlight 过滤后传入",
         "### `get_fs_event_cursor(repoPath) throws -> Int64?`",
         "### `set_fs_event_cursor(repoPath, lastEventId) throws`",
-        "每批 sync 完成后保存 cursor",
+        "最后单独持久化最大 `fs_event_id`",
         "`sync_external_changes`（批量事件）",
+        "`external_sync_receipts`",
+        "收据保证幂等",
     ] {
         assert_contains(CORE_API, fragment);
     }
@@ -149,7 +154,7 @@ fn assert_rust_entry_points_are_real_created_wiring() {
         "`change_log.action =",
         "external_modified`",
         "`kind = create`",
-        "Cursor persistence is part of the batch success contract",
+        "persists the maximum event cursor last",
     ] {
         assert_contains(API_RS, fragment);
     }
@@ -157,23 +162,29 @@ fn assert_rust_entry_points_are_real_created_wiring() {
     for fragment in [
         "ExternalEventKind::Created =>",
         "plan_created_event",
-        "should_skip_relative_path",
-        "has_icloud_placeholder_marker",
-        "external_create_detail",
-        "cursor_for_batch",
-        "sha256_file",
+        "db::set_fs_event_cursor",
     ] {
         assert_contains(SYNC_RS, fragment);
     }
+    for fragment in [
+        "should_skip_relative_path",
+        "has_icloud_placeholder_marker",
+        "normalize_and_coalesce_events",
+    ] {
+        assert_contains(SYNC_EVENTS_RS, fragment);
+    }
+    for fragment in ["external_create_detail", "stable_file_snapshot"] {
+        assert_contains(SYNC_PLANS_RS, fragment);
+    }
+    assert_contains(SYNC_SNAPSHOTS_RS, "fn stable_file_snapshot");
 
     for fragment in [
         "apply_external_sync_batch",
-        "INSERT OR IGNORE INTO files",
+        "INSERT INTO files",
         "'external'",
         "storage_mode_to_db(&crate::StorageMode::Indexed)",
         "INSERT INTO change_log",
         "'external_modified'",
-        "set_cursor(&tx, last_event_id)",
         "tx.commit()",
     ] {
         assert_contains(DB_SYNC_RS, fragment);
@@ -232,7 +243,7 @@ fn sync_external_created_integration_verify_real_flow_reaches_list_tree_detail_l
 }
 
 #[test]
-fn sync_external_created_integration_verify_scope_boundaries_do_not_claim_adjacent_sync() {
+fn sync_external_created_integration_verify_coalesces_adjacent_modified_signal() {
     let repo = initialized_repo();
     write_repo_file(repo.path(), "docs/created.txt", b"created");
 
@@ -243,13 +254,13 @@ fn sync_external_created_integration_verify_scope_boundaries_do_not_claim_adjace
             modified("docs/created.txt", 321),
         ],
     )
-    .expect("sync only the bound created capability");
+    .expect("sync coalesced created and modified signals");
 
     assert_eq!(result.detected_creates, 1);
     assert_eq!(result.detected_modifies, 0);
     assert_eq!(result.detected_renames, 0);
     assert_eq!(result.detected_deletes, 0);
-    assert_eq!(fs_cursor(repo.path()), None);
+    assert_eq!(fs_cursor(repo.path()), Some(321));
 }
 
 #[test]
@@ -284,7 +295,7 @@ fn sync_external_created_integration_verify_skip_and_failure_boundaries_are_tran
             created("docs/missing.txt", 333),
         ],
     );
-    assert!(matches!(failed, Err(CoreError::Io { .. })));
+    assert_eq!(failed, Err(CoreError::file_not_found("docs/missing.txt")));
 
     assert_eq!(fs_cursor(repo.path()), Some(331));
     assert!(list_files(path_string(repo.path()), default_file_filter())

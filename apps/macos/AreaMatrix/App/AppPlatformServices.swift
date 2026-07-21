@@ -74,7 +74,7 @@ enum AppPlatformServices {
     }
 
     static var helpOpener: any WelcomeHelpOpening {
-        LocalWelcomeHelpOpener()
+        WelcomeHelpOpener()
     }
 
     static var directoryPicker: any RepositoryDirectoryPicking {
@@ -83,6 +83,10 @@ enum AppPlatformServices {
 
     static var importPicker: any RepositoryImportPicking {
         NSOpenPanelRepositoryImportPicker()
+    }
+
+    static var missingFilePicker: any RepositoryMissingFilePicking {
+        NSOpenPanelRepositoryMissingFilePicker()
     }
 
     static var windowCloser: any WindowClosing {

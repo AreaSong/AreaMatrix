@@ -1,0 +1,26 @@
+version: v2
+status: blocked
+kind: promotion-preview
+mode: preview
+target_kind: preview-only
+writes_live_queue: false
+template_reference: false
+apply_allowed: false
+target_queue: workflow/versions/v2/execution
+live_mapping: pending
+local_phase: phase-0
+local_batch: 0-1
+local_start_task: 1
+blocked: true
+gate_message: "promotion blocked: explicit execution authorization and live mapping are required"
+tasks:
+  - semantic_id: v2-asw-governance-adoption/authoring
+    live_label: pending
+    feature: v2-asw-governance-adoption
+    task_key: authoring
+    title: Implement and verify the approved ASW governance authoring baseline.
+    task_file: pending
+    manifest: pending
+    copy_ready: pending
+    verify_ready: pending
+    depends_on: []

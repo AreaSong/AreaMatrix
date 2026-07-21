@@ -183,11 +183,11 @@ fn smart_lists_validation_locks_core_api_udl_and_rust_alignment() {
     }
 
     for fragment in [
-        "测试金字塔",
-        "`core/storage`",
-        "集成测试目录",
-        "`core/tests/`，每个文件独立编译",
-        "关键测试场景",
+        "## 原则",
+        "Core line coverage",
+        "Core 测试位于：",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+        "文件安全测试矩阵",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

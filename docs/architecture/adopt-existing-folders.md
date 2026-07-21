@@ -71,7 +71,8 @@
 
 自动分类时：
 
-- 命中 `docs` / `finance` / `code` 等系统分类，但目录不存在，则 ImportSheet 预告“将创建 `<slug>/`”。
+- 命中 `docs` / `finance` / `code` 等系统分类，但目录不存在，则由 Core 在导入落位时创建
+  `<slug>/`；当前 Import sheet 只展示“建议分类”，不单独预告目录创建。
 - 分类置信度低或未命中时，默认进入 `inbox/`；若 `inbox/` 不存在，则创建。
 - 用户可在 ImportSheet 改成任意已有目录或系统分类。
 
@@ -123,7 +124,8 @@ AREAMATRIX.md
 
 ```yaml
 version: 1
-patterns:
+ignore:
+  - ".DS_Store"
   - ".areamatrix/"
   - ".git/"
   - ".hg/"
@@ -136,10 +138,11 @@ patterns:
   - "dist/"
   - ".next/"
   - ".cache/"
-  - ".DS_Store"
   - "*.tmp"
   - "*.swp"
 ```
+
+matcher 兼容 `ignore:` 与 `patterns:` 两种顶层 key；`init_repo` 生成的默认文件使用 `ignore:`。
 
 文件位置：
 
@@ -166,15 +169,16 @@ stateDiagram-v2
     [*] --> idle
     idle --> running: start_adopt
     running --> completed: scan_done
-    running --> paused: user_cancel
     running --> failed: error
-    running --> interrupted: app_crash
-    interrupted --> running: resume
-    interrupted --> idle: restart
-    failed --> running: retry
-    paused --> running: resume
+    failed --> running: resume_scan_session
+    paused --> running: resume_scan_session
+    interrupted --> running: resume_scan_session
     completed --> [*]
 ```
+
+当前 runtime 会创建 `running`，并由 scan runner 写入 `completed` 或 `failed`。schema 允许
+`paused/interrupted`，`resume_scan_session` 也能恢复这些既有 row，但当前没有 pause/cancel/restart API，
+启动时也不会自动把旧 `running` 标记为 `interrupted`。
 
 DB 建议表：
 
@@ -202,10 +206,10 @@ CREATE TABLE IF NOT EXISTS scan_sessions (
 
 恢复规则：
 
-- 每批处理后更新 `last_path`、写入计数和 Needs Review 计数，批大小建议 100-500。
-- 启动时发现 `running` 且进程不是当前实例，标记为 `interrupted`。
-- 默认向用户提供 `Resume`，也允许 `Restart scan`。
-- 扫描是幂等的：同一路径重复处理时按 `path + hash` upsert，不重复插入。
+- runner 逐文件更新 `last_path`、计数和错误状态。
+- `resume_scan_session` 从已有 `last_path` 后继续；completed row 返回空报告，running row返回 Conflict。
+- 当前没有进程身份检查或 Restart scan API。
+- 扫描按现有 path/hash metadata upsert，重复运行不得移动或覆盖用户文件。
 
 ---
 
@@ -222,7 +226,7 @@ CREATE TABLE IF NOT EXISTS scan_sessions (
 `change_log`：
 
 - 接管已有文件写 `adopted`。
-- 外部新增文件写 `imported`，detail 中 `by = "external"`。
+- 外部新增文件写 `external_modified`，detail 中 `kind = "create"`。
 - 用户拖入文件写 `imported`，detail 中 `by = "user"`。
 
 ---

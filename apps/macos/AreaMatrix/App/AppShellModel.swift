@@ -24,7 +24,7 @@ final class OnboardingModel: ObservableObject {
     @Published var mainRepoDiagnostics: MainRepoDiagnosticsState = .idle
     var mainRepoDiagnosticsGeneration = 0
     @Published var mainRepoLastOpenedAt: Int64?
-    @Published var pendingExternalCreatedFileEvent: MainPendingExternalCreatedFileEvent?
+    @Published var pendingExternalSyncWindows: [MainExternalSyncWindow] = []
     @Published var pendingTagSuggestionFocus: TagSuggestionPresentationRequest?
     @Published var isRetryingMainRepository = false
     var openingCancellationToken: UUID?
@@ -76,6 +76,7 @@ final class OnboardingModel: ObservableObject {
     let mainLoadingTreeLister: (any CoreRepositoryTreeListing)?
     let startupRecoverer: any CoreStartupRecovering
     let externalChangesSyncer: any CoreExternalChangesSyncing
+    let repositoryWriteCoordinator: RepositoryWriteCoordinator
     let existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading
     let scanSessionReader: any CoreScanSessionReading
     let diagnosticsCollector: any CoreDiagnosticsCollecting
@@ -96,6 +97,7 @@ final class OnboardingModel: ObservableObject {
     var queuedDockImportBatches: [[URL]] = []
     var validatePathReturnRoute: Route = .choosePath
     var initializationProgressTask: Task<Void, Never>?
+    var pendingWatcherRescanSeed: (repoPath: String, eventID: Int64)?
     init(
         settingsReader: any AppSettingsReading = AppPlatformServices.settingsReader,
         settingsWriter: any AppSettingsWriting = AppPlatformServices.settingsWriter,
@@ -110,6 +112,7 @@ final class OnboardingModel: ObservableObject {
         mainLoadingTreeLister: (any CoreRepositoryTreeListing)? = nil,
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
+        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             OnboardingPlatformServices.metadataReader,
         scanSessionReader: any CoreScanSessionReading = AppCoreServices.scanSessionReader,
@@ -140,6 +143,7 @@ final class OnboardingModel: ObservableObject {
         self.mainLoadingTreeLister = mainLoadingTreeLister ?? (emptyRepositoryOpener as? any CoreRepositoryTreeListing)
         self.startupRecoverer = startupRecoverer
         self.externalChangesSyncer = externalChangesSyncer
+        self.repositoryWriteCoordinator = repositoryWriteCoordinator
         self.existingRepositoryMetadataReader = existingRepositoryMetadataReader
         self.scanSessionReader = scanSessionReader
         self.diagnosticsCollector = diagnosticsCollector

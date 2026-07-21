@@ -17,6 +17,11 @@ protocol RepositoryImportPicking {
     func chooseImportURLs() -> [URL]?
 }
 
+protocol RepositoryMissingFilePicking {
+    @MainActor
+    func chooseReplacementFile(lastKnownPath: String?) -> URL?
+}
+
 protocol RepositoryFinderOpening {
     @MainActor
     func openRepositoryInFinder(repoPath: String) throws
@@ -113,22 +118,20 @@ struct AppKitInteractionFeedbackPerformer: AppInteractionFeedbackPerforming {
     }
 }
 
-struct LocalWelcomeHelpOpener: WelcomeHelpOpening {
-    private let localURLOpener: any LocalFileURLOpening
+struct WelcomeHelpOpener: WelcomeHelpOpening {
+    static let userGuideURL =
+        "https://github.com/AreaSong/AreaMatrix/blob/main/docs/user-guide/getting-started.md"
 
-    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
-        self.localURLOpener = localURLOpener
+    private let externalURLOpener: any ExternalURLStringOpening
+
+    init(externalURLOpener: any ExternalURLStringOpening = AppPlatformServices.externalURLStringOpener) {
+        self.externalURLOpener = externalURLOpener
     }
 
     @MainActor
     func openWelcomeHelp() throws {
-        let docsURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            .appendingPathComponent("docs/product/prd.md")
-
         do {
-            try localURLOpener.openExisting(docsURL, requiresDirectory: false)
-        } catch LocalFileURLOpenError.openRejected(_) {
-            return
+            try externalURLOpener.openHTTPSURLString(Self.userGuideURL)
         } catch {
             throw WelcomeHelpError.helpDocumentUnavailable
         }
@@ -169,6 +172,25 @@ struct NSOpenPanelRepositoryImportPicker: RepositoryImportPicking {
         panel.message = "Choose files or folders to import."
 
         return panel.runModal() == .OK ? panel.urls : nil
+    }
+}
+
+struct NSOpenPanelRepositoryMissingFilePicker: RepositoryMissingFilePicking {
+    @MainActor
+    func chooseReplacementFile(lastKnownPath: String?) -> URL? {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = false
+        panel.prompt = "Locate"
+        panel.message = "Choose the existing local file to relink. AreaMatrix will not move or modify it."
+        if let lastKnownPath, !lastKnownPath.isEmpty {
+            let expandedPath = NSString(string: lastKnownPath).expandingTildeInPath
+            panel.directoryURL = URL(fileURLWithPath: expandedPath).deletingLastPathComponent()
+        }
+
+        return panel.runModal() == .OK ? panel.url : nil
     }
 }
 

@@ -47,7 +47,8 @@ AreaMatrix-dev/
 # macOS / IDE
 .DS_Store
 .idea/
-.cursor/
+# Cursor adapter layer is tracked; session-local plans stay untracked.
+.cursor/plans/
 .vscode/*
 !.vscode/
 !.vscode/settings.json

@@ -157,7 +157,9 @@ extension OnboardingModel {
     @MainActor
     func recoverMainOpeningResidue(repoPath: String, cancellationToken: UUID) async throws {
         do {
-            let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            let report = try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {
+                try await self.startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            }
             guard openingCancellationToken == cancellationToken else { return }
             guard case var .mainLoading(state) = route, state.repoPath == repoPath else { return }
             state.startupRecovery = .completed(report.hasVisibleDetails ? report : nil)
@@ -297,7 +299,9 @@ extension OnboardingModel {
     @MainActor
     func recoverStartupResidue(repoPath: String) async throws {
         do {
-            let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            let report = try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {
+                try await self.startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            }
             initializationRecoveryReport = report.hasVisibleDetails ? report : nil
         } catch {
             guard CoreErrorRawContextSnapshot.repoNotInitializedPath(from: error) != nil else { throw error }

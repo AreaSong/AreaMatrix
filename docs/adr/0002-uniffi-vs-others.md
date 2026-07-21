@@ -7,6 +7,8 @@
 > 影响范围：core / macos-app / 未来 android-app
 > 关联 ADR：[0001 桌面技术栈](0001-tech-stack.md)
 
+> 现状更正（2026-07-21）：「CI 自动生成 Swift / Kotlin bindings」——CI 当前仅构建并校验 Swift bindings（`.github/workflows/macos-ci.yml` 的 `./dev build core` 与 `./dev bindings verify`），无 Kotlin 生成；Kotlin 属未来 Android 端计划。
+
 ## 上下文
 
 在 [ADR-0001](0001-tech-stack.md) 中已确定"Rust core + 各平台原生 Shell"。Rust 与 Swift 之间需要稳定、可维护的 FFI 通道。需求：
@@ -19,7 +21,7 @@
 
 ## 决定
 
-采用 **UniFFI 0.28+**。Rust 端用 `uniffi` crate 暴露接口，UDL 文件定义跨语言契约，CI 自动生成 Swift / Kotlin bindings。
+采用 **UniFFI 0.28+**。Rust 端用 `uniffi` crate 暴露接口，UDL 文件定义跨语言契约，CI 自动生成 Swift / Kotlin bindings（更正：CI 仅构建并校验 Swift bindings，见顶部现状说明）。
 
 ## 理由
 

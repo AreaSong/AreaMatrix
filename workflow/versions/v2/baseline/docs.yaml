@@ -1,0 +1,38 @@
+version: v2
+status: ready
+docs:
+  - file: 'docs/governance/enterprise-workflow-baseline.md'
+    line_start: 1
+    line_end: 152
+    heading: 'AreaMatrix 企业工作流治理基线'
+    excerpt: '本文是 AreaMatrix 对 `ASW-EWF-001@1.0.0` 的项目适配源事实。'
+    sha256: 'e4538a1f79197196d8b4dd71133581ebe559a097c84875e4725b6ba7d0656282'
+    source: 'changes:v2-asw-governance-adoption'
+  - file: 'docs/governance/governance-register.yaml'
+    line_start: 1
+    line_end: 1634
+    heading: 'AM-GOV-REGISTER-001'
+    excerpt: 'id: AM-GOV-REGISTER-001'
+    sha256: 'ee8b60fe82889746bce7a7a333c1ee2e48146e786fd978f28464daafe26bed66'
+    source: 'changes:v2-asw-governance-adoption'
+  - file: 'docs/governance/project-charter.md'
+    line_start: 1
+    line_end: 64
+    heading: 'AreaMatrix 项目章程'
+    excerpt: '本文固定 AreaMatrix 的使命、产品边界、成功条件、责任和退出条件。'
+    sha256: '1f54d6b5b10c6838b4e7f3f7e97c819cda05d356796b928158717daf7021fd0a'
+    source: 'changes:v2-asw-governance-adoption'
+  - file: 'docs/governance/operations-lifecycle.md'
+    line_start: 1
+    line_end: 67
+    heading: 'AreaMatrix 运行与能力生命周期'
+    excerpt: '本文定义桌面产品的运行健康、事故处置、能力状态和安全退役门禁。'
+    sha256: '635ecba88148e3349e64799e2dfa8e0df5fd16a16ef79d92eeb96b1ec86b3373'
+    source: 'changes:v2-asw-governance-adoption'
+  - file: 'docs/security/threat-model.md'
+    line_start: 1
+    line_end: 82
+    heading: 'AreaMatrix 威胁模型'
+    excerpt: '本文定义 AreaMatrix 桌面产品的信任边界、威胁主体、数据分类和控制映射，是安全事实的权威来源。'
+    sha256: '52e6dc428412bb432b477f62d9088d7a55ff49e0676759b5f4c1e58a39977252'
+    source: 'changes:v2-asw-governance-adoption'

@@ -32,10 +32,13 @@ struct MainRepositoryDetailErrorPane: View {
     let detailLogDiagnosticsState: MainDetailLogDiagnosticsState
     let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
     let onRetry: () -> Void
+    let onRetryExternalSync: () -> Void
     let onRefreshChangeLog: () -> Void
     let onRequestDetailLogDiagnostics: () -> Void
     let onConfirmDetailLogDiagnostics: () -> Void
     let onCancelDetailLogDiagnostics: () -> Void
+    let missingFileRelinkState: MainMissingFileRelinkState
+    let onLocateMissingFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
     let canPerformWriteAction: (Int64) -> Bool
 
@@ -50,6 +53,12 @@ struct MainRepositoryDetailErrorPane: View {
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 Button("Retry", action: onRetry)
+                MainRepositoryDetailLocateButton(
+                    file: missingFile,
+                    state: missingFileRelinkState,
+                    onLocateMissingFile: onLocateMissingFile,
+                    canPerformWriteAction: canPerformWriteAction
+                )
                 MainRepositoryDetailIndexRemovalButton(
                     file: missingFile,
                     style: .primary,
@@ -57,6 +66,7 @@ struct MainRepositoryDetailErrorPane: View {
                     canPerformWriteAction: canPerformWriteAction
                 )
             }
+            MissingFileRecoveryMessage(file: missingFile, state: missingFileRelinkState)
             DisclosureGroup("Technical Details") {
                 Text(error.rawContext)
                     .font(.system(.caption, design: .monospaced))
@@ -68,6 +78,7 @@ struct MainRepositoryDetailErrorPane: View {
                 detailLogState: detailLogState,
                 diagnosticsState: detailLogDiagnosticsState,
                 externalCreateSyncState: detailExternalCreateSyncState,
+                onRetryExternalSync: onRetryExternalSync,
                 onRefreshChangeLog: onRefreshChangeLog,
                 onRequestDiagnostics: onRequestDetailLogDiagnostics,
                 onConfirmDiagnostics: onConfirmDetailLogDiagnostics,
@@ -84,6 +95,8 @@ struct MainRepositoryDetailStatusSection: View {
     let isLoading: Bool
     let selectedFile: FileEntrySnapshot?
     let onRetry: () -> Void
+    let missingFileRelinkState: MainMissingFileRelinkState
+    let onLocateMissingFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
     let canPerformWriteAction: (Int64) -> Bool
 
@@ -93,6 +106,8 @@ struct MainRepositoryDetailStatusSection: View {
                 error: error,
                 selectedFile: selectedFile,
                 onRetry: onRetry,
+                missingFileRelinkState: missingFileRelinkState,
+                onLocateMissingFile: onLocateMissingFile,
                 onBeginDeleteFile: onBeginDeleteFile,
                 canPerformWriteAction: canPerformWriteAction
             )
@@ -113,6 +128,8 @@ struct MainRepositoryDetailInlineErrorBanner: View {
     let error: CoreErrorMappingSnapshot
     let selectedFile: FileEntrySnapshot?
     let onRetry: () -> Void
+    let missingFileRelinkState: MainMissingFileRelinkState
+    let onLocateMissingFile: (Int64) -> Void
     let onBeginDeleteFile: (Int64) -> Void
     let canPerformWriteAction: (Int64) -> Bool
 
@@ -131,6 +148,12 @@ struct MainRepositoryDetailInlineErrorBanner: View {
                     .foregroundStyle(.secondary)
                 HStack(spacing: 10) {
                     Button("Retry", action: onRetry)
+                    MainRepositoryDetailLocateButton(
+                        file: selectedFile,
+                        state: missingFileRelinkState,
+                        onLocateMissingFile: onLocateMissingFile,
+                        canPerformWriteAction: canPerformWriteAction
+                    )
                     MainRepositoryDetailIndexRemovalButton(
                         file: selectedFile,
                         style: .secondary,
@@ -138,9 +161,41 @@ struct MainRepositoryDetailInlineErrorBanner: View {
                         canPerformWriteAction: canPerformWriteAction
                     )
                 }
+                MissingFileRecoveryMessage(file: selectedFile, state: missingFileRelinkState)
             }
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+struct MainRepositoryDetailLocateButton: View {
+    let file: FileEntrySnapshot?
+    let state: MainMissingFileRelinkState
+    let onLocateMissingFile: (Int64) -> Void
+    let canPerformWriteAction: (Int64) -> Bool
+
+    var body: some View {
+        if let file, MainRepositoryDetailFileActionPolicy.shouldShowLocate(for: file) {
+            Button(state.isBusy(for: file.id) ? "Locating…" : "Locate…") {
+                onLocateMissingFile(file.id)
+            }
+            .disabled(!canPerformWriteAction(file.id) || state.isBusy(for: file.id))
+            .accessibilityIdentifier("file-detail-missing-locate")
+        }
+    }
+}
+
+struct MissingFileRecoveryMessage: View {
+    let file: FileEntrySnapshot?
+    let state: MainMissingFileRelinkState
+
+    var body: some View {
+        if let file, let message = state.message(for: file.id) {
+            Label(message, systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("file-detail-missing-relink-message")
+        }
     }
 }
 

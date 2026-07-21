@@ -34,6 +34,13 @@ final class ValidatePathErrorMappingTests: XCTestCase {
         XCTAssertFalse(mapping.suggestedAction.isEmpty)
     }
 
+    func testCoreBridgeMapsExpiredActionIDAsRawContext() async {
+        let mapping = await CoreBridge().mapCoreError(CoreError.ExpiredAction(actionId: "action-42"))
+
+        XCTAssertEqual(mapping.kind, .expiredAction)
+        XCTAssertEqual(mapping.rawContext, "action-42")
+    }
+
     func testAppSemanticErrorMappingBypassesCoreErrorRecording() async {
         let mapping = CoreErrorMappingSnapshot.invalidPath(rawContext: "app-semantic-path")
         let errorMapper = StaticCoreErrorMapper(mapping: .errorSmokePermissionDeniedFixture(rawContext: "unexpected"))

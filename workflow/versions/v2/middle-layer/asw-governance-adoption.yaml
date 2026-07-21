@@ -1,0 +1,86 @@
+id: v2-asw-governance-adoption-middle-layer
+version: v2
+feature_id: v2-asw-governance-adoption
+module: governance
+status: ready
+docs_refs:
+  - file: docs/governance/enterprise-workflow-baseline.md
+    line_start: 1
+    line_end: 152
+    heading: AreaMatrix 企业工作流治理基线
+    excerpt: 本文是 AreaMatrix 对 `ASW-EWF-001@1.0.0` 的项目适配源事实。
+  - file: docs/governance/governance-register.yaml
+    line_start: 1
+    line_end: 1634
+    heading: AM-GOV-REGISTER-001
+    excerpt: "id: AM-GOV-REGISTER-001"
+  - file: docs/governance/project-charter.md
+    line_start: 1
+    line_end: 64
+    heading: AreaMatrix 项目章程
+    excerpt: 本文固定 AreaMatrix 的使命、产品边界、成功条件、责任和退出条件。
+  - file: docs/governance/operations-lifecycle.md
+    line_start: 1
+    line_end: 67
+    heading: AreaMatrix 运行与能力生命周期
+    excerpt: 本文定义桌面产品的运行健康、事故处置、能力状态和安全退役门禁。
+  - file: docs/security/threat-model.md
+    line_start: 1
+    line_end: 82
+    heading: AreaMatrix 威胁模型
+    excerpt: 本文定义 AreaMatrix 桌面产品的信任边界、威胁主体、数据分类和控制映射，是安全事实的权威来源。
+insertions:
+  - target: AreaMatrix enterprise governance source-of-truth and workflow gates
+    reason: Map the upstream enterprise baseline into existing AreaMatrix governance without creating a parallel product source.
+    before: Engineering, security, CI, and workflow controls existed without one project-level ASW applicability and lifecycle register.
+    after: ASW domains, owners, G0-G8, external dependencies, operations, and retirement have explicit AreaMatrix landing points.
+links:
+  - feature: v1-mvp
+    relationship: preserves-history
+    reason: V1 execution and release residual evidence remain read-only and are not closed by v2 governance authoring.
+code_impacts:
+  existing:
+    - scripts/areaflow_shim.py
+    - scripts/dev_tools/checks.py
+    - scripts/task_loop/self_check.py
+  expected:
+    - docs/governance/**
+    - workflow/versions/v2/**
+    - .github/PULL_REQUEST_TEMPLATE.md
+  tests:
+    - scripts/dev_tools/test_build_tools.py
+    - scripts/task_loop/self_check.py
+dependencies:
+  features: []
+  docs:
+    - docs/governance/enterprise-workflow-baseline.md
+    - docs/governance/project-charter.md
+    - docs/governance/governance-register.yaml
+    - docs/governance/operations-lifecycle.md
+    - docs/security/threat-model.md
+  code:
+    - scripts/areaflow_shim.py
+    - scripts/dev_tools/checks.py
+  tasks: []
+slice_plan:
+  - id: authoring
+    purpose: Establish the complete adapted governance baseline, authoring boundary, adapters, checks, and v2 planning evidence.
+    inputs:
+      - ASW-EWF-001@1.0.0
+      - approved v2 discussion decisions
+    outputs:
+      - AreaMatrix governance source facts
+      - v2 durable governance residual index
+      - authoring-only shim boundary
+      - review and CI enforcement
+      - promotion preview with pending live mapping
+    acceptance:
+      - ./dev workflow discuss --version v2 doctor
+      - ./dev workflow doctor
+      - ./dev check governance
+      - ./dev check task-loop
+risk_boundaries:
+  - Do not modify Rust Core, Swift/macOS product code, UDL, DB schema, runtime configuration, or user files.
+  - Do not write v2 execution state or historical v1 execution and evidence.
+  - Do not authorize promotion apply or task-loop execution.
+  - Do not convert v2 governance residuals into executable tasks.

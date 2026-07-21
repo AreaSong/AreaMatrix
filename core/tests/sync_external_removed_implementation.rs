@@ -231,7 +231,7 @@ fn sync_external_removed_implementation_rejects_existing_path_without_metadata_c
         vec![removed("docs/still-present.pdf", 31)],
     );
 
-    assert!(matches!(result, Err(CoreError::Io { .. })));
+    assert_eq!(result, Err(CoreError::conflict("docs/still-present.pdf")));
 
     assert_eq!(fs_cursor(repo.path()), Some(30));
     assert_eq!(
@@ -308,7 +308,7 @@ fn sync_external_removed_implementation_rejects_escaping_or_placeholder_paths_wi
     );
     assert_eq!(
         placeholder,
-        Err(CoreError::icloud_placeholder("icloud placeholder"))
+        Err(CoreError::icloud_placeholder("docs/waiting.pdf.icloud"))
     );
     assert_eq!(fs_cursor(repo.path()), None);
     assert!(listed_changes(repo.path()).is_empty());

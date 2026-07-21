@@ -9,42 +9,124 @@ private struct ExternalSyncCall: Equatable {
 }
 
 actor RecordingExternalChangesSyncer: CoreExternalChangesSyncing {
-    private let result: Swift.Result<SyncResultSnapshot, Error>
+    private var results: [Swift.Result<SyncResultSnapshot, Error>]
     private var calls: [ExternalSyncCall] = []
+    private var batches: [[ExternalSyncCall]] = []
+    private var cursor: Int64?
+    private var cursorWrites: [Int64] = []
+    private let suspendsSync: Bool
+    private var syncContinuations: [CheckedContinuation<Void, Never>] = []
+    private var activeSyncCalls = 0
+    private var maxConcurrentSyncCalls = 0
+    private var cursorWriteResults: [Swift.Result<Void, Error>]
 
-    init(result: Swift.Result<SyncResultSnapshot, Error>) {
-        self.result = result
+    init(
+        result: Swift.Result<SyncResultSnapshot, Error>,
+        cursor: Int64? = 1,
+        suspendsSync: Bool = false,
+        cursorWriteResults: [Swift.Result<Void, Error>] = [.success(())]
+    ) {
+        results = [result]
+        self.cursor = cursor
+        self.suspendsSync = suspendsSync
+        self.cursorWriteResults = cursorWriteResults
     }
 
-    func syncExternalCreated(
-        repoPath: String,
-        relativePath: String,
-        fsEventID: Int64
-    ) async throws -> SyncResultSnapshot {
-        try recordAndResolve(kind: .created, repoPath: repoPath, relativePath: relativePath, fsEventID: fsEventID)
+    init(
+        results: [Swift.Result<SyncResultSnapshot, Error>],
+        cursor: Int64? = 1,
+        cursorWriteResults: [Swift.Result<Void, Error>] = [.success(())]
+    ) {
+        self.results = results
+        self.cursor = cursor
+        suspendsSync = false
+        self.cursorWriteResults = cursorWriteResults
     }
 
-    func syncExternalRenamed(
+    func syncExternalChanges(
         repoPath: String,
-        relativePath: String,
-        fsEventID: Int64
+        events: [MainExternalCreatedFileEvent]
     ) async throws -> SyncResultSnapshot {
-        try recordAndResolve(kind: .renamed, repoPath: repoPath, relativePath: relativePath, fsEventID: fsEventID)
-    }
-
-    func syncExternalRemoved(
-        repoPath: String,
-        relativePath: String,
-        fsEventID: Int64
-    ) async throws -> SyncResultSnapshot {
-        try recordAndResolve(kind: .removed, repoPath: repoPath, relativePath: relativePath, fsEventID: fsEventID)
+        activeSyncCalls += 1
+        maxConcurrentSyncCalls = max(maxConcurrentSyncCalls, activeSyncCalls)
+        defer { activeSyncCalls -= 1 }
+        let batch = events.map {
+            ExternalSyncCall(
+                kind: $0.kind,
+                repoPath: repoPath,
+                relativePath: $0.relativePath,
+                fsEventID: $0.fsEventID
+            )
+        }
+        batches.append(batch)
+        calls.append(contentsOf: batch)
+        if suspendsSync {
+            await withCheckedContinuation { continuation in
+                syncContinuations.append(continuation)
+            }
+        }
+        return try nextSyncResult().get()
     }
 
     func getFSEventCursor(repoPath _: String) async throws -> Int64? {
-        nil
+        cursor
     }
 
-    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
+    func setFSEventCursor(repoPath _: String, lastEventID: Int64) async throws {
+        cursorWrites.append(lastEventID)
+        try nextCursorWriteResult().get()
+        cursor = lastEventID
+    }
+
+    func recordedCursorWrites() -> [Int64] {
+        cursorWrites
+    }
+
+    func recordedBatchCount() -> Int {
+        batches.count
+    }
+
+    func recordedMaxConcurrentSyncCalls() -> Int {
+        maxConcurrentSyncCalls
+    }
+
+    func resumeNextSync() {
+        guard !syncContinuations.isEmpty else { return }
+        syncContinuations.removeFirst().resume()
+    }
+
+    private func nextSyncResult() -> Swift.Result<SyncResultSnapshot, Error> {
+        guard let result = results.first else {
+            return .failure(CoreError.Internal(message: "No external sync result configured"))
+        }
+        if results.count > 1 { results.removeFirst() }
+        return result
+    }
+
+    private func nextCursorWriteResult() -> Swift.Result<Void, Error> {
+        guard let result = cursorWriteResults.first else {
+            return .failure(CoreError.Internal(message: "No cursor write result configured"))
+        }
+        if cursorWriteResults.count > 1 { cursorWriteResults.removeFirst() }
+        return result
+    }
+
+    func assertSyncedExternalEvents(
+        repoPath: String,
+        events: [MainExternalCreatedFileEvent],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let expectedBatch = events.map {
+            ExternalSyncCall(
+                kind: $0.kind,
+                repoPath: repoPath,
+                relativePath: $0.relativePath,
+                fsEventID: $0.fsEventID
+            )
+        }
+        XCTAssertEqual(batches, [expectedBatch], file: file, line: line)
+    }
 
     func assertSyncedExternalEvent(
         kind: MainExternalSyncEventKind,
@@ -140,18 +222,93 @@ actor RecordingExternalChangesSyncer: CoreExternalChangesSyncing {
         XCTAssertEqual(calls, [], file: file, line: line)
     }
 
-    private func recordAndResolve(
-        kind: MainExternalSyncEventKind,
-        repoPath: String,
-        relativePath: String,
-        fsEventID: Int64
-    ) throws -> SyncResultSnapshot {
-        calls.append(ExternalSyncCall(
-            kind: kind,
-            repoPath: repoPath,
-            relativePath: relativePath,
-            fsEventID: fsEventID
-        ))
-        return try result.get()
+    func assertCursorWrites(
+        _ expected: [Int64],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(cursorWrites, expected, file: file, line: line)
+    }
+}
+
+actor SuspendedCursorExternalChangesSyncer: CoreExternalChangesSyncing {
+    private var requestedRepoPaths: Set<String> = []
+    private var continuations: [String: CheckedContinuation<Int64?, Never>] = [:]
+
+    func syncExternalChanges(
+        repoPath _: String,
+        events _: [MainExternalCreatedFileEvent]
+    ) async throws -> SyncResultSnapshot {
+        .createdFixture()
+    }
+
+    func getFSEventCursor(repoPath: String) async throws -> Int64? {
+        let normalized = normalizedRepoPath(repoPath)
+        requestedRepoPaths.insert(normalized)
+        return await withCheckedContinuation { continuation in
+            continuations[normalized] = continuation
+        }
+    }
+
+    func setFSEventCursor(repoPath _: String, lastEventID _: Int64) async throws {}
+
+    func waitUntilCursorRequested(repoPath: String) async {
+        let normalized = normalizedRepoPath(repoPath)
+        while !requestedRepoPaths.contains(normalized) {
+            await Task.yield()
+        }
+    }
+
+    func resumeCursor(repoPath: String, cursor: Int64?) {
+        continuations.removeValue(forKey: normalizedRepoPath(repoPath))?.resume(returning: cursor)
+    }
+
+    private func normalizedRepoPath(_ repoPath: String) -> String {
+        URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL.path
+    }
+}
+
+actor SuspendedInFlightFileChangeTracker: InFlightFileChangeTracking {
+    private var containsRequestCount = 0
+    private var activeContainsCalls = 0
+    private var maxConcurrentContainsCalls = 0
+    private var containsContinuations: [CheckedContinuation<Bool, Never>] = []
+
+    func mark(repoPath _: String, relativePath _: String) async {}
+
+    func unmark(repoPath _: String, relativePath _: String) async {}
+
+    func contains(repoPath _: String, relativePath _: String) async -> Bool {
+        containsRequestCount += 1
+        activeContainsCalls += 1
+        maxConcurrentContainsCalls = max(maxConcurrentContainsCalls, activeContainsCalls)
+        let result = await withCheckedContinuation { continuation in
+            containsContinuations.append(continuation)
+        }
+        activeContainsCalls -= 1
+        return result
+    }
+
+    func waitUntilContainsRequested() async {
+        await waitUntilContainsRequestCount(1)
+    }
+
+    func waitUntilContainsRequestCount(_ expected: Int) async {
+        while containsRequestCount < expected {
+            await Task.yield()
+        }
+    }
+
+    func resumeContains(_ value: Bool) {
+        guard !containsContinuations.isEmpty else { return }
+        containsContinuations.removeFirst().resume(returning: value)
+    }
+
+    func recordedContainsRequestCount() -> Int {
+        containsRequestCount
+    }
+
+    func recordedMaxConcurrentContainsCalls() -> Int {
+        maxConcurrentContainsCalls
     }
 }

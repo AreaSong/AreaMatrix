@@ -21,21 +21,21 @@
 | 移动 | Move | 把原文件移入资料库（原位置消失） |
 | 复制 | Copy | 复制原文件入库（原位置保留） |
 | 仅索引 | Index | 不复制，只在 DB 记录元数据，原文件原位 |
-| 伴生笔记 | Companion note | 每个文件可以有一份 `<filename>.md` 笔记，用户手动维护 |
+| 伴生笔记 | Companion note | 每个文件可以有一份 `<filename>.md` 笔记，由应用原子写入并与 DB notes 记录强一致校验；外部手改会导致读取报错 |
 | 资料库概览 | Repository overview | AreaMatrix 自动生成的目录概要，默认位于 `.areamatrix/generated/`，可选生成根目录 `AREAMATRIX.md` |
 | 顶层节点 | Top-level node | 资料库根下的一级归属，可是系统分类，也可以是用户已有文件夹 |
 | 文件来源 | File origin | 文件进入索引的来源：用户导入、接管已有目录、外部新增 |
 | 改动日志 | Change log | 记录文件在资料库中所有事件的时间线 |
 | 树状视图 | Tree view | 侧边栏的资料库目录树展示 |
-| 详情面板 | Detail pane | 主窗口底部展示选中文件元数据/改动/笔记的区域 |
+| 详情面板 | Detail pane | 主窗口右侧展示选中文件元数据/改动/笔记的区域 |
 | 投放区 | Drop zone | 可接受拖拽导入的窗口区域 |
-| 导入确认面板 | ImportSheet | 拖入后出现的确认 sheet（分类/命名/存储模式） |
+| 导入确认面板 | ImportSheet | 拖入后出现的确认 sheet（分类/命名/存储模式）的文档统称；代码中为 `ImportEntry*` / `ImportFolder*` / `ImportBatch*` 系列 sheet，无同名类型 |
 | 空态 | Empty state | 没有数据时的引导状态（提供下一步动作） |
 | 骨架屏 | Skeleton | 加载期间用占位行代替真实内容的 UI |
 | 智能列表 | Smart list | 保存的搜索规则在侧边栏形成固定入口 |
 | 命令面板 | Command palette | 通过 Cmd+K 呼出的可搜索命令入口 |
 | 批量操作 | Batch actions | 多选文件后的一次性操作（改分类/加标签/删除等） |
-| 撤销 | Undo | 对最近操作进行回滚（通常 Cmd+Z） |
+| 撤销 | Undo | 对受支持操作进行回滚；主工作区 Cmd+Z 打开操作历史面板，导入 footer 的 Undo 按钮直接绑定 Cmd+Z |
 | 范围切换 | Scope | 搜索时“当前分类/全库”等范围选择 |
 | 预览影响 | Preview impact | 在变更规则/批量操作前预估会影响多少文件的预览步骤 |
 
@@ -57,16 +57,16 @@
 | InFlight 过滤 | InFlight filter | 应用自身操作产生的 FSEvents 不应被当作外部变化处理 |
 | 去抖 | Debounce | 在 200ms 窗口内合并同 path 的 FSEvents |
 | 占位符 | Placeholder file | iCloud 未下载文件的本地占位（`.icloud` 后缀） |
-| 协调读取 | Coordinated read | 通过 NSFileCoordinator 触发 iCloud 占位符下载 |
+| 占位符下载 | Placeholder download | 通过 `FileManager.startDownloadingUbiquitousItem` 请求 iCloud 下载占位符内容，并轮询下载状态直到完成 |
 | CoreBridge | CoreBridge | Swift 端串行化对 Core 写操作的 actor，参见 concurrency.md |
 | 跨 Actor 边界 | Cross-actor boundary | Swift 端不同 Actor / Task 间传值时的数据所有权切换点 |
 | Send / Sync | Send / Sync | Rust 中表达类型可跨线程移动 / 共享的 marker trait |
 | Sendable | Sendable | Swift 中表达类型可跨并发上下文安全传递的 protocol |
 | 模式版本 | Schema version | DB 结构的整数版本号，独立于应用 SemVer，参见 migration.md |
 | 应用版本 | App version | 应用的 SemVer 版本号（MAJOR.MINOR.PATCH） |
-| 迁移脚本 | Migration script | `m_NNN_xxx.sql` 文件，单次 schema 升级的原子单元 |
+| 模式迁移 | Schema migration | 由内嵌 `INITIAL_SCHEMA` 与 `run_schema_migrations` 完成的单次 schema 升级，迁移前一次性备份 `.areamatrix/index.db.pre-v2.bak`，无独立 `.sql` 迁移文件 |
 | Tracing span | Tracing span | tracing crate 表达"嵌套耗时段"的概念，参见 observability.md |
-| 诊断包 | Diagnostic bundle | 用户/QA 提报问题时一键导出的日志 + DB 快照压缩包 |
+| 诊断导出 | Diagnostics export | 用户/QA 提报问题时的导出材料：About 脱敏文本报告（about-diagnostics.txt）、repository metadata snapshot 与打开日志目录入口，不生成压缩包 |
 | 反向 callback | Reverse callback | 由 Rust Core 主动调用 Swift 端的 callback interface |
 | 取消令牌 | Cancellation token | 用于跨 FFI 协作式取消的小对象（参见 uniffi-recipes.md Recipe 6）|
 

@@ -108,7 +108,7 @@ fn assert_core_api_and_udl_contract() {
 
     for fragment in [
         "每个错误返回 severity、suggested_action、recoverability",
-        "Swift `AppError` 包装层只负责本地化与展示编排",
+        "Swift 错误包装层（`AppSemanticError` 与 `AppErrorMappingProviding`）只负责本地化与展示编排",
         "不得用字符串 contains 做主分支判断",
     ] {
         assert_contains(CORE_API, fragment);

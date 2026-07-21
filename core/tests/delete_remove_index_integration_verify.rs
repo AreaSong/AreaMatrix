@@ -196,7 +196,7 @@ fn delete_remove_index_integration_verify_docs_api_udl_and_consumers_stay_aligne
     for fragment in [
         "`delete_file` 是用户确认后的 repo-owned 删除入口",
         "不提供永久删除参数",
-        "Indexed、Adopted、External 或 Missing 条目的索引移除必须使用",
+        "Indexed、Adopted、External 条目的索引移除必须使用",
         "`remove_index_entry` 是 index-only 删除入口",
         "`change_log.action = removed_from_index`",
         "不触发 iCloud placeholder 下载。",

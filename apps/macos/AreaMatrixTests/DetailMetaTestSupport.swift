@@ -17,6 +17,8 @@ func assertMainRepositoryDetailFileActionMenu(
     let menu = MainRepositoryDetailFileActionMenu(
         detail: detail,
         disabledReason: disabledReason,
+        missingFileRelinkState: .idle,
+        onLocateMissingFile: { _ in },
         onBeginRenameFile: { _ in },
         onBeginChangeCategoryFile: { _ in },
         onBeginClassifierCorrectionFile: { _ in },

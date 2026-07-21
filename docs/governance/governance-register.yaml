@@ -1,0 +1,1634 @@
+schema_version: 1
+id: AM-GOV-REGISTER-001
+status: active
+owner: "@AreaSong"
+updated: "2026-07-15"
+upstream:
+  spec_id: ASW-EWF-001
+  version: 1.0.0
+  source_task_id: 019f63ff-b316-79d2-a0cd-215090bcea1e
+  source_path: docs/governance/upstream/ASW-EWF-001-1.0.0.txt
+  sha256: ce6a779f243f54440ab9a82886a0d8d0c8a601243260fcdb829beed3f04c96f1
+  adoption: adapted-complete
+
+raci:
+  accountable: "@AreaSong"
+  roles:
+    executive_sponsor: "@AreaSong"
+    product_owner: "@AreaSong"
+    technical_owner: "@AreaSong"
+    data_owner: "@AreaSong"
+    security_coordinator: "@AreaSong"
+    release_owner: "@AreaSong"
+  independent_review:
+    required_for:
+      - L3
+      - L4
+      - High
+      - Mission-Critical
+    missing_reviewer_behavior: blocked
+
+documents:
+  - id: AM-GOV-001
+    path: docs/governance/enterprise-workflow-baseline.md
+    authority: governance-adaptation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-15"
+    review_cycle: quarterly
+    review_triggers:
+      - upstream-spec-changed
+      - workflow-gates-changed
+      - project-risk-boundary-changed
+  - id: AM-CHARTER-001
+    path: docs/governance/project-charter.md
+    authority: project-charter
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-15"
+    review_cycle: quarterly
+    review_triggers:
+      - product-scope-changed
+      - ownership-changed
+      - distribution-model-changed
+  - id: AM-OPS-001
+    path: docs/governance/operations-lifecycle.md
+    authority: operations-and-retirement
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-15"
+    review_cycle: quarterly
+    review_triggers:
+      - remote-service-added
+      - release-channel-changed
+      - incident-control-changed
+  - id: AM-SEC-001
+    path: docs/security/threat-model.md
+    authority: security-threat-model
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: quarterly
+    review_triggers:
+      - remote-service-added
+      - new-user-file-write-path
+      - new-external-input-parser
+      - privacy-boundary-changed
+
+  - id: AM-DOC-001
+    path: docs/README.md
+    authority: docs-navigation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - docs-structure-changed
+  - id: AM-DOC-002
+    path: docs/adr/0001-tech-stack.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-003
+    path: docs/adr/0002-uniffi-vs-others.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-004
+    path: docs/adr/0003-source-of-truth-strategy.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-005
+    path: docs/adr/0004-transactional-storage.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-006
+    path: docs/adr/0005-fsevents-listener.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-007
+    path: docs/adr/0006-icloud-support.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-008
+    path: docs/adr/0007-readme-granularity.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-009
+    path: docs/adr/0008-naming-and-i18n.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-010
+    path: docs/adr/0009-min-macos-version.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-011
+    path: docs/adr/0010-adopt-existing-folders-and-overviews.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-012
+    path: docs/adr/README.md
+    authority: architecture-decision
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - id: AM-DOC-013
+    path: docs/api/classifier-yaml.md
+    authority: api-contract
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: quarterly
+    review_triggers:
+      - core-api-or-udl-changed
+  - id: AM-DOC-014
+    path: docs/api/core-api.md
+    authority: api-contract
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: quarterly
+    review_triggers:
+      - core-api-or-udl-changed
+  - id: AM-DOC-015
+    path: docs/api/error-codes.md
+    authority: api-contract
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: quarterly
+    review_triggers:
+      - core-api-or-udl-changed
+  - id: AM-DOC-016
+    path: docs/api/uniffi-recipes.md
+    authority: api-contract
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: quarterly
+    review_triggers:
+      - core-api-or-udl-changed
+  - id: AM-DOC-017
+    path: docs/architecture/adopt-existing-folders.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-018
+    path: docs/architecture/concurrency.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-019
+    path: docs/architecture/core-internal-architecture.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-020
+    path: docs/architecture/data-model.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-021
+    path: docs/architecture/ffi-design.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-022
+    path: docs/architecture/fs-watcher.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-023
+    path: docs/architecture/layered-design.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-024
+    path: docs/architecture/macos-frontend-architecture.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-025
+    path: docs/architecture/migration.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-026
+    path: docs/architecture/overview.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-027
+    path: docs/architecture/source-of-truth.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-028
+    path: docs/architecture/tech-stack.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-029
+    path: docs/architecture/transactional-import.md
+    authority: architecture
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - id: AM-DOC-030
+    path: docs/development/build.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-031
+    path: docs/development/ci-governance.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-032
+    path: docs/development/coding-standards.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-033
+    path: docs/development/dependency-policy.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-034
+    path: docs/development/error-recovery-matrix.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-035
+    path: docs/development/git-workflow.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-036
+    path: docs/development/observability.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-037
+    path: docs/development/performance.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-038
+    path: docs/development/recovery.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-039
+    path: docs/development/release.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-040
+    path: docs/development/secret-scan-runbook.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-041
+    path: docs/development/setup.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-042
+    path: docs/development/testing.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-043
+    path: docs/development/troubleshooting.md
+    authority: engineering-process
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - id: AM-DOC-044
+    path: docs/modules/change-log.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-045
+    path: docs/modules/classify.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-046
+    path: docs/modules/overview-gen.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-047
+    path: docs/modules/storage.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-048
+    path: docs/modules/tree-scan.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-049
+    path: docs/product/capabilities.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - id: AM-DOC-050
+    path: docs/product/capability-direction.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - id: AM-DOC-051
+    path: docs/product/glossary.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - id: AM-DOC-052
+    path: docs/product/overview.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - id: AM-DOC-053
+    path: docs/product/prd.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - id: AM-DOC-054
+    path: docs/product/privacy.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - id: AM-DOC-055
+    path: docs/product/product-surfaces.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - id: AM-DOC-056
+    path: docs/product/user-stories.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - id: AM-DOC-057
+    path: docs/product/workflows.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - id: AM-DOC-058
+    path: docs/roadmap/README.md
+    authority: capability-direction
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - capability-direction-changed
+  - id: AM-DOC-059
+    path: docs/user-guide/README.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-060
+    path: docs/user-guide/adopting-existing-folders.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-061
+    path: docs/user-guide/ai-features-and-privacy.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-062
+    path: docs/user-guide/conflicts-and-recovery.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-063
+    path: docs/user-guide/getting-started.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-064
+    path: docs/user-guide/importing-files.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-065
+    path: docs/user-guide/organizing-files.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-066
+    path: docs/user-guide/repositories.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-067
+    path: docs/user-guide/search-tags-and-smart-lists.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-068
+    path: docs/user-guide/settings.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-069
+    path: docs/user-guide/troubleshooting.md
+    authority: user-documentation
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - id: AM-DOC-070
+    path: docs/ux/README.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-071
+    path: docs/ux/brand-assets.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-072
+    path: docs/ux/classifier-calibration.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-073
+    path: docs/ux/competitive-analysis.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-074
+    path: docs/ux/dedup-conflict.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-075
+    path: docs/ux/deep-features.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-076
+    path: docs/ux/drag-import-flow.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-077
+    path: docs/ux/error-messages.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-078
+    path: docs/ux/first-launch.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-079
+    path: docs/ux/search.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-080
+    path: docs/ux/settings-panel.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+  - id: AM-DOC-081
+    path: docs/ux/ui-states.md
+    authority: interaction-design
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-20"
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+
+document_domains:
+  - domain: docs/adr
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - architecture-decision-changed
+  - domain: docs/api
+    owner: "@AreaSong"
+    status: active
+    review_cycle: quarterly
+    review_triggers:
+      - core-api-or-udl-changed
+  - domain: docs/architecture
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - module-boundary-or-data-model-changed
+  - domain: docs/development
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - validation-or-release-process-changed
+  - domain: docs/governance
+    owner: "@AreaSong"
+    status: active
+    review_cycle: quarterly
+    review_triggers:
+      - upstream-spec-changed
+      - governance-gates-changed
+  - domain: docs/modules
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - core-module-behavior-changed
+  - domain: docs/product
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - product-scope-or-privacy-changed
+  - domain: docs/roadmap
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - capability-direction-changed
+  - domain: docs/security
+    owner: "@AreaSong"
+    status: active
+    review_cycle: quarterly
+    review_triggers:
+      - threat-model-or-data-classification-changed
+  - domain: docs/user-guide
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - user-visible-behavior-changed
+  - domain: docs/ux
+    owner: "@AreaSong"
+    status: active
+    review_cycle: annual
+    review_triggers:
+      - interaction-or-surface-changed
+
+repo_domains:
+  - domain: root-policy
+    owner: "@AreaSong"
+    status: active
+    authority: meta
+    verification: ./dev check governance and ./dev check docs
+    review_triggers:
+      - root-policy-or-entry-doc-changed
+    paths:
+      - AGENTS.md
+      - README.md
+      - README.zh-CN.md
+      - CHANGELOG.md
+      - LICENSE
+      - COMMERCIAL_LICENSE.md
+      - CODE_OF_CONDUCT.md
+      - CONTRIBUTING.md
+      - CODE_REVIEW.md
+      - SECURITY.md
+      - .gitignore
+      - .gitleaks.toml
+  - domain: tooling-cli
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: python3 -m unittest over scripts.dev_tools and ./dev check quality
+    review_triggers:
+      - dev-cli-or-check-behavior-changed
+    paths:
+      - dev
+      - task-loop
+      - scripts/
+  - domain: docs-source-facts
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: ./dev check docs plus document_domains coverage
+    review_triggers:
+      - any-docs-authority-changed
+    paths:
+      - docs/
+  - domain: ai-collaboration-rules
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: ./dev check governance
+    review_triggers:
+      - ai-collaboration-rule-changed
+    paths:
+      - .ai-governance/
+  - domain: codex-adapters
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: ./dev check skills and ./dev check codex-os
+    review_triggers:
+      - skill-or-codex-runtime-changed
+    paths:
+      - .codex/
+      - .agents/
+  - domain: cursor-adapters
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: manual review on change
+    review_triggers:
+      - cursor-adapter-changed
+    paths:
+      - .cursor/
+  - domain: github-adapters
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: ./dev check governance
+    review_triggers:
+      - ci-or-review-template-changed
+    paths:
+      - .github/
+  - domain: editor-config
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: manual review on change
+    review_triggers:
+      - editor-config-changed
+    paths:
+      - .vscode/
+  - domain: areaflow-projection
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: ./dev check governance authoring shim assertions
+    review_triggers:
+      - shim-lifecycle-changed
+    paths:
+      - .areaflow/
+  - domain: core-crate-config
+    owner: "@AreaSong"
+    status: active
+    authority: build-config
+    verification: cargo fmt clippy and test across the workspace
+    review_triggers:
+      - dependency-or-build-config-changed
+    paths:
+      - core/
+  - domain: core-api-contract
+    owner: "@AreaSong"
+    status: active
+    authority: contract
+    verification: ./dev bindings verify and core contract tests
+    review_triggers:
+      - core-api-or-udl-changed
+    paths:
+      - core/area_matrix.udl
+  - domain: core-source
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: cargo fmt clippy and test across the workspace
+    review_triggers:
+      - core-module-behavior-changed
+    paths:
+      - core/src/
+  - domain: core-tests
+    owner: "@AreaSong"
+    status: active
+    authority: test
+    verification: cargo test across the workspace
+    review_triggers:
+      - core-validation-coverage-changed
+    paths:
+      - core/tests/
+      - core/benches/
+  - domain: macos-app
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: ./dev test macos with SwiftLint and SwiftFormat
+    review_triggers:
+      - macos-feature-or-platform-boundary-changed
+    paths:
+      - apps/macos/AreaMatrix/
+      - apps/macos/AGENTS.md
+  - domain: macos-generated-bindings
+    owner: "@AreaSong"
+    status: active
+    authority: generated-verified
+    verification: ./dev bindings verify
+    review_triggers:
+      - udl-or-bindgen-version-changed
+    paths:
+      - apps/macos/AreaMatrix/Bridge/UniFFI/
+  - domain: macos-tests
+    owner: "@AreaSong"
+    status: active
+    authority: test
+    verification: ./dev test macos
+    review_triggers:
+      - macos-governance-or-page-tests-changed
+    paths:
+      - apps/macos/AreaMatrixTests/
+  - domain: macos-project-config
+    owner: "@AreaSong"
+    status: active
+    authority: build-config
+    verification: xcodebuild plus governance test membership check
+    review_triggers:
+      - target-membership-or-build-settings-changed
+    paths:
+      - apps/macos/AreaMatrix.xcodeproj/
+  - domain: ios-port
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: platform test suite runs on demand
+    review_triggers:
+      - shared-contract-or-port-scope-changed
+    paths:
+      - apps/ios/
+  - domain: linux-port
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: platform test suite runs on demand
+    review_triggers:
+      - shared-contract-or-port-scope-changed
+    paths:
+      - apps/linux/
+  - domain: windows-port
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: platform test suite runs on demand
+    review_triggers:
+      - shared-contract-or-port-scope-changed
+    paths:
+      - apps/windows/
+  - domain: brand-assets
+    owner: "@AreaSong"
+    status: active
+    authority: assets
+    verification: brand generator scripts and manual review
+    review_triggers:
+      - brand-or-prototype-assets-changed
+    paths:
+      - assets/
+  - domain: task-records
+    owner: "@AreaSong"
+    status: active
+    authority: task-records
+    verification: ./dev check codex-os registry checks
+    review_triggers:
+      - task-registry-format-changed
+    paths:
+      - tasks/
+  - domain: workflow-system
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: ./dev workflow doctor
+    review_triggers:
+      - workflow-lifecycle-rules-changed
+    paths:
+      - workflow/
+      - workflow/versions/README.md
+      - workflow/versions/source-docs-guide.md
+  - domain: workflow-templates
+    owner: "@AreaSong"
+    status: active
+    authority: adapter
+    verification: ./dev workflow doctor template checks
+    review_triggers:
+      - workflow-template-contract-changed
+    paths:
+      - workflow/templates/
+      - workflow/versions/v-template/
+  - domain: workflow-active-version
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: ./dev workflow doctor for the active version
+    review_triggers:
+      - active-version-gate-changed
+    paths:
+      - workflow/versions/v2/
+  - domain: workflow-sealed-versions
+    owner: "@AreaSong"
+    status: active
+    authority: archived-readonly
+    verification: read-only guard with audit access only
+    review_triggers:
+      - sealed-record-audit-requested
+    paths:
+      - workflow/versions/
+  - domain: residual-ledger
+    owner: "@AreaSong"
+    status: active
+    authority: source-fact
+    verification: residual cross-check via governance review
+    review_triggers:
+      - residual-item-opened-or-closed
+    paths:
+      - workflow/residuals/
+
+core_modules:
+  - module: ai_call_log
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - ai_call_log
+  - module: ai_classification_suggestion
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - ai_classification_suggestion
+  - module: ai_fallback
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - ai_fallback
+  - module: ai_privacy_rules
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+      - docs/user-guide/ai-features-and-privacy.md
+    test_families:
+      - ai_privacy_rules
+  - module: ai_runtime
+    owner: "@AreaSong"
+    coverage_note: internal AI executor runtime; exercised via ai_classification_suggestion, ai_summary, and ai_tags_suggestion executor tests
+  - module: ai_settings
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - ai_settings_config
+  - module: ai_summary
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - ai_summary
+  - module: ai_tags_suggestion
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - ai_tags_suggestion
+  - module: api
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+      - docs/architecture/ffi-design.md
+    test_families:
+      - smoke
+      - core_performance_baseline
+  - module: batch_category
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - batch_change_category
+  - module: batch_delete
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - batch_delete_trash
+  - module: batch_rename
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - batch_rename_preview
+  - module: classifier_correction
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - classifier_correction
+  - module: classifier_impact
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - classifier_impact_preview
+  - module: classifier_rule_editor
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+      - docs/api/classifier-yaml.md
+    test_families:
+      - classifier_rule_editor
+  - module: classifier_rules
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/classifier-yaml.md
+    test_families:
+      - classifier_rule_save
+  - module: classify
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/modules/classify.md
+      - docs/api/classifier-yaml.md
+    test_families:
+      - classify_preview
+  - module: cloud_permission_state
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - cloud_permission_state
+      - onedrive_risk_state
+  - module: command_index
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - command_index
+  - module: config
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - load_update_config
+      - repository_settings_cross_platform
+  - module: cross_platform_ffi
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+      - docs/architecture/ffi-design.md
+    test_families:
+      - cross_platform_ffi
+  - module: db
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/architecture/data-model.md
+      - docs/architecture/migration.md
+      - docs/modules/change-log.md
+    test_families:
+      - list_change_log
+      - list_files
+      - get_file_detail
+      - mobile_library_query
+      - mobile_detail
+      - desktop_main_query
+  - module: domain
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    coverage_note: shared DTO types exercised by every capability family through the public API
+  - module: error
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/error-codes.md
+    test_families:
+      - error_mapping
+      - error_recovery_matrix
+  - module: external_runtime
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/architecture/concurrency.md
+    test_families:
+      - external_runtime_governance
+  - module: icloud_conflicts
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - list_icloud_conflicts
+      - icloud_conflict_visual
+  - module: import_conflict_batch
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+      - docs/architecture/transactional-import.md
+    test_families:
+      - import_conflict_batch
+  - module: local_model_status
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - local_model_status
+  - module: missing_file_recovery
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - missing_file_recovery
+  - module: note
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - read_write_note
+  - module: overview
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/modules/overview-gen.md
+    test_families:
+      - overview_generated
+  - module: platform_capabilities
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - platform_capabilities
+  - module: platform_watcher_status
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - platform_watcher_status
+  - module: recovery
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/architecture/transactional-import.md
+    test_families:
+      - recover_on_startup
+      - recovery_scenarios
+  - module: redo
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - redo_action_log
+  - module: remote_provider_config
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - remote_provider_config
+      - remote_provider_network_failure_matrix
+  - module: repair
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - repair_reindex_metadata
+  - module: repo_entries
+    owner: "@AreaSong"
+    coverage_note: internal init/adopt user-content classification helper; exercised via init_empty_repo and adopt_existing_repo families
+  - module: repo_init
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+      - docs/architecture/adopt-existing-folders.md
+    test_families:
+      - init_empty_repo
+      - adopt_existing_repo
+      - mobile_repo_connect
+      - windows_repo_connect
+      - linux_repo_connect
+  - module: repo_path
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - validate_repo_path
+  - module: repo_scan
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - manual_rescan
+  - module: search
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - search_query_files
+      - search_filters
+      - saved_search
+      - smart_list
+  - module: semantic_search
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+      - docs/user-guide/ai-features-and-privacy.md
+    test_families:
+      - semantic_search
+  - module: storage
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/modules/storage.md
+      - docs/architecture/transactional-import.md
+    test_families:
+      - files_import
+      - import_copy_file
+      - import_move_file
+      - import_index_file
+      - camera_import
+      - share_extension_import
+      - desktop_import_flow
+      - detect_duplicate
+      - resolve_name_conflict
+      - rename_file
+      - delete_remove_index
+      - move_to_category
+  - module: sync
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/architecture/fs-watcher.md
+      - docs/architecture/source-of-truth.md
+      - docs/api/core-api.md
+    test_families:
+      - sync_external_created
+      - sync_external_modified
+      - sync_external_removed
+      - sync_external_renamed
+  - module: sync_conflict_detect
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - sync_conflict_detect
+  - module: sync_conflict_resolve
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - sync_conflict_resolve
+      - replace_confirm_cross_platform
+  - module: tags
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - tag_crud
+      - tag_suggestions
+      - batch_add_tags
+  - module: tree
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/modules/tree-scan.md
+    test_families:
+      - build_tree
+  - module: undo
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+    test_families:
+      - undo_action_log
+cross_cutting_test_families:
+  - family: release_evidence
+    owner: "@AreaSong"
+    purpose: release evidence checklist and residual ledger pinning tests spanning docs and workflow sources
+macos_features:
+  - feature: AI
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/user-guide/ai-features-and-privacy.md
+  - feature: CommandPalette
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/ux/deep-features.md
+  - feature: Detail
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/ux/ui-states.md
+      - docs/user-guide/organizing-files.md
+  - feature: FileActions
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/user-guide/organizing-files.md
+      - docs/ux/deep-features.md
+  - feature: Import
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/user-guide/importing-files.md
+      - docs/ux/drag-import-flow.md
+  - feature: MainList
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/ux/ui-states.md
+      - docs/user-guide/getting-started.md
+  - feature: Onboarding
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/ux/first-launch.md
+      - docs/user-guide/getting-started.md
+  - feature: RepositoryLifecycle
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/user-guide/repositories.md
+      - docs/ux/error-messages.md
+  - feature: Search
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/ux/search.md
+      - docs/user-guide/search-tags-and-smart-lists.md
+  - feature: Settings
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/ux/settings-panel.md
+      - docs/user-guide/settings.md
+  - feature: SyncConflicts
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/ux/dedup-conflict.md
+      - docs/user-guide/conflicts-and-recovery.md
+raid:
+  - id: AM-RISK-001
+    type: risk
+    status: open
+    severity: high
+    probability: high
+    impact: high
+    impact_scope: independent-review-and-L3-L4-governance-gates
+    owner: "@AreaSong"
+    summary: Single-maintainer role concentration can prevent independent review.
+    mitigation: Keep L3/L4 changes blocked until a qualified independent reviewer is recorded.
+    due: ongoing
+    escalation: Any L3/L4 or Mission-Critical change enters G3 or G5.
+    close_evidence: Named reviewer and completed independent review evidence.
+  - id: AM-DEP-001
+    type: dependency
+    status: blocked-external
+    severity: high
+    probability: high
+    impact: high
+    impact_scope: formal-apple-distribution
+    owner: "@AreaSong"
+    summary: Formal Apple distribution requires external signing and notarization capability.
+    mitigation: Keep formal distribution residuals open and do not relabel previews as releases.
+    due: before-formal-distribution
+    escalation: G6 formal distribution review.
+    close_evidence: Developer ID, notarization, stapling, spctl, checksum and clean-Mac evidence.
+  - id: AM-DEP-002
+    type: dependency
+    status: blocked-external
+    severity: medium
+    probability: high
+    impact: medium
+    impact_scope: trusted-preview-participation-and-feedback-operations
+    owner: "@AreaSong"
+    summary: Trusted preview participant invitation and feedback operations require external participants.
+    mitigation: Keep the related v1 feedback residual open until real invitation and triage evidence exists.
+    due: before-formal-test-distribution
+    escalation: G6 trusted preview distribution decision.
+    close_evidence: Tester roster, invitation, feedback route and triage owner evidence.
+  - id: AM-DEP-003
+    type: dependency
+    status: deferred
+    severity: high
+    probability: high
+    impact: high
+    impact_scope: v2-promotion-and-live-execution
+    owner: "@AreaSong"
+    summary: AreaFlow execution cutover and live mapping are not authorized.
+    mitigation: Permit governance authoring only; block promotion apply, execution and task-loop writes.
+    due: before-v2-live-execution
+    escalation: Any request to write execution state or start runner commands.
+    close_evidence: Explicit execution authorization, live mapping, recovery plan and passing boundary tests.
+  - id: AM-DEP-004
+    type: dependency
+    status: deferred
+    severity: medium
+    probability: high
+    impact: medium
+    impact_scope: remote-ci-and-branch-protection
+    owner: "@AreaSong"
+    summary: GitHub remote CI and branch protection are external merge controls.
+    mitigation: Run local equivalent gates and require remote CI before merge.
+    due: before-merge
+    escalation: G5 merge readiness review.
+    close_evidence: Required GitHub checks and branch protection evidence.
+
+exceptions: []
+
+capabilities:
+  - id: AM-CAP-GOVERNANCE
+    owner: "@AreaSong"
+    status: active
+    success_metrics:
+      - ASW applicability matrix has no unclassified domain.
+      - G0-G8 have unique AreaMatrix landing points.
+      - Governance checks reject missing owners and widened execution permissions.
+    operational_targets:
+      - Quarterly source verification.
+      - Governance CI on every PR and main push.
+    retirement_conditions:
+      - A superseding governance baseline is accepted and migration evidence is recorded.

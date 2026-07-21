@@ -1,812 +1,238 @@
-# 文件系统监听设计（FSEventStream + iCloud）
+# 文件监听与外部变化同步
 
-> 用户在 Finder / 终端 / 同步工具中对资料库的修改必须能被应用感知并同步到 DB 和 UI。本文给出 FSEvents 监听、去抖、自家事件过滤、iCloud 占位符状态机、断线重连流程的完整设计。
+> 记录 macOS FSEvents watcher、cursor、事件合并、Core 同步、恢复和 iCloud 文件安全边界。
 >
-> 阅读时长：约 14 分钟。
+> 阅读时长：约 8 分钟。
 
 ---
 
-## 设计目标
-
-1. 在 Finder / 终端中改资料库文件，UI 1 秒内更新
-2. 应用自身的写操作不引起处理循环
-3. iCloud 占位符可用且不阻塞 UI
-4. 关闭应用期间发生的变化在重启后能补回
-5. 高频事件（拖拽几百个文件）不会触发雪崩
-6. FSEventStream 异常断开时能恢复
-
----
-
-## 完整流程图
-
-```mermaid
-flowchart TB
-    OS[macOS Kernel]
-    OS -->|file events| FSEvent[FSEventStream callback]
-    FSEvent -->|raw events| Filter1{属于资料库?}
-    Filter1 -->|否| Drop1[丢弃]
-    Filter1 -->|是| Filter2{在 .areamatrix/ 内?}
-    Filter2 -->|是| Drop2[丢弃]
-    Filter2 -->|否| Debounce[200ms 去抖]
-    Debounce --> Filter3{InFlight 标记?}
-    Filter3 -->|是| Drop3[丢弃: 自家操作]
-    Filter3 -->|否| Resolve{是 .icloud 占位符?}
-    Resolve -->|是| Coordinate[ICloudCoordinator]
-    Resolve -->|否| Sync[Core sync_external_changes]
-    Coordinate -.下载完成.-> FSEvent
-    Sync --> DB[(SQLite)]
-    Sync --> Notify[发 RepoChanged 通知]
-    Notify --> UI[UI 刷新]
-```
-
----
-
-## FSEventStream 配置
-
-```swift
-// apps/macos/AreaMatrix/Watcher/FSWatcher.swift
-import Foundation
-import CoreServices
-
-public final class FSWatcher {
-    private var stream: FSEventStreamRef?
-    private let repoPath: String
-    private var sinceEventId: FSEventStreamEventId
-    private let onEvents: ([FSRawEvent]) -> Void
-    private let onMustRescan: () -> Void
-    private let onRootChanged: () -> Void
-    private let healthMonitor = HealthMonitor()
-
-    public init(
-        repoPath: String,
-        sinceEventId: FSEventStreamEventId,
-        onEvents: @escaping ([FSRawEvent]) -> Void,
-        onMustRescan: @escaping () -> Void,
-        onRootChanged: @escaping () -> Void
-    ) {
-        self.repoPath = repoPath
-        self.sinceEventId = sinceEventId
-        self.onEvents = onEvents
-        self.onMustRescan = onMustRescan
-        self.onRootChanged = onRootChanged
-    }
-
-    public func start() {
-        var context = FSEventStreamContext(
-            version: 0,
-            info: Unmanaged.passUnretained(self).toOpaque(),
-            retain: nil, release: nil, copyDescription: nil
-        )
-        let flags: FSEventStreamCreateFlags =
-            UInt32(kFSEventStreamCreateFlagFileEvents) |
-            UInt32(kFSEventStreamCreateFlagUseCFTypes) |
-            UInt32(kFSEventStreamCreateFlagUseExtendedData) |
-            UInt32(kFSEventStreamCreateFlagWatchRoot) |
-            UInt32(kFSEventStreamCreateFlagNoDefer)
-
-        stream = FSEventStreamCreate(
-            kCFAllocatorDefault,
-            { (_, info, count, paths, flags, ids) in
-                let watcher = Unmanaged<FSWatcher>.fromOpaque(info!).takeUnretainedValue()
-                watcher.handleRawEvents(count: count, paths: paths, flags: flags, ids: ids)
-            },
-            &context,
-            [repoPath] as CFArray,
-            sinceEventId,
-            0.2,
-            flags
-        )
-        guard let stream = stream else { return }
-        FSEventStreamSetDispatchQueue(stream, .global(qos: .utility))
-        FSEventStreamStart(stream)
-        healthMonitor.start { [weak self] in self?.recover() }
-    }
-
-    public func stop() {
-        guard let stream = stream else { return }
-        FSEventStreamStop(stream)
-        FSEventStreamInvalidate(stream)
-        FSEventStreamRelease(stream)
-        self.stream = nil
-        healthMonitor.stop()
-    }
-
-    private func handleRawEvents(
-        count: Int,
-        paths: UnsafeMutableRawPointer,
-        flags: UnsafePointer<FSEventStreamEventFlags>,
-        ids: UnsafePointer<FSEventStreamEventId>
-    ) {
-        let pathsArr = unsafeBitCast(paths, to: NSArray.self) as! [String]
-        var batched: [FSRawEvent] = []
-        for i in 0..<count {
-            let f = flags[i]
-            sinceEventId = max(sinceEventId, ids[i])
-
-            if f & UInt32(kFSEventStreamEventFlagRootChanged) != 0 {
-                onRootChanged()
-                return
-            }
-            if f & UInt32(kFSEventStreamEventFlagMustScanSubDirs) != 0 {
-                onMustRescan()
-                return
-            }
-            if f & UInt32(kFSEventStreamEventFlagHistoryDone) != 0 {
-                continue
-            }
-            batched.append(FSRawEvent(path: pathsArr[i], flags: f, eventId: ids[i]))
-        }
-        if !batched.isEmpty {
-            onEvents(batched)
-            healthMonitor.heartbeat()
-        }
-    }
-
-    private func recover() {
-        tracing("watcher silent for too long, restarting")
-        stop()
-        start()
-    }
-}
-
-public struct FSRawEvent {
-    public let path: String
-    public let flags: FSEventStreamEventFlags
-    public let eventId: FSEventStreamEventId
-}
-```
-
-### 关键 flag 解释
-
-| Flag | 作用 |
-|---|---|
-| `FileEvents` | 给细粒度的文件级事件而非目录级 |
-| `UseCFTypes` | path 用 CFString 而非 char* |
-| `UseExtendedData` | 提供 inode 用于检测 rename |
-| `WatchRoot` | 资料库根本身被移动 / 重命名也通知 |
-| `NoDefer` | 立即送事件，不等待 latency |
-
----
-
-## InFlightTracker 完整实现
-
-### 设计要求
-
-1. 引用计数：同 path 多次 mark / unmark 不打架
-2. TTL：异常路径 60s 自动失效，避免死锁外部同步
-3. 线程安全：从任意 actor 调用都安全
-4. 高频性能：mark/contains 必须 O(1)
-
-### 实现
-
-```swift
-// apps/macos/AreaMatrix/Watcher/InFlightTracker.swift
-import Foundation
-
-public actor InFlightTracker {
-    private struct Entry {
-        var refCount: Int
-        var expireAt: Date
-    }
-
-    private var paths: [String: Entry] = [:]
-    private let ttl: TimeInterval
-    private var sweepTask: Task<Void, Never>?
-
-    public init(ttl: TimeInterval = 60) {
-        self.ttl = ttl
-        startSweeper()
-    }
-
-    deinit { sweepTask?.cancel() }
-
-    public func mark(_ path: String) {
-        if var e = paths[path] {
-            e.refCount += 1
-            e.expireAt = Date().addingTimeInterval(ttl)
-            paths[path] = e
-        } else {
-            paths[path] = Entry(refCount: 1, expireAt: Date().addingTimeInterval(ttl))
-        }
-    }
-
-    public func mark(_ paths: [String]) {
-        for p in paths { mark(p) }
-    }
-
-    public func unmark(_ path: String) {
-        guard var e = paths[path] else { return }
-        e.refCount -= 1
-        if e.refCount <= 0 {
-            paths.removeValue(forKey: path)
-        } else {
-            e.expireAt = Date().addingTimeInterval(ttl)
-            paths[path] = e
-        }
-    }
-
-    public func contains(_ path: String) -> Bool {
-        guard let e = paths[path] else { return false }
-        if e.expireAt < Date() {
-            paths.removeValue(forKey: path)
-            return false
-        }
-        return true
-    }
-
-    public func filter(_ events: [FSRawEvent]) -> [FSRawEvent] {
-        let now = Date()
-        var kept: [FSRawEvent] = []
-        kept.reserveCapacity(events.count)
-        for event in events {
-            if let e = paths[event.path], e.expireAt >= now {
-                continue
-            }
-            kept.append(event)
-        }
-        return kept
-    }
-
-    private func startSweeper() {
-        sweepTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 30 * NSEC_PER_SEC)
-                await self?.sweep()
-            }
-        }
-    }
-
-    private func sweep() {
-        let now = Date()
-        paths = paths.filter { $0.value.expireAt >= now }
-    }
-}
-```
-
-### 使用模式
-
-```swift
-public actor CoreBridge {
-    let tracker: InFlightTracker
-
-    public func importFile(from src: URL, options: ImportOptions) async throws -> FileEntry {
-        let staging = stagingPathFor(src)
-        let final = expectedFinalPath(src, options)
-
-        await tracker.mark([staging, final])
-        defer {
-            Task { await tracker.unmark(staging); await tracker.unmark(final) }
-        }
-
-        return try await Task.detached(priority: .userInitiated) {
-            try AreaMatrix.importFile(repoPath: self.repoPath, sourcePath: src.path, options: options)
-        }.value
-    }
-
-    public func writeNote(fileId: Int64, content: String) async throws {
-        let entry = try await getFile(id: fileId)
-        let notePath = "\(entry.path).md"
-
-        await tracker.mark(notePath)
-        defer { Task { await tracker.unmark(notePath) } }
-
-        try await Task.detached {
-            try AreaMatrix.writeNote(repoPath: self.repoPath, fileId: fileId, contentMd: content)
-        }.value
-    }
-}
-```
-
-### 测试
-
-```swift
-final class InFlightTrackerTests: XCTestCase {
-    func test_ref_counting() async {
-        let tracker = InFlightTracker()
-        await tracker.mark("/a")
-        await tracker.mark("/a")
-        XCTAssertTrue(await tracker.contains("/a"))
-        await tracker.unmark("/a")
-        XCTAssertTrue(await tracker.contains("/a"))
-        await tracker.unmark("/a")
-        XCTAssertFalse(await tracker.contains("/a"))
-    }
-
-    func test_ttl_expiration() async {
-        let tracker = InFlightTracker(ttl: 0.1)
-        await tracker.mark("/x")
-        XCTAssertTrue(await tracker.contains("/x"))
-        try? await Task.sleep(nanoseconds: 200_000_000)
-        XCTAssertFalse(await tracker.contains("/x"))
-    }
-
-    func test_filter_drops_marked() async {
-        let tracker = InFlightTracker()
-        await tracker.mark("/a")
-        let events = [
-            FSRawEvent(path: "/a", flags: 0, eventId: 1),
-            FSRawEvent(path: "/b", flags: 0, eventId: 2),
-        ]
-        let filtered = await tracker.filter(events)
-        XCTAssertEqual(filtered.count, 1)
-        XCTAssertEqual(filtered.first?.path, "/b")
-    }
-}
-```
-
----
-
-## Debouncer
-
-### 实现（与上一版相同，简化）
-
-```swift
-public final class Debouncer {
-    private let interval: TimeInterval
-    private var pending: [String: FSRawEvent] = [:]
-    private var workItem: DispatchWorkItem?
-    private let queue: DispatchQueue
-    private let onFlush: ([FSRawEvent]) -> Void
-    private let lock = NSLock()
-
-    public init(
-        interval: TimeInterval = 0.2,
-        queue: DispatchQueue = .global(qos: .utility),
-        onFlush: @escaping ([FSRawEvent]) -> Void
-    ) {
-        self.interval = interval
-        self.queue = queue
-        self.onFlush = onFlush
-    }
-
-    public func enqueue(_ events: [FSRawEvent]) {
-        lock.lock()
-        for event in events {
-            if let existing = pending[event.path] {
-                pending[event.path] = FSRawEvent(
-                    path: event.path,
-                    flags: existing.flags | event.flags,
-                    eventId: max(existing.eventId, event.eventId)
-                )
-            } else {
-                pending[event.path] = event
-            }
-        }
-        workItem?.cancel()
-        let work = DispatchWorkItem { [weak self] in self?.flush() }
-        workItem = work
-        lock.unlock()
-        queue.asyncAfter(deadline: .now() + interval, execute: work)
-    }
-
-    private func flush() {
-        lock.lock()
-        let snapshot = Array(pending.values)
-        pending.removeAll()
-        lock.unlock()
-        if !snapshot.isEmpty { onFlush(snapshot) }
-    }
-}
-```
-
-200ms 是经验值；过短无效，过长用户感觉迟钝。
-
----
-
-## iCloud 占位符状态机
-
-### 占位符类型
-
-```mermaid
-stateDiagram-v2
-    [*] --> Local : 文件在本地
-    Local --> Evicted : iCloud 优化空间，驱逐
-    Evicted --> Downloading : 用户/应用请求
-    Downloading --> Local : 下载完成
-    Downloading --> Failed : 网络错误
-    Failed --> Evicted : 重试
-    Local --> [*]
-```
-
-### 状态查询
-
-```swift
-public enum ICloudState {
-    case local
-    case evicted
-    case downloading(progress: Double)
-    case uploading(progress: Double)
-    case failed(error: Error)
-    case notICloud
-}
-
-public extension URL {
-    func iCloudState() throws -> ICloudState {
-        let keys: Set<URLResourceKey> = [
-            .isUbiquitousItemKey,
-            .ubiquitousItemDownloadingStatusKey,
-            .ubiquitousItemDownloadingErrorKey,
-            .ubiquitousItemIsDownloadingKey,
-            .ubiquitousItemIsUploadingKey,
-            .ubiquitousItemUploadingErrorKey,
-        ]
-        let values = try resourceValues(forKeys: keys)
-        guard values.isUbiquitousItem ?? false else { return .notICloud }
-
-        if let err = values.ubiquitousItemDownloadingError as? Error {
-            return .failed(error: err)
-        }
-
-        switch values.ubiquitousItemDownloadingStatus {
-        case .current: return .local
-        case .downloaded:
-            if values.ubiquitousItemIsDownloading ?? false {
-                return .downloading(progress: 0)
-            }
-            return .local
-        case .notDownloaded: return .evicted
-        default: return .evicted
-        }
-    }
-}
-```
-
-### 触发下载 + 等待
-
-```swift
-// apps/macos/AreaMatrix/Watcher/ICloudCoordinator.swift
-public final class ICloudCoordinator {
-    public enum DownloadError: Error {
-        case timeout
-        case networkUnavailable
-        case underlying(Error)
-    }
-
-    public func ensureDownloaded(
-        at url: URL,
-        timeout: TimeInterval = 30
-    ) async throws {
-        let state = try url.iCloudState()
-        switch state {
-        case .local, .notICloud: return
-        case .failed(let e): throw DownloadError.underlying(e)
-        default: break
-        }
-
-        try FileManager.default.startDownloadingUbiquitousItem(at: url)
-
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            let s = try url.iCloudState()
-            switch s {
-            case .local: return
-            case .failed(let e): throw DownloadError.underlying(e)
-            default: try await Task.sleep(nanoseconds: 250_000_000)
-            }
-        }
-        throw DownloadError.timeout
-    }
-
-    public func coordinatedRead<T>(
-        at url: URL,
-        _ body: (URL) throws -> T
-    ) async throws -> T {
-        try await ensureDownloaded(at: url)
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        var coordError: NSError?
-        var result: Result<T, Error>?
-        coordinator.coordinate(readingItemAt: url, options: [], error: &coordError) { coordinatedURL in
-            do { result = .success(try body(coordinatedURL)) }
-            catch { result = .failure(error) }
-        }
-        if let coordError = coordError { throw coordError }
-        return try result!.get()
-    }
-}
-```
-
-### Sync 流程中的位置
+## 职责分层
 
 ```mermaid
 flowchart LR
-    Event[FSEvent: file changed] --> CheckState{iCloud state?}
-    CheckState -->|local| Proceed[正常处理]
-    CheckState -->|evicted| Defer[暂缓，记入 pendingDownloads]
-    CheckState -->|downloading| Defer
-    CheckState -->|notICloud| Proceed
-    Defer --> UserAction{用户操作?}
-    UserAction -->|查看详情| TriggerDL[触发下载]
-    UserAction -->|忽略| Skip[不处理]
-    TriggerDL --> WaitDone[等下载完成]
-    WaitDone --> Proceed
+    fsevents["FSEventStream"]
+    watcher["MainExternalCreatedFileWatcher"]
+    tracker["InFlightFileChangeTracker"]
+    relay["External change relay"]
+    model["Current repository model"]
+    bridge["CoreExternalChangesSyncing"]
+    core["sync_external_changes"]
+
+    fsevents --> watcher
+    tracker --> watcher
+    watcher --> relay
+    relay --> model
+    model --> bridge
+    bridge --> core
 ```
 
-### 限流
+- Swift 平台层启动和停止 FSEventStream。
+- watcher 处理 flags、路径归一化、200ms 合并和 InFlight 过滤。
+- 当前资料库 model 保留待处理事件并以单批调用 Core。
+- Core 读取 metadata/hash，更新 DB、change log、overview 和 cursor。
+- Core 不启动 FSEvents，也不调用 macOS API。
 
-不要对每个占位符都立即触发下载（用户可能只是浏览，无需都下到本地）：
+## 启动与 cursor
 
-- Sync 处理时遇到 evicted 文件：跳过 hash 计算，仅按 path 入库（hash 留空，标记 `needs_hash`）
-- 用户主动选中文件查看详情时再触发下载
-- 设置中提供「全量下载」开关（默认关）
+watcher 启动前调用 `get_fs_event_cursor(repoPath)`：
 
----
+- 有 cursor：从该 event ID 启动 FSEventStream。
+- 无 cursor：不从 `SinceNow` 静默开始，而是请求用户可见的全量重扫。
+- cursor 读取或 stream 启动失败：进入 watcher startup error。
 
-## Cursor 持久化（断点续传）
+重扫请求记录当前 `FSEventsGetCurrentEventId()` 作为 resume seed。用户确认并完成重扫后，应用通过 `set_fs_event_cursor` 写入该 seed，再重新打开资料库和 watcher。
 
-```mermaid
-sequenceDiagram
-    participant App
-    participant DB
-    participant FSEvents
+正常业务批次先由 Core 在 DB batch 和 overview 成功后写入实际 signal 的最大 event ID。Swift 同时保留
+整个回调窗口的 `cursorWatermark`。每次 flush 都发布一个有序同步窗口：业务窗口在 Core 成功后补写更高
+watermark；全部事件被过滤时发布空窗口，并在它到达队首后确认 watermark。
 
-    App->>DB: SELECT last_event_id FROM fs_event_cursor
-    DB-->>App: id = 12345
-    App->>FSEvents: stream sinceEventId=12345
-    FSEvents-->>App: 重放 12345 之后的事件
-    App->>App: 处理...
-    App->>DB: UPDATE fs_event_cursor SET last_event_id=99999
-```
+watcher 的启动、停止和资料库切换使用 generation token。异步读取旧资料库 cursor 后若 generation 或当前
+资料库已经变化，旧启动结果不得创建 stream、覆盖新 stream、发布事件或推进新资料库 cursor。
 
-### 边界
+## FSEventStream 配置
 
-- 首次启动：`fs_event_cursor` 表无数据 → 用 `kFSEventStreamEventIdSinceNow` + 全量 reconcile
-- FSEvents 历史已被 OS 清理：得到 `MustScanSubDirs` flag → 触发 `reindex_from_filesystem`
-- cursor 落后超过 24h：保守起见也触发 reconcile
+当前 flags：
 
-### 保存频率
+- `FileEvents`
+- `UseCFTypes`
+- `WatchRoot`
+- `NoDefer`
 
-- 每批事件处理完保存一次
-- 每 10s 强制 flush 一次（保险）
+stream latency 为 0.2 秒，回调投递到 main dispatch queue。
 
----
+当前不使用 `UseExtendedData`，不依赖 inode 字段配对 rename，也没有 HealthMonitor 静默定时器。
 
-## 重连流程
+## 恢复 flags
 
-### 触发场景
-
-1. macOS 系统休眠唤醒后 FSEventStream 静默
-2. 资料库被卸载（外接硬盘 / iCloud 临时下线）后重新挂载
-3. 应用从后台切回前台
-4. HealthMonitor 检测到长时间无事件
-
-### HealthMonitor
-
-```swift
-public final class HealthMonitor {
-    private var lastHeartbeat: Date = .now
-    private var task: Task<Void, Never>?
-    private let threshold: TimeInterval
-
-    public init(threshold: TimeInterval = 30) {
-        self.threshold = threshold
-    }
-
-    public func start(onSilent: @escaping () -> Void) {
-        lastHeartbeat = .now
-        task = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 5 * NSEC_PER_SEC)
-                guard let self = self else { return }
-                if Date().timeIntervalSince(self.lastHeartbeat) > self.threshold {
-                    onSilent()
-                    self.lastHeartbeat = .now
-                }
-            }
-        }
-    }
-
-    public func heartbeat() { lastHeartbeat = .now }
-
-    public func stop() { task?.cancel() }
-}
-```
-
-### 重连流程
-
-```mermaid
-flowchart TB
-    Trigger[触发重连]
-    Stop[stop 旧 stream]
-    LoadCursor[从 DB 读 cursor]
-    NewStream[create stream sinceCursor]
-    Start[start]
-    Reconcile[全量 reconcile<br/>防止丢失]
-    Health[启动 HealthMonitor]
-
-    Trigger --> Stop
-    Stop --> LoadCursor
-    LoadCursor --> NewStream
-    NewStream --> Start
-    Start --> Reconcile
-    Reconcile --> Health
-```
-
-### 实现
-
-```swift
-public final class WatcherSupervisor {
-    private var watcher: FSWatcher?
-    private let coreBridge: CoreBridge
-    private let repoPath: String
-
-    public func startInitial() async throws {
-        let cursor = try await coreBridge.getFsEventCursor() ?? .now
-        startWatcher(sinceEventId: cursor)
-
-        if try await coreBridge.getFsEventCursor() == nil {
-            try await coreBridge.reconcileFull()
-        }
-    }
-
-    public func reconnect() async throws {
-        watcher?.stop()
-        let cursor = try await coreBridge.getFsEventCursor() ?? .now
-        let now = FSEventStreamEventId(kFSEventStreamEventIdSinceNow)
-        let staleness = now > cursor ? now - cursor : 0
-        startWatcher(sinceEventId: cursor)
-        if staleness > 60 * 60 * 24 * 1_000_000 {
-            try await coreBridge.reconcileFull()
-        }
-    }
-
-    private func startWatcher(sinceEventId: FSEventStreamEventId) {
-        watcher = FSWatcher(
-            repoPath: repoPath,
-            sinceEventId: sinceEventId,
-            onEvents: { [weak self] events in
-                Task { try? await self?.handleEvents(events) }
-            },
-            onMustRescan: { [weak self] in
-                Task { try? await self?.coreBridge.reconcileFull() }
-            },
-            onRootChanged: { [weak self] in
-                Task { await self?.notifyRootChanged() }
-            }
-        )
-        watcher?.start()
-    }
-}
-```
-
-### 应用生命周期 hook
-
-```swift
-@MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    let supervisor = WatcherSupervisor(...)
-
-    func applicationDidFinishLaunching(_ note: Notification) {
-        Task { try await supervisor.startInitial() }
-        NSWorkspace.shared.notificationCenter.addObserver(
-            self, selector: #selector(didWake),
-            name: NSWorkspace.didWakeNotification, object: nil
-        )
-    }
-
-    @objc func didWake() {
-        Task { try await supervisor.reconnect() }
-    }
-}
-```
-
----
-
-## Sync 模块（Core 侧）
-
-```rust
-// core/src/sync/mod.rs
-pub fn sync_external_changes(
-    repo_path: &Path,
-    events: Vec<ExternalEvent>,
-) -> CoreResult<SyncResult> {
-    let mut result = SyncResult::default();
-    let paired = pair_events(&events);
-
-    for unit in paired {
-        match unit {
-            EventUnit::Renamed(from, to) => handle_rename(repo_path, &from, &to, &mut result)?,
-            EventUnit::Single(e) => match e.kind {
-                ExternalEventKind::Created => handle_created(repo_path, &e, &mut result)?,
-                ExternalEventKind::Removed => handle_removed(repo_path, &e, &mut result)?,
-                ExternalEventKind::Modified => handle_modified(repo_path, &e, &mut result)?,
-                ExternalEventKind::Renamed => unreachable!("paired"),
-            }
-        }
-    }
-
-    Ok(result)
-}
-
-fn pair_events(events: &[ExternalEvent]) -> Vec<EventUnit> {
-    let mut by_hash: HashMap<String, ExternalEvent> = HashMap::new();
-    let mut units = Vec::new();
-    for e in events {
-        match e.kind {
-            ExternalEventKind::Created => {
-                if let Ok(hash) = sha256_quick(&e.path) {
-                    if let Some(removed) = by_hash.remove(&hash) {
-                        units.push(EventUnit::Renamed(removed, e.clone()));
-                        continue;
-                    }
-                    by_hash.insert(hash, e.clone());
-                }
-                units.push(EventUnit::Single(e.clone()));
-            }
-            _ => units.push(EventUnit::Single(e.clone())),
-        }
-    }
-    units
-}
-```
-
-详见 [source-of-truth.md](source-of-truth.md) 的 9 种场景。
-
----
-
-## 边界情况清单
-
-| 场景 | 行为 |
+| Flag | 行为 |
 |---|---|
-| 资料库根被移动 | 收到 RootChanged flag → 暂停 watcher，提示用户重新选择路径 |
-| FSEvents 历史已清理 | 收到 MustScanSubDirs flag → 触发 reindex_from_filesystem |
-| 拖动 1000 个文件 | 200ms 去抖 + 批量 sync_external_changes |
-| 应用刚启动还在初始化时收到事件 | 缓冲到 watcher 启动 → 一次性 flush |
-| FSEvents 回调线程阻塞 | 回调内只 enqueue，重活全在 dispatch queue |
-| iCloud 大文件下载中用户操作 | 显示进度，不阻塞 UI |
-| 用户在 .areamatrix/ 内手动改 | 只警告（属于内部数据） |
-| 系统休眠后唤醒 | HealthMonitor 检测到静默 → 自动 reconnect |
-| 资料库在外接硬盘，硬盘弹出 | RootChanged → 提示用户重连 |
-| 同一文件 5 秒内被改 100 次 | 200ms 去抖合并；hash 仅最后一次 |
+| `RootChanged` | 停止 stream，清空 pending，要求重新连接资料库路径 |
+| `MustScanSubDirs` | 停止 stream，要求全量重扫 |
+| `UserDropped` | 停止 stream，要求全量重扫 |
+| `KernelDropped` | 停止 stream，要求全量重扫 |
+| `EventIdsWrapped` | 停止 stream，要求全量重扫 |
+| `HistoryDone` | 只作为历史重放边界，不生成文件事件 |
 
----
+任一无法保证历史完整性的 flag 都不能继续推进 cursor。
 
-## 测试策略
+## 事件归一化
 
-### 单元测试
+watcher 忽略：
 
-- Debouncer：模拟连续事件，验证合并和 flush
-- InFlightTracker：mark/unmark 计数、TTL、filter 正确性
-- Sync：mock 文件系统，验证 created/removed/modified/renamed 各场景
-- HealthMonitor：模拟静默窗口
+- 目录事件。
+- 无效或超出 `Int64` 的 event ID。
+- 资料库外路径。
+- `.areamatrix` 及其子路径。
+- 只有恢复/边界 flag、没有文件语义的事件。
 
-### 集成测试（手工）
+文件事件映射：
 
-详见 [../development/testing.md](../development/testing.md) 的 FSEvents 集成测试章节。
+| FSEvents flags | 路径状态 | Core kind |
+|---|---|---|
+| `ItemRenamed` | 新路径存在 | `Renamed` |
+| `ItemRenamed` | 路径不存在 | `Removed` |
+| `ItemRemoved` | 路径不存在 | `Removed` |
+| `ItemCreated` | 文件存在 | `Created` |
+| `ItemModified` | 文件存在 | `Modified` |
 
-### 自动化集成测试
+同一路径在窗口内的 flags 合并，event ID 取最大值。flush 前按 event ID、路径排序。
 
-```rust
-#[test]
-fn external_create_synced() {
-    let (tmp, repo) = setup_with_watcher();
-    std::fs::write(repo.join("docs/external.pdf"), b"x").unwrap();
-    wait_for_sync(Duration::from_secs(2));
+Core 收到一批事件后再次按 `fs_event_id` 和原输入顺序归一化同一路径事件：后到的 Created、Removed 或
+Renamed 覆盖更早的业务 kind；Modified 只推进该路径 watermark，不覆盖已经观察到的业务 kind。这样
+Removed→Created、Created→Removed 和 Renamed→Removed 都以较晚事实为准，同时保留整批最大 cursor。
 
-    let entries = list_files(&repo, FileFilter::default()).unwrap();
-    assert!(entries.iter().any(|e| e.path == "docs/external.pdf"));
-}
-```
+## Rename 配对
 
----
+Swift 不使用 inode 配对旧路径和新路径。Core 对新路径计算 hash，并在 active rows 中查找唯一候选：
 
-## 性能目标
+- 唯一候选：更新同一 file ID 的 path、name 和 category。
+- 候选旧路径必须已经不存在；仍存在说明可能是同 hash copy，返回 Conflict。
+- 目标路径的 active、staging 或 deleted row 均参与冲突检查；无候选或多个候选也返回 Conflict，不猜测。
+- 同批出现旧路径 Removed 和新路径 Renamed 时，Core 在配对成功后抑制同一 file ID 的 soft delete。
+- 跨分类移动同时更新 category，并刷新来源与目标分类概览。
 
-| 操作 | 目标 |
-|---|---|
-| 单个事件从 FS 到 UI 更新 | < 1 s |
-| 1000 个事件的 debounce 合并 | < 250 ms |
-| InFlightTracker.contains | < 1 µs |
-| Sync 单个事件（含 hash） | < 50 ms（小文件） |
-| 全量 reconcile（10k 文件） | < 10 s |
+Core 不执行物理 rename；它只登记 Finder、终端或同步工具已经完成的外部变化。
 
----
+## Created 与重新激活
+
+- active 同路径 row：幂等跳过。
+- 没有同路径 row：创建 `origin=external`、`storage_mode=indexed` 的 active row。
+- deleted 同路径 row：复用原 file ID，更新 hash/size/name/category，清除 `deleted_at` 并恢复 active。
+- staging 同路径 row：返回 Conflict，不覆盖未完成导入状态。
+
+外部 create 写入 `external_modified`，detail 中记录 `kind=create`。
+
+## Modified
+
+`Modified` 对已登记文件重新读取 size 和 SHA-256：
+
+- hash/size 未变化：幂等跳过。
+- 内容变化：更新 metadata 并写 `external_modified` change log。
+- 路径存在但没有 active row：按外部 create 登记。
+- 文件在读取期间继续变化时最多重试稳定快照；Unix/macOS 同时校验打开句柄与最终路径的
+  device/inode identity，防止同 size/mtime 的原子替换提交旧句柄 hash。仍不稳定则返回 Conflict，等待后续事件重放。
+
+Core 只读取用户明确存在的本地文件；不修改文件正文。
+
+## InFlight 过滤
+
+平台层以 `(repoPath, relativePath)` 为 key 标记应用自身的文件写入；当前实际接入的是受管 note
+sidecar 写入路径（`MainDetailNoteState` 在写 sidecar 前后 mark/unmark），import、rename、move、
+delete 等其余自身动作暂未标记，回流事件由 Core 幂等与事务规则吸收：
+
+- actor 内使用引用计数，支持嵌套 mark/unmark。
+- 每次 mark 或仍有引用的 unmark 后刷新过期时间。
+- 最后一次 unmark 把 count 置 0，但 entry 继续保留完整 TTL grace，吸收延迟到达的自身事件。
+- 默认 TTL 为 60 秒，防止异常路径永久屏蔽外部变化。
+- 只过滤匹配路径，不丢弃同批其他路径。
+
+InFlight 过滤是反馈回路保护，不替代 Core 幂等和事务。
+
+## 200ms 合并
+
+watcher 在收到事件后启动可取消的 200ms flush task。新事件到达时重置等待：
+
+- 同一路径只保留合并结果。
+- 不同路径全部保留。
+- flush 后一次性发布信号列表。
+- 当前资料库 model 再合并同路径的较新 event ID，并以单个 Core batch 提交。
+
+flush 取当前窗口最大 event ID 作为 `cursorWatermark`：
+
+- 有 signal 时，窗口携带排序并按路径去重后的业务事件。
+- 全部事件被路径规则或 InFlight 过滤时，窗口的事件列表为空。
+- relay notification 只负责唤醒；消费端一次取出该资料库的完整 backlog，不使用 notification object 替代队列。
+- 当前资料库只处理队首窗口。业务窗口完成 Core 后按需补写 watermark；空窗口在队首直接确认 watermark。
+- 业务窗口的 Core 调用与空窗口的 watermark 确认都包在 `RepositoryWriteCoordinator.withWriteAccess`
+  内执行，与 import、repair 等其他 per-repo 写路径串行化。
+- Core 或 cursor 失败时保留队首并阻断后续窗口；已经提交后的 UI reload 失败不会重新提交同一 Core batch。
+
+## 受管 note sidecar
+
+`<filename>.md` 只有在基础文件存在 active row 且 `notes` 表已有该 file ID 时才是受管 sidecar。
+
+- 受管 sidecar 的 watcher 重放只参与 cursor/watermark 确认。
+- 不把它登记成普通 external Markdown 文件。
+- 外部编辑不会自动回写 DB；后续 `read_note` / `write_note` 发现不一致时返回错误。
+- 不满足受管合同的普通 Markdown 文件继续按普通文件同步。
+
+## Core 提交顺序
+
+`sync_external_changes`：
+
+1. 校验整批 event ID 和路径，并按 `external_sync_receipts` 过滤掉已应用过的事件（同
+   `(event_id, kind, path)` 的重放直接计入结果，不再执行）。
+2. 规划 Created、Renamed、Removed、Modified。
+3. 在一个 SQLite 事务中写 files、change_log 和本批事件的 receipts。
+4. 更新所有受影响分类和 root overview。
+5. 单独持久化业务事件最大 cursor，并清理 cursor 之下的旧 receipts；Swift 按需补写回调窗口 watermark。
+
+DB 事务失败时 metadata、change log 和 receipts 全部回滚，cursor 不推进。overview 或 cursor 失败时 cursor
+仍不推进；重放安全由 receipts 查重与各动作幂等规则共同保证（例如 rename 目标已被本事件结果占用时按
+receipt/change-log 判定为重放而不是 Conflict）。
+
+## iCloud placeholder
+
+- watcher 只观察路径和 FSEvents metadata。
+- Core 发现 placeholder marker 时先尝试物化回退：`.icloud` 占位文件已消失且对应真实文件存在时，
+  改用真实路径继续处理；无法解析时才返回 `ICloudPlaceholder`。
+- watcher 和 Core 都不触发下载。
+- `Download & retry` 属于用户触发的 macOS 平台动作。
+- placeholder 错误不推进 cursor，也不删除 marker、原文件或 conflicted copy。
+
+## RootChanged 与重扫
+
+`RootChanged` 进入重新连接错误，不自动猜测新路径。
+
+重扫进入已有 DB repair / reindex 确认界面：
+
+- 清空该资料库的 pending watcher events。
+- 显示需要全量重扫的原因。
+- 用户确认后运行现有 reindex/recovery 合同。
+- 完成后写入预先记录的 resume seed。
+
+该流程不得移动、删除、重命名或覆盖用户文件。
+
+## 验证重点
+
+- 从已有 cursor 启动；无 cursor 请求重扫。
+- dropped/wrapped flags 全部停止 stream 并请求重扫。
+- RootChanged 进入重新连接。
+- HistoryDone 不产生业务事件。
+- burst 合并保持不同路径并按 event ID 排序，所有 signal 携带同一 watermark。
+- filtered-only window 只在前序窗口完成后单调确认 watermark，失败时保留队首并阻断后续 ack。
+- 快速切换资料库时，旧 cursor read / flush 不得覆盖新 stream 或向新资料库发布事件。
+- InFlight 引用计数、count=0 TTL grace 和逐路径过滤正确。
+- 单批进入 Core，DB 失败保持原子，overview 失败不推进 cursor。
+- managed sidecar 重放只推进 cursor，不登记普通文件。
+- created deleted-row reactivation 保持原 file ID。
+- rename、modified、removed 和跨分类概览均可重放。
+- iCloud placeholder 不发生隐式下载或用户文件写入。
 
 ## Related
 
-- [overview.md](overview.md)
 - [source-of-truth.md](source-of-truth.md)
-- [transactional-import.md](transactional-import.md)
 - [concurrency.md](concurrency.md)
-- [../adr/0005-fsevents-listener.md](../adr/0005-fsevents-listener.md)
-- [../adr/0006-icloud-support.md](../adr/0006-icloud-support.md)
-- [../development/troubleshooting.md](../development/troubleshooting.md)
+- [transactional-import.md](transactional-import.md)
+- [../api/core-api.md](../api/core-api.md)
+- [../development/recovery.md](../development/recovery.md)

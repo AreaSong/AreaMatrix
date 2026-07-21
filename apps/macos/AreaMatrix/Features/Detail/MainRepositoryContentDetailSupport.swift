@@ -19,6 +19,7 @@ extension MainRepositoryContentView {
             detailExternalCreateSyncState: fileListModel.detailExternalCreateSyncState,
             detailTagEditorState: fileListModel.detailTagEditorState,
             detailTagSuggestionState: fileListModel.detailTagSuggestionState,
+            missingFileRelinkState: fileListModel.missingFileRelinkState,
             tagSuggestionPresentationRequest: fileListModel.tagSuggestionPresentationRequest,
             detailTagUndoToast: fileListModel.detailTagUndoToast,
             detailTabRequest: fileListModel.detailTabRequest,
@@ -37,9 +38,13 @@ extension MainRepositoryContentView {
                 openClassifierRuleEditorFromBatchCategory(handoff, route: commandPaletteBatchChangeCategoryRoute())
             },
             onRetrySelectedFileDetail: { Task { await fileListModel.retrySelectedFileDetail() } },
+            onRetryExternalSync: fileListModel.retryExternalSync,
             tagActions: detailTagActions,
             onCopyPaths: onCopyPaths,
             onOpenNoteFile: onOpenNoteFile,
+            onLocateMissingFile: { fileID in
+                Task { await fileListModel.locateMissingFile(fileID: fileID) }
+            },
             onRefreshChangeLog: {
                 Task {
                     await fileListModel.loadSelectedFileChangeLog()

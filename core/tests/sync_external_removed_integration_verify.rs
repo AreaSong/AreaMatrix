@@ -16,6 +16,9 @@ use api_contract_source::API_RS;
 const CORE_API: &str = include_str!("../../docs/api/core-api.md");
 const DB_SYNC_RS: &str = include_str!("../src/db/sync.rs");
 const SYNC_RS: &str = include_str!("../src/sync/mod.rs");
+const SYNC_EVENTS_RS: &str = include_str!("../src/sync/events.rs");
+const SYNC_PLANS_RS: &str = include_str!("../src/sync/plans.rs");
+const SYNC_SNAPSHOTS_RS: &str = include_str!("../src/sync/snapshots.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -189,7 +192,7 @@ fn assert_core_api_and_udl_contract() {
     for fragment in [
         "### `sync_external_changes(repoPath, events) throws -> SyncResult`",
         "去抖 + InFlight 过滤后传入",
-        "print(\"created: \\(result.detectedCreates), renamed: \\(result.detectedRenames), deleted: \\(result.detectedDeletes)\")",
+        "deleted: \\(result.detectedDeletes), modified: \\(result.detectedModifies)",
         "`sync_external_changes`（批量事件）",
         "文件不存在抛 `FileNotFound`。",
     ] {
@@ -218,13 +221,27 @@ fn assert_rust_entry_points_are_real_removed_wiring() {
     for fragment in [
         "ExternalEventKind::Removed =>",
         "plan_removed_event",
+        "normalize_and_coalesce_events",
+        "db::set_fs_event_cursor",
+    ] {
+        assert_contains(SYNC_RS, fragment);
+    }
+
+    for fragment in [
+        "plan_removed_event",
         "ensure_path_absent",
         "find_active_file_by_path",
         "external_removed_detail",
-        "has_icloud_placeholder_marker",
-        "cursor_for_batch",
+        "resolve_file_event_path",
     ] {
-        assert_contains(SYNC_RS, fragment);
+        assert_contains(SYNC_PLANS_RS, fragment);
+    }
+    assert_contains(SYNC_SNAPSHOTS_RS, "ensure_path_absent");
+    for fragment in [
+        "normalize_and_coalesce_events",
+        "has_icloud_placeholder_marker",
+    ] {
+        assert_contains(SYNC_EVENTS_RS, fragment);
     }
 
     for fragment in [
@@ -233,7 +250,6 @@ fn assert_rust_entry_points_are_real_removed_wiring() {
         "deleted_at = strftime('%s', 'now')",
         "status = 'deleted'",
         "'deleted'",
-        "set_cursor(&tx, last_event_id)",
         "tx.commit()",
     ] {
         assert_contains(DB_SYNC_RS, fragment);
@@ -310,7 +326,7 @@ fn sync_external_removed_integration_verify_boundaries_stay_transactional_and_sc
         vec![removed("docs/present.pdf", 911)],
     );
 
-    assert!(matches!(existing_path, Err(CoreError::Io { .. })));
+    assert_eq!(existing_path, Err(CoreError::conflict("docs/present.pdf")));
 
     assert_eq!(fs_cursor(repo.path()), Some(910));
     assert_eq!(
@@ -336,13 +352,13 @@ fn sync_external_removed_integration_verify_boundaries_stay_transactional_and_sc
             modified("docs/present.pdf", 913),
         ],
     )
-    .expect("sync only the bound removed capability");
+    .expect("sync coalesced removed and modified signals");
 
     assert_eq!(partial_scope.detected_creates, 0);
     assert_eq!(partial_scope.detected_renames, 0);
     assert_eq!(partial_scope.detected_deletes, 1);
     assert_eq!(partial_scope.detected_modifies, 0);
-    assert_eq!(fs_cursor(repo.path()), Some(910));
+    assert_eq!(fs_cursor(repo.path()), Some(913));
     assert_eq!(count_deleted_changes(repo.path(), entry.id), 1);
 }
 

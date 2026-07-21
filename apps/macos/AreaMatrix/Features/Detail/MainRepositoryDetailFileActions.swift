@@ -3,6 +3,8 @@ import SwiftUI
 struct MainRepositoryDetailFileActionMenu: View {
     let detail: FileEntrySnapshot
     let disabledReason: MainFileWriteActionDisabledReason?
+    let missingFileRelinkState: MainMissingFileRelinkState
+    let onLocateMissingFile: (Int64) -> Void
     let onBeginRenameFile: (Int64) -> Void
     let onBeginChangeCategoryFile: (Int64) -> Void
     let onBeginClassifierCorrectionFile: (Int64) -> Void
@@ -47,6 +49,13 @@ struct MainRepositoryDetailFileActionMenu: View {
                     .disabled(disabledReason != nil)
                     .accessibilityIdentifier("icloud-conflict-minimal-resolve-icloud-conflict")
                 }
+                if MainRepositoryDetailFileActionPolicy.shouldShowLocate(for: detail) {
+                    Button(missingFileRelinkState.isBusy(for: detail.id) ? "Locating…" : "Locate…") {
+                        onLocateMissingFile(detail.id)
+                    }
+                    .disabled(disabledReason != nil || missingFileRelinkState.isBusy(for: detail.id))
+                    .accessibilityIdentifier("file-detail-locate-missing-file")
+                }
                 if MainRepositoryDetailFileActionPolicy.shouldShowRemoveFromIndex(for: detail) {
                     Button("Remove from Index", role: .destructive) {
                         onBeginDeleteFile(detail.id)
@@ -64,6 +73,10 @@ struct MainRepositoryDetailFileActionMenu: View {
 }
 
 enum MainRepositoryDetailFileActionPolicy {
+    static func shouldShowLocate(for detail: FileEntrySnapshot) -> Bool {
+        detail.availability == .missing
+    }
+
     static func shouldShowRemoveFromIndex(for detail: FileEntrySnapshot) -> Bool {
         MainFileDeleteOperation.recommended(for: detail) == .removeFromIndex
     }

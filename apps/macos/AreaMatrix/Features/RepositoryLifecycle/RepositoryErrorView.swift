@@ -194,9 +194,13 @@ struct MainRepoErrorView: View {
             EmptyView()
         case .confirmingPrivacy:
             VStack(alignment: .leading, spacing: 8) {
-                Text("Diagnostics do not include user file contents, are not uploaded, and redact paths and usernames.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
+                        "notes, and other sensitive metadata. Original file contents are not copied, and " +
+                        "diagnostics are not uploaded automatically. Review the snapshot before sharing."
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
                 HStack(spacing: 10) {
                     Button("Create diagnostics", action: onConfirmDiagnostics)
                         .buttonStyle(.borderedProminent)
@@ -206,7 +210,7 @@ struct MainRepoErrorView: View {
             .padding(12)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
         case .collecting:
-            Label("Preparing redacted diagnostics...", systemImage: "arrow.clockwise")
+            Label("Preparing repository diagnostics...", systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):

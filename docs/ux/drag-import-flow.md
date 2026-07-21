@@ -1,517 +1,158 @@
-# 拖拽导入流程（Drag & Drop Import Flow）
+# 拖拽与导入流程
 
-> 定义 AreaMatrix 的拖拽导入 UX：从“用户把文件拖进来”到“文件落位、分类、命名、概览更新、列表可见”的全链路交互。包含触发入口矩阵、hover/drop 视觉态、ImportSheet（Move/Copy/Index）、多文件/文件夹/跨应用拖入分支、失败恢复与撤销。
+> 记录 AreaMatrix macOS 导入入口、预览、冲突处理、逐项执行、停止与恢复的真实 UX 合同。
 >
-> 阅读时长：约 18 分钟。
+> 阅读时长：约 8 分钟。
 
 ---
 
-## 目标与成功标准
+## 入口
 
-### 目标
+用户可以通过以下入口发起导入：
 
-1. **一拖即用**：拖入即出现 ImportSheet，默认选项合理，确认后 1 秒内列表可见（不含大文件 hash）。
-2. **用户不做工程决策**：用户只做“我想怎么处理源文件（Move/Copy/Index）”与“是否接受分类/命名建议”两类决策。
-3. **可逆且可解释**：任何导入都能在改动时间线里看到，失败能恢复，取消不留半文件。
-4. **批量友好**：拖入多个文件/文件夹时，能批量确认/批量处理，进度清晰。
-5. **符合 macOS 习惯**：支持 Finder 拖拽、Dock 图标拖拽、从 Mail/Safari 下载项拖拽（尽可能）。
+- 应用菜单 `Import...`，快捷键为 `Command-I`。
+- 主资料库工具栏的 Import。
+- Dock/Open Files 请求；资料库尚未可用时排队，打开资料库后再消费。
+- 主窗口或侧栏支持的文件拖放区域：根节点和 Smart List 映射到 repository root，分类及子目录映射到
+  顶层分类，列表区沿用当前侧栏目标，空资料库映射到 auto classify。
+- 文件选择器选择一个或多个文件、文件夹。
 
-### 成功标准（验收）
+所有入口先形成统一的 `ImportEntryRequest`，再进入预览。拖放本身不直接写文件或 DB。
 
-- **I1**：拖入 1 个小文件（< 10MB）→ 点击确认 → 1 秒内列表出现。
-- **I2**：拖入 20 个文件 → 先出现“批量 ImportSheet”→ 可一键应用同一策略。
-- **I3**：拖入文件夹 → 能提示“将递归导入 N 个文件（可排除 .DS_Store 等）”。
-- **I4**：拖入不可访问文件（无权限/已删除）→ 给出错误并继续处理其他文件。
-- **I5**：用户点取消（在 ImportSheet）→ **不发生任何 FS 变更**。
-- **I6**：导入过程中强制终止 App → 下次启动自动恢复/清理（与事务式导入一致）。
+## 预览
 
----
+预览负责把输入转换为可检查的行：
 
-## 谁会使用这份文档
+- 来源名称和类型。
+- 预测分类与目标相对路径。
+- 存储模式：Copy、Move、Index-only。
+- duplicate hash、同名冲突、不可读路径和 iCloud placeholder 状态。
+- 用户选择的分类覆盖、命名策略和冲突策略。
 
-- **macOS 工程师**：实现 DragTarget、ImportSheet、进度 UI、错误提示与撤销入口。
-- **Core 工程师**：对齐批量导入 API、进度回调、去重提示、staging 清理行为。
-- **产品/设计**：锁定默认策略、文案与分支行为（尤其 Move/Index 的风险说明）。
+预览是只读操作。Apply 之前不得创建最终资料库文件、移动来源文件或写入活动 DB 行。
 
----
+### 文件夹预扫描
 
-## 关键概念（首次出现术语）
+文件夹导入先递归预扫描，再允许执行：
 
-- Drop zone（投放区）：窗口中可接受拖入的区域。
-- ImportSheet：拖入后出现的确认面板（macOS 常见的 sheet）。
-- Storage mode（存储模式）：Move / Copy / Index（仅索引）。
-- Staging（暂存区）：导入先落到 `.areamatrix/staging/`，保证事务性。
-- Dedup（去重）：以 SHA256 判断内容重复。
+- 默认不包含隐藏文件，也不跟随 symlink。
+- `.DS_Store`、`.git/`、`.areamatrix/`、`node_modules/` 等排除项显示汇总。
+- 扫描错误会阻止导入，用户只能 Retry scan 或 Cancel。
+- 切换“包含隐藏文件”或“跟随符号链接”后重新扫描，不复用旧结果。
 
----
+## 存储模式
 
-## 触发入口矩阵（用户从哪里拖进来）
-
-| 入口 | 支持 | 说明 |
-|---|---|---|
-| 主窗口（空态/正常态）拖入 | 必须 | 主路径 |
-| 侧边栏树节点上拖入 | 必须 | 作为“目标分类”显式指定 |
-| 文件列表区域拖入 | 必须 | 目标=当前选中的分类/节点 |
-| App Dock 图标拖入 | 应支持 | 作为“导入到当前 repo”的快捷入口 |
-| 菜单 File → Import…（非拖拽） | 建议 | 作为无法拖拽用户的替代（与本篇共享 ImportSheet） |
-| 从 Mail 附件拖入 | 尽可能 | 可能先落到临时目录；仍按普通文件处理 |
-| 从 Safari 下载条拖入 | 尽可能 | 依赖 macOS 具体行为；失败时提示“请先保存到 Finder 再拖入” |
-
----
-
-## 总体流程（高层）
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant UI as SwiftUI(App)
-    participant Core as Core(Rust)
-    participant Repo as RepoFS
-
-    User->>UI: Drag files into dropZone
-    UI->>UI: Parse drop items (URLs / file promises)
-    UI->>UI: Preflight (count, types, size, permission)
-    UI-->>User: Show ImportSheet (preview + options)
-
-    User->>UI: Confirm import
-    UI->>Core: importBatch(items, options, progressCb)
-    Core->>Repo: staging -> hash -> dedup -> finalize
-    Core->>Core: update DB + change_log + overview gen
-    Core-->>UI: results (success/skip/fail)
-    UI-->>User: List updates + toast summary
-```
-
----
-
-## Drop zone 与视觉态
-
-### Drop zone 覆盖范围
-
-1. **空态**：整个主窗口主体区域是 drop zone（让新用户“哪里都能拖”）。
-2. **正常态**：至少文件列表区域 + 侧边栏都可 drop。\n
-   - 侧边栏 drop → 目标分类=被 drop 的节点\n
-   - 列表区域 drop → 目标分类=当前选中节点\n
-
-### Hover / Drop 视觉态（不画图，用文字+ASCII）
-
-#### Hover（拖拽进入窗口）
-
-- 窗口出现浅色边框高亮（可与系统 accent color 一致）
-- drop zone 显示一行提示：\n
-  - “导入到：<当前分类>（可拖到侧边栏其他分类以改变目标）”
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ AreaMatrix                                                                    │
-│ ┌───────────────┐  导入到：docs  （拖到左侧分类可改变目标）                    │
-│ │ docs          │  ┌────────────────────────────────────────────────────────┐ │
-│ │ code          │  │                                                        │ │
-│ │ design        │  │   Drop files to import                                 │ │
-│ │ ...           │  │                                                        │ │
-│ └───────────────┘  └────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-#### Hover（拖到侧边栏节点上）
-
-- 节点高亮（背景+边框）
-- tooltip：`Import into "<category>"`（中文 UI 显示“导入到「文档」”）
-
-#### Drop（放下那一刻）
-
-1. 立刻出现 ImportSheet（sheet 由窗口顶部滑下）
-2. 背景区域变为不可交互（符合 sheet）
-
----
-
-## ImportSheet：单文件版（核心）
-
-### 什么时候出现单文件版
-
-- drop items 预解析后：**只有 1 个文件**（不含文件夹）
-- 若是 1 个文件夹 → 走“文件夹版”（见后文）
-
-### 单文件 ImportSheet 的信息结构
-
-1. **文件预览**：文件名、图标、大小、来源路径（脱敏：仅显示 `~`）
-2. **建议分类**：Classifier 的推荐（可更改）
-3. **建议命名**：推荐新文件名（可编辑）
-4. **存储模式**：Move / Copy / Index（附风险提示）
-5. **冲突/重复提示**：如果检测到同名或 hash 重复，在这里提前呈现（不进度条后置）
-6. **按钮**：Cancel / Import
-
-### 单文件 ImportSheet（ASCII）
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 导入 1 个文件                                                                  │
-│                                                                              │
-│  文件： [PDF icon]  合同.pdf                                                   │
-│  大小： 1.2 MB                                                                 │
-│  来源： ~/Downloads/合同.pdf                                                   │
-│                                                                              │
-│  建议分类： [ docs ▾ ]   （为什么？）                                          │
-│  建议命名： [ 2026Q1_合同_客户A.pdf ____________________________ ]            │
-│                                                                              │
-│  存储模式： (●) Copy   ( ) Move   ( ) Index-only                              │
-│          Copy：保留原文件。Move：从原位置移走。Index：不复制，仅记录索引。       │
-│                                                                              │
-│  冲突：无                                                                       │
-│                                                                              │
-│  [ Cancel ]                                                   [ Import ]     │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 交互细节（逐项）
-
-#### “为什么？”（分类解释）
-
-点击后弹 popover（不跳页）：
-
-- 命中规则：扩展名/关键词/优先级
-- 置信度：高/中/低（规则引擎可推导：扩展名命中=高，关键词命中=中，兜底=inbox=低）
-- 操作：`Change rules…`（跳到 `classifier-calibration.md`，见 U4）
-
-#### 分类下拉（建议分类 → 手动更改）
-
-- 下拉列表按“常用 + 最近使用 + 全部分类”分组
-- 允许临时导入到 `inbox`（即使推荐为 docs）
-- 侧边栏节点作为 drop 目标时：默认分类=该节点（覆盖 classifier 推荐）
-
-#### 建议命名输入框
-
-- 默认可编辑
-- 自动选中“主体部分”，便于用户直接改
-- 保存时自动修正非法字符（macOS 文件名禁止 `:` 等）
-- 显示冲突预告：若目标文件名已存在，提示“将自动追加序号（2）”
-
-#### 存储模式说明（重要）
-
-对 Move / Index 要给“风险提示”但不恐吓：
-
-- **Copy（默认）**：最安全，保留来源文件。
-- **Move**：导入后来源文件消失。适用于下载目录整理。
-- **Index-only**：不复制，不移动。适用于超大文件或外部硬盘。
-  - 额外提示：如果源文件被删除/移动，索引会失效（UI 会标“missing”）。
-
-对 Index-only 的提示建议用 info icon（ℹ︎），点击展开：
-
-> Index-only 不会把文件放进资料库，只记录引用路径。若你移动/删除源文件，该条目将变为“缺失”。你可以稍后执行“Materialize”（把它复制进资料库）。
-
-（Materialize 行为属于后续能力，但提示先占位。）
-
----
-
-## ImportSheet：多文件版（Batch）
-
-### 触发条件
-
-- drop items ≥ 2（文件+文件夹混合时，先展开文件夹得到最终 file list，见后文）
-
-### 设计原则
-
-1. **批量应用同一策略**：分类、存储模式、命名策略可一键应用。
-2. **允许逐项覆盖**：对少数例外允许单独改。
-3. **先总览后细节**：先告诉用户“你将导入 N 个文件、总大小 X”，然后提供“展开列表”。
-
-### 多文件 ImportSheet（ASCII）
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 导入 20 个文件                                                                 │
-│                                                                              │
-│  总大小： 512 MB    来源：Finder 拖入                                           │
-│                                                                              │
-│  批量设置：                                                                    │
-│    导入到： [ 自动分类（推荐） ▾ ]   （可选：指定分类）                         │
-│    存储模式： (●) Copy   ( ) Move   ( ) Index-only                              │
-│    命名策略： [ 使用建议命名（推荐） ▾ ]                                        │
-│              • 保留原名  • 使用建议命名  • 统一前缀…  • 仅标准化字符            │
-│                                                                              │
-│  项目（可展开）：  [▶] 查看 20 个项目                                           │
-│                                                                              │
-│  预计：重复 2 个，重名冲突 1 个                                                 │
-│                                                                              │
-│  [ Cancel ]                                                   [ Import ]     │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 展开列表视图（批量）
-
-展开后显示表格：
-
-- icon, 原名, 建议分类, 建议新名, 冲突标记
-- 点击某行可单独改分类/命名（不离开 sheet）
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 项目列表（20）                                                                 │
-│                                                                              │
-│  [PDF] 合同.pdf     分类：docs   名称：2026Q1_合同.pdf        状态：OK          │
-│  [PNG] IMG_001.png  分类：media  名称：2026-04-28_screenshot.png 状态：OK      │
-│  [PDF] 报告.pdf     分类：docs   名称：报告.pdf                状态：DUP        │
-│                                                                              │
-│  说明：DUP=内容重复；NAME=重名冲突                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 文件夹拖入（Folder Import）
-
-### 触发条件
-
-- drop items 中包含目录 URL
-
-### 目录展开规则
-
-- 递归遍历（深度不限），但必须有 **排除规则**：
-  - 默认排除：`.DS_Store`、`.git/`、`.areamatrix/`、`node_modules/`（可配置）
-  - 默认排除隐藏文件：以 `.` 开头（可在高级选项开启导入）
-  - 符号链接：默认不跟随（避免无限循环）
-
-### 文件夹 ImportSheet（ASCII）
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 导入文件夹                                                                     │
-│                                                                              │
-│  文件夹： ~/Downloads/客户A/                                                   │
-│                                                                              │
-│  将导入： 143 个文件（排除 12 个隐藏/系统文件）                                 │
-│  预计总大小： 2.8 GB                                                           │
-│                                                                              │
-│  选项：                                                                        │
-│   [✓] 递归导入子文件夹                                                         │
-│   [ ] 包含隐藏文件（.开头）                                                     │
-│   [ ] 跟随符号链接（不推荐）                                                    │
-│                                                                              │
-│  批量设置（同多文件版）…                                                       │
-│                                                                              │
-│  [ Cancel ]                                                   [ Import ]     │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 大目录预估与“先计算再导入”问题
-
-为了避免用户等很久才看到 sheet：
-
-- drop 后先显示 sheet 的“正在分析文件夹…”占位态
-- 允许先展示“已发现 N 个文件（持续增长）”，并在 N 稳定后启用 Import 按钮
-
-```mermaid
-stateDiagram-v2
-    [*] --> analyzing
-    analyzing --> ready: discoveredCountStable
-    analyzing --> error: permissionDenied
-    ready --> importing: userConfirm
-```
-
----
-
-## 跨应用拖入（Mail / Safari / 截图等）
-
-### 原则
-
-UI 不应假设拖入的永远是“稳定的文件 URL”。某些来源可能是：
-
-- file promise（承诺稍后写入）
-- 临时文件（放在沙盒/缓存）
-
-产品侧策略：
-
-1. **尽最大努力转换为稳定文件 URL**。
-2. 失败时给出明确提示：
-   - “请先保存到 Finder，再拖入 AreaMatrix。”
-
-### 失败提示（ASCII）
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 无法导入该项目                                                                 │
-│                                                                              │
-│  这个项目来自某个应用（例如邮件附件或网页下载），当前无法直接访问文件内容。     │
-│                                                                              │
-│  你可以：                                                                      │
-│  • 先把它保存到 Finder，然后再拖入 AreaMatrix                                  │
-│                                                                              │
-│  [ OK ]                                                                       │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 冲突与去重在 ImportSheet 的呈现（与 U5 对齐）
-
-导入前就提示冲突，有两个好处：
-
-- 用户在确认前就理解会发生什么
-- 避免导入到一半才弹对话框打断批量流程
-
-### 冲突类型
-
-| 类型 | 检测 | ImportSheet 展示 |
-|---|---|---|
-| 内容重复（hash dup） | 计算 SHA256 后 | “重复：与 <existing> 相同” + 选项 |
-| 重名冲突（同名不同内容） | 目标路径存在但 hash 不同 | “重名：将自动改名 / 或询问” |
-| 同目录冲突（同分类同名） | 同上 | 与重名合并 |
-
-### 单文件重复的选项（推荐 3 个）
-
-- `Skip`（跳过导入）
-- `Keep both`（保留两份，自动编号）
-- `Replace`（替换现有文件，危险操作，需二次确认）
-
-批量时默认策略：
-
-- 对重复文件默认 `Skip`，并在结果摘要中提示“跳过 N 个重复文件”。
-
----
-
-## 导入执行期间 UI（进度、取消、错误）
-
-### 进度呈现方式
-
-导入确认后，sheet 切换为进度视图（不关闭，避免“点了没反应”）：
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 正在导入…（12 / 20）                                                          │
-│                                                                              │
-│  当前：IMG_0123.png                                                           │
-│  状态：hash（43%）                                                            │
-│                                                                              │
-│  总进度： ████████████░░░░░░░░░  60%                                          │
-│                                                                              │
-│  [ Run in background ]                                      [ Cancel ]       │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Run in background
-
-点击后：
-
-- 关闭 sheet
-- 主界面顶部出现小进度条（或 toolbar indicator）
-- 结束后 toast 总结（成功/失败/跳过数量）
-
-### Cancel（取消）策略
-
-取消导入是高复杂度能力，建议当前产品策略：
-
-- **允许取消等待队列**：未开始处理的项直接取消
-- **正在处理的当前项**：允许“当前项完成后停止”
-  - 用语：`Stop after current file`（中文“处理完当前文件后停止”）
-- 取消后必须保证：
-  - staging 已清理
-  - DB 不存在 “staging” 悬挂记录
-
-工程实现参考：`docs/architecture/transactional-import.md` 的 staging GC 与恢复逻辑。
-
----
-
-## 导入完成后的反馈（总结 + 下一步）
-
-### 成功 toast（单文件）
-
-- “已导入到 docs：2026Q1_合同_客户A.pdf”
-
-### 批量总结 toast（多文件）
-
-- “导入完成：成功 17，跳过 2（重复），失败 1（无权限）”
-
-### 导入后自动行为
-
-1. 若用户导入到当前选中分类：列表自动滚动到新条目并高亮 2 秒
-2. 详情面板自动打开该条目的“元数据”Tab
-3. 侧边栏该分类的计数更新（如果显示计数）
-
----
-
-## 与主界面交互（目标分类规则）
-
-### 拖入目标优先级（从高到低）
-
-| 入口 | 默认目标 | ImportOptions | 是否自动分类 |
+| 模式 | 来源文件 | 资料库文件 | DB |
 |---|---|---|---|
-| drop 到侧边栏具体节点 | 该节点目录 | `destination=.selectedDirectory` + `targetDirectory` | 否 |
-| drop 到文件列表 | 当前选中节点目录 | `destination=.selectedDirectory` + `targetDirectory` | 否 |
-| drop 到根节点 | repo 根目录 | `destination=.selectedDirectory` + `targetDirectory=""` | 否 |
-| drop 到窗口空白区 | 自动分类 | `destination=.autoClassify` | 是 |
-| File → Import… | 自动分类 | `destination=.autoClassify` | 是 |
+| Copy | 保留 | 成功后创建 repo-owned 文件 | 记录 Copied |
+| Move | 成功后从来源位置移除 | 成功后创建 repo-owned 文件 | 记录 Moved |
+| Index-only | 保留在原位置 | 不创建副本 | 记录 Indexed 和来源路径 |
 
-用户在 ImportSheet 手动选择系统分类时，改为 `destination=.category` + `overrideCategory`。自动分类命中不存在的系统目录时，ImportSheet 需要预告“将创建 `<slug>/`”；未命中或低置信时进 `inbox/`。
+Move 和 Replace 都必须在执行前显示影响。选择 Move 后，用户通过执行 Import 确认风险，当前没有独立的二次
+modal；Replace 始终需要单独二次确认。Index-only 必须提示来源移动会导致条目缺失。
 
-```mermaid
-flowchart TD
-  A[Drop] --> B{DroppedOnSidebarNode?}
-  B -->|yes| T1[destination=SelectedDirectory]
-  B -->|no| C{DroppedOnListOrRoot?}
-  C -->|yes| T2[destination=SelectedDirectory]
-  C -->|no| D{UserSelectedCategoryInSheet?}
-  D -->|yes| T3[destination=Category]
-  D -->|no| E{ClassifierMatch?}
-  E -->|yes| T4[destination=AutoClassify]
-  E -->|no| T5[AutoClassify fallback inbox]
-```
+## Duplicate 与同名冲突
 
----
+duplicate 以内容 hash 为基础，策略包括 Skip、Ask、Keep Both 和经过确认的 Replace。
 
-## 文案（中英对照，关键按钮）
+同名但内容不同的文件默认使用安全的新名称，不覆盖已有文件。Replace 只有在高级设置启用且本次操作再次确认后可用；可恢复的旧 repo-owned 文件进入系统 Trash。
 
-| Key | 中文 | English |
-|---|---|---|
-| importSheet.title.single | 导入 1 个文件 | Import 1 item |
-| importSheet.title.multi | 导入 %d 个文件 | Import %d items |
-| importSheet.mode.copy | 复制（推荐） | Copy (Recommended) |
-| importSheet.mode.move | 移动 | Move |
-| importSheet.mode.index | 仅索引 | Index-only |
-| importSheet.cancel | 取消 | Cancel |
-| importSheet.import | 导入 | Import |
-| importSheet.background | 后台运行 | Run in background |
-| importSheet.stopAfterCurrent | 处理完当前文件后停止 | Stop after current file |
-| import.toast.single | 已导入到 %s：%s | Imported to %s: %s |
-| import.toast.summary | 导入完成：成功 %d，跳过 %d，失败 %d | Import finished: %d success, %d skipped, %d failed |
+批量冲突可以使用统一策略或逐项处理。未解决的冲突保持 pending，不得被计入成功。
 
----
+## iCloud placeholder
 
-## 测试用例（产品验收清单）
+预览或 Core 发现 placeholder 时返回明确状态：
 
-### 单文件
+- 不读取未下载正文。
+- 不由 watcher 或 Core 隐式下载。
+- UI 可以提供 `Download & retry`，下载动作属于 macOS 平台层并由用户明确触发。
+- 下载或重试失败时保留来源和现有资料库状态。
 
-- [ ] 拖入 PDF → 出现单文件 ImportSheet，默认 Copy，分类推荐正确
-- [ ] 修改建议命名为非法字符 → 自动修正或提示
-- [ ] 选择 Move → 提示“源文件将被移走”，确认后源路径为空
-- [ ] 选择 Index-only → 导入后 repo 内无新文件，但列表出现条目且标“indexed”
+## 执行模型
 
-### 多文件/文件夹
+批量导入由 Swift `ImportBatchCopyImportModel` 逐项串行编排。每个条目调用单文件 Core 导入合同；当前不存在 Core 端的批量 progress callback、worker pool 或并行导入合同。
 
-- [ ] 拖入 20 文件 → 多文件 ImportSheet，可批量设置并逐项覆盖
-- [ ] 拖入包含隐藏文件的文件夹 → 默认排除隐藏文件并显示数量
-- [ ] 大文件夹分析期间 → 计数递增，稳定后启用 Import
+执行顺序：
 
-### 冲突
+1. 保存可恢复的导入 session 摘要。
+2. 标记当前行并显示目标路径。
+3. 调用单文件 Core 导入。
+4. 更新该行的 imported、duplicate、error 或 pending 状态。
+5. 保存完成数、失败数和当前路径。
+6. 进入下一行，或因停止请求、duplicate 决策或 fatal 错误结束循环。
 
-- [ ] 拖入重复文件 → sheet 显示重复并默认 Skip（批量）
-- [ ] 拖入重名不同内容 → sheet 提示将自动编号或询问策略（见 U5）
+已完成条目保持完成；单个失败不会被改写为成功。fatal 错误会暂停剩余队列并保留重试上下文。
 
-### 异常
+## 进度界面
 
-- [ ] 拖入无权限文件 → 不影响其他文件导入，结果摘要含失败原因
-- [ ] 导入中 kill app → 下次启动可恢复/清理 staging 残留
+进度页显示：
 
----
+- completed、failed、remaining、pending 和 stopped 数量。
+- 当前目标路径。
+- 每一行的 importing、imported、failed、skipped 或 pending 状态。
+- 查看详情、停止、重试当前项、停止并查看结果、诊断等上下文动作。
+
+AreaMatrix 当前不提供 `Run in background`。关闭进度上下文不能把仍在执行的导入伪装为后台任务。
+
+## Stop after current file
+
+用户选择停止时先确认：
+
+- 已完成的文件保留。
+- 未开始的文件取消。
+- 当前文件处理到 Core 安全边界后停止。
+
+停止请求不会中断正在进行的文件系统/DB 提交。当前条目返回后，Swift 循环标记 stopped，并不再启动下一项。
+
+停止后结果摘要区分 imported、failed、stopped 和 pending。结果表当前把未开始的 stopped 行显示为
+`Skipped`，没有独立的 stopped 行状态。若 session 已到可安全结束条件，应用清除 app-owned session 摘要；
+底层 staging 与 DB 恢复仍由 Core 恢复合同负责。
+
+## 失败与重试
+
+失败分为：
+
+- 可重试：权限恢复、placeholder 下载完成、暂时性 DB/IO 错误。
+- 需要决策：duplicate、同名冲突、Replace 确认。
+- fatal：当前上下文无法安全继续。
+
+重试当前项前，应用先确认保存的 session 和 Core 恢复状态。重试不得重复创建活动行、覆盖已有文件或让 cursor/session 提前表示完成。
+
+## 结果
+
+结果页展示：
+
+- 成功、失败、停止和待处理四个汇总数量。
+- 每行状态为 Imported、Skipped、Failed 或 Pending；停止前未开始的行使用 Skipped，并保留原因。
+- 最后导入路径。
+- 未解决 duplicate 和 iCloud 数量。
+- 脱敏详情导出。
+- 返回资料库、在 Finder 中查看或继续处理冲突。
+
+详情导出不包含用户文件正文，路径按诊断合同处理。
+
+## 文件安全不变量
+
+- 预览不产生最终写入。
+- Copy 失败不删除来源文件。
+- Move 只有在文件与 DB 提交成功后才移除来源位置。
+- Index-only 不复制或移动来源文件。
+- 失败导入不得留下可见的最终目录半成品。
+- Replace 不静默覆盖；旧 repo-owned 文件必须可恢复。
+- 自动生成内容只写允许的 AreaMatrix 目标，不覆盖 `README.md`。
+
+## 验证重点
+
+- 多路径请求保留顺序和逐项状态。
+- Stop 在当前项完成后阻止下一项启动。
+- duplicate、同名、placeholder 和 fatal 错误不会被计入成功。
+- session 重试幂等，DB 与文件系统保持一致。
+- Copy、Move、Index-only 和 Replace 分别满足文件安全合同。
 
 ## Related
 
-- [../product/prd.md](../product/prd.md)
-- [../modules/storage.md](../modules/storage.md)
-- [../modules/classify.md](../modules/classify.md)
-- [../modules/overview-gen.md](../modules/overview-gen.md)
-- [../modules/change-log.md](../modules/change-log.md)
-- [../architecture/transactional-import.md](../architecture/transactional-import.md)
-- [../architecture/adopt-existing-folders.md](../architecture/adopt-existing-folders.md)
-- [../architecture/fs-watcher.md](../architecture/fs-watcher.md)
-- [../architecture/source-of-truth.md](../architecture/source-of-truth.md)
 - [dedup-conflict.md](dedup-conflict.md)
-- [classifier-calibration.md](classifier-calibration.md)
+- [ui-states.md](ui-states.md)
+- [../user-guide/importing-files.md](../user-guide/importing-files.md)
+- [../architecture/transactional-import.md](../architecture/transactional-import.md)
+- [../architecture/fs-watcher.md](../architecture/fs-watcher.md)

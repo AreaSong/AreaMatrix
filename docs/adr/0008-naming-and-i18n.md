@@ -7,6 +7,13 @@
 > 影响范围：core/classify / core/storage / apps/macos UI
 > 关联 ADR：—
 
+> 现状更正（2026-07-21）：三层分离原则（FS 英文 slug、用户文件名保留）仍有效，以下声明按当前实现更正：
+>
+> - 内置分类 slug 实际为 6 个：docs / code / design / media / finance / inbox（`core/resources/classifier.yaml`），正文原「10 个」处已就地更正。
+> - 「`Localizations/{en,zh-Hans,zh-Hant}.lproj/Localizable.strings` 编译进 app bundle」未实现：全仓无 `.lproj` / `.strings` / `.xcstrings`，UI 文案当前硬编码中英混用；未实现，已列入残差跟踪。
+> - 「UI 显示按 `Locale.preferredLanguages.first` 取本地化字符串」未实现：`preferredLanguages` 仅用于推导仓库配置 locale（`apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift`），驱动分类 `display_name`（仅 zh-Hans / en），不驱动 UI strings。
+> - 「DB 中 path 列做 NFC 归一 + case-insensitive 索引」未实现：`files.path` 为 `TEXT NOT NULL UNIQUE`，无 `COLLATE NOCASE`、无 NFC 归一（`core/src/db/schema.rs`）；unicode NFC 归一目前仅用于分类关键词匹配。
+
 ## 上下文
 
 AreaMatrix 是面向中文用户为主的本地资料管理工具，但要兼顾跨语言场景：
@@ -24,12 +31,12 @@ AreaMatrix 是面向中文用户为主的本地资料管理工具，但要兼顾
 
 | 层 | 命名策略 |
 |---|---|
-| **文件系统**（分类目录、staging 等内部目录） | 英文 slug：`docs`, `code`, `media`, `archive`, `data`, `software`, `finance`, `health`, `personal`, `inbox` |
+| **文件系统**（分类目录、staging 等内部目录） | 英文 slug，内置 6 个：`docs`, `code`, `design`, `media`, `finance`, `inbox`（更正：见顶部现状说明） |
 | **数据库**（files.category 列） | 同 FS：英文 slug |
-| **UI 显示**（侧栏、详情、设置） | 按 `Locale.preferredLanguages.first` 取本地化字符串 |
+| **UI 显示**（侧栏、详情、设置） | 按 `Locale.preferredLanguages.first` 取本地化字符串（更正：未实现，见顶部现状说明） |
 | **用户文件名** | **完全保留**，不做翻译 / 拼音化 / 转码 |
 
-**Locale 配置文件**：每个 locale 一个 strings 文件，编译进 app bundle：
+**Locale 配置文件**（更正：未实现，见顶部现状说明）：每个 locale 一个 strings 文件，编译进 app bundle：
 
 ```text
 apps/macos/AreaMatrix/Localizations/
@@ -87,7 +94,7 @@ apps/macos/AreaMatrix/Localizations/
 - 缺点：
   - 配置复杂
   - 用户再也无法跨语言切换 UI
-- **为什么没选**：当前分类内置（10 个），用户自定义后续加入（仍用英文 slug + 显示名分离）
+- **为什么没选**：当前分类内置（6 个），用户自定义后续加入（仍用英文 slug + 显示名分离）
 
 ### E. 自动音译 / 拼音化中文文件名
 
@@ -125,7 +132,7 @@ apps/macos/AreaMatrix/Localizations/
 - 用户改了 macOS locale 但应用没自动跟随 → 提供"语言切换"设置项
 - 用户文件名包含 NTFS / FAT 不允许的字符（`:`, `?`, `*` 等）→ 在导入时验证 + 转义建议
 - 大小写敏感性：APFS 默认不敏感、ext4 敏感 → 跨平台同步时可能出冲突
-  - 缓解：DB 中 path 列做 NFC 归一 + case-insensitive 索引
+  - 缓解：DB 中 path 列做 NFC 归一 + case-insensitive 索引（更正：未实现，见顶部现状说明）
 
 ## 何时重审
 

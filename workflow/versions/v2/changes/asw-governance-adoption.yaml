@@ -1,0 +1,106 @@
+id: v2-asw-governance-adoption-change
+title: Adopt ASW-EWF-001 governance baseline
+version: v2
+status: ready
+features:
+  - id: v2-asw-governance-adoption
+    module: governance
+    intent: Establish the complete AreaMatrix-specific enterprise governance baseline and its enforceable authoring boundary.
+    depends_on: []
+    docs:
+      source:
+        - docs/governance/enterprise-workflow-baseline.md
+        - docs/governance/project-charter.md
+        - docs/governance/governance-register.yaml
+        - docs/governance/operations-lifecycle.md
+        - docs/security/threat-model.md
+      update:
+        - CODE_REVIEW.md
+        - CONTRIBUTING.md
+        - docs/development/ci-governance.md
+        - workflow/README.md
+        - workflow/AGENTS.md
+        - .ai-governance/README.md
+        - .ai-governance/project/areamatrix-rules.md
+        - .github/PULL_REQUEST_TEMPLATE.md
+      api: []
+      udl: []
+    doc_changes:
+      - file: docs/governance/enterprise-workflow-baseline.md
+        operation: create
+        line_start: 1
+        line_end: 152
+        heading: AreaMatrix 企业工作流治理基线
+        excerpt: 本文是 AreaMatrix 对 `ASW-EWF-001@1.0.0` 的项目适配源事实。
+        summary: Record applicability, G0-G8, RAID assessment dimensions, source facts, tailoring, and upgrade policy.
+        depends_on: []
+        tasks:
+          - authoring
+      - file: docs/governance/governance-register.yaml
+        operation: create
+        line_start: 1
+        line_end: 1634
+        heading: AM-GOV-REGISTER-001
+        excerpt: "id: AM-GOV-REGISTER-001"
+        summary: Record owners, per-file document registration, document domains, repo-wide domain ownership, core module and macOS feature correspondence, RAID probability/impact/scope, external dependencies, and capability lifecycle.
+        depends_on: []
+        tasks:
+          - authoring
+      - file: docs/governance/project-charter.md
+        operation: create
+        line_start: 1
+        line_end: 64
+        heading: AreaMatrix 项目章程
+        excerpt: 本文固定 AreaMatrix 的使命、产品边界、成功条件、责任和退出条件。
+        summary: Record mission, scope, non-goals, responsibility, cost boundary, and exit conditions.
+        depends_on: []
+        tasks:
+          - authoring
+      - file: docs/governance/operations-lifecycle.md
+        operation: create
+        line_start: 1
+        line_end: 67
+        heading: AreaMatrix 运行与能力生命周期
+        excerpt: 本文定义桌面产品的运行健康、事故处置、能力状态和安全退役门禁。
+        summary: Record the desktop operations model, incident loop, capability states, and retirement gates.
+        depends_on: []
+        tasks:
+          - authoring
+      - file: docs/security/threat-model.md
+        operation: create
+        line_start: 1
+        line_end: 82
+        heading: AreaMatrix 威胁模型
+        excerpt: 本文定义 AreaMatrix 桌面产品的信任边界、威胁主体、数据分类和控制映射，是安全事实的权威来源。
+        summary: Record trust boundaries, threat actors, data classification, and control mapping for the desktop product.
+        depends_on: []
+        tasks:
+          - authoring
+    code_impacts:
+      existing:
+        - scripts/areaflow_shim.py
+        - scripts/dev_tools/checks.py
+      expected:
+        - docs/governance/**
+        - workflow/versions/v2/**
+      tests:
+        - scripts/dev_tools/test_build_tools.py
+        - scripts/task_loop/self_check.py
+    risk:
+      level: High
+      boundaries:
+        - Governance authoring only; product behavior and public contracts remain unchanged.
+        - Promotion apply, execution state, progress, logs, checkpoints, and runner commands remain blocked.
+        - External dependencies retain real blocked or deferred status.
+        - Durable v2 governance residuals remain index-only and executable_task false.
+    task_split:
+      - id: authoring
+        title: Implement and verify the approved ASW governance authoring baseline.
+        validation:
+          - ./dev workflow discuss --version v2 doctor
+          - ./dev workflow doctor
+          - ./dev workflow check-template
+          - ./dev check governance
+          - ./dev check docs
+          - ./dev check task-loop
+          - ./dev check diff

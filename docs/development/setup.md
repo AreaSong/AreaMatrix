@@ -76,17 +76,13 @@ rustup component add rustfmt clippy llvm-tools-preview
 
 ## 第 3 步：UniFFI 工具
 
-UniFFI 通过 cargo 直接构建，不需额外安装。但需要安装 `uniffi-bindgen` CLI：
+不需要手工安装 `uniffi-bindgen` CLI：uniffi 0.28 起该独立 crate 不再发布可执行文件，
+`cargo install uniffi-bindgen` 已不可用。`./dev build core` 生成 Swift bindings 时，
+`scripts/dev_tools/build.py` 会按 `core/Cargo.lock` 锁定的 UniFFI 版本构建并缓存一个
+bindgen wrapper，保证生成器与 scaffolding 版本一致，因此这一步没有额外操作。
 
-```bash
-cargo install uniffi-bindgen --locked
-```
-
-验证：
-
-```bash
-uniffi-bindgen --version
-```
+如需改用自备的 bindgen，可设置环境变量 `UNIFFI_BINDGEN` 或 `AREAMATRIX_UNIFFI_BINDGEN`
+指向其可执行文件覆盖默认机制；版本必须与 `core/Cargo.lock` 中的 UniFFI 一致。
 
 ---
 
@@ -188,10 +184,11 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test --workspace
 cd ..
 
-# Swift
+# Swift（与 ./dev check 使用的命令一致，避免把生成绑定卷进检查）
 cd apps/macos
-swiftformat --lint .
-swiftlint --strict
+swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf \
+  --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore
+swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache
 cd ../..
 ```
 
@@ -253,7 +250,7 @@ ls apps/macos/AreaMatrix/Bridge/UniFFI/
 **修复**：检查 `core/Cargo.toml`：
 
 ```toml
-rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
+rusqlite = { version = "0.31", features = ["bundled", "chrono", "serde_json"] }
 ```
 
 ### Q4: 运行时 SQLite 报 `database is locked`
@@ -266,15 +263,19 @@ rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
 sudo mdutil -d ~/AreaMatrix-dev
 ```
 
-### Q5: `cargo install uniffi-bindgen` 失败
+### Q5: 生成 Swift bindings 时报 bindgen 相关错误
 
-**原因**：UniFFI 需要从对应版本编译 bindgen，要与 `core/Cargo.toml` 中的 `uniffi` 版本一致。
+**原因**：构建脚本按 `core/Cargo.lock` 锁定版本构建缓存 bindgen wrapper，依赖本地 Cargo
+registry 缓存可用；或者 `UNIFFI_BINDGEN` / `AREAMATRIX_UNIFFI_BINDGEN` 指向了版本不匹配的
+bindgen。
 
 **修复**：
 
 ```bash
-# 假设 Cargo.toml 中是 uniffi = "0.28"
-cargo install uniffi-bindgen --version 0.28
+# 补齐锁定依赖缓存后重试
+cd core && cargo fetch --locked && cd ..
+# 若设置过 UNIFFI_BINDGEN / AREAMATRIX_UNIFFI_BINDGEN，先取消或指向匹配版本
+./dev build core
 ```
 
 ---

@@ -1,6 +1,6 @@
 ---
 name: areamatrix-git-checkpoint
-description: "Use when Codex needs to review, commit, push, or recover AreaMatrix task-loop Git checkpoints after verify-ready PASS results."
+description: "Use when the task involves AreaMatrix task-loop Git checkpoints: reviewing, committing, pushing, or recovering checkpoint state after verify-ready PASS results, GIT_CHECKPOINT modes, dirty worktree preflight, or push failures. Trigger phrases include 提交检查点 / 推送失败 / 提交没进去 / dirty worktree / git_push_failed / checkpoint 恢复."
 ---
 
 # AreaMatrix Git Checkpoint

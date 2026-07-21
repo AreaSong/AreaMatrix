@@ -44,6 +44,40 @@ final class InitializingStepIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    func testSuccessfulInitializationPersistsWatcherCursorAndSavesRepository() async {
+        let repoPath = "/tmp/adopt"
+        let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: repoPath)
+        let writer = InitializingRecordingSettingsWriter()
+        let syncer = RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: nil)
+        let model = OnboardingModel(
+            settingsReader: StaticSettingsReader(repoPath: nil),
+            settingsWriter: writer,
+            configLoader: StaticConfigurationLoader(config: .initializingFixture(repoPath: repoPath)),
+            pathValidator: InitializingRecordingPathValidator(validation: validation),
+            repositoryInitializer: RecordingRepositoryInitializer(),
+            startupRecoverer: StaticStartupRecoverer(),
+            externalChangesSyncer: syncer,
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+        model.updateRepositoryPath(repoPath)
+        await model.continueFromChoosePath()
+        await model.continueFromValidatePath()
+
+        await model.adoptExistingRepositoryFromConfirmInit()
+
+        let cursorWrites = await syncer.recordedCursorWrites()
+        XCTAssertEqual(cursorWrites.count, 1)
+        XCTAssertGreaterThan(cursorWrites[0], 0)
+        writer.assertSavedRepoPaths([repoPath])
+        XCTAssertEqual(model.route, .initializationDone(RepositoryInitializationResult(
+            repoPath: repoPath,
+            mode: .adoptExisting,
+            scanSession: nil,
+            recoveryReport: nil
+        )))
+    }
+
+    @MainActor
     func testAdoptExistingFatalErrorRoutesToInitFailed() async {
         let validation = RepoPathValidationSnapshot.initializingAdoptExistingFixture(repoPath: "/tmp/adopt")
         let mapping = CoreErrorMappingSnapshot.initializingPermissionDeniedFixture(rawContext: "/tmp/adopt")

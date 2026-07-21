@@ -44,6 +44,14 @@ fn created(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
     }
 }
 
+fn removed(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
+    ExternalEvent {
+        path: relative_path.to_owned(),
+        kind: ExternalEventKind::Removed,
+        fs_event_id,
+    }
+}
+
 fn default_file_filter() -> FileFilter {
     FileFilter {
         category: None,
@@ -190,7 +198,7 @@ fn sync_external_created_implementation_rolls_back_batch_and_cursor_on_failure()
         ],
     );
 
-    assert!(matches!(result, Err(CoreError::Io { .. })));
+    assert_eq!(result, Err(CoreError::file_not_found("docs/missing.pdf")));
 
     assert_eq!(active_file_count(repo.path()), 0);
     assert_eq!(
@@ -228,7 +236,7 @@ fn sync_external_created_implementation_rejects_icloud_placeholder_marker() {
 
     assert_eq!(
         result,
-        Err(CoreError::icloud_placeholder("icloud placeholder"))
+        Err(CoreError::icloud_placeholder("docs/waiting.pdf.icloud"))
     );
     assert_eq!(active_file_count(repo.path()), 0);
 }
@@ -261,6 +269,40 @@ fn sync_external_created_implementation_is_idempotent_for_duplicate_created_even
 }
 
 #[test]
+fn sync_external_created_implementation_reactivates_deleted_path() {
+    let repo = initialized_repo();
+    let relative_path = "docs/recreated.pdf";
+    write_repo_file(repo.path(), relative_path, b"first content");
+    sync_external_changes(path_string(repo.path()), vec![created(relative_path, 60)])
+        .expect("sync original external file");
+    let original = list_files(path_string(repo.path()), default_file_filter())
+        .expect("list original file")
+        .remove(0);
+    fs::remove_file(repo.path().join(relative_path)).expect("remove external file");
+    sync_external_changes(path_string(repo.path()), vec![removed(relative_path, 61)])
+        .expect("sync external removal");
+
+    write_repo_file(repo.path(), relative_path, b"replacement content");
+    let result = sync_external_changes(path_string(repo.path()), vec![created(relative_path, 62)])
+        .expect("sync recreated external file");
+
+    assert_eq!(result.detected_creates, 1);
+    assert_eq!(
+        get_fs_event_cursor(path_string(repo.path())).unwrap(),
+        Some(62)
+    );
+    let recreated = list_files(path_string(repo.path()), default_file_filter())
+        .expect("list recreated file")
+        .remove(0);
+    assert_eq!(recreated.id, original.id);
+    assert_eq!(recreated.path, relative_path);
+    assert_ne!(recreated.hash_sha256, original.hash_sha256);
+    assert_eq!(recreated.size_bytes, 19);
+    assert_eq!(recreated.origin, FileOrigin::External);
+    assert_eq!(recreated.storage_mode, StorageMode::Indexed);
+}
+
+#[test]
 fn sync_external_created_implementation_cursor_api_roundtrips_without_file_mutation() {
     let repo = initialized_repo();
     write_repo_file(repo.path(), "docs/user.txt", b"untouched");
@@ -273,6 +315,24 @@ fn sync_external_created_implementation_cursor_api_roundtrips_without_file_mutat
 
     assert_eq!(
         get_fs_event_cursor(path_string(repo.path())).expect("read updated cursor"),
+        Some(99)
+    );
+    assert_eq!(
+        fs::read(repo.path().join("docs/user.txt")).expect("user file remains readable"),
+        b"untouched"
+    );
+}
+
+#[test]
+fn sync_external_created_implementation_cursor_does_not_regress_to_lower_value() {
+    let repo = initialized_repo();
+    write_repo_file(repo.path(), "docs/user.txt", b"untouched");
+
+    set_fs_event_cursor(path_string(repo.path()), 99).expect("set high cursor");
+    set_fs_event_cursor(path_string(repo.path()), 42).expect("replay lower cursor");
+
+    assert_eq!(
+        get_fs_event_cursor(path_string(repo.path())).expect("read monotonic cursor"),
         Some(99)
     );
     assert_eq!(

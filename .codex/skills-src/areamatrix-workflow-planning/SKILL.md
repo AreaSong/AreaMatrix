@@ -1,6 +1,6 @@
 ---
 name: areamatrix-workflow-planning
-description: "Use when Codex needs to plan AreaMatrix v* workflow versions, discuss docs scope, define middle-layer handoff, or gate prompt draft generation before changes/plans/drafts/queue/promotion."
+description: "Use when the task plans AreaMatrix v* workflow versions: docs discussion scope, middle-layer handoff, or gating prompt draft generation before changes/plans/drafts/queue/promotion. Trigger phrases include 规划新版本 / 新功能怎么进队列 / 讨论门禁 / discussion gate / promotion preview / prompt drafts."
 ---
 
 # AreaMatrix Workflow Planning

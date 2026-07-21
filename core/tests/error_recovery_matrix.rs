@@ -36,7 +36,9 @@ fn error_recovery_matrix_error_mapping_covers_all_core_domains() {
         "repo path",
         "permission",
         "DB",
+        "validation",
         "IO",
+        "expired action",
         "iCloud placeholder",
         "duplicate",
         "conflict",
@@ -50,18 +52,40 @@ fn error_recovery_matrix_error_mapping_covers_all_core_domains() {
         "`Io`",
         "`Db`",
         "`Config`",
+        "`Validation`",
         "`Classify`",
         "`Conflict`",
         "`DuplicateFile`",
         "`FileNotFound`",
+        "`ExpiredAction`",
         "`RepoNotInitialized`",
         "`InvalidPath`",
         "`ICloudPlaceholder`",
+        "`StagingRecoveryRequired`",
         "`PermissionDenied`",
         "`Internal`",
     ] {
         assert_contains(MATRIX, variant);
-        assert_contains(ERROR_CODES, variant);
+    }
+
+    for variant_shape in [
+        "`Io { message }`",
+        "`Db { message }`",
+        "`Config { reason }`",
+        "`Validation { reason }`",
+        "`Classify { reason }`",
+        "`Conflict { path }`",
+        "`DuplicateFile { existing_path }`",
+        "`FileNotFound { path }`",
+        "`ExpiredAction { action_id }`",
+        "`RepoNotInitialized { path }`",
+        "`InvalidPath { path }`",
+        "`ICloudPlaceholder { path }`",
+        "`StagingRecoveryRequired { path }`",
+        "`PermissionDenied { path }`",
+        "`Internal { message }`",
+    ] {
+        assert_contains(ERROR_CODES, variant_shape);
     }
 
     for action in [
@@ -69,8 +93,8 @@ fn error_recovery_matrix_error_mapping_covers_all_core_domains() {
         "Download & retry",
         "Reconnect folder",
         "Skip / Overwrite / Keep both",
-        "Retry startup recovery",
-        "Restart / Collect diagnostics",
+        "打开或重试 startup recovery",
+        "Leave flow、Collect diagnostics、Open Issue",
     ] {
         assert_contains(MATRIX, action);
     }
@@ -83,31 +107,31 @@ fn error_recovery_matrix_error_mapping_records_source_docs_and_troubleshooting()
         "DB locked",
         "DB corrupted",
         "ICloudPlaceholder",
+        "Validation",
+        "ExpiredAction",
+        "StagingRecoveryRequired",
         "PermissionDenied",
         "Internal",
     ] {
         assert_contains(ERROR_MESSAGES, fragment);
     }
 
-    for fragment in [
-        "R4. iCloud 文件无法导入",
-        "R6. 写权限被拒",
-        "D1. SQLITE_BUSY: database is locked",
-        "Staging / 事务",
-        "收集诊断信息",
+    for (troubleshooting_fragment, matrix_fragment) in [
+        ("## iCloud placeholder", "#icloud-placeholder"),
+        ("## 权限被拒", "#权限被拒"),
+        ("## SQLite busy 或损坏", "#sqlite-busy-或损坏"),
+        ("## Staging recovery", "staging recovery"),
+        ("## Diagnostics", "diagnostics"),
     ] {
-        assert_contains(TROUBLESHOOTING, fragment);
-        assert_contains(
-            MATRIX,
-            fragment.split('.').next().expect("fragment has prefix"),
-        );
+        assert_contains(TROUBLESHOOTING, troubleshooting_fragment);
+        assert_contains(MATRIX, matrix_fragment);
     }
 
     for fragment in [
-        "INV-2",
-        "失败的 import 不留下 DB 记录或最终目录中的半文件",
-        "各失败场景处理",
-        "Indexed 失败只回滚本次 DB staging 行",
+        "## 核心不变量",
+        "失败导入不得留下最终目录半成品",
+        "## 失败状态",
+        "overview 或 replacement 保护失败时执行专用 DB rollback",
     ] {
         assert_contains(TRANSACTIONAL_IMPORT, fragment);
     }

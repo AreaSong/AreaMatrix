@@ -1,738 +1,97 @@
-# 模块：改动日志（change_log）
+# 改动日志
 
-> 所有文件级动作都被记录到 SQLite `change_log` 表。详情面板的「改动」Tab、AreaMatrix 概览的「近期改动」段都从这里来。
+> 记录 AreaMatrix `change_log` 的真实 action、transaction 语义和查询边界。
 >
-> 阅读时长：约 10 分钟。
+> 阅读时长：约 5 分钟。
 
 ---
 
-## 设计原则
+## 定位
 
-1. **append-only**：永不更新已存在的记录，只 INSERT
-2. **结构化但灵活**：固定字段 + `detail_json` 任意 schema
-3. **不阻塞主操作**：写日志失败不能让 import / rename 失败（但要 tracing 警告）
-4. **DB 损坏不丢用户文件**：日志只是元信息，FS 才是真相
-5. **支持 GC**：保留策略与归档可按配置启用
+改动日志保存在 `.areamatrix/index.db` 的 `change_log` 表中。当前没有独立
+`core/src/change_log/` 模块；查询实现在 `core/src/db/change_log.rs`，各 mutation 在自己的 DB 模块中
+写入日志。
 
----
+## Action
 
-## 动作类型（9 种）
+DB CHECK 允许以下字符串：
 
-```rust
-// core/src/change_log/mod.rs
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ChangeAction {
-    Imported,
-    Adopted,
-    Renamed,
-    Moved,
-    EditedNote,
-    Deleted,
-    RemovedFromIndex,
-    Restored,
-    ExternalModified,
-}
-
-impl ChangeAction {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            ChangeAction::Imported => "imported",
-            ChangeAction::Adopted => "adopted",
-            ChangeAction::Renamed => "renamed",
-            ChangeAction::Moved => "moved",
-            ChangeAction::EditedNote => "edited_note",
-            ChangeAction::Deleted => "deleted",
-            ChangeAction::RemovedFromIndex => "removed_from_index",
-            ChangeAction::Restored => "restored",
-            ChangeAction::ExternalModified => "external_modified",
-        }
-    }
-
-    pub fn from_str(s: &str) -> Option<Self> {
-        Some(match s {
-            "imported" => Self::Imported,
-            "adopted" => Self::Adopted,
-            "renamed" => Self::Renamed,
-            "moved" => Self::Moved,
-            "edited_note" => Self::EditedNote,
-            "deleted" => Self::Deleted,
-            "removed_from_index" => Self::RemovedFromIndex,
-            "restored" => Self::Restored,
-            "external_modified" => Self::ExternalModified,
-            _ => return None,
-        })
-    }
-}
-```
-
----
-
-## detail_json schema（每个 action 一份）
-
-### Imported
-
-```json
-{
-  "source": "/Users/foo/Downloads/contract.pdf",
-  "mode": "copied",
-  "category": "finance",
-  "renamed_from_original": false,
-  "by": "user"
-}
-```
-
-字段：
-
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| source | string | yes | 源文件绝对路径 |
-| mode | enum | yes | "moved" / "copied" / "indexed" |
-| category | string | yes | 落入的分类 slug |
-| renamed_from_original | bool | yes | 是否因冲突或用户改名而与 source 不同名 |
-| by | string | yes | 固定 "user" |
-
-### Adopted
-
-```json
-{
-  "path": "project-a/spec.pdf",
-  "scan_session_id": 12,
-  "by": "adopt"
-}
-```
-
-接管已有目录首次扫描时写入。它表示“AreaMatrix 认识了一个已有文件”，不表示用户导入或复制了文件。
-
-### Renamed
-
-```json
-{
-  "from": "old.pdf",
-  "to": "new.pdf",
-  "by": "user"
-}
-```
-
-### Moved
-
-```json
-{
-  "from_category": "docs",
-  "to_category": "finance",
-  "renamed_to": "tax.pdf",
-  "by": "user"
-}
-```
-
-`renamed_to` 仅当跨分类时因冲突自动追加 `_1` 才出现，正常情况下不写。
-
-### EditedNote
-
-```json
-{
-  "length_before": 0,
-  "length_after": 423,
-  "by": "user"
-}
-```
-
-仅记录长度变化，不记录内容（隐私 + 数据量）。
-
-### Deleted
-
-```json
-{
-  "hard": false,
-  "by": "user"
-}
-```
-
-`by` 取值：
-
-- `"user"`：UI 触发
-- `"external"`：FSEvents 检测到外部删除
-- `"startup_reconcile"`：启动重建发现孤儿 DB 行
-
-### RemovedFromIndex
-
-```json
-{
-  "index_only": true,
-  "path": "/Users/foo/External/report.pdf",
-  "storage_mode": "indexed",
-  "origin": "imported",
-  "by": "user"
-}
-```
-
-Remove from Index 只移除 Indexed / Adopted / External / Missing
-metadata 在默认 list/detail 中的可见性，不移动、不删除、不重命名、不覆盖、
-不 Trash 外部源文件，也不清空 notes / tags 等关联 metadata。
-
-### Restored
-
-```json
-{
-  "reason": "user_undelete",
-  "by": "user"
-}
-```
-
-`reason` 取值：
-
-- `"user_undelete"`：用户从软删除列表恢复
-- `"external_recreated"`：外部又把文件放回了同路径同 hash
-
-### ExternalModified
-
-```json
-{
-  "kind": "rename",
-  "from_path": "docs/old.pdf",
-  "to_path": "docs/new.pdf",
-  "hash_before": "abc...",
-  "hash_after": "abc...",
-  "by": "external"
-}
-```
-
-`kind` 取值：
-
-| kind | 含义 | 必填字段 |
-|---|---|---|
-| rename | 同分类内改名 | from_path, to_path |
-| move | 跨分类移动 | from_path, to_path |
-| content | 内容修改（hash 变化） | hash_before, hash_after |
-| metadata | 仅 mtime/size 变化 | （仅 by） |
-
----
-
-## 文件布局
-
-```text
-core/src/change_log/
-├── mod.rs       // ChangeAction + insert/list 入口
-├── filter.rs    // ChangeFilter
-├── gc.rs        // 保留策略与归档
-└── tests.rs
-```
-
----
-
-## 写入 API（内部）
-
-```rust
-// core/src/change_log/mod.rs
-use rusqlite::Transaction;
-use serde_json::Value;
-use crate::error::CoreResult;
-
-pub fn insert(
-    tx: &Transaction,
-    file_id: i64,
-    action: ChangeAction,
-    detail: Value,
-) -> CoreResult<i64> {
-    let action_str = action.as_str();
-    let detail_str = serde_json::to_string(&detail)
-        .map_err(|e| crate::error::CoreError::Internal { message: e.to_string() })?;
-    let now = chrono::Utc::now().timestamp();
-
-    tx.execute(
-        "INSERT INTO change_log (file_id, action, detail_json, occurred_at) \
-         VALUES (?1, ?2, ?3, ?4)",
-        rusqlite::params![file_id, action_str, detail_str, now],
-    )?;
-
-    Ok(tx.last_insert_rowid())
-}
-
-pub fn insert_safe(
-    conn: &rusqlite::Connection,
-    file_id: i64,
-    action: ChangeAction,
-    detail: Value,
-) {
-    let result = (|| -> CoreResult<()> {
-        let tx = conn.unchecked_transaction()?;
-        insert(&tx, file_id, action, detail)?;
-        tx.commit()?;
-        Ok(())
-    })();
-
-    if let Err(e) = result {
-        tracing::warn!(
-            file_id = file_id,
-            action = action.as_str(),
-            error = %e,
-            "failed to write change_log; main operation succeeded"
-        );
-    }
-}
-```
-
-`insert` 返回错误供事务内调用方决定回滚。`insert_safe` 用于"日志写失败不应阻断"的场景（如笔记编辑后台异步记录）。
-
----
-
-## 查询 API（外部）
-
-```rust
-#[derive(Debug, Clone, Default)]
-pub struct ChangeFilter {
-    pub file_id: Option<i64>,
-    pub category: Option<String>,
-    pub action: Option<ChangeAction>,
-    pub since: Option<i64>,
-    pub until: Option<i64>,
-    pub limit: i64,
-    pub offset: i64,
-}
-
-#[derive(Debug, Clone, serde::Serialize)]
-pub struct ChangeLogEntry {
-    pub id: i64,
-    pub file_id: Option<i64>,
-    pub filename: String,
-    pub category: String,
-    pub action: String,
-    pub detail_json: String,
-    pub occurred_at: i64,
-}
-
-pub fn list_changes(repo: &Path, filter: ChangeFilter) -> CoreResult<Vec<ChangeLogEntry>> {
-    db::with_repo(repo, |conn| {
-        let mut sql = String::from(
-            "SELECT cl.id, cl.file_id, COALESCE(f.current_name, ''), \
-                    COALESCE(f.category, ''), cl.action, cl.detail_json, cl.occurred_at \
-             FROM change_log cl \
-             LEFT JOIN files f ON f.id = cl.file_id \
-             WHERE 1=1",
-        );
-        let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
-
-        if let Some(fid) = filter.file_id {
-            sql.push_str(" AND cl.file_id = ?");
-            params.push(Box::new(fid));
-        }
-        if let Some(cat) = &filter.category {
-            sql.push_str(" AND f.category = ?");
-            params.push(Box::new(cat.clone()));
-        }
-        if let Some(action) = filter.action {
-            sql.push_str(" AND cl.action = ?");
-            params.push(Box::new(action.as_str().to_string()));
-        }
-        if let Some(since) = filter.since {
-            sql.push_str(" AND cl.occurred_at >= ?");
-            params.push(Box::new(since));
-        }
-        if let Some(until) = filter.until {
-            sql.push_str(" AND cl.occurred_at < ?");
-            params.push(Box::new(until));
-        }
-
-        sql.push_str(" ORDER BY cl.occurred_at DESC LIMIT ? OFFSET ?");
-        let limit = if filter.limit <= 0 { 100 } else { filter.limit.min(1000) };
-        params.push(Box::new(limit));
-        params.push(Box::new(filter.offset.max(0)));
-
-        let mut stmt = conn.prepare(&sql)?;
-        let refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|b| b.as_ref()).collect();
-        let rows = stmt.query_map(refs.as_slice(), |row| {
-            Ok(ChangeLogEntry {
-                id: row.get(0)?,
-                file_id: row.get(1)?,
-                filename: row.get(2)?,
-                category: row.get(3)?,
-                action: row.get(4)?,
-                detail_json: row.get(5)?,
-                occurred_at: row.get(6)?,
-            })
-        })?;
-        rows.collect::<Result<_, _>>().map_err(Into::into)
-    })
-}
-
-pub fn recent_changes_for_category(
-    repo: &Path,
-    category: &str,
-    days: i64,
-) -> CoreResult<Vec<ChangeLogEntry>> {
-    let since = chrono::Utc::now().timestamp() - days * 86400;
-    list_changes(repo, ChangeFilter {
-        category: Some(category.into()),
-        since: Some(since),
-        limit: 200,
-        ..Default::default()
-    })
-}
-
-pub fn recent_changes(repo: &Path, days: i64) -> CoreResult<Vec<ChangeLogEntry>> {
-    let since = chrono::Utc::now().timestamp() - days * 86400;
-    list_changes(repo, ChangeFilter {
-        since: Some(since),
-        limit: 200,
-        ..Default::default()
-    })
-}
-```
-
----
-
-## UI 展示
-
-详情面板「改动」Tab：
-
-```text
-2026-04-26 14:32  imported (source: ~/Downloads/contract.pdf, mode: Copied)
-2026-04-25 09:11  renamed (合同.pdf → 契约.pdf)
-2026-04-25 09:12  external_modified (rename: 契约.pdf → 契约_2026Q1.pdf)
-```
-
-Swift 端把 `detail_json` 解构展示：
-
-```swift
-struct ChangeRowView: View {
-    let entry: ChangeLogEntry
-
-    var body: some View {
-        HStack {
-            Text(formatDate(entry.occurredAt))
-            Text(entry.action).bold()
-            Text(humanDescribe(entry))
-        }
-    }
-
-    private func humanDescribe(_ e: ChangeLogEntry) -> String {
-        guard let data = e.detailJson.data(using: .utf8),
-              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { return e.detailJson }
-
-        switch e.action {
-        case "imported":
-            let mode = dict["mode"] as? String ?? ""
-            return "from \(dict["source"] ?? "") (\(mode))"
-        case "renamed":
-            return "\(dict["from"] ?? "") → \(dict["to"] ?? "")"
-        case "moved":
-            return "\(dict["from_category"] ?? "") → \(dict["to_category"] ?? "")"
-        case "external_modified":
-            let kind = dict["kind"] as? String ?? ""
-            return "(\(kind)) \(dict["from_path"] ?? "") → \(dict["to_path"] ?? "")"
-        default:
-            return e.detailJson
-        }
-    }
-}
-```
-
----
-
-## 不变量
-
-| 不变量 | 说明 |
+| Action | 语义 |
 |---|---|
-| INV-CL1 | `change_log.occurred_at` 在同事务内单调递增 |
-| INV-CL2 | 文件软删除后日志保留，`file_id` 仍指向 `files.id` |
-| INV-CL3 | 文件物理删除时 `file_id` 置 NULL（FK `ON DELETE SET NULL`） |
-| INV-CL4 | 同一事务内的多次 INSERT 共享同一 `occurred_at`（性能）— 通过 `clock` 抽象支持测试 |
-| INV-CL5 | `detail_json` 必须是合法 JSON 对象（不允许 array / scalar） |
-| INV-CL6 | `action` 字段值必须在 9 种枚举内（DB CHECK 约束） |
+| `imported` | Copy/Move/Indexed 导入成功 |
+| `adopted` | 接管已有文件并登记 |
+| `renamed` | AreaMatrix 或外部 rename 已确认 |
+| `moved` | 分类移动或 category metadata 更新 |
+| `edited_note` | note sidecar 与 DB 同步成功 |
+| `deleted` | repo-owned 文件进入删除/Trash 状态，或外部文件消失 |
+| `removed_from_index` | Indexed entry 从索引移除 |
+| `restored` | token 化 Undo 恢复 |
+| `external_modified` | 外部 create/modify、tag 等 metadata 变化 |
 
-DB 端 CHECK 约束：
+`action` 在 Rust DTO 中是 `String`，不是独立 `ChangeAction` enum。新增 action 必须同时修改 schema CHECK、
+写入方、Core API、UDL 消费假设和测试。
 
-```sql
-CONSTRAINT action_valid CHECK (action IN (
-    'imported','adopted','renamed','moved','edited_note',
-    'deleted','removed_from_index','restored','external_modified'
-))
-```
+## Transaction 语义
 
----
+关键 mutation 把 metadata 和 change log 放在同一 SQLite transaction：
 
-## 保留策略与 GC
+- import promotion：active row + `imported`
+- rename：files + `renamed` + undo metadata
+- category move：files + `moved` + undo metadata
+- delete：files + `deleted`/`removed_from_index` + undo metadata
+- note：notes row + `edited_note`
+- adopt/reindex：files + 对应 log
+- external sync：整批 files + change log
 
-```mermaid
-flowchart LR
-    DB[(change_log table)]
-    Live[live data<br/>< 90 days]
-    Archive[archive jsonl<br/>>= 90 days]
-    Delete[deleted<br/>after 365 days, opt-in]
+因此日志写失败会使对应 DB transaction 失败。它不是“仅 warning、不阻断主操作”的旁路日志。文件系统
+已经发生变化的操作必须由外层 guard/rollback 恢复，不能通过忽略日志错误留下 FS/DB 分叉。
 
-    DB --> Live
-    Live --> Archive
-    Archive --> Delete
-```
+## detail_json
 
-| 模式 | 策略 |
-|---|---|
-| 当前默认 | 永久保留（不删） |
-| 可配置保留 | 设置中加"保留近 N 天/M 条"开关；超出归档为只读 |
-| 归档清理 | 自动归档为 `.areamatrix/archives/changes-YYYYMM.jsonl` 后从 DB 删除 |
+`detail_json` 必须是 JSON object。内容由 action owner 定义，例如 rename 的 from/to path、external create 的
+`kind=create`、note 的 length before/after。
 
-### gc 实现
+敏感原则：
 
-```rust
-// core/src/change_log/gc.rs
-pub struct GcPolicy {
-    pub keep_days: i64,
-    pub archive_to_jsonl: bool,
-    pub max_rows: i64,
-}
+- 不记录文件正文、note 正文或 AI secret。
+- Indexed 路径等用户数据只在完成产品行为所需范围内持久化。
+- 对外 diagnostics 不应直接导出未经脱敏的完整 change log。
 
-pub fn run_gc(repo: &Path, policy: GcPolicy) -> CoreResult<GcReport> {
-    let mut report = GcReport::default();
-    let cutoff = chrono::Utc::now().timestamp() - policy.keep_days * 86400;
+## 查询
 
-    let to_archive: Vec<ChangeLogEntry> = list_changes(repo, ChangeFilter {
-        until: Some(cutoff),
-        limit: policy.max_rows,
-        ..Default::default()
-    })?;
+`list_changes(repoPath, filter)` 支持：
 
-    if policy.archive_to_jsonl && !to_archive.is_empty() {
-        write_jsonl_archive(repo, &to_archive)?;
-        report.archived_rows = to_archive.len() as i64;
-    }
+- `file_id`
+- `category`
+- 精确 `action`
+- `since` / `until`
+- `limit` / `offset`
 
-    let ids: Vec<i64> = to_archive.iter().map(|e| e.id).collect();
-    if !ids.is_empty() {
-        db::with_repo(repo, |conn| {
-            let tx = conn.transaction()?;
-            for chunk in ids.chunks(500) {
-                let placeholders = (0..chunk.len()).map(|_| "?").collect::<Vec<_>>().join(",");
-                let sql = format!("DELETE FROM change_log WHERE id IN ({})", placeholders);
-                let params: Vec<&dyn rusqlite::ToSql> = chunk.iter()
-                    .map(|i| i as &dyn rusqlite::ToSql)
-                    .collect();
-                tx.execute(&sql, params.as_slice())?;
-            }
-            tx.commit()?;
-            Ok(())
-        })?;
-        report.deleted_rows = ids.len() as i64;
-    }
+排序为 `occurred_at DESC, id DESC`。limit 小于等于 0 时使用 100，上限 1000。读取时如果
+`detail_json` 不是 JSON object，返回 DB error。
 
-    Ok(report)
-}
+`occurred_at` 使用秒级时间，不提供跨设备或跨数据库的严格单调保证。
 
-fn write_jsonl_archive(repo: &Path, entries: &[ChangeLogEntry]) -> CoreResult<()> {
-    let layout = crate::repo::RepoLayout::for_repo(repo);
-    let dir = layout.archives_dir();
-    std::fs::create_dir_all(&dir)?;
-    let now = chrono::Local::now().format("%Y-%m");
-    let path = dir.join(format!("changes-{}.jsonl", now));
+## 保留与归档
 
-    let mut file = std::fs::OpenOptions::new()
-        .create(true).append(true).open(&path)?;
-    use std::io::Write;
-    for e in entries {
-        let line = serde_json::to_string(e)?;
-        writeln!(file, "{}", line)?;
-    }
-    file.sync_all()?;
-    Ok(())
-}
+当前没有 change-log GC、retention timer、JSONL archive writer 或
+`.areamatrix/archives/changes-*.jsonl` 合同。`archives/` 被其他可恢复文件操作使用，不表示 change log 会
+自动迁出 SQLite。
 
-#[derive(Debug, Default)]
-pub struct GcReport {
-    pub archived_rows: i64,
-    pub deleted_rows: i64,
-}
-```
+在新增保留策略前，必须明确用户可见历史、Undo/Redo、审计、隐私、备份和 schema migration 影响。
 
----
+## 验证
 
-## 容量估算
-
-| 操作量 | DB 行数 | 近似大小 |
-|---|---|---|
-| 1 万次操作 | 10000 | ≈ 5 MB |
-| 10 万次操作 | 100000 | ≈ 50 MB |
-| 100 万次操作 | 1000000 | ≈ 500 MB |
-
-平均 detail_json 长度 200 字节，加索引开销 ≈ 500 字节/行。
-
-普通用户 1-2 年内不会到 10 万次操作量级。当前默认不做 GC。
-
----
-
-## 写入失败处理
-
-事务内 INSERT change_log 失败：
-
-- import / rename / move / delete 等主操作回滚
-- 用户看到错误：`CoreError::Db { ... }`
-- tracing 记录 stack trace 与 SQL 错误码
-
-事务外的"失败可忽略"场景（如笔记编辑的次要日志）：
-
-- 用 `insert_safe` 写入
-- 失败时仅 tracing 警告，不抛错
-
-如果 change_log 表本身损坏（极小概率）：
-
-- 启动时 schema 检查会发现（PRAGMA integrity_check）
-- 提示用户："改动历史损坏，可继续使用，但历史记录可能不完整。建议从备份恢复或重新索引。"
-
----
-
-## 单元测试
-
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-    use tempfile::TempDir;
-
-    fn setup() -> (TempDir, std::path::PathBuf) {
-        let d = tempfile::tempdir().unwrap();
-        let p = d.path().to_path_buf();
-        crate::api::init_repo(
-            p.to_string_lossy().into(),
-            RepoInitOptions::create_empty_generated_only(),
-        ).unwrap();
-        (d, p)
-    }
-
-    #[test]
-    fn import_creates_imported_entry() {
-        let (_d, p) = setup();
-        let src = p.join("__src.pdf");
-        std::fs::write(&src, b"x").unwrap();
-        let entry = crate::storage::import_file(
-            &p, &src, crate::api::types::ImportOptions::default()
-        ).unwrap();
-        let changes = list_changes(&p, ChangeFilter {
-            file_id: Some(entry.id), limit: 10, ..Default::default()
-        }).unwrap();
-        assert_eq!(changes.len(), 1);
-        assert_eq!(changes[0].action, "imported");
-    }
-
-    #[test]
-    fn rename_logs_from_to() {
-        let (_d, p) = setup();
-        let src = p.join("__r.pdf");
-        std::fs::write(&src, b"x").unwrap();
-        let entry = crate::storage::import_file(
-            &p, &src, crate::api::types::ImportOptions::default()
-        ).unwrap();
-        crate::storage::rename_file(&p, entry.id, "new.pdf").unwrap();
-        let changes = list_changes(&p, ChangeFilter {
-            file_id: Some(entry.id),
-            action: Some(ChangeAction::Renamed),
-            limit: 10, ..Default::default()
-        }).unwrap();
-        let detail: serde_json::Value =
-            serde_json::from_str(&changes[0].detail_json).unwrap();
-        assert_eq!(detail["to"], "new.pdf");
-    }
-
-    #[test]
-    fn category_filter_works() {
-        let (_d, p) = setup();
-        let src = p.join("__c.pdf");
-        std::fs::write(&src, b"x").unwrap();
-        let entry = crate::storage::import_file(
-            &p, &src, crate::api::types::ImportOptions::default()
-        ).unwrap();
-        let by_cat = list_changes(&p, ChangeFilter {
-            category: Some(entry.category.clone()),
-            limit: 10, ..Default::default()
-        }).unwrap();
-        assert!(by_cat.iter().any(|c| c.file_id == Some(entry.id)));
-    }
-
-    #[test]
-    fn limit_and_offset_paginate() {
-        let (_d, p) = setup();
-        for i in 0..25 {
-            let src = p.join(format!("__p{}.pdf", i));
-            std::fs::write(&src, b"x").unwrap();
-            let mut opts = crate::api::types::ImportOptions::default();
-            opts.duplicate_strategy = crate::api::types::DuplicateStrategy::KeepBoth;
-            let _ = crate::storage::import_file(&p, &src, opts);
-        }
-        let page1 = list_changes(&p, ChangeFilter { limit: 10, offset: 0, ..Default::default() }).unwrap();
-        let page2 = list_changes(&p, ChangeFilter { limit: 10, offset: 10, ..Default::default() }).unwrap();
-        assert_eq!(page1.len(), 10);
-        assert_eq!(page2.len(), 10);
-        assert_ne!(page1[0].id, page2[0].id);
-    }
-
-    #[test]
-    fn invalid_action_rejected_at_db() {
-        let (_d, p) = setup();
-        let r = crate::db::with_repo(&p, |conn| {
-            conn.execute(
-                "INSERT INTO change_log (file_id, action, detail_json, occurred_at) \
-                 VALUES (NULL, 'unknown_action', '{}', 0)",
-                [],
-            )
-        });
-        assert!(r.is_err(), "DB CHECK constraint should reject");
-    }
-
-    #[test]
-    fn gc_archives_and_deletes() {
-        let (_d, p) = setup();
-        let src = p.join("__g.pdf");
-        std::fs::write(&src, b"x").unwrap();
-        let _ = crate::storage::import_file(
-            &p, &src, crate::api::types::ImportOptions::default()
-        ).unwrap();
-
-        crate::db::with_repo(&p, |conn| {
-            conn.execute(
-                "UPDATE change_log SET occurred_at = 0 WHERE 1=1",
-                [],
-            )
-        }).unwrap();
-
-        let report = gc::run_gc(&p, gc::GcPolicy {
-            keep_days: 1,
-            archive_to_jsonl: true,
-            max_rows: 1000,
-        }).unwrap();
-        assert!(report.archived_rows >= 1);
-        assert_eq!(report.archived_rows, report.deleted_rows);
-    }
-
-    #[test]
-    fn external_modified_kinds() {
-        let detail = json!({
-            "kind": "rename",
-            "from_path": "docs/a.pdf",
-            "to_path": "docs/b.pdf",
-            "by": "external",
-        });
-        assert_eq!(detail["kind"], "rename");
-    }
-}
-```
-
----
-
-## 错误返回示例
-
-| 触发 | 返回 |
-|---|---|
-| INSERT 时 detail_json 不是合法 JSON | `CoreError::Internal { message: "serialize" }` |
-| INSERT 时 action 不在枚举内 | DB CHECK 约束失败 → `CoreError::Db` |
-| `list_changes` limit < 0 或 > 1000 | 自动 clamp 到 [1, 1000]，不报错 |
-| `list_changes` 时 DB 损坏 | `CoreError::Db { ... }`，UI 提示重建索引 |
-
----
+- mutation 成功时 metadata 与 log 同时存在。
+- 注入 log 写失败时 transaction 回滚。
+- external create/modify 使用 `external_modified`，rename 使用 `renamed`。
+- filter、pagination、非法 JSON 和时间范围错误均有覆盖。
+- 日志失败后的文件系统补偿满足用户文件不变量。
 
 ## Related
 
 - [../architecture/data-model.md](../architecture/data-model.md)
-- [../architecture/migration.md](../architecture/migration.md)
+- [../architecture/transactional-import.md](../architecture/transactional-import.md)
+- [../architecture/fs-watcher.md](../architecture/fs-watcher.md)
 - [../api/core-api.md](../api/core-api.md)
-- [../development/observability.md](../development/observability.md)
 - [storage.md](storage.md)
-- [overview-gen.md](overview-gen.md)

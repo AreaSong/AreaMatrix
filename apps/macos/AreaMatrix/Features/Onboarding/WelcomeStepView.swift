@@ -232,6 +232,7 @@ private extension WelcomeStepView {
                 }
             )
             .buttonStyle(.plain)
+            .keyboardShortcut("o", modifiers: [.command])
             .focused($isChooseFolderFocused)
             .focusEffectDisabled()
             .onChange(of: isChooseFolderFocused) { _, focused in
@@ -296,10 +297,10 @@ private extension WelcomeStepView {
 
         scanTask = Task { @MainActor in
             let logs = [
-                ("初始化 AreaMatrix 核心引擎...", AreaMatrixTheme.Colors.tealText),
-                ("扫描文件指纹并生成索引...", AreaMatrixTheme.Colors.tealText),
-                ("建立 AREAMATRIX.md 概览映射...", AreaMatrixTheme.Colors.tealText),
-                ("接管完毕，安全网罩已启动。", AreaMatrixTheme.Colors.goldText)
+                ("准备打开本地文件夹选择器...", AreaMatrixTheme.Colors.tealText),
+                ("加载文件安全与分类说明...", AreaMatrixTheme.Colors.tealText),
+                ("选择文件夹前不会写入任何资料...", AreaMatrixTheme.Colors.tealText),
+                ("准备请求文件夹访问权限...", AreaMatrixTheme.Colors.goldText)
             ]
             let scenes: [WelcomeScene] = [.feat1, .feat2, .feat3, .feat4]
 
@@ -314,7 +315,7 @@ private extension WelcomeStepView {
 
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
-            guard await typeScanLog(">>> 授权通过，正在进入 <<<", colorToken: AreaMatrixTheme.Colors.goldText) else { return }
+            guard await typeScanLog(">>> 正在打开文件夹选择器 <<<", colorToken: AreaMatrixTheme.Colors.goldText) else { return }
             withAnimation(.areaMatrixProgressStep) {
                 scanProgressFraction = 1.0
                 activeScene = .feat5

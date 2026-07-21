@@ -1,6 +1,6 @@
 ---
 name: areamatrix-doc-sync
-description: "Use when Codex needs to keep AreaMatrix docs, Core API, UDL, prompt manifests, README files, and generated prompt materials aligned without drifting from the documented source of truth."
+description: "Use when the change may drift AreaMatrix docs, Core API, UDL, prompt manifests, README files, or generated materials away from the documented source of truth. Trigger phrases include 文档同步 / 文档和代码不一致 / 更新 API 文档 / 改了 docs / docs drift / UDL alignment / README navigation."
 ---
 
 # AreaMatrix Doc Sync

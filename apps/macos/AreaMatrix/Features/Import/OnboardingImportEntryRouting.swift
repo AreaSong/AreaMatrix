@@ -2,6 +2,16 @@ import Foundation
 
 extension OnboardingModel {
     @MainActor
+    func handleImportMenuCommand() {
+        switch route {
+        case let .mainEmpty(opening), let .mainList(opening), let .settingsGeneral(opening):
+            chooseImportSources(opening: opening)
+        default:
+            toastMessage = "Open a repository before importing files."
+        }
+    }
+
+    @MainActor
     func chooseImportSources(opening: RepositoryOpeningResult) {
         guard let urls = importPicker.chooseImportURLs() else { return }
         startImportEntry(opening: opening, source: .filePicker, urls: urls)

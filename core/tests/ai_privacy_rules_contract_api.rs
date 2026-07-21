@@ -350,7 +350,7 @@ fn ai_privacy_rules_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "| `list_ai_privacy_rules(repo)` | ai/privacy | √ | Config / Db |",
         "| `update_ai_privacy_rules(repo, request)` | ai/privacy | √ | Config / Db |",
-        "| `evaluate_ai_privacy(repo, request)` | ai/privacy | √ | Config / Db |",
+        "| `evaluate_ai_privacy(repo, request)` | ai/privacy | √ | Config |",
         "### `list_ai_privacy_rules(repoPath: String) throws -> AiPrivacyRulesSnapshot`",
         "### `update_ai_privacy_rules(repoPath: String, request: AiPrivacyRulesUpdateRequest) throws -> AiPrivacyRulesSnapshot`",
         "### `evaluate_ai_privacy(repoPath: String, request: AiPrivacyEvaluationRequest) throws -> AiPrivacyEvaluationReport`",

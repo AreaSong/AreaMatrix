@@ -53,6 +53,8 @@ enum DatabaseRepairReturnRoute: Equatable {
     case validatePath
     case mainLoading(MainLoadingState)
     case mainRepoError(CoreErrorMappingSnapshot?)
+    case mainList(RepositoryOpeningResult)
+    case mainEmpty(RepositoryOpeningResult)
     case settingsRepository
     case settingsGeneral(RepositoryOpeningResult, selectedTab: String?)
 }

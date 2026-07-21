@@ -208,6 +208,8 @@ final class MainListIntegrationClosureTests: XCTestCase {
             diagnosticsCollector: collector
         )
 
+        model.requestCurrentListDiagnostics()
+        XCTAssertEqual(model.diagnosticsState, .confirmingPrivacy)
         await model.collectCurrentListDiagnostics()
 
         XCTAssertEqual(model.diagnosticsState, .collected(snapshot))

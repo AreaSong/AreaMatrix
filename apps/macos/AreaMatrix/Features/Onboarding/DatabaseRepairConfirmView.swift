@@ -29,6 +29,7 @@ struct DBRepairConfirmView: View {
         lastOpenedAt: Int64? = nil,
         metadataRepairer: any CoreMetadataRepairing = CoreBridge(),
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
+        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
         diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         onCancel: @escaping () -> Void,
@@ -42,6 +43,7 @@ struct DBRepairConfirmView: View {
             lastOpenedAt: lastOpenedAt,
             metadataRepairer: metadataRepairer,
             startupRecoverer: startupRecoverer,
+            repositoryWriteCoordinator: repositoryWriteCoordinator,
             diagnosticsCollector: diagnosticsCollector,
             errorMapper: errorMapper
         ))
@@ -77,8 +79,9 @@ struct DBRepairConfirmView: View {
             }
         } message: {
             Text(
-                "Diagnostics do not include user file contents, are not uploaded automatically, " +
-                    "and paths and usernames are redacted before display."
+                "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
+                    "notes, and other sensitive metadata. Original file contents are not copied, and " +
+                    "diagnostics are not uploaded automatically. Review the snapshot before sharing."
             )
         }
         .task {
@@ -107,14 +110,12 @@ struct DBRepairConfirmView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Repository")
                 .font(.headline)
-            Text(model.repoPath)
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .lineLimit(3)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            AreaMatrixPathBox(
+                path: model.repoPath,
+                style: .plain,
+                lineLimit: 3,
+                alignment: .leading
+            )
             if let mapping = model.initialMapping {
                 Text("Error: \(mapping.kind.rawValue)")
                     .font(.callout)
@@ -169,7 +170,7 @@ struct DBRepairConfirmView: View {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            Label("Preparing redacted diagnostics...", systemImage: "arrow.clockwise")
+            Label("Preparing repository diagnostics...", systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):

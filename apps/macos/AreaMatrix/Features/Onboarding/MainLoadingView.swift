@@ -29,14 +29,13 @@ struct MainLoadingView: View {
     }
 
     private var pathBox: some View {
-        Text(state.repoPath)
-            .font(.system(.body, design: .monospaced))
-            .textSelection(.enabled)
-            .lineLimit(3)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .frame(maxWidth: 640, alignment: .leading)
-            .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 6))
+        AreaMatrixPathBox(
+            path: state.repoPath,
+            style: .quaternary(backgroundOpacity: 0.45),
+            lineLimit: 3,
+            maxWidth: 640,
+            alignment: .leading
+        )
     }
 
     @ViewBuilder

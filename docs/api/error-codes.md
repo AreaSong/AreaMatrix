@@ -1,754 +1,142 @@
 # 错误码表（CoreError）
 
-> AreaMatrix Core 暴露的所有错误类型与处理建议。Swift 侧通过 `do/try/catch` 捕获并转换为用户消息。
+> 记录 AreaMatrix Core 通过 UniFFI 暴露的结构化错误、稳定映射元数据和恢复边界。
 >
-> 阅读时长：约 12 分钟。
+> 阅读时长：约 8 分钟。
 
 ---
 
-## 错误体系层级
+## 合同边界
 
-```mermaid
-flowchart LR
-    Sys["系统层错误<br/>io::Error / rusqlite::Error"]
-    Core[CoreError 枚举<br/>面向 FFI]
-    Swift[Swift CoreError<br/>面向 UI]
-    AppErr[AppError<br/>用户消息]
-    User((User))
+`CoreError` 是 Rust Core 与 Swift 平台层之间的错误合同。调用方必须按 variant 和结构化字段分支，
+不能解析 `Display`、`localizedDescription` 或用户文案来决定业务流程。
 
-    Sys -->|impl From| Core
-    Core -->|UniFFI| Swift
-    Swift -->|wrap| AppErr
-    AppErr -->|toast / sheet| User
-```
+Core 通过 `to_error_mapping` / `map_core_error` 返回：
 
----
+- `kind`：稳定错误分类。
+- `user_message`：短用户文案。
+- `severity`：呈现严重度。
+- `suggested_action`：建议恢复动作。
+- `recoverability`：恢复姿态。
+- `raw_context`：原始路径、原因或消息，仅用于受控详情和诊断。
 
-## CoreError 完整定义
+错误映射是无副作用纯函数：不得读取文件系统、打开 DB、写日志或修改资料库。
 
-```rust
-// core/src/error.rs
-use thiserror::Error;
+## CoreError 完整表
 
-pub type CoreResult<T> = Result<T, CoreError>;
-
-#[derive(Error, Debug)]
-pub enum CoreError {
-    #[error("io error: {0}")]
-    Io { message: String },
-
-    #[error("db error: {0}")]
-    Db { message: String },
-
-    #[error("config error: {reason}")]
-    Config { reason: String },
-
-    #[error("validation error: {reason}")]
-    Validation { reason: String },
-
-    #[error("classification failed: {reason}")]
-    Classify { reason: String },
-
-    #[error("path conflict: {path}")]
-    Conflict { path: String },
-
-    #[error("duplicate file already exists at: {existing_path}")]
-    DuplicateFile { existing_path: String },
-
-    #[error("file not found: {path}")]
-    FileNotFound { path: String },
-
-    #[error("expired action: {action_id}")]
-    ExpiredAction { action_id: String },
-
-    #[error("repo not initialized at: {path}")]
-    RepoNotInitialized { path: String },
-
-    #[error("invalid path: {path}")]
-    InvalidPath { path: String },
-
-    #[error("iCloud placeholder not downloaded: {path}")]
-    ICloudPlaceholder { path: String },
-
-    #[error("staging recovery required: {path}")]
-    StagingRecoveryRequired { path: String },
-
-    #[error("permission denied: {path}")]
-    PermissionDenied { path: String },
-
-    #[error("internal error: {message}")]
-    Internal { message: String },
-}
-
-impl From<std::io::Error> for CoreError {
-    fn from(e: std::io::Error) -> Self {
-        match e.kind() {
-            std::io::ErrorKind::NotFound => {
-                CoreError::FileNotFound { path: e.to_string() }
-            }
-            std::io::ErrorKind::PermissionDenied => {
-                CoreError::PermissionDenied { path: e.to_string() }
-            }
-            _ => CoreError::Io { message: e.to_string() },
-        }
-    }
-}
-
-impl From<rusqlite::Error> for CoreError {
-    fn from(e: rusqlite::Error) -> Self {
-        CoreError::Db { message: e.to_string() }
-    }
-}
-
-impl From<serde_json::Error> for CoreError {
-    fn from(e: serde_json::Error) -> Self {
-        CoreError::Internal { message: format!("json: {}", e) }
-    }
-}
-
-impl From<walkdir::Error> for CoreError {
-    fn from(e: walkdir::Error) -> Self {
-        CoreError::Io { message: e.to_string() }
-    }
-}
-```
-
----
-
-## 错误码总表
-
-| Variant | 触发场景 | 自动重试 | UI 处理 | 严重程度 |
+| Variant | 稳定语义 | Severity | Recoverability | 默认恢复方向 |
 |---|---|---|---|---|
-| `Io { message }` | 文件读写失败、磁盘空间、损坏 | 视情况 | toast「文件操作失败：{}」 | medium |
-| `Db { message }` | SQLite locked、busy、schema 损坏、索引损坏 | locked/busy 可重试；损坏不可自动重试 | locked/busy：inline Retry；损坏：blocking repair | medium / critical |
-| `Config { reason }` | classifier.yaml 解析失败、必填字段缺失 | 否 | 弹窗：跳转到设置 → 显示具体字段错误 | medium |
-| `Validation { reason }` | API 输入无效、编辑草稿不合法、数量上限越界 | 否 | inline field error 或 toast「输入无效」 | low |
-| `Classify { reason }` | 分类引擎内部错误 | 否 | toast「分类失败」+ 落到 inbox | low |
-| `Conflict { path }` | 路径冲突（应已被 conflict::resolve 解决） | 否 | toast「路径冲突」 | medium |
-| `DuplicateFile { existing_path }` | 拖入重复 hash 文件且 strategy=Skip | 否 | 弹窗：跳过 / 覆盖 / 保留两份 | low |
-| `FileNotFound { path }` | 引用的 file_id 不存在或物理文件已消失 | 否 | toast「文件已不存在」+ 刷新列表 | low |
-| `ExpiredAction { action_id }` | Undo / Redo action 已过期、被新写操作清空或不再可用 | 否 | toast「操作已过期」+ 刷新撤销/重做历史 | low |
-| `RepoNotInitialized { path }` | 资料库目录未 init | 否 | 触发首次启动向导 | high |
-| `InvalidPath { path }` | 路径含非法字符、空、超长 | 否 | toast「路径不合法」+ 让用户改名 | low |
-| `ICloudPlaceholder { path }` | 操作占位符文件 | 自动重试 | 静默触发下载 + retry | medium |
-| `StagingRecoveryRequired { path }` | 导入 staging 残留或 session 状态不一致 | 否 | blocking repair：先运行导入恢复 | high |
-| `PermissionDenied { path }` | 资料库不可写、SQLite 文件锁定 | 否 | 弹窗：解释权限问题 + 链接帮助 | high |
-| `Internal { message }` | Rust panic / unwrap 兜底 | 否 | 弹窗「应用内部错误」+ 提交日志 | critical |
+| `Io { message }` | 文件或底层 IO 失败 | medium | Retryable | 重试；持续失败时检查磁盘和文件状态 |
+| `Db { message }` | SQLite 或 metadata 失败 | high | UserActionRequired | 按 DB 子语义处理 |
+| `Config { reason }` | 配置无效或保存失败 | medium | UserActionRequired | 打开设置并修正或恢复有效配置 |
+| `Validation { reason }` | API 输入或编辑草稿无效 | low | UserActionRequired | 修正当前输入 |
+| `Classify { reason }` | 分类规则执行失败 | low | RefreshRequired | 保留文件并回落 inbox，再检查规则 |
+| `Conflict { path }` | 路径、命名或状态冲突 | medium | UserActionRequired | 更名、选择冲突策略或刷新状态 |
+| `DuplicateFile { existing_path }` | active 文件已拥有相同内容 | low | UserActionRequired | Skip、Keep both 或经确认 Replace |
+| `FileNotFound { path }` | DB row 或操作目标对应文件不存在 | low | RefreshRequired | 刷新；缺失文件页可 Relink 或移除索引 |
+| `ExpiredAction { action_id }` | Undo/Redo token 已过期或不可再执行 | low | RefreshRequired | 刷新 Undo History |
+| `RepoNotInitialized { path }` | 所选目录不是已初始化资料库 | high | UserActionRequired | 初始化、重新选择或进入恢复页面 |
+| `InvalidPath { path }` | 路径越界、格式无效或不满足资料库约束 | low | UserActionRequired | 修改路径或名称 |
+| `ICloudPlaceholder { path }` | 所需本地内容尚未下载 | medium | Retryable | 用户触发 Download & retry 或换本地位置 |
+| `StagingRecoveryRequired { path }` | staging 状态必须先恢复 | high | UserActionRequired | 进入导入恢复上下文 |
+| `PermissionDenied { path }` | 文件或资料库权限不足 | high | UserActionRequired | 修复权限或选择其他位置 |
+| `Internal { message }` | 未预期内部失败或不变量破坏 | critical | Fatal | 保留上下文并进入当前页面的阻断恢复 |
 
----
+实际 Rust 定义位于 `core/src/error/core_error.rs`，FFI 定义位于 `core/area_matrix.udl`。
 
-## 每个错误的触发用例
+`Config { reason }` 必须始终提供经过控制、可向用户解释的 reason。Swift 只展示 Core/error mapping
+给出的 reason 和恢复元数据，不解析 reason 字符串来推断错误类型、字段、规则、行列或按钮。只有 Core
+明确提供 parse location 时 UI 才显示行号/列号；可视化 editor 的语义错误使用 field/rule + reason，
+不要求也不伪造源码位置。`Revert` 仅在 last-valid backup 确实存在时可用。
 
-### `Io`
+## DB 子语义
 
-```rust
-#[test]
-fn io_when_disk_full() {
-    let mock = mock_disk_full_writer();
-    let r = import_file(&repo, &src, opts);
-    assert!(matches!(r, Err(CoreError::Io { .. })));
-}
+`Db` 保持同一个公开 variant，但映射会识别稳定 SQLite / integrity marker：
 
-#[test]
-fn io_when_source_corrupt() {
-    let bad_src = create_unreadable_file();
-    let r = import_file(&repo, &bad_src, opts);
-    assert!(matches!(r, Err(CoreError::Io { .. }) | Err(CoreError::FileNotFound { .. })));
-}
-```
+| 子语义 | Severity | Recoverability | UI |
+|---|---|---|---|
+| locked / busy | medium | Retryable | inline 或 banner Retry |
+| corrupted / malformed / integrity failure | critical | Fatal | blocking repair |
+| 其他 DB 错误 | high | UserActionRequired | 保留上下文，进入诊断或恢复 |
 
-Swift 处理：
+不得把未知 `Db` 默认当成可重试，也不得用任意字符串让 UI 自动执行 repair。
 
-```swift
-catch CoreError.Io(let msg) {
-    Toast.show("文件操作失败：\(truncate(msg, 80))")
-    Logger.shared.error("io", metadata: ["raw": msg])
-}
-```
+## Severity 与 UI
 
-### `Db`
-
-```rust
-#[test]
-fn db_when_locked() {
-    let mapping = CoreError::Db {
-        message: "database is locked".to_owned(),
-    }.to_error_mapping();
-    assert_eq!(mapping.recoverability, ErrorRecoverability::Retryable);
-}
-
-#[test]
-fn db_when_corrupted() {
-    let repo = setup();
-    let db_path = repo.path().join(".areamatrix/index.db");
-    std::fs::write(&db_path, b"not-a-sqlite-file").unwrap();
-    let r = list_files(&repo.path(), FileFilter::default());
-    assert!(matches!(r, Err(CoreError::Db { .. })));
-}
-```
-
-Swift 处理必须区分 locked/busy 与 corrupted。locked/busy 只能 Retry，不进入 repair；
-corrupted 才进入 blocking repair。
-
-```swift
-catch CoreError.Db(let msg) {
-    let mapping = await coreBridge.mapCoreError(error)
-    switch mapping.recoverability {
-    case .retryable:
-        await showInlineRetry(
-            title: "数据库暂时被占用",
-            message: truncate(msg, 200)
-        )
-    case .fatal:
-        await showAlert(
-            title: "资料库索引损坏",
-            message: "你的文件仍在资料库目录中，但索引需要修复。",
-            actions: [.repairIndex, .openFinder, .collectDiagnostics]
-        )
-    default:
-        await showAlert(
-            title: "数据库错误",
-            message: truncate(msg, 200),
-            actions: [.collectDiagnostics, .quit]
-        )
-    }
-}
-```
-
-### `Config`
-
-```rust
-#[test]
-fn config_when_yaml_invalid() {
-    let repo = setup();
-    std::fs::write(
-        repo.path().join(".areamatrix/classifier.yaml"),
-        "version: 1\ndefault: nonexistent\ncategories: []"
-    ).unwrap();
-    classify::rules::invalidate_cache(&repo.path());
-    let r = classify::rules::load_or_default(&repo.path());
-    assert!(matches!(r, Err(CoreError::Config { reason }) if reason.contains("default")));
-}
-```
-
-Swift 处理：
-
-```swift
-catch CoreError.Config(let reason) {
-    await showSheet(
-        title: "配置错误",
-        message: reason,
-        primaryAction: .openSettings("打开设置"),
-        secondaryAction: .restoreDefault("恢复默认配置")
-    )
-}
-```
-
-### `DuplicateFile`
-
-```rust
-#[test]
-fn duplicate_when_same_hash() {
-    let repo = setup();
-    let src = repo.write_source("a.pdf", b"same");
-    import_file(&repo.path(), &src, ImportOptions::default()).unwrap();
-    let src2 = repo.write_source("b.pdf", b"same");
-    let r = import_file(&repo.path(), &src2, ImportOptions::default());
-    assert!(matches!(r, Err(CoreError::DuplicateFile { .. })));
-}
-```
-
-Swift 处理（用户决策，sheet 而非 toast）：
-
-```swift
-catch CoreError.DuplicateFile(let existing) {
-    let choice = await DuplicateChoiceSheet(
-        existingPath: existing,
-        newSource: sourceURL.path
-    ).present()
-
-    switch choice {
-    case .skip:
-        return
-    case .overwrite:
-        var opts = options
-        opts.duplicateStrategy = .overwrite
-        try await retryImport(opts: opts)
-    case .keepBoth:
-        var opts = options
-        opts.duplicateStrategy = .keepBoth
-        try await retryImport(opts: opts)
-    case .cancel:
-        throw CancellationError()
-    }
-}
-```
-
-### `FileNotFound`
-
-```rust
-#[test]
-fn file_not_found_after_external_delete() {
-    let repo = setup();
-    let entry = import_simple(&repo);
-    std::fs::remove_file(repo.path().join(&entry.path)).unwrap();
-    let r = delete_file(&repo.path(), entry.id);
-    assert!(matches!(r, Err(CoreError::FileNotFound { .. }) | Ok(_)));
-}
-```
-
-Swift 处理（用户感知低）：
-
-```swift
-catch CoreError.FileNotFound(let path) {
-    Toast.show("文件已不存在：\(URL(fileURLWithPath: path).lastPathComponent)")
-    appState.removeFile(id: entry.id)
-    appState.refreshList()
-}
-```
-
-### `ExpiredAction`
-
-```rust
-#[test]
-fn expired_action_after_redo_stack_cleared() {
-    let r = redo_action(&repo.path(), "redo:batch-tags:42");
-    assert!(matches!(r, Err(CoreError::ExpiredAction { .. })));
-}
-```
-
-Swift 处理（用户感知低，需要刷新状态）：
-
-```swift
-catch CoreError.ExpiredAction(let actionId) {
-    Toast.show("操作已过期，请刷新历史后再试")
-    Logger.shared.info("expired_action", metadata: ["action": actionId])
-    appState.refreshUndoRedoHistory()
-}
-```
-
-### `InvalidPath`
-
-```rust
-#[test]
-fn invalid_path_when_filename_has_slash() {
-    let repo = setup();
-    let r = rename_file(&repo.path(), 1, "bad/name.pdf");
-    assert!(matches!(r, Err(CoreError::InvalidPath { .. })));
-}
-
-#[test]
-fn invalid_path_when_too_long() {
-    let repo = setup();
-    let long_name = "a".repeat(300) + ".pdf";
-    let r = rename_file(&repo.path(), 1, &long_name);
-    assert!(matches!(r, Err(CoreError::InvalidPath { .. })));
-}
-```
-
-Swift 处理：
-
-```swift
-catch CoreError.InvalidPath(let path) {
-    Toast.show("文件名不允许：\(path)")
-    nameField.becomeFirstResponder()
-    nameField.shake()
-}
-```
-
-### `ICloudPlaceholder`
-
-```rust
-#[test]
-fn icloud_placeholder_when_undownloaded() {
-    let repo = setup();
-    let placeholder = repo.path().join("docs/.contract.pdf.icloud");
-    std::fs::write(&placeholder, b"").unwrap();
-    let r = import_file(&repo.path(), &placeholder, ImportOptions::default());
-    assert!(matches!(r, Err(CoreError::ICloudPlaceholder { .. })));
-}
-```
-
-Swift 处理（自动重试）：
-
-```swift
-func importWithICloudRetry(src: URL, opts: ImportOptions) async throws -> FileEntry {
-    var attempts = 0
-    while attempts < 3 {
-        do {
-            return try await coreBridge.importFile(from: src, options: opts)
-        } catch CoreError.ICloudPlaceholder(let path) {
-            attempts += 1
-            await iCloudCoordinator.triggerDownload(URL(fileURLWithPath: path))
-            try await Task.sleep(nanoseconds: UInt64(2_000_000_000 * attempts))
-        }
-    }
-    throw AppError.icloudPlaceholder(path: src.path)
-}
-```
-
-### `PermissionDenied`
-
-```rust
-#[test]
-fn permission_denied_readonly_repo() {
-    let repo = setup();
-    set_readonly(repo.path()).unwrap();
-    let r = import_file(&repo.path(), &src, opts);
-    assert!(matches!(r, Err(CoreError::PermissionDenied { .. }) | Err(CoreError::Io { .. })));
-}
-```
-
-Swift 处理（高严重）：
-
-```swift
-catch CoreError.PermissionDenied(let path) {
-    let action = await showAlert(
-        title: "无写入权限",
-        message: "AreaMatrix 无法写入资料库目录：\(path)\n\n请在系统设置中授予完整磁盘访问权限。",
-        actions: [.openSystemSettings, .relocate, .cancel]
-    )
-    if action == .openSystemSettings {
-        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")!)
-    }
-}
-```
-
-### `RepoNotInitialized`
-
-```swift
-catch CoreError.RepoNotInitialized {
-    appState.showFirstLaunchWizard = true
-}
-```
-
-### `Conflict`
-
-罕见，正常流程已被 `conflict::resolve_target` 解决。出现时为内部 bug。
-
-```swift
-catch CoreError.Conflict(let path) {
-    Toast.show("路径冲突，请重试")
-    Logger.shared.error("unexpected_conflict", metadata: ["path": path])
-}
-```
-
-### `Classify`
-
-```swift
-catch CoreError.Classify(let reason) {
-    Toast.show("分类失败，已落入 inbox")
-    Logger.shared.warning("classify_fail", metadata: ["reason": reason])
-}
-```
-
-### `Internal`
-
-```swift
-catch CoreError.Internal(let msg) {
-    let traceId = UUID().uuidString.prefix(8)
-    Logger.shared.error("internal", metadata: ["msg": msg, "trace": String(traceId)])
-    await showAlert(
-        title: "应用内部错误",
-        message: """
-        发生未预期错误，可能影响后续操作。
-        Trace ID: \(traceId)
-
-        建议：
-        1. 复制 Trace ID 反馈到 GitHub Issue
-        2. 重启应用
-        """,
-        actions: [.copyTrace, .submitIssue, .restart]
-    )
-}
-```
-
----
-
-## 重试策略
-
-### 自动重试（无需用户介入）
-
-| 错误 | 策略 |
+| Severity | 默认 UI 形态 |
 |---|---|
-| `ICloudPlaceholder` | 触发下载 → 等待 → 重试操作（最多 3 次，每次 2s/4s/8s） |
-| `Io: ResourceBusy`（macOS spotlight 短暂锁文件） | 100ms 退避，最多 3 次 |
-| `Db: Busy` (SQLITE_BUSY) | rusqlite `busy_timeout(5000)` 自动 |
+| low | toast 3s 自动消失 |
+| medium | banner 可手动关闭 |
+| high | modal alert |
+| critical | blocking modal |
 
-### 不应自动重试
+页面上下文可以提高阻断强度。例如 `RepoNotInitialized` 的 Core severity 是 high，资料库打开页仍可使用
+blocking route；这不改变 Core error contract。
 
-- 任何 `PermissionDenied`：等用户处理权限
-- `DuplicateFile`：用户决策
-- `Internal`：先排查
-- `Db` 其他场景：可能是 schema 损坏，不要硬来
+## 重试规则
 
-### 重试代码模板
+`Retryable` 表示同一操作在外部条件变化后可以再次尝试，不等于允许静默循环。
 
-```swift
-func withRetry<T>(
-    _ retriable: Set<String> = ["icloud_placeholder", "io_busy"],
-    maxAttempts: Int = 3,
-    operation: @escaping () async throws -> T
-) async throws -> T {
-    var attempt = 0
-    while attempt < maxAttempts {
-        do {
-            return try await operation()
-        } catch let error as CoreError where shouldRetry(error, retriable) {
-            attempt += 1
-            if attempt >= maxAttempts { throw error }
-            let backoff = UInt64(pow(2.0, Double(attempt))) * 1_000_000_000
-            try await Task.sleep(nanoseconds: backoff)
-        }
-    }
-    fatalError("unreachable")
-}
+- DB locked/busy 可以由页面提供 Retry，并使用 SQLite `busy_timeout` 控制短暂竞争。
+- 短暂 IO busy 可以在明确边界内有限退避；失败仍需返回用户可见状态。
+- `ICloudPlaceholder` 不自动下载。只有用户点击 `Download & retry` 后，macOS 平台层才请求下载；Core
+  和 watcher 都不触发下载，也不在后台自动重试。
+- `PermissionDenied`、`DuplicateFile`、`Conflict`、`StagingRecoveryRequired` 和 `Internal` 不自动重试。
+- cursor、overview 或 DB 提交失败时，外部同步必须保留可重放状态，不能通过吞错推进 cursor。
 
-func shouldRetry(_ error: CoreError, _ retriable: Set<String>) -> Bool {
-    switch error {
-    case .ICloudPlaceholder: return retriable.contains("icloud_placeholder")
-    case .Io(let msg) where msg.contains("busy"): return retriable.contains("io_busy")
-    default: return false
-    }
-}
-```
+## Swift 侧映射
 
----
-
-## Swift 侧 AppError 映射
+Swift 使用 `CoreErrorMappingSnapshot` 和 `CoreErrorKindSnapshot`，并通过 Core 的
+`map_core_error(ErrorMappingInput)` 获取稳定元数据。应用语义错误使用 `AppSemanticError` 携带同一
+snapshot；不存在另一套字符串型 `AppError` 合同。
 
 ```swift
-// apps/macos/AreaMatrix/Bridge/AppError.swift
-import Foundation
-
-public enum AppError: Error, LocalizedError {
-    case io(String)
-    case db(String)
-    case config(reason: String)
-    case validation(reason: String)
-    case classify(reason: String)
-    case conflict(path: String)
-    case duplicate(existingPath: String)
-    case fileNotFound(path: String)
-    case repoNotInitialized(path: String)
-    case invalidPath(path: String)
-    case icloudPlaceholder(path: String)
-    case stagingRecoveryRequired(path: String)
-    case permissionDenied(path: String)
-    case expiredAction(actionId: String)
-    case internalError(message: String)
-
-    public var errorDescription: String? {
-        switch self {
-        case .io(let msg): return String(localized: "core.io.\(msg)")
-        case .db(let msg): return String(localized: "core.db.\(msg)")
-        case .config(let r): return String(localized: "core.config.\(r)")
-        case .validation(let r): return String(localized: "core.validation.\(r)")
-        case .classify(let r): return String(localized: "core.classify.\(r)")
-        case .conflict(let p): return String(localized: "core.conflict.\(p)")
-        case .duplicate(let p): return String(localized: "core.dup.\(p)")
-        case .fileNotFound(let p): return String(localized: "core.notfound.\(p)")
-        case .repoNotInitialized(let p): return String(localized: "core.uninitialized.\(p)")
-        case .invalidPath(let p): return String(localized: "core.invalid.\(p)")
-        case .icloudPlaceholder(let p): return String(localized: "core.icloud.\(p)")
-        case .stagingRecoveryRequired(let p): return String(localized: "core.staging_recovery.\(p)")
-        case .permissionDenied(let p): return String(localized: "core.perm.\(p)")
-        case .expiredAction(let id): return String(localized: "core.expired_action.\(id)")
-        case .internalError(let m): return String(localized: "core.internal.\(m)")
-        }
-    }
-}
-
-extension CoreError {
-    public func toAppError() -> AppError {
-        switch self {
-        case .Io(let m): return .io(m)
-        case .Db(let m): return .db(m)
-        case .Config(let r): return .config(reason: r)
-        case .Validation(let r): return .validation(reason: r)
-        case .Classify(let r): return .classify(reason: r)
-        case .Conflict(let p): return .conflict(path: p)
-        case .DuplicateFile(let p): return .duplicate(existingPath: p)
-        case .FileNotFound(let p): return .fileNotFound(path: p)
-        case .ExpiredAction(let id): return .expiredAction(actionId: id)
-        case .RepoNotInitialized(let p): return .repoNotInitialized(path: p)
-        case .InvalidPath(let p): return .invalidPath(path: p)
-        case .ICloudPlaceholder(let p): return .icloudPlaceholder(path: p)
-        case .StagingRecoveryRequired(let p): return .stagingRecoveryRequired(path: p)
-        case .PermissionDenied(let p): return .permissionDenied(path: p)
-        case .Internal(let m): return .internalError(message: m)
-        }
-    }
+let mapping = await errorMapper.mapCoreError(error)
+switch mapping.recoverability {
+case .retryable:
+    showRetry(mapping)
+case .userActionRequired:
+    showUserAction(mapping)
+case .refreshRequired:
+    refreshAndPresent(mapping)
+case .fatal:
+    showBlockingRecovery(mapping)
 }
 ```
 
----
+Swift 可以显示经过控制的 `rawContext`，但不得把包含用户名或绝对路径的
+`error.localizedDescription` 直接显示给用户，也不得把原始上下文自动上传。
 
-## 用户消息中英对照
+## 恢复与隐私约束
 
-```text
-// apps/macos/AreaMatrix/Localizations/zh-Hans.lproj/Errors.strings
-"core.io.short" = "文件操作失败";
-"core.db.short" = "数据库错误";
-"core.config.short" = "配置错误";
-"core.duplicate.short" = "文件已存在";
-"core.invalid.short" = "文件名不合法";
-"core.icloud.short" = "iCloud 文件未下载";
-"core.permission.short" = "无访问权限";
-"core.notfound.short" = "文件不存在";
-"core.expired_action.short" = "操作已过期";
-"core.uninitialized.short" = "资料库未初始化";
-"core.internal.short" = "应用内部错误";
+- `ICloudPlaceholder` 的 Download & retry 必须由用户触发。
+- `StagingRecoveryRequired` 必须进入当前 import/startup recovery 上下文，不能自动删除 residue。
+- `FileNotFound` 的 Relink 只更新索引指向；移除索引不得删除外部用户文件。
+- repository diagnostics 可能包含完整 metadata DB、WAL 和 SHM；导出前必须确认，不得称为全文脱敏。
+- About 文本诊断不包含用户文件正文，并按其专用合同处理路径和用户名。
+- `Internal` 默认提供 Leave flow、Collect diagnostics 和 Open Issue；不假设存在全局重启或统一 zip
+  bundle。只有当前上下文接入了真实可执行且经过验证的 restart 动作时，才显示 Restart。
 
-"core.duplicate.detail" = "此文件已在 %@ 中存在。";
-"core.duplicate.action.skip" = "跳过";
-"core.duplicate.action.overwrite" = "覆盖现有";
-"core.duplicate.action.keep_both" = "保留两份";
+## 反模式
 
-"core.permission.action.system_settings" = "打开系统设置";
-"core.permission.action.relocate" = "更换资料库位置";
+- 用技术术语吓退用户，或把 SQLite/Rust 原始文本直接作为标题。
+- 把 `error.localizedDescription` 直接显示并据此选择业务动作。
+- 对 `Db`、iCloud、权限或 staging 错误“不要硬来”：不静默下载、不猜测修复、不覆盖用户文件。
+- 把同机 dry-run、截图或日志文本当作恢复路径已经闭环的证据。
+
+## 验证
+
+```bash
+cd core
+cargo test --test error_mapping_contract_api
+cargo test --test error_recovery_matrix
 ```
 
-```text
-// en.lproj/Errors.strings
-"core.io.short" = "File operation failed";
-"core.db.short" = "Database error";
-"core.config.short" = "Configuration error";
-"core.duplicate.short" = "File already exists";
-"core.invalid.short" = "Invalid filename";
-"core.icloud.short" = "iCloud file not downloaded";
-"core.permission.short" = "Permission denied";
-"core.notfound.short" = "File not found";
-"core.expired_action.short" = "Action expired";
-"core.uninitialized.short" = "Repository not initialized";
-"core.internal.short" = "Internal error";
-
-"core.duplicate.detail" = "This file already exists at %@.";
-"core.duplicate.action.skip" = "Skip";
-"core.duplicate.action.overwrite" = "Overwrite";
-"core.duplicate.action.keep_both" = "Keep both";
-
-"core.permission.action.system_settings" = "Open System Settings";
-"core.permission.action.relocate" = "Choose another location";
-```
-
----
-
-## 用户消息原则
-
-### 应该
-
-- **告诉用户发生了什么**：「文件已在 docs/contract.pdf 中存在」
-- **告诉用户能怎么做**：「跳过 / 覆盖 / 保留两份」
-- **保留技术细节供日志**：toast 短，详细错误进 OSLog
-- **本地化**：所有用户可见错误用 `String(localized:)`
-
-### 不应该
-
-- 暴露内部路径 / SQL 语句 / Rust panic 堆栈
-- 用技术术语吓退用户（"FFI binding deserialization failed"）
-- 在不可恢复错误时显示"重试"按钮
-- 把 `error.localizedDescription` 直接显示（可能含技术细节）
-
----
-
-## 日志要求
-
-每个 CoreError 必须有 tracing 日志：
-
-```rust
-fn import_file(...) -> CoreResult<FileEntry> {
-    // ...
-    if let Some(existing) = db::find_by_hash(...)? {
-        tracing::warn!(
-            existing_path = %existing.path,
-            new_source = %src.display(),
-            hash = %new_hash,
-            "duplicate file detected"
-        );
-        return Err(CoreError::DuplicateFile { existing_path: existing.path });
-    }
-    Ok(...)
-}
-```
-
-Swift 端弹错误时同时把 trace_id 显示在 toast 角落，便于用户在 issue 中报上下文：
-
-```swift
-struct ErrorToast: View {
-    let error: AppError
-    let traceId: String
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text(error.errorDescription ?? "")
-            Text("ID: \(traceId)")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-```
-
-详见 [../development/observability.md](../development/observability.md)。
-
----
-
-## 严重程度处理矩阵
-
-```mermaid
-flowchart TB
-    Err[CoreError]
-    Sev{severity?}
-    Low[low<br/>toast 3s]
-    Med[medium<br/>banner 可关闭]
-    High[high<br/>modal alert]
-    Crit[critical<br/>blocking modal + 必须重启]
-
-    Err --> Sev
-    Sev -->|low| Low
-    Sev -->|medium| Med
-    Sev -->|high| High
-    Sev -->|critical| Crit
-```
-
-| 严重程度 | UI | 用户体验 |
-|---|---|---|
-| low | toast 3s 自动消失 | 几乎不打断 |
-| medium | banner 可手动关闭 | 提醒但允许继续 |
-| high | modal alert | 必须用户响应 |
-| critical | blocking modal | 必须重启 / 修复 |
-
----
-
-## 错误测试矩阵
-
-每个 variant 至少一个 test：
-
-| Variant | 测试 |
-|---|---|
-| `Io` | `io_when_disk_full`, `io_when_source_corrupt` |
-| `Db` | `db_when_corrupted`, `db_when_busy_recovers` |
-| `Config` | `config_when_yaml_invalid`, `config_when_default_missing` |
-| `Validation` | `validation_when_tag_suggestion_input_invalid` |
-| `Classify` | `classify_when_engine_panics` |
-| `Conflict` | （罕见，仅 stress test） |
-| `DuplicateFile` | `duplicate_when_same_hash`, `duplicate_skip_strategy` |
-| `FileNotFound` | `file_not_found_after_external_delete` |
-| `ExpiredAction` | `expired_action_after_redo_stack_cleared` |
-| `RepoNotInitialized` | `repo_not_initialized_when_no_db` |
-| `InvalidPath` | `invalid_path_with_slash`, `invalid_path_too_long`, `invalid_path_empty` |
-| `ICloudPlaceholder` | `icloud_placeholder_when_undownloaded` |
-| `StagingRecoveryRequired` | `staging_recovery_required_when_import_session_dirty` |
-| `PermissionDenied` | `permission_denied_readonly_repo` |
-| `Internal` | `internal_when_panic_caught` |
-
----
+涉及 Swift 消费路径时还需运行对应 error mapping / recovery XCTest。
 
 ## Related
 
-- [core-api.md](core-api.md)
-- [uniffi-recipes.md](uniffi-recipes.md)
-- [../architecture/ffi-design.md](../architecture/ffi-design.md)
-- [../development/observability.md](../development/observability.md)
-- [../modules/storage.md](../modules/storage.md)
+- [Core API](core-api.md)
+- [错误文案与恢复路径](../ux/error-messages.md)
+- [错误恢复矩阵](../development/error-recovery-matrix.md)
+- [文件监听与外部变化同步](../architecture/fs-watcher.md)

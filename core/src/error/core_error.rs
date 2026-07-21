@@ -57,7 +57,7 @@ pub enum CoreError {
     /// Filesystem permission is insufficient.
     #[error("permission denied: {path}")]
     PermissionDenied { path: String },
-    /// Placeholder for unimplemented or unexpected internal failures.
+    /// Unexpected internal failure or invariant violation.
     #[error("internal error: {message}")]
     Internal { message: String },
 }

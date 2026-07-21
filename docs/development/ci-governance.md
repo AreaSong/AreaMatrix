@@ -10,13 +10,15 @@
 
 CI 是合并前的最低共同质量线。它不能替代 review，但可以阻止明显不完整、不可复现或不可追溯的改动进入主线。
 
+企业治理检查同时验证 `ASW-EWF-001@1.0.0` 的 AreaMatrix 适配基线、G0-G8、L0-L4、治理登记册和 authoring-only 权限边界。CI 不能把外部签名、公证、独立复核、测试参与者或 AreaFlow execution 标记为完成。
+
 ## 必跑矩阵
 
 | Workflow | 目的 | 触发 |
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
 | `macos-ci.yml` | Core build、tracked Swift bindings drift、Xcode build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
-| `governance-ci.yml` | governance files、文档链接与导航、skills、quality smoke、品牌资产、Codex OS、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
+| `governance-ci.yml` | governance files、文档链接与导航、skills、quality smoke、品牌资产、Codex OS、wording audit、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 
 macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.yml` 必须先显式检查工程和源码目录；
 任一目录缺失都应立即失败，不得通过条件表达式跳过 build/test、SwiftLint 或 SwiftFormat。
@@ -24,6 +26,13 @@ macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.
 `MacOSGovernance*TestSupport.swift` 与 `AreaMatrixTests` target 的 Sources membership 双向核对，
 防止治理测试只有文件引用、没有进入可执行 XCTest target 时被 CI 静默漏跑。
 它还会核对 Core 与 macOS 之间的 `AREAMATRIX_*_RUNTIME` key 合同，防止新增或改名 runtime 后只有一侧更新。
+它同时检查 `docs/governance/` 的固定源事实、上游版本/hash、owner、复审字段、RAID、G0-G8、PR 模板字段，以及 promotion apply / execution / runner 仍被 shim 阻断。
+
+`./dev check docs` 除了相对链接和 README 导航可达性，还检查每篇 Markdown 的唯一一级标题、
+H1 后紧跟的摘要引用、代码块语言与闭合、`## Related` 章节和文件末尾单个换行；阅读时长估算与
+标题层级不在其检查范围内，靠评审把关。`./dev check governance` 对固定上游规范快照执行登记册 SHA-256
+校验；`./dev check diff` 同时检查 unstaged、staged 和 merge-base 到 HEAD 的 committed diff，避免只检查
+当前工作区而漏掉已提交空白错误。
 
 ## 本地等价检查
 
@@ -130,6 +139,11 @@ cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftform
 ```
 
 检查会把允许项单独分类：事务式 `staging`、Xcode `Build Phase`、Apple/macOS beta 测试、系统临时文件、治理规则中的受控词清单，以及集中历史证据测试。其他长期源事实命中必须改成长期产品、架构、API、UX、测试或发布语义。
+
+唯一固定上游快照 `docs/governance/upstream/ASW-EWF-001-1.0.0.txt` 以
+`allowed-upstream-snapshot` 分类显示。它是完整的外部规范副本，不代表 AreaMatrix 当前产品口径；
+该例外只匹配精确路径，且文件内容必须继续通过治理登记册 SHA-256 校验。相邻文件或其他
+`docs/governance/upstream/` 内容不会自动获得豁免。
 
 ## Secret Scan Checkout
 

@@ -22,28 +22,26 @@ For the pre-discussion question and routing entry, see
 `tasks/prompts/**` into version-local execution, see
 [`references/execution-hard-migration-plan.md`](references/execution-hard-migration-plan.md).
 
-## AreaFlow Read-Only Shim
+## AreaFlow Governance Authoring Shim
 
-This repository has a Package B read-only AreaFlow compatibility shim. The shim
-keeps local entry points available while AreaFlow owns the broader workflow
-cutover path.
+This repository uses an authoring-only AreaFlow compatibility shim for the approved
+ASW governance adoption. It permits local planning artifacts while AreaFlow retains
+the separate execution cutover boundary.
 
-- `./dev workflow status`, `./dev workflow doctor`, `./dev workflow init
-  --version <version>`, and `./dev workflow open` use the read-only shim and
-  fall back to `.areaflow/status.json` when AreaFlow is unavailable.
+- `./dev workflow status` and `./dev workflow open` use the compatibility projection;
+  native workflow doctors remain available for repository validation.
+- Version init, discussion, baseline, middle-layer, plans, drafts, queue, and
+  promotion preview may write only planning artifacts.
+- `./dev changes generate --write` is limited to `v2` draft output under
+  `workflow/versions/v2/drafts/`.
 - `./task-loop status` is read-only and reports the shim state from AreaFlow or
   the local status projection.
 - `./task-loop run` and runner recovery/write commands remain blocked before
   the legacy runner or Dev Console wrapper can create logs, pid files,
   progress, summaries, or checkpoints.
-- `./dev workflow` write-mode commands, including version skeleton writes,
-  discussion / middle-layer writes, plan / queue writes, promotion apply, and
-  projection / closeout writes, remain blocked until a separate authoring or
-  execution cutover approval exists.
-- `./dev changes generate --write` is also blocked because it writes
-  `workflow/versions/**` draft artifacts.
-- The shim does not write `workflow/versions/**`, progress, logs, checkpoints,
-  release evidence, source files, or user files.
+- Promotion approval/apply, projection/closeout writes, live execution, progress,
+  logs, checkpoints, release evidence, product source files, and user files remain blocked.
+- Any output path outside the approved v2 planning roots fails closed.
 
 ## Standard Flow
 

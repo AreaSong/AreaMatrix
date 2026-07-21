@@ -204,9 +204,11 @@ namespace area_matrix {
     );
 
     // replace confirmation may compose this existing deletion contract only for
-    // recoverable repo-owned discarded versions. There is no hard-delete flag;
-    // platforms must disable Replace when Trash or a documented safety backup
-    // is unavailable.
+    // recoverable repo-owned discarded versions. Swift owns the host availability
+    // probe and dangerous confirmation; Core owns the actual Trash mutation,
+    // metadata/change-log/Undo commit, and failure rollback. There is no
+    // hard-delete flag; platforms must disable Replace when Trash or a documented
+    // safety backup is unavailable.
     [Throws=CoreError]
     void delete_file(string repo_path, i64 file_id);
 

@@ -23,10 +23,13 @@
 ## AI 设置
 
 管理本地模型、远程 Provider、凭据、隐私规则、调用日志和失败回退。远程 AI 默认关闭。
+调用日志中的 `Privacy rules checked = yes` 表示请求实际经过隐私评估，不等于命中了规则；命中的规则
+会单独显示。旧日志无法证明是否检查过时显示为 `not recorded`。
 
 ## 高级与诊断
 
-查看诊断、恢复和平台差异。导出诊断前检查内容和脱敏说明；AreaMatrix 不自动上传诊断包。
+查看诊断、恢复和平台差异。repository snapshot 可能包含路径、文件名、标签、笔记和其他 metadata；
+About 文本诊断按专用合同脱敏。导出前检查内容和隐私说明，AreaMatrix 不自动上传诊断产物。
 
 ## Related
 

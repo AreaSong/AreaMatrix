@@ -55,6 +55,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
 
     private let metadataRepairer: any CoreMetadataRepairing
     private let startupRecoverer: any CoreStartupRecovering
+    private let repositoryWriteCoordinator: RepositoryWriteCoordinator
     private let diagnosticsCollector: any CoreDiagnosticsCollecting
     private let errorMapper: any CoreErrorMapping
     private var diagnosticsGeneration = 0
@@ -66,6 +67,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
         lastOpenedAt: Int64?,
         metadataRepairer: any CoreMetadataRepairing,
         startupRecoverer: any CoreStartupRecovering,
+        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
         diagnosticsCollector: any CoreDiagnosticsCollecting,
         errorMapper: any CoreErrorMapping
     ) {
@@ -75,6 +77,7 @@ final class DatabaseRepairConfirmModel: ObservableObject {
         self.lastOpenedAt = lastOpenedAt
         self.metadataRepairer = metadataRepairer
         self.startupRecoverer = startupRecoverer
+        self.repositoryWriteCoordinator = repositoryWriteCoordinator
         self.diagnosticsCollector = diagnosticsCollector
         self.errorMapper = errorMapper
     }
@@ -112,10 +115,12 @@ final class DatabaseRepairConfirmModel: ObservableObject {
         repairState = .running(.scanningFiles)
 
         do {
-            let report = try await metadataRepairer.repairMetadata(
-                repoPath: repoPath,
-                options: RepairOptionsSnapshot(fullRescan: true, preserveDiagnosticsSnapshot: true)
-            )
+            let report = try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {
+                try await self.metadataRepairer.repairMetadata(
+                    repoPath: self.repoPath,
+                    options: RepairOptionsSnapshot(fullRescan: true, preserveDiagnosticsSnapshot: true)
+                )
+            }
             repairState = .succeeded(report)
         } catch {
             repairState = await .failed(errorMapper.mapError(error))
@@ -158,7 +163,9 @@ final class DatabaseRepairConfirmModel: ObservableObject {
         startupRecoveryState = .checking
 
         do {
-            let report = try await startupRecoverer.recoverOnStartup(repoPath: repoPath)
+            let report = try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {
+                try await self.startupRecoverer.recoverOnStartup(repoPath: self.repoPath)
+            }
             startupRecoveryState = .completed(report.hasVisibleDetails ? report : nil)
         } catch {
             startupRecoveryState = await .failed(errorMapper.mapError(error))

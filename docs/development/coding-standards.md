@@ -29,17 +29,11 @@ cargo clippy --all-targets --all-features -- -D warnings
 
 PR 不通过则不允许合并。
 
-### `rustfmt.toml`
+### rustfmt 配置
 
-```toml
-edition = "2021"
-max_width = 100
-hard_tabs = false
-tab_spaces = 4
-newline_style = "Unix"
-imports_granularity = "Crate"
-group_imports = "StdExternalCrate"
-```
+仓库不提供 `rustfmt.toml`，Rust 格式化使用 rustfmt 默认配置，一致性由 CI 的
+`cargo fmt --all -- --check` 强制。如后续需要偏离默认值，必须先提交配置文件并同步本节说明，
+不要依赖本地个人配置。
 
 ### 命名
 
@@ -127,7 +121,7 @@ pub fn import_file(...) -> CoreResult<FileEntry> { ... }
 
 ### `scripts/dev_tools/swiftformat.conf`
 
-```
+```text
 --swiftversion 5.9
 --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData
 --indent 4
@@ -180,22 +174,14 @@ identifier_name:
 
 ### 模块组织
 
-```
+```text
 AreaMatrix/
-├── App/        # AreaMatrixApp.swift, AppDelegate.swift
-├── Models/     # @Observable stores
-├── Bridge/     # CoreBridge, AppError, generated bindings
-├── Watcher/    # FSWatcher, Debouncer, InFlightTracker, ICloudCoordinator
-├── Adapters/   # DragDropAdapter, NSItemProvider helpers
-├── Views/
-│   ├── Main/   # 主窗口
-│   ├── Sidebar/
-│   ├── List/
-│   ├── Detail/
-│   ├── Import/
-│   ├── Settings/
-│   └── Onboarding/
-├── Logging/    # AppLogger
+├── App/        # app lifecycle 与依赖装配
+├── Bridge/     # CoreBridge、snapshot、error mapping、generated/UniFFI bindings
+├── Features/   # 按产品能力组织的 model/action/view support
+├── Models/     # 跨 feature model
+├── PlatformServices/ # FSEvents、iCloud、Finder、Trash availability probe/确认/UI、权限和 diagnostics
+├── Views/      # 窗口与页面组合
 └── Resources/
 ```
 
@@ -210,6 +196,7 @@ AreaMatrix/
 @Observable
 final class RepoStore {
     private(set) var files: [FileEntry] = []
+    private(set) var lastErrorMessage: String?
     private let bridge: CoreBridge
 
     init(bridge: CoreBridge) {
@@ -220,8 +207,9 @@ final class RepoStore {
     func reload(filter: FileFilter) async {
         do {
             self.files = try await bridge.listFiles(filter: filter)
+            lastErrorMessage = nil
         } catch {
-            AppLogger.shared.error("reload failed: \(error)")
+            lastErrorMessage = error.localizedDescription
         }
     }
 }
@@ -236,10 +224,13 @@ final class RepoStore {
 ### 不允许
 
 - 直接调 UniFFI 生成函数（必须经过 CoreBridge）
-- `print()` 调试（用 OSLog / AppLogger）
+- 用 `print()` 冒充持久化日志或错误处理；当前应映射为页面状态或显式 diagnostics，日志体系接入后再使用
+  受治理的 logger
 - 强制解包 `!`（除非是 `IBOutlet` 或类型已经是 force unwrap 的字面量类型）
 - 在 View body 闭包内 `await`（Swift 编译能过但要避免）
 - 单文件超 500 行
+- 在 Swift 层执行确认后的 Trash mutation、写 delete metadata/change log 或自行生成 Undo；Swift 只负责
+  availability probe、危险确认和 UI，实际 mutation、持久化与失败回滚必须经过 Core 合同。
 
 ---
 
@@ -327,7 +318,7 @@ flowchart TB
 
 简短：[Conventional Commits](https://www.conventionalcommits.org/)：
 
-```
+```text
 feat(classify): 关键词匹配支持大小写折叠
 fix(storage): 修复 staging 残留清理时的 race
 docs(adr): 增补 0010 关于全文搜索的决策
@@ -343,8 +334,8 @@ chore(ci): 升级 macos-14 runner
 PR 必须通过：
 
 - [ ] `cargo fmt --all -- --check`
-- [ ] `cargo clippy -- -D warnings`
-- [ ] `cargo test --workspace`
+- [ ] `cargo clippy --all-targets --all-features -- -D warnings`
+- [ ] `cargo test --all-features --workspace`
 - [ ] `cargo llvm-cov --fail-under-lines 70`（核心模块）
 - [ ] `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore`
 - [ ] `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache`

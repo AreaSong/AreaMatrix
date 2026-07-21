@@ -23,6 +23,8 @@ AreaMatrix/
 
 `.codex/skills-src/`、`.agents/skills/`、`workflow/`、`dev`
 和 `task-loop` 是固定工具入口，目录收紧时不得为了视觉简洁而移动或重命名。
+根 `AGENTS.md` 持有任务到 repo-local skill 的路由表；新增或删除 skill 时必须同步该表，
+一致性由 `./dev check skills` 校验。
 v1 历史 prompt 执行队列已完成并归档在
 `workflow/versions/v1-mvp/execution/`；不得为了整理状态重写历史
 `progress.json`、task-loop logs、checkpoint 或 evidence。未来真实版本必须先通过
@@ -43,6 +45,7 @@ exclude 隐藏，不纳入源码目录语义。
 - 架构与目录：`docs/architecture/`
 - Core API：`docs/api/core-api.md`
 - 开发规范：`docs/development/`
+- 企业治理适配、项目章程、RAID 与生命周期：`docs/governance/`
 - v1 source docs archive：`workflow/versions/v1-mvp/source-docs/`
 - 版本化 workflow：`workflow/versions/`、`workflow/templates/`
 - 长期路线图：`docs/roadmap/version-roadmap.md`
@@ -72,6 +75,13 @@ exclude 隐藏，不纳入源码目录语义。
 - FSEvents 与 iCloud 处理必须考虑重复事件、延迟、占位符和外部改动。
 - 自动概览默认写入 `.areamatrix/generated/`，不得默认覆盖 `README.md`。
 - 远程 AI 调用、用户数据离开本机、日志或错误上报暴露敏感路径 / 内容时，必须说明隐私影响、明示同意、数据最小化和回滚 / 关闭路径。
+
+## 企业治理门禁
+
+- 所有中高风险变更按 `docs/governance/enterprise-workflow-baseline.md` 选择 L0-L4 和 G0-G8 当前门禁。
+- `@AreaSong` 可以合并产品、技术、数据、安全协调和发布准备角色，但 L3/L4 缺少独立合格复核时必须保持 blocked。
+- 外部签名、公证、测试参与者、远端 CI 和 AreaFlow execution 必须保留真实 external/deferred 状态，不能用本地检查替代。
+- 长期文档 owner、状态、复审触发和外部依赖统一登记到 `docs/governance/governance-register.yaml`。
 
 ## 安全重点
 

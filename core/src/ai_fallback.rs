@@ -187,16 +187,25 @@ pub(crate) fn get_ai_fallback_status(
     validation::validate_repo_path(&repo_path)?;
     validation::validate_request(&request)?;
     let provider_error_code = request.provider_error_code.clone();
+    let privacy_rules_checked = privacy_rules_checked(&request);
     let repo = Path::new(&repo_path);
     call_log::ensure_metadata_readable(repo)?;
     let mut status = status_from_request(request);
     if status.call_log_id.is_none() {
-        let call_log_id =
-            call_log::insert_fallback_call_log(repo, &status, provider_error_code.as_deref())?;
+        let call_log_id = call_log::insert_fallback_call_log(
+            repo,
+            &status,
+            provider_error_code.as_deref(),
+            privacy_rules_checked,
+        )?;
         status.call_log_id = Some(call_log_id);
         status.secondary_action = secondary_action_after_call_log(&status);
     }
     Ok(status)
+}
+
+fn privacy_rules_checked(request: &AiFallbackStatusRequest) -> bool {
+    request.privacy_decision.is_some() || request.privacy_skipped_reason.is_some()
 }
 
 fn status_from_request(request: AiFallbackStatusRequest) -> AiFallbackStatus {

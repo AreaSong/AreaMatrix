@@ -241,16 +241,19 @@ mod tests {
             "sleep 30 & descendant=$!; printf '%s' \"$descendant\" > {}; wait",
             shell_quote(&pid_path)
         );
-        let mut command = shell(&script);
-
-        let error = run(&mut command, b"", limits(Duration::from_millis(200), 16))
+        let command = shell(&script);
+        let run_handle = thread::spawn(move || {
+            let mut command = command;
+            run(&mut command, b"", limits(Duration::from_secs(3), 16))
+        });
+        let descendant_pid = wait_until_pid_file(&pid_path);
+        let error = run_handle
+            .join()
+            .expect("runtime worker should not panic")
             .expect_err("runtime process group should time out");
-        let descendant_pid = fs::read_to_string(&pid_path)
-            .expect("read descendant pid")
-            .parse::<i32>()
-            .expect("parse descendant pid");
 
         assert!(matches!(error, ExternalRuntimeError::TimedOut));
+        let descendant_pid = descendant_pid.expect("read descendant pid before timeout");
         assert!(wait_until_process_exits(descendant_pid));
     }
 
@@ -280,6 +283,20 @@ mod tests {
             thread::sleep(Duration::from_millis(10));
         }
         false
+    }
+
+    #[cfg(unix)]
+    fn wait_until_pid_file(path: &Path) -> Option<i32> {
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while Instant::now() < deadline {
+            if let Ok(contents) = fs::read_to_string(path) {
+                if let Ok(pid) = contents.trim().parse::<i32>() {
+                    return Some(pid);
+                }
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        None
     }
 
     #[cfg(unix)]

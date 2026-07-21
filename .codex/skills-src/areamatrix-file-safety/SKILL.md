@@ -1,6 +1,6 @@
 ---
 name: areamatrix-file-safety
-description: "Use when Codex touches AreaMatrix file safety boundaries such as adopting existing folders, staging recovery, DB metadata, migrations, reindex, FSEvents/iCloud sync, generated overviews, or user-file deletion/overwrite risks."
+description: "Use when the task touches AreaMatrix file safety boundaries: adopting existing folders, staging recovery, DB metadata, migrations, reindex, FSEvents/iCloud sync, generated overviews, or user-file deletion/overwrite risks. Trigger phrases include 删除用户文件 / 覆盖文件 / 非空目录接管 / 数据迁移 / 数据修复 / 导入失败恢复 / iCloud 占位符."
 ---
 
 # AreaMatrix File Safety

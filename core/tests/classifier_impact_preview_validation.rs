@@ -206,7 +206,7 @@ fn classifier_impact_preview_validation_locks_api_udl_and_rust_contract() {
     ) {
     }
     assert_signature(preview_classifier_rule_impact);
-    assert_contains(TESTING_DOC, "`core/classify` | ≥ 90%");
+    assert_contains(TESTING_DOC, "Core line coverage：70%");
 
     for fragment in [
         "RuleImpactReport preview_classifier_rule_impact(",

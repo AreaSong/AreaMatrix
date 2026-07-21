@@ -14,17 +14,20 @@ struct MainRepositorySelectedFileDetailPane: View {
     let detailExternalCreateSyncState: MainDetailExternalCreateSyncState
     let detailTagEditorState: DetailTagEditorState
     let detailTagSuggestionState: DetailTagSuggestionState
+    let missingFileRelinkState: MainMissingFileRelinkState
     let tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     let detailTagUndoToast: DetailTagUndoToast?
     let repoPath: String
     let tagActions: MainRepositoryDetailPaneTagActions
     let onRequestTabChange: (DetailPaneTab) -> Void
     let onRetrySelectedFileDetail: () -> Void
+    let onRetryExternalSync: () -> Void
     let onRefreshChangeLog: () -> Void
     let onRequestDetailLogDiagnostics: () -> Void
     let onConfirmDetailLogDiagnostics: () -> Void
     let onCancelDetailLogDiagnostics: () -> Void
     let onOpenNoteFile: (String) -> Void
+    let onLocateMissingFile: (Int64) -> Void
     let onBeginRenameFile: (Int64) -> Void
     let onBeginChangeCategoryFile: (Int64) -> Void
     let onBeginClassifierCorrectionFile: (Int64) -> Void
@@ -59,6 +62,8 @@ struct MainRepositorySelectedFileDetailPane: View {
                 MainRepositoryDetailFileActionMenu(
                     detail: detail,
                     disabledReason: writeActionDisabledReason(detail.id),
+                    missingFileRelinkState: missingFileRelinkState,
+                    onLocateMissingFile: onLocateMissingFile,
                     onBeginRenameFile: onBeginRenameFile,
                     onBeginChangeCategoryFile: onBeginChangeCategoryFile,
                     onBeginClassifierCorrectionFile: onBeginClassifierCorrectionFile,
@@ -93,6 +98,7 @@ struct MainRepositorySelectedFileDetailPane: View {
                 detailLogState: detailLogState,
                 diagnosticsState: detailLogDiagnosticsState,
                 externalCreateSyncState: detailExternalCreateSyncState,
+                onRetryExternalSync: onRetryExternalSync,
                 onRefreshChangeLog: onRefreshChangeLog,
                 onRequestDiagnostics: onRequestDetailLogDiagnostics,
                 onConfirmDiagnostics: onConfirmDetailLogDiagnostics,
@@ -154,6 +160,8 @@ struct MainRepositorySelectedFileDetailPane: View {
             isLoading: isDetailLoading,
             selectedFile: detail,
             onRetry: onRetrySelectedFileDetail,
+            missingFileRelinkState: missingFileRelinkState,
+            onLocateMissingFile: onLocateMissingFile,
             onBeginDeleteFile: onBeginDeleteFile,
             canPerformWriteAction: canPerformWriteAction
         )

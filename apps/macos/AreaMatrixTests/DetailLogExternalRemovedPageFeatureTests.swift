@@ -3,7 +3,7 @@ import XCTest
 
 final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
     @MainActor
-    func testDetailLogSyncExternalRemovedCoreProductionRelayCreatesCurrentMainWindowRemovedEvent() throws {
+    func testDetailLogSyncExternalRemovedCoreProductionRelayCreatesCurrentMainWindowRemovedEvent() {
         let fixture = makeShellMainListFixture(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
             model: makeShellOnboardingModel()
@@ -20,12 +20,12 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         model.consumePendingExternalCreatedFileSignals()
 
         XCTAssertEqual(
-            model.externalCreatedEvent(for: opening),
-            MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/removed.pdf", fsEventID: 10100)
+            model.externalCreatedEvents(for: opening),
+            [MainExternalCreatedFileEvent(kind: .removed, relativePath: "docs/removed.pdf", fsEventID: 10100)]
         )
-        let handledEvent = try XCTUnwrap(model.externalCreatedEvent(for: opening))
-        model.finishExternalCreatedFileEvent(handledEvent)
-        XCTAssertNil(model.externalCreatedEvent(for: opening))
+        let handledEvents = model.externalCreatedEvents(for: opening)
+        model.finishExternalCreatedFileEvents(handledEvents)
+        XCTAssertEqual(model.externalCreatedEvents(for: opening), [])
     }
 
     func testDetailLogSyncExternalRemovedCoreWatcherBuildsRemovedSignalForUserFileOnly() {
@@ -95,12 +95,110 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.statusBanner, .removedSelectedFile(fileID: removed.id))
         XCTAssertEqual(
             model.detailExternalCreateSyncState,
-            .synced(event: event, fileID: removed.id, .detailRemovedFixture())
+            .synced(fileID: removed.id, event: event, .detailRemovedFixture())
         )
         await lister.assertChangeLogListRequests([
             DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: removed.id))
         ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: removed.id, entries: [entry]))
+    }
+}
+
+extension DetailLogExternalRemovedPageFeatureTests {
+    @MainActor
+    func testMixedExternalWindowKeepsSelectedRemovedFileAheadOfLaterCreate() async throws {
+        let removed = FileEntrySnapshot.detailMetaFixture(id: 44, currentName: "removed.pdf")
+        var created = FileEntrySnapshot.detailMetaFixture(id: 45, currentName: "later.pdf")
+        created.path = "docs/later.pdf"
+        let removedEvent = try XCTUnwrap(MainExternalCreatedFileEvent(
+            kind: .removed,
+            relativePath: removed.path,
+            fsEventID: 10004
+        ))
+        let createdEvent = try XCTUnwrap(MainExternalCreatedFileEvent(
+            relativePath: created.path,
+            fsEventID: 10005
+        ))
+        let entry = ChangeLogEntrySnapshot.detailLogFixture(fileID: removed.id, action: "deleted")
+        let result = SyncResultSnapshot.testFixture(detectedCreates: 1, detectedDeletes: 1)
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [removed]),
+            fileLister: RecordingFileLister(files: [created]),
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(removed)),
+            changeLogLister: DetailLogRecordingLister(results: [.success([entry])]),
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(result)),
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
+        )
+
+        await model.selectFiles([removed.id])
+        await model.syncExternalChanges([removedEvent, createdEvent])
+
+        var missingRemoved = removed
+        missingRemoved.availability = .missing
+        XCTAssertEqual(model.files, [created])
+        XCTAssertEqual(model.selection, .single(removed.id))
+        XCTAssertEqual(model.selectedFileDetail, missingRemoved)
+        XCTAssertEqual(model.statusBanner, .removedSelectedFile(fileID: removed.id))
+        XCTAssertEqual(
+            model.detailExternalCreateSyncState,
+            .synced(fileID: removed.id, event: removedEvent, result)
+        )
+    }
+
+    @MainActor
+    func testSelectedRemovalReplayWithNoDetectedChangesRefreshesAndCompletes() async throws {
+        let removed = FileEntrySnapshot.detailMetaFixture(id: 46, currentName: "cursor-removed.pdf")
+        let keeper = FileEntrySnapshot.detailMetaFixture(id: 47, currentName: "keeper.pdf")
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(
+            kind: .removed,
+            relativePath: removed.path,
+            fsEventID: 10006,
+            cursorWatermark: 10007
+        ))
+        let window = try externalRemovedWindow(event: event, cursorWatermark: 10007)
+        let entry = ChangeLogEntrySnapshot.detailLogFixture(fileID: removed.id, action: "deleted")
+        let fileLister = RecordingFileLister(files: [keeper])
+        let syncer = RecordingExternalChangesSyncer(
+            results: [
+                .success(.deletedFixture()),
+                .success(.testFixture())
+            ],
+            cursorWriteResults: [
+                .failure(CoreError.Db(message: "cursor failed")),
+                .success(())
+            ]
+        )
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [removed, keeper]),
+            fileLister: fileLister,
+            fileDetailer: DetailMetaImmediateDetailer(result: .success(removed)),
+            changeLogLister: DetailLogRecordingLister(results: [.success([entry])]),
+            externalChangesSyncer: syncer,
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
+        )
+
+        await model.selectFiles([removed.id])
+        let firstAttemptCompleted = await model.syncExternalWindow(window)
+        XCTAssertFalse(firstAttemptCompleted)
+        XCTAssertTrue(model.hasRetryableExternalSyncFailure)
+
+        let replayCompleted = await model.syncExternalWindow(window)
+        XCTAssertTrue(replayCompleted)
+
+        var missingRemoved = removed
+        missingRemoved.availability = .missing
+        XCTAssertEqual(model.files, [keeper])
+        XCTAssertEqual(model.selection, .single(removed.id))
+        XCTAssertEqual(model.selectedFileDetail, missingRemoved)
+        XCTAssertEqual(
+            model.detailExternalCreateSyncState,
+            .synced(fileID: removed.id, event: event, .testFixture())
+        )
+        XCTAssertFalse(model.hasRetryableExternalSyncFailure)
+        let batchCount = await syncer.recordedBatchCount()
+        XCTAssertEqual(batchCount, 2)
+        await syncer.assertCursorWrites([10007, 10007])
+        await fileLister.assertFileListRequestCount(1)
     }
 
     @MainActor
@@ -127,7 +225,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         await model.selectFiles([selected.id])
         await model.syncExternalCreated(event)
 
-        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
+        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(fileID: selected.id, event: event, mapping))
         await mapper.assertMappedCoreErrors([CoreError.Db(message: "delete log failed")])
         await lister.assertChangeLogListRequests([])
         XCTAssertEqual(model.detailLogState, .notLoaded)
@@ -157,7 +255,7 @@ final class DetailLogExternalRemovedPageFeatureTests: XCTestCase {
         await model.selectFiles([selected.id])
         await model.syncExternalCreated(event)
 
-        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
+        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(fileID: selected.id, event: event, mapping))
         await lister.assertChangeLogListRequests([])
         await mapper.assertFirstMappedInternalErrorContains("removed event 10003 did not report a detected delete")
     }
@@ -308,4 +406,15 @@ private extension CoreErrorMappingSnapshot {
 
 private func makeDetailLogExternalRemovedTemporaryRepositoryURL() throws -> URL {
     try makeTestTemporaryDirectory(named: "AreaMatrixDetailExternalRemoved")
+}
+
+private func externalRemovedWindow(
+    event: MainExternalCreatedFileEvent,
+    cursorWatermark: Int64
+) throws -> MainExternalSyncWindow {
+    try XCTUnwrap(MainExternalSyncWindow(
+        repoPath: "/tmp/repo",
+        events: [event],
+        cursorWatermark: cursorWatermark
+    ))
 }

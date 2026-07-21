@@ -3,7 +3,7 @@ import XCTest
 
 final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     @MainActor
-    func testDetailLogSyncExternalRenamedCoreProductionRelayCreatesCurrentMainWindowRenamedEvent() throws {
+    func testDetailLogSyncExternalRenamedCoreProductionRelayCreatesCurrentMainWindowRenamedEvent() {
         let fixture = makeShellMainListFixture(
             opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
             model: makeShellOnboardingModel()
@@ -20,12 +20,12 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         model.consumePendingExternalCreatedFileSignals()
 
         XCTAssertEqual(
-            model.externalCreatedEvent(for: opening),
-            MainExternalCreatedFileEvent(kind: .renamed, relativePath: "docs/renamed.pdf", fsEventID: 9100)
+            model.externalCreatedEvents(for: opening),
+            [MainExternalCreatedFileEvent(kind: .renamed, relativePath: "docs/renamed.pdf", fsEventID: 9100)]
         )
-        let handledEvent = try XCTUnwrap(model.externalCreatedEvent(for: opening))
-        model.finishExternalCreatedFileEvent(handledEvent)
-        XCTAssertNil(model.externalCreatedEvent(for: opening))
+        let handledEvents = model.externalCreatedEvents(for: opening)
+        model.finishExternalCreatedFileEvents(handledEvents)
+        XCTAssertEqual(model.externalCreatedEvents(for: opening), [])
     }
 
     func testDetailLogSyncExternalRenamedCoreWatcherBuildsRenamedSignalForUserFileOnly() {
@@ -93,12 +93,196 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.statusBanner, .renamedPreservedSelection(fileID: renamed.id))
         XCTAssertEqual(
             model.detailExternalCreateSyncState,
-            .synced(event: event, fileID: renamed.id, .detailRenamedFixture())
+            .synced(fileID: renamed.id, event: event, .detailRenamedFixture())
         )
         await lister.assertChangeLogListRequests([
             DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: renamed.id))
         ])
         XCTAssertEqual(model.detailLogState, .loaded(fileID: renamed.id, entries: [entry]))
+    }
+}
+
+extension DetailLogExternalRenamedPageFeatureTests {
+    @MainActor
+    func testMixedExternalWindowKeepsSelectedRenamedFileAheadOfLaterCreate() async throws {
+        var original = FileEntrySnapshot.detailMetaFixture(id: 35, currentName: "original.pdf")
+        original.path = "docs/original.pdf"
+        var renamed = original
+        renamed.currentName = "renamed.pdf"
+        renamed.path = "docs/renamed.pdf"
+        var created = FileEntrySnapshot.detailMetaFixture(id: 36, currentName: "later.pdf")
+        created.path = "docs/later.pdf"
+        let renamedEvent = try XCTUnwrap(MainExternalCreatedFileEvent(
+            kind: .renamed,
+            relativePath: renamed.path,
+            fsEventID: 9006
+        ))
+        let createdEvent = try XCTUnwrap(MainExternalCreatedFileEvent(
+            relativePath: created.path,
+            fsEventID: 9007
+        ))
+        let entry = ChangeLogEntrySnapshot.detailLogFixture(fileID: renamed.id, action: "renamed")
+        let detailer = RecordingFileDetailer(results: [.success(original), .success(renamed)])
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
+            fileLister: RecordingFileLister(files: [renamed, created]),
+            fileDetailer: detailer,
+            changeLogLister: DetailLogRecordingLister(results: [.success([entry])]),
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.testFixture(
+                detectedCreates: 1,
+                detectedRenames: 1
+            ))),
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
+        )
+
+        await model.selectFiles([original.id])
+        await model.syncExternalChanges([renamedEvent, createdEvent])
+
+        XCTAssertEqual(model.files, [renamed, created])
+        XCTAssertEqual(model.selection, .single(renamed.id))
+        XCTAssertEqual(model.selectedFileDetail, renamed)
+        XCTAssertEqual(model.statusBanner, .renamedPreservedSelection(fileID: renamed.id))
+        XCTAssertEqual(
+            model.detailExternalCreateSyncState,
+            .synced(
+                fileID: renamed.id,
+                event: renamedEvent,
+                .testFixture(detectedCreates: 1, detectedRenames: 1)
+            )
+        )
+        await detailer.assertRequestedFileIDs([original.id, renamed.id])
+    }
+
+    @MainActor
+    func testExternalSyncResetsPaginationAndKeepsUnrelatedLaterPageSelection() async throws {
+        let firstPage = (0 ..< 50).map { index in
+            var file = FileEntrySnapshot.detailMetaFixture(
+                id: Int64(100 + index),
+                currentName: "page-\(index).pdf"
+            )
+            file.path = "docs/page-\(index).pdf"
+            return file
+        }
+        let additionalFiles = (50 ..< 74).map { index in
+            var file = FileEntrySnapshot.detailMetaFixture(
+                id: Int64(100 + index),
+                currentName: "page-\(index).pdf"
+            )
+            file.path = "docs/page-\(index).pdf"
+            return file
+        }
+        var selected = FileEntrySnapshot.detailMetaFixture(id: 999, currentName: "selected-later.pdf")
+        selected.path = "docs/selected-later.pdf"
+        let loadedDepth = firstPage + additionalFiles + [selected]
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(
+            kind: .renamed,
+            relativePath: firstPage[0].path,
+            fsEventID: 9008
+        ))
+        let detailer = RecordingFileDetailer(results: [.success(selected)])
+        let fileLister = RecordingFileLister(files: loadedDepth)
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: loadedDepth),
+            fileLister: fileLister,
+            fileDetailer: detailer,
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.renamedFixture())),
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
+        )
+        model.hasMore = false
+        model.isLoadingMore = true
+        model.loadMoreErrorMapping = .detailMetaFileNotFound()
+
+        await model.selectFiles([selected.id])
+        await model.syncExternalCreated(event)
+
+        XCTAssertEqual(model.files, loadedDepth)
+        XCTAssertEqual(model.selection, .single(selected.id))
+        XCTAssertEqual(model.selectedFileDetail, selected)
+        XCTAssertEqual(model.nextFilePageOffset, 75)
+        XCTAssertTrue(model.hasMore)
+        XCTAssertFalse(model.isLoadingMore)
+        XCTAssertNil(model.loadMoreErrorMapping)
+        var expectedFilter = FileFilterSnapshot.currentCategory(nil)
+        expectedFilter.limit = 75
+        await fileLister.assertFileListFilters([expectedFilter])
+        await detailer.assertRequestedFileIDs([selected.id])
+    }
+
+    @MainActor
+    func testCrossCategoryExternalRenameReloadsSelectedDetailByFileIDAndRequestsNavigation() async throws {
+        var original = FileEntrySnapshot.detailMetaFixture(id: 33, currentName: "original.pdf")
+        original.path = "docs/original.pdf"
+        original.category = "docs"
+        var moved = original
+        moved.currentName = "renamed.swift"
+        moved.path = "code/renamed.swift"
+        moved.category = "code"
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(
+            kind: .renamed,
+            relativePath: moved.path,
+            fsEventID: 9004
+        ))
+        let entry = ChangeLogEntrySnapshot.detailLogFixture(fileID: moved.id, action: "renamed")
+        let detailer = RecordingFileDetailer(results: [.success(original), .success(moved)])
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
+            fileLister: RecordingFileLister(files: []),
+            fileDetailer: detailer,
+            changeLogLister: DetailLogRecordingLister(results: [.success([entry])]),
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.renamedFixture())),
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
+        )
+        model.currentCategory = "docs"
+
+        await model.selectFiles([original.id])
+        await model.syncExternalCreated(event)
+
+        XCTAssertEqual(model.files, [])
+        XCTAssertEqual(model.selection, .single(moved.id))
+        XCTAssertEqual(model.selectedFileDetail, moved)
+        XCTAssertEqual(model.pendingExternalSelectionUpdate, .moved(moved))
+        XCTAssertEqual(model.detailLogState, .loaded(fileID: moved.id, entries: [entry]))
+        XCTAssertEqual(
+            model.detailExternalCreateSyncState,
+            .synced(fileID: moved.id, event: event, .renamedFixture())
+        )
+        await detailer.assertRequestedFileIDs([original.id, original.id])
+    }
+
+    @MainActor
+    func testCrossCategoryExternalRenameClearsSelectionWhenFileIDReloadFails() async throws {
+        var original = FileEntrySnapshot.detailMetaFixture(id: 34, currentName: "original.pdf")
+        original.path = "docs/original.pdf"
+        original.category = "docs"
+        let event = try XCTUnwrap(MainExternalCreatedFileEvent(
+            kind: .renamed,
+            relativePath: "code/renamed.swift",
+            fsEventID: 9005
+        ))
+        let detailer = RecordingFileDetailer(results: [
+            .success(original),
+            .failure(CoreError.FileNotFound(path: event.relativePath))
+        ])
+        let model = MainFileListModel(
+            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: [original]),
+            fileLister: RecordingFileLister(files: []),
+            fileDetailer: detailer,
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.renamedFixture())),
+            errorMapper: StaticCoreErrorMapper(mapping: .detailMetaFileNotFound())
+        )
+        model.currentCategory = "docs"
+
+        await model.selectFiles([original.id])
+        await model.syncExternalCreated(event)
+
+        XCTAssertEqual(model.selection, MainFileSelectionState.none)
+        XCTAssertNil(model.selectedFileDetail)
+        XCTAssertEqual(model.pendingExternalSelectionUpdate, .cleared(fileID: original.id))
+        XCTAssertEqual(
+            model.detailExternalCreateSyncState,
+            .synced(fileID: original.id, event: event, .renamedFixture())
+        )
+        await detailer.assertRequestedFileIDs([original.id, original.id])
     }
 
     @MainActor
@@ -127,7 +311,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         await model.selectFiles([existing.id])
         await model.syncExternalCreated(event)
 
-        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
+        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(fileID: existing.id, event: event, mapping))
         await mapper.assertMappedCoreErrors([CoreError.Conflict(path: event.relativePath)])
         await lister.assertChangeLogListRequests([])
         XCTAssertEqual(model.detailLogState, .notLoaded)
@@ -158,7 +342,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
         let rawContext = "renamed event 9003 returned sync errors: \(syncResult.errors.joined(separator: "; "))"
         let mapping = CoreErrorMappingSnapshot.internalFailure(rawContext: rawContext)
 
-        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
+        XCTAssertEqual(model.detailExternalCreateSyncState, .idle)
         await mapper.assertMappedCoreErrors([])
         await lister.assertChangeLogListRequests([])
         XCTAssertTrue(mapping.rawContext.contains("renamed event 9003 returned sync errors"))

@@ -361,10 +361,10 @@ fn ai_summary_validation_locks_core_api_udl_rust_and_docs_alignment() {
     assert_clear(clear_ai_summary);
 
     for fragment in [
-        "`core/tests/`，每个文件独立编译",
-        "### 共享 fixtures",
-        "tempfile::{NamedTempFile, TempDir}",
-        "## 关键测试场景",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+        "临时目录、fixture 和 dependency injection 用于隔离",
+        "临时目录、fixture 和 dependency injection 用于隔离",
+        "## 文件安全测试矩阵",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

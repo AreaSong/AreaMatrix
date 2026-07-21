@@ -67,7 +67,7 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
         await model.selectFiles([selected.id])
         await model.syncExternalCreated(event)
 
-        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(event: event, mapping))
+        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(fileID: selected.id, event: event, mapping))
         XCTAssertEqual(model.selection, .single(selected.id))
         XCTAssertEqual(model.detailLogState, MainDetailLogState.notLoaded)
         XCTAssertNil(model.detailTabRequest)
@@ -153,6 +153,8 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
             11002
         case .removed:
             11003
+        case .modified:
+            11004
         }
     }
 

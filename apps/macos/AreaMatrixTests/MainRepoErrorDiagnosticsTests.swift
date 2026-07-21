@@ -5,9 +5,9 @@ final class MainRepoErrorDiagnosticsTests: XCTestCase {
     @MainActor
     func testMainRepoErrorDiagnosticsRequirePrivacyConfirmationAndUseCoreSnapshot() async {
         let snapshot = DiagnosticsSnapshotSnapshot.testFixture(
-            snapshotPath: "/tmp/repo/.areamatrix/diagnostics/main-repo.zip",
+            snapshotPath: "/tmp/repo/.areamatrix/diagnostics/main-repo.db",
             createdAt: 1_778_000_000,
-            warnings: ["paths redacted"]
+            warnings: ["index.db-wal disappeared during snapshot"]
         )
         let collector = ShellRecordingDiagnosticsCollector(result: .success(snapshot))
         let model = OnboardingModel(

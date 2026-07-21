@@ -1,239 +1,131 @@
-# 深层功能（Undo / Tags / Batch / Shortcuts / Command Palette / Smart Lists）
+# 撤销、标签、批量操作、快捷键、命令面板与智能列表
 
-> 定义效率与组织能力的 UX 合同：撤销系统、标签、批量操作、快捷键体系、命令面板（Cmd+K）和智能列表。
+> 记录 AreaMatrix 已实现的高频组织能力及其可逆性、上下文和文件安全边界。
 >
-> 阅读时长：约 22 分钟。
+> 阅读时长：约 7 分钟。
 
 ---
 
-## 目标与成功标准
+## 能力关系
 
-### 目标
+- 分类决定文件在资料库中的位置。
+- 标签提供跨分类组织维度。
+- Saved Search 保存查询规则，Smart List 在侧栏提供固定入口。
+- 命令面板聚合当前上下文可执行的命令和目标。
+- Undo/Redo 使用 Core 返回的 token 和 action log，不通过猜测文件状态生成反向操作。
 
-1. **可逆（Undo）可预期**：用户知道哪些操作能撤销、撤销多久、撤销后会发生什么。\n
-2. **标签不替代分类**：标签是 cross-cutting（横切）维度，用于跨分类组织。\n
-3. **批量操作安全**：批量操作要可预览影响、可取消、可回滚。\n
-4. **键盘效率**：常见操作都有快捷键，且可发现（菜单提示）。\n
-5. **命令面板统一入口**：高级操作都能 Cmd+K 搜到。\n
+## Undo 与 Redo
 
-### 成功标准（验收）
+可逆操作在成功后记录 action log 和 token。UI 可以从 toast 或 Undo History 发起 Undo/Redo；Core 校验 token、当前状态和冲突后执行。
 
-- **DF1**：删除/移动/重命名/改分类能撤销。\n
-- **DF2**：多选 50 个文件 → 批量改分类/加标签/删除。\n
-- **DF3**：Cmd+K 能执行：Import、Change category、Add tag、Open logs。\n
-- **DF4**：保存搜索生成 Smart List，点击后进入“搜索模式”。\n
+主要规则：
 
----
+- 只有明确返回可逆 token 的动作才能显示 Undo。
+- Undo 失败必须保留原始状态，并给出结构化恢复建议。
+- Redo 通过对应 action log 恢复，不直接重放 UI 点击。
+- Finder、终端、同步工具产生的外部变化会进入 change log，但不自动生成可执行 Undo。
+- 批量操作的 Undo 以批次 token 为边界，不能只恢复其中一部分后仍宣称整批成功。
 
-## 1) 撤销系统（Undo）
+`Option-Command-Z` 打开 Undo History。主资料库内容获得按键处理时，`Command-Z` 打开 Undo 流程，
+`Shift-Command-Z` 加载并执行最新可用 Redo；无可用项或执行失败时打开 Undo History 显示原因。
 
-### 1.1 撤销范围（可逆性矩阵）
+## 标签
 
-| 操作 | 撤销要求 | 说明 |
+标签支持单文件编辑和批量添加：
+
+- Detail Meta 展示当前标签。
+- Add Tag 支持已有标签建议和新标签输入。
+- Remove Tag 只移除文件与标签的关联。
+- 批量 Add 使用预览和明确选择范围，并返回可逆 action token。
+- 当前没有批量 Remove Tag API；移除标签仍在单文件 Detail 中完成。
+
+标签不会改变文件分类或物理路径。标签写入失败时，列表、详情和 action log 必须保持一致或明确进入可重试错误状态。
+
+## 批量操作
+
+主列表多选后可以进入批量动作。当前高风险动作均先展示影响范围：
+
+| 动作 | 前置界面 | 文件影响 |
 |---|---|---|
-| Import（Copy） | 🟡 可选 | 可撤销=删除导入文件（走回收站） |
-| Import（Move） | 🔴 必须 | 撤销需要把文件移动回原位置（若可） |
-| Rename | 🔴 必须 | 直接反向 rename |
-| Move to category | 🔴 必须 | 反向移动 |
-| Delete（Trash） | 🔴 必须 | Restore（从回收站恢复） |
-| Edit note | 🟡 可选 | 可用版本文件/备份（或依赖编辑器） |
-| Rule change | 🟡 可选 | revert classifier.yaml 上次有效 |
+| Change category | 目标分类和路径预览 | repo-owned 文件可能移动；indexed 文件只更新 metadata |
+| Rename | 新名称预览和冲突检查 | 只处理所选文件，冲突时不静默覆盖 |
+| Add tags | 标签和选择范围 | 不改变文件路径；当前不提供批量 Remove Tag |
+| Delete | 删除影响确认 | repo-owned 文件进入 Trash；indexed 文件按合同移除索引 |
 
-### 1.2 Undo UI 形态
+批量执行返回逐项结果。部分失败不能被压缩为整批成功；结果页必须区分 succeeded、failed、skipped 和 pending。
 
-#### toast + Undo（推荐）
+## 已实现快捷键
 
-每个可撤销操作完成后 toast：\n
-- “已移动到 finance  [Undo]”\n
+快捷键只在应用处于前台且对应窗口或视图接收事件时生效。AreaMatrix 没有注册系统级全局 hotkey。
 
-#### Undo 历史面板（可选）
-
-菜单 View → Undo History（或侧栏一页）：\n
-- 最近 20 条操作\n
-- 可逐条撤销/重做\n
-
-### 1.3 Undo 约束
-
-- 只保证“最近 N 分钟或最近 N 条”（产品可配置，默认 50 条）\n
-- 外部变更（FSEvents）造成的操作不提供 Undo（但会记录 change_log）\n
-
----
-
-## 2) 标签系统（Tags）
-
-### 2.1 标签模型（产品侧）
-
-- 标签是字符串（slug + displayName 可选）\n
-- 一文件可多个标签\n
-- 标签可用于过滤与 Smart List\n
-
-### 2.2 标签 UI 入口
-
-#### Detail → Meta 区域
-
-```
-Tags:  [ urgent ] [ clientA ]  [+ Add…]
-```
-
-点击 `+ Add…` 弹 popover：\n
-- 输入框 + 自动补全已有标签\n
-- 回车创建新标签\n
-
-#### List 多选批量加标签
-
-多选时 Detail multi view 提供：`Add tag…`\n
-
-### 2.3 标签与分类的关系（必须讲清楚）
-
-提示文案：\n
-> 分类决定“放哪儿”，标签决定“怎么横向组织”。\n
-
----
-
-## 3) 批量操作（Batch actions）
-
-### 3.1 触发入口
-
-- List 多选（Shift/⌘）→ Detail 进入 multi summary（见 `ui-states.md` 附录）\n
-
-### 3.2 批量动作清单
-
-| 动作 | 默认策略 | 风险提示 |
-|---|---|---|
-| Change category… | 预览后执行 | 🟡 |
-| Add tag… | 立即执行 | 🟢 |
-| Delete… | 默认 Trash | 🔴（需确认） |
-
-### 3.3 批量预览（Change category）
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 批量改分类                                                                     │
-│                                                                              │
-│  已选择 50 个文件                                                               │
-│  改为： [ finance ▾ ]                                                          │
-│                                                                              │
-│  预览：将移动 50 个文件到 finance/                                             │
-│                                                                              │
-│  [ Cancel ]                                                   [ Apply ]      │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 3.4 批量删除确认
-
-必须包含：\n
-- 将移到回收站\n
-- 可撤销（若支持 undo）\n
-- 可选“仅从索引移除”（Index-only 文件更适用）\n
-
----
-
-## 4) 快捷键体系（Shortcuts）
-
-### 4.1 原则
-
-- 与 macOS 常见习惯一致（⌘F 搜索、⌘, 设置）\n
-- 菜单中显示快捷键，提升可发现性\n
-
-### 4.2 建议清单（核心 20 个）
+### 应用菜单
 
 | 快捷键 | 动作 |
 |---|---|
-| ⌘, | 打开 Settings |
-| ⌘F | 搜索 |
-| ⌘I | Import… |
-| ⌘K | 命令面板 |
-| ⌘L | 聚焦 List |
-| ⌘1/⌘2/⌘3 | Detail Tab（Meta/Log/Note） |
-| Delete | 删除（Trash） |
-| ⌘Z | Undo |
-| ⇧⌘Z | Redo |
-| ⌘O | 在 Finder 打开当前文件/目录 |
-| ⌘R | Rescan（谨慎） |
+| `Command-I` | 打开 Import |
+| `Command-,` | 打开 Settings |
+| `Command-K` | 打开 Command Palette |
+| `Option-Command-Z` | 打开 Undo History |
 
----
+### Welcome
 
-## 5) 命令面板（Command Palette, Cmd+K）
+| 快捷键 | 动作 |
+|---|---|
+| `Command-O` | 进入 Choose Path；Browse 才打开目录选择器 |
 
-### 5.1 目标
+### 主资料库上下文
 
-把“记不住菜单在哪”的操作集中到一个可搜索入口。\n
+| 快捷键 | 动作 |
+|---|---|
+| `Command-F` | 进入搜索输入 |
+| `Command-K` | 切换 Command Palette |
+| `Command-Z` | 打开 Undo 流程 |
+| `Shift-Command-Z` | 执行最新可用 Redo；失败时进入 Undo History |
 
-### 5.2 UI（ASCII）
+各 sheet 的 Return、Escape 等按键使用 SwiftUI default/cancel action，只在该 sheet 内生效。
 
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  Command…  [ search… ______________________________ ]                         │
-│                                                                              │
-│  Import files…                                                               │
-│  Change repository…                                                          │
-│  Change category…                                                            │
-│  Add tag…                                                                    │
-│  Open logs                                                                    │
-│  Collect diagnostics…                                                        │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
+当前没有 `Command-L`、`Command-1/2/3`、`Command-R` 或“用 `Command-O` 打开当前文件”的应用级合同。
 
-### 5.3 命令分类（建议）
+## Command Palette
 
-- Repository\n
-- Import\n
-- Organize\n
-- Diagnostics\n
-- View\n
+`Command-K` 打开命令面板。命令来源包括 Core command index 和应用侧安全 fallback；可用项由当前路由、选择状态、只读状态和能力检查决定。
 
----
+命令面板可以提供：
 
-## 6) 智能列表（Smart Lists）
+- Import 和资料库操作。
+- 搜索、Saved Search 和 Smart List 入口。
+- 当前选择可用的文件动作。
+- Settings 和 Help 入口；日志与诊断继续从 Settings 的对应页面进入。
 
-### 6.1 与 Saved Search 的关系
+不可执行项应禁用或不展示，并给出原因。命令面板不能绕过批量预览、Replace 确认、Trash 确认、恢复确认或 AI 隐私同意。
 
-Saved Search 是“搜索规则”，Smart List 是“侧边栏的一个固定入口”。\n
+## Saved Search 与 Smart List
 
-### 6.2 侧边栏分组
+Saved Search 保存查询、过滤器和显示名称。Smart List 是侧栏中的 Saved Search 投影：
 
-```
-Smart Lists
-  最近合同
-  本周发票
-```
+- 点击后进入搜索结果上下文。
+- 结果仍使用主列表和详情视图。
+- 管理界面支持创建、更新和删除 Saved Search。
+- 删除 Smart List 不删除匹配文件。
+- 查询错误必须保留规则并提供修正入口，不能静默返回空列表。
 
-点击 Smart List：\n
-- Tree 进入“搜索模式”节点\n
-- List 显示结果\n
-- banner 显示规则 + Clear\n
+## 错误与恢复
 
-### 6.3 管理
+- 文件动作失败时保留逐项状态和结构化错误。
+- Undo/Redo token 过期或状态冲突时不执行猜测性恢复。
+- 批量失败后允许刷新列表、详情和 change log。
+- About 文本诊断不包含用户文件正文；repository snapshot 可能包含路径、文件名、标签、笔记和其他
+  metadata。两者写出前都进行隐私确认，且不会自动上传。
+- 只读资料库禁用写动作，但保留搜索、查看和安全诊断入口。
 
-右键 Smart List：\n
-- Rename\n
-- Duplicate\n
-- Delete\n
+## 验证重点
 
----
-
-## 文案（中英对照，关键按钮）
-
-| Key | 中文 | English |
-|---|---|---|
-| undo.action | 撤销 | Undo |
-| redo.action | 重做 | Redo |
-| tags.add | 添加标签… | Add tag… |
-| batch.changeCategory | 批量改分类… | Change category… |
-| commandPalette.title | 命令… | Command… |
-| smartList.title | 智能列表 | Smart Lists |
-
----
-
-## 测试用例（产品验收清单）
-
-- [ ] 移动/重命名/删除后 toast 提供 Undo\n
-- [ ] 多选 50 项可批量改分类/加标签/删除\n
-- [ ] Cmd+K 可执行 Import/Change repo/Open logs\n
-- [ ] 保存搜索生成 Smart List，点击进入搜索模式\n
-
----
+- 菜单快捷键与 `AreaMatrixApp` 注册一致。
+- 上下文快捷键只在对应视图生效。
+- 批量结果准确区分每个状态。
+- Undo/Redo 使用真实 token 和 action log。
+- Command Palette 不绕过确认边界。
+- Smart List 删除不影响用户文件。
 
 ## Related
 
@@ -241,3 +133,4 @@ Smart Lists
 - [search.md](search.md)
 - [settings-panel.md](settings-panel.md)
 - [../modules/change-log.md](../modules/change-log.md)
+- [../api/core-api.md](../api/core-api.md)

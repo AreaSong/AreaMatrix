@@ -82,7 +82,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
     }
 
     @MainActor
-    func testValidationFailureShowsLineFieldAndErrorText() async throws {
+    func testValidationFailurePreservesCoreProvidedLocationWithoutParsingIt() async throws {
         let repoURL = try temporaryClassifierRecoveryRepo()
         defer { removeTestTemporaryItems(repoURL) }
         try writeClassifier("version: 1\ndefault: inbox\ncategories: []\n", repoURL: repoURL)
@@ -97,8 +97,29 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         XCTAssertEqual(model.validationStatusLabel, "Failed")
         XCTAssertEqual(
             model.validationError?.message,
-            "分类规则无效：categories[2].slug duplicate at line 47 column 5 (field categories[2].slug, line 47)"
+            "分类规则无效：categories[2].slug duplicate at line 47 column 5"
         )
-        XCTAssertEqual(model.validationError?.recovery, "Open classifier.yaml and fix the reported line and field.")
+        XCTAssertEqual(
+            model.validationError?.recovery,
+            "Open classifier.yaml and fix the reported configuration error."
+        )
+    }
+
+    @MainActor
+    func testSemanticValidationFailureDoesNotInventSourceLocation() async throws {
+        let repoURL = try temporaryClassifierRecoveryRepo()
+        defer { removeTestTemporaryItems(repoURL) }
+        try writeClassifier("version: 1\ndefault: inbox\ncategories: []\n", repoURL: repoURL)
+        let predictor = ClassifierSettingsSequencePredictor(results: [
+            .failure(CoreError.Config(reason: "duplicate category slug"))
+        ])
+        let model = await classifierSettingsRecoveryModel(repoURL: repoURL, predictor: predictor)
+
+        let validated = await model.validateClassifierRules()
+
+        XCTAssertFalse(validated)
+        XCTAssertEqual(model.validationError?.message, "分类规则无效：duplicate category slug")
+        XCTAssertFalse(model.validationError?.message.contains("line") == true)
+        XCTAssertFalse(model.validationError?.message.contains("field") == true)
     }
 }

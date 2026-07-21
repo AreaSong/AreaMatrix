@@ -13,6 +13,40 @@
 2. 再按目标路径读取最近的局部 `AGENTS.md`；当前已有 `core/AGENTS.md`、`apps/macos/AGENTS.md` 与 `workflow/AGENTS.md`。
 3. 再读与任务匹配的 `docs/` 文档、`.ai-governance/` 规则和 `workflow/versions/<version>/execution/` 任务文件。
 
+## Skill 路由
+
+命中下表任一行时，先读对应 `.agents/skills/<skill>/SKILL.md`（源文件在 `.codex/skills-src/`），按其 Read first 顺序补齐上下文；完整职责与交接边界见 `.codex/skills-src/README.md` 的 Owner 边界表。
+
+| 任务特征 | Skill |
+|---|---|
+| `./task-loop` 运行、copy-ready / verify-ready 执行、progress、失败恢复 | `areamatrix-task-loop` |
+| PASS 后 commit / push、dirty worktree、checkpoint 失败恢复 | `areamatrix-git-checkpoint` |
+| 选择最小验证集、报告 PASS / FAIL / BLOCKED 证据 | `areamatrix-validation-driver` |
+| docs、Core API / UDL、README、prompt 材料漂移同步 | `areamatrix-doc-sync` |
+| 用户文件、`.areamatrix/` 元数据、DB、staging、FSEvents / iCloud 安全 | `areamatrix-file-safety` |
+| v* 版本规划、discussion gate、middle-layer、promotion preview | `areamatrix-workflow-planning` |
+| code review、安全、依赖、CI、CODEOWNERS 治理 | `areamatrix-enterprise-governance` |
+| 「还有什么没解决」、blocker / exception / reference 遗留项 | `areamatrix-residual-ledger` |
+| Codex OS intake、preflight、evidence、closeout、dashboard | `areamatrix-codex-os` |
+| 其他未列出任务 | 不强制 skill；按本文件与最近局部 `AGENTS.md` 执行 |
+
+同会话每个新任务都重新匹配本表；上下文被压缩或清空后，重读本文件与命中的 SKILL.md，不凭记忆沿用上一个任务的路由结论。
+
+## Cursor 适配层
+
+统一语义见 [.ai-governance/workflows/cursor-adapter-layer.md](.ai-governance/workflows/cursor-adapter-layer.md)；`.cursor/` 只是 Cursor 形态的投影层，不替代本文件、`.ai-governance/` 或上方 Skill 路由表。
+
+| 路径 | 职责 |
+|---|---|
+| `.cursor/rules/` | Cursor 注入规则，仅承载本文件未覆盖的 Cursor 工作流语义 |
+| `.cursor/skills/` | Cursor Agent 静默规程（session-bootstrap / closeout / plan-sync / pre-push-review） |
+| `.cursor/commands/` | 斜杠兼容镜像，不要求用户手打 |
+| `.cursor/hooks/` | sessionStart / stop / beforeShellExecution 兜底钩子 |
+| `.cursor/plans/` | Cursor 会话级进行中计划（不入库，不替代 `tasks/` 与 workflow execution） |
+| Cursor 工作区级 `canvases/` | residual ledger 与产品能力的只读可视化面板（不在仓库内） |
+
+静默约定：新对话执行 `areamatrix-session-bootstrap`；宣称完成前执行 `areamatrix-closeout`；不少于 3 步的任务用 `areamatrix-plan-sync` 维护 `.cursor/plans/`；push / PR 前执行 `areamatrix-pre-push-review`。到点直接执行，禁止要求用户手打斜杠；命中业务语义时仍按上方 Skill 路由表交接。
+
 ## 源事实
 
 - 产品、架构、API、开发规范的权威来源是 `docs/`。

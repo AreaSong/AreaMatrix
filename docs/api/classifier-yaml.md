@@ -1,742 +1,137 @@
 # classifier.yaml 配置规范
 
-> 用户可编辑的分类规则文件，位于 `<repo>/.areamatrix/classifier.yaml`。本文给出 schema、JSON Schema、默认值、10 个配置案例、校验规则、迁移策略。
+> 定义 `<repo>/.areamatrix/classifier.yaml` 当前由 Rust parser 实际接受的字段和匹配语义。
 >
-> 阅读时长：约 12 分钟。
+> 阅读时长：约 7 分钟。
 
 ---
 
-## 文件位置
+## 文件与 fallback
 
-`<repo_root>/.areamatrix/classifier.yaml`
+- 路径：`<repo>/.areamatrix/classifier.yaml`。
+- 初始化资料库时，Core 把内嵌 `core/resources/classifier.yaml` 写入该路径。
+- 文件缺失：使用内嵌 `core/resources/classifier.yaml`。
+- 文件存在但 unreadable、YAML 无效或校验失败：返回 `Config`/`Classify` error。
+- parser 拒绝 unknown fields。
 
-每个资料库一份，与 DB 同目录。这样资料库迁移 / 备份时分类规则自动跟随。
+普通打开资料库或 Core 升级不会覆盖已有 YAML。只有明确的 rule save/editor API 会写入用户配置。
 
----
+仓库当前没有 tracked `classifier.schema.json` 或 AJV CI gate；机械合同由 Rust parser 和测试执行。
 
-## 完整 Schema
+## Schema
 
 ```yaml
-# Required: schema version
 version: 1
-
-# Required: 兜底分类的 slug
 default: inbox
-
-# Required: 至少一个分类
 categories:
   - slug: docs
     display_name:
       zh-Hans: 文档
       en: Documents
     description:
-      zh-Hans: ""
-      en: ""
-    extensions: [pdf, docx, txt, md, rtf]
-    keywords: [report, manual, doc, 报告, 手册]
-    priority: 0
-    naming_template: ""
-```
-
----
-
-## JSON Schema
-
-下面的 JSON Schema 用于 IDE 验证 / CI 自动校验：
-
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AreaMatrix classifier.yaml",
-  "type": "object",
-  "required": ["version", "default", "categories"],
-  "properties": {
-    "version": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 1
-    },
-    "default": {
-      "type": "string",
-      "pattern": "^[a-z][a-z0-9_-]*$",
-      "minLength": 1,
-      "maxLength": 32
-    },
-    "categories": {
-      "type": "array",
-      "minItems": 1,
-      "maxItems": 64,
-      "items": { "$ref": "#/$defs/category" }
-    }
-  },
-  "$defs": {
-    "category": {
-      "type": "object",
-      "required": ["slug"],
-      "additionalProperties": false,
-      "properties": {
-        "slug": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_-]*$",
-          "minLength": 1,
-          "maxLength": 32
-        },
-        "display_name": {
-          "type": "object",
-          "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 32 }
-        },
-        "description": {
-          "type": "object",
-          "additionalProperties": { "type": "string", "maxLength": 200 }
-        },
-        "extensions": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[a-z0-9]+$",
-            "minLength": 1,
-            "maxLength": 16
-          },
-          "uniqueItems": true,
-          "default": []
-        },
-        "keywords": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 32 },
-          "uniqueItems": true,
-          "default": []
-        },
-        "priority": {
-          "type": "integer",
-          "minimum": -1000,
-          "maximum": 1000,
-          "default": 0
-        },
-        "naming_template": {
-          "type": "string",
-          "maxLength": 200,
-          "default": ""
-        }
-      }
-    }
-  }
-}
-```
-
-存放路径：`core/resources/classifier.schema.json`，CI 跑 `ajv validate` 检查内置默认 yaml。
-
----
-
-## 字段详解
-
-### 顶层
-
-| 字段 | 类型 | 必填 | 默认 | 说明 |
-|---|---|---|---|---|
-| `version` | int | yes | — | schema 版本，便于未来迁移 |
-| `default` | string | yes | "inbox" | 兜底分类的 slug，必须出现在 `categories` 中 |
-| `categories` | list | yes | — | 至少一个；最多 64 个 |
-
-### Category
-
-| 字段 | 类型 | 必填 | 校验 |
-|---|---|---|---|
-| `slug` | string | yes | `^[a-z][a-z0-9_-]*$`、长度 1-32、唯一 |
-| `display_name` | map<locale, name> | no | locale 是 BCP 47 标识符，name 长度 1-32 |
-| `description` | map<locale, text> | no | text 长度 ≤ 200 |
-| `extensions` | list&lt;string&gt; | no | 每个 1-16 字符、`^[a-z0-9]+$`、不含 `.`、唯一 |
-| `keywords` | list&lt;string&gt; | no | 每个 1-32 字符、唯一 |
-| `priority` | int | no | -1000..1000，越大越优先 |
-| `naming_template` | string | no | 含占位符 `{original}` `{stem}` `{ext}` `{date}` `{slug}` |
-
----
-
-## 匹配语义
-
-### Keyword 匹配
-
-- 文件名先 NFKC 归一化、再小写
-- 关键词如果含 CJK 字符 → `contains` 子串匹配
-- 关键词如果纯 ASCII → tokenize（按 `[ _\-\.\\/\(\)\[\]]` 切分）后做 token 等值匹配
-
-```text
-filename:    "Invoice_2026_Q1.pdf"
-normalized:  "invoice_2026_q1.pdf"
-tokens:      ["invoice", "2026", "q1", "pdf"]
-keyword "invoice" → tokens 含 "invoice" → 命中
-```
-
-```text
-filename:    "2026年Q1发票.pdf"
-normalized:  "2026年q1发票.pdf"
-keyword "发票" (CJK) → contains "发票" → 命中
-```
-
-### Extension 匹配
-
-- 取最后一个 `.` 之后的子串，转小写
-- 与 `extensions` 列表逐项相等比较
-
-```text
-filename: "report.PDF" → ext "pdf" → 匹配 docs.extensions
-filename: "archive.tar.gz" → ext "gz" → 不匹配（tar.gz 视为 gz）
-```
-
-### 优先级
-
-```mermaid
-flowchart TB
-    Match{multiple hits?}
-    P[按 priority DESC]
-    Same{same priority?}
-    L[按 keyword 长度 DESC]
-    Order[按 categories 列表顺序]
-
-    Match -->|yes| P
-    P --> Same
-    Same -->|yes| L
-    L --> Order
-```
-
-`keywords` 优先级整体高于 `extensions`：keyword 命中即返回，不再走 extension。
-
----
-
-## 配置案例（10 个）
-
-### 案例 1：极简（仅默认）
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: inbox
-    display_name: { zh-Hans: 收件箱, en: Inbox }
-```
-
-所有文件都归 inbox。等于禁用分类。
-
-### 案例 2：默认 6 类
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: docs
-    display_name: { zh-Hans: 文档, en: Documents }
-    extensions: [pdf, docx, txt, md, rtf]
-    keywords: [report, manual, doc, 报告, 手册]
-
-  - slug: code
-    display_name: { zh-Hans: 代码, en: Code }
-    extensions: [rs, swift, py, js, ts, go, java, cpp, h, hpp, c]
-
-  - slug: design
-    display_name: { zh-Hans: 设计, en: Design }
-    extensions: [psd, ai, sketch, fig, xd]
-    keywords: [design, mockup, wireframe, 设计稿, 原型]
-
-  - slug: media
-    display_name: { zh-Hans: 媒体, en: Media }
-    extensions: [png, jpg, jpeg, gif, mp4, mov, mp3, wav]
-
-  - slug: finance
-    display_name: { zh-Hans: 财务, en: Finance }
-    keywords: [invoice, receipt, tax, contract, 发票, 收据, 税务, 合同, 报销]
-    priority: 10
-
-  - slug: inbox
-    display_name: { zh-Hans: 未分类, en: Inbox }
-```
-
-`finance.priority=10` 高于 docs 的 0，`Invoice.pdf` 优先归 finance。
-
-### 案例 3：研究者（论文 + 数据 + 笔记）
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: papers
-    display_name: { zh-Hans: 论文, en: Papers }
-    extensions: [pdf]
-    keywords: [paper, arxiv, doi, abstract, 论文]
-    priority: 20
-
-  - slug: data
-    display_name: { zh-Hans: 数据, en: Datasets }
-    extensions: [csv, tsv, parquet, h5, npz, json, xlsx]
-    keywords: [dataset, train, test, valid, 数据集]
-
-  - slug: notes
-    display_name: { zh-Hans: 笔记, en: Notes }
-    extensions: [md, org, txt]
-
-  - slug: code
-    display_name: { zh-Hans: 代码, en: Code }
-    extensions: [py, ipynb, r, rmd, jl]
-
-  - slug: inbox
-    display_name: { zh-Hans: 未分类, en: Inbox }
-```
-
-### 案例 4：设计师（素材 + 客户 + 合同）
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: assets
-    display_name: { zh-Hans: 素材, en: Assets }
-    extensions: [psd, ai, sketch, fig, png, jpg, svg, webp]
-    keywords: []
-
-  - slug: clients
-    display_name: { zh-Hans: 客户, en: Clients }
-    keywords: [客户, brief, brand-guide, logo]
-    priority: 5
-
-  - slug: contracts
-    display_name: { zh-Hans: 合同, en: Contracts }
-    extensions: [pdf]
-    keywords: [contract, agreement, 合同, 协议]
-    priority: 15
-
-  - slug: invoices
-    display_name: { zh-Hans: 发票, en: Invoices }
-    extensions: [pdf]
-    keywords: [invoice, 发票, 账单]
-    priority: 20
-
-  - slug: inbox
-    display_name: { zh-Hans: 未分类, en: Inbox }
-```
-
-### 案例 5：法务（按案件类型分）
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: contracts
-    display_name: { zh-Hans: 合同, en: Contracts }
-    keywords: [contract, agreement, mou, nda, 合同, 协议, 备忘录]
-    priority: 30
-
-  - slug: litigation
-    display_name: { zh-Hans: 诉讼, en: Litigation }
-    keywords: [petition, claim, judgment, 起诉书, 判决, 申诉]
-    priority: 25
-
-  - slug: regulatory
-    display_name: { zh-Hans: 合规, en: Regulatory }
-    keywords: [compliance, gdpr, ccpa, 合规, 监管]
-
-  - slug: research
-    display_name: { zh-Hans: 研究, en: Research }
-    extensions: [pdf, docx]
-    keywords: [memo, research, 研究, 备忘]
-
-  - slug: inbox
-    display_name: { zh-Hans: 未分类, en: Inbox }
-```
-
-### 案例 6：开发者（按项目状态分）
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: specs
-    display_name: { zh-Hans: 规格, en: Specs }
-    extensions: [md, pdf]
-    keywords: [spec, rfc, design-doc, 规格, 设计文档]
-    priority: 15
-
-  - slug: code
-    display_name: { zh-Hans: 代码, en: Code }
-    extensions: [rs, swift, py, js, ts, go, java]
-
-  - slug: builds
-    display_name: { zh-Hans: 构建产物, en: Build Artifacts }
-    extensions: [dmg, app, ipa, apk, exe, deb, zip, tar]
-
-  - slug: docs
-    display_name: { zh-Hans: 文档, en: Documents }
-    extensions: [pdf, docx, md]
-
-  - slug: inbox
-    display_name: { zh-Hans: 未分类, en: Inbox }
-```
-
-### 案例 7：用 priority 解决重叠
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: receipts
-    display_name: { zh-Hans: 收据, en: Receipts }
-    keywords: [receipt, 收据]
-    priority: 30
-
-  - slug: contracts
-    display_name: { zh-Hans: 合同, en: Contracts }
-    keywords: [contract, 合同]
-    priority: 20
-
-  - slug: docs
-    display_name: { zh-Hans: 文档, en: Documents }
-    extensions: [pdf, docx]
-    priority: 0
-
-  - slug: inbox
-    display_name: { zh-Hans: 未分类, en: Inbox }
-```
-
-文件 `Receipt-Contract-2026.pdf` 同时含 receipt 和 contract → receipts.priority=30 > contracts.priority=20 → 归 receipts。
-
-### 案例 8：使用 naming_template
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: invoices
-    display_name: { zh-Hans: 发票, en: Invoices }
-    keywords: [invoice, 发票]
-    priority: 20
-    naming_template: "{date}_{slug}_{stem}.{ext}"
-    # Invoice-Q1.pdf → 2026-04-28_invoices_Invoice-Q1.pdf
-
-  - slug: photos
-    display_name: { zh-Hans: 照片, en: Photos }
-    extensions: [jpg, jpeg, heic]
-    naming_template: "{date}_{stem}.{ext}"
-
-  - slug: inbox
-    display_name: { zh-Hans: 未分类, en: Inbox }
-```
-
-### 案例 9：多 locale（含日韩）
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: docs
-    display_name:
-      zh-Hans: 文档
-      zh-Hant: 文件
+      zh-Hans: 文档资料
       en: Documents
-      ja: ドキュメント
-      ko: 문서
-    extensions: [pdf, docx, md]
-
-  - slug: inbox
-    display_name:
-      zh-Hans: 未分类
-      zh-Hant: 未分類
-      en: Inbox
-      ja: 受信箱
-      ko: 받은편지함
-```
-
-### 案例 10：保守极简（只用扩展名）
-
-```yaml
-version: 1
-default: inbox
-categories:
-  - slug: docs
-    display_name: { zh-Hans: 文档, en: Documents }
     extensions: [pdf, docx, txt, md]
-
-  - slug: code
-    display_name: { zh-Hans: 代码, en: Code }
-    extensions: [rs, swift, py, js, ts]
-
-  - slug: media
-    display_name: { zh-Hans: 媒体, en: Media }
-    extensions: [png, jpg, mp4, mov, mp3]
-
-  - slug: inbox
-    display_name: { zh-Hans: 未分类, en: Inbox }
+    keywords: [report, 报告]
+    priority: 0
+    naming_template: "{date}_{stem}.{ext}"
 ```
 
-不用 keywords，避免误分类。新手友好。
+顶层只允许：
 
----
+| 字段 | 约束 |
+|---|---|
+| `version` | 必须为 `1` |
+| `default` | 必须匹配一个 category slug |
+| `categories` | 1 到 64 项 |
 
-## 校验流程
+Category 只允许：
 
-```mermaid
-flowchart TB
-    Read[读取 yaml]
-    Parse{yaml 语法?}
-    Schema{JSON Schema?}
-    SlugUnique{slug 唯一?}
-    DefExists{default 存在?}
-    Apply[应用为活动规则]
-    KeepOld[保留上次有效规则]
-    Notify[通知用户错误]
+| 字段 | 约束 |
+|---|---|
+| `slug` | 必填；小写字母开头；小写字母/数字/`_`/`-`；最多 32 字符；唯一 |
+| `display_name` | optional map；value 非空且最多 32 字符 |
+| `description` | optional map；value 最多 200 字符 |
+| `extensions` | optional；小写字母/数字，不含点，1–16 字符；category 内唯一 |
+| `keywords` | optional；trim 后非空，最多 32 字符；category 内唯一 |
+| `priority` | optional；`-1000..=1000` |
+| `naming_template` | optional；最多 200 字符 |
 
-    Read --> Parse
-    Parse -->|no| Notify
-    Parse -->|yes| Schema
-    Schema -->|no| KeepOld
-    Schema -->|yes| SlugUnique
-    SlugUnique -->|no| KeepOld
-    SlugUnique -->|yes| DefExists
-    DefExists -->|no| KeepOld
-    DefExists -->|yes| Apply
-    KeepOld --> Notify
-```
+locale key 当前作为普通 map key 保存，Core 不额外验证 BCP 47 格式。
 
-校验失败 = **不替换**当前规则，UI 显示具体哪个字段出错。
+## 匹配
 
----
+文件名先做 NFKC 和 lowercase。
 
-## 校验失败的具体报错样例
+### Keyword
 
-### 错误 1：default 不在 categories 里
+- CJK keyword：normalized filename contains。
+- 非 CJK keyword：按空格、`_`、`-`、`.`、tab、slash、backslash、括号和方括号切 token 后等值匹配。
+- tie-break：priority 高 → keyword 长 → category 顺序早。
 
-```yaml
-version: 1
-default: nonexistent
-categories:
-  - slug: docs
-    display_name: { en: Documents }
-```
+### Extension
 
-报错（CoreError::Config）：
+- 只使用最后一层 extension。
+- tie-break：priority 高 → category 顺序早。
+- Keyword 命中后不再检查 extension。
 
-```text
-default 'nonexistent' not found in categories
-```
+### Default
 
-UI 文案：
+没有 keyword/extension hit 时返回 `default`，confidence 为 0，不代表错误。
 
-> 配置错误：兜底分类 'nonexistent' 没有出现在 categories 列表中。请检查 default 字段或添加对应分类。
+稳定的分类结果语义：
 
-### 错误 2：slug 含大写
-
-```yaml
-version: 1
-default: docs
-categories:
-  - slug: Docs
-    display_name: { en: Documents }
-```
-
-报错：
-
-```text
-invalid slug: Docs
-```
-
-UI 文案：
-
-> 配置错误：slug 'Docs' 不合法。slug 必须以小写字母开头，仅含 a-z, 0-9, -, _。
-
-### 错误 3：slug 重复
-
-```yaml
-version: 1
-default: docs
-categories:
-  - slug: docs
-    display_name: { en: Documents }
-  - slug: docs
-    display_name: { en: Docs2 }
-```
-
-报错：
-
-```text
-duplicate slug: docs
-```
-
-### 错误 4：extension 含点
-
-```yaml
-version: 1
-default: docs
-categories:
-  - slug: docs
-    display_name: { en: Documents }
-    extensions: [".pdf"]
-```
-
-报错：
-
-```text
-invalid extension '.pdf' in docs (must be lowercase letters/digits, no dot)
-```
-
-### 错误 5：YAML 语法错误
-
-```yaml
-version: 1
-default: docs
-categories:
-  - slug: docs
-    display_name { en: Documents }   # 漏了冒号
-```
-
-报错：
-
-```text
-yaml parse error: while parsing a block mapping at line 5 column 5, did not find expected ':'
-```
-
-### 错误 6：version 不支持
-
-```yaml
-version: 99
-default: docs
-categories:
-  - slug: docs
-    display_name: { en: Documents }
-```
-
-报错：
-
-```text
-unsupported version: 99 (this build supports version 1)
-```
-
-### 错误 7：categories 为空
-
-```yaml
-version: 1
-default: inbox
-categories: []
-```
-
-报错：
-
-```text
-categories must not be empty
-```
-
-### 错误 8：超过 64 类
-
-报错：
-
-```text
-too many categories (65 > 64 max)
-```
-
-### 错误 9：display_name 中 locale 值为空字符串
-
-```yaml
-version: 1
-default: docs
-categories:
-  - slug: docs
-    display_name: { en: "" }
-```
-
-报错：
-
-```text
-display_name['en'] must not be empty in category 'docs'
-```
-
-### 错误 10：未识别字段
-
-```yaml
-version: 1
-default: docs
-categories:
-  - slug: docs
-    display_name: { en: Documents }
-    extensoins: [pdf]   # 拼错
-```
-
-报错（serde strict mode）：
-
-```text
-unknown field `extensoins`, expected one of `slug`, `display_name`, `description`, `extensions`, `keywords`, `priority`, `naming_template`
-```
-
----
-
-## naming_template 占位符
-
-| 占位符 | 替换为 | 示例 |
+| 命中方式 | `reason` | `confidence` |
 |---|---|---|
-| `{original}` | 原文件名（含扩展名） | `report.pdf` |
-| `{stem}` | 原文件名不带扩展名 | `report` |
-| `{ext}` | 扩展名（不带点） | `pdf` |
-| `{date}` | 当前日期 `YYYY-MM-DD` | `2026-04-28` |
-| `{date_iso}` | ISO 8601 日期时间 | `2026-04-28T10:30:00Z` |
-| `{slug}` | 当前分类 slug | `docs` |
+| keyword | `Keyword` | `0.9` |
+| extension | `Extension` | `0.7` |
+| fallback | `Default` | `0.0` |
 
-未识别的占位符保留原样：`{unknown}` 不被替换。
+## Naming template
 
-当前默认不启用模板（保持 original），避免用户被改名困扰。
+| Placeholder | 输出 |
+|---|---|
+| `{original}` | 完整原文件名 |
+| `{stem}` | stem |
+| `{ext}` | 不含点的最后一层 extension |
+| `{date}` | 本地日期 `YYYY-MM-DD` |
+| `{date_iso}` | UTC RFC3339，例如 `2026-04-28T10:30:00Z` |
+| `{slug}` | category slug |
 
----
+未识别 placeholder 当前保持原字符串。模板结果仍需 storage filename validation；不能用模板绕过路径安全。
 
-## 默认 classifier.yaml 来源
+## 保存和编辑
 
-文件：`core/resources/classifier.default.yaml`
+Core 的 rule save/editor API 都先写入同目录临时文件、同步文件内容，再原子替换 YAML 并同步父目录：
 
-应用 `init_repo` 时复制到 `<repo>/.areamatrix/classifier.yaml`。
+- `save_classifier_rule` 在原子替换或临时文件清理失败时返回错误；它不承诺在替换后的父目录同步失败时恢复旧内容。
+- classifier editor mutation 会保留旧 bytes；替换后的父目录同步失败时，重新原子写回旧内容。
+- 两类入口都执行各自的规则校验；需要影响确认的 editor 操作和过宽 extension-only rule 未确认时会被拒绝。
 
-后续 Core 升级**不**自动覆盖用户的 yaml。如果新版本引入了新的默认分类，提示用户「我们建议加入 xxx 分类」并提供一键合并入口。
+- 保存只影响未来分类。
+- 不自动重分类、移动、重命名、删除或 reindex 已有文件。
+- 删除 default category、最后一个 category 或未确认影响的规则会被拒绝。
+- Swift UI 不直接编辑 YAML；通过 Core API 获取 editor snapshot 和提交 request。
 
----
+用户手工编辑 YAML 后，下次规则读取会重新解析；当前没有 classifier cache。
 
-## 用户编辑流程
+## AI 边界
 
-```mermaid
-sequenceDiagram
-    actor User
-    participant UI
-    participant FS
-    participant Watcher
-    participant Core
+`classifier.yaml` 只定义本地规则。AI category suggestion 使用独立 API、privacy/provider 配置和 audit log，
+不是 YAML 的隐式 fallback。
 
-    User->>UI: 设置 → 打开 classifier.yaml
-    UI->>FS: 调用系统编辑器
-    User->>FS: 修改 yaml + 保存
-    FS->>Watcher: FSEvents 通知
-    Watcher->>Core: invalidate_cache + 重新加载
-    Core->>Core: validate
-    alt 校验通过
-        Core->>UI: 通知「规则已更新」
-    else 校验失败
-        Core->>UI: 错误事件 + 保留旧规则
-        UI->>User: toast「规则错误：<reason>」
-    end
+## 验证
+
+```bash
+cd core
+cargo test --workspace classify
 ```
 
-后续配置 UI 可加入图形化编辑器（设置面板内）。
-
----
-
-## CI 校验
-
-`.github/workflows/core-ci.yml` 加一步：
-
-```yaml
-- name: Validate default classifier.yaml
-  run: |
-    npm install -g ajv-cli
-    ajv validate \
-      --spec=draft7 \
-      -s core/resources/classifier.schema.json \
-      -d core/resources/classifier.default.yaml
-```
-
----
+完整 Core 改动仍需 fmt、clippy 和 workspace tests。
 
 ## Related
 
 - [core-api.md](core-api.md)
-- [error-codes.md](error-codes.md)
 - [../modules/classify.md](../modules/classify.md)
-- [../adr/0008-naming-and-i18n.md](../adr/0008-naming-and-i18n.md)
+- [../ux/classifier-calibration.md](../ux/classifier-calibration.md)
+- [../development/testing.md](../development/testing.md)

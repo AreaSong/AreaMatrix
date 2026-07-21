@@ -102,6 +102,20 @@ CREATE TABLE IF NOT EXISTS fs_event_cursor (
   updated_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS external_sync_receipts (
+  event_id INTEGER NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('created', 'renamed', 'removed', 'modified')),
+  path TEXT NOT NULL,
+  file_id INTEGER,
+  previous_category TEXT,
+  current_category TEXT,
+  applied_at INTEGER NOT NULL,
+  PRIMARY KEY (event_id, kind, path)
+);
+
+CREATE INDEX IF NOT EXISTS idx_external_sync_receipts_applied
+  ON external_sync_receipts(applied_at DESC);
+
 CREATE TABLE IF NOT EXISTS scan_sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   kind TEXT NOT NULL CHECK (kind IN ('adopt', 'reindex')),

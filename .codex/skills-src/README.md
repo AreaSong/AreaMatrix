@@ -18,9 +18,9 @@
 - `areamatrix-task-loop`：任务循环、运行锁、stale progress、summary index、自检和恢复入口。
 - `areamatrix-git-checkpoint`：PASS task 的 Git checkpoint、commit/push、dirty worktree 和恢复策略。
 - `areamatrix-enterprise-governance`：代码评审、安全、依赖、CI、CODEOWNERS 与治理漂移。
-- `areamatrix-validation-driver`
-- `areamatrix-doc-sync`
-- `areamatrix-file-safety`
+- `areamatrix-validation-driver`：按改动范围选择最小充分验证，报告 PASS / FAIL / BLOCKED 证据。
+- `areamatrix-doc-sync`：docs、Core API、UDL、prompt 材料与 README 之间的漂移同步。
+- `areamatrix-file-safety`：用户文件、`.areamatrix/` 元数据、DB、staging、FSEvents / iCloud 安全边界。
 - `areamatrix-workflow-planning`：v* 版本规划、docs 讨论、中间层讨论和 prompt 生成前门禁。
 - `areamatrix-residual-ledger`：release blocker、accepted exception、historical reference、template-only 和 task-facing residual 索引。
 - `areamatrix-codex-os`：Codex OS start-flow、run-validation、repair-plan、close-flow、ops-flow，以及 intake、registry、preflight、context、resume、subagent plan、evidence、finish、dashboard、weekly review 和 archive recommendations。
@@ -50,5 +50,29 @@
 ## 维护建议
 
 - 变更 skill 时，同时检查 `agents/openai.yaml` 是否仍与 `SKILL.md` 匹配。
+- frontmatter `description` 是触发条件而不是职责摘要：写清楚何时激活、覆盖用户可能的中英文说法；新增 skill 后同步根 `AGENTS.md` 的 Skill 路由表。
 - 不在 skill 目录内添加 README、变更日志或低价值说明文件。
 - 验收时先运行 `./dev check skills`、`./dev check quality` 和 `./dev check wording`；涉及 task-loop 时再运行 `./task-loop check` 和 prompt runner 基线。
+
+## 经验录入门槛
+
+任务结束时若发现新教训，先过三问，至少满足两项才录入 skill：
+
+- 可重复：同类任务还会再遇到，不是一次性变通。
+- 代价高：不提前知道会浪费大量排查时间，或触发高风险边界。
+- 不可见：从代码、命令输出或现有文档无法直接看出。
+
+录入位置按内容形态判断：
+
+- 硬约束（必须做 / 不得做）→ 对应 skill 的 `SKILL.md` Guardrails。
+- 场景、清单、矩阵、runbook → 该 skill 的 `references/*.md`。
+- 会话叙事、调试过程、一次性结论 → 不写入 skill；归 Git 历史、task evidence 或 closeout。
+
+录入必须泛化：写触发条件、根因和不遵守的后果，不复述某次会话的经过。录入不等于生效：新坑点必须同时出现在任务路径上（`SKILL.md` 的触发描述、Workflow 步骤、Guardrails 或 References 索引行），只躺在 references 深处不算完成录入。
+
+## 规则清退
+
+- 相关机制已移除 → 直接删除对应规则行。
+- 规则仍适用但范围收窄 → 在规则行内补作用域说明。
+- 不确定是否仍适用 → 行尾加 `<!-- deprecated: 原因与日期 -->`，下次触碰该 skill 时确认删除或恢复。
+- 过时规则比缺失规则更有害；更正过时内容不需要过录入门槛。

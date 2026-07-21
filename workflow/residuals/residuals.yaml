@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-15"
+updated: "2026-07-21"
 scope: global
 authority: index-only
 source_of_truth:
@@ -57,6 +57,90 @@ items:
       - xcodebuild macOS build and test
       - file-safety acceptance evidence showing no DB creation or mutation on reads
     notes: Closed after read-only open-mode and negative-path verification. Existing SQLite shared-memory lock coordination may update index.db-shm during a read-only WAL read; the reader does not create sidecars or modify index.db or index.db-wal.
+  - id: global-product-soft-delete-retention
+    status: deferred
+    type: product-contract-gap
+    title: Soft-delete 30-day retention cleanup is not implemented
+    source: docs/adr/0003-source-of-truth-strategy.md
+    supporting_sources:
+      - docs/adr/0006-icloud-support.md
+      - core/src/db/sync.rs
+    owner: core-storage
+    current_impact: soft-deleted rows are retained indefinitely; no retention or cleanup job exists
+    executable_task: true
+    promotion_required: true
+    close_condition: Either implement the documented retention cleanup for soft-deleted rows with file-safety tests, or amend ADR-0003/ADR-0006 to remove the 30-day retention promise.
+    notes: Soft delete itself is implemented (status='deleted' plus deleted_at); only the retention/cleanup policy promised by the ADRs is missing.
+  - id: global-product-ui-localization
+    status: deferred
+    type: product-contract-gap
+    title: UI string localization pipeline from ADR-0008 is not implemented
+    source: docs/adr/0008-naming-and-i18n.md
+    supporting_sources:
+      - apps/macos/AreaMatrix/Features/Settings/GeneralSettingsState.swift
+      - apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift
+    owner: macos-frontend
+    current_impact: UI copy is hardcoded and mixes zh-Hans and English; no .lproj/Localizable.strings pipeline exists
+    executable_task: true
+    promotion_required: true
+    close_condition: Either ship the .lproj/Localizable.strings pipeline for UI copy, or amend ADR-0008 to scope localization to classifier display names only.
+    notes: Locale.preferredLanguages currently only drives repository config locale and classifier display_name (zh-Hans/en); it does not drive UI strings.
+  - id: global-docs-core-module-doc-coverage
+    status: deferred
+    type: product-doc-marker
+    title: Module-level docs exist for only 5 of 50 core modules
+    source: docs/governance/governance-register.yaml
+    supporting_sources:
+      - docs/architecture/core-internal-architecture.md
+      - core/src/lib.rs
+    owner: doc-sync
+    current_impact: 45 core modules rely on core-api.md function contracts and architecture docs instead of dedicated module docs; the module-to-doc-to-test mapping is registered under core_modules and enforced by ./dev check governance
+    executable_task: true
+    promotion_required: true
+    close_condition: Either write module docs for the high-risk undocumented modules (storage adjacency, sync, recovery already covered by architecture docs), or accept API-contract-level coverage as the permanent documentation depth and record that decision in docs/architecture/core-internal-architecture.md.
+    notes: Registered during repo-wide correspondence governance; no new module docs were written to avoid scope explosion.
+  - id: global-governance-ios-bindings-verify-gap
+    status: deferred
+    type: file-safety-gap
+    title: Tracked iOS FFI artifacts have no binding-drift verify fallback
+    source: docs/governance/governance-register.yaml
+    supporting_sources:
+      - apps/ios/Carea_matrixFFI/area_matrixFFI.h
+      - apps/ios/Carea_matrixFFI/module.modulemap
+    owner: macos-bridge
+    current_impact: macOS generated bindings are guarded by ./dev bindings verify, but the tracked iOS header/modulemap and *CoreFFI.swift shims can drift from core/area_matrix.udl without any check failing
+    executable_task: true
+    promotion_required: true
+    close_condition: Extend bindings verify (or an equivalent governance check) to cover apps/ios generated artifacts, or stop tracking generated iOS artifacts in git.
+    notes: Registered during repo-wide correspondence governance W0 ownership audit; iOS app itself remains experimental.
+  - id: global-ai-classification-call-log-gate
+    status: deferred
+    type: product-contract-gap
+    title: suggest_category_with_ai remote path lacks pre-call log gate required by Core API
+    source: docs/api/core-api.md
+    supporting_sources:
+      - core/src/ai_classification_suggestion/implementation.rs
+      - core/src/ai_summary/implementation/generation.rs
+      - core/src/ai_tags_suggestion/implementation.rs
+    owner: core-storage
+    current_impact: remote classification may execute before call-log gate; if insert_call_log later fails, remote data was already sent and Internal is returned after the fact. Summary and tags already have ensure_*_call_log_gate before remote execution.
+    executable_task: true
+    promotion_required: true
+    close_condition: Add a pre-remote call-log gate to suggest_category_with_ai matching summary/tags, with privacy and failure-recovery tests proving no remote send when the gate fails.
+    notes: High-risk privacy boundary; code change deferred pending explicit confirmation. Core API contract already requires the gate.
+  - id: global-ai-semantic-search-remote-route
+    status: deferred
+    type: product-contract-gap
+    title: Semantic search remote route and RateLimited/Timeout fallbacks are not implemented
+    source: docs/api/core-api.md
+    supporting_sources:
+      - core/src/semantic_search/implementation.rs
+    owner: core-storage
+    current_impact: RemoteFirst and route=Remote always fall back to ProviderUnavailable; RateLimited and Timeout enum values are reserved but never constructed. Local semantic search and negative privacy gates remain valid.
+    executable_task: true
+    promotion_required: true
+    close_condition: Either ship remote semantic search with rate-limit/timeout mapping and contract tests, or amend Core API / UDL to mark remote semantic route as unsupported until a later version.
+    notes: Documented as current limitation in core-api.md during correspondence governance audit.
   - id: global-ref-areaflow
     status: reference-only
     type: historical-reference
@@ -115,3 +199,10 @@ version_residuals:
       - deferred
       - accepted-exception
     summary: V1 distribution remains uncleared by distribution evidence and decisions; technical queue is complete.
+  - version: v2
+    source: workflow/versions/v2/residuals/residuals.yaml
+    status: mixed-blocked
+    status_breakdown:
+      - open
+      - deferred
+    summary: V2 governance authoring remains bounded by independent review, execution authorization, and remote merge-control evidence.

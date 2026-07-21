@@ -12,6 +12,10 @@ private func detailRow(_ label: String, _ value: String) -> some View {
     .font(.callout)
 }
 
+func aiCallLogPrivacyRulesCheckedLabel(_ checked: Bool) -> String {
+    checked ? "yes" : "not recorded"
+}
+
 struct AICallLogView: View {
     @StateObject private var model: AICallLogModel
     @State private var confirmation: AICallLogConfirmation?
@@ -178,7 +182,7 @@ struct AICallLogView: View {
                 detailRow("Provider", record.providerName ?? record.route.map(aiCallLogRouteLabel) ?? "Not recorded")
                 detailRow("Model", record.modelName ?? "Not recorded")
                 detailRow("Sent fields", sentFieldSummary(record.sentFields))
-                detailRow("Privacy rules checked", record.privacyRulesChecked ? "yes" : "no user content")
+                detailRow("Privacy rules checked", aiCallLogPrivacyRulesCheckedLabel(record.privacyRulesChecked))
                 detailRow("Privacy match", privacyMatchLabel(record))
                 detailRow("Result summary", record.resultSummary)
                 if let code = record.errorCode { detailRow("Error", code) }

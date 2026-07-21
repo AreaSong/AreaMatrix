@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -179,6 +180,53 @@ def _local_markdown_target(root: Path, source: Path, target: str) -> Path | None
     return (source.parent / decoded).resolve()
 
 
+def _check_markdown_structure(path: Path, text: str, failures: FailureCollector) -> None:
+    relative = path.as_posix()
+    in_fence = False
+    fence_marker = ""
+    h1_lines: list[int] = []
+    related_found = False
+
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        stripped = line.lstrip()
+        marker = "```" if stripped.startswith("```") else "~~~" if stripped.startswith("~~~") else ""
+        if marker:
+            if in_fence and marker == fence_marker:
+                in_fence = False
+                fence_marker = ""
+            elif not in_fence:
+                if not stripped[len(marker) :].strip():
+                    failures.fail(f"{relative}:{line_number} opening code fence is missing a language")
+                in_fence = True
+                fence_marker = marker
+            continue
+        if in_fence:
+            continue
+        if re.match(r"^#\s+\S", line):
+            h1_lines.append(line_number)
+        if line.strip() == "## Related":
+            related_found = True
+
+    if in_fence:
+        failures.fail(f"{relative} has an unclosed code fence")
+    if len(h1_lines) != 1:
+        failures.fail(f"{relative} must contain exactly one H1 outside code fences, found {len(h1_lines)}")
+    else:
+        lines = text.splitlines()
+        first_content = next(
+            (line.strip() for line in lines[h1_lines[0] :] if line.strip()),
+            "",
+        )
+        if not first_content.startswith(">"):
+            failures.fail(f"{relative} must place a blockquote summary immediately after its H1")
+    if not related_found:
+        failures.fail(f"{relative} is missing a top-level ## Related section")
+    if not text.endswith("\n"):
+        failures.fail(f"{relative} must end with a newline")
+    elif text.endswith("\n\n"):
+        failures.fail(f"{relative} has a blank line at EOF")
+
+
 def run_docs_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     failures = FailureCollector()
@@ -188,6 +236,8 @@ def run_docs_check(root: Path | None = None) -> int:
             failures.fail(f"missing documentation entry point: {path.relative_to(root)}")
 
     markdown_files = sorted(path for path in (root / "docs").rglob("*.md") if path.is_file())
+    for path in markdown_files:
+        _check_markdown_structure(path.relative_to(root), _read(path), failures)
     checked_files = [path for path in roots if path.is_file()] + markdown_files
     local_links: dict[Path, set[Path]] = {}
     for source in checked_files:
@@ -459,6 +509,544 @@ def _check_ai_runtime_environment_contract(root: Path, failures: FailureCollecto
         )
 
 
+def _check_enterprise_governance_baseline(root: Path, failures: FailureCollector) -> None:
+    from .changes import ChangeYAMLError, parse_yaml_subset
+
+    root = root.resolve()
+    baseline_path = root / "docs/governance/enterprise-workflow-baseline.md"
+    register_path = root / "docs/governance/governance-register.yaml"
+    if not baseline_path.is_file() or not register_path.is_file():
+        return
+
+    baseline = _read(baseline_path)
+    for gate in range(9):
+        if not re.search(rf"\bG{gate}\b", baseline):
+            failures.fail(f"enterprise governance baseline is missing G{gate}")
+    applicability_rows = re.findall(r"(?m)^\|\s*(?:[1-9]|[12][0-9]|3[0-7])\s+[^|]+\|", baseline)
+    if len(applicability_rows) != 37:
+        failures.fail(f"enterprise governance applicability matrix must classify 37 domains, found {len(applicability_rows)}")
+
+    try:
+        register = parse_yaml_subset(_read(register_path), register_path)
+    except ChangeYAMLError as exc:
+        failures.fail(f"invalid enterprise governance register: {exc}")
+        return
+    if not isinstance(register, dict):
+        failures.fail("enterprise governance register must be a mapping")
+        return
+
+    upstream = register.get("upstream")
+    expected_upstream = {
+        "spec_id": "ASW-EWF-001",
+        "version": "1.0.0",
+        "adoption": "adapted-complete",
+    }
+    if not isinstance(upstream, dict):
+        failures.fail("enterprise governance register upstream must be a mapping")
+    else:
+        for key, value in expected_upstream.items():
+            if str(upstream.get(key)) != value:
+                failures.fail(f"enterprise governance register upstream.{key} must be {value}")
+        source_path = upstream.get("source_path")
+        source_hash = upstream.get("sha256")
+        if not isinstance(source_path, str) or not source_path:
+            failures.fail("enterprise governance register upstream.source_path must be repo-relative")
+        else:
+            source = Path(source_path)
+            if source.is_absolute() or ".." in source.parts:
+                failures.fail("enterprise governance register upstream.source_path must stay inside the repository")
+            else:
+                resolved = (root / source).resolve()
+                try:
+                    resolved.relative_to(root)
+                except ValueError:
+                    failures.fail("enterprise governance register upstream.source_path resolves outside the repository")
+                else:
+                    if not resolved.is_file():
+                        failures.fail(f"enterprise governance upstream snapshot does not exist: {source_path}")
+                    elif not isinstance(source_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", source_hash):
+                        failures.fail("enterprise governance register upstream.sha256 must be a lowercase SHA-256")
+                    else:
+                        actual_hash = hashlib.sha256(resolved.read_bytes()).hexdigest()
+                        if actual_hash != source_hash:
+                            failures.fail(
+                                "enterprise governance upstream snapshot hash mismatch: "
+                                f"expected {source_hash}, found {actual_hash}"
+                            )
+                        baseline_hashes = re.findall(r"\b[0-9a-f]{64}\b", baseline)
+                        if source_hash not in baseline_hashes:
+                            failures.fail("enterprise governance baseline must state the upstream snapshot SHA-256")
+                        for stated_hash in baseline_hashes:
+                            if stated_hash != source_hash:
+                                failures.fail(
+                                    "enterprise governance baseline states a stale SHA-256: "
+                                    f"{stated_hash}"
+                                )
+
+    raci = register.get("raci")
+    if not isinstance(raci, dict) or raci.get("accountable") != "@AreaSong":
+        failures.fail("enterprise governance register must declare @AreaSong accountable")
+    else:
+        independent = raci.get("independent_review")
+        if not isinstance(independent, dict) or independent.get("missing_reviewer_behavior") != "blocked":
+            failures.fail("enterprise governance independent review must fail closed")
+
+    registered_document_paths: set[str] = set()
+    documents = register.get("documents")
+    if not isinstance(documents, list) or len(documents) < 3:
+        failures.fail("enterprise governance register must contain at least three source documents")
+    else:
+        for entry in documents:
+            if not isinstance(entry, dict):
+                failures.fail("enterprise governance document entry must be a mapping")
+                continue
+            for key in ["id", "path", "authority", "owner", "status", "last_verified", "review_cycle", "review_triggers"]:
+                if not entry.get(key):
+                    failures.fail(f"enterprise governance document entry is missing {key}")
+            path = entry.get("path")
+            if isinstance(path, str):
+                if path in registered_document_paths:
+                    failures.fail(f"enterprise governance document is registered twice: {path}")
+                registered_document_paths.add(path)
+                if not (root / path).is_file():
+                    failures.fail(f"enterprise governance document does not exist: {path}")
+
+    docs_root = root / "docs"
+    if docs_root.is_dir():
+        for md_path in sorted(docs_root.rglob("*.md")):
+            if not md_path.is_file():
+                continue
+            rel = md_path.relative_to(root).as_posix()
+            if rel not in registered_document_paths:
+                failures.fail(f"docs page is not registered in documents: {rel}")
+
+    threat_model_rel = "docs/security/threat-model.md"
+    threat_model_path = root / threat_model_rel
+    if not threat_model_path.is_file():
+        failures.fail(f"enterprise governance threat model is missing: {threat_model_rel}")
+    else:
+        threat_model = _read(threat_model_path)
+        for anchor in ["信任边界", "威胁主体", "数据分类", "控制映射", "复审触发"]:
+            if anchor not in threat_model:
+                failures.fail(f"enterprise governance threat model is missing section: {anchor}")
+        if threat_model_rel not in registered_document_paths:
+            failures.fail("enterprise governance threat model must be registered in documents")
+
+    domains = register.get("document_domains")
+    if not isinstance(domains, list) or not domains:
+        failures.fail("enterprise governance register document_domains must be non-empty")
+    else:
+        covered_domains: set[str] = set()
+        for entry in domains:
+            if not isinstance(entry, dict):
+                failures.fail("enterprise governance document domain entry must be a mapping")
+                continue
+            for key in ["domain", "owner", "status", "review_cycle", "review_triggers"]:
+                if not entry.get(key):
+                    failures.fail(f"enterprise governance document domain entry is missing {key}")
+            domain = entry.get("domain")
+            if not isinstance(domain, str) or not domain:
+                continue
+            if domain in covered_domains:
+                failures.fail(f"enterprise governance document domain repeats {domain}")
+            covered_domains.add(domain)
+            if not (root / domain).is_dir():
+                failures.fail(f"enterprise governance document domain does not exist: {domain}")
+        docs_root = root / "docs"
+        if docs_root.is_dir():
+            actual_domains = {
+                f"docs/{child.name}" for child in docs_root.iterdir() if child.is_dir()
+            }
+            for missing_domain in sorted(actual_domains - covered_domains):
+                failures.fail(f"enterprise governance document domain is unregistered: {missing_domain}")
+
+    raid = register.get("raid")
+    if not isinstance(raid, list) or not raid:
+        failures.fail("enterprise governance register RAID must be non-empty")
+    else:
+        expected_entries = {
+            "AM-RISK-001": ("risk", "open"),
+            "AM-DEP-001": ("dependency", "blocked-external"),
+            "AM-DEP-002": ("dependency", "blocked-external"),
+            "AM-DEP-003": ("dependency", "deferred"),
+            "AM-DEP-004": ("dependency", "deferred"),
+        }
+        by_id: dict[str, dict[str, object]] = {}
+        for entry in raid:
+            if not isinstance(entry, dict):
+                failures.fail("enterprise governance RAID entry must be a mapping")
+                continue
+            entry_id = entry.get("id")
+            if not isinstance(entry_id, str) or not entry_id:
+                failures.fail("enterprise governance RAID entry is missing id")
+                continue
+            if entry_id in by_id:
+                failures.fail(f"enterprise governance RAID repeats id {entry_id}")
+                continue
+            by_id[entry_id] = entry
+
+        for entry_id, (expected_type, expected_status) in expected_entries.items():
+            entry = by_id.get(entry_id)
+            if not isinstance(entry, dict):
+                failures.fail(f"enterprise governance RAID is missing {entry_id}")
+                continue
+            for key in [
+                "type",
+                "status",
+                "severity",
+                "probability",
+                "impact",
+                "impact_scope",
+                "owner",
+                "summary",
+                "mitigation",
+                "due",
+                "escalation",
+                "close_evidence",
+            ]:
+                if not entry.get(key):
+                    failures.fail(f"enterprise governance RAID {entry_id} is missing {key}")
+            if entry.get("type") != expected_type or entry.get("status") != expected_status:
+                failures.fail(
+                    f"enterprise governance RAID {entry_id} must remain "
+                    f"{expected_type}/{expected_status}"
+                )
+            probability = entry.get("probability")
+            if probability and probability not in {"low", "medium", "high"}:
+                failures.fail(
+                    f"enterprise governance RAID {entry_id}.probability "
+                    "must be low, medium, or high"
+                )
+            for key in ["impact", "severity"]:
+                value = entry.get(key)
+                if value and value not in {"low", "medium", "high", "critical"}:
+                    failures.fail(
+                        f"enterprise governance RAID {entry_id}.{key} "
+                        "must be low, medium, high, or critical"
+                    )
+
+    status_path = root / ".areaflow/status.json"
+    try:
+        status = json.loads(_read(status_path))
+    except (OSError, json.JSONDecodeError) as exc:
+        failures.fail(f"invalid AreaFlow status projection: {exc}")
+        return
+    compatibility = status.get("compatibility")
+    compatibility = compatibility if isinstance(compatibility, dict) else {}
+    if compatibility.get("shim_lifecycle_state") != "authoring_only_shim":
+        failures.fail("AreaFlow shim lifecycle state must be authoring_only_shim")
+    blocked_values = compatibility.get("blocked_commands")
+    blocked = set(blocked_values) if isinstance(blocked_values, list) else set()
+    required_blocked = {"./task-loop run", "promotion apply", "write execution"}
+    if not required_blocked.issubset(blocked):
+        failures.fail(f"AreaFlow status projection is missing blocked commands: {sorted(required_blocked - blocked)}")
+
+    execution_root = root / "workflow/versions/v2/execution"
+    execution_files = sorted(path.relative_to(execution_root) for path in execution_root.rglob("*") if path.is_file())
+    if execution_files != [Path("README.md")]:
+        failures.fail(f"v2 execution must remain README-only, found {[str(path) for path in execution_files]}")
+    _require_text(root, failures, "workflow/versions/v2/promotion/promotion.yaml", r"live_mapping:\s+pending", "v2 pending live mapping")
+    _require_text(root, failures, "workflow/versions/v2/promotion/approval.yaml", r"approved:\s+false", "v2 promotion approval block")
+
+
+def _udl_namespace_functions(udl_text: str) -> list[str] | None:
+    """Extract function names declared inside the leading namespace block."""
+
+    if not udl_text.startswith("namespace area_matrix {"):
+        return None
+    end = udl_text.find("\n};")
+    if end < 0:
+        return None
+    names: list[str] = []
+    for line in udl_text[:end].splitlines():
+        stripped = line.strip()
+        if stripped.startswith("//") or stripped.startswith("["):
+            continue
+        match = re.match(
+            r"^(?:[A-Za-z0-9_?<> ]+\s)?([a-z][a-z0-9_]*)\(",
+            stripped.replace(" (", "("),
+        )
+        if match:
+            names.append(match.group(1))
+    return names
+
+
+def _check_core_api_contract_sync(root: Path, failures: FailureCollector) -> None:
+    """core-api.md embedded UDL and function inventory must match the real UDL."""
+
+    api_path = root / "docs/api/core-api.md"
+    udl_path = root / "core/area_matrix.udl"
+    if not api_path.is_file() or not udl_path.is_file():
+        return
+    api_text = _read(api_path)
+    udl_text = _read(udl_path)
+
+    match = re.search(r"(?ms)^```idl\n(.*?)^```$", api_text)
+    if match is None:
+        failures.fail("core-api.md must embed the full UDL in an idl code block")
+    elif match.group(1).rstrip("\n") != udl_text.rstrip("\n"):
+        failures.fail("core-api.md embedded UDL differs from core/area_matrix.udl")
+
+    udl_names = _udl_namespace_functions(udl_text)
+    if udl_names is None:
+        failures.fail("core/area_matrix.udl namespace block could not be parsed")
+        return
+    udl_set = set(udl_names)
+    if len(udl_names) != len(udl_set):
+        failures.fail("core/area_matrix.udl namespace declares duplicate function names")
+
+    table_names = set(re.findall(r"(?m)^\|\s*`([a-z][a-z0-9_]*)\(", api_text))
+    heading_names = set(re.findall(r"(?m)^###\s+`([a-z][a-z0-9_]*)\(", api_text))
+    for name in sorted(udl_set - table_names):
+        failures.fail(f"core-api.md function overview table is missing UDL function: {name}")
+    for name in sorted(table_names - udl_set):
+        failures.fail(f"core-api.md function overview table lists unknown function: {name}")
+    for name in sorted(udl_set - heading_names):
+        failures.fail(f"core-api.md has no contract section for UDL function: {name}")
+    for name in sorted(heading_names - udl_set):
+        failures.fail(f"core-api.md documents a function missing from the UDL: {name}")
+
+
+def _check_data_model_schema_sync(root: Path, failures: FailureCollector) -> None:
+    """Every table created in core/src must be documented in data-model.md and vice versa."""
+
+    doc_path = root / "docs/architecture/data-model.md"
+    src_root = root / "core/src"
+    if not doc_path.is_file() or not src_root.is_dir():
+        return
+    doc_tables = set(re.findall(r"(?m)^\|\s*`([a-z][a-z0-9_]*)`\s*\|", _read(doc_path)))
+    created_tables: set[str] = set()
+    for rust_path in sorted(src_root.rglob("*.rs")):
+        created_tables.update(
+            re.findall(r"CREATE TABLE (?:IF NOT EXISTS )?([a-z][a-z0-9_]*)", _read(rust_path))
+        )
+    if not created_tables:
+        failures.fail("no CREATE TABLE statements found under core/src")
+        return
+    for table in sorted(created_tables - doc_tables):
+        failures.fail(f"data-model.md is missing a table created in core/src: {table}")
+    for table in sorted(doc_tables - created_tables):
+        failures.fail(f"data-model.md documents a table never created in core/src: {table}")
+
+
+_REPO_DOMAIN_AUTHORITIES = {
+    "source-fact",
+    "contract",
+    "code",
+    "test",
+    "generated-verified",
+    "build-config",
+    "adapter",
+    "assets",
+    "task-records",
+    "archived-readonly",
+    "meta",
+}
+
+
+def _check_repo_domain_coverage(root: Path, failures: FailureCollector) -> None:
+    """Every tracked file must resolve to exactly one registered repo domain."""
+
+    from .changes import ChangeYAMLError, parse_yaml_subset
+
+    root = root.resolve()
+    register_path = root / "docs/governance/governance-register.yaml"
+    if not register_path.is_file():
+        return
+    try:
+        register = parse_yaml_subset(_read(register_path), register_path)
+    except ChangeYAMLError:
+        # The enterprise baseline check already reports the parse failure.
+        return
+    if not isinstance(register, dict):
+        return
+
+    domains = register.get("repo_domains")
+    if not isinstance(domains, list) or not domains:
+        failures.fail("enterprise governance register repo_domains must be non-empty")
+        return
+
+    patterns: dict[str, str] = {}
+    seen_domains: set[str] = set()
+    for entry in domains:
+        if not isinstance(entry, dict):
+            failures.fail("repo domain entry must be a mapping")
+            continue
+        for key in ["domain", "owner", "status", "authority", "verification", "review_triggers", "paths"]:
+            if not entry.get(key):
+                failures.fail(f"repo domain entry is missing {key}")
+        domain = entry.get("domain")
+        if not isinstance(domain, str) or not domain:
+            continue
+        if domain in seen_domains:
+            failures.fail(f"repo domain repeats {domain}")
+            continue
+        seen_domains.add(domain)
+        authority = entry.get("authority")
+        if authority and authority not in _REPO_DOMAIN_AUTHORITIES:
+            failures.fail(f"repo domain {domain} has unknown authority: {authority}")
+        paths = entry.get("paths")
+        if not isinstance(paths, list):
+            continue
+        for pattern in paths:
+            if not isinstance(pattern, str) or not pattern:
+                failures.fail(f"repo domain {domain} has an empty path pattern")
+                continue
+            if pattern.startswith("/") or ".." in Path(pattern).parts:
+                failures.fail(f"repo domain {domain} path must stay inside the repository: {pattern}")
+                continue
+            if pattern in patterns:
+                failures.fail(f"repo domain path is registered twice: {pattern}")
+                continue
+            patterns[pattern] = domain
+
+    tracked = _git_text(root, "-c", "core.quotepath=off", "ls-files")
+    if tracked is None:
+        # Outside a git checkout only the schema above can be validated.
+        return
+    tracked_files = [line for line in tracked.splitlines() if line]
+    winning_patterns: set[str] = set()
+    unowned: list[str] = []
+    for rel_path in tracked_files:
+        best: str | None = None
+        for pattern in patterns:
+            if pattern.endswith("/"):
+                if not rel_path.startswith(pattern):
+                    continue
+            elif rel_path != pattern:
+                continue
+            if best is None or len(pattern) > len(best):
+                best = pattern
+        if best is None:
+            unowned.append(rel_path)
+        else:
+            winning_patterns.add(best)
+
+    for rel_path in unowned[:20]:
+        failures.fail(f"repo domain coverage is missing an owner for {rel_path}")
+    if len(unowned) > 20:
+        failures.fail(f"repo domain coverage is missing owners for {len(unowned) - 20} more file(s)")
+    for pattern in sorted(set(patterns) - winning_patterns):
+        failures.fail(f"repo domain path matches no tracked file: {pattern}")
+
+
+def _registered_families(entries: list, key: str, failures: FailureCollector, label: str) -> list[str]:
+    families: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        value = entry.get(key)
+        if isinstance(value, str) and value:
+            families.append(value)
+        elif isinstance(value, list):
+            families.extend(item for item in value if isinstance(item, str) and item)
+    duplicates = {family for family in families if families.count(family) > 1}
+    for family in sorted(duplicates):
+        failures.fail(f"{label} registers test family twice: {family}")
+    return families
+
+
+def _check_code_correspondence(root: Path, failures: FailureCollector) -> None:
+    """core/src modules and macOS Features must map to registered docs and test families."""
+
+    from .changes import ChangeYAMLError, parse_yaml_subset
+
+    register_path = root / "docs/governance/governance-register.yaml"
+    lib_path = root / "core/src/lib.rs"
+    if not register_path.is_file() or not lib_path.is_file():
+        return
+    try:
+        register = parse_yaml_subset(_read(register_path), register_path)
+    except ChangeYAMLError:
+        return
+    if not isinstance(register, dict):
+        return
+
+    modules_section = register.get("core_modules")
+    if not isinstance(modules_section, list) or not modules_section:
+        failures.fail("enterprise governance register core_modules must be non-empty")
+        return
+    features_section = register.get("macos_features")
+    if not isinstance(features_section, list) or not features_section:
+        failures.fail("enterprise governance register macos_features must be non-empty")
+        return
+    cross_section = register.get("cross_cutting_test_families")
+    if not isinstance(cross_section, list):
+        cross_section = []
+
+    lib_modules = set(re.findall(r"(?m)^(?:pub )?mod ([a-z][a-z0-9_]*);", _read(lib_path)))
+    registered_modules: set[str] = set()
+    for entry in modules_section:
+        if not isinstance(entry, dict):
+            failures.fail("core module entry must be a mapping")
+            continue
+        module = entry.get("module")
+        if not isinstance(module, str) or not module:
+            failures.fail("core module entry is missing module")
+            continue
+        if module in registered_modules:
+            failures.fail(f"core module is registered twice: {module}")
+            continue
+        registered_modules.add(module)
+        if not entry.get("owner"):
+            failures.fail(f"core module {module} is missing owner")
+        docs = entry.get("authority_docs")
+        docs = docs if isinstance(docs, list) else []
+        for doc in docs:
+            if not isinstance(doc, str) or not (root / doc).is_file():
+                failures.fail(f"core module {module} references a missing authority doc: {doc}")
+        if not docs and not entry.get("coverage_note"):
+            failures.fail(f"core module {module} needs authority_docs or a coverage_note")
+    for module in sorted(lib_modules - registered_modules):
+        failures.fail(f"core/src module is not registered in core_modules: {module}")
+    for module in sorted(registered_modules - lib_modules):
+        failures.fail(f"core_modules registers a module missing from core/src/lib.rs: {module}")
+
+    families = _registered_families(modules_section, "test_families", failures, "core_modules")
+    families += _registered_families(cross_section, "family", failures, "cross_cutting_test_families")
+    tests_dir = root / "core/tests"
+    test_stems = sorted(path.stem for path in tests_dir.glob("*.rs")) if tests_dir.is_dir() else []
+    if test_stems:
+        for family in sorted(set(families)):
+            if not any(stem.startswith(family) for stem in test_stems):
+                failures.fail(f"registered test family matches no file in core/tests: {family}")
+        for stem in test_stems:
+            if not any(stem.startswith(family) for family in families):
+                failures.fail(f"core/tests file has no registered capability family: {stem}.rs")
+
+    features_dir = root / "apps/macos/AreaMatrix/Features"
+    disk_features = (
+        {path.name for path in features_dir.iterdir() if path.is_dir()} if features_dir.is_dir() else set()
+    )
+    registered_features: set[str] = set()
+    for entry in features_section:
+        if not isinstance(entry, dict):
+            failures.fail("macos feature entry must be a mapping")
+            continue
+        feature = entry.get("feature")
+        if not isinstance(feature, str) or not feature:
+            failures.fail("macos feature entry is missing feature")
+            continue
+        if feature in registered_features:
+            failures.fail(f"macos feature is registered twice: {feature}")
+            continue
+        registered_features.add(feature)
+        if not entry.get("owner"):
+            failures.fail(f"macos feature {feature} is missing owner")
+        docs = entry.get("authority_docs")
+        if not isinstance(docs, list) or not docs:
+            failures.fail(f"macos feature {feature} must register authority_docs")
+            continue
+        for doc in docs:
+            if not isinstance(doc, str) or not (root / doc).is_file():
+                failures.fail(f"macos feature {feature} references a missing authority doc: {doc}")
+    if disk_features:
+        for feature in sorted(disk_features - registered_features):
+            failures.fail(f"macOS feature directory is not registered in macos_features: {feature}")
+        for feature in sorted(registered_features - disk_features):
+            failures.fail(f"macos_features registers a directory missing from Features/: {feature}")
+
+
 def run_governance_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     failures = FailureCollector()
@@ -478,6 +1066,14 @@ def run_governance_check(root: Path | None = None) -> int:
         "docs/development/git-workflow.md",
         "docs/development/dependency-policy.md",
         "docs/development/ci-governance.md",
+        "docs/governance/enterprise-workflow-baseline.md",
+        "docs/governance/project-charter.md",
+        "docs/governance/governance-register.yaml",
+        "docs/governance/operations-lifecycle.md",
+        "docs/security/threat-model.md",
+        "workflow/versions/v2/discussion/decisions.yaml",
+        "workflow/versions/v2/promotion/promotion.yaml",
+        "workflow/versions/v2/promotion/approval.yaml",
         "workflow/versions/v1-mvp/execution/_shared/engineering-quality-rules.md",
     ]
     for rel_path in required_files:
@@ -486,6 +1082,11 @@ def run_governance_check(root: Path | None = None) -> int:
     _check_macos_governance_test_membership(root, failures)
     _check_ai_runtime_environment_contract(root, failures)
     _check_feature_evolution_evidence(root, failures)
+    _check_enterprise_governance_baseline(root, failures)
+    _check_repo_domain_coverage(root, failures)
+    _check_code_correspondence(root, failures)
+    _check_core_api_contract_sync(root, failures)
+    _check_data_model_schema_sync(root, failures)
 
     _require_text(root, failures, "SECURITY.md", "GitHub Security Advisory", "private security advisory reporting")
     _forbid_text(root, failures, "SECURITY.md", "security@<your-domain>", "placeholder security email")
@@ -531,6 +1132,9 @@ def run_governance_check(root: Path | None = None) -> int:
     )
     _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "CODEOWNERS", "CODEOWNERS checklist")
     _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "rollback|回滚", "rollback checklist")
+    _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "ASW change level", "ASW change level field")
+    _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "Current gate", "G0-G8 current gate field")
+    _require_text(root, failures, ".github/PULL_REQUEST_TEMPLATE.md", "Retirement / deprecation impact", "retirement impact field")
     _require_text(root, failures, ".github/ISSUE_TEMPLATE/bug_report.md", "数据安全影响|Data Safety Impact", "bug data safety section")
     _require_text(root, failures, ".github/ISSUE_TEMPLATE/bug_report.md", "Security Advisory", "private security disclosure reminder")
     _require_text(root, failures, ".github/ISSUE_TEMPLATE/feature_request.md", "本地优先|Local-first", "feature local-first section")
@@ -673,6 +1277,34 @@ def _check_skill_dir(failures: FailureCollector, path: Path) -> None:
         failures.fail(f"missing directory: {path}")
 
 
+SKILL_MD_MAX_LINES = 100
+
+
+def _check_skill_markdown_links(root: Path, failures: FailureCollector, source: Path) -> None:
+    for target in _markdown_link_targets(_read(source)):
+        resolved = _local_markdown_target(root, source, target)
+        if resolved is None:
+            continue
+        try:
+            resolved.relative_to(root)
+        except ValueError:
+            failures.fail(f"{source.relative_to(root)} links outside repository: {target}")
+            continue
+        if not resolved.exists():
+            failures.fail(f"{source.relative_to(root)} has broken link: {target}")
+
+
+def _check_skill_routing_table(root: Path, failures: FailureCollector, names: list[str]) -> None:
+    agents_file = root / "AGENTS.md"
+    if not agents_file.is_file():
+        failures.fail("missing file: AGENTS.md (skill routing table)")
+        return
+    text = _read(agents_file)
+    for name in names:
+        if name not in text:
+            failures.fail(f"AGENTS.md skill routing table is missing {name}")
+
+
 def run_skills_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     skill_root = root / ".codex/skills-src"
@@ -682,11 +1314,13 @@ def run_skills_check(root: Path | None = None) -> int:
     _check_skill_dir(failures, discovery_root)
 
     found = 0
+    names: list[str] = []
     for skill_dir in sorted(skill_root.glob("areamatrix-*")) if skill_root.is_dir() else []:
         if not skill_dir.is_dir():
             continue
         found += 1
         name = skill_dir.name
+        names.append(name)
         skill_file = skill_dir / "SKILL.md"
         openai_file = skill_dir / "agents/openai.yaml"
         references_dir = skill_dir / "references"
@@ -718,6 +1352,16 @@ def run_skills_check(root: Path | None = None) -> int:
                     failures.fail(f"missing description in {skill_file}")
             except SimpleYAMLError as exc:
                 failures.fail(f"invalid SKILL.md: {exc}")
+            line_count = len(_read(skill_file).splitlines())
+            if line_count > SKILL_MD_MAX_LINES:
+                failures.fail(
+                    f"{skill_file.relative_to(root)} has {line_count} lines; "
+                    f"split content into references/ (max {SKILL_MD_MAX_LINES})"
+                )
+            _check_skill_markdown_links(root, failures, skill_file)
+        if references_dir.is_dir():
+            for reference_file in sorted(references_dir.glob("*.md")):
+                _check_skill_markdown_links(root, failures, reference_file)
 
         if openai_file.is_file():
             try:
@@ -746,6 +1390,8 @@ def run_skills_check(root: Path | None = None) -> int:
 
     if found == 0:
         failures.fail(f"no AreaMatrix skills found under {skill_root}")
+    else:
+        _check_skill_routing_table(root, failures, names)
 
     if failures.count:
         print(f"skill health: FAILED ({failures.count} issue(s))", file=os.sys.stderr)
@@ -1017,9 +1663,66 @@ def run_codex_os_check(root: Path | None = None) -> int:
     return 0
 
 
+def _github_event_diff_base() -> str | None:
+    event_path = os.environ.get("GITHUB_EVENT_PATH")
+    if not event_path:
+        return None
+    try:
+        event = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    pull_request = event.get("pull_request")
+    if isinstance(pull_request, dict):
+        base = pull_request.get("base")
+        if isinstance(base, dict):
+            sha = base.get("sha")
+            if isinstance(sha, str) and sha:
+                return sha
+    before = event.get("before")
+    if isinstance(before, str) and before and before != "0" * 40:
+        return before
+    return None
+
+
+def _resolve_diff_base(root: Path) -> str | None:
+    candidates = [
+        os.environ.get("AREAMATRIX_DIFF_BASE"),
+        _github_event_diff_base(),
+    ]
+    github_base_ref = os.environ.get("GITHUB_BASE_REF")
+    if github_base_ref:
+        candidates.append(f"origin/{github_base_ref}")
+    candidates.append(os.environ.get("AREAMATRIX_DIFF_UPSTREAM", "origin/main"))
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        if _git_text(root, "rev-parse", "--verify", f"{candidate}^{{commit}}") is None:
+            continue
+        merge_base = _git_text(root, "merge-base", "HEAD", candidate)
+        if merge_base:
+            return merge_base
+    return None
+
+
 def run_diff_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
-    return run_step(["git", "diff", "--check"], cwd=root, check=False).returncode
+    for argv in (["git", "diff", "--check"], ["git", "diff", "--cached", "--check"]):
+        proc = run_step(argv, cwd=root, check=False)
+        if proc.returncode != 0:
+            return proc.returncode
+
+    base = _resolve_diff_base(root)
+    if base is None:
+        print(
+            "ERROR: unable to resolve committed diff base; set AREAMATRIX_DIFF_BASE or fetch origin/main.",
+            file=os.sys.stderr,
+        )
+        return 1
+    head = _git_text(root, "rev-parse", "HEAD")
+    if head == base:
+        return 0
+    return run_step(["git", "diff", "--check", base], cwd=root, check=False).returncode
 
 
 def _task_path(root: Path, label: str) -> Path:

@@ -1,0 +1,26 @@
+id: v2
+title: AreaMatrix ASW-EWF-001 governance adoption
+lifecycle_status: planning
+depends_on:
+  - v1-mvp
+live_queue: ""
+execution_mode: governance-authoring-only
+middle_layers: required
+discussion:
+  required: true
+  status: approved
+gate: queue-only-until-explicit-approval-and-live-mapping
+promotion: explicit-only
+local_queue:
+  phase: phase-0
+  batch: 0-1
+  batch_slug: v2-planning
+  start_task: 1
+promotion_preview:
+  target_queue: workflow/versions/v2/execution
+  live_mapping: pending
+execution:
+  root: workflow/versions/v2/execution
+  status: blocked-until-promotion
+  migration: hard-migration-required
+archive_policy: archive-after-complete

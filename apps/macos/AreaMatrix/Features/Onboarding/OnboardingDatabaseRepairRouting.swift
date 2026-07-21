@@ -2,12 +2,12 @@ import Foundation
 
 extension OnboardingModel {
     @MainActor
-    func openMainRepositoryRepair(repoPath: String) {
+    func openMainRepositoryRepair(repoPath: String, mapping currentMapping: CoreErrorMappingSnapshot? = nil) {
         let routeMapping: CoreErrorMappingSnapshot? = if case let .mainRepoError(errorRepoPath, mapping) = route,
                                                          errorRepoPath == repoPath {
             mapping
         } else { nil }
-        let mapping = mainRepoRecoveryErrorMapping ?? routeMapping
+        let mapping = currentMapping ?? mainRepoRecoveryErrorMapping ?? routeMapping
         mainRepoRecoveryErrorMapping = nil
         route = .dbRepairConfirm(DatabaseRepairRouteState(
             repoPath: repoPath,
@@ -26,6 +26,10 @@ extension OnboardingModel {
             route = .mainLoading(state)
         case let .mainRepoError(mapping):
             routeMainRepositoryError(repoPath: repairRoute.repoPath, mapping: mapping)
+        case let .mainList(opening):
+            route = .mainList(opening)
+        case let .mainEmpty(opening):
+            route = .mainEmpty(opening)
         case .settingsRepository:
             route = .settingsRepository
         case let .settingsGeneral(opening, selectedTab):
@@ -40,6 +44,10 @@ extension OnboardingModel {
             .mainRepoError(mapping)
         case let .mainLoading(state) where state.repoPath == repoPath:
             .mainLoading(state)
+        case let .mainList(opening) where opening.config.repoPath == repoPath:
+            .mainList(opening)
+        case let .mainEmpty(opening) where opening.config.repoPath == repoPath:
+            .mainEmpty(opening)
         case .settingsRepository:
             .settingsRepository
         case let .settingsGeneral(opening):

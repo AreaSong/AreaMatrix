@@ -1,6 +1,6 @@
 ---
 name: areamatrix-validation-driver
-description: "Use when Codex needs to choose, run, or report the smallest sufficient AreaMatrix validation set for prompt tasks, scripts, Rust core, macOS app, docs-only changes, or mixed changes."
+description: "Use when the task needs to choose, run, or report the smallest sufficient AreaMatrix validation set for prompt tasks, scripts, Rust core, macOS app, docs-only changes, or mixed changes. Trigger phrases include 跑哪些检查 / 怎么验证 / 验证通过了吗 / 算不算完成 / which checks to run / validation evidence / PASS FAIL BLOCKED."
 ---
 
 # AreaMatrix Validation Driver
@@ -54,3 +54,4 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 - Do not report PASS when review, dependency, security, CI, or Git evidence blockers remain.
 - Do not make validation larger than needed by default; widen with a concrete risk, manifest, cross-layer change, or prior failure reason.
 - Do not report release or closeout PASS while relevant residual ledger items remain `open`, `blocked-external`, or `blocked-decision`.
+- Do not trust a pipeline exit code when `cargo test` / `clippy` output is filtered through `grep`/`head`/`tail`; those filters can return 0 after swallowing a failure. Capture the compiler/test exit code before filtering, or re-run the failing binary unfiltered when any `FAILED`/`panicked` line appears.

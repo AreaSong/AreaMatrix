@@ -207,12 +207,11 @@ final class DetailIntegrationVerifyTests: XCTestCase {
 
         await model.syncExternalCreated(event)
 
-        guard case let .synced(syncedEvent, fileID, _) = model.detailExternalCreateSyncState else {
+        guard case let .synced(fileID, syncedEvent, _) = model.detailExternalCreateSyncState else {
             return XCTFail("expected synced state for \(kind.rawValue)")
         }
         XCTAssertEqual(syncedEvent, event)
-        XCTAssertNotNil(fileID)
-        try assertLoadedLog(model.detailLogState, fileID: XCTUnwrap(fileID), expectedAction: expectedAction)
+        try assertLoadedLog(model.detailLogState, fileID: fileID, expectedAction: expectedAction)
         XCTAssertEqual(model.detailTabRequest, .automatic(.log))
         model.consumeDetailTabRequest(.automatic(.log))
         XCTAssertNil(model.detailTabRequest)
@@ -279,6 +278,125 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             overrideFilename: filename,
             duplicateStrategy: .keepBoth
         )
+    }
+}
+
+extension DetailIntegrationVerifyTests {
+    @MainActor
+    func testMissingFileLocateRelinksRealCoreMetadataWithoutMutatingReplacementFile() async throws {
+        let repoURL = try makeDetailIntegrationTemporaryRepositoryURL()
+        let sourceRootURL = try makeDetailIntegrationTemporaryRepositoryURL()
+        defer { removeTestTemporaryItems(repoURL, sourceRootURL) }
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let imported = try await importDetailFixture(
+            bridge: bridge,
+            repoURL: repoURL,
+            sourceRootURL: sourceRootURL,
+            filename: "missing.txt",
+            content: "matching content"
+        )
+        let originalURL = repoURL.appendingPathComponent(imported.path)
+        try removeTestTemporaryItem(originalURL)
+        let replacementURL = repoURL.appendingPathComponent("docs/recovered.txt")
+        try "matching content".write(to: replacementURL, atomically: true, encoding: .utf8)
+        let model = try await makeMissingFileIntegrationModel(
+            bridge: bridge,
+            repoURL: repoURL,
+            picker: DetailIntegrationMissingFilePicker(selectedURL: replacementURL)
+        )
+
+        await model.loadCurrentCategory("docs")
+        await model.selectFiles([imported.id])
+        await model.locateMissingFile(fileID: imported.id)
+
+        let refreshed = try await bridge.getFile(repoPath: repoURL.path, fileID: imported.id)
+        XCTAssertEqual(refreshed.path, "docs/recovered.txt")
+        XCTAssertEqual(refreshed.availability, .available)
+        XCTAssertEqual(model.selectedFileDetail, refreshed)
+        XCTAssertEqual(model.statusBanner, .relinkedMissingFile(fileID: imported.id))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: originalURL.path))
+        XCTAssertEqual(try String(contentsOf: replacementURL, encoding: .utf8), "matching content")
+        guard case let .loaded(fileID, entries) = model.detailLogState else {
+            return XCTFail("expected relink change log")
+        }
+        XCTAssertEqual(fileID, imported.id)
+        XCTAssertTrue(entries.contains { $0.detailJSON.contains("missing_file_relinked") })
+    }
+
+    @MainActor
+    func testMissingFileLocateHashMismatchKeepsRealCoreMetadataAndUserFilesUnchanged() async throws {
+        let repoURL = try makeDetailIntegrationTemporaryRepositoryURL()
+        let sourceRootURL = try makeDetailIntegrationTemporaryRepositoryURL()
+        defer { removeTestTemporaryItems(repoURL, sourceRootURL) }
+        let bridge = CoreBridge()
+        try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
+        let imported = try await importDetailFixture(
+            bridge: bridge,
+            repoURL: repoURL,
+            sourceRootURL: sourceRootURL,
+            filename: "missing.txt",
+            content: "original content"
+        )
+        let originalURL = repoURL.appendingPathComponent(imported.path)
+        try removeTestTemporaryItem(originalURL)
+        let replacementURL = repoURL.appendingPathComponent("docs/not-the-same.txt")
+        try "different content".write(to: replacementURL, atomically: true, encoding: .utf8)
+        let model = try await makeMissingFileIntegrationModel(
+            bridge: bridge,
+            repoURL: repoURL,
+            picker: DetailIntegrationMissingFilePicker(selectedURL: replacementURL)
+        )
+
+        await model.loadCurrentCategory("docs")
+        await model.selectFiles([imported.id])
+        await model.locateMissingFile(fileID: imported.id)
+
+        guard case .hashMismatch = model.missingFileRelinkState else {
+            return XCTFail("expected hash mismatch state")
+        }
+        let retained = try await bridge.getFile(repoPath: repoURL.path, fileID: imported.id)
+        XCTAssertEqual(retained.path, imported.path)
+        XCTAssertEqual(retained.availability, .missing)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: originalURL.path))
+        XCTAssertEqual(try String(contentsOf: replacementURL, encoding: .utf8), "different content")
+        let entries = try await bridge.listChanges(
+            repoPath: repoURL.path,
+            filter: .detailLog(fileID: imported.id)
+        )
+        XCTAssertFalse(entries.contains { $0.detailJSON.contains("missing_file_relinked") })
+    }
+
+    @MainActor
+    private func makeMissingFileIntegrationModel(
+        bridge: CoreBridge,
+        repoURL: URL,
+        picker: DetailIntegrationMissingFilePicker
+    ) async throws -> MainFileListModel {
+        let config = try await bridge.loadConfig(repoPath: repoURL.path)
+        let tree = try await bridge.listTree(repoPath: repoURL.path, locale: "zh-Hans")
+        return MainFileListModel(
+            opening: RepositoryOpeningResult(config: config, tree: tree, currentCategoryFiles: []),
+            fileLister: bridge,
+            fileDetailer: bridge,
+            missingFileRecoverer: bridge,
+            missingFilePicker: picker,
+            changeLogLister: bridge,
+            errorMapper: bridge
+        )
+    }
+}
+
+@MainActor
+private final class DetailIntegrationMissingFilePicker: RepositoryMissingFilePicking {
+    private let selectedURL: URL?
+
+    init(selectedURL: URL?) {
+        self.selectedURL = selectedURL
+    }
+
+    func chooseReplacementFile(lastKnownPath _: String?) -> URL? {
+        selectedURL
     }
 }
 

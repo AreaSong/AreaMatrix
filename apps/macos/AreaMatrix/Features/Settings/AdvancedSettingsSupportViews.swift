@@ -49,8 +49,9 @@ struct AdvancedSettingsDiagnosticsSection: View {
             .accessibilityIdentifier("advanced-settings-export-diagnostics")
 
             Text(
-                "Diagnostics do not include your original file contents, are not uploaded automatically, " +
-                    "and paths and usernames are redacted before display."
+                "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
+                    "notes, and other sensitive metadata. Original file contents are not copied, and " +
+                    "diagnostics are not uploaded automatically. Review the snapshot before sharing."
             )
             .font(.callout)
             .foregroundStyle(.secondary)

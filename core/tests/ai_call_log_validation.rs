@@ -238,9 +238,9 @@ fn ai_call_log_validation_locks_core_api_udl_rust_and_docs_alignment() {
     assert_clear(clear_ai_call_log);
 
     for fragment in [
-        "`core/tests/`，每个文件独立编译",
-        "## 关键测试场景",
-        "`core/tests/` 下，全场景从 init_repo",
+        "## Rust Core",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
+        "## 文件安全测试矩阵",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

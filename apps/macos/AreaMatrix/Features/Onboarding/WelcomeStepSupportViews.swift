@@ -40,7 +40,7 @@ struct WelcomeFeatureCardsGrid: View {
                 icon: "arrow.down.doc",
                 title: "拖拽归档，智能分类",
                 description: "识别、重命名并自动落位",
-                accentColor: Color(red: 55 / 255, green: 202 / 255, blue: 182 / 255),
+                accentColor: AreaMatrixTheme.Colors.tealBright,
                 entranceDelay: 0.3
             ),
             AreaMatrixFeatureCardSpec(
@@ -48,7 +48,7 @@ struct WelcomeFeatureCardsGrid: View {
                 icon: "checkmark.shield",
                 title: "零侵入，绝对安全",
                 description: "不碰原文件，真相在文件系统",
-                accentColor: Color(red: 241 / 255, green: 184 / 255, blue: 78 / 255),
+                accentColor: AreaMatrixTheme.Colors.gold,
                 entranceDelay: 0.55
             ),
             AreaMatrixFeatureCardSpec(
@@ -56,7 +56,7 @@ struct WelcomeFeatureCardsGrid: View {
                 icon: "rectangle.split.2x1",
                 title: "全局概览，改动追溯",
                 description: "生成大纲，双向同步改动日志",
-                accentColor: Color(red: 233 / 255, green: 109 / 255, blue: 90 / 255),
+                accentColor: AreaMatrixTheme.Colors.coral,
                 entranceDelay: 0.8
             )
         ]

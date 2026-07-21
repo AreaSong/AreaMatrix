@@ -52,7 +52,7 @@ fn read_write_note_contract_api_docs_control_map_and_udl_stay_aligned() {
 
     for fragment in [
         "### `read_note(repoPath, fileId) throws -> String?`",
-        "无笔记时返回 `nil`。",
+        "DB 中没有 note row 时返回 `nil`",
         "### `write_note(repoPath, fileId, contentMd) throws`",
         "DB `notes` 表",
         "物理文件 `<filename>.md`",

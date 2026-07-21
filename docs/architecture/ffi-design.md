@@ -1,573 +1,106 @@
-# FFI 桥接设计（Rust ↔ Swift via UniFFI）
+# FFI 设计
 
-> AreaMatrix 通过 UniFFI 桥接 Rust core 与 Swift app。本文给出 UDL 编写规范、类型映射、错误处理、构建流程、调试技巧。
+> 记录 Rust Core、UniFFI UDL、生成绑定和 Swift `CoreBridge` 之间的现行边界。
 >
-> 阅读时长：约 7 分钟。
+> 阅读时长：约 5 分钟。
 
 ---
 
-## 为什么选 UniFFI
+## 权威顺序
 
-详见 [../adr/0002-uniffi-vs-others.md](../adr/0002-uniffi-vs-others.md)。
+公开 Core 合同按以下顺序维护：
 
-简短理由：工业级、跨语言扩展性、类型支持完备、Mozilla 长期维护。
+1. [Core API](../api/core-api.md)：行为、输入输出、副作用和错误。
+2. `core/area_matrix.udl`：跨语言类型与函数签名。
+3. `core/src/api/**`：Rust FFI 门面。
+4. `core/src/**`：平台无关实现。
+5. `apps/macos/AreaMatrix/Bridge/CoreBridge*.swift`：平台调用适配。
+6. `apps/macos/AreaMatrix/Bridge/{Generated,UniFFI}/`：生成物。
 
----
+本文件不内嵌第二份 UDL。完整签名只以 `core/area_matrix.udl` 为准，避免文档副本漂移。
 
-## 工作流程
+## 分层
 
 ```mermaid
 flowchart LR
-    UDL[area_matrix.udl] -->|build.rs| Scaffolding[Rust scaffolding]
-    Scaffolding -->|cargo build| StaticLib[libarea_matrix_core.a]
-    UDL -->|uniffi-bindgen| SwiftBindings[area_matrix.swift]
-    UDL -->|uniffi-bindgen| Header[area_matrixFFI.h]
-    StaticLib --> XcodeProject[Xcode 项目]
-    SwiftBindings --> XcodeProject
-    Header --> XcodeProject
-    XcodeProject -->|build| App[AreaMatrix.app]
+    docs["Core API 文档"] --> udl["area_matrix.udl"]
+    udl --> rustApi["core/src/api"]
+    rustApi --> core["Rust domain/storage/db"]
+    udl --> generated["UniFFI generated Swift/C"]
+    generated --> bridge["CoreBridge"]
+    bridge --> model["Swift model/store"]
+    model --> ui["SwiftUI"]
 ```
 
-构建入口：`./dev build core`，详见 [../development/build.md](../development/build.md)。默认输出目录
-`apps/macos/AreaMatrix/Bridge/Generated/` 用于本地检查；当前 Xcode 工程消费 tracked
-`apps/macos/AreaMatrix/Bridge/UniFFI/` bindings，并链接 `core/target/.../libarea_matrix_core.a`。
+- Core 不依赖 AppKit、SwiftUI、FSEvents、NSWorkspace 或 security-scoped bookmark。
+- UDL 只表达稳定 DTO、enum、error 和函数，不承载业务流程说明。
+- `core/src/api/**` 保持薄门面，不放 SQL 或复杂文件操作。
+- Swift 业务代码必须经过 `CoreBridge`，不直接调用生成 UniFFI 函数。
+- 平台文件监听、iCloud 下载、Finder reveal、权限处理，以及 Trash availability probe / 危险确认 / UI
+  留在 Swift 平台层。确认后的实际 Trash mutation、DB/change log/Undo 写入和失败回滚属于 Core；Core
+  通过平台中立实现完成该操作，不依赖 AppKit 或 SwiftUI。
 
----
+## 生成流程
 
-## UDL 接口定义
+`core/build.rs` 从仓库根下的 `core/area_matrix.udl` 生成 Rust scaffolding。macOS 开发工具默认把本地验证
+产物写入被忽略的 `Bridge/Generated/`；显式 bindings update 才更新 Xcode 消费并纳入版本控制的
+`Bridge/UniFFI/`。
 
-文件：`core/area_matrix.udl`
-
-```idl
-namespace area_matrix {
-  // 简单工具
-  string get_version();
-
-  // 仓库初始化
-  [Throws=CoreError]
-  void init_repo(string repo_path, RepoInitOptions options);
-
-  [Throws=CoreError]
-  RepoConfig load_config(string repo_path);
-
-  [Throws=CoreError]
-  void update_config(string repo_path, RepoConfig new_config);
-
-  // 分类预测（导入前用）
-  [Throws=CoreError]
-  ClassifyResult predict_category(string repo_path, string filename);
-
-  // 导入文件
-  [Throws=CoreError]
-  FileEntry import_file(string repo_path, string source_path, ImportOptions options);
-
-  // 列出
-  [Throws=CoreError]
-  sequence<FileEntry> list_files(string repo_path, FileFilter filter);
-
-  // 改动日志
-  [Throws=CoreError]
-  sequence<ChangeLogEntry> list_changes(string repo_path, ChangeFilter filter);
-
-  // 树状图
-  [Throws=CoreError]
-  string list_tree_json(string repo_path, string locale);
-
-  // 笔记
-  [Throws=CoreError]
-  string? read_note(string repo_path, i64 file_id);
-
-  [Throws=CoreError]
-  void write_note(string repo_path, i64 file_id, string content_md);
-
-  // 同步外部变化
-  [Throws=CoreError]
-  SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);
-
-  // 启动维护
-  [Throws=CoreError]
-  RecoveryReport recover_on_startup(string repo_path);
-
-  // 重新索引
-  [Throws=CoreError]
-  ReindexReport reindex_from_filesystem(string repo_path);
-
-  [Throws=CoreError]
-  ScanSession? get_latest_scan_session(string repo_path);
-
-  [Throws=CoreError]
-  ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
-};
-
-// ============== 类型 ==============
-
-dictionary FileEntry {
-  i64 id;
-  string path;
-  string original_name;
-  string current_name;
-  string category;
-  i64 size_bytes;
-  string hash_sha256;
-  StorageMode storage_mode;
-  FileOrigin origin;
-  string? source_path;
-  i64 imported_at;
-  i64 updated_at;
-};
-
-enum StorageMode { "Moved", "Copied", "Indexed" };
-enum FileOrigin { "Imported", "Adopted", "External" };
-
-dictionary RepoInitOptions {
-  RepoInitMode mode;
-  boolean create_default_categories;
-  OverviewOutput overview_output;
-};
-
-enum RepoInitMode { "CreateEmpty", "AdoptExisting" };
-enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
-
-dictionary ImportOptions {
-  StorageMode mode;
-  ImportDestination destination;
-  string? target_directory;        // SelectedDirectory 时使用，相对 repo 根
-  string? override_category;       // 用户在 ImportSheet 修改的分类
-  string? override_filename;       // 用户修改的目标文件名
-  DuplicateStrategy duplicate_strategy;
-};
-
-enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
-
-enum DuplicateStrategy {
-  "Skip",
-  "Overwrite",
-  "KeepBoth",
-  "Ask"  // Ask = Core 返回 DuplicateFile error，由 UI 决策
-};
-
-dictionary ClassifyResult {
-  string category;
-  string suggested_name;
-  ClassifyReason reason;
-  f32 confidence;  // 0.0 ~ 1.0
-};
-
-enum ClassifyReason { "Keyword", "Extension", "AiPredicted", "Default" };
-
-dictionary FileFilter {
-  string? category;
-  boolean? include_deleted;
-  i64? imported_after;
-  i64? imported_before;
-  i64 limit;
-  i64 offset;
-};
-
-dictionary ChangeFilter {
-  i64? file_id;
-  string? action;
-  i64? since;
-  i64 limit;
-};
-
-enum ChangeAction {
-  "Imported",
-  "Renamed",
-  "Moved",
-  "EditedNote",
-  "Deleted",
-  "Restored",
-  "ExternalModified"
-};
-
-dictionary ChangeLogEntry {
-  i64 id;
-  i64? file_id;
-  ChangeAction action;
-  string detail_json;
-  i64 occurred_at;
-};
-
-dictionary RepoConfig {
-  string repo_path;
-  StorageMode default_mode;
-  OverviewOutput overview_output;
-  boolean ai_enabled;
-  string locale;  // "zh-Hans" | "en"
-  boolean icloud_warn;
-  boolean enable_extension_rules;
-  boolean enable_keyword_rules;
-  boolean fallback_to_inbox;
-  boolean allow_replace_during_import;
-};
-
-dictionary ExternalEvent {
-  string path;
-  ExternalEventKind kind;
-  i64 fs_event_id;
-};
-
-enum ExternalEventKind { "Created", "Removed", "Modified", "Renamed" };
-
-dictionary SyncResult {
-  i64 detected_creates;
-  i64 detected_renames;
-  i64 detected_deletes;
-  i64 detected_modifies;
-  sequence<string> errors;
-};
-
-dictionary RecoveryReport {
-  i64 cleaned_staging_files;
-  i64 reverted_staging_db_rows;
-  sequence<string> warnings;
-};
-
-dictionary ReindexReport {
-  i64? scan_session_id;
-  i64 inserted;
-  i64 updated;
-  i64 skipped;
-  sequence<string> errors;
-};
-
-dictionary ScanSession {
-  i64 id;
-  ScanSessionKind kind;
-  ScanSessionStatus status;
-  string? last_path;
-  i64 inserted;
-  i64 updated;
-  i64 skipped;
-  i64 started_at;
-  i64 updated_at;
-  i64? finished_at;
-  sequence<string> errors;
-};
-
-enum ScanSessionKind { "Adopt", "Reindex" };
-enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
-
-// ============== 错误 ==============
-
-[Error]
-enum CoreError {
-  "Io",                  // 底层 IO 失败
-  "Db",                  // SQLite 失败
-  "Config",              // 配置错误
-  "Classify",            // 分类失败
-  "Conflict",            // 路径冲突
-  "DuplicateFile",       // 同 hash 已存在
-  "FileNotFound",        // 文件不存在
-  "RepoNotInitialized",  // 资料库未初始化
-  "InvalidPath",         // 路径不合法
-  "ICloudPlaceholder",   // 占位符未下载
-  "PermissionDenied",    // 权限不足
-  "Internal"             // 兜底
-};
+```bash
+./dev build core
+./dev bindings verify
 ```
 
----
+`./dev bindings verify` 是只读漂移检查。需要更新绑定时使用仓库提供的明确 update 命令，再审查生成 diff；
+不要手工修补生成 Swift 或 C header。
 
-## 类型映射
+## 调用与线程
 
-| Rust | UDL | Swift |
-|---|---|---|
-| `String` | `string` | `String` |
-| `bool` | `boolean` | `Bool` |
-| `i64` | `i64` | `Int64` |
-| `i32` | `i32` | `Int32` |
-| `f32` | `f32` | `Float` |
-| `Option<T>` | `T?` | `T?` |
-| `Vec<T>` | `sequence<T>` | `[T]` |
-| `HashMap<K,V>` | `record<K,V>` | `[K: V]` |
-| `struct` | `dictionary` | `struct` |
-| `enum`（无关联值） | `enum` | `enum`（lowerCamelCase 命名） |
-| `Result<T, E>` | `[Throws=E] T` | `throws -> T` |
+UDL 函数是同步 FFI 合同，当前不使用 UniFFI `[Async]`。Swift `CoreBridge` 是 actor；涉及文件 IO、DB、
+hash、reindex 等重工作的方法通常从 actor 内通过 `Task.detached` 调用同步绑定，页面模型在更新 UI 状态时
+回到 main actor。Core 不持有 SwiftUI 状态，也不回调平台 UI。
 
-注意：UDL 的 enum 在 Swift 里是 **lowerCamelCase**，例如 Rust 的 `StorageMode::Moved` → Swift 的 `.moved`。
+跨 FFI 的长流程使用可恢复的小调用、report DTO 和持久化 session/cursor，不跨调用持有 SQLite
+transaction。
 
----
+## 类型与错误
 
-## Rust 侧实现
+稳定类型映射：
 
-### 入口结构
-
-```rust
-// core/src/lib.rs
-uniffi::include_scaffolding!("area_matrix");
-
-mod api;
-mod domain;
-mod error;
-mod config;
-mod classify;
-mod storage;
-mod overview;
-mod tree;
-mod sync;
-mod db;
-
-pub use api::*;
-pub use domain::*;
-pub use error::CoreError;
-```
-
-### api/ 门面模式
-
-```rust
-// core/src/api/file_actions.rs
-use crate::{storage, CoreResult, FileEntry, ImportOptions};
-
-pub fn import_file(
-    repo_path: String,
-    source_path: String,
-    options: ImportOptions,
-) -> CoreResult<FileEntry> {
-    storage::import_file(repo_path, source_path, options)
-}
-```
-
-### 错误传播
-
-```rust
-// core/src/error.rs
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum CoreError {
-    #[error("io error: {0}")]
-    Io(String),
-
-    #[error("db error: {0}")]
-    Db(String),
-
-    #[error("classification failed: {0}")]
-    Classify(String),
-
-    // ... 其他变体对应 UDL Error enum
-}
-
-impl From<std::io::Error> for CoreError {
-    fn from(e: std::io::Error) -> Self {
-        CoreError::Io(e.to_string())
-    }
-}
-
-impl From<rusqlite::Error> for CoreError {
-    fn from(e: rusqlite::Error) -> Self {
-        CoreError::Db(e.to_string())
-    }
-}
-
-pub type CoreResult<T> = Result<T, CoreError>;
-```
-
-UniFFI 会把 Rust 的 enum 变体名映射到 Swift 的 case，UDL 的 `[Error]` 标记自动让 Swift 抛 throws。
-
----
-
-## Swift 侧使用
-
-### 自动生成的类型
-
-```swift
-// area_matrix.swift（自动生成，不要手改）
-public enum StorageMode: Equatable, Hashable {
-    case moved
-    case copied
-    case indexed
-}
-
-public enum FileOrigin: Equatable, Hashable {
-    case imported
-    case adopted
-    case external
-}
-
-public struct FileEntry {
-    public let id: Int64
-    public let path: String
-    public let originalName: String
-    public let currentName: String
-    public let category: String
-    public let sizeBytes: Int64
-    public let hashSha256: String
-    public let storageMode: StorageMode
-    public let origin: FileOrigin
-    public let sourcePath: String?
-    public let importedAt: Int64
-    public let updatedAt: Int64
-}
-
-public enum CoreError: Error {
-    case io(message: String)
-    case db(message: String)
-    // ...
-}
-
-public func importFile(
-    repoPath: String,
-    sourcePath: String,
-    options: ImportOptions
-) throws -> FileEntry { /* ... */ }
-```
-
-### CoreBridge 包装
-
-直接调 UniFFI 生成函数有几个不便：
-1. 函数全是 free function，不便于组织
-2. 路径都是 `String`，UI 用 `URL` 不直观
-3. 同步函数会阻塞主线程
-
-`CoreBridge` 解决这些问题：
-
-```swift
-// apps/macos/AreaMatrix/Bridge/CoreBridge.swift
-@MainActor
-public final class CoreBridge {
-    private let repoURL: URL
-
-    public init(repoURL: URL) {
-        self.repoURL = repoURL
-    }
-
-    public func importFile(
-        from sourceURL: URL,
-        options: ImportOptions
-    ) async throws -> FileEntry {
-        let repoPath = self.repoURL.path
-        let sourcePath = sourceURL.path
-        return try await Task.detached(priority: .userInitiated) {
-            try area_matrix.importFile(
-                repoPath: repoPath,
-                sourcePath: sourcePath,
-                options: options
-            )
-        }.value
-    }
-
-    public func listFiles(filter: FileFilter) async throws -> [FileEntry] {
-        let repoPath = self.repoURL.path
-        return try await Task.detached(priority: .userInitiated) {
-            try area_matrix.listFiles(repoPath: repoPath, filter: filter)
-        }.value
-    }
-
-    // ... 其他方法
-}
-```
-
-UI 层只用 CoreBridge，不直接 `import area_matrix`。
-
----
-
-## 异步与线程安全
-
-### Core 函数的线程要求
-
-- Core 函数**默认同步**且**线程安全**（没有全局可变状态）
-- SQLite Connection 不是 Send，因此每次调用内部新建（轻量）或用 thread-local
-- 长耗时操作（hash 大文件、tree 扫描）应在 Swift 侧用 `Task.detached` 调用，避免阻塞主线程
-
-### 异步设计
-
-UniFFI 0.28+ 支持 `[Async]` 标记将 Rust async fn 暴露为 Swift async：
-
-```idl
-[Async, Throws=CoreError]
-ReindexReport reindex_from_filesystem(string repo_path);
-```
-
-```rust
-pub async fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport> {
-    // ... tokio::task::spawn_blocking ...
-}
-```
-
-```swift
-let report = try await reindexFromFilesystem(repoPath: ...)
-```
-
-当前默认用同步函数 + Swift 侧 `Task.detached`；需要跨边界 async 时，再把稳定接口提升为
-`[Async]` 合同。
-
----
-
-## 性能注意事项
-
-### 边界开销
-
-每次 FFI 调用有固定开销（~1-10μs，含序列化）。注意：
-
-- **不要在 hot loop 里跨边界**：例如不要每个文件单独调一次 import，而是在 Rust 侧批量处理
-- **大列表用 sequence + 分页**：list_files 用 `limit/offset` 而不是一次返回所有
-- **避免大字符串重复传递**：tree JSON 一次拿完整结构在 Swift 缓存，过滤在 Swift 做
-
-### 字符串拷贝
-
-UDL 的 `string` 在边界处复制。如果某 API 频繁调用且字符串很大（比如 README 内容），考虑改成传 file_id + Rust 侧读文件。
-
----
-
-## 调试技巧
-
-### Rust 侧日志可见
-
-Swift 侧初始化 tracing：
-
-```swift
-@main
-struct AreaMatrixApp: App {
-    init() {
-        try? area_matrix.initLogging(level: "info")
-    }
-    // ...
-}
-```
-
-UDL 加：
-
-```idl
-[Throws=CoreError]
-void init_logging(string level);
-```
-
-Rust 实现把 tracing 输出到 OSLog 或 stdout（开发期）。
-
-### 崩溃排查
-
-- Rust panic 会被 UniFFI 捕获并转为 `CoreError::Internal`
-- 但要避免 panic 进入业务路径，所有 fallible 操作走 `Result`
-
-### binding 查看
-
-每次 `./dev build core` 后，可查看
-`apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift` 确认默认导出的最新 API。若公开 UDL
-接口变化需要提交给 Xcode 使用，还要显式更新
-`apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift`。
-
----
-
-## UDL 编写规范
-
-| 规则 | 说明 |
+| UDL | Swift |
 |---|---|
-| `dictionary` 字段名用 snake_case | 自动转 Swift camelCase |
-| `enum` 变体名用 PascalCase | 自动转 Swift lowerCamelCase |
-| 函数名用 snake_case | 自动转 Swift camelCase |
-| Optional 用 `T?` | 不用 sequence<T> 表 0/1 |
-| 返回 `Result<T,E>` 用 `[Throws=E] T` | 不要用 enum 包裹 |
-| 函数参数 ≤ 5 个 | 多了用 dictionary 封装 |
-| dictionary 字段 ≤ 15 个 | 多了拆分 |
+| `string` | `String` |
+| `boolean` | `Bool` |
+| `i64` | `Int64` |
+| `f32` | `Float` |
+| `T?` | `Optional<T>` |
+| `sequence<T>` | `[T]` |
+| `dictionary` | Swift struct |
+
+UDL enum case 映射为 Swift lowerCamelCase；snake_case 字段和函数映射为 Swift camelCase；
+`[Throws=CoreError]` 映射为 Swift `throws`。
+
+- DTO 字段必须使用 UniFFI 支持的稳定类型。
+- optional、sequence 和 enum 的业务语义先在 Core API 中说明。
+- Rust 可恢复失败通过 `CoreError` 返回，不使用 panic 穿过 FFI。
+- Swift 在 `CoreBridge` 中映射 Core error，再由页面模型生成用户文案和恢复动作。
+- 新增或删除公开函数必须同步 Core API、UDL、Rust re-export、Swift bridge 和 bindings。
+
+## 兼容性
+
+破坏性 UDL 变化属于高风险变更，至少需要：
+
+- 调用方清单和迁移方式。
+- 旧生成绑定不兼容的明确说明。
+- Core contract test、bindings verify、Rust 全量和 macOS build/test。
+- 回滚到旧 UDL/绑定/实现的单一 commit 边界。
+
+平台能力差异通过 `get_platform_capabilities` 等显式合同表达，不能让 Core 猜测当前宿主平台。
 
 ## Related
 
-- [overview.md](overview.md)
-- [layered-design.md](layered-design.md)
-- [concurrency.md](concurrency.md)
 - [../api/core-api.md](../api/core-api.md)
+- [layered-design.md](layered-design.md)
+- [core-internal-architecture.md](core-internal-architecture.md)
+- [macos-frontend-architecture.md](macos-frontend-architecture.md)
 - [../api/uniffi-recipes.md](../api/uniffi-recipes.md)
-- [../adr/0002-uniffi-vs-others.md](../adr/0002-uniffi-vs-others.md)
-- [../development/build.md](../development/build.md)

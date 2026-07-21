@@ -41,7 +41,9 @@
 
 ## 调用日志
 
-调用日志用于解释任务、Provider、结果和失败回退。日志不得包含凭据、Authorization header、完整敏感响应 header 或不必要的底层错误原文。
+调用日志用于解释任务、Provider、结果和失败回退。`Privacy checked` 表示本次请求确实经过隐私规则评估，
+不等于命中了某条规则；命中的规则会单独显示。旧日志若缺少可证明的检查记录，会保守显示为未记录。
+日志不得包含凭据、Authorization header、完整敏感响应 header 或不必要的底层错误原文。
 
 ## Related
 

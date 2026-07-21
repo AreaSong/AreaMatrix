@@ -61,8 +61,9 @@ extension AdvancedSettingsPane {
             }
         } message: {
             Text(
-                "Diagnostics do not include your original file contents, are not uploaded automatically, " +
-                    "and paths and usernames are redacted before display."
+                "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
+                    "notes, and other sensitive metadata. Original file contents are not copied, and " +
+                    "diagnostics are not uploaded automatically. Review the snapshot before sharing."
             )
         }
         .sheet(isPresented: rootOverviewBinding) {
@@ -175,7 +176,7 @@ extension AdvancedSettingsPane {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            SettingsProgressBanner(title: "Preparing redacted diagnostics...")
+            SettingsProgressBanner(title: "Preparing repository diagnostics...")
         case let .collected(snapshot):
             SettingsStatusBanner(title: "Diagnostics exported", systemImage: "checkmark.circle", tint: .green) {
                 Text(snapshot.snapshotPath)

@@ -1,110 +1,249 @@
 //! External filesystem synchronization.
 
 use std::{
-    collections::BTreeSet,
-    fs,
-    io::{self, Read},
-    path::{Component, Path, PathBuf},
+    collections::{BTreeMap, BTreeSet},
+    path::{Path, PathBuf},
 };
 
-use serde_json::json;
-use sha2::{Digest, Sha256};
+mod events;
+mod plans;
+mod snapshots;
 
-use crate::{
-    db::{self, ExternalCreatedRow, ExternalRemovedRow, ExternalRenamedRow},
-    overview, repo_path, CoreError, CoreResult, ExternalEvent, ExternalEventKind, SyncResult,
+#[cfg(test)]
+mod precondition_tests;
+
+use events::{
+    affected_node_for_event, category_for_relative_path, normalize_and_coalesce_events,
+    should_skip_event, validate_event_id,
+};
+use plans::{
+    plan_created_event, plan_modified_event, plan_removed_event, plan_renamed_event,
+    revalidate_planned_filesystem_state, ModifiedEventPlan,
 };
 
-const AREA_MATRIX_DIR: &str = ".areamatrix";
-const ROOT_OVERVIEW_FILE: &str = "AREAMATRIX.md";
-const HASH_BUFFER_BYTES: usize = 64 * 1024;
-const FORBIDDEN_COMPONENT_CHARS: &[char] = &['/', '\\', ':', '*', '?', '"', '<', '>', '|'];
+use crate::{db, overview, repo_path, CoreResult, ExternalEvent, ExternalEventKind, SyncResult};
 
-struct CreatedPlan {
-    row: ExternalCreatedRow,
-}
-
-struct RenamedPlan {
-    row: ExternalRenamedRow,
-    category: String,
-}
-
-struct RemovedPlan {
-    row: ExternalRemovedRow,
-    category: String,
-}
-
-struct ResolvedEventPath {
-    absolute_path: PathBuf,
-    relative_path: String,
-}
-
-/// Synchronizes implemented external filesystem events into repository metadata.
-///
-/// # Errors
-///
-/// Returns `CoreError::InvalidPath { path }` for paths outside the initialized
-/// repository, `CoreError::ICloudPlaceholder { path }` for placeholder paths,
-/// `CoreError::PermissionDenied { path }` for unreadable files, `CoreError::FileNotFound { path }`
-/// for missing renamed targets, `CoreError::Conflict { path }` for ambiguous or
-/// cross-category rename pairing, `CoreError::Io { message }` for metadata/hash failures,
-/// or `CoreError::Db { message }` for transactional persistence failures.
 pub(crate) fn sync_external_changes(
     repo_path: String,
     events: Vec<ExternalEvent>,
 ) -> CoreResult<SyncResult> {
     let repo = initialized_repo_path(&repo_path)?;
-    let mut created_plans = Vec::new();
-    let mut renamed_plans = Vec::new();
-    let mut removed_plans = Vec::new();
-    let mut max_sync_event_id = None;
-    let mut has_out_of_scope_events = false;
-
-    for event in events {
-        match event.kind {
-            ExternalEventKind::Created => {
-                validate_event_id(event.fs_event_id)?;
-                max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
-                if let Some(plan) = plan_created_event(&repo, &event)? {
-                    created_plans.push(plan);
-                }
-            }
-            ExternalEventKind::Renamed => {
-                validate_event_id(event.fs_event_id)?;
-                max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
-                if let Some(plan) = plan_renamed_event(&repo, &event)? {
-                    renamed_plans.push(plan);
-                }
-            }
-            ExternalEventKind::Removed => {
-                validate_event_id(event.fs_event_id)?;
-                max_sync_event_id = Some(max_event_id(max_sync_event_id, event.fs_event_id));
-                if let Some(plan) = plan_removed_event(&repo, &event)? {
-                    removed_plans.push(plan);
-                }
-            }
-            ExternalEventKind::Modified => {
-                has_out_of_scope_events = true;
+    let (normalized_events, max_sync_event_id) = normalize_and_coalesce_events(&repo, events)?;
+    db::ensure_external_sync_receipts(&repo)?;
+    let persisted_cursor = db::get_fs_event_cursor(&repo)?;
+    let mut events = Vec::new();
+    let mut replayed_receipts = Vec::new();
+    for event in normalized_events {
+        if persisted_cursor.is_some_and(|cursor| event.fs_event_id <= cursor) {
+            continue;
+        }
+        let kind = external_event_kind_name(&event.kind);
+        if let Some(receipt) =
+            db::find_external_sync_receipt(&repo, event.fs_event_id, kind, &event.path)?
+        {
+            replayed_receipts.push(receipt);
+        } else {
+            events.push(event);
+        }
+    }
+    let mut created_rows = Vec::new();
+    let mut renamed_rows = Vec::new();
+    let mut removed_rows = Vec::new();
+    let mut modified_rows = Vec::new();
+    let mut filesystem_expectations = Vec::new();
+    let mut affected_nodes = BTreeSet::new();
+    let mut receipt_by_path = events
+        .iter()
+        .map(|event| {
+            (
+                event.path.clone(),
+                db::ExternalSyncReceiptRow {
+                    event_id: event.fs_event_id,
+                    kind: external_event_kind_name(&event.kind).to_owned(),
+                    path: event.path.clone(),
+                    file_id: None,
+                    previous_category: None,
+                    current_category: None,
+                },
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let renamed_event_paths = events
+        .iter()
+        .filter(|event| event.kind == ExternalEventKind::Renamed)
+        .map(|event| event.path.as_str())
+        .collect::<BTreeSet<_>>();
+    let deferred_sidecar_renames = renamed_event_paths
+        .iter()
+        .filter_map(|path| path.strip_suffix(".md"))
+        .filter(|base_path| renamed_event_paths.contains(base_path))
+        .map(str::to_owned)
+        .collect::<BTreeSet<_>>();
+    let mut rename_plans_by_target = BTreeMap::new();
+    let mut renamed_file_ids = BTreeSet::new();
+    let mut replayed_renamed_file_ids = BTreeSet::new();
+    for receipt in replayed_receipts {
+        if let Some(category) = receipt.previous_category {
+            affected_nodes.insert(category);
+        }
+        if let Some(category) = receipt.current_category {
+            affected_nodes.insert(category);
+        }
+        if receipt.kind == "renamed" {
+            if let Some(file_id) = receipt.file_id {
+                rename_plans_by_target.insert(receipt.path, file_id);
+                replayed_renamed_file_ids.insert(file_id);
             }
         }
     }
 
-    let affected_nodes = affected_nodes_for_batch(&created_plans, &renamed_plans, &removed_plans);
-    let cursor = cursor_for_batch(max_sync_event_id, has_out_of_scope_events);
-    let created_rows = created_plans.into_iter().map(|plan| plan.row).collect();
-    let renamed_rows = renamed_plans.into_iter().map(|plan| plan.row).collect();
-    let removed_rows = removed_plans.into_iter().map(|plan| plan.row).collect();
-    let applied =
-        db::apply_external_sync_batch(&repo, created_rows, renamed_rows, removed_rows, cursor)?;
+    for event in &events {
+        if event.kind != ExternalEventKind::Renamed
+            || deferred_sidecar_renames.contains(event.path.strip_suffix(".md").unwrap_or(""))
+            || should_skip_event(&repo, &event.path, &rename_plans_by_target)?
+        {
+            continue;
+        }
+        if let Some(mut plan) = plan_renamed_event(&repo, event)? {
+            affected_nodes.insert(category_for_relative_path(&plan.target_path));
+            affected_nodes.insert(plan.previous_category.clone());
+            if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
+                receipt.file_id = Some(plan.file_id);
+                receipt.previous_category = Some(plan.previous_category.clone());
+                receipt.current_category = Some(category_for_relative_path(&plan.target_path));
+            }
+            rename_plans_by_target.insert(plan.target_path.clone(), plan.file_id);
+            rename_plans_by_target.insert(event.path.clone(), plan.file_id);
+            renamed_file_ids.insert(plan.file_id);
+            if let Some(expectation) = plan.expectation.take() {
+                filesystem_expectations.push(expectation);
+            }
+            if let Some(row) = plan.row {
+                renamed_rows.push(row);
+            }
+        }
+    }
+
+    for event in &events {
+        if should_skip_event(&repo, &event.path, &rename_plans_by_target)? {
+            continue;
+        }
+        if let Some(node) = affected_node_for_event(&repo, event)? {
+            affected_nodes.insert(node.clone());
+            if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
+                receipt.current_category = Some(node);
+            }
+        }
+        match event.kind {
+            ExternalEventKind::Created => {
+                if let Some(plan) = plan_created_event(&repo, event)? {
+                    if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
+                        receipt.current_category = Some(plan.row.category.clone());
+                    }
+                    filesystem_expectations.push(plan.expectation);
+                    created_rows.push(plan.row);
+                }
+            }
+            ExternalEventKind::Renamed => {
+                if rename_plans_by_target.contains_key(&event.path) {
+                    continue;
+                }
+                if let Some(mut plan) = plan_renamed_event(&repo, event)? {
+                    affected_nodes.insert(plan.previous_category.clone());
+                    if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
+                        receipt.file_id = Some(plan.file_id);
+                        receipt.previous_category = Some(plan.previous_category.clone());
+                        receipt.current_category =
+                            Some(category_for_relative_path(&plan.target_path));
+                    }
+                    rename_plans_by_target.insert(plan.target_path.clone(), plan.file_id);
+                    rename_plans_by_target.insert(event.path.clone(), plan.file_id);
+                    renamed_file_ids.insert(plan.file_id);
+                    if let Some(expectation) = plan.expectation.take() {
+                        filesystem_expectations.push(expectation);
+                    }
+                    if let Some(row) = plan.row {
+                        renamed_rows.push(row);
+                    }
+                }
+            }
+            ExternalEventKind::Removed => {
+                if let Some(plan) = plan_removed_event(&repo, event)? {
+                    if let Some(row) = plan.row.as_ref() {
+                        if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
+                            receipt.file_id = Some(row.file_id);
+                            receipt.previous_category = receipt.current_category.clone();
+                        }
+                    }
+                    filesystem_expectations.push(plan.expectation);
+                    removed_rows.push(plan.row);
+                }
+            }
+            ExternalEventKind::Modified => {
+                if let Some(plan) = plan_modified_event(&repo, event)? {
+                    match plan {
+                        ModifiedEventPlan::Created(plan) => {
+                            if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
+                                receipt.current_category = Some(plan.row.category.clone());
+                            }
+                            filesystem_expectations.push(plan.expectation);
+                            created_rows.push(plan.row);
+                        }
+                        ModifiedEventPlan::Modified(plan) => {
+                            if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
+                                receipt.file_id = Some(plan.row.file_id);
+                            }
+                            filesystem_expectations.push(plan.expectation);
+                            modified_rows.push(plan.row);
+                        }
+                        ModifiedEventPlan::Unchanged(expectation) => {
+                            filesystem_expectations.push(expectation);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    removed_rows.retain(|row| match row {
+        Some(row) => {
+            !renamed_file_ids.contains(&row.file_id)
+                && !replayed_renamed_file_ids.contains(&row.file_id)
+        }
+        None => true,
+    });
+    let removed_rows = removed_rows.into_iter().flatten().collect::<Vec<_>>();
+    let receipts = receipt_by_path.into_values().collect();
+    revalidate_planned_filesystem_state(&repo, &filesystem_expectations)?;
+    let applied = db::apply_external_sync_batch(
+        &repo,
+        created_rows,
+        renamed_rows,
+        modified_rows,
+        removed_rows,
+        receipts,
+    )?;
     regenerate_affected_overviews(&repo, &affected_nodes)?;
+    if let Some(cursor) = max_sync_event_id {
+        db::set_fs_event_cursor(&repo, cursor)?;
+    }
 
     Ok(SyncResult {
         detected_creates: applied.detected_creates,
         detected_renames: applied.detected_renames,
         detected_deletes: applied.detected_deletes,
-        detected_modifies: 0,
+        detected_modifies: applied.detected_modifies,
         errors: Vec::new(),
     })
+}
+
+fn external_event_kind_name(kind: &ExternalEventKind) -> &'static str {
+    match kind {
+        ExternalEventKind::Created => "created",
+        ExternalEventKind::Renamed => "renamed",
+        ExternalEventKind::Removed => "removed",
+        ExternalEventKind::Modified => "modified",
+    }
 }
 
 /// Returns the latest processed filesystem event cursor.
@@ -131,136 +270,6 @@ pub(crate) fn set_fs_event_cursor(repo_path: String, last_event_id: i64) -> Core
     db::set_fs_event_cursor(&repo, last_event_id)
 }
 
-fn plan_created_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<CreatedPlan>> {
-    let Some(resolved) = resolve_event_path(repo, &event.path)? else {
-        return Ok(None);
-    };
-    if has_icloud_placeholder_marker(Path::new(&resolved.relative_path)) {
-        return Err(CoreError::icloud_placeholder("icloud placeholder"));
-    }
-
-    let metadata = fs::symlink_metadata(&resolved.absolute_path).map_err(map_io_error)?;
-    if metadata.is_dir() {
-        return Ok(None);
-    }
-    if !metadata.is_file() {
-        return Err(CoreError::invalid_path("invalid path"));
-    }
-
-    let hash_sha256 = sha256_file(&resolved.absolute_path)?;
-    let current_name = file_name_from_relative(&resolved.relative_path)?;
-    let category = category_for_relative_path(&resolved.relative_path);
-    let detail_json = external_create_detail(
-        &resolved.relative_path,
-        &category,
-        &hash_sha256,
-        metadata.len() as i64,
-    )?;
-
-    Ok(Some(CreatedPlan {
-        row: ExternalCreatedRow {
-            path: resolved.relative_path,
-            original_name: current_name.clone(),
-            current_name,
-            category,
-            size_bytes: metadata.len() as i64,
-            hash_sha256,
-            detail_json,
-        },
-    }))
-}
-
-fn plan_renamed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<RenamedPlan>> {
-    let Some(resolved) = resolve_event_path(repo, &event.path)? else {
-        return Ok(None);
-    };
-    if has_icloud_placeholder_marker(Path::new(&resolved.relative_path)) {
-        return Err(CoreError::icloud_placeholder("icloud placeholder"));
-    }
-
-    let metadata =
-        fs::symlink_metadata(&resolved.absolute_path).map_err(map_renamed_target_metadata_error)?;
-    if metadata.is_dir() {
-        return Ok(None);
-    }
-    if !metadata.is_file() {
-        return Err(CoreError::invalid_path("invalid path"));
-    }
-
-    let hash_sha256 = sha256_file(&resolved.absolute_path)?;
-    let current_name = file_name_from_relative(&resolved.relative_path)?;
-    let category = category_for_relative_path(&resolved.relative_path);
-
-    if let Some(active_at_target) = db::find_active_file_by_path(repo, &resolved.relative_path)? {
-        if active_at_target.hash_sha256 == hash_sha256 {
-            return Ok(None);
-        }
-        return Err(CoreError::conflict("path conflict"));
-    }
-
-    let candidates =
-        db::find_external_rename_candidates_by_hash(repo, &hash_sha256, &resolved.relative_path)?;
-    let candidate = match candidates.as_slice() {
-        [candidate] => candidate,
-        _ => return Err(CoreError::conflict("path conflict")),
-    };
-    if candidate.category != category {
-        return Err(CoreError::conflict("path conflict"));
-    }
-
-    let detail_json = external_rename_detail(
-        &candidate.path,
-        &resolved.relative_path,
-        &candidate.current_name,
-        &current_name,
-    )?;
-
-    Ok(Some(RenamedPlan {
-        row: ExternalRenamedRow {
-            file_id: candidate.id,
-            path: resolved.relative_path,
-            current_name,
-            detail_json,
-        },
-        category,
-    }))
-}
-
-fn plan_removed_event(repo: &Path, event: &ExternalEvent) -> CoreResult<Option<RemovedPlan>> {
-    let Some(resolved) = resolve_event_path(repo, &event.path)? else {
-        return Ok(None);
-    };
-    if has_icloud_placeholder_marker(Path::new(&resolved.relative_path)) {
-        return Err(CoreError::icloud_placeholder("icloud placeholder"));
-    }
-    ensure_path_absent(&resolved.absolute_path)?;
-
-    let Some(file) = db::find_active_file_by_path(repo, &resolved.relative_path)? else {
-        return Ok(None);
-    };
-    let detail_json = external_removed_detail()?;
-
-    Ok(Some(RemovedPlan {
-        row: ExternalRemovedRow {
-            file_id: file.id,
-            detail_json,
-        },
-        category: file.category,
-    }))
-}
-
-fn affected_nodes_for_batch(
-    created_plans: &[CreatedPlan],
-    renamed_plans: &[RenamedPlan],
-    removed_plans: &[RemovedPlan],
-) -> BTreeSet<String> {
-    let mut nodes = BTreeSet::new();
-    nodes.extend(created_plans.iter().map(|plan| plan.row.category.clone()));
-    nodes.extend(renamed_plans.iter().map(|plan| plan.category.clone()));
-    nodes.extend(removed_plans.iter().map(|plan| plan.category.clone()));
-    nodes
-}
-
 fn regenerate_affected_overviews(repo: &Path, nodes: &BTreeSet<String>) -> CoreResult<()> {
     for node in nodes {
         overview::regenerate_for_node(repo, node)?;
@@ -268,208 +277,176 @@ fn regenerate_affected_overviews(repo: &Path, nodes: &BTreeSet<String>) -> CoreR
     Ok(())
 }
 
-fn resolve_event_path(repo: &Path, raw_path: &str) -> CoreResult<Option<ResolvedEventPath>> {
-    if raw_path.trim().is_empty() {
-        return Err(CoreError::invalid_path("invalid path"));
-    }
-
-    let raw = Path::new(raw_path);
-    let relative_path = if raw.is_absolute() {
-        relative_repo_path(repo, raw)?
-    } else {
-        normalize_relative_path(raw)?
-    };
-    if should_skip_relative_path(&relative_path) {
-        return Ok(None);
-    }
-
-    Ok(Some(ResolvedEventPath {
-        absolute_path: repo.join(&relative_path),
-        relative_path,
-    }))
-}
-
-fn normalize_relative_path(path: &Path) -> CoreResult<String> {
-    let mut parts = Vec::new();
-    for component in path.components() {
-        match component {
-            Component::Normal(part) => {
-                let Some(part) = part.to_str() else {
-                    return Err(CoreError::invalid_path("invalid path"));
-                };
-                validate_relative_component(part)?;
-                parts.push(part.to_owned());
-            }
-            _ => return Err(CoreError::invalid_path("invalid path")),
-        }
-    }
-    if parts.is_empty() {
-        return Err(CoreError::invalid_path("invalid path"));
-    }
-    Ok(parts.join("/"))
-}
-
-fn relative_repo_path(repo: &Path, path: &Path) -> CoreResult<String> {
-    let relative = path
-        .strip_prefix(repo)
-        .map_err(|error| CoreError::invalid_path(error.to_string()))?;
-    normalize_relative_path(relative)
-}
-
-fn validate_relative_component(component: &str) -> CoreResult<()> {
-    if component.is_empty() || component == "." || component == ".." {
-        return Err(CoreError::invalid_path("invalid path"));
-    }
-    if component
-        .chars()
-        .any(|ch| ch.is_control() || FORBIDDEN_COMPONENT_CHARS.contains(&ch))
-    {
-        return Err(CoreError::invalid_path("invalid path"));
-    }
-    Ok(())
-}
-
-fn should_skip_relative_path(relative_path: &str) -> bool {
-    relative_path == ROOT_OVERVIEW_FILE
-        || relative_path
-            .split('/')
-            .any(|component| component == AREA_MATRIX_DIR)
-}
-
-fn has_icloud_placeholder_marker(path: &Path) -> bool {
-    path.components().any(|component| {
-        component
-            .as_os_str()
-            .to_string_lossy()
-            .to_ascii_lowercase()
-            .ends_with(".icloud")
-    })
-}
-
-fn category_for_relative_path(relative_path: &str) -> String {
-    match relative_path.split_once('/') {
-        Some((top_level, _)) if !top_level.is_empty() => top_level.to_owned(),
-        _ => "__root__".to_owned(),
-    }
-}
-
-fn file_name_from_relative(relative_path: &str) -> CoreResult<String> {
-    relative_path
-        .rsplit('/')
-        .next()
-        .filter(|name| !name.is_empty())
-        .map(str::to_owned)
-        .ok_or_else(|| CoreError::invalid_path("invalid path"))
-}
-
-fn external_create_detail(
-    relative_path: &str,
-    category: &str,
-    hash_sha256: &str,
-    size_bytes: i64,
-) -> CoreResult<String> {
-    serde_json::to_string(&json!({
-        "kind": "create",
-        "path": relative_path,
-        "category": category,
-        "hash_after": hash_sha256,
-        "size_bytes": size_bytes,
-        "by": "external",
-    }))
-    .map_err(|error| CoreError::internal(error.to_string()))
-}
-
-fn external_rename_detail(
-    from_path: &str,
-    to_path: &str,
-    from_name: &str,
-    to_name: &str,
-) -> CoreResult<String> {
-    serde_json::to_string(&json!({
-        "from_path": from_path,
-        "to_path": to_path,
-        "from_name": from_name,
-        "to_name": to_name,
-        "by": "external",
-    }))
-    .map_err(|error| CoreError::internal(error.to_string()))
-}
-
-fn external_removed_detail() -> CoreResult<String> {
-    serde_json::to_string(&json!({
-        "hard": false,
-        "by": "external",
-    }))
-    .map_err(|error| CoreError::internal(error.to_string()))
-}
-
 fn initialized_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     repo_path::validate_initialized_repo_path(repo_path.to_owned())?;
     Ok(PathBuf::from(repo_path))
 }
 
-fn validate_event_id(event_id: i64) -> CoreResult<()> {
-    if event_id < 0 {
-        Err(CoreError::invalid_path("invalid path"))
-    } else {
-        Ok(())
-    }
-}
+#[cfg(test)]
+mod tests {
+    use std::fs::{self, File, FileTimes};
 
-fn max_event_id(current: Option<i64>, candidate: i64) -> i64 {
-    current.map_or(candidate, |value| value.max(candidate))
-}
-
-fn cursor_for_batch(max_sync_event_id: Option<i64>, has_out_of_scope_events: bool) -> Option<i64> {
-    if has_out_of_scope_events {
-        None
-    } else {
-        max_sync_event_id
-    }
-}
-
-fn sha256_file(path: &Path) -> CoreResult<String> {
-    let mut file = fs::File::open(path).map_err(map_io_error)?;
-    let mut hasher = Sha256::new();
-    let mut buffer = [0_u8; HASH_BUFFER_BYTES];
-
-    loop {
-        let bytes_read = file.read(&mut buffer).map_err(map_io_error)?;
-        if bytes_read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..bytes_read]);
-    }
-    Ok(format!("{:x}", hasher.finalize()))
-}
-
-fn ensure_path_absent(path: &Path) -> CoreResult<()> {
-    match fs::symlink_metadata(path) {
-        Ok(_) => Err(CoreError::io("io error")),
-        Err(error) => match error.kind() {
-            io::ErrorKind::NotFound => Ok(()),
-            io::ErrorKind::InvalidInput => Err(CoreError::invalid_path("invalid path")),
-            io::ErrorKind::PermissionDenied => {
-                Err(CoreError::permission_denied("permission denied"))
-            }
-            _ => Err(CoreError::io("io error")),
+    use super::{
+        events::normalize_and_coalesce_events,
+        snapshots::{
+            retry_stable_snapshot, snapshot_metadata_is_stable, SnapshotAttempt, StableFileSnapshot,
         },
-    }
-}
+    };
+    use crate::{CoreError, ExternalEvent, ExternalEventKind};
 
-fn map_io_error(error: io::Error) -> CoreError {
-    match error.kind() {
-        io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
-        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
-        _ => CoreError::io("io error"),
+    fn event(kind: ExternalEventKind, fs_event_id: i64) -> ExternalEvent {
+        ExternalEvent {
+            path: "docs/item.txt".to_owned(),
+            kind,
+            fs_event_id,
+        }
     }
-}
 
-fn map_renamed_target_metadata_error(error: io::Error) -> CoreError {
-    match error.kind() {
-        io::ErrorKind::NotFound => CoreError::file_not_found("missing file"),
-        io::ErrorKind::InvalidInput => CoreError::invalid_path("invalid path"),
-        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
-        _ => CoreError::io("io error"),
+    fn coalesced_event(events: Vec<ExternalEvent>) -> ExternalEvent {
+        let repo = tempfile::tempdir().expect("create temporary repository directory");
+        let (mut events, _) = normalize_and_coalesce_events(repo.path(), events)
+            .expect("normalize and coalesce events");
+        assert_eq!(events.len(), 1);
+        events.remove(0)
+    }
+
+    #[test]
+    fn coalescing_orders_removed_then_created_by_event_id() {
+        let event = coalesced_event(vec![
+            event(ExternalEventKind::Created, 20),
+            event(ExternalEventKind::Removed, 10),
+        ]);
+
+        assert_eq!(event.kind, ExternalEventKind::Created);
+        assert_eq!(event.fs_event_id, 20);
+    }
+
+    #[test]
+    fn coalescing_orders_created_then_removed_by_event_id() {
+        let event = coalesced_event(vec![
+            event(ExternalEventKind::Removed, 20),
+            event(ExternalEventKind::Created, 10),
+        ]);
+
+        assert_eq!(event.kind, ExternalEventKind::Removed);
+        assert_eq!(event.fs_event_id, 20);
+    }
+
+    #[test]
+    fn coalescing_orders_renamed_then_removed_by_event_id() {
+        let event = coalesced_event(vec![
+            event(ExternalEventKind::Removed, 20),
+            event(ExternalEventKind::Renamed, 10),
+        ]);
+
+        assert_eq!(event.kind, ExternalEventKind::Removed);
+        assert_eq!(event.fs_event_id, 20);
+    }
+
+    #[test]
+    fn coalescing_preserves_input_order_for_equal_event_ids() {
+        let created_last = coalesced_event(vec![
+            event(ExternalEventKind::Removed, 10),
+            event(ExternalEventKind::Created, 10),
+        ]);
+        let removed_last = coalesced_event(vec![
+            event(ExternalEventKind::Created, 10),
+            event(ExternalEventKind::Removed, 10),
+        ]);
+
+        assert_eq!(created_last.kind, ExternalEventKind::Created);
+        assert_eq!(removed_last.kind, ExternalEventKind::Removed);
+    }
+
+    #[test]
+    fn coalescing_modified_only_advances_the_retained_watermark() {
+        let event = coalesced_event(vec![
+            event(ExternalEventKind::Created, 10),
+            event(ExternalEventKind::Modified, 30),
+            event(ExternalEventKind::Modified, 20),
+        ]);
+
+        assert_eq!(event.kind, ExternalEventKind::Created);
+        assert_eq!(event.fs_event_id, 30);
+    }
+
+    #[test]
+    fn stable_file_snapshot_retries_after_change() {
+        let mut attempts = 0;
+        let snapshot = retry_stable_snapshot("docs/item.txt", || {
+            attempts += 1;
+            if attempts == 1 {
+                Ok(SnapshotAttempt::Changed)
+            } else {
+                Ok(SnapshotAttempt::Stable(StableFileSnapshot {
+                    size_bytes: 3,
+                    hash_sha256: "abc".to_owned(),
+                }))
+            }
+        })
+        .expect("second stable snapshot attempt should succeed");
+
+        assert_eq!(attempts, 2);
+        assert_eq!(snapshot.size_bytes, 3);
+        assert_eq!(snapshot.hash_sha256, "abc");
+    }
+
+    #[test]
+    fn stable_file_snapshot_rejects_continuous_changes() {
+        let result = retry_stable_snapshot("docs/item.txt", || Ok(SnapshotAttempt::Changed));
+
+        assert!(matches!(result, Err(CoreError::Conflict { .. })));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn stable_file_snapshot_detects_same_metadata_atomic_replacement() {
+        use std::os::unix::fs::MetadataExt;
+
+        let directory = tempfile::tempdir().expect("create temporary directory");
+        let path = directory.path().join("stable.txt");
+        let replacement = directory.path().join("replacement.txt");
+        fs::write(&path, b"old!").expect("write original file");
+        fs::write(&replacement, b"new!").expect("write replacement file");
+
+        let open_file = File::open(&path).expect("open original file handle");
+        let before = open_file.metadata().expect("read original metadata");
+        File::options()
+            .write(true)
+            .open(&replacement)
+            .expect("open replacement file")
+            .set_times(
+                FileTimes::new()
+                    .set_modified(before.modified().expect("read original modification time")),
+            )
+            .expect("align replacement modification time");
+        fs::rename(&replacement, &path).expect("atomically replace original path");
+
+        let after = open_file.metadata().expect("read open-handle metadata");
+        let path_after = fs::symlink_metadata(&path).expect("read final path metadata");
+        assert_eq!(before.len(), after.len());
+        assert_eq!(after.len(), path_after.len());
+        assert_eq!(
+            before.modified().expect("read initial modification time"),
+            after
+                .modified()
+                .expect("read open-handle modification time")
+        );
+        assert_eq!(
+            after
+                .modified()
+                .expect("read open-handle modification time"),
+            path_after
+                .modified()
+                .expect("read final path modification time")
+        );
+        assert_ne!(
+            (after.dev(), after.ino()),
+            (path_after.dev(), path_after.ino())
+        );
+        assert!(
+            !snapshot_metadata_is_stable(&before, &after, &path_after, "docs/item.txt")
+                .expect("compare stable snapshot metadata")
+        );
     }
 }

@@ -31,6 +31,8 @@ Residual ledger 的字段约定，用于人读 Markdown 与机器可读 `residua
 | `backlog-reference` | closed backlog、候选包或治理记录。 |
 | `product-doc-marker` | 产品文档里的状态词或验收表达，属于产品结构而非任务。 |
 | `task-index` | 可转任务视角的索引项。 |
+| `governance-risk` | 治理风险；关闭必须以权威治理登记册及独立证据为准。 |
+| `governance-dependency` | 治理外部依赖或延后条件；不得由本地自报或 authoring 状态关闭。 |
 
 ## 必填字段
 
@@ -64,6 +66,8 @@ close_condition: Real iCloud placeholder smoke evidence is recorded.
 | `v1-rl-*` | v1 release blocker / release evidence。 |
 | `v1-ex-*` | v1 accepted exception。 |
 | `v1-ref-*` | v1 historical reference 或特殊分发 review。 |
+| `v2-risk-*` | v2 durable governance risk。 |
+| `v2-dep-*` | v2 durable governance dependency。 |
 | `task-idx-*` | task 视角索引项。 |
 
 ## Version Residual 同步规则

@@ -8,10 +8,15 @@ extension MainFileListModel {
               canPerformWriteAction(fileID: fileID) else { return false }
 
         deleteState = .deleting(fileID: fileID, operation: operation)
+        let selectionGeneration = detailGeneration
         clearDiagnosticsState()
         do {
             try await performDelete(fileID: fileID, operation: operation)
-            await applyDeletedFile(fileID: fileID, operation: operation)
+            await applyDeletedFile(
+                fileID: fileID,
+                operation: operation,
+                selectionGeneration: selectionGeneration
+            )
             return true
         } catch {
             let mapping = await mapCoreError(error)
@@ -30,9 +35,13 @@ extension MainFileListModel {
         }
     }
 
-    private func applyDeletedFile(fileID: Int64, operation: MainFileDeleteOperation) async {
+    private func applyDeletedFile(
+        fileID: Int64,
+        operation: MainFileDeleteOperation,
+        selectionGeneration: Int
+    ) async {
         files.removeAll { $0.id == fileID }
-        if selection.singleFileID == fileID || selectedFileDetail?.id == fileID {
+        if detailGeneration == selectionGeneration, selection.singleFileID == fileID {
             await selectFiles([])
         }
         deleteState = .idle

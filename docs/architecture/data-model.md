@@ -1,34 +1,143 @@
 # 数据模型
 
-> AreaMatrix 的元数据全部存储在资料库内的 SQLite 单文件 `<repo>/.areamatrix/index.db` 中。本文给出完整 schema、CRUD SQL、关键索引的 EXPLAIN 输出、容量预估方法论。
+> 记录 AreaMatrix 当前 SQLite 元数据、文件系统数据和按功能创建的扩展表。
 >
-> 阅读时长：约 14 分钟。
+> 阅读时长：约 8 分钟。
 
 ---
 
-## 数据存储位置
+## 存储边界
 
-| 数据 | 位置 | 形式 |
+| 数据 | 位置 | 权威边界 |
 |---|---|---|
-| 用户文件 | `<repo>/...` | 标准文件，可来自新建目录或已有目录 |
-| 元数据 / 改动日志 | `<repo>/.areamatrix/index.db` | SQLite |
-| 用户配置 | `~/Library/Application Support/AreaMatrix/config.json` | JSON |
-| 分类规则 | `<repo>/.areamatrix/classifier.yaml` | YAML |
-| 忽略规则 | `<repo>/.areamatrix/ignore.yaml` | YAML |
-| 自动概览 | `<repo>/.areamatrix/generated/*.md`，可选 `<repo>/AREAMATRIX.md` | Markdown |
-| 临时事务区 | `<repo>/.areamatrix/staging/` | 标准文件 |
-| 应用日志 | `~/Library/Logs/AreaMatrix/*.log` | 文本 |
-| change_log 归档 | `<repo>/.areamatrix/archives/changes-YYYY-MM.jsonl` | 文本 |
+| 用户文件 | 用户选择的资料库目录或 Indexed 外部路径 | 文件系统 |
+| 核心元数据 | `<repo>/.areamatrix/index.db` | SQLite |
+| SQLite WAL/SHM | `<repo>/.areamatrix/index.db-{wal,shm}` | SQLite 运行状态 |
+| 配置 | `repo_config` 及 `.areamatrix/*.yaml` | 按配置类型分域 |
+| 导入暂存 | `<repo>/.areamatrix/staging/` | AreaMatrix-owned、可恢复的 Copy/Move 中间态 |
+| 笔记 sidecar | `<filename>.md` | 与 `notes` 表保持一致合同 |
+| 自动概览 | `.areamatrix/generated/` | DB/文件状态派生 |
+| diagnostics snapshot | `.areamatrix/diagnostics/` | AreaMatrix-owned 恢复材料 |
 
-DB 放在资料库内（而不是 `~/Library/Application Support/`）的理由：
+`archives/` 可被可恢复文件操作使用，但当前 change log 不归档为 JSONL。仓库没有“每次启动保留 5 份
+数据库备份”的行为。
 
-- 用户**带走资料库时元数据一起带走**
-- iCloud 同步资料库时元数据自动同步
-- 删除资料库 = 完整清理（不留垃圾）
+## Schema version 2 初始表
 
----
+新资料库由 `core/src/db/schema.rs::INITIAL_SCHEMA` 创建以下 11 张表：
 
-## SQLite 配置
+| 表 | 用途 |
+|---|---|
+| `schema_version` | schema 版本与应用时间 |
+| `files` | 文件索引、hash、路径、来源、storage mode 和生命周期状态 |
+| `change_log` | 可查询的文件和元数据变更历史 |
+| `notes` | 笔记 Markdown 内容 |
+| `tags` | 文件标签多值关系 |
+| `undo_actions` | token 化 Undo 状态和 inverse payload |
+| `fs_event_cursor` | FSEvents 已确认的单调 cursor |
+| `external_sync_receipts` | 外部同步事件的幂等回执，`(event_id, kind, path)` 主键 |
+| `scan_sessions` | adopt/reindex 进度、计数和错误 |
+| `repo_config` | 资料库级 key/value 配置 |
+| `saved_searches` | 保存的搜索条件和侧边栏状态 |
+
+`external_sync_receipts` 同时由 `core/src/db/sync/receipts.rs::ensure_external_sync_receipts`
+以 `CREATE TABLE IF NOT EXISTS` 兜底，保证在初始 schema 早于该表的既有资料库上按需补建。
+
+### files
+
+`files` 的关键字段：
+
+- `path`：唯一路径；repo-owned 为相对路径，Indexed 可为外部绝对路径。
+- `original_name` / `current_name`：导入原名和当前显示/物理名称。
+- `category`：分类 slug。
+- `size_bytes` / `hash_sha256`：最近一次已确认快照。
+- `storage_mode`：`moved`、`copied`、`indexed`。
+- `origin`：`imported`、`adopted`、`external`。
+- `status`：`staging`、`active`、`deleted`。
+- `source_path`：导入来源或 Indexed 外部路径。
+- `deleted_at`：soft-delete 时间。
+
+active category、active hash、status 和 imported time 都有索引。外部 deleted path 再次出现时可复用原 row
+并恢复为 active。
+
+`staging` row 不进入普通文件列表、overview 或 command index 等用户消费面。即使 `list_files` 使用
+`include_deleted = true`，查询仍排除 `status = staging`，不会暴露尚未提交的导入。
+
+### 关系与删除语义
+
+| 关系 | 删除语义 |
+|---|---|
+| `change_log.file_id -> files.id` | `ON DELETE SET NULL`，保留历史记录 |
+| `notes.file_id -> files.id` | `ON DELETE CASCADE` |
+| `tags.file_id -> files.id` | `ON DELETE CASCADE` |
+
+`tags` 使用 `(file_id, tag)` 复合主键，保证同一文件不会保存重复标签。
+
+### change_log
+
+`action` 由 DB CHECK 限制为：
+
+```text
+imported, adopted, renamed, moved, edited_note,
+deleted, removed_from_index, restored, external_modified
+```
+
+`detail_json` 必须是 JSON object。关键 mutation 把 metadata 与 change log 放在同一 transaction 中；日志
+写失败会使对应 metadata transaction 失败。
+
+### fs_event_cursor
+
+表只允许 `id = 1`，保存 `last_event_id` 和 `updated_at`。写入使用单调最大值，不能让 cursor 回退。
+
+### scan_sessions
+
+记录 adopt/reindex 的 `running/completed/paused/failed/interrupted` 状态，以及 inserted、updated、missing、
+conflicts、unreadable、unknown、skipped 和 errors。
+
+## 按功能创建的扩展表
+
+以下表在相应能力首次写入或检查 schema 时创建，不属于 `INITIAL_SCHEMA`：
+
+| 表 | Owner |
+|---|---|
+| `ai_call_log` | AI 调用审计 |
+| `ai_summaries` | AI 摘要 metadata |
+| `import_sessions` | 导入冲突 review session |
+| `import_conflicts` | 逐项导入冲突状态 |
+| `semantic_index_entries` | 本地语义索引 metadata |
+
+部分扩展表还会自行补列。因此 `schema_version = 2` 表示核心 schema 版本，不表示所有惰性能力都已经创建或
+运行过。
+
+### `ai_call_log`
+
+`ai_call_log` 由 AI producer 首次成功写入审计记录时，在同一 SQLite transaction 中按需创建，不属于
+`INITIAL_SCHEMA`。表不存在时，`list_ai_calls` 返回空页，`clear_ai_call_log` 返回 zero-count report；读取和
+空清理不会仅为查询创建该表。
+
+稳定 schema 语义：
+
+- 基础列为 `id`、`feature`、`file_id`、`route`、`provider`、`model`、`status`、
+  `sent_fields_json`、`privacy_rule_id`、`result_summary`、`error_code` 和 `occurred_at`；基础列缺失时读取和
+  清理返回 DB error。
+- `status` 只允许 `success`、`failed`、`skipped`、`unavailable`。
+- `file_id` 可为空，并以 `ON DELETE SET NULL` 引用 `files.id`；删除文件 row 后保留审计记录，但解除文件关联。
+- `privacy_rules_checked` 只允许 `0` 或 `1`，由 producer 显式写入：进入 privacy gate 并完成评估时为 `1`，
+  即使没有命中任何规则；在 gate 之前因 AI/feature disabled 退出时为 `0`。它不能从
+  `privacy_rule_id` 是否为空推断。
+- `privacy_rule_id` 只记录命中的规则。旧表补列时，非空 rule id 可确定回填 checked=`1`；rule id 为空的
+  历史行无法证明是否评估过，只能保守回填 `0`。这表示“未记录/未证明”，不表示当时一定绕过规则。
+- `sent_fields_json` 保存字段类别标识，不保存字段正文；公开读取仍对显示文本执行脱敏。
+- `batch_id`、`scope`、`duration_ms`、`privacy_rules_checked`、`privacy_rule_name` 和
+  `matched_field_type` 是兼容补列。旧表缺列时读取使用 `NULL` 或可推导 fallback，下一次成功写入在 transaction
+  内补齐。
+- 查询索引分别按 `occurred_at DESC` 和 `(feature, occurred_at DESC)` 排序；索引名称属于实现细节。
+- API 返回的 90 天 retention 是应用策略，schema 没有自动过期 trigger。删除只通过
+  `clear_ai_call_log` 的 `All`、`SelectedEntries` 或 `OlderThan` scope 执行。
+
+## 连接与一致性
+
+可写连接配置：
 
 ```sql
 PRAGMA journal_mode = WAL;
@@ -40,836 +149,28 @@ PRAGMA cache_size = -65536;
 PRAGMA busy_timeout = 5000;
 ```
 
-| Pragma | 选择理由 |
-|---|---|
-| `journal_mode = WAL` | 读写并发更好；崩溃恢复 |
-| `foreign_keys = ON` | SQLite 默认关闭，必须显式打开 |
-| `synchronous = NORMAL` | 配合 WAL 已足够安全；FULL 模式过于保守 |
-| `temp_store = MEMORY` | 临时表/索引放内存，提速 |
-| `mmap_size = 256MB` | 大库下显著降低 IO |
-| `cache_size = -65536` | 64MB page cache（负数为 KB） |
-| `busy_timeout = 5000` | 写并发自动等待 5s 而非立即返回 SQLITE_BUSY |
+只读连接使用 `SQLITE_OPEN_READ_ONLY` 和 `query_only = ON`。平台 metadata reader 不得用可写 fallback
+创建或修改 DB。
 
----
+关键一致性边界：
 
-## 完整 Schema
+- 文件操作与 DB 无法组成单一 transaction，使用 staging、短 DB transaction 和补偿 guard。
+- note sidecar 与 `notes` row 不一致时，read/write 返回错误而不是静默覆盖。
+- external sync 的 files/change_log 在一个 transaction 中提交，overview 和 cursor 随后执行。
+- diagnostics/repair 使用独立 snapshot 和 replacement DB，不把用户文件纳入备份。
 
-```sql
--- core/src/db/schema.sql
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
-PRAGMA synchronous = NORMAL;
-PRAGMA temp_store = MEMORY;
+## 迁移与恢复
 
-CREATE TABLE IF NOT EXISTS schema_version (
-  version INTEGER PRIMARY KEY,
-  applied_at INTEGER NOT NULL,
-  applied_by TEXT NOT NULL DEFAULT 'area_matrix_core'
-);
+当前核心版本为 2，只为旧 `scan_sessions` 补齐四个计数列。迁移前执行 WAL checkpoint 并创建一次性
+`.areamatrix/index.db.pre-v2.bak`。完整规则见 [migration.md](migration.md)。
 
-CREATE TABLE IF NOT EXISTS files (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  path TEXT NOT NULL UNIQUE,
-  original_name TEXT NOT NULL,
-  current_name TEXT NOT NULL,
-  category TEXT NOT NULL,
-  size_bytes INTEGER NOT NULL,
-  hash_sha256 TEXT NOT NULL,
-  storage_mode TEXT NOT NULL CHECK (storage_mode IN ('moved', 'copied', 'indexed')),
-  origin TEXT NOT NULL DEFAULT 'imported'
-    CHECK (origin IN ('imported', 'adopted', 'external')),
-  source_path TEXT,
-  imported_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  deleted_at INTEGER,
-  status TEXT NOT NULL DEFAULT 'active'
-    CHECK (status IN ('staging', 'active', 'deleted'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_files_category_active
-  ON files(category, imported_at DESC)
-  WHERE status = 'active';
-CREATE INDEX IF NOT EXISTS idx_files_hash_active
-  ON files(hash_sha256)
-  WHERE status = 'active';
-CREATE INDEX IF NOT EXISTS idx_files_status ON files(status);
-CREATE INDEX IF NOT EXISTS idx_files_imported_at ON files(imported_at DESC);
-
-CREATE TABLE IF NOT EXISTS change_log (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  file_id INTEGER,
-  action TEXT NOT NULL CHECK (action IN (
-    'imported','adopted','renamed','moved','edited_note',
-    'deleted','removed_from_index','restored','external_modified'
-  )),
-  detail_json TEXT NOT NULL,
-  occurred_at INTEGER NOT NULL,
-  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE SET NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_changelog_time ON change_log(occurred_at DESC);
-CREATE INDEX IF NOT EXISTS idx_changelog_file ON change_log(file_id, occurred_at DESC);
-CREATE INDEX IF NOT EXISTS idx_changelog_action ON change_log(action, occurred_at DESC);
-
-CREATE TABLE IF NOT EXISTS notes (
-  file_id INTEGER PRIMARY KEY,
-  content_md TEXT NOT NULL,
-  updated_at INTEGER NOT NULL,
-  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS tags (
-  file_id INTEGER NOT NULL,
-  tag TEXT NOT NULL,
-  added_at INTEGER NOT NULL,
-  PRIMARY KEY (file_id, tag),
-  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
-
-CREATE TABLE IF NOT EXISTS undo_actions (
-  token TEXT PRIMARY KEY,
-  kind TEXT NOT NULL,
-  summary_json TEXT NOT NULL,
-  inverse_json TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'executed', 'expired', 'blocked')),
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_undo_actions_status_time
-  ON undo_actions(status, created_at DESC);
-
-CREATE TABLE IF NOT EXISTS fs_event_cursor (
-  id INTEGER PRIMARY KEY CHECK (id = 1),
-  last_event_id INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS scan_sessions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  kind TEXT NOT NULL CHECK (kind IN ('adopt', 'reindex')),
-  status TEXT NOT NULL CHECK (status IN (
-    'running','completed','paused','failed','interrupted'
-  )),
-  started_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  finished_at INTEGER,
-  last_path TEXT,
-  inserted INTEGER NOT NULL DEFAULT 0,
-  updated INTEGER NOT NULL DEFAULT 0,
-  missing INTEGER NOT NULL DEFAULT 0,
-  conflicts INTEGER NOT NULL DEFAULT 0,
-  unreadable INTEGER NOT NULL DEFAULT 0,
-  unknown INTEGER NOT NULL DEFAULT 0,
-  skipped INTEGER NOT NULL DEFAULT 0,
-  errors_json TEXT NOT NULL DEFAULT '[]'
-);
-
-CREATE INDEX IF NOT EXISTS idx_scan_sessions_status
-  ON scan_sessions(status, updated_at DESC);
-
-CREATE TABLE IF NOT EXISTS ai_call_log (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  feature TEXT NOT NULL,
-  file_id INTEGER,
-  batch_id TEXT,
-  scope TEXT,
-  route TEXT,
-  provider TEXT,
-  model TEXT,
-  status TEXT NOT NULL CHECK (status IN ('success', 'failed', 'skipped', 'unavailable')),
-  duration_ms INTEGER,
-  sent_fields_json TEXT NOT NULL,
-  privacy_rules_checked INTEGER NOT NULL DEFAULT 0 CHECK (privacy_rules_checked IN (0, 1)),
-  privacy_rule_id TEXT,
-  privacy_rule_name TEXT,
-  matched_field_type TEXT,
-  result_summary TEXT NOT NULL,
-  error_code TEXT,
-  occurred_at INTEGER NOT NULL,
-  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE SET NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_ai_call_log_time
-  ON ai_call_log(occurred_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ai_call_log_feature_time
-  ON ai_call_log(feature, occurred_at DESC);
-
-CREATE TABLE IF NOT EXISTS repo_config (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
-INSERT OR IGNORE INTO schema_version (version, applied_at, applied_by)
-VALUES (2, strftime('%s', 'now'), 'area_matrix_core');
-```
-
----
-
-## 表关系图
-
-```mermaid
-erDiagram
-    files ||--o{ change_log : "logs"
-    files ||--o| notes : "annotates"
-    files ||--o{ tags : "tagged"
-    files ||--o{ ai_call_log : "ai audit"
-    files {
-        int id PK
-        string path UK
-        string original_name
-        string current_name
-        string category
-        int size_bytes
-        string hash_sha256
-        string storage_mode
-        string origin
-        string source_path
-        int imported_at
-        int updated_at
-        int deleted_at
-        string status
-    }
-    change_log {
-        int id PK
-        int file_id FK
-        string action
-        string detail_json
-        int occurred_at
-    }
-    notes {
-        int file_id PK_FK
-        string content_md
-        int updated_at
-    }
-    tags {
-        int file_id PK_FK
-        string tag PK
-        int added_at
-    }
-    undo_actions {
-        string token PK
-        string kind
-        string summary_json
-        string inverse_json
-        string status
-        int created_at
-        int updated_at
-    }
-    fs_event_cursor {
-        int id PK
-        int last_event_id
-        int updated_at
-    }
-    scan_sessions {
-        int id PK
-        string kind
-        string status
-        int started_at
-        int updated_at
-        int finished_at
-        string last_path
-        int inserted
-        int updated
-        int missing
-        int conflicts
-        int unreadable
-        int unknown
-        int skipped
-        string errors_json
-    }
-    ai_call_log {
-        int id PK
-        string feature
-        int file_id FK
-        string batch_id
-        string scope
-        string route
-        string provider
-        string model
-        string status
-        int duration_ms
-        string sent_fields_json
-        int privacy_rules_checked
-        string privacy_rule_id
-        string privacy_rule_name
-        string matched_field_type
-        string result_summary
-        string error_code
-        int occurred_at
-    }
-    repo_config {
-        string key PK
-        string value
-        int updated_at
-    }
-    schema_version {
-        int version PK
-        int applied_at
-    }
-```
-
----
-
-## CRUD SQL（按表）
-
-### files: INSERT (staging)
-
-```sql
-INSERT INTO files (
-  path, original_name, current_name, category,
-  size_bytes, hash_sha256, storage_mode, origin, source_path,
-  imported_at, updated_at, status
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'staging');
-```
-
-### files: 提升为 active
-
-```sql
-UPDATE files
-   SET path = ?, current_name = ?, status = 'active', updated_at = ?
- WHERE id = ?;
-```
-
-### files: SELECT by path
-
-```sql
-SELECT id, path, original_name, current_name, category,
-       size_bytes, hash_sha256, storage_mode, origin, source_path,
-       imported_at, updated_at, deleted_at, status
-  FROM files
- WHERE path = ? AND status != 'staging'
- LIMIT 1;
-```
-
-### files: SELECT by hash (active)
-
-```sql
-SELECT id, path, current_name, category, size_bytes
-  FROM files
- WHERE hash_sha256 = ? AND status = 'active'
- LIMIT 1;
-```
-
-### files: list active in category
-
-```sql
-SELECT id, path, current_name, size_bytes, hash_sha256, origin, imported_at
-  FROM files
- WHERE category = ? AND status = 'active'
- ORDER BY imported_at DESC
- LIMIT ? OFFSET ?;
-```
-
-### files: rename / move (combined UPDATE)
-
-```sql
-UPDATE files
-   SET path = ?, current_name = ?, category = ?, updated_at = ?
- WHERE id = ?;
-```
-
-### files: 软删除
-
-```sql
-UPDATE files
-   SET status = 'deleted', deleted_at = ?, updated_at = ?
- WHERE id = ?;
-```
-
-### files: 物理删除（仅 staging 行）
-
-```sql
-DELETE FROM files WHERE id = ? AND status = 'staging';
-```
-
-### files: 列出 staging 行（recovery 用）
-
-```sql
-SELECT id, path FROM files WHERE status = 'staging';
-```
-
-### files: 分类总览
-
-```sql
-SELECT
-  category,
-  COUNT(*) AS file_count,
-  SUM(size_bytes) AS total_bytes,
-  MAX(imported_at) AS latest_import
-FROM files
-WHERE status = 'active'
-GROUP BY category
-ORDER BY category;
-```
-
-### files: 跨分类时间窗
-
-```sql
-SELECT id, path, category, imported_at
-  FROM files
- WHERE status = 'active'
-   AND imported_at >= ?
-   AND imported_at < ?
- ORDER BY imported_at DESC
- LIMIT ? OFFSET ?;
-```
-
-### change_log: INSERT
-
-```sql
-INSERT INTO change_log (file_id, action, detail_json, occurred_at)
-VALUES (?, ?, ?, ?);
-```
-
-### scan_sessions: START
-
-```sql
-INSERT INTO scan_sessions (
-  kind, status, started_at, updated_at,
-  inserted, updated, missing, conflicts, unreadable, unknown, skipped, errors_json
-) VALUES (?, 'running', ?, ?, 0, 0, 0, 0, 0, 0, 0, '[]');
-```
-
-### scan_sessions: PROGRESS
-
-```sql
-UPDATE scan_sessions
-   SET updated_at = ?,
-       last_path = ?,
-       inserted = ?,
-       updated = ?,
-       missing = ?,
-       conflicts = ?,
-       unreadable = ?,
-       unknown = ?,
-       skipped = ?,
-       errors_json = ?
- WHERE id = ? AND status = 'running';
-```
-
-### scan_sessions: FINISH
-
-```sql
-UPDATE scan_sessions
-   SET status = ?, finished_at = ?, updated_at = ?
- WHERE id = ?;
-```
-
-### change_log: SELECT 单文件历史
-
-```sql
-SELECT id, action, detail_json, occurred_at
-  FROM change_log
- WHERE file_id = ?
- ORDER BY occurred_at DESC
- LIMIT ?;
-```
-
-### change_log: SELECT 近期跨文件
-
-```sql
-SELECT cl.id, cl.file_id, cl.action, cl.detail_json, cl.occurred_at,
-       f.path, f.category
-  FROM change_log cl
-  LEFT JOIN files f ON f.id = cl.file_id
- WHERE cl.occurred_at >= ?
- ORDER BY cl.occurred_at DESC
- LIMIT ?;
-```
-
-### change_log: GC（按时间）
-
-```sql
-DELETE FROM change_log
- WHERE occurred_at < ?
-   AND id NOT IN (SELECT id FROM change_log ORDER BY occurred_at DESC LIMIT ?);
-```
-
-### notes: UPSERT
-
-```sql
-INSERT INTO notes (file_id, content_md, updated_at)
-VALUES (?, ?, ?)
-ON CONFLICT(file_id) DO UPDATE SET
-  content_md = excluded.content_md,
-  updated_at = excluded.updated_at;
-```
-
-### notes: SELECT
-
-```sql
-SELECT content_md, updated_at FROM notes WHERE file_id = ?;
-```
-
-### tags: 批量加标签
-
-```sql
-INSERT OR IGNORE INTO tags (file_id, tag, added_at)
-VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?);
-```
-
-### tags: 按标签查文件
-
-```sql
-SELECT f.id, f.path, f.current_name, f.category
-  FROM tags t
-  JOIN files f ON f.id = t.file_id
- WHERE t.tag = ? AND f.status = 'active'
- ORDER BY t.added_at DESC
- LIMIT ?;
-```
-
-### undo_actions: INSERT
-
-```sql
-INSERT INTO undo_actions (
-  token, kind, summary_json, inverse_json, status, created_at, updated_at
-) VALUES (?, ?, ?, ?, 'pending', ?, ?);
-```
-
-### undo_actions: SELECT pending
-
-```sql
-SELECT token, kind, summary_json, inverse_json, status, created_at, updated_at
-  FROM undo_actions
- WHERE status = 'pending'
- ORDER BY created_at DESC
- LIMIT ?;
-```
-
-### undo_actions: MARK
-
-```sql
-UPDATE undo_actions
-   SET status = ?, updated_at = ?
- WHERE token = ? AND status = 'pending';
-```
-
-### fs_event_cursor: 读
-
-```sql
-SELECT last_event_id FROM fs_event_cursor WHERE id = 1;
-```
-
-### fs_event_cursor: 写
-
-```sql
-INSERT INTO fs_event_cursor (id, last_event_id, updated_at)
-VALUES (1, ?, ?)
-ON CONFLICT(id) DO UPDATE SET
-  last_event_id = excluded.last_event_id,
-  updated_at = excluded.updated_at;
-```
-
----
-
-## 关键查询的 EXPLAIN QUERY PLAN
-
-数据集：files 表 10 万行（active 9 万、deleted 9 千、staging 1 千）。
-
-### Q1：按 path 查（应走 UNIQUE index）
-
-```sql
-EXPLAIN QUERY PLAN
-SELECT id, current_name FROM files WHERE path = 'docs/contract.pdf';
-```
-
-输出：
-
-```text
-SEARCH files USING INDEX sqlite_autoindex_files_1 (path=?)
-```
-
-性能：< 0.1 ms。`sqlite_autoindex_files_1` 是 `path UNIQUE` 自动建的索引。
-
-### Q2：按 hash 查 active（应走 partial index）
-
-```sql
-EXPLAIN QUERY PLAN
-SELECT id, path FROM files WHERE hash_sha256 = ? AND status = 'active';
-```
-
-输出：
-
-```text
-SEARCH files USING INDEX idx_files_hash_active (hash_sha256=?)
-```
-
-性能：< 0.5 ms。`partial index` 只覆盖 active 行（约 90% 行），但查询提速明显。
-
-### Q3：分类列表（应走 partial composite index）
-
-```sql
-EXPLAIN QUERY PLAN
-SELECT id, current_name FROM files
-WHERE category = 'docs' AND status = 'active'
-ORDER BY imported_at DESC LIMIT 200;
-```
-
-输出：
-
-```text
-SEARCH files USING INDEX idx_files_category_active (category=?)
-```
-
-`(category, imported_at DESC)` 复合索引同时覆盖 WHERE 和 ORDER BY，无 sort 步骤。性能：< 5 ms。
-
-### Q4：分类总览（GROUP BY）
-
-```sql
-EXPLAIN QUERY PLAN
-SELECT category, COUNT(*), SUM(size_bytes)
-FROM files WHERE status = 'active' GROUP BY category;
-```
-
-输出：
-
-```text
-SCAN files USING INDEX idx_files_category_active
-USE TEMP B-TREE FOR GROUP BY
-```
-
-性能：10 万行约 30 ms（必须扫整索引）。当前可接受；大库下加物化视图。
-
-### Q5：单文件 change_log 历史
-
-```sql
-EXPLAIN QUERY PLAN
-SELECT action, detail_json, occurred_at FROM change_log
-WHERE file_id = 42 ORDER BY occurred_at DESC LIMIT 100;
-```
-
-输出：
-
-```text
-SEARCH change_log USING INDEX idx_changelog_file (file_id=?)
-```
-
-`(file_id, occurred_at DESC)` 复合索引；性能 < 1 ms。
-
-### Q6：近 7 天跨文件改动
-
-```sql
-EXPLAIN QUERY PLAN
-SELECT cl.action, cl.detail_json, cl.occurred_at, f.path
-FROM change_log cl LEFT JOIN files f ON f.id = cl.file_id
-WHERE cl.occurred_at >= ? ORDER BY cl.occurred_at DESC LIMIT 200;
-```
-
-输出：
-
-```text
-SEARCH cl USING INDEX idx_changelog_time (occurred_at>?)
-SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
-```
-
-性能：< 10 ms（30 天 5 万条 change_log）。
-
-### Q7：full table scan（应避免）
-
-```sql
-EXPLAIN QUERY PLAN
-SELECT * FROM files WHERE current_name LIKE '%2026%';
-```
-
-输出：
-
-```text
-SCAN files
-```
-
-10 万行约 100 ms。全文搜索能力需要加 FTS5 全文搜索表：
-
-```sql
-CREATE VIRTUAL TABLE files_fts USING fts5(
-  current_name, original_name, content='files', content_rowid='id'
-);
-```
-
----
-
-## 容量预估方法论
-
-### 单行字节数估算
-
-| 表 | 平均行字节 | 来源 |
-|---|---|---|
-| `files` | 320 字节 | 见下表 |
-| `change_log` | 280 字节 | id+file_id+action+detail_json(200)+timestamp |
-| `scan_sessions` | 512 字节 | 一次接管 / 重建扫描一行，errors_json 通常为空 |
-| `notes` | 1024 字节 | 平均 1KB markdown |
-| `tags` | 64 字节 | id+tag(16)+timestamp |
-
-`files` 单行细节：
-
-| 字段 | 平均字节 |
-|---|---|
-| id | 8 |
-| path | 60 (含路径) |
-| original_name | 32 |
-| current_name | 32 |
-| category | 12 |
-| size_bytes | 8 |
-| hash_sha256 | 64 (hex 字符串) |
-| storage_mode | 8 |
-| origin | 8 |
-| source_path | 60 (NULL or 含路径) |
-| imported_at + updated_at + deleted_at | 24 |
-| status | 8 |
-| 行开销 + 索引 | ~40 |
-| **合计** | **~320** |
-
-### 不同规模
-
-| 文件数 | files 大小 | change_log 估算 | notes (10% 文件有) | 总 DB 大小 | mmap 命中率 |
-|---|---|---|---|---|---|
-| 1,000 | 320 KB | 1 MB (≈ 4× 改动) | 100 KB | ~1.5 MB | 100% |
-| 10,000 | 3.2 MB | 10 MB | 1 MB | ~15 MB | 100% |
-| 100,000 | 32 MB | 100 MB | 10 MB | ~150 MB | 大部分 |
-| 1,000,000 | 320 MB | 1 GB | 100 MB | ~1.5 GB | 部分 |
-
-### 性能预期
-
-| 操作 | 1k 文件 | 10k | 100k | 1M |
-|---|---|---|---|---|
-| 按 path 查（UNIQUE index） | < 0.1 ms | < 0.1 ms | < 0.1 ms | < 0.5 ms |
-| 按 hash 查（partial index） | < 0.5 ms | < 0.5 ms | < 0.5 ms | < 2 ms |
-| 列分类（200 条） | < 1 ms | < 2 ms | < 5 ms | < 20 ms |
-| 分类总览（GROUP BY） | < 1 ms | < 5 ms | < 30 ms | < 300 ms |
-| 单文件历史 | < 0.5 ms | < 1 ms | < 1 ms | < 5 ms |
-| 全表扫描（无索引 LIKE） | < 5 ms | < 30 ms | < 300 ms | 数秒 |
-
-### vacuum / analyze 节奏
-
-```sql
-ANALYZE;       -- 每月一次自动跑（统计信息）
-VACUUM;        -- 删 deleted 行 > 30% 时手动跑（重整页）
-```
-
-`VACUUM` 期间需独占锁，不在用户活跃时跑。
-
----
-
-## 关键不变量
-
-| 不变量 | SQL 表达 | 校验时机 |
-|---|---|---|
-| INV-D1 同 path 唯一 active | `path UNIQUE` | INSERT |
-| INV-D2 staging 行不可见 | 用户查询带 `WHERE status = 'active'` | 编码规范 |
-| INV-D3 软删除保留历史 | `deleted_at` + change_log | INSERT change_log |
-| INV-D4 schema 版本可追溯 | schema_version 单调 | migration |
-| INV-D5 change_log action 在枚举内 | CHECK 约束 | INSERT |
-| INV-D6 storage_mode 在枚举内 | CHECK 约束 | INSERT |
-| INV-D7 origin 在枚举内 | CHECK 约束 | INSERT |
-| INV-D8 status 在枚举内 | CHECK 约束 | INSERT/UPDATE |
-| INV-D9 scan session 状态可恢复 | `scan_sessions.status` CHECK | 扫描启动/恢复 |
-
-`fsck` 命令跑：
-
-```sql
-SELECT id FROM files WHERE status = 'active' AND deleted_at IS NOT NULL;
-SELECT id FROM files WHERE hash_sha256 NOT GLOB '[0-9a-f]*' OR LENGTH(hash_sha256) != 64;
-SELECT cl.id FROM change_log cl LEFT JOIN files f ON f.id = cl.file_id
-  WHERE cl.action != 'deleted' AND cl.file_id IS NOT NULL AND f.id IS NULL;
-```
-
----
-
-## Migration 策略
-
-### 文件布局
-
-```text
-core/src/db/
-├── schema.sql              # v1 完整 schema
-└── migrations/
-    ├── m_002_add_xxx.sql
-    ├── m_003_xxx.sql
-    └── ...
-```
-
-### 启动时检查
-
-```rust
-fn run_migrations(conn: &mut rusqlite::Connection) -> CoreResult<()> {
-    let current: i64 = conn.query_row(
-        "SELECT COALESCE(MAX(version), 0) FROM schema_version",
-        [], |r| r.get(0)
-    )?;
-
-    let latest: i64 = LATEST_VERSION;
-    for v in (current + 1)..=latest {
-        let sql = match v {
-            2 => include_str!("migrations/m_002_scan_session_review_counts.sql"),
-            _ => continue,
-        };
-        let tx = conn.transaction()?;
-        tx.execute_batch(sql)?;
-        tx.execute(
-            "INSERT INTO schema_version (version, applied_at) VALUES (?1, strftime('%s', 'now'))",
-            rusqlite::params![v],
-        )?;
-        tx.commit()?;
-        tracing::info!("applied migration v{}", v);
-    }
-    Ok(())
-}
-```
-
-详见 [migration.md](migration.md)。
-
----
-
-## 备份与恢复
-
-### 自动备份
-
-应用启动时如果检测到 `index.db` 存在：
-
-- 创建 `.areamatrix/index.db.bak.<timestamp>`（保留最近 5 份）
-- 每次 migration 前额外创建 `.areamatrix/index.db.pre-v<N>.bak`
-
-### 手动恢复
-
-```bash
-cp <repo>/.areamatrix/index.db.bak.<timestamp> <repo>/.areamatrix/index.db
-```
-
-### 完全重建
-
-应用提供「从文件系统重新索引」按钮：
-
-- 扫描 `<repo>/`，跳过 `.areamatrix/` 与可忽略目录，对每个用户文件计算 hash 并 INSERT 到 files
-- 通过 `scan_sessions(kind='reindex')` 记录进度，允许中断后恢复或重跑
-- 重建得到的行使用 `storage_mode='indexed'`，`origin='external'`；首次接管扫描使用 `origin='adopted'`
-- 旧 change_log 历史全部丢失；重建过程可重新写入 `imported` / `startup_reconcile` 类事件作为新的起点
-
-> 完全重建会丢失改动历史，但用户的文件本身永远不会丢。这是产品级的"真相在文件系统"承诺的体现。
-
----
-
-## 100 万文件以上的考量
-
-100 万文件以上需要后续大库优化。需要的改造：
-
-- files 表分片（按 category 或时间分区）
-- 全文搜索切换到独立服务（不在 SQLite）
-- 增量备份策略
-- WAL checkpoint 自动调度
-
----
+删除 `.areamatrix/` 不删除用户文件，但会丢失不能从文件系统重建的 tags、notes、history、saved searches
+和配置。
 
 ## Related
 
-- [overview.md](overview.md)
-- [adopt-existing-folders.md](adopt-existing-folders.md)
-- [transactional-import.md](transactional-import.md)
-- [source-of-truth.md](source-of-truth.md)
 - [migration.md](migration.md)
-- [../modules/storage.md](../modules/storage.md)
+- [source-of-truth.md](source-of-truth.md)
+- [transactional-import.md](transactional-import.md)
 - [../modules/change-log.md](../modules/change-log.md)
+- [../api/core-api.md](../api/core-api.md)

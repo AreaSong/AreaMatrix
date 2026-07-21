@@ -227,9 +227,11 @@ namespace area_matrix {
     );
 
     // replace confirmation may compose this existing deletion contract only for
-    // recoverable repo-owned discarded versions. There is no hard-delete flag;
-    // platforms must disable Replace when Trash or a documented safety backup
-    // is unavailable.
+    // recoverable repo-owned discarded versions. Swift owns the host availability
+    // probe and dangerous confirmation; Core owns the actual Trash mutation,
+    // metadata/change-log/Undo commit, and failure rollback. There is no
+    // hard-delete flag; platforms must disable Replace when Trash or a documented
+    // safety backup is unavailable.
     [Throws=CoreError]
     void delete_file(string repo_path, i64 file_id);
 
@@ -2601,8 +2603,8 @@ interface CoreError {
 | `init_logging(level)` | meta | √ | Config |
 | `inspect_binding_contract(request)` | ffi | √ | Config / Internal |
 | `get_platform_capabilities(platform, app_version)` | platform | √ | Config |
-| `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder |
-| `validate_initialized_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / RepoNotInitialized |
+| `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / Io / Db |
+| `validate_initialized_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / RepoNotInitialized / Io / Db |
 | `init_repo(path, options)` | repo | √ | Io / Config / PermissionDenied |
 | `load_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |
 | `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |
@@ -2625,15 +2627,15 @@ interface CoreError {
 | `apply_ai_tag_suggestions(repo, request)` | ai | √ | Config / FileNotFound / Db |
 | `list_ai_privacy_rules(repo)` | ai/privacy | √ | Config / Db |
 | `update_ai_privacy_rules(repo, request)` | ai/privacy | √ | Config / Db |
-| `evaluate_ai_privacy(repo, request)` | ai/privacy | √ | Config / Db |
+| `evaluate_ai_privacy(repo, request)` | ai/privacy | √ | Config |
 | `get_ai_fallback_status(repo, request)` | ai/fallback | √ | Config / PermissionDenied / Internal |
 | `semantic_search(repo, query, filter, pagination)` | ai/search | √ | Config / PermissionDenied / Db / Internal |
 | `build_embedding_index(repo, scope)` | ai/search | √ | Config / PermissionDenied / Db / Internal |
 | `recover_on_startup(repo)` | repo | √ | Db |
 | `preview_manual_rescan(repo)` | repo | √ | Io / Db / PermissionDenied / Conflict |
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db / PermissionDenied / Conflict |
-| `create_diagnostics_snapshot(repo)` | repo | √ | Db / PermissionDenied / Io / Internal |
-| `repair_metadata(repo, options)` | repo | √ | Db / PermissionDenied / Io / Internal |
+| `create_diagnostics_snapshot(repo)` | repo | √ | InvalidPath / RepoNotInitialized / FileNotFound / PermissionDenied / Io / Internal |
+| `repair_metadata(repo, options)` | repo | √ | InvalidPath / RepoNotInitialized / Conflict / Db / PermissionDenied / Io / Internal |
 | `get_latest_scan_session(repo)` | repo | √ | Db |
 | `resume_scan_session(repo, id)` | repo | √ | Io / Db |
 | `predict_category(repo, name)` | classify | √ | Config / Classify |
@@ -2692,11 +2694,11 @@ interface CoreError {
 | `acknowledge_onedrive_risk_notice(repo)` | cloud | √ | ICloudPlaceholder / PermissionDenied / Io |
 | `preview_import_conflict_batch(repo, request)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
 | `apply_import_conflict_batch(repo, request, preview_token)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
-| `read_note(repo, file_id)` | note | √ | Io |
-| `write_note(repo, file_id, content)` | note | √ | Io |
-| `sync_external_changes(repo, events)` | sync | √ | Db |
-| `get_fs_event_cursor(repo)` | sync | √ | Db |
-| `set_fs_event_cursor(repo, id)` | sync | √ | Db |
+| `read_note(repo, file_id)` | note | √ | InvalidPath / FileNotFound / PermissionDenied / Io / Db |
+| `write_note(repo, file_id, content)` | note | √ | InvalidPath / FileNotFound / PermissionDenied / Io / Db |
+| `sync_external_changes(repo, events)` | sync | √ | InvalidPath / RepoNotInitialized / FileNotFound / ICloudPlaceholder / Conflict / PermissionDenied / Io / Db |
+| `get_fs_event_cursor(repo)` | sync | √ | InvalidPath / RepoNotInitialized / ICloudPlaceholder / PermissionDenied / Io / Db |
+| `set_fs_event_cursor(repo, id)` | sync | √ | InvalidPath / RepoNotInitialized / ICloudPlaceholder / PermissionDenied / Io / Db |
 | `record_watcher_health(repo, signal)` | sync/watcher | √ | Db / Io |
 | `map_core_error(input)` | error | × | — |
 
@@ -2711,7 +2713,7 @@ macOS 应用可以在平台层组合稳定 API：
 - 文件详情当前先用 `get_file` + `list_changes` + `read_note` 组合；当前合同不提供详情聚合 DTO。
 - 导入进度 / 队列语义由 Swift 侧编排多次导入调用，覆盖 copied-file import, moved-file import, indexed-file import；Core 不提供流式导入队列合同。
 - `validate_initialized_repo_path` 负责 Core 的资料库基础校验。macOS 平台层如读取现有 metadata，只能以只读方式打开已存在的 `.areamatrix/index.db`；缺失、锁定、损坏或不兼容数据库必须返回错误，不得创建、迁移或修改数据库。
-- 错误映射元数据由 `map_core_error` 提供稳定结构；每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串。Swift `AppError` 包装层只负责本地化与展示编排。
+- 错误映射元数据由 `map_core_error` 提供稳定结构；每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串。Swift 错误包装层（`AppSemanticError` 与 `AppErrorMappingProviding`）只负责本地化与展示编排。
 
 Search、标签、批量操作、Undo/Redo、命令索引、分类规则、AI、隐私、语义搜索、冲突处理和平台能力矩阵均已进入 UDL。Search 包括 search query `search_files`、search facets `list_filter_facets` 和 saved search CRUD；调用方必须按各章节的副作用与错误合同使用。
 
@@ -2872,13 +2874,16 @@ case nil:
 - `hasUnfinishedScanSession`：是否存在未完成的 adopt / reindex scan session。
 - `recommendedMode`：路径可用于初始化时推荐 `CreateEmpty` 或 `AdoptExisting`，不可用时为 `nil`。
 - `issues`：结构化问题列表，UI 不需要解析错误字符串即可展示风险；Windows / OneDrive
-  场景会包含 `OneDrivePath`、`WindowsReservedName` 或 `WindowsCaseInsensitive`。
+  场景会包含 `OneDrivePath` 或 `WindowsCaseInsensitive`。Windows 保留名不进 issues，
+  直接按 `InvalidPath` 硬错误拒绝；`WindowsReservedName` 是合同中预留的 issue 值，当前不构造。
 
 错误：
 
-- `InvalidPath`：路径为空、不是可接受的文件系统路径、或位于 `.areamatrix/` 内部。
+- `InvalidPath`：路径为空、不是可接受的文件系统路径、含 Windows 保留名、或位于 `.areamatrix/` 内部。
 - `PermissionDenied`：无法读取目录 metadata、列出目录内容或确认写权限。
 - `ICloudPlaceholder`：候选路径或关键 metadata 仍是未下载的 iCloud 占位符。
+- `Io`：目录 metadata 读取失败且无法归入以上错误。
+- `Db`：scan session 状态读取失败。
 - `RepoNotInitialized`：不由本入口返回；调用方要求已初始化语义时使用
   `validate_initialized_repo_path`。
 
@@ -2908,6 +2913,7 @@ if validation.isInitialized {
 - `InvalidPath`：路径为空、不是可接受的文件系统路径、或位于 `.areamatrix/` 内部。
 - `PermissionDenied`：无法读取目录 metadata、列出目录内容或确认写权限。
 - `ICloudPlaceholder`：候选路径或关键 metadata 仍是未下载的 iCloud 占位符。
+- `Io` / `Db`：同 `validate_repo_path`，metadata 读取兜底与 scan session 状态读取失败。
 
 ### `init_repo(repoPath: String, options: RepoInitOptions) throws`
 
@@ -2919,10 +2925,10 @@ let options = RepoInitOptions(
 )
 do {
     try AreaMatrix.initRepo(repoPath: selectedURL.path, options: options)
-} catch CoreError.Config(let reason) {
-    if reason.contains("already managed") {
-        await showAlert("这个目录已经是 AreaMatrix 资料库")
-    }
+} catch CoreError.Config {
+    // 已初始化、目录非空、有未完成 scan session 等一律归一为
+    // Config("configuration error")；按错误变体分支，不解析 reason 字符串。
+    await showAlert("这个目录当前不能初始化为 AreaMatrix 资料库")
 } catch {
     throw error
 }
@@ -2935,7 +2941,7 @@ do {
 - 创建 `.areamatrix/{staging, archives, generated}/`
 - 复制默认 `classifier.yaml`
 - 创建默认 `ignore.yaml`
-- 创建 SQLite + 应用 schema v1
+- 创建 SQLite 并写入当前初始 schema；新库直接落在最新 `schema_version`（当前为 2），不重放历史迁移
 - `AdoptExisting` 模式下启动 `scan_sessions(kind=Adopt)` 并执行内部接管扫描
 - 默认生成 `.areamatrix/generated/root.md`
 - 仅当 `overview_output = RootAreaMatrixFile` 时写入/维护根目录 `AREAMATRIX.md`
@@ -3175,7 +3181,8 @@ local model status 的本地模型状态读取入口，服务 `local model statu
 
 副作用边界：
 
-- 状态检查只读本地模型 manifest、模型目录 metadata、磁盘占用、缓存状态和 runtime 健康 metadata。
+- 状态检查只读本地模型 manifest、模型目录 metadata、磁盘占用、缓存状态和 runtime 健康 metadata；
+  每次成功检查会把脱敏快照写入 AreaMatrix-owned status cache（repo DB 状态表），这是唯一写入。
 - 不下载、安装、删除、训练模型，不改写模型权重，不读取用户文件内容，不调用远程 provider，
   不写 AI call log，不自动启用远程 fallback。
 - 本地模型不可用时，调用方只能显示本地修复、安装帮助、诊断或非 AI 回退；不得把返回状态解释成
@@ -3572,6 +3579,10 @@ AI call log 的 AI 调用日志读取入口，服务 `AI call log surface ai-cal
 - `sent_fields` 只包含字段类型：`FileName`、`RepoRelativePath`、`Extension`、
   `ExtractedTextExcerpt`、`AiSummary`、`NoteSummary`、`TagCategoryContext`。
 - `privacy_rules_checked`、`privacy_rule_id`、`privacy_rule_name`、`matched_field_type`。
+- `privacy_rules_checked` 表示 producer 已完成 privacy gate 评估，和是否命中规则相互独立；允许但未命中规则的
+  调用仍为 `true`。`privacy_rule_id` / name / matched field 只在命中规则时存在。
+- 兼容旧 schema 时，非空 rule id 可证明 checked；rule id 为空的历史行只能保守返回 `false`，表示
+  “没有可证明的检查记录”，不能据此断言旧调用绕过了规则。
 - `result_summary` 是脱敏摘要，不得包含完整 prompt、完整输出或原始 provider 响应。
 
 隐私和副作用边界：
@@ -3582,6 +3593,8 @@ AI call log 的 AI 调用日志读取入口，服务 `AI call log surface ai-cal
   配置、编辑隐私规则、删除 AI 结果或触碰用户文件。
 - 隐私规则命中记录必须能表达 `Skipped`、sent fields none、rule id/name、feature、
   file/batch、provider gate 和 result `No AI call was made`。
+- AI/feature 在 privacy gate 之前被禁用的记录使用 `privacy_rules_checked = false`；成功、失败、no-input、
+  privacy skip 等已经经过 gate 的记录使用 `true`。
 
 错误：
 
@@ -3674,8 +3687,9 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 - `generated_at`：草稿生成时间，未知时为 nil。
 - `used_context`：实际使用或允许展示的字段类型，包含 filename、repo-relative path、
   extracted text excerpt、existing AI summary、note summary、tag/category context。
-- `skipped_reason`：`AiDisabled`、`FeatureDisabled`、`ProviderUnavailable`、`PrivacyRule`、
-  `NoEligibleInput` 或 `CallLogUnavailable`。
+- `skipped_reason`：`AiDisabled`、`FeatureDisabled`、`ProviderUnavailable`、`PrivacyRule` 或
+  `NoEligibleInput`。`CallLogUnavailable` 是合同预留值，当前实现对 call log gate 失败直接返回
+  `Db` 错误而不是结构化 Skipped。
 - `privacy_rule_id` / `call_log_id`：供页面跳转隐私规则和调用日志；具体日志读写属于 AI call log，
   隐私规则详情属于 AI privacy rules。
 - `requires_user_save`：必须为 true。生成结果默认是草稿，不能直接写正式摘要。
@@ -3691,7 +3705,8 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 - 隐私规则命中时必须返回 `Skipped` / `PrivacyRule`，`used_context` 为空或只包含允许展示字段；
   sent fields 由 AI call log 记录为 none。
 - 失败、跳过或取消不得改变文件、摘要、notes、tags、分类、AI settings、provider metadata、
-  privacy rules、AI call log、generated overview 或任何用户文件。
+  privacy rules、generated overview 或任何用户文件；AI call log 除外，skip / 失败 / 不可用
+  同样登记调用日志行并返回 `call_log_id`（隐私跳过的 sent fields 记录为 none）。
 
 错误：
 
@@ -3839,8 +3854,9 @@ AI tag suggestions 的 AI 标签建议入口，服务 `AI tag suggestion surface
   provider 原始响应或文件内容。
 - `used_context`：实际使用或允许展示的字段类型，包含 filename、repo-relative path、limited
   extracted text excerpt、AI summary、note summary、existing tags 或 tag registry。
-- `skipped_reason`：`AiDisabled`、`FeatureDisabled`、`ProviderUnavailable`、`PrivacyRule`、
-  `NoEligibleInput` 或 `CallLogUnavailable`。
+- `skipped_reason`：`AiDisabled`、`FeatureDisabled`、`ProviderUnavailable`、`PrivacyRule` 或
+  `NoEligibleInput`。`CallLogUnavailable` 是合同预留值，当前实现对 call log gate 失败直接返回
+  `Db` 错误而不是结构化 Skipped。
 - `privacy_rule_id` / `call_log_id`：供页面跳转隐私规则和调用日志；具体日志读写属于 AI call log，
   隐私规则详情属于 AI privacy rules。
 - `requires_user_confirmation`：必须为 true。建议在用户采纳前不得写入正式标签。
@@ -4059,7 +4075,6 @@ AI privacy rules 的隐私 gate 评估入口。AI 分类、摘要、标签和语
 错误：
 
 - `Config`：`repoPath`、字段集合、规则、provider scope 或 context 无效。
-- `Db`：实现需要加载 privacy metadata、registry 或匹配统计但读取失败。
 
 页面消费状态：
 
@@ -4177,10 +4192,13 @@ scope 和分页与普通搜索保持同一合同。
 - `deduped_normal_count`：被语义组折叠的普通搜索重复数量。
 - `index_status`：`Ready`、`NotReady`、`Building`、`Paused`、`Canceled`、`Failed` 或
   `Partial`。
-- `route`：`Local` 或 `Remote`；未进入 AI 路线时为 `nil`。
+- `route`：`Local` 或 `Remote`；未进入 AI 路线时为 `nil`。当前实现尚未接通远程语义路线：
+  `RemoteFirst` / `route=Remote` 一律回退为 `ProviderUnavailable`，成功构建的 `provider_name`
+  恒为本地模型。
 - `fallback_reason` / `fallback_message`：`AiDisabled`、`FeatureDisabled`、
   `ProviderUnavailable`、`PrivacyRule`、`SemanticIndexNotReady`、`CallLogUnavailable`、
   `NoEligibleInput`、`NormalSearchUnavailable`、`RateLimited` 或 `Timeout`。
+  `RateLimited` / `Timeout` 为合同预留值，当前实现不构造。
 - `call_log_id` / `privacy_rule_id`：跳转 AI call log surface / AI privacy rules surface 所需的追溯 id。
 - `low_confidence`：语义组存在低置信结果时为 true。
 
@@ -4253,6 +4271,7 @@ semantic search 的 embedding index 构建入口，服务 semantic search surfac
   AI call log；不得移动、删除、重命名、覆盖、Trash、导入或改写任何用户文件。
 - 远程 embedding 只在远程 AI 显式启用、SemanticSearch scope 允许、测试连接成功、隐私规则通过且
   call-log gate 可用后进入；隐私命中文件不得进入远程队列，sent fields 必须为 none。
+  当前实现尚未接通远程 embedding：请求远程路线时回退为 `ProviderUnavailable`，不发出网络请求。
 - 取消、暂停、清理未提交 index batch 和远程队列停止语义由独立的 semantic search
   recovery / queue-management 合同承载；本合同只定义启动和报告形状。
 
@@ -4372,10 +4391,13 @@ metadata repair 的只创建诊断入口。调用方在用户确认修复后、�
 
 错误与副作用边界：
 
-- `Db`：损坏 metadata 无法以诊断模式打开或读取。
+- `InvalidPath`：`repoPath` 为空、不安全，或命中 metadata 内部路径。
+- `RepoNotInitialized`：候选目录没有 `.areamatrix/` 元数据。
+- `FileNotFound`：诊断材料源路径不存在。
 - `PermissionDenied`：无法写入 `.areamatrix/` 诊断位置。
 - `Io`：复制或读取诊断材料失败。
 - `Internal`：诊断快照路径不在 `.areamatrix/` 内等不变量失败。
+- 诊断快照只做文件级复制，不打开 SQLite，因此不返回 `Db`。
 - 不修改 `files`、`scan_sessions` 或用户文件。
 - 不写 `AREAMATRIX.md`、`README.md` 或 `.areamatrix/generated/`。
 - 云端备份恢复和自动上传诊断不属于当前诊断合同。
@@ -4414,6 +4436,8 @@ metadata 层可恢复修复（metadata repair only）。`preserve_diagnostics_sn
 
 错误与副作用边界：
 
+- `InvalidPath` / `RepoNotInitialized`：同诊断快照入口的路径与初始化校验。
+- `Conflict`：`full_rescan = true` 且已有 Running scan session。
 - `Db`：SQLite 损坏、schema 读取、metadata upsert 或 scan session 持久化失败。
 - `PermissionDenied`：`.areamatrix/` 诊断、DB 或 metadata 写入被阻断。
 - `Io`：文件系统遍历、诊断材料复制或 metadata 读取失败。
@@ -4515,7 +4539,7 @@ func importDroppedFile(_ url: URL) async {
 
 | destination | 使用字段 | 目标规则 |
 |---|---|---|
-| `AutoClassify` | `override_category` 可选 | 根据 classifier 推断；低置信或无命中进 `inbox/` |
+| `AutoClassify` | `override_category` 可选 | 根据 classifier 规则推断；无命中走默认分类 `inbox/` |
 | `SelectedDirectory` | `target_directory` 必填 | 放入用户显式 drop 的目录，不再自动分类 |
 | `Category` | `override_category` 必填 | 放入指定系统分类目录，必要时创建 `<slug>/` |
 
@@ -4552,8 +4576,9 @@ final 文件、写 DB、写导入日志、刷新生成概览，再尝试移除�
 结果必须标记 `Retained`，UI 显示 `Imported, original retained`，并且不得把
 该项标记为完整 Move。
 
-Replace 仍属于 replace confirmation / `replace confirmation surface`，Trash / Recycle Bin 能力检测、文件夹批量、
-拖拽入口和多项进度仍由平台/UI 层处理。
+Replace 仍属于 replace confirmation / `replace confirmation surface`。Swift 平台/UI 层负责宿主 Trash / Recycle
+Bin availability probe、危险确认、文件夹展开、拖拽入口和多项进度；确认后的实际 Trash mutation、DB/change
+log/Undo 写入及失败回滚由 Core 负责。
 
 可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `PermissionDenied` / `Internal`。
 
@@ -4581,20 +4606,25 @@ func deleteFile(_ entry: FileEntry) async {
 `delete_file` 是用户确认后的 repo-owned 删除入口：仅用于 `Copied` / `Moved`
 等 AreaMatrix 管理的 active 条目。成功时 Core 必须把目标文件移入系统 Trash，
 将对应 metadata 标记为 `files.status = deleted`，刷新 `deleted_at` / `updated_at`，
-并写入 `change_log.action = deleted`。
+写入 `change_log.action = deleted`，并创建可撤销状态。Swift 在调用前只负责宿主 availability
+probe、危险确认和 UI 状态，不得自行移动文件、写 DB/change log 或拼装 Undo。
 
 副作用边界：
 
 - 不提供永久删除参数，不直接物理删除目标文件。
 - 不删除、移动、重命名或覆盖任何其他用户文件。
 - 不清空 notes / tags 等关联 metadata。
-- Indexed、Adopted、External 或 Missing 条目的索引移除必须使用
-  `remove_index_entry`。
+- Indexed、Adopted、External 条目的索引移除必须使用
+  `remove_index_entry`；repo-owned Missing 条目的记录移除走
+  `remove_missing_file_record`。
+- 如果 Trash mutation 已发生，但 metadata、change log 或 Undo 持久化失败，Core 必须尝试把文件恢复到
+  原 repo 路径并回滚本次 DB 变更；回滚失败必须返回明确错误，不得报告成功或留下无 Undo 的已删除状态。
 
 错误：
 
 - `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
-- `PermissionDenied`：系统 Trash、目标文件或 metadata 写入被权限阻断。
+- `PermissionDenied`：系统 Trash、目标文件或 metadata 写入被权限阻断，或条目不是
+  repo-owned（此类条目走 `remove_index_entry`）。
 - `Io`：Trash 或文件系统操作失败。
 - `Db`：SQLite 查询、软删除或 change log 写入失败。
 - `Internal`：Trash 适配或状态转换出现未预期错误。
@@ -4621,7 +4651,8 @@ func removeIndexEntry(_ entry: FileEntry) async {
 ```
 
 `remove_index_entry` 是 index-only 删除入口：用于 Indexed / Adopted / External
-或 Missing metadata，不移动、不删除、不重命名、不覆盖、不 Trash 外部源文件。
+metadata（含其 Missing 状态；repo-owned Missing 记录走 `remove_missing_file_record`），
+不移动、不删除、不重命名、不覆盖、不 Trash 外部源文件。
 成功时 Core 只更新 metadata，使该条目不再出现在默认 list/detail 中，并写入
 `change_log.action = removed_from_index`。
 
@@ -4636,7 +4667,8 @@ func removeIndexEntry(_ entry: FileEntry) async {
 错误：
 
 - `FileNotFound`：`fileId` 对应的 removable active row 不存在。
-- `PermissionDenied`：metadata 写入被权限阻断。
+- `PermissionDenied`：metadata 写入被权限阻断，或条目是 repo-owned
+  （此类条目走 `delete_file`）。
 - `Db`：SQLite 查询、索引移除或 change log 写入失败。
 - `Internal`：状态转换出现未预期错误。
 
@@ -4677,10 +4709,10 @@ appState.replaceFile(updated)
 
 - `InvalidPath`：`repoPath` 或 `newName` 为空、不安全，或命中 metadata 内部路径。
 - `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
-- `Conflict`：安全目标名无法解析。
+- `Conflict`：安全目标名无法解析，或伴生 note sidecar 的目标名已被占用。
 - `PermissionDenied`：文件系统 rename 或 metadata 写入被权限阻断。
 - `Io`：文件系统读写失败。
-- `Db`：SQLite 查询、更新或 change log 写入失败。
+- `Db`：SQLite 查询、更新或 change log 写入失败。sidecar 内容与 DB note 不一致时也归一为 Db。
 - `Config`：generated overview 输出配置无效。
 
 ### `preview_move_to_category(repoPath, fileId, newCategory) throws -> MoveToCategoryPreview`
@@ -4752,17 +4784,18 @@ let moved = try await Task.detached {
   不覆盖已有文件，编号耗尽或竞态无法解析时抛 `Conflict`。
 - Indexed 文件只更新 `files.category`、`updated_at` 和 `change_log.moved`，
   保留 `files.path` / `files.source_path`，不移动、重命名或覆盖外部源文件。
-- 成功改分类不改变 `file_id`、`original_name`、`current_name`、hash、storage
-  mode、origin、source path、tags 或 notes。
+- 成功改分类不改变 `file_id`、`original_name`、hash、storage mode、origin、
+  source path、tags 或 notes；repo-owned 移动在目标同名时按安全编号解析，
+  `current_name` 会同步为最终落位名（与 preview 的 `name_conflict_resolved` 一致）。
 
 错误：
 
 - `Classify`：目标分类不存在或 classifier 规则不可用。
 - `FileNotFound`：`fileId` 对应的 active row 不存在，或 repo-owned 文件已消失。
-- `Conflict`：目标同名安全路径无法解析。
+- `Conflict`：目标同名安全路径无法解析，或伴生 note sidecar 的目标已被占用。
 - `PermissionDenied`：文件系统移动或 metadata 写入被权限阻断。
 - `Io`：文件系统读写失败。
-- `Db`：SQLite 查询、更新或 change log 写入失败。
+- `Db`：SQLite 查询、更新或 change log 写入失败。sidecar 内容与 DB note 不一致时也归一为 Db。
 
 ## query API
 
@@ -5450,8 +5483,8 @@ batch delete 的只读批量删除预览入口，服务 `batch delete confirmati
 - `delete_mode`：回显本次预览模式，避免 UI 混淆 Trash 删除和 index-only 移除。
 - `preview_token`：绑定本次选择集、模式、Trash 可用性和已检查文件状态的确认令牌；执行
   API 必须带回该值。
-- `trash_available`：系统 Trash 是否可用于 repo-owned 删除；为 `false` 时 UI 必须禁用
-  `Move to Trash`，不得提供永久删除替代。
+- `trash_available`：Core 对当前 repo-owned 删除请求执行安全复核后的 Trash 可用状态；Swift 仍须先做
+  宿主 availability probe。任一侧为 `false` 时 UI 必须禁用 `Move to Trash`，不得提供永久删除替代。
 - `undo_available`：本次可处理项是否能创建 undo action log；为 `false` 时 batch delete confirmation
   必须显示 Undo 不可用确认区。
 - `will_trash_count`：确认后会移动到 Trash 的 repo-owned 文件数。
@@ -5467,7 +5500,8 @@ batch delete 的只读批量删除预览入口，服务 `batch delete confirmati
 
 副作用边界：
 
-- 只读检查 DB、文件状态、Trash 可用性和权限。
+- 只读检查 DB、文件状态、操作级 Trash 前置条件和权限；Swift 的宿主 availability probe 只用于 UI
+  gate，不能替代 Core 执行前复核。
 - 不移动文件到 Trash，不移除 index row，不写 `files`、`change_log`、`undo_actions`、
   notes、tags、saved searches、generated overview 或任何用户文件。
 - 不提供永久删除，不清空 Trash，不删除外部源文件，不触发 iCloud placeholder 下载。
@@ -5477,7 +5511,6 @@ batch delete 的只读批量删除预览入口，服务 `batch delete confirmati
 错误：
 
 - `FileNotFound`：`fileIds` 为空、包含非法 id，或运行时发现必须阻断的 active row 缺失。
-- `Conflict`：preview token 缺失/过期、选择集/模式/Trash 可用性或 inspected state 已变化。
 - `PermissionDenied`：Trash、metadata、目标文件或权限 inspection 被阻断。
 - `Io`：Trash 可用性、文件系统 metadata 或路径检查失败。
 - `Db`：SQLite 查询、file row、Trash/undo 预检状态读取失败。
@@ -5498,6 +5531,8 @@ batch delete 的批量删除执行入口，服务 `batch delete confirmation` �
 `Move to Trash` / `Remove from index`，并向 `undo toast` / undo action log 提供可撤销操作状态。
 输入必须带回用户刚确认的 `preview_token`，并与 preview 状态一致；如果选择集、模式、
 Trash 可用性或 inspected state 变化，Core 必须拒绝不安全写入并让 UI 重新 Preview。
+Swift 负责 availability probe、危险确认和报告呈现；不得在调用前后自行执行 Trash mutation、
+DB/change log 写入或 Undo 拼装。
 
 输出 `BatchDeleteReport`：
 
@@ -5747,7 +5782,7 @@ classifier rule save 的分类规则保存入口，服务 `classifier save-rule 
 输入是已初始化 `repoPath` 和一个 `ClassifierRule`。`target_category` 必须是已存在的
 classifier category slug；`keywords` 和 `extensions` 是追加到目标分类的独立匹配值，
 不是 keyword AND extension 复合规则；`extensions` 必须是不带点的小写值；`priority`
-范围是 `-1000..1000`；`preview_confirmed` 表示 UI 已经完成必需的影响预览确认。
+范围是 `-1000..=1000`；`preview_confirmed` 表示 UI 已经完成必需的影响预览确认。
 
 输出 `ClassifierRule`：
 
@@ -5927,7 +5962,7 @@ ruleEditor.replaceSnapshot(snapshot)
 
 classifier rule editor 的新建分类入口，服务 classifier rule editor surface 的 `New category` 后 Validate + Save。输入是
 已初始化 `repoPath` 和一个 `ClassifierRuleCreateRequest`。`slug` 是写回 classifier
-的分类 slug；扩展名必须是不带点的小写值；`priority` 范围为 `-1000..1000`；
+的分类 slug；扩展名必须是不带点的小写值；`priority` 范围为 `-1000..=1000`；
 `naming_template` 只允许当前 `classifier.yaml` 支持的模板字段。新建分类不会自动影响
 历史文件，因此不要求 impact preview confirmation。
 
@@ -5981,7 +6016,7 @@ ruleEditor.replaceSnapshot(snapshot)
 classifier rule editor 的编辑保存入口，服务 classifier rule editor surface 的 Validate 后 Save。输入是已初始化
 `repoPath` 和一个 `ClassifierRuleUpdate`。`rule_id` 是稳定目标行，`slug` 是写回
 classifier 的分类 slug；扩展名必须是不带点的小写值；`priority` 范围为
-`-1000..1000`；`naming_template` 只允许当前 `classifier.yaml` 支持的模板字段。
+`-1000..=1000`；`naming_template` 只允许当前 `classifier.yaml` 支持的模板字段。
 `preview_confirmed` 表示删除/大范围变更前 UI 已经完成影响预览或等价摘要确认。
 
 输出仍为 `ClassifierRuleEditorSnapshot`，让 classifier rule editor surface 在保存成功后用同一份已持久化快照
@@ -6765,6 +6800,7 @@ cloud storage state 的云盘权限状态入口，也是 OneDrive risk notice �
 
 错误：
 
+- `InvalidPath`：`repoPath` 为空，或命中 `.areamatrix` metadata 内部路径。
 - `ICloudPlaceholder`：资料库路径或关键 metadata 仍是可见云端占位符。
 - `PermissionDenied`：metadata 或目录读取被权限阻断。
 - `Io`：其他只读文件系统探测失败，例如路径不存在、不是目录或 metadata 不可读。
@@ -6807,6 +6843,7 @@ OneDrive 风险文案后调用；调用成功后返回刷新后的 `CloudStorage
 
 错误：
 
+- `InvalidPath`：`repoPath` 为空，或命中 `.areamatrix` metadata 内部路径。
 - `ICloudPlaceholder`：资料库路径或关键 metadata 仍是可见云端占位符。
 - `PermissionDenied`：metadata、目录读取或 acknowledgement 写入被权限阻断。
 - `Io`：路径不是目录、metadata 缺失、repo 尚未初始化、SQLite 写入或其他只读 / metadata 探测失败。
@@ -6865,7 +6902,6 @@ applyButton.isEnabled = preview.canApply && !preview.replaceConfirmationRequired
 错误：
 
 - `FileNotFound`：`import_session_id` 为空、`conflict_ids` 为空，或指定 session/conflict 已不存在。
-- `Conflict`：策略组合无法安全预览、作用域与当前 staging state 无法绑定。
 - `PermissionDenied`：metadata、staging、Trash 或目标路径 inspection 被权限阻断。
 - `StagingRecoveryRequired`：存在未恢复的 staging residue 或 import session 状态不一致，必须先恢复。
 - `Io`：staging 文件、目标路径、Trash preflight 或 metadata inspection 失败。
@@ -6943,7 +6979,15 @@ if let note = try AreaMatrix.readNote(repoPath: repoPath, fileId: entry.id) {
 }
 ```
 
-无笔记时返回 `nil`。
+DB 中没有 note row 时返回 `nil`，不会自动接管同名 Markdown 文件。DB 存在时，Core 同时读取
+`<filename>.md`；只有两者内容一致才返回笔记。sidecar 缺失、无法读取或内容与 DB 不一致时返回错误，
+不用任一侧静默覆盖另一侧。
+
+外部编辑受管 sidecar 不会自动回写 DB。watcher 只把该事件作为可确认 cursor 的受管事件跳过，下一次
+`read_note` 或 `write_note` 会暴露不一致。
+
+sidecar 或其父目录的读取权限不足时返回 `PermissionDenied`；其他文件系统读取失败返回 `Io`，note
+metadata 查询失败返回 `Db`。这些错误都不会修改 DB、sidecar 或用户文件。
 
 ### `write_note(repoPath, fileId, contentMd) throws`
 
@@ -6975,6 +7019,15 @@ func saveNote(_ entry: FileEntry, content: String) async {
 
 `InFlightTracker` 标记避免 watcher 把这次写视为外部变化（详见 [../architecture/fs-watcher.md](../architecture/fs-watcher.md)）。
 
+写入前 Core 校验旧状态：
+
+- DB 与 sidecar 都不存在：允许创建。
+- 两者存在且内容一致：允许替换。
+- 只有一侧存在或内容不一致：返回错误，不覆盖用户内容。
+
+sidecar 先通过同目录临时文件原子落位；`notes` row 与 `edited_note` change log 在同一 transaction 中提交。
+DB 提交失败时恢复旧 sidecar。
+
 ---
 
 ## sync API
@@ -6994,28 +7047,73 @@ let result = try await Task.detached {
     try AreaMatrix.syncExternalChanges(repoPath: repoPath, events: coreEvents)
 }.value
 
-print("created: \(result.detectedCreates), renamed: \(result.detectedRenames), deleted: \(result.detectedDeletes)")
+print(
+    "created: \(result.detectedCreates), renamed: \(result.detectedRenames), " +
+        "deleted: \(result.detectedDeletes), modified: \(result.detectedModifies)"
+)
 appState.refreshList()
 ```
 
-应用调用方在去抖 + InFlight 过滤后传入。详见 [../architecture/source-of-truth.md](../architecture/source-of-truth.md)。
+应用调用方在去抖 + InFlight 过滤后传入按路径归一化的事件。rename 只携带新路径；旧/新路径配对由
+Core 根据稳定 hash 完成，平台层不提供 inode 或路径配对。详见
+[../architecture/source-of-truth.md](../architecture/source-of-truth.md)。
+
+事件行为：
+
+- `Created`：登记新的 external/indexed row；active 同路径幂等跳过，deleted 同路径复用原 file ID 并恢复
+  active，staging 同路径返回 Conflict；不复制或移动用户文件。
+- `Renamed`：Core 按稳定 hash 选择唯一 active 候选，并确认候选旧路径已消失后，更新同一 file ID 的
+  path、name、category 和稳定 metadata 快照；零个或多个候选、旧路径仍存在、或目标路径被 active、
+  staging、deleted 任一 row 占用时都返回 Conflict，不猜测、不降级为其他事件组合。唯一例外是幂等
+  重放：事件收据命中、或 change_log 已记录同一事件的 renamed 结果时，按已应用跳过，不算冲突。
+- `Removed`：只在路径已不存在时 soft-delete 对应 active row。
+- `Modified`：稳定读取后更新已有 row 的 size/hash；未登记的现存路径按 external create 处理。读取期间
+  文件持续变化时返回可重放 Conflict，不推进 cursor。
+
+整批规划成功后，Core 先在一个 SQLite 事务中提交 files/change_log 与 `external_sync_receipts`
+事件收据，再更新受影响概览，最后单独持久化最大 `fs_event_id` 并清理不高于 cursor 的旧收据。
+overview 或 cursor 失败时 cursor 不推进；DB 可能已经提交，重放同一批事件时收据保证幂等：
+整批收据已存在返回零计数成功，收据只有部分存在则返回 Conflict。
+
+受管 note sidecar 事件不登记为普通 external 文件，但合法 event ID 仍计入批次 cursor。Swift watcher 还
+把每次 flush 记录为有序同步窗口并携带 `cursorWatermark`：Core 成功后可补写高于实际 signal 最大值的
+watermark；全部事件在 Swift 层被过滤时形成空窗口，并在前序窗口完成后确认 watermark。Core 或 cursor
+失败必须保留队首并阻断后续窗口，不能静默跳过。
+
+资料库尚未初始化时返回 `RepoNotInitialized`；该错误不创建 `.areamatrix/`、DB 或 cursor，也不触碰用户
+文件。
 
 ### `get_fs_event_cursor(repoPath) throws -> Int64?`
 
 ```swift
 let cursor = try AreaMatrix.getFsEventCursor(repoPath: repoPath)
-let stream = startFSEventStream(sinceWhen: cursor ?? .now)
+guard let cursor else {
+    requestConfirmedFullRescan()
+    return
+}
+let stream = startFSEventStream(sinceWhen: cursor)
 ```
 
-启动时调用，决定 FSEventStream 从哪个 event id 开始重放。
+启动时从已初始化资料库的 `.areamatrix/index.db` 读取。返回 `nil` 只表示 `fs_event_cursor` 尚无持久化
+row，不表示资料库可以未初始化；平台层不得静默从 `SinceNow` 开始，而应进入用户可见的全量重扫恢复。
+
+无效资料库路径返回 `InvalidPath`，缺少 AreaMatrix metadata 返回 `RepoNotInitialized`，placeholder-shaped
+路径返回 `ICloudPlaceholder`，路径检查受权限阻断返回 `PermissionDenied`，其他文件系统检查失败返回
+`Io`，SQLite 打开或查询失败返回 `Db`。
 
 ### `set_fs_event_cursor(repoPath, lastEventId) throws`
 
 ```swift
-try AreaMatrix.setFsEventCursor(repoPath: repoPath, lastEventId: lastBatch.maxEventId)
+try AreaMatrix.setFsEventCursor(repoPath: repoPath, lastEventId: confirmedRescanSeed)
 ```
 
-每批 sync 完成后保存 cursor，断电后下次启动差量重放。
+该 API 用于已初始化资料库的初始 cursor、已确认全量重扫后的恢复 seed，以及 watcher 的 watermark 确认。
+`sync_external_changes` 在 DB 和 overview 成功后负责推进实际业务事件的最大 cursor；Swift 可以在 Core
+成功后补写更高的回调窗口 watermark，或在 filtered-only 窗口到达有序队首时确认 watermark。写入使用
+单调最大值，较旧 seed 不会使 cursor 回退，负 `lastEventId` 返回 `InvalidPath`。
+
+cursor 只写入 `.areamatrix/index.db`。资料库路径校验还可能返回 `InvalidPath`、`RepoNotInitialized`、
+`ICloudPlaceholder`、`PermissionDenied` 或 `Io`；SQLite 打开、transaction 或写入失败返回 `Db`。
 
 ### `record_watcher_health(repoPath, signal) throws -> PlatformWatcherSnapshot`
 
@@ -7071,7 +7169,7 @@ watcher status 页面渲染状态卡、禁用条件、错误摘要和诊断预�
 - 不触发 `sync_external_changes`，不推进 fs event cursor；事件失败不应推进 cursor。
 - 不启动手动 rescan，不调用 `reindex_from_filesystem`，`Run rescan now` 必须进入
   `rescan confirmation`，由 manual rescan 处理确认和扫描。
-- 不打开 Explorer / 文件管理器，不导出诊断包；这些动作属于平台层或独立能力。
+- 不打开 Explorer / 文件管理器，不创建 diagnostics snapshot 或脱敏报告；这些动作属于平台层或独立能力。
 - 不读取用户文件正文，不触发 iCloud/OneDrive 下载，不修改系统 watcher/inotify 设置。
 
 错误：
@@ -7109,8 +7207,8 @@ let mapping = AreaMatrix.mapCoreError(
 
 error mapping 的错误映射入口。输入用稳定的 `ErrorKind` 加可选 `path`、`reason`、`message`
 描述 Core 错误 payload；输出固定返回 `kind`、`user_message`、`severity`、
-`suggested_action`、`recoverability` 和 `raw_context`，供 Swift `AppError`
-做本地化与展示编排。
+`suggested_action`、`recoverability` 和 `raw_context`，供 Swift 错误包装层
+（`AppSemanticError`）做本地化与展示编排。
 
 副作用边界：
 
@@ -7134,7 +7232,7 @@ public actor CoreBridge {
     }
 
     public func bootstrap() async throws -> RecoveryReport {
-        try AreaMatrix.initLogging(level: "info")
+        // init_logging 属于可选 meta API；macOS App 当前不接线日志初始化。
         return try AreaMatrix.recoverOnStartup(repoPath: repoPath)
     }
 
@@ -7205,7 +7303,7 @@ Core 对 error mapping 暴露 `map_core_error(input: ErrorMappingInput) -> Error
 输入用 `ErrorKind` 加原始 `path` / `reason` / `message` 表示同一个
 `CoreError` payload；输出固定包含 `kind`、`user_message`、`severity`、
 `suggested_action`、`recoverability` 和 `raw_context`。该函数无文件系统、
-数据库、日志或状态副作用，Swift `AppError` 只能基于这些结构化字段编排
+数据库、日志或状态副作用，Swift 错误包装层只能基于这些结构化字段编排
 本地化和展示，不得用字符串 contains 做主分支判断。
 
 ```swift
@@ -7216,12 +7314,18 @@ extension CoreError {
             return "文件操作失败：\(msg)"
         case .Db:
             return "数据库错误，请尝试重启应用"
+        case .Validation(let reason):
+            return "输入无效：\(reason)"
         case .DuplicateFile(let path):
             return "文件已存在：\(path)"
+        case .ExpiredAction(let actionId):
+            return "操作已过期：\(actionId)"
         case .InvalidPath(let path):
             return "无效路径：\(path)"
         case .ICloudPlaceholder(let path):
             return "iCloud 文件未下载：\(path)"
+        case .StagingRecoveryRequired(let path):
+            return "需要先恢复未完成的导入：\(path)"
         case .PermissionDenied(let path):
             return "权限不足：\(path)"
         case .FileNotFound(let path):

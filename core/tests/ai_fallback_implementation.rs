@@ -62,6 +62,40 @@ fn remote_failed_request() -> AiFallbackStatusRequest {
     }
 }
 
+fn provider_gate_request(reason: AiPrivacySkippedReason) -> AiFallbackStatusRequest {
+    AiFallbackStatusRequest {
+        operation: AiFallbackOperation::ClassificationSuggestion,
+        route: Some(AiCallLogRoute::Remote),
+        provider_error: None,
+        provider_error_code: None,
+        privacy_decision: Some(AiPrivacyDecision::Skipped),
+        privacy_skipped_reason: Some(reason),
+        category_skipped_reason: None,
+        semantic_fallback_reason: None,
+        call_log_status: Some(AiCallLogStatus::Skipped),
+        call_log_id: None,
+        privacy_rule_id: None,
+        retry_after: None,
+    }
+}
+
+fn ai_disabled_request() -> AiFallbackStatusRequest {
+    AiFallbackStatusRequest {
+        operation: AiFallbackOperation::ClassificationSuggestion,
+        route: None,
+        provider_error: None,
+        provider_error_code: None,
+        privacy_decision: None,
+        privacy_skipped_reason: None,
+        category_skipped_reason: Some(AiCategorySuggestionSkipReason::AiDisabled),
+        semantic_fallback_reason: None,
+        call_log_status: Some(AiCallLogStatus::Skipped),
+        call_log_id: None,
+        privacy_rule_id: None,
+        retry_after: None,
+    }
+}
+
 fn default_filter() -> AiCallLogFilter {
     AiCallLogFilter {
         feature: None,
@@ -120,6 +154,7 @@ fn ai_fallback_implementation_records_sanitized_failure_log_without_user_file_ch
     assert_eq!(page.total_count, 1);
     assert_eq!(record.id, log_id);
     assert_eq!(record.sent_fields, Vec::new());
+    assert!(record.privacy_rules_checked);
     assert_eq!(record.error_code.as_deref(), Some("ProviderUnavailable"));
     assert_eq!(record.provider_name.as_deref(), Some("remote_provider"));
     assert_eq!(
@@ -158,11 +193,58 @@ fn ai_fallback_implementation_records_privacy_skip_with_rule_traceability() {
     assert_eq!(record.feature, AiCallLogFeature::Classification);
     assert_eq!(record.status, AiCallLogStatus::Skipped);
     assert_eq!(record.sent_fields, Vec::new());
+    assert!(record.privacy_rules_checked);
     assert_eq!(
         record.privacy_rule_id.as_deref(),
         Some("rule:private-folder")
     );
     assert_eq!(record.error_code.as_deref(), Some("PrivacySkipped"));
+}
+
+#[test]
+fn ai_fallback_implementation_marks_all_provider_gate_results_as_privacy_checked() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+    let reasons = [
+        AiPrivacySkippedReason::PrivacyGateDisabled,
+        AiPrivacySkippedReason::ScopeNotAllowed,
+        AiPrivacySkippedReason::ProviderNotConfigured,
+        AiPrivacySkippedReason::ProviderNotVerified,
+        AiPrivacySkippedReason::ProviderDisabled,
+    ];
+
+    for reason in reasons {
+        let status = get_ai_fallback_status(repo_path.clone(), provider_gate_request(reason))
+            .expect("record provider-gate fallback");
+        let record_id = status.call_log_id.expect("provider-gate fallback log id");
+        let page = list_ai_calls(repo_path.clone(), default_filter(), first_page())
+            .expect("list provider-gate fallback logs");
+        let record = page
+            .records
+            .iter()
+            .find(|record| record.id == record_id)
+            .expect("find provider-gate fallback log");
+        assert!(record.privacy_rules_checked);
+    }
+}
+
+#[test]
+fn ai_fallback_implementation_keeps_non_privacy_skip_unchecked() {
+    let repo = initialized_repo();
+    let repo_path = path_string(repo.path());
+
+    let status = get_ai_fallback_status(repo_path.clone(), ai_disabled_request())
+        .expect("record AI-disabled fallback");
+    let record_id = status.call_log_id.expect("AI-disabled fallback log id");
+    let page = list_ai_calls(repo_path, default_filter(), first_page())
+        .expect("list AI-disabled fallback logs");
+    let record = page
+        .records
+        .iter()
+        .find(|record| record.id == record_id)
+        .expect("find AI-disabled fallback log");
+
+    assert!(!record.privacy_rules_checked);
 }
 
 #[test]

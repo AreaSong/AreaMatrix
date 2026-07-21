@@ -14,7 +14,8 @@
 2. `.codex/` 只承载 Codex 运行材料，不作为业务规则权威来源。
 3. `workflow/versions/<version>/execution/` 是任务执行边界，不替代长期治理规则。
 4. 高风险边界必须显式记录，不能只靠临场判断。
-5. 企业治理规则先落到 `CODE_REVIEW.md`、`SECURITY.md` 和 `docs/development/`，再同步到 `.codex/` skills 或 prompt 门禁。
+5. 企业治理适配先落到 `docs/governance/`，评审、安全、CI 和 Codex 材料只作为执行适配器。
+6. `ASW-EWF-001@1.0.0` 的项目落点、G0-G8、RACI、RAID 和外部依赖以 `docs/governance/` 为准。
 
 ## Live 主线保护
 
@@ -44,6 +45,7 @@ AGENTS.md / .ai-governance
 - `workflows/prompt-task-runtime.md`：Quick / Change / Mission-Critical 任务运行方式。
 - `workflows/external-capability-admission.md`：Vibe-Skills、Codex 官方能力、插件、MCP、subagent pattern 等外部能力的接入门禁。
 - `workflows/subagent-boundaries.md`：Codex subagents 的只读探索、写入实现、live runner 禁区和主 agent 复核责任。
+- `workflows/cursor-adapter-layer.md`：Cursor 适配层（`.cursor/` rules、skills、commands、hooks、plans 与工作区级 canvas）的投影边界、静默触发表和 hooks 约束。
 
 ## 参考入口
 
@@ -53,3 +55,5 @@ AGENTS.md / .ai-governance
 - 代码评审：[../CODE_REVIEW.md](../CODE_REVIEW.md)
 - 安全政策：[../SECURITY.md](../SECURITY.md)
 - CI 治理：[../docs/development/ci-governance.md](../docs/development/ci-governance.md)
+- 企业治理基线：[../docs/governance/enterprise-workflow-baseline.md](../docs/governance/enterprise-workflow-baseline.md)
+- 治理登记册：[../docs/governance/governance-register.yaml](../docs/governance/governance-register.yaml)

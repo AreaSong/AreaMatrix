@@ -87,8 +87,6 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "Features/Import/ImportBatchPreviewState.swift:resourceValues:5",
             "Features/Import/ImportFolderPreviewState.swift:resourceValues:1",
             "Features/Import/ImportSingleFilePreflightCorePreview.swift:FileHandle:1",
-            "Features/Import/ImportSingleFilePreflightSupport.swift:FileManager.default:1",
-            "Features/Import/ImportSingleFilePreflightSupport.swift:startDownloadingUbiquitousItem:1",
             "Features/Import/ImportSingleFilePreviewModelState.swift:resourceValues:1"
         ]
         let actual = try countedRegexMatches(
@@ -295,7 +293,7 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
                         #"\bAppKitInteractionFeedbackPerformer\s*\("#,
                         #"\bBundleAppVersionReader\s*\("#,
                         #"\bFileImportBatchSessionStore\s*\("#,
-                        #"\bLocalWelcomeHelpOpener\s*\("#,
+                        #"\bWelcomeHelpOpener\s*\("#,
                         #"\bLocalRootOverviewFileInspector\s*\("#,
                         #"\bLocalSystemCapabilities\s*\("#,
                         #"\bNSApplicationKeyWindowCloser\s*\("#,

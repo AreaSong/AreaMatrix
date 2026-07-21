@@ -37,6 +37,10 @@ ARCHIVED_EVIDENCE_TESTS = {
     "core/tests/recovery_scenarios.rs",
 }
 
+UPSTREAM_GOVERNANCE_SNAPSHOTS = {
+    "docs/governance/upstream/ASW-EWF-001-1.0.0.txt",
+}
+
 TEXT_SUFFIXES = {
     "",
     ".c",
@@ -226,6 +230,15 @@ def _classify(rel_path: str, line_no: int, term: str, line: str) -> WordingHit:
         return WordingHit(rel_path, line_no, term, "allowed-policy", "治理或 skill 规则清单需要列出受控词", line)
     if _is_skill_path(rel_path) and _is_skill_allowed_line(line):
         return WordingHit(rel_path, line_no, term, "allowed-policy", "repo-local skill 规则或操作说明需要列出受控词", line)
+    if rel_path in UPSTREAM_GOVERNANCE_SNAPSHOTS:
+        return WordingHit(
+            rel_path,
+            line_no,
+            term,
+            "allowed-upstream-snapshot",
+            "登记册 SHA-256 校验的只读上游规范快照，不作为 AreaMatrix 当前源事实",
+            line,
+        )
     if rel_path in ARCHIVED_EVIDENCE_TESTS:
         return WordingHit(rel_path, line_no, term, "allowed-archive-test", "集中历史证据测试，不作为当前命名", line)
     allowed, reason = _is_allowed_technical(rel_path, term, line)

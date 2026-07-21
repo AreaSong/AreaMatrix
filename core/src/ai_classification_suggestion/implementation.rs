@@ -30,6 +30,7 @@ pub(super) fn suggest_category_with_ai(
             &file,
             AiCategorySuggestionSkipReason::AiDisabled,
             "AI classification suggestions are off",
+            false,
             None,
         );
     }
@@ -39,6 +40,7 @@ pub(super) fn suggest_category_with_ai(
             &file,
             AiCategorySuggestionSkipReason::FeatureDisabled,
             "AI classification suggestions feature is off",
+            false,
             None,
         );
     }
@@ -48,6 +50,7 @@ pub(super) fn suggest_category_with_ai(
             &file,
             AiCategorySuggestionSkipReason::PrivacyRule,
             "Skipped by privacy rule",
+            true,
             privacy_rule_id(&request),
         );
     }
@@ -65,6 +68,7 @@ pub(super) fn suggest_category_with_ai(
             &file,
             AiCategorySuggestionSkipReason::NoEligibleContext,
             "No eligible AI context is available",
+            true,
             None,
         );
     }
@@ -178,6 +182,7 @@ fn suggested(
             route: Some(&draft.route),
             status: "success",
             sent_fields: &used_context,
+            privacy_rules_checked: true,
             privacy_rule_id: None,
             result_summary: &result_summary,
             error_code: None,
@@ -206,6 +211,7 @@ fn no_suggestion_for_confident_rule(
             route: None,
             status: "skipped",
             sent_fields: &[],
+            privacy_rules_checked: true,
             privacy_rule_id: None,
             result_summary: "Rule classification is already confident",
             error_code: None,
@@ -231,6 +237,7 @@ fn no_suggestion(
             route: Some(&draft.route),
             status: "success",
             sent_fields: &used_context,
+            privacy_rules_checked: true,
             privacy_rule_id: None,
             result_summary: "No category suggestion is available",
             error_code: None,
@@ -249,6 +256,7 @@ fn skipped(
     file: &FileEntry,
     reason: AiCategorySuggestionSkipReason,
     message: &str,
+    privacy_rules_checked: bool,
     privacy_rule_id: Option<String>,
 ) -> CoreResult<AiCategorySuggestion> {
     let call_log_id = insert_call_log(
@@ -258,6 +266,7 @@ fn skipped(
             route: None,
             status: "skipped",
             sent_fields: &[],
+            privacy_rules_checked,
             privacy_rule_id: privacy_rule_id.as_deref(),
             result_summary: message,
             error_code: None,
@@ -279,6 +288,7 @@ fn unavailable_provider(repo: &Path, file: &FileEntry) -> CoreResult<AiCategoryS
             route: None,
             status: "unavailable",
             sent_fields: &[],
+            privacy_rules_checked: true,
             privacy_rule_id: None,
             result_summary: "AI classification provider is unavailable",
             error_code: Some("ProviderUnavailable"),
@@ -307,6 +317,7 @@ fn unavailable_after_runtime_error(
             route: Some(&route),
             status: "failed",
             sent_fields: &context.fields,
+            privacy_rules_checked: true,
             privacy_rule_id: None,
             result_summary: &message,
             error_code: Some(error_code),

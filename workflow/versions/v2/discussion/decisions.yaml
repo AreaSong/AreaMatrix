@@ -1,0 +1,47 @@
+version: v2
+status: ready
+allow_changes: true
+exact_docs:
+  - docs/governance/enterprise-workflow-baseline.md
+  - docs/governance/project-charter.md
+  - docs/governance/governance-register.yaml
+  - docs/governance/operations-lifecycle.md
+  - CODE_REVIEW.md
+  - docs/development/ci-governance.md
+  - workflow/README.md
+decisions:
+  - id: adoption-depth
+    status: accepted
+    summary: Use adapted-complete adoption without mechanically copying the upstream document.
+  - id: authoring-cutover
+    status: accepted
+    summary: Permit governance authoring while keeping execution, promotion apply, and task-loop blocked.
+  - id: responsibility-model
+    status: accepted
+    summary: Roles may be combined under @AreaSong; L3/L4 changes require independent review or remain blocked.
+  - id: operations-model
+    status: accepted
+    summary: Use a desktop product operations model, not a fictitious SaaS availability model.
+  - id: governance-audit-2026-07
+    status: accepted
+    summary: Adopt the 2026-07-20 audit outcome; keep the upstream snapshot byte-identical, add the threat model and document domains as governed source facts, register structural tailoring, and extend the authoring ledger to all five governance docs.
+open_questions:
+  - id: none
+    status: none
+    question: No unresolved discussion questions.
+blockers:
+  - id: none
+    status: none
+    summary: No blocker prevents governance authoring; external dependencies do not authorize execution.
+risk_boundaries:
+  - Do not write version execution or historical workflow/versions/v1-mvp/execution from discussion.
+  - Do not modify product code, UDL, DB schema, runtime configuration, or user files.
+  - Do not mark signing, notarization, testers, independent review, remote CI, or AreaFlow execution complete without evidence.
+next_layers:
+  middle-layer: ready
+  changes: ready
+  plans: ready
+  drafts: ready
+  queue: ready
+  promotion: blocked
+  execution: blocked

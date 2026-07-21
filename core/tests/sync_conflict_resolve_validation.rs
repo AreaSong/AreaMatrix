@@ -231,10 +231,10 @@ fn sync_conflict_resolve_validation_core_api_udl_rust_and_tests_stay_aligned() {
 
 fn assert_task_docs_and_testing_alignment() {
     for fragment in [
-        "Rust 单元测试",
-        "集成测试目录",
-        "Sync 模块",
-        "`core/tests/`",
+        "## Rust Core",
+        "Core 测试位于：",
+        "FSEvents sync",
+        "`core/tests/**` 合同、实现、失败恢复和集成测试。",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

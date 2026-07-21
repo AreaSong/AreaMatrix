@@ -28,6 +28,35 @@ enum MainDetailTabRequest: Equatable {
     case automatic(DetailPaneTab)
 }
 
+enum MainMissingFileRelinkState: Equatable {
+    case idle
+    case loading(fileID: Int64)
+    case relinking(fileID: Int64)
+    case hashMismatch(fileID: Int64, message: String)
+    case unavailable(fileID: Int64, message: String)
+    case failed(fileID: Int64, CoreErrorMappingSnapshot)
+
+    func isBusy(for fileID: Int64) -> Bool {
+        switch self {
+        case let .loading(currentFileID), let .relinking(currentFileID):
+            currentFileID == fileID
+        case .idle, .hashMismatch, .unavailable, .failed:
+            false
+        }
+    }
+
+    func message(for fileID: Int64) -> String? {
+        switch self {
+        case let .hashMismatch(currentFileID, message), let .unavailable(currentFileID, message):
+            currentFileID == fileID ? message : nil
+        case let .failed(currentFileID, mapping):
+            currentFileID == fileID ? mapping.userMessage : nil
+        case .idle, .loading, .relinking:
+            nil
+        }
+    }
+}
+
 extension MainFileDeleteOperation {
     func successBanner(fileID: Int64) -> MainListStatusBanner {
         switch self {
@@ -41,6 +70,7 @@ extension MainFileDeleteOperation {
 
 enum MainListDiagnosticsState: Equatable {
     case idle
+    case confirmingPrivacy
     case collecting
     case collected(DiagnosticsSnapshotSnapshot)
     case failed(CoreErrorMappingSnapshot)

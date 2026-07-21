@@ -77,12 +77,21 @@ pub(super) fn ensure_ai_call_log_schema(tx: &rusqlite::Transaction<'_>) -> CoreR
 
 fn ensure_optional_columns(tx: &rusqlite::Transaction<'_>) -> CoreResult<()> {
     let schema = read_schema(tx)?;
+    let backfill_privacy_rules_checked = !schema.columns.contains("privacy_rules_checked");
     for (name, definition) in optional_column_definitions() {
         if schema.columns.contains(name) {
             continue;
         }
         tx.execute(
             &format!("ALTER TABLE ai_call_log ADD COLUMN {definition}"),
+            [],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    }
+    if backfill_privacy_rules_checked {
+        tx.execute(
+            "UPDATE ai_call_log
+             SET privacy_rules_checked = CASE WHEN privacy_rule_id IS NULL THEN 0 ELSE 1 END",
             [],
         )
         .map_err(|error| CoreError::db(error.to_string()))?;

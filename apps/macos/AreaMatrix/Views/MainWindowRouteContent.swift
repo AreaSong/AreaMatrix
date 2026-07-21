@@ -214,12 +214,11 @@ private extension MainWindowRouteContent {
             scanSession: repairRoute.scanSession,
             mapping: repairRoute.mapping,
             lastOpenedAt: model.mainRepoLastOpenedAt,
+            repositoryWriteCoordinator: model.repositoryWriteCoordinator,
             onCancel: {
                 model.returnFromDatabaseRepair(repairRoute)
             },
-            onRepairSucceeded: {
-                await model.retryMainRepositoryFromError(repoPath: repairRoute.repoPath)
-            },
+            onRepairSucceeded: { await model.finishWatcherRecoveryRescan(repoPath: repairRoute.repoPath) },
             onOpenRepositoryInFinder: {
                 model.revealMainRepositoryFolder(repoPath: repairRoute.repoPath)
             }
@@ -330,7 +329,17 @@ private extension MainWindowRouteContent {
             onOpenImportConflictBatch: { model.startImportConflictBatchReview(opening: opening, route: $0) },
             mainListErrorRecoveryActions: MainListErrorRecoveryActions(
                 retryFallback: { Task { await model.retryConfigurationLoad() } },
-                collectFallbackDiagnostics: { await model.collectMainListDiagnostics(opening: opening) }
+                collectFallbackDiagnostics: { await model.collectMainListDiagnostics(opening: opening) },
+                openRepair: { model.openMainRepositoryRepair(repoPath: opening.config.repoPath) },
+                openRepairWithMapping: {
+                    model.openMainRepositoryRepair(repoPath: opening.config.repoPath, mapping: $0)
+                },
+                downloadExternalSyncPlaceholder: { relativePath in
+                    try await downloadExternalSyncPlaceholder(
+                        repoPath: opening.config.repoPath,
+                        relativePath: relativePath
+                    )
+                }
             ),
             onShowInFinder: { model.showMainListFileInFinder(opening: opening, relativePath: $0) },
             onCopyPath: { model.copyMainListPath(opening: opening, relativePath: $0) },
@@ -339,12 +348,25 @@ private extension MainWindowRouteContent {
             onOpenChangeCategoryPermissionRecovery: {
                 model.revealMainRepositoryFolder(repoPath: opening.config.repoPath)
             },
-            externalCreatedEvent: model.externalCreatedEvent(for: opening),
-            onExternalCreatedEventHandled: model.finishExternalCreatedFileEvent,
+            externalSyncWindows: model.externalSyncWindows(for: opening),
+            onExternalSyncWindowCompleted: model.finishExternalSyncWindow,
             pendingTagSuggestionFocus: model.pendingTagSuggestionFocus,
             onPendingTagSuggestionFocusConsumed: model.consumePendingTagSuggestionFocus,
             importProgressPresentation: importProgressPresentation
         )
+    }
+
+    private func downloadExternalSyncPlaceholder(
+        repoPath: String,
+        relativePath: String
+    ) async throws {
+        let repoURL = URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL
+        let itemURL = repoURL.appendingPathComponent(relativePath, isDirectory: false).standardizedFileURL
+        let repoPrefix = repoURL.path.hasSuffix("/") ? repoURL.path : "\(repoURL.path)/"
+        guard itemURL.path.hasPrefix(repoPrefix) else {
+            throw AppSemanticError.invalidPath(rawContext: relativePath)
+        }
+        try await LocalICloudPlaceholderDownloader().downloadPlaceholder(at: itemURL)
     }
 }
 

@@ -24,12 +24,6 @@ enum ImportSingleFileFilenameValidator {
     }
 }
 
-struct LocalICloudPlaceholderDownloader: ICloudPlaceholderDownloading {
-    func downloadPlaceholder(at sourceURL: URL) async throws {
-        try FileManager.default.startDownloadingUbiquitousItem(at: sourceURL)
-    }
-}
-
 protocol SourcePreflightInspecting: Sendable {
     func inspect(sourceURL: URL) throws -> SourcePreflightSnapshot
 }

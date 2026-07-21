@@ -7,6 +7,8 @@
 > 影响范围：core / macos-app / 全部下游 platform
 > 关联 ADR：[0002 FFI 工具](0002-uniffi-vs-others.md)、[0009 最低 macOS 版本](0009-min-macos-version.md)
 
+> 现状更正（2026-07-21）：Core 职责原列有「FSEvents 抽象」——Core 无 watcher 抽象，只消费平台层规范化的文件事件（`core/src/sync`）；FSEvents 全部在 Swift 平台层，Rust notify 抽象已在 [ADR-0005](0005-fsevents-listener.md) 备选中否决。
+
 ## 上下文
 
 AreaMatrix 是一个本地优先的资料管理桌面应用，首发目标是 macOS，后续要扩展到 Windows / Linux / iOS / Android。需求约束：
@@ -21,7 +23,7 @@ AreaMatrix 是一个本地优先的资料管理桌面应用，首发目标是 ma
 
 采用 **"Core + Shell" 分层架构**：
 
-- **Core**：用 Rust 实现所有平台无关的逻辑（DB、文件 IO、分类、hash、FSEvents 抽象）
+- **Core**：用 Rust 实现所有平台无关的逻辑（DB、文件 IO、分类、hash、FSEvents 抽象（更正：Core 无 FSEvents 抽象，仅消费规范化事件，见顶部现状说明））
 - **Shell**：每个平台用最原生的 UI 框架
   - macOS：SwiftUI（macOS 14 Sonoma 起）
   - 未来 iOS：SwiftUI
