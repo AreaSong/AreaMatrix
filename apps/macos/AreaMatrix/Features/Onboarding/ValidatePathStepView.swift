@@ -28,8 +28,8 @@ struct ValidatePathStepView: View {
             AreaMatrixStepHeader(
                 systemImage: "checklist",
                 tint: .blue,
-                title: "校验资料库路径",
-                subtitle: "AreaMatrix 会先检查路径状态，再进入初始化或打开流程。"
+                title: String(localized: "onboarding.validate.title"),
+                subtitle: String(localized: "onboarding.validate.subtitle")
             )
 
             VStack(spacing: 24) {

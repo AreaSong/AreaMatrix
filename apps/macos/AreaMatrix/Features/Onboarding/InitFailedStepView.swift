@@ -28,13 +28,13 @@ struct InitFailedStepView: View {
         }
         .areaMatrixOnboardingPanel()
         .confirmationDialog(
-            "Collect diagnostics?",
+            String(localized: "onboarding.failed.collectDiagnostics"),
             isPresented: $isDiagnosticsPrivacyPresented
         ) {
-            Button("Collect Diagnostics...") {
+            Button(String(localized: "onboarding.failed.collectDiagnosticsButton")) {
                 Task { await onCollectDiagnostics() }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(String(localized: "settings.action.cancel"), role: .cancel) {}
         } message: {
             Text(
                 "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
@@ -48,14 +48,14 @@ struct InitFailedStepView: View {
         AreaMatrixStepHeader(
             systemImage: "exclamationmark.triangle",
             tint: .orange,
-            title: "初始化未完成",
-            subtitle: "AreaMatrix 没能完成资料库初始化。\n你的原始文件没有被移动、重命名、删除或覆盖。"
+            title: String(localized: "onboarding.failed.title"),
+            subtitle: String(localized: "onboarding.failed.subtitle")
         )
     }
 
     private var errorSummary: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("错误摘要")
+            Text(String(localized: "onboarding.failed.errorSummary"))
                 .font(.headline)
             Text(mapping?.userMessage ?? "Unknown initialization error")
             Text("路径：\(repoPath)")
@@ -81,7 +81,7 @@ struct InitFailedStepView: View {
 
     private var recoveryAdvice: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("恢复建议")
+            Text(String(localized: "onboarding.failed.recoveryAdvice"))
                 .font(.headline)
             Text(mapping?.suggestedAction ??
                 "请检查文件夹权限、释放磁盘空间，或选择其他资料库位置后重试。")
@@ -139,23 +139,23 @@ struct InitFailedStepView: View {
 
     private var footer: some View {
         HStack {
-            Button(action: onQuit) { Text("退出") }
+            Button(action: onQuit) { Text(String(localized: "onboarding.failed.quit")) }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
 
             Spacer()
 
-            Button("诊断报告...") {
+            Button(String(localized: "onboarding.failed.diagnostics")) {
                 isDiagnosticsPrivacyPresented = true
             }
             .controlSize(.large)
             .disabled(isActionInFlight)
 
-            Button("更改位置", action: onChangePath)
+            Button(String(localized: "onboarding.failed.changeLocation"), action: onChangePath)
                 .controlSize(.large)
                 .disabled(isActionInFlight)
 
-            Button("重试", action: onRetry)
+            Button(String(localized: "onboarding.failed.retry"), action: onRetry)
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)

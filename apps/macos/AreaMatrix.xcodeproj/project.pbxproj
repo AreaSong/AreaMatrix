@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0A0000000000000000000902 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000903 /* AppIcon.icon */; };
 		0A0000000000000000000900 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000901 /* Assets.xcassets */; };
+		0A0000000000000000000964 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000960 /* Localizable.strings */; };
 		0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000013 /* AreaMatrixApp.swift */; };
 		0A0000000000000000000003 /* MainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000014 /* MainWindow.swift */; };
 		0A0000000000000000000868 /* MainWindowRouteContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000869 /* MainWindowRouteContent.swift */; };
@@ -763,6 +764,9 @@
 /* Begin PBXFileReference section */
 		0A0000000000000000000901 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AreaMatrix/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000903 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AreaMatrix/Resources/AppIcon.icon; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000000961 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		0A0000000000000000000962 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		0A0000000000000000000963 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		0A0000000000000000000011 /* AreaMatrixShellApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix.xcodeproj/Shell/AreaMatrixShellApp.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000012 /* AreaMatrix.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AreaMatrix.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A0000000000000000000013 /* AreaMatrixApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AreaMatrixApp.swift; sourceTree = SOURCE_ROOT; };
@@ -1555,6 +1559,7 @@
 				0A0000000000000000000036 /* Views */,
 				0A0000000000000000000037 /* Bridge */,
 				0A0000000000000000000039 /* Resources */,
+				0A0000000000000000000965 /* Localizations */,
 			);
 			name = "Future SwiftUI Structure";
 			sourceTree = "<group>";
@@ -2140,6 +2145,24 @@
 			name = Resources;
 			sourceTree = "<group>";
 		};
+		0A0000000000000000000965 /* Localizations */ = {
+			isa = PBXGroup;
+			children = (
+				0A0000000000000000000960 /* Localizable.strings */,
+			);
+			path = AreaMatrix/Localizations;
+			sourceTree = SOURCE_ROOT;
+		};
+		0A0000000000000000000960 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0A0000000000000000000961 /* en */,
+				0A0000000000000000000962 /* zh-Hans */,
+				0A0000000000000000000963 /* zh-Hant */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
 		0A000000000000000000003A /* Tests */ = {
 			isa = PBXGroup;
 			children = (
@@ -2537,6 +2560,8 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
+				"zh-Hant",
 			);
 			mainGroup = 0A0000000000000000000031;
 			productRefGroup = 0A0000000000000000000034 /* Products */;
@@ -2556,6 +2581,7 @@
 			files = (
 				0A0000000000000000000902 /* AppIcon.icon in Resources */,
 				0A0000000000000000000900 /* Assets.xcassets in Resources */,
+				0A0000000000000000000964 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

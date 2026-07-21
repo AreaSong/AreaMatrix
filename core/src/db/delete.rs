@@ -266,3 +266,36 @@ fn index_entry_clause() -> &'static str {
 fn detail_json(detail: &Value) -> CoreResult<String> {
     serde_json::to_string(detail).map_err(|error| CoreError::internal(error.to_string()))
 }
+
+/// Purges soft-deleted metadata rows older than `retention_days`.
+///
+/// Only removes `files.status = 'deleted'` rows whose `deleted_at` is past the
+/// retention cutoff. Related AreaMatrix-owned sidecar rows cascade via FK.
+/// This never mutates user-owned filesystem content.
+pub(crate) fn purge_expired_soft_deleted_files(
+    repo_path: &Path,
+    retention_days: i64,
+) -> CoreResult<i64> {
+    if retention_days <= 0 {
+        return Err(CoreError::internal(
+            "soft-delete retention days must be positive",
+        ));
+    }
+    let cutoff = chrono::Utc::now().timestamp() - retention_days.saturating_mul(24 * 60 * 60);
+    let mut connection = open_repo_connection(repo_path)?;
+    let tx = connection
+        .transaction()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let deleted = tx
+        .execute(
+            "DELETE FROM files
+             WHERE status = 'deleted'
+               AND deleted_at IS NOT NULL
+               AND deleted_at < ?1",
+            params![cutoff],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(deleted as i64)
+}

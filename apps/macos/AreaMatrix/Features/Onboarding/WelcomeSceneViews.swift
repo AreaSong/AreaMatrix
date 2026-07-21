@@ -32,8 +32,8 @@ struct WelcomeDefaultSceneView: View {
             AreaMatrixLaunchBrandVisual()
 
             AreaMatrixLaunchCopyText(
-                title: "将散乱的文件，化作知识枢纽。",
-                description: "无需搬运，只需指认一个本地文件夹。AreaMatrix 会为你建立结构清晰、无感同步的私人资料库。"
+                title: String(localized: "onboarding.welcome.default.title"),
+                description: String(localized: "onboarding.welcome.default.description")
             )
         }
     }
@@ -47,8 +47,8 @@ struct WelcomeStartSceneView: View {
             AreaMatrixFolderLaunchVisual()
 
             AreaMatrixSceneText(
-                title: "立刻开启你的本地知识库",
-                description: "放心，我们仅仅是为你指认的文件夹建立一层索引。你可以随时停止使用，没有任何锁定风险。点击即可瞬间接管！"
+                title: String(localized: "onboarding.welcome.start.title"),
+                description: String(localized: "onboarding.welcome.start.description")
             )
         }
     }

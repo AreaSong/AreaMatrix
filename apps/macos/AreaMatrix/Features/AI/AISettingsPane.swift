@@ -55,7 +55,7 @@ struct AISettingsPane: View {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: "AI", subtitle: model.repoPath) {
+        SettingsPageHeader(title: String(localized: "settings.page.ai"), subtitle: model.repoPath) {
             if model.isSaving {
                 SettingsHeaderProgressIndicator(label: "Saving AI settings")
             }

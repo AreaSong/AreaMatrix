@@ -13,7 +13,7 @@ struct MainLoadingView: View {
             ProgressView(state.accessibilityStatusText)
                 .controlSize(.large)
                 .accessibilityLabel(state.accessibilityStatusText)
-            Text("正在打开资料库...")
+            Text(String(localized: "onboarding.loading.opening"))
                 .font(.title2.weight(.semibold))
             pathBox
             recoverySection
@@ -21,7 +21,7 @@ struct MainLoadingView: View {
             openingErrorSection
             scanSection
             safetyText
-            Button("Cancel opening", action: onCancelOpening)
+            Button(String(localized: "onboarding.loading.cancelOpening"), action: onCancelOpening)
                 .accessibilityHint("Cancel opening returns to folder validation and does not modify user files.")
         }
         .padding(48)
@@ -54,13 +54,13 @@ struct MainLoadingView: View {
     private var openingErrorSection: some View {
         if let mapping = state.repositoryOpeningErrorMapping {
             VStack(alignment: .leading, spacing: 8) {
-                Label("Repository is temporarily unavailable", systemImage: "exclamationmark.triangle")
+                Label(String(localized: "onboarding.loading.repoUnavailable"), systemImage: "exclamationmark.triangle")
                     .font(.headline)
                     .foregroundStyle(.orange)
                 Text(mapping.userMessage)
                 Text(mapping.suggestedAction)
                     .foregroundStyle(.secondary)
-                Button("Retry", action: onRetryOpening)
+                Button(String(localized: "onboarding.loading.retry"), action: onRetryOpening)
             }
             .font(.callout)
             .padding(14)
@@ -102,7 +102,7 @@ struct MainLoadingView: View {
     private var treeLoadingSection: some View {
         if let treeLoading = state.treeLoading {
             VStack(alignment: .leading, spacing: 8) {
-                Label(state.treeStatusText ?? "正在加载资料库目录...", systemImage: treeIcon(for: treeLoading))
+                Label(state.treeStatusText ?? String(localized: "onboarding.loading.loadingTree"), systemImage: treeIcon(for: treeLoading))
                     .font(.headline)
                     .foregroundStyle(treeColor(for: treeLoading))
 
@@ -114,7 +114,7 @@ struct MainLoadingView: View {
                 case let .failed(mapping):
                     Text(mapping.suggestedAction)
                         .foregroundStyle(.secondary)
-                    Button("Retry Tree", action: onRetryTree)
+                    Button(String(localized: "onboarding.loading.retryTree"), action: onRetryTree)
                 }
             }
             .padding(14)

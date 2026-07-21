@@ -9,9 +9,13 @@ use crate::{
 };
 
 use super::{
-    call_log::{insert_call_log, insert_call_log_in_tx, SearchLog, LOCAL_MODEL},
+    call_log::{
+        ensure_semantic_call_log_gate, insert_call_log, insert_call_log_in_tx, SearchLog,
+        LOCAL_MODEL,
+    },
+    executor::{self, RemoteBuildDraft, RemoteSearchDraft, SemanticRemoteError},
     fallback::{BuildFallback, SearchFallback},
-    matches::{build_index_groups, normal_matches},
+    matches::{build_index_groups, build_remote_groups, normal_matches},
     store::{load_indexed_files, load_semantic_index, save_semantic_index, StoredSemanticIndex},
     SemanticIndexBuildReport, SemanticIndexScope, SemanticIndexStatus,
     SemanticSearchFallbackReason, SemanticSearchResultPage, SemanticSearchRoute,
@@ -32,7 +36,6 @@ pub(super) fn semantic_search(
     let repo = PathBuf::from(&repo_path);
     let ai_config = crate::ai_settings::load_ai_config(repo_path)?;
     let capability = semantic_capability(&ai_config.capabilities)?;
-    let index = load_semantic_index(&repo)?;
 
     if !ai_config.config.ai_enabled {
         return fallback_search_page_from_normal_result(
@@ -50,24 +53,12 @@ pub(super) fn semantic_search(
             SearchFallback::feature_disabled(),
         );
     }
-    if let Some(rule_id) = search_privacy_block(index.as_ref()) {
+    if let Some(rule_id) = search_privacy_block(load_semantic_index(&repo)?.as_ref()) {
         return fallback_search_page_from_normal_result(
             repo,
             query,
             normal_page,
             SearchFallback::privacy(rule_id),
-        );
-    }
-    if remote_requested(&ai_config.config.provider_preference, capability) {
-        let _provider = crate::remote_provider_config::load_enabled_remote_provider_runtime(
-            &repo,
-            AiFeatureKind::SemanticSearch,
-        )?;
-        return fallback_search_page_from_normal_result(
-            repo,
-            query,
-            normal_page,
-            SearchFallback::provider(),
         );
     }
 
@@ -79,37 +70,16 @@ pub(super) fn semantic_search(
             SearchFallback::provider(),
         );
     };
-    let Some(index) = ready_index(index.as_ref()) else {
-        return fallback_search_page_from_normal_result(
-            repo,
-            query,
-            normal_page,
-            SearchFallback::index_not_ready(),
-        );
-    };
-    let (semantic_total_count, indexed_files) =
-        load_indexed_files(&repo, &query, &filter, &pagination)?;
-    let call_log_id = match insert_call_log(&repo, SearchLog::success(&route, indexed_files.len()))
-    {
-        Ok(id) => Some(id),
-        Err(_) => {
-            return fallback_search_page_from_normal_result(
-                repo,
-                query,
-                normal_page,
-                SearchFallback::call_log(),
-            )
+    let index = load_semantic_index(&repo)?;
+
+    match route {
+        SemanticSearchRoute::Remote => {
+            remote_semantic_search(repo, query, filter, pagination, normal_page, index)
         }
-    };
-    success_search_page(
-        query,
-        normal_page,
-        route,
-        index.status.clone(),
-        call_log_id,
-        semantic_total_count,
-        indexed_files,
-    )
+        SemanticSearchRoute::Local => {
+            local_semantic_search(repo, query, filter, pagination, normal_page, index)
+        }
+    }
 }
 
 pub(super) fn build_embedding_index(
@@ -139,13 +109,6 @@ pub(super) fn build_embedding_index(
             BuildFallback::feature_disabled(),
         );
     }
-    if remote_build_requested(&scope, &ai_config.config.provider_preference, capability) {
-        let _provider = crate::remote_provider_config::load_enabled_remote_provider_runtime(
-            &repo,
-            AiFeatureKind::SemanticSearch,
-        )?;
-        return fallback_build_report(&repo, scope_page.total_count, BuildFallback::provider());
-    }
     let Some(route) =
         selected_build_route(&scope, capability, &ai_config.config.provider_preference)
     else {
@@ -155,9 +118,149 @@ pub(super) fn build_embedding_index(
         return fallback_build_report(&repo, 0, BuildFallback::no_input(route));
     }
 
-    let (outcome, call_log_id) = crate::db::with_write_transaction(&repo, |tx| {
+    match route {
+        SemanticSearchRoute::Remote => {
+            remote_build_embedding_index(&repo, scope, scope_page.total_count, &ai_config)
+        }
+        SemanticSearchRoute::Local => {
+            local_build_embedding_index(&repo, scope, scope_page.total_count, &ai_config)
+        }
+    }
+}
+
+fn local_semantic_search(
+    repo: PathBuf,
+    query: String,
+    filter: SearchFilter,
+    pagination: SearchPagination,
+    normal_page: CoreResult<SearchResultPage>,
+    index: Option<StoredSemanticIndex>,
+) -> CoreResult<SemanticSearchResultPage> {
+    let Some(index) = ready_index(index.as_ref()) else {
+        return fallback_search_page_from_normal_result(
+            repo,
+            query,
+            normal_page,
+            SearchFallback::index_not_ready(),
+        );
+    };
+    let (semantic_total_count, indexed_files) =
+        load_indexed_files(&repo, &query, &filter, &pagination)?;
+    let call_log_id = match insert_call_log(
+        &repo,
+        SearchLog::success(&SemanticSearchRoute::Local, indexed_files.len()),
+    ) {
+        Ok(id) => Some(id),
+        Err(_) => {
+            return fallback_search_page_from_normal_result(
+                repo,
+                query,
+                normal_page,
+                SearchFallback::call_log(),
+            )
+        }
+    };
+    success_search_page(
+        query,
+        normal_page,
+        SemanticSearchRoute::Local,
+        index.status.clone(),
+        call_log_id,
+        semantic_total_count,
+        indexed_files,
+    )
+}
+
+fn remote_semantic_search(
+    repo: PathBuf,
+    query: String,
+    filter: SearchFilter,
+    pagination: SearchPagination,
+    normal_page: CoreResult<SearchResultPage>,
+    index: Option<StoredSemanticIndex>,
+) -> CoreResult<SemanticSearchResultPage> {
+    if let Err(error) = ensure_semantic_call_log_gate(&repo) {
+        if matches!(error, CoreError::Db { .. }) {
+            return fallback_search_page_from_normal_result(
+                repo,
+                query,
+                normal_page,
+                SearchFallback::call_log(),
+            );
+        }
+        return Err(error);
+    }
+
+    match executor::execute_remote_search(&repo, &query, &filter, &pagination) {
+        Ok(draft) => remote_success_search_page(
+            repo,
+            query,
+            normal_page,
+            draft,
+            index_status_from_index(index.as_ref()),
+        ),
+        Err(SemanticRemoteError::RateLimited) => fallback_search_page_from_normal_result(
+            repo,
+            query,
+            normal_page,
+            SearchFallback::rate_limited(),
+        ),
+        Err(SemanticRemoteError::Timeout) => fallback_search_page_from_normal_result(
+            repo,
+            query,
+            normal_page,
+            SearchFallback::timeout(),
+        ),
+        Err(SemanticRemoteError::Unavailable) => fallback_search_page_from_normal_result(
+            repo,
+            query,
+            normal_page,
+            SearchFallback::provider(),
+        ),
+    }
+}
+
+fn remote_success_search_page(
+    repo: PathBuf,
+    query: String,
+    normal_page: CoreResult<SearchResultPage>,
+    draft: RemoteSearchDraft,
+    index_status: SemanticIndexStatus,
+) -> CoreResult<SemanticSearchResultPage> {
+    let hydrated = executor::hydrate_remote_matches(&repo, draft.matches)?;
+    let call_log_id = match insert_call_log(
+        &repo,
+        SearchLog::success_with_model(
+            &SemanticSearchRoute::Remote,
+            hydrated.len(),
+            Some(&draft.model),
+        ),
+    ) {
+        Ok(id) => Some(id),
+        Err(_) => {
+            return fallback_search_page(repo, query, normal_page?, SearchFallback::call_log())
+        }
+    };
+    success_remote_search_page(
+        repo,
+        query,
+        normal_page,
+        hydrated,
+        index_status,
+        call_log_id,
+    )
+}
+
+fn local_build_embedding_index(
+    repo: &Path,
+    scope: SemanticIndexScope,
+    _total_count: i64,
+    ai_config: &crate::ai_settings::AiConfigSnapshot,
+) -> CoreResult<SemanticIndexBuildReport> {
+    let route = SemanticSearchRoute::Local;
+    let (outcome, call_log_id) = crate::db::with_write_transaction(repo, |tx| {
         let outcome = save_semantic_index(
-            &repo,
+            repo,
             tx,
             route.clone(),
             &scope.filter,
@@ -177,19 +280,82 @@ pub(super) fn build_embedding_index(
         )?;
         Ok((outcome, call_log_id))
     })?;
-    Ok(SemanticIndexBuildReport {
-        status: outcome.metadata.status.clone(),
-        route: Some(route),
-        total_count: outcome.metadata.total_count,
-        processed_count: outcome.metadata.processed_count,
-        skipped_count: outcome.metadata.skipped_count,
-        failed_count: outcome.metadata.failed_count,
-        privacy_skipped_count: outcome.metadata.privacy_skipped_count,
-        provider_name: Some(LOCAL_MODEL.to_owned()),
-        call_log_id: Some(call_log_id),
-        fallback_reason: build_fallback_reason(&outcome.metadata),
-        message: Some(build_message(&outcome.metadata)),
-    })
+    Ok(build_success_report(
+        route,
+        outcome.metadata,
+        Some(LOCAL_MODEL.to_owned()),
+        call_log_id,
+        outcome.privacy_rule_id,
+    ))
+}
+
+fn remote_build_embedding_index(
+    repo: &Path,
+    scope: SemanticIndexScope,
+    total_count: i64,
+    ai_config: &crate::ai_settings::AiConfigSnapshot,
+) -> CoreResult<SemanticIndexBuildReport> {
+    if let Err(error) = ensure_semantic_call_log_gate(repo) {
+        if matches!(error, CoreError::Db { .. }) {
+            let (fallback, total_count) = BuildFallback::call_log(total_count);
+            return fallback_build_report(repo, total_count, fallback);
+        }
+        return Err(error);
+    }
+
+    let route = SemanticSearchRoute::Remote;
+    let draft = match executor::execute_remote_build(repo, &scope.filter) {
+        Ok(draft) => draft,
+        Err(SemanticRemoteError::RateLimited) => {
+            return fallback_build_report(repo, total_count, BuildFallback::rate_limited());
+        }
+        Err(SemanticRemoteError::Timeout) => {
+            return fallback_build_report(repo, total_count, BuildFallback::timeout());
+        }
+        Err(SemanticRemoteError::Unavailable) => {
+            return fallback_build_report(repo, total_count, BuildFallback::provider());
+        }
+    };
+    complete_remote_build(repo, scope, ai_config, route, draft)
+}
+
+fn complete_remote_build(
+    repo: &Path,
+    scope: SemanticIndexScope,
+    ai_config: &crate::ai_settings::AiConfigSnapshot,
+    route: SemanticSearchRoute,
+    draft: RemoteBuildDraft,
+) -> CoreResult<SemanticIndexBuildReport> {
+    let (outcome, call_log_id) = crate::db::with_write_transaction(repo, |tx| {
+        let outcome = save_semantic_index(
+            repo,
+            tx,
+            route.clone(),
+            &scope.filter,
+            scope
+                .privacy_policy_ref
+                .as_deref()
+                .or(ai_config.config.privacy_policy_ref.as_deref()),
+        )?;
+        let call_log_id = insert_call_log_in_tx(
+            tx,
+            SearchLog::build_result_with_model(
+                &route,
+                outcome.metadata.processed_count,
+                outcome.metadata.failed_count,
+                outcome.privacy_rule_id.as_deref(),
+                Some(&draft.model),
+            ),
+        )?;
+        Ok((outcome, call_log_id))
+    })?;
+    Ok(build_success_report(
+        route,
+        outcome.metadata,
+        Some(draft.model),
+        call_log_id,
+        outcome.privacy_rule_id,
+    ))
 }
 
 fn normal_search(
@@ -233,11 +399,15 @@ fn select_route(
     preference: &AiProviderPreference,
 ) -> Option<SemanticSearchRoute> {
     if matches!(preference, AiProviderPreference::RemoteFirst) && capability.remote_allowed {
-        return None;
+        return Some(SemanticSearchRoute::Remote);
     }
-    capability
-        .local_allowed
-        .then_some(SemanticSearchRoute::Local)
+    if capability.local_allowed {
+        return Some(SemanticSearchRoute::Local);
+    }
+    if capability.remote_allowed {
+        return Some(SemanticSearchRoute::Remote);
+    }
+    None
 }
 
 fn selected_build_route(
@@ -249,22 +419,11 @@ fn selected_build_route(
         Some(SemanticSearchRoute::Local) => capability
             .local_allowed
             .then_some(SemanticSearchRoute::Local),
-        Some(SemanticSearchRoute::Remote) => None,
+        Some(SemanticSearchRoute::Remote) => capability
+            .remote_allowed
+            .then_some(SemanticSearchRoute::Remote),
         None => select_route(capability, preference),
     }
-}
-
-fn remote_requested(preference: &AiProviderPreference, capability: &AiCapabilityState) -> bool {
-    matches!(preference, AiProviderPreference::RemoteFirst) && capability.remote_allowed
-}
-
-fn remote_build_requested(
-    scope: &SemanticIndexScope,
-    preference: &AiProviderPreference,
-    capability: &AiCapabilityState,
-) -> bool {
-    matches!(scope.route, Some(SemanticSearchRoute::Remote))
-        || (scope.route.is_none() && remote_requested(preference, capability))
 }
 
 fn ready_index(index: Option<&StoredSemanticIndex>) -> Option<&StoredSemanticIndex> {
@@ -276,17 +435,19 @@ fn ready_index(index: Option<&StoredSemanticIndex>) -> Option<&StoredSemanticInd
     })
 }
 
+fn index_status_from_index(index: Option<&StoredSemanticIndex>) -> SemanticIndexStatus {
+    index
+        .map(|metadata| metadata.status.clone())
+        .unwrap_or(SemanticIndexStatus::NotReady)
+}
+
 fn fallback_search_page(
     repo: PathBuf,
     query: String,
     normal_page: SearchResultPage,
     fallback: SearchFallback,
 ) -> CoreResult<SemanticSearchResultPage> {
-    let call_log_id = match insert_call_log(&repo, SearchLog::skipped(&fallback)) {
-        Ok(id) => Some(id),
-        Err(_) if fallback.reason != SemanticSearchFallbackReason::CallLogUnavailable => None,
-        Err(error) => return Err(error),
-    };
+    let call_log_id = insert_call_log(&repo, SearchLog::skipped(&fallback)).ok();
     let reason = if call_log_id.is_none() {
         SemanticSearchFallbackReason::CallLogUnavailable
     } else {
@@ -354,6 +515,48 @@ fn success_search_page(
     })
 }
 
+fn success_remote_search_page(
+    repo: PathBuf,
+    query: String,
+    normal_page: CoreResult<SearchResultPage>,
+    matches: Vec<executor::RemoteSearchMatchDraft>,
+    index_status: SemanticIndexStatus,
+    call_log_id: Option<i64>,
+) -> CoreResult<SemanticSearchResultPage> {
+    let normal_unavailable = normal_page.is_err();
+    let (normal_total_count, normal_results) = match normal_page {
+        Ok(page) => (page.total_count, page.results),
+        Err(_) => (0, Vec::new()),
+    };
+    let semantic_total_count =
+        i64::try_from(matches.len()).map_err(|error| CoreError::db(error.to_string()))?;
+    let groups = build_remote_groups(
+        semantic_total_count,
+        matches,
+        &repo,
+        SemanticSearchRoute::Remote,
+        call_log_id,
+        normal_results,
+    )?;
+    Ok(SemanticSearchResultPage {
+        query,
+        semantic_total_count: groups.semantic_total_count,
+        normal_total_count,
+        semantic_matches: groups.semantic_matches,
+        normal_matches: groups.normal_matches,
+        deduped_normal_count: groups.deduped_normal_count,
+        index_status,
+        route: Some(SemanticSearchRoute::Remote),
+        fallback_reason: normal_unavailable
+            .then_some(SemanticSearchFallbackReason::NormalSearchUnavailable),
+        fallback_message: normal_unavailable
+            .then_some("Normal search fallback is unavailable".to_owned()),
+        call_log_id,
+        privacy_rule_id: None,
+        low_confidence: groups.low_confidence,
+    })
+}
+
 fn fallback_build_report(
     repo: &Path,
     total_count: i64,
@@ -367,6 +570,28 @@ fn fallback_build_report(
         }
     };
     Ok(build_report(total_count, fallback, call_log_id))
+}
+
+fn build_success_report(
+    route: SemanticSearchRoute,
+    metadata: StoredSemanticIndex,
+    provider_name: Option<String>,
+    call_log_id: i64,
+    _privacy_rule_id: Option<String>,
+) -> SemanticIndexBuildReport {
+    SemanticIndexBuildReport {
+        status: metadata.status.clone(),
+        route: Some(route),
+        total_count: metadata.total_count,
+        processed_count: metadata.processed_count,
+        skipped_count: metadata.skipped_count,
+        failed_count: metadata.failed_count,
+        privacy_skipped_count: metadata.privacy_skipped_count,
+        provider_name,
+        call_log_id: Some(call_log_id),
+        fallback_reason: build_fallback_reason(&metadata),
+        message: Some(build_message(&metadata)),
+    }
 }
 
 fn build_report(

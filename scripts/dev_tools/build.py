@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -14,11 +15,15 @@ UNIFFI_BINDGEN_WRAPPER = "areamatrix_uniffi_bindgen_wrapper"
 UNIFFI_BINDGEN_CRATE = "uniffi_bindgen"
 DEFAULT_BINDINGS_UDL = "core/area_matrix.udl"
 DEFAULT_TRACKED_BINDINGS_DIR = "apps/macos/AreaMatrix/Bridge/UniFFI"
+DEFAULT_IOS_BINDINGS_DIR = "apps/ios/Carea_matrixFFI"
+DEFAULT_IOS_APP_ROOT = "apps/ios/AreaMatrix"
 BINDING_ARTIFACTS = (
     ("area_matrix.swift", "area_matrix.swift"),
     ("area_matrixFFI.h", "area_matrixFFI.h"),
     ("area_matrixFFI.modulemap", "module.modulemap"),
 )
+UNIFFI_FN_FUNC_RE = re.compile(r"\buniffi_area_matrix_core_fn_func_[A-Za-z0-9_]+\b")
+MODULEMAP_HEADER_RE = re.compile(r'header\s+"([^"]+)"')
 
 
 def _host_triple() -> str:
@@ -452,6 +457,74 @@ def _binding_drift(generated_dir: Path, tracked_dir: Path) -> list[str]:
     return drift
 
 
+def _extract_uniffi_fn_func_symbols(text: str) -> set[str]:
+    return set(UNIFFI_FN_FUNC_RE.findall(text))
+
+
+def _ios_core_ffi_sources(ios_app_root: Path) -> list[Path]:
+    return sorted(ios_app_root.rglob("*CoreFFI.swift"))
+
+
+def _ios_bindings_subset_issues(
+    generated_header: Path,
+    ios_bindings_dir: Path,
+    ios_app_root: Path,
+) -> list[str]:
+    """Validate iOS subset bindings without requiring a full byte-identical header.
+
+    Rules:
+    - every `fn_func_*` in the tracked iOS header must exist in the regenerated header
+    - every `fn_func_*` used by `*CoreFFI.swift` must exist in the tracked iOS header
+    - `module.modulemap` must point at an existing header file beside itself
+    """
+    issues: list[str] = []
+    ios_header = ios_bindings_dir / "area_matrixFFI.h"
+    modulemap = ios_bindings_dir / "module.modulemap"
+    if not ios_header.is_file():
+        issues.append(f"missing iOS header: {ios_header}")
+        return issues
+    if not modulemap.is_file():
+        issues.append(f"missing iOS modulemap: {modulemap}")
+        return issues
+
+    modulemap_text = modulemap.read_text(encoding="utf-8")
+    header_refs = MODULEMAP_HEADER_RE.findall(modulemap_text)
+    if not header_refs:
+        issues.append(f"iOS modulemap does not declare a header: {modulemap}")
+    for header_name in header_refs:
+        header_path = ios_bindings_dir / header_name
+        if not header_path.is_file():
+            issues.append(f"iOS modulemap header missing: {header_path}")
+
+    generated_symbols = _extract_uniffi_fn_func_symbols(
+        generated_header.read_text(encoding="utf-8")
+    )
+    ios_symbols = _extract_uniffi_fn_func_symbols(ios_header.read_text(encoding="utf-8"))
+    stale = sorted(ios_symbols - generated_symbols)
+    if stale:
+        preview = ", ".join(stale[:5])
+        suffix = "" if len(stale) <= 5 else f" (+{len(stale) - 5} more)"
+        issues.append(
+            "iOS header contains symbols absent from regenerated UniFFI header: "
+            f"{preview}{suffix}"
+        )
+
+    used_symbols: set[str] = set()
+    for source in _ios_core_ffi_sources(ios_app_root):
+        used_symbols.update(
+            _extract_uniffi_fn_func_symbols(source.read_text(encoding="utf-8"))
+        )
+    missing = sorted(used_symbols - ios_symbols)
+    if missing:
+        preview = ", ".join(missing[:5])
+        suffix = "" if len(missing) <= 5 else f" (+{len(missing) - 5} more)"
+        issues.append(
+            "iOS *CoreFFI.swift uses symbols missing from tracked iOS header: "
+            f"{preview}{suffix}"
+        )
+    return issues
+
+
 def run_core_build(
     root: Path | None = None,
     *,
@@ -531,6 +604,10 @@ def run_bindings_verify(
     root: Path | None = None,
     udl: str | Path = DEFAULT_BINDINGS_UDL,
     tracked_dir: str | Path = DEFAULT_TRACKED_BINDINGS_DIR,
+    *,
+    ios_bindings_dir: str | Path = DEFAULT_IOS_BINDINGS_DIR,
+    ios_app_root: str | Path = DEFAULT_IOS_APP_ROOT,
+    verify_ios_subset: bool | None = None,
 ) -> int:
     root = (root or project_root()).resolve()
     udl_path = resolve_project_path(root, udl)
@@ -538,6 +615,11 @@ def run_bindings_verify(
     require_file(udl_path, "Core UniFFI UDL")
     if not tracked_path.is_dir():
         fail(f"tracked bindings directory not found at {tracked_path}.")
+
+    ios_bindings_path = resolve_project_path(root, ios_bindings_dir)
+    ios_app_path = resolve_project_path(root, ios_app_root)
+    if verify_ios_subset is None:
+        verify_ios_subset = ios_bindings_path.is_dir()
 
     core_dir = root / "core"
     bindgen_cmd = _uniffi_bindgen_command(core_dir)
@@ -551,17 +633,36 @@ def run_bindings_verify(
             return rc
         _normalize_binding_artifacts(generated_dir)
         drift = _binding_drift(generated_dir, tracked_path)
+        ios_issues: list[str] = []
+        if verify_ios_subset:
+            ios_issues = _ios_bindings_subset_issues(
+                generated_dir / "area_matrixFFI.h",
+                ios_bindings_path,
+                ios_app_path,
+            )
 
-    if drift:
+    if drift or ios_issues:
         print("bindings verify: FAILED", file=os.sys.stderr)
         for name in drift:
             print(f"- tracked binding differs: {tracked_path / name}", file=os.sys.stderr)
-        print(
-            "Run `./dev bindings update --udl core/area_matrix.udl "
-            "--out-dir apps/macos/AreaMatrix/Bridge/UniFFI` after reviewing the Core API / UDL change.",
-            file=os.sys.stderr,
-        )
+        for issue in ios_issues:
+            print(f"- iOS subset verify: {issue}", file=os.sys.stderr)
+        if drift:
+            print(
+                "Run `./dev bindings update --udl core/area_matrix.udl "
+                "--out-dir apps/macos/AreaMatrix/Bridge/UniFFI` after reviewing the Core API / UDL change.",
+                file=os.sys.stderr,
+            )
+        if ios_issues:
+            print(
+                "iOS uses a curated header subset under apps/ios/Carea_matrixFFI; "
+                "refresh area_matrixFFI.h symbols and *CoreFFI.swift shims against the regenerated header.",
+                file=os.sys.stderr,
+            )
         return 1
 
-    print("bindings verify: PASS")
+    if verify_ios_subset:
+        print("bindings verify: PASS (macOS full + iOS subset)")
+    else:
+        print("bindings verify: PASS")
     return 0

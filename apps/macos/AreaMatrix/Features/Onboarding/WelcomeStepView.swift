@@ -183,7 +183,7 @@ private extension WelcomeStepView {
                 action: onLearnMore,
                 label: {
                     AreaMatrixLinkActionLabel(
-                        title: "了解 AreaMatrix 如何工作",
+                        title: String(localized: "onboarding.welcome.learnMore"),
                         iconName: "questionmark.circle",
                         isHovered: isLearnMoreHovered
                     )
@@ -223,7 +223,7 @@ private extension WelcomeStepView {
                         shimmerPhase: $shimmerPhase
                     ) {
                         AreaMatrixPrimaryActionLabel(
-                            title: "选择本地文件夹",
+                            title: String(localized: "onboarding.welcome.chooseFolder"),
                             iconName: "folder.badge.plus",
                             shortcut: "⌘O",
                             isHovered: isCtaHovered

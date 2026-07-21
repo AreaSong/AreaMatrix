@@ -284,6 +284,10 @@ DB 查询、源码聚合或断言 helper 移入 `core/tests/support/**`。但测
 
 每一步都必须运行与影响面匹配的验证。涉及 Core API、UDL、Swift bridge 的破坏性变化仍属于高风险边界，必须先确认。
 
+## 模块文档覆盖策略
+
+高风险文件安全、恢复、冲突与 AI 远程相关模块以 `docs/modules/*` 为行为说明权威；其余模块以 [Core API](../api/core-api.md) 与 UDL 合同为准，不要求为每个 core 模块写满独立模块文档。
+
 ## Related
 
 - [overview.md](overview.md)
@@ -293,3 +297,4 @@ DB 查询、源码聚合或断言 helper 移入 `core/tests/support/**`。但测
 - [transactional-import.md](transactional-import.md)
 - [../api/core-api.md](../api/core-api.md)
 - [../development/coding-standards.md](../development/coding-standards.md)
+- [../modules/storage.md](../modules/storage.md)

@@ -27,22 +27,22 @@ struct ValidatePathFooter: View {
 
     @ViewBuilder
     private var defaultFooter: some View {
-        Button(action: onBack) { Text("返回").font(.body.weight(.medium)) }
+        Button(action: onBack) { Text(String(localized: "onboarding.validate.back")).font(.body.weight(.medium)) }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
 
         if showsCancel {
-            Button(action: onCancel) { Text("取消").font(.body.weight(.medium)) }
+            Button(action: onCancel) { Text(String(localized: "onboarding.validate.cancel")).font(.body.weight(.medium)) }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
         }
 
         Spacer()
 
-        Button(action: onChangePath) { Text("更改") }
+        Button(action: onChangePath) { Text(String(localized: "onboarding.validate.change")) }
             .controlSize(.large)
 
-        Button(action: onRetry) { Text("重试") }
+        Button(action: onRetry) { Text(String(localized: "onboarding.validate.retry")) }
             .controlSize(.large)
 
         primaryButton
@@ -50,13 +50,13 @@ struct ValidatePathFooter: View {
 
     private var existingRepositoryFooter: some View {
         Group {
-            Button(action: onBack) { Text("返回").font(.body.weight(.medium)) }
+            Button(action: onBack) { Text(String(localized: "onboarding.validate.back")).font(.body.weight(.medium)) }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
 
             Spacer()
 
-            Button(action: onChangePath) { Text("更改位置") }
+            Button(action: onChangePath) { Text(String(localized: "onboarding.validate.changeLocation")) }
                 .controlSize(.large)
 
             primaryButton

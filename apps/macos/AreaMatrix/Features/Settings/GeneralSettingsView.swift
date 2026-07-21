@@ -54,8 +54,8 @@ extension GeneralSettingsView {
             storageConfirmationTitle,
             isPresented: storageConfirmationBinding
         ) {
-            Button("Cancel", role: .cancel, action: model.cancelPendingStorageMode)
-            Button("Confirm") {
+            Button(String(localized: "settings.action.cancel"), role: .cancel, action: model.cancelPendingStorageMode)
+            Button(String(localized: "settings.action.confirm")) {
                 Task {
                     await model.confirmPendingStorageMode()
                 }
@@ -76,38 +76,33 @@ extension GeneralSettingsView {
             )
         }
         .confirmationDialog(
-            "Create default ignore.yaml?",
+            String(localized: "settings.ignore.createTitle"),
             isPresented: ignoreRulesCreateBinding
         ) {
-            Button("Cancel", role: .cancel, action: model.cancelCreateDefaultIgnoreRules)
-            Button("Create default ignore.yaml") {
+            Button(String(localized: "settings.action.cancel"), role: .cancel, action: model.cancelCreateDefaultIgnoreRules)
+            Button(String(localized: "settings.ignore.createButton")) {
                 model.createDefaultIgnoreRulesAndOpen()
             }
         } message: {
-            Text(
-                """
-                AreaMatrix will only write .areamatrix/ignore.yaml. Existing user files are not moved, renamed, \
-                deleted, or overwritten.
-                """
-            )
+            Text(String(localized: "settings.ignore.createMessage"))
         }
     }
 
     private var sidebar: some View {
         List(selection: $selectedTab) {
-            Label("通用", systemImage: "gearshape")
+            Label(String(localized: "settings.tab.general"), systemImage: "gearshape")
                 .tag("general")
-            Label("资料库", systemImage: "folder")
+            Label(String(localized: "settings.tab.repository"), systemImage: "folder")
                 .tag("repository")
-            Label("分类规则", systemImage: "tag")
+            Label(String(localized: "settings.tab.classifier"), systemImage: "tag")
                 .tag("classifier")
-            Label("AI", systemImage: "sparkles")
+            Label(String(localized: "settings.tab.ai"), systemImage: "sparkles")
                 .tag("ai")
-            Label("集成", systemImage: "point.3.connected.trianglepath.dotted")
+            Label(String(localized: "settings.tab.integrations"), systemImage: "point.3.connected.trianglepath.dotted")
                 .tag("integrations")
-            Label("高级", systemImage: "wrench.and.screwdriver")
+            Label(String(localized: "settings.tab.advanced"), systemImage: "wrench.and.screwdriver")
                 .tag("advanced")
-            Label("关于", systemImage: "info.circle")
+            Label(String(localized: "settings.tab.about"), systemImage: "info.circle")
                 .tag("about")
         }
         .listStyle(.sidebar)
@@ -168,16 +163,16 @@ extension GeneralSettingsView {
 
     private func loadingErrorContent(_ error: GeneralSettingsSaveError) -> some View {
         SettingsPageErrorContent(
-            title: "Unable to load settings",
+            title: String(localized: "settings.error.unableToLoad"),
             message: error.message,
             recovery: error.recovery
         ) {
-            Button("Retry") {
+            Button(String(localized: "settings.action.retry")) {
                 Task {
                     await model.load()
                 }
             }
-            Button("Close", action: onClose)
+            Button(String(localized: "settings.action.close"), action: onClose)
         }
     }
 
@@ -188,11 +183,11 @@ extension GeneralSettingsView {
     private var storageConfirmationTitle: String {
         switch model.pendingStorageConfirmation {
         case .move:
-            "Use Move as the default?"
+            String(localized: "settings.storage.confirmMove")
         case .indexOnly:
-            "Use Index-only as the default?"
+            String(localized: "settings.storage.confirmIndexOnly")
         default:
-            "Confirm default storage mode"
+            String(localized: "settings.storage.confirmDefault")
         }
     }
 

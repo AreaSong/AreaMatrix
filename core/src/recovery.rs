@@ -9,6 +9,7 @@ use crate::{db, CoreError, CoreResult, RecoveryReport, StorageMode};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const STAGING_DIR: &str = "staging";
+const SOFT_DELETE_RETENTION_DAYS: i64 = 30;
 
 enum StagingRoot {
     Missing,
@@ -45,8 +46,28 @@ pub(crate) fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport
         recover_staging_row(&repo, &staging_root, row, &mut report)?;
     }
     clean_orphan_staging_files(&staging_root, &protected_paths, &mut report)?;
+    purge_expired_soft_delete_metadata(&repo, &mut report)?;
 
     Ok(report)
+}
+
+fn purge_expired_soft_delete_metadata(repo: &Path, report: &mut RecoveryReport) -> CoreResult<()> {
+    match db::purge_expired_soft_deleted_files(repo, SOFT_DELETE_RETENTION_DAYS) {
+        Ok(purged) if purged > 0 => {
+            report.warnings.push(format!(
+                "Purged {purged} soft-deleted metadata rows older than {SOFT_DELETE_RETENTION_DAYS} days"
+            ));
+            Ok(())
+        }
+        Ok(_) => Ok(()),
+        Err(error) => {
+            report.warnings.push(format!(
+                "Soft-delete retention purge skipped: {}",
+                error.raw_context()
+            ));
+            Ok(())
+        }
+    }
 }
 
 fn empty_report() -> RecoveryReport {

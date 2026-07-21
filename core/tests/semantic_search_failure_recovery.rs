@@ -1,8 +1,8 @@
-use std::fs;
+use std::{fs, path::Path};
 
 use area_matrix_core::{
-    build_embedding_index, map_core_error, semantic_search, AiProviderPreference, CoreError,
-    ErrorKind, ErrorMappingInput, ErrorRecoverability, ErrorSeverity, SearchPagination,
+    build_embedding_index, map_core_error, semantic_search, AiFeatureKind, AiProviderPreference,
+    CoreError, ErrorKind, ErrorMappingInput, ErrorRecoverability, ErrorSeverity, SearchPagination,
     SemanticIndexStatus, SemanticSearchFallbackReason, SemanticSearchRoute,
 };
 use pretty_assertions::assert_eq;
@@ -237,6 +237,12 @@ fn semantic_search_failure_privacy_skip_and_remote_gate_do_not_leak_key_material
 
     let remote_repo = initialized_repo();
     let remote_path = path_string(remote_repo.path());
+    insert_file(
+        remote_repo.path(),
+        "finance/remote-gate-invoice.txt",
+        "finance",
+        None,
+    );
     update_ai_config(
         remote_repo.path(),
         ai_config(
@@ -271,6 +277,84 @@ fn semantic_search_failure_privacy_skip_and_remote_gate_do_not_leak_key_material
         Some(SemanticSearchFallbackReason::ProviderUnavailable)
     );
     assert_no_secret_material(&combined_log_text(remote_repo.path()));
+}
+
+#[test]
+fn semantic_search_failure_remote_call_log_gate_blocks_runtime_without_invocation() {
+    #[path = "support/remote_provider_config_common.rs"]
+    mod remote_common;
+    #[path = "support/semantic_search_runtime.rs"]
+    mod semantic_runtime;
+
+    use area_matrix_core::enable_remote_ai_provider;
+    use remote_common::{
+        enable_request_for_endpoint, successful_provider_test, test_request_for_endpoint,
+    };
+    use semantic_runtime::RemoteRuntimeProbe;
+
+    fn install_broken_ai_call_log_schema(repo: &Path) {
+        let connection =
+            rusqlite::Connection::open(repo.join(".areamatrix/index.db")).expect("open database");
+        let _ = connection.execute("DROP TABLE IF EXISTS ai_call_log", []);
+        connection
+            .execute_batch("CREATE TABLE ai_call_log (id INTEGER PRIMARY KEY);")
+            .expect("install broken AI call log schema");
+    }
+
+    let repo = initialized_repo();
+    insert_file(
+        repo.path(),
+        "finance/invoice-gate.txt",
+        "finance",
+        Some("invoice gate"),
+    );
+    let repo_path = path_string(repo.path());
+    update_ai_config(
+        repo.path(),
+        ai_config(
+            repo_path.clone(),
+            true,
+            false,
+            true,
+            AiProviderPreference::RemoteFirst,
+            true,
+            true,
+        ),
+    );
+    let endpoint_url = "https://provider.example.test/semantic-gate";
+    let test_result =
+        successful_provider_test(repo_path.clone(), test_request_for_endpoint(endpoint_url))
+            .expect("test remote provider");
+    let token = test_result
+        .verification_token
+        .expect("successful test returns verification token");
+    let mut enable_request = enable_request_for_endpoint(token, endpoint_url);
+    enable_request.feature_scope = vec![AiFeatureKind::SemanticSearch];
+    enable_remote_ai_provider(repo_path.clone(), enable_request).expect("enable remote provider");
+    install_broken_ai_call_log_schema(repo.path());
+    let remote_runtime = RemoteRuntimeProbe::new();
+
+    let page = semantic_search(
+        repo_path.clone(),
+        "invoice".to_owned(),
+        default_filter(),
+        first_page(),
+    )
+    .expect("call log gate fallback page");
+    let mut remote_scope = semantic_scope();
+    remote_scope.route = Some(SemanticSearchRoute::Remote);
+    let report =
+        build_embedding_index(repo_path, remote_scope).expect("call log gate build report");
+
+    assert_eq!(
+        page.fallback_reason,
+        Some(SemanticSearchFallbackReason::CallLogUnavailable)
+    );
+    assert_eq!(
+        report.fallback_reason,
+        Some(SemanticSearchFallbackReason::CallLogUnavailable)
+    );
+    assert!(!remote_runtime.was_invoked());
 }
 
 #[test]

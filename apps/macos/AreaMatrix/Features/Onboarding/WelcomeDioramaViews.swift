@@ -8,8 +8,8 @@ struct WelcomeClassifySceneView: View {
             AreaMatrixClassificationDiorama()
                 .areaMatrixSceneVisualMotion()
             AreaMatrixSceneText(
-                title: "智能引擎，自动归档",
-                description: "把文件拖入视窗，底层的智能规则与 AI 将自动识别内容、建议命名，并为其在庞大复杂的目录树中寻找到最佳的物理归属。",
+                title: String(localized: "onboarding.welcome.classify.title"),
+                description: String(localized: "onboarding.welcome.classify.description"),
                 gradient: LinearGradient(
                     colors: [
                         colorScheme == .dark ? AreaMatrixTheme.Colors.tealBright : AreaMatrixTheme.Colors.tealDeep,
@@ -31,8 +31,8 @@ struct WelcomeSecuritySceneView: View {
             AreaMatrixProtectionDiorama()
                 .areaMatrixSceneVisualMotion()
             AreaMatrixSceneText(
-                title: "零侵入，绝对的安全防线",
-                description: "我们仅仅在底层建立一层可视化的超级索引。程序承诺永远不会在后台私自改动、移动或覆盖您宝贵的源文件与已有目录结构。",
+                title: String(localized: "onboarding.welcome.security.title"),
+                description: String(localized: "onboarding.welcome.security.description"),
                 gradient: LinearGradient(
                     colors: [
                         colorScheme == .dark ? AreaMatrixTheme.Colors.gold : AreaMatrixTheme.Colors.goldDeep,

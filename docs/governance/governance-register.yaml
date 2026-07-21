@@ -804,6 +804,78 @@ documents:
     review_cycle: annual
     review_triggers:
       - interaction-or-surface-changed
+  - id: AM-DOC-082
+    path: docs/modules/repo-init.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-21"
+    review_cycle: quarterly
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-083
+    path: docs/modules/import-conflict-batch.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-21"
+    review_cycle: quarterly
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-084
+    path: docs/modules/repair.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-21"
+    review_cycle: quarterly
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-085
+    path: docs/modules/repo-scan.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-21"
+    review_cycle: quarterly
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-086
+    path: docs/modules/missing-file-recovery.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-21"
+    review_cycle: quarterly
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-087
+    path: docs/modules/batch-delete.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-21"
+    review_cycle: quarterly
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-088
+    path: docs/modules/sync-conflict-resolve.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-21"
+    review_cycle: quarterly
+    review_triggers:
+      - core-module-behavior-changed
+  - id: AM-DOC-089
+    path: docs/modules/semantic-search.md
+    authority: module-behavior
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-21"
+    review_cycle: quarterly
+    review_triggers:
+      - core-module-behavior-changed
 
 document_domains:
   - domain: docs/adr
@@ -1202,6 +1274,7 @@ core_modules:
   - module: batch_delete
     owner: "@AreaSong"
     authority_docs:
+      - docs/modules/batch-delete.md
       - docs/api/core-api.md
     test_families:
       - batch_delete_trash
@@ -1311,6 +1384,7 @@ core_modules:
   - module: import_conflict_batch
     owner: "@AreaSong"
     authority_docs:
+      - docs/modules/import-conflict-batch.md
       - docs/api/core-api.md
       - docs/architecture/transactional-import.md
     test_families:
@@ -1324,6 +1398,7 @@ core_modules:
   - module: missing_file_recovery
     owner: "@AreaSong"
     authority_docs:
+      - docs/modules/missing-file-recovery.md
       - docs/api/core-api.md
     test_families:
       - missing_file_recovery
@@ -1374,6 +1449,7 @@ core_modules:
   - module: repair
     owner: "@AreaSong"
     authority_docs:
+      - docs/modules/repair.md
       - docs/api/core-api.md
     test_families:
       - repair_reindex_metadata
@@ -1383,6 +1459,7 @@ core_modules:
   - module: repo_init
     owner: "@AreaSong"
     authority_docs:
+      - docs/modules/repo-init.md
       - docs/api/core-api.md
       - docs/architecture/adopt-existing-folders.md
     test_families:
@@ -1400,6 +1477,7 @@ core_modules:
   - module: repo_scan
     owner: "@AreaSong"
     authority_docs:
+      - docs/modules/repo-scan.md
       - docs/api/core-api.md
     test_families:
       - manual_rescan
@@ -1415,6 +1493,7 @@ core_modules:
   - module: semantic_search
     owner: "@AreaSong"
     authority_docs:
+      - docs/modules/semantic-search.md
       - docs/api/core-api.md
       - docs/user-guide/ai-features-and-privacy.md
     test_families:
@@ -1457,6 +1536,7 @@ core_modules:
   - module: sync_conflict_resolve
     owner: "@AreaSong"
     authority_docs:
+      - docs/modules/sync-conflict-resolve.md
       - docs/api/core-api.md
     test_families:
       - sync_conflict_resolve

@@ -158,9 +158,9 @@ diagnostics closure，也不改变 diagnostics 的隐私、脱敏或 Core snapsh
 - 平台能力 inventory 已覆盖 `FileManager` 默认实例、`FileHandle`、`URL.resourceValues`、Data 读写、
   脚本写入与环境变量访问；后续新增同类 feature 例外会直接触发治理测试。
 
-AI runtime environment contract 当前由 Core 的 6 个 `AREAMATRIX_*_RUNTIME` key 与治理检查共同固定：
-classification、tags、summary 的 local / remote runtime 由外部集成提供；
-remote provider probe 已退出 runtime 环境合同。Core 新增或重命名 runtime key 时，
+AI runtime environment contract 当前由 Core 的 7 个 `AREAMATRIX_*_RUNTIME` key 与治理检查共同固定：
+classification、tags、summary 的 local / remote runtime，以及 semantic search 的 remote runtime
+由外部集成提供；remote provider probe 已退出 runtime 环境合同。Core 新增或重命名 runtime key 时，
 `./dev check governance` 必须失败，不能让跨 Rust / Swift 的环境变量合同静默漂移。
 
 ## 架构演进规则

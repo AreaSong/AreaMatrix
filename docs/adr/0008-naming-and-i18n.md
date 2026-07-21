@@ -10,8 +10,8 @@
 > 现状更正（2026-07-21）：三层分离原则（FS 英文 slug、用户文件名保留）仍有效，以下声明按当前实现更正：
 >
 > - 内置分类 slug 实际为 6 个：docs / code / design / media / finance / inbox（`core/resources/classifier.yaml`），正文原「10 个」处已就地更正。
-> - 「`Localizations/{en,zh-Hans,zh-Hant}.lproj/Localizable.strings` 编译进 app bundle」未实现：全仓无 `.lproj` / `.strings` / `.xcstrings`，UI 文案当前硬编码中英混用；未实现，已列入残差跟踪。
-> - 「UI 显示按 `Locale.preferredLanguages.first` 取本地化字符串」未实现：`preferredLanguages` 仅用于推导仓库配置 locale（`apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift`），驱动分类 `display_name`（仅 zh-Hans / en），不驱动 UI strings。
+> - 「`Localizations/{en,zh-Hans,zh-Hant}.lproj/Localizable.strings` 编译进 app bundle」**已实现**（2026-07-21）：Settings 与 Onboarding 关键 UI 已通过 `String(localized:)` 接入 `apps/macos/AreaMatrix/Localizations/` 管线（en / zh-Hans；zh-Hant 暂镜像 en 内容作 fallback）；其余 UI 表面仍可按需渐进接入。
+> - 「UI 显示按 `Locale.preferredLanguages.first` 取本地化字符串」**部分实现**：Settings / Onboarding 关键文案已走系统 locale 与 bundle strings；`preferredLanguages` 仍同时用于推导仓库配置 locale（`apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift`）驱动分类 `display_name`（仅 zh-Hans / en）；MainList / Detail 等其余表面尚未全面接入。
 > - 「DB 中 path 列做 NFC 归一 + case-insensitive 索引」未实现：`files.path` 为 `TEXT NOT NULL UNIQUE`，无 `COLLATE NOCASE`、无 NFC 归一（`core/src/db/schema.rs`）；unicode NFC 归一目前仅用于分类关键词匹配。
 
 ## 上下文
@@ -33,10 +33,10 @@ AreaMatrix 是面向中文用户为主的本地资料管理工具，但要兼顾
 |---|---|
 | **文件系统**（分类目录、staging 等内部目录） | 英文 slug，内置 6 个：`docs`, `code`, `design`, `media`, `finance`, `inbox`（更正：见顶部现状说明） |
 | **数据库**（files.category 列） | 同 FS：英文 slug |
-| **UI 显示**（侧栏、详情、设置） | 按 `Locale.preferredLanguages.first` 取本地化字符串（更正：未实现，见顶部现状说明） |
+| **UI 显示**（侧栏、详情、设置） | 按系统 locale 取 bundle 本地化字符串（Settings / Onboarding 已接入；其余表面渐进） |
 | **用户文件名** | **完全保留**，不做翻译 / 拼音化 / 转码 |
 
-**Locale 配置文件**（更正：未实现，见顶部现状说明）：每个 locale 一个 strings 文件，编译进 app bundle：
+**Locale 配置文件**（Settings / Onboarding 已接入，见顶部现状说明）：每个 locale 一个 strings 文件，编译进 app bundle：
 
 ```text
 apps/macos/AreaMatrix/Localizations/

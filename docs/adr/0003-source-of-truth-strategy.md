@@ -10,7 +10,7 @@
 > 现状更正（2026-07-21）：Hybrid 真相源与 FS → DB 单向同步仍是现行决策，以下细节按当前实现更正：
 >
 > - 「FS 中 DB 不知道的文件 → 自动 INSERT 并通过分类引擎归位」：外部新文件按顶层目录推导 category 原地索引（`core/src/sync/events.rs` 的 `category_for_relative_path`），不调用 classify 引擎、不移动文件。
-> - 「删除走软删除，30 天保留期」：软删除已实现，30 天保留期逻辑未实现，已列入残差跟踪。
+> - 「删除走软删除，30 天保留期」：软删除已实现；`recover_on_startup` 会 purge `files.status='deleted'` 且 `deleted_at` 超过 30 天的元数据行（及相关 AreaMatrix 拥有 sidecar），不硬删用户源文件、不二次清空系统 Trash。
 > - 组件名 `InFlightTracker` 实际为 `actor InFlightFileChangeTracker`（`apps/macos/AreaMatrix/PlatformServices/InFlightFileChangeTracker.swift`），正文已就地更正。
 
 ## 上下文
@@ -115,7 +115,7 @@ DB ↔ FS 双向写、双向监听。
 - **依赖 FSEvents 可靠性**：FSEvents 偶发漏事件需要 reindex 兜底
 - **In-flight 过滤复杂**：应用自己改 FS 时要避免 FSEvents 反馈给自己造成循环（[InFlightFileChangeTracker](../architecture/fs-watcher.md)）
 - **元数据可能丢失**：用户在 Finder 把文件移到仓库外 → DB 中删除并丢失分类/标签/历史
-  - 缓解：删除走软删除，30 天保留期（更正：30 天保留期未实现，见顶部现状说明）
+  - 缓解：删除走软删除，30 天保留期（启动 recovery 会 purge 过期 soft-deleted 元数据行）
   - 缓解：后续提供"找回"功能
 
 ### 风险

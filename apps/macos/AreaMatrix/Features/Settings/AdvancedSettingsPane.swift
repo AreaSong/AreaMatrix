@@ -96,7 +96,7 @@ extension AdvancedSettingsPane {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: "高级", subtitle: model.repoPath) {
+        SettingsPageHeader(title: String(localized: "settings.page.advanced"), subtitle: model.repoPath) {
             if model.isSaving || model.loadState == .loading {
                 SettingsHeaderProgressIndicator(
                     label: model.isSaving ? "Saving advanced settings" : "Loading advanced settings"
@@ -127,12 +127,12 @@ extension AdvancedSettingsPane {
     }
 
     private var loadingContent: some View {
-        SettingsPageLoadingContent(title: "Loading advanced settings...")
+        SettingsPageLoadingContent(title: String(localized: "settings.loading.advanced"))
     }
 
     private func loadErrorContent(_ error: AdvancedSettingsError) -> some View {
         SettingsPageErrorContent(
-            title: "Unable to load advanced settings",
+            title: String(localized: "settings.error.loadAdvanced"),
             message: error.message,
             recovery: error.recovery
         ) {
