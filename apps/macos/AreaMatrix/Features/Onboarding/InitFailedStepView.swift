@@ -27,6 +27,7 @@ struct InitFailedStepView: View {
             footer
         }
         .areaMatrixOnboardingPanel()
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .confirmationDialog(
             String(localized: "onboarding.failed.collectDiagnostics"),
             isPresented: $isDiagnosticsPrivacyPresented
@@ -47,7 +48,7 @@ struct InitFailedStepView: View {
     private var header: some View {
         AreaMatrixStepHeader(
             systemImage: "exclamationmark.triangle",
-            tint: .orange,
+            tint: AreaMatrixTheme.Colors.coral,
             title: String(localized: "onboarding.failed.title"),
             subtitle: String(localized: "onboarding.failed.subtitle")
         )
@@ -140,24 +141,25 @@ struct InitFailedStepView: View {
     private var footer: some View {
         HStack {
             Button(action: onQuit) { Text(String(localized: "onboarding.failed.quit")) }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
 
             Spacer()
 
             Button(String(localized: "onboarding.failed.diagnostics")) {
                 isDiagnosticsPrivacyPresented = true
             }
+            .buttonStyle(AreaMatrixSecondaryButtonStyle())
             .controlSize(.large)
             .disabled(isActionInFlight)
 
             Button(String(localized: "onboarding.failed.changeLocation"), action: onChangePath)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .controlSize(.large)
                 .disabled(isActionInFlight)
 
             Button(String(localized: "onboarding.failed.retry"), action: onRetry)
                 .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.coral))
                 .controlSize(.large)
                 .disabled(!canRetry || isActionInFlight)
         }

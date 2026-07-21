@@ -22,16 +22,13 @@ extension MainRepositoryContentView {
     private var listContentPane: some View {
         switch state {
         case .empty:
-            VStack(spacing: 14) {
-                Text("这里还没有文件")
-                    .font(.title2.weight(.semibold))
-                Text("把文件拖到这里，AreaMatrix 会自动分类、命名并记录改动。")
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                Button("Import...", action: onImport)
-                    .disabled(opening.isReadOnly)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            AreaMatrixEmptyStateView(
+                systemImage: "tray.and.arrow.down",
+                title: "这里还没有文件",
+                message: "把文件拖到这里，AreaMatrix 会自动分类、命名并记录改动。",
+                primaryTitle: opening.isReadOnly ? nil : "Import...",
+                primaryAction: opening.isReadOnly ? nil : onImport
+            )
             .modifier(ImportDropTargetModifier(
                 target: .autoClassify,
                 dropPreviewModel: dropPreviewModel,
@@ -58,6 +55,8 @@ extension MainRepositoryContentView {
             }
             .padding(18)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .areaMatrixWorkspaceRegionShell(cornerRadius: 14)
+            .padding(10)
             .modifier(ImportDropTargetModifier(
                 target: selectedSidebarRow.importDropTarget,
                 dropPreviewModel: dropPreviewModel,

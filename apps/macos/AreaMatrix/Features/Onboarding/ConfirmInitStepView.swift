@@ -48,9 +48,9 @@ struct ConfirmInitStepView: View {
             }
             footer
         }
-        .padding(.horizontal, 72)
-        .padding(.vertical, 48)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(40)
+        .areaMatrixGlassContentPanel(width: 720, padding: 0)
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .confirmationDialog(String(localized: "onboarding.confirm.quitSetup"), isPresented: $isCancelConfirmationPresented) {
             Button(String(localized: "onboarding.confirm.quit"), role: .destructive, action: onCancelSetup)
             Button(String(localized: "settings.action.cancel"), role: .cancel) {}
@@ -60,15 +60,15 @@ struct ConfirmInitStepView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(isCreateMode
+        AreaMatrixStepHeader(
+            systemImage: isCreateMode ? "plus.rectangle.on.folder" : "folder.badge.plus",
+            tint: AreaMatrixTheme.Colors.tealBright,
+            title: isCreateMode
                 ? String(localized: "onboarding.confirm.createTitle")
-                : String(localized: "onboarding.confirm.adoptTitle"))
-                .font(.system(size: 34, weight: .semibold))
-                .accessibilityAddTraits(.isHeader)
-            Text(String(localized: "onboarding.confirm.subtitle"))
-                .font(.title3)
-        }
+                : String(localized: "onboarding.confirm.adoptTitle"),
+            subtitle: String(localized: "onboarding.confirm.subtitle")
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var pathBox: some View {
@@ -77,7 +77,7 @@ struct ConfirmInitStepView: View {
                 .font(.headline)
             AreaMatrixPathBox(
                 path: draft.validation.repoPath,
-                style: .plain,
+                style: .glass,
                 lineLimit: 3,
                 alignment: .leading
             )
@@ -125,14 +125,17 @@ struct ConfirmInitStepView: View {
         HStack {
             if footerActions.contains(.back) {
                 Button(String(localized: "onboarding.confirm.back"), action: onBack)
+                    .buttonStyle(AreaMatrixSecondaryButtonStyle())
             }
             if footerActions.contains(.cancelSetup) {
                 Button(String(localized: "onboarding.confirm.cancelSetup")) {
                     isCancelConfirmationPresented = true
                 }
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
             }
             if footerActions.contains(.changePath) {
                 Button(String(localized: "onboarding.confirm.changePath"), action: onChangePath)
+                    .buttonStyle(AreaMatrixSecondaryButtonStyle())
             }
             Spacer()
             if footerActions.contains(.primary) {
@@ -143,7 +146,7 @@ struct ConfirmInitStepView: View {
                     action: primaryAction
                 )
                     .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(AreaMatrixPrimaryButtonStyle())
                     .disabled(!canRunPrimaryAction)
             }
         }
@@ -252,6 +255,9 @@ private struct InitPlanList: View {
                         .accessibilityLabel(item)
                 }
             }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .areaMatrixGlassCard(cornerRadius: 10)
         }
     }
 }

@@ -61,6 +61,7 @@ struct ImportResultView: View {
             }
             .frame(minHeight: 220)
             .accessibilityLabel(state.summaryText)
+            .areaMatrixWorkspaceRegionShell(cornerRadius: 10)
 
             if let selectedItem {
                 ImportErrorDetailView(item: selectedItem)
@@ -79,14 +80,19 @@ struct ImportResultView: View {
                         .controlSize(.small)
                 }
                 Button("Export Details...", action: onRequestExport)
+                    .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 Button(state.retryButtonTitle, action: onRetryFailed)
+                    .buttonStyle(AreaMatrixSecondaryButtonStyle())
                     .disabled(!state.canRetryFailedItems)
                 Button("Done", action: onDone)
                     .keyboardShortcut(.defaultAction)
+                    .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.emerald))
             }
             exportStatus
         }
-        .padding(24)
+        .padding(28)
+        .areaMatrixGlassContentPanel(width: nil, padding: 0)
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .confirmationDialog(
             "Export import result details?",
             isPresented: exportConfirmationBinding,

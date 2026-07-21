@@ -15,7 +15,7 @@
 - `PlatformServices/` 或现有 `App/` 平台服务文件：AppKit、FileManager、iCloud、FSEvents、NSOpenPanel、NSSavePanel、NSWorkspace、Pasteboard、系统能力检测等平台副作用。新增平台能力优先进入 `PlatformServices/`；既有 `App/` 平台服务可随触达渐进迁移。
 - `Features/<FeatureName>/`：按业务域收拢 View / Model / State / Actions / Support。当前 owner 包括 `AI`、`CommandPalette`、`Detail`、`FileActions`、`Import`、`MainList`、`Onboarding`、`RepositoryLifecycle`、`Search`、`Settings`、`SyncConflicts`。
 - `Models/`：尚未收拢到 feature 的 UI state、presentation state、routing state 和轻量 view model。新增复杂 model 优先放到对应 `Features/<FeatureName>/`，不要继续扩大顶层 `Models/`。
-- `Views/`：现有跨 feature 的 SwiftUI 入口和渐进迁移区。新增业务视图优先放入 `Features/<FeatureName>/`；`Views/DesignSystem/` 只放通用 UI 组件、主题、效果和可复用控件。
+- `Views/`：现有跨 feature 的 SwiftUI 入口和渐进迁移区。新增业务视图优先放入 `Features/<FeatureName>/`；`Views/DesignSystem/` 只放通用 UI 组件、主题、效果和可复用控件。新增 DesignSystem / Effects Swift 文件时必须同步写入 `AreaMatrix.xcodeproj` 的 PBXFileReference、对应 Group 与 Sources（缺任一环会出现「找不到类型」却难定位到工程登记）。
 - `Resources/`：静态资源。
 - `AreaMatrixTests/Support` 或 feature-local test support：后续新增 fixture、mock bridge、临时 repo 构造、重复断言 helper 优先收敛到明确支撑目录；不要继续散落成大号测试工具文件。
 

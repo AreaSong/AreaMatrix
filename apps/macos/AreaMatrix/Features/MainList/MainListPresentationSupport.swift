@@ -41,7 +41,10 @@ extension MainRepositoryContentView {
                 searchRouteStatus(destination)
             } else {
                 Text(fileListModel.searchState.isActive ? "No search results" : "No files in this category")
+                    .font(.callout)
                     .foregroundStyle(.secondary)
+                    .padding(16)
+                    .areaMatrixGlassCard(cornerRadius: 10)
             }
         }
     }

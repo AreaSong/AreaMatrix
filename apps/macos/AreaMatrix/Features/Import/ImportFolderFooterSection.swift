@@ -22,12 +22,15 @@ struct ImportFolderFooterSection: View {
             }
             Spacer()
             Button("Retry scan", action: onRetryScan)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button("Cancel", action: onCancel)
                 .keyboardShortcut(.cancelAction)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button("Import Folder") {
                 Task { await importFolder() }
             }
             .keyboardShortcut(.defaultAction)
+            .buttonStyle(AreaMatrixPrimaryButtonStyle())
             .disabled(importDisabledReason != nil)
         }
     }

@@ -124,6 +124,22 @@ extension ImportEntrySheetView {
         }
         .padding(24)
         .frame(minWidth: request.urls.count > 1 ? 720 : 480)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.35),
+                            Color.white.opacity(0.08)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.immediate)
         .task(id: request.id) {
             switch request.kind {
             case .singleFile:

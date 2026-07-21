@@ -13,6 +13,7 @@ private struct AreaMatrixBlobColorSpec {
 struct AreaMatrixAmbientBackground: View {
     let scene: AreaMatrixAmbientScene
     var parallax: AreaMatrixParallax = .zero
+    var strength: AreaMatrixMotionTokens.AmbientStrength = .full
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var blobBreathing = false
@@ -23,7 +24,7 @@ struct AreaMatrixAmbientBackground: View {
                 .ignoresSafeArea()
 
             AreaMatrixNoiseOverlay()
-                .opacity(colorScheme == .dark ? 0.035 : 0.025)
+                .opacity((colorScheme == .dark ? 0.035 : 0.025) * strength.opacityScale)
                 .ignoresSafeArea()
 
             GeometryReader { _ in
@@ -36,7 +37,11 @@ struct AreaMatrixAmbientBackground: View {
                     )
                     .offset(x: blobBreathing ? 25 : -25, y: blobBreathing ? -20 : 20)
                     .scaleEffect(blobBreathing ? 1.05 : 0.95)
-                    .animation(.easeInOut(duration: 7).repeatForever(autoreverses: true), value: blobBreathing)
+                    .animation(
+                        .easeInOut(duration: AreaMatrixMotionTokens.Duration.blobBreathMid)
+                            .repeatForever(autoreverses: true),
+                        value: blobBreathing
+                    )
                     .offset(x: parallax.horizontal * 60, y: parallax.vertical * 40)
 
                     blob(
@@ -47,7 +52,12 @@ struct AreaMatrixAmbientBackground: View {
                     )
                     .offset(x: blobBreathing ? -28 : 28, y: blobBreathing ? 18 : -18)
                     .scaleEffect(blobBreathing ? 1.08 : 0.92)
-                    .animation(.easeInOut(duration: 9).repeatForever(autoreverses: true).delay(1), value: blobBreathing)
+                    .animation(
+                        .easeInOut(duration: AreaMatrixMotionTokens.Duration.blobBreathExtra)
+                            .repeatForever(autoreverses: true)
+                            .delay(1),
+                        value: blobBreathing
+                    )
                     .offset(x: parallax.horizontal * -40, y: parallax.vertical * -50)
 
                     blob(
@@ -58,7 +68,12 @@ struct AreaMatrixAmbientBackground: View {
                     )
                     .offset(x: blobBreathing ? 18 : -18, y: blobBreathing ? 22 : -22)
                     .scaleEffect(blobBreathing ? 1.04 : 0.96)
-                    .animation(.easeInOut(duration: 8).repeatForever(autoreverses: true).delay(2), value: blobBreathing)
+                    .animation(
+                        .easeInOut(duration: AreaMatrixMotionTokens.Duration.blobBreathLong)
+                            .repeatForever(autoreverses: true)
+                            .delay(2),
+                        value: blobBreathing
+                    )
                     .offset(x: parallax.horizontal * 30, y: parallax.vertical * -30)
 
                     blob(
@@ -69,17 +84,26 @@ struct AreaMatrixAmbientBackground: View {
                     )
                     .offset(x: blobBreathing ? -15 : 15, y: blobBreathing ? 12 : -12)
                     .scaleEffect(blobBreathing ? 1.06 : 0.94)
-                    .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true).delay(3), value: blobBreathing)
+                    .animation(
+                        .easeInOut(duration: AreaMatrixMotionTokens.Duration.blobBreathShort)
+                            .repeatForever(autoreverses: true)
+                            .delay(3),
+                        value: blobBreathing
+                    )
                     .offset(x: parallax.horizontal * -20, y: parallax.vertical * 20)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .rotationEffect(.degrees(blobBreathing ? 360 : 0))
-                .animation(.linear(duration: 60).repeatForever(autoreverses: false), value: blobBreathing)
+                .animation(
+                    .linear(duration: AreaMatrixMotionTokens.Duration.ambientOrbit)
+                        .repeatForever(autoreverses: false),
+                    value: blobBreathing
+                )
                 .onAppear { blobBreathing = true }
                 .offset(x: parallax.horizontal * -20, y: parallax.vertical * -20)
                 .blur(radius: colorScheme == .dark ? 100 : 75)
                 .blendMode(colorScheme == .dark ? .screen : .multiply)
-                .opacity(colorScheme == .dark ? 0.9 : 0.6)
+                .opacity((colorScheme == .dark ? 0.9 : 0.6) * strength.opacityScale)
                 .animation(.areaMatrixSceneEnterExit, value: scene)
                 .animation(.areaMatrixSceneParallax, value: parallax)
             }
@@ -87,7 +111,7 @@ struct AreaMatrixAmbientBackground: View {
             RadialGradient(
                 colors: [
                     .clear,
-                    Color.black.opacity(colorScheme == .dark ? 0.25 : 0.08)
+                    Color.black.opacity((colorScheme == .dark ? 0.25 : 0.08) * strength.opacityScale)
                 ],
                 center: .center,
                 startRadius: 250,
@@ -150,7 +174,7 @@ struct AreaMatrixAmbientBackground: View {
     }
 
     private var opacityMultiplier: Double {
-        colorScheme == .dark ? 1.0 : 1.5
+        (colorScheme == .dark ? 1.0 : 1.5) * strength.opacityScale
     }
 
     private var blobColorSpecs: [AreaMatrixBlobColorSpec] {

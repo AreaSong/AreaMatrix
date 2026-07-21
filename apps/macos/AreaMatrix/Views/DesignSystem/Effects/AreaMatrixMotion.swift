@@ -2,43 +2,69 @@ import SwiftUI
 
 extension Animation {
     static var areaMatrixSpring: Animation {
-        .spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0)
+        .spring(
+            response: AreaMatrixMotionTokens.Spring.response,
+            dampingFraction: AreaMatrixMotionTokens.Spring.damping,
+            blendDuration: 0
+        )
     }
 
     static var areaMatrixHover: Animation {
-        .spring(response: 0.3, dampingFraction: 0.6)
+        .spring(
+            response: AreaMatrixMotionTokens.Spring.hoverResponse,
+            dampingFraction: AreaMatrixMotionTokens.Spring.hoverDamping
+        )
     }
 
     static var areaMatrixSceneFlow: Animation {
-        .spring(response: 0.6, dampingFraction: 0.82)
+        .spring(
+            response: AreaMatrixMotionTokens.Spring.response,
+            dampingFraction: AreaMatrixMotionTokens.Spring.sceneFlowDamping
+        )
     }
 
     static var areaMatrixSceneEnterExit: Animation {
-        .timingCurve(0.16, 1, 0.3, 1, duration: 0.6)
+        .timingCurve(0.16, 1, 0.3, 1, duration: AreaMatrixMotionTokens.Duration.sceneEnterExit)
     }
 
     static var areaMatrixSceneParallax: Animation {
-        .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.16)
+        .timingCurve(0.2, 0.8, 0.2, 1, duration: AreaMatrixMotionTokens.Duration.sceneParallax)
     }
 
     static var areaMatrixOverlayFade: Animation {
-        .easeInOut(duration: 0.8)
+        .easeInOut(duration: AreaMatrixMotionTokens.Duration.overlayFade)
     }
 
     static var areaMatrixProgressStep: Animation {
-        .easeOut(duration: 0.8)
+        .easeOut(duration: AreaMatrixMotionTokens.Duration.progressStep)
     }
 
     static var areaMatrixFlashIn: Animation {
-        .easeIn(duration: 0.15)
+        .easeIn(duration: AreaMatrixMotionTokens.Duration.flash)
     }
 
     static var areaMatrixQuickFade: Animation {
-        .easeOut(duration: 0.2)
+        .easeOut(duration: AreaMatrixMotionTokens.Duration.quickFade)
     }
 
     static var areaMatrixDeepDive: Animation {
-        .timingCurve(0.7, 0, 1, 1, duration: 0.6)
+        .timingCurve(0.7, 0, 1, 1, duration: AreaMatrixMotionTokens.Duration.deepDive)
+    }
+
+    static var areaMatrixEntrance: Animation {
+        .easeOut(duration: AreaMatrixMotionTokens.Duration.entrance)
+    }
+
+    static var areaMatrixThemeToggle: Animation {
+        .easeInOut(duration: AreaMatrixMotionTokens.Duration.themeToggle)
+    }
+
+    static var areaMatrixGlowBreath: Animation {
+        .easeInOut(duration: AreaMatrixMotionTokens.Duration.glowBreath).repeatForever(autoreverses: true)
+    }
+
+    static var areaMatrixPulseAura: Animation {
+        .easeOut(duration: AreaMatrixMotionTokens.Duration.pulseAura).repeatForever(autoreverses: false)
     }
 }
 
@@ -51,7 +77,10 @@ struct AreaMatrixFeatureCardFocusModifier: ViewModifier {
             .opacity(anyCardHovered ? (isHovered ? 1.0 : 0.4) : 1.0)
             .saturation(anyCardHovered ? (isHovered ? 1.0 : 0.4) : 1.0)
             .animation(.areaMatrixHover, value: isHovered)
-            .animation(.easeOut(duration: 0.4), value: anyCardHovered)
+            .animation(
+                .easeOut(duration: AreaMatrixMotionTokens.Duration.hoverSettle),
+                value: anyCardHovered
+            )
     }
 }
 
@@ -125,7 +154,13 @@ struct AreaMatrixMagneticHoverModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .offset(x: offset.width, y: offset.height)
-            .animation(.interpolatingSpring(stiffness: 150, damping: 12), value: offset)
+            .animation(
+                .interpolatingSpring(
+                    stiffness: AreaMatrixMotionTokens.Spring.magneticStiffness,
+                    damping: AreaMatrixMotionTokens.Spring.magneticDamping
+                ),
+                value: offset
+            )
             .background(
                 GeometryReader { proxy in
                     Color.clear
@@ -157,8 +192,8 @@ struct AreaMatrixDelayedEntranceModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(isVisible ? 1 : 0)
-            .offset(y: isVisible ? 0 : 12)
-            .animation(.easeOut(duration: 0.5).delay(delay), value: isVisible)
+            .offset(y: isVisible ? 0 : AreaMatrixMotionTokens.Intensity.entranceOffsetY)
+            .animation(.areaMatrixEntrance.delay(delay), value: isVisible)
     }
 }
 
@@ -201,15 +236,15 @@ extension View {
     func areaMatrixTextShimmer(
         primary: Color = .primary,
         highlight: Color,
-        duration: Double = 4.0
+        duration: Double = AreaMatrixMotionTokens.Duration.textShimmer
     ) -> some View {
         modifier(AreaMatrixTextShimmerModifier(primaryColor: primary, highlightColor: highlight, duration: duration))
     }
 
     func areaMatrixPulseAura(
         color: Color,
-        duration: Double = 2.5,
-        maxScale: CGFloat = 1.7,
+        duration: Double = AreaMatrixMotionTokens.Duration.pulseAura,
+        maxScale: CGFloat = AreaMatrixMotionTokens.Intensity.pulseAuraMaxScale,
         cornerRadius: CGFloat = 28
     ) -> some View {
         modifier(AreaMatrixPulseAuraModifier(
@@ -220,11 +255,14 @@ extension View {
         ))
     }
 
-    func areaMatrixMagneticHover(intensity: CGFloat = 0.2) -> some View {
+    func areaMatrixMagneticHover(intensity: CGFloat = AreaMatrixMotionTokens.Intensity.magneticDefault) -> some View {
         modifier(AreaMatrixMagneticHoverModifier(intensity: intensity))
     }
 
-    func areaMatrixDelayedEntrance(isVisible: Bool, delay: Double) -> some View {
+    func areaMatrixDelayedEntrance(
+        isVisible: Bool,
+        delay: Double = AreaMatrixMotionTokens.EntranceDelay.body
+    ) -> some View {
         modifier(AreaMatrixDelayedEntranceModifier(isVisible: isVisible, delay: delay))
     }
 

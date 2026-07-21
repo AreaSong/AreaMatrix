@@ -44,14 +44,23 @@ extension MainWindow {
             if case .welcome = model.route {
                 Color.clear
             } else if isOnboardingRoute {
-                AreaMatrixAmbientBackground(scene: onboardingScene, parallax: .zero)
-                    .ignoresSafeArea()
+                AreaMatrixAmbientBackground(
+                    scene: routeAmbientScene,
+                    parallax: .zero,
+                    strength: .standard
+                )
+                .ignoresSafeArea()
             } else {
-                Color(nsColor: .windowBackgroundColor)
+                AreaMatrixAmbientBackground(
+                    scene: routeAmbientScene,
+                    parallax: .zero,
+                    strength: .subdued
+                )
+                .ignoresSafeArea()
             }
         }
         .background {
-            if isOnboardingRoute {
+            if usesCustomWindowChrome {
                 AreaMatrixWindowChromeObserver()
             }
         }
@@ -132,6 +141,17 @@ extension MainWindow {
         return false
     }
 
+    private var usesCustomWindowChrome: Bool {
+        switch model.route {
+        case .loadingConfiguration, .choosePath, .validatePath,
+             .confirmRepositoryInitialization, .initializing, .initializationFailed,
+             .initializationDone, .configurationError:
+            true
+        default:
+            false
+        }
+    }
+
     private var isOnboardingRoute: Bool {
         switch model.route {
         case .loadingConfiguration, .welcome, .choosePath, .validatePath,
@@ -143,14 +163,15 @@ extension MainWindow {
         }
     }
 
-    private var onboardingScene: AreaMatrixAmbientScene {
+    private var routeAmbientScene: AreaMatrixAmbientScene {
         switch model.route {
         case .choosePath: .classify
-        case .validatePath: .security
-        case .confirmRepositoryInitialization: .security
-        case .initializing: .tracking
-        case .initializationFailed: .help
-        case .initializationDone: .start
+        case .validatePath, .confirmRepositoryInitialization: .security
+        case .initializing, .mainLoading, .importProgress: .tracking
+        case .initializationFailed, .mainRepoError, .dbRepairConfirm: .help
+        case .initializationDone, .importResult: .start
+        case .settingsGeneral, .settingsRepository: .home
+        case .mainEmpty, .mainList: .home
         default: .home
         }
     }

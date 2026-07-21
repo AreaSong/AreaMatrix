@@ -208,7 +208,7 @@ private extension WelcomeStepView {
                     scheduleHoverReset(for: .feat4)
                 }
             }
-            .areaMatrixDelayedEntrance(isVisible: footerEntered, delay: 0.5)
+            .areaMatrixDelayedEntrance(isVisible: footerEntered, delay: AreaMatrixMotionTokens.EntranceDelay.footer)
 
             Spacer()
 

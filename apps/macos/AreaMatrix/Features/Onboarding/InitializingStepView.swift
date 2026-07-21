@@ -29,6 +29,7 @@ struct InitializingStepView: View {
             footer
         }
         .areaMatrixOnboardingPanel()
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
     }
 
     private var header: some View {
@@ -40,6 +41,7 @@ struct InitializingStepView: View {
         ) {
             ProgressView()
                 .controlSize(.large)
+                .tint(AreaMatrixTheme.Colors.tealBright)
                 .accessibilityLabel(accessibilityProgressLabel)
         }
     }
@@ -149,6 +151,7 @@ struct InitializingStepView: View {
                 Text(String(localized: "onboarding.initializing.cancel"))
                     .font(.body.weight(.medium))
             }
+            .buttonStyle(AreaMatrixSecondaryButtonStyle())
             .controlSize(.large)
             .disabled(isCancellationRequested)
         }

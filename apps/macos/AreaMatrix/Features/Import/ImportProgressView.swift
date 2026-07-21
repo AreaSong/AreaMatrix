@@ -27,7 +27,7 @@ struct ImportProgressView: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+            .areaMatrixGlassCard(cornerRadius: 12)
 
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(state.items) { item in
@@ -44,15 +44,19 @@ struct ImportProgressView: View {
                 Button(state.detailsButtonTitle) {
                     onViewDetails()
                 }
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 if state.isRunning {
                     Button(stopButtonTitle) {
                         isStopConfirmationPresented = true
                     }
+                    .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.coral))
                     .disabled(state.stopState != .idle)
                 }
             }
         }
-        .padding(24)
+        .padding(28)
+        .areaMatrixGlassContentPanel(width: nil, padding: 0)
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .alert("停止剩余导入？", isPresented: $isStopConfirmationPresented) {
             Button("Cancel", role: .cancel) {}
             Button("Stop", role: .destructive, action: onStopAfterCurrentFile)

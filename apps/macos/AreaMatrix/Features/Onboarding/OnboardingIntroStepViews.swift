@@ -37,11 +37,12 @@ struct ChoosePathStepView: View {
             footer
         }
         .areaMatrixOnboardingPanel()
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.blue, lineWidth: isDropTargeted ? 3 : 0)
+                .stroke(AreaMatrixTheme.Colors.tealBright, lineWidth: isDropTargeted ? 3 : 0)
                 .opacity(isDropTargeted ? 0.8 : 0)
-                .animation(.easeInOut(duration: 0.2), value: isDropTargeted)
+                .animation(.areaMatrixQuickFade, value: isDropTargeted)
         )
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
             if let provider = providers
@@ -67,17 +68,17 @@ struct ChoosePathStepView: View {
             ZStack {
                 Image(systemName: "folder.badge.gearshape")
                     .font(.system(size: 58, weight: .bold))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(AreaMatrixTheme.Colors.tealBright)
                     .blur(radius: 20)
                     .opacity(0.5)
 
                 Image(systemName: "folder.badge.gearshape")
                     .font(.system(size: 48, weight: .light))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(AreaMatrixTheme.Colors.tealBright)
             }
         }
         .opacity(isInputFocused ? 0.4 : 1.0)
-        .animation(.easeInOut(duration: 0.3), value: isInputFocused)
+        .animation(.areaMatrixThemeToggle, value: isInputFocused)
     }
 
     private var pathSelection: some View {
@@ -163,14 +164,19 @@ struct ChoosePathStepView: View {
 }
 
 struct LoadingConfigurationView: View {
+    @State private var entered = false
+
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 18) {
             ProgressView()
                 .controlSize(.large)
+                .tint(AreaMatrixTheme.Colors.tealBright)
             Text("Loading repository settings...")
                 .font(.headline)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .areaMatrixGlassContentPanel(width: 420, padding: 36)
+        .areaMatrixDelayedEntrance(isVisible: entered, delay: AreaMatrixMotionTokens.EntranceDelay.body)
+        .onAppear { entered = true }
     }
 }
 
@@ -181,20 +187,23 @@ struct ConfigurationErrorView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Label(failure.title, systemImage: "exclamationmark.triangle")
-                .font(.title2.weight(.semibold))
-            Text(failure.message)
-                .foregroundStyle(.secondary)
+            AreaMatrixStepHeader(
+                systemImage: "exclamationmark.triangle",
+                tint: AreaMatrixTheme.Colors.coral,
+                title: failure.title,
+                subtitle: failure.message
+            )
             Text(failure.recoveryAction)
                 .foregroundStyle(.secondary)
             HStack {
                 Button("Start setup", action: onStartSetup)
+                    .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 Button("Retry", action: onRetry)
                     .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(AreaMatrixPrimaryButtonStyle())
             }
         }
-        .padding(48)
-        .frame(maxWidth: 620, maxHeight: .infinity, alignment: .center)
+        .areaMatrixGlassContentPanel(width: 560)
+        .areaMatrixPageContentEntrance()
     }
 }

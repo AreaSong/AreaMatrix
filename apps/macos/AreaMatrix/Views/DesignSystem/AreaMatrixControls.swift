@@ -35,7 +35,7 @@ struct AreaMatrixThemeToggleButton: View {
     }
 
     private func toggleTheme() {
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(.areaMatrixThemeToggle) {
             AppPlatformServices.interactionFeedback.performHaptic(.alignment)
             if themeOverride == nil {
                 themeOverride = colorScheme == .dark ? .light : .dark
@@ -45,7 +45,12 @@ struct AreaMatrixThemeToggleButton: View {
             applyAppAppearance()
         }
 
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+        withAnimation(
+            .spring(
+                response: AreaMatrixMotionTokens.Spring.themeSpinResponse,
+                dampingFraction: AreaMatrixMotionTokens.Spring.themeSpinDamping
+            )
+        ) {
             spin += 360
         }
     }
@@ -79,21 +84,30 @@ struct AreaMatrixPrimaryGlowButton<Label: View>: View {
             .padding(.vertical, 10)
             .background(background)
             .cornerRadius(cornerRadius)
-            .areaMatrixPulseAura(color: accent, duration: 2.5, maxScale: 1.5, cornerRadius: cornerRadius)
+            .areaMatrixPulseAura(
+                color: accent,
+                duration: AreaMatrixMotionTokens.Duration.pulseAura,
+                maxScale: AreaMatrixMotionTokens.Intensity.pulseAuraCTAMaxScale,
+                cornerRadius: cornerRadius
+            )
             .shadow(
                 color: accent.opacity(isHovered ? 0.7 : (isGlowing ? 0.6 : 0.3)),
                 radius: isHovered ? 20 : (isGlowing ? 16 : 6),
                 y: isHovered ? 6 : 4
             )
-            .scaleEffect(isHovered ? 1.04 : 1.0)
+            .scaleEffect(isHovered ? AreaMatrixMotionTokens.Intensity.hoverScale : 1.0)
             .offset(y: isHovered ? -2 : 0)
             .animation(.areaMatrixQuickFade, value: isHovered)
-            .areaMatrixMagneticHover(intensity: 0.15)
+            .areaMatrixMagneticHover(intensity: AreaMatrixMotionTokens.Intensity.magneticCTA)
             .onAppear {
-                withAnimation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true)) {
+                withAnimation(.areaMatrixGlowBreath) {
                     isGlowing = true
                 }
-                withAnimation(.linear(duration: 3).repeatForever(autoreverses: false).delay(1)) {
+                withAnimation(
+                    .linear(duration: AreaMatrixMotionTokens.Duration.shimmerSweep)
+                        .repeatForever(autoreverses: false)
+                        .delay(1)
+                ) {
                     shimmerPhase = 1.5
                 }
             }
@@ -192,19 +206,28 @@ struct AreaMatrixPrimaryActionLabel: View {
 }
 
 struct AreaMatrixPrimaryButtonStyle: ButtonStyle {
+    var accent: Color = AreaMatrixTheme.Colors.tealBright
     @State private var isHovered = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body.weight(.medium))
+            .font(.body.weight(.semibold))
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            .background(Color.blue.opacity(configuration.isPressed ? 0.8 : (isHovered ? 1.0 : 0.9)))
-            .foregroundStyle(.white)
+            .background(
+                AreaMatrixTheme.Gradients.primaryAction(accent: accent)
+                    .opacity(configuration.isPressed ? 0.85 : (isHovered ? 1.0 : 0.95))
+            )
+            .foregroundStyle(.black)
             .clipShape(Capsule())
-            .scaleEffect(configuration.isPressed ? 0.96 : (isHovered ? 1.02 : 1.0))
-            .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
-            .animation(.easeOut(duration: 0.2), value: isHovered)
+            .shadow(color: accent.opacity(isHovered ? 0.55 : 0.3), radius: isHovered ? 12 : 6, y: 3)
+            .scaleEffect(
+                configuration.isPressed
+                    ? AreaMatrixMotionTokens.Intensity.pressScale
+                    : (isHovered ? 1.02 : 1.0)
+            )
+            .animation(.areaMatrixQuickFade, value: configuration.isPressed)
+            .animation(.areaMatrixQuickFade, value: isHovered)
             .onHover { hovering in
                 isHovered = hovering
                 AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
@@ -220,12 +243,12 @@ struct AreaMatrixSecondaryButtonStyle: ButtonStyle {
             .font(.body.weight(.medium))
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(Color.secondary.opacity(configuration.isPressed ? 0.2 : (isHovered ? 0.1 : 0.0)))
+            .background(Color.primary.opacity(configuration.isPressed ? 0.14 : (isHovered ? 0.08 : 0.0)))
             .foregroundStyle(.secondary)
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
-            .animation(.easeOut(duration: 0.2), value: isHovered)
+            .scaleEffect(configuration.isPressed ? AreaMatrixMotionTokens.Intensity.pressScale : 1.0)
+            .animation(.areaMatrixQuickFade, value: configuration.isPressed)
+            .animation(.areaMatrixQuickFade, value: isHovered)
             .onHover { hovering in
                 isHovered = hovering
                 AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)

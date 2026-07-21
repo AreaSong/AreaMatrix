@@ -67,9 +67,9 @@ struct DBRepairConfirmView: View {
             }
             footer
         }
-        .padding(.horizontal, 72)
-        .padding(.vertical, 48)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(36)
+        .areaMatrixGlassContentPanel(width: 780, padding: 0)
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .confirmationDialog("Export diagnostics?", isPresented: diagnosticsConfirmationBinding) {
             Button("Cancel", role: .cancel, action: model.cancelDiagnosticsExport)
             Button("Export diagnostics") {
@@ -93,17 +93,13 @@ struct DBRepairConfirmView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Repair Repository Metadata?", systemImage: "wrench.and.screwdriver")
-                .font(.system(size: 34, weight: .semibold))
-                .accessibilityAddTraits(.isHeader)
-            Text("AreaMatrix cannot read the repository metadata database. Your files remain in the repository folder.")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-            Text("Repair only affects .areamatrix/ metadata after you confirm the safety boundary.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
+        AreaMatrixStepHeader(
+            systemImage: "wrench.and.screwdriver",
+            tint: AreaMatrixTheme.Colors.gold,
+            title: "Repair Repository Metadata?",
+            subtitle: "AreaMatrix cannot read the repository metadata database. Your files remain in the repository folder."
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var repositoryContext: some View {
@@ -112,7 +108,7 @@ struct DBRepairConfirmView: View {
                 .font(.headline)
             AreaMatrixPathBox(
                 path: model.repoPath,
-                style: .plain,
+                style: .glass,
                 lineLimit: 3,
                 alignment: .leading
             )
@@ -251,12 +247,15 @@ struct DBRepairConfirmView: View {
     private var footer: some View {
         HStack(spacing: 12) {
             Button("Cancel", action: onCancel)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .disabled(model.repairState.isRunning)
             Button("Export diagnostics...", action: model.requestDiagnosticsExport)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .disabled(!model.canExportDiagnostics)
                 .accessibilityIdentifier("database-repair-metadata-repair-export-diagnostics")
             if model.repairState.failure != nil {
                 Button("Open repository in Finder", action: onOpenRepositoryInFinder)
+                    .buttonStyle(AreaMatrixSecondaryButtonStyle())
                     .disabled(model.repairState.isRunning)
             }
             Spacer()
@@ -269,7 +268,7 @@ struct DBRepairConfirmView: View {
                 }
             }
             .keyboardShortcut(.defaultAction)
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.gold))
             .disabled(!model.canRunFullRescan)
             .accessibilityIdentifier("database-repair-metadata-repair-run-full-rescan")
         }

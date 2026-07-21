@@ -10,6 +10,14 @@ struct MainWindowRouteContent: View {
     }
 
     var body: some View {
+        routeBody
+            .id(routeIdentity)
+            .transition(.areaMatrixScene)
+            .animation(.areaMatrixSceneFlow, value: routeIdentity)
+    }
+
+    @ViewBuilder
+    private var routeBody: some View {
         switch model.route {
         case .loadingConfiguration:
             LoadingConfigurationView()
@@ -50,6 +58,29 @@ struct MainWindowRouteContent: View {
             mainRepositoryContent(opening: opening, state: .list)
         case let .configurationError(failure):
             configurationErrorView(failure)
+        }
+    }
+
+    private var routeIdentity: String {
+        switch model.route {
+        case .loadingConfiguration: "loadingConfiguration"
+        case .welcome: "welcome"
+        case .choosePath: "choosePath"
+        case .validatePath: "validatePath"
+        case .confirmRepositoryInitialization: "confirmRepositoryInitialization"
+        case .initializing: "initializing"
+        case .initializationFailed: "initializationFailed"
+        case .initializationDone: "initializationDone"
+        case .mainLoading: "mainLoading"
+        case .mainRepoError: "mainRepoError"
+        case .dbRepairConfirm: "dbRepairConfirm"
+        case .settingsRepository: "settingsRepository"
+        case .settingsGeneral: "settingsGeneral"
+        case .importProgress: "importProgress"
+        case .importResult: "importResult"
+        case .mainEmpty: "mainEmpty"
+        case .mainList: "mainList"
+        case .configurationError: "configurationError"
         }
     }
 }

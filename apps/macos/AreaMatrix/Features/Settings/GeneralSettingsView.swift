@@ -43,8 +43,10 @@ extension GeneralSettingsView {
     var body: some View {
         HStack(spacing: 0) {
             sidebar
+                .areaMatrixWorkspaceRegionShell(cornerRadius: 0)
             Divider()
             content
+                .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task {

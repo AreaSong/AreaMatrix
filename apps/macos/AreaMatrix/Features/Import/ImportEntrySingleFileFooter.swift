@@ -6,10 +6,12 @@ extension ImportEntrySheetView {
             Spacer()
             Button("Cancel", action: onCancel)
                 .keyboardShortcut(.cancelAction)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button(previewModel.singleFilePrimaryActionTitle) {
                 Task { await runSingleFileImportAction() }
             }
             .keyboardShortcut(.defaultAction)
+            .buttonStyle(AreaMatrixPrimaryButtonStyle())
             .disabled(previewModel.primaryActionDisabledReason != nil)
         }
     }

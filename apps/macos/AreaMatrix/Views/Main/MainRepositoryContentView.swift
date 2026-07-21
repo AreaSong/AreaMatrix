@@ -119,16 +119,19 @@ extension MainRepositoryContentView {
             externalSyncErrorBanner
             HStack(spacing: 0) {
                 sidebar
+                    .areaMatrixWorkspaceRegionShell(cornerRadius: 0)
                 Divider()
                 listPane
                 Divider()
                 detailPane
+                    .areaMatrixWorkspaceRegionShell(cornerRadius: 0)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .center) { dropOverlay }
         .overlay(alignment: .bottomTrailing) { batchTagUndoToastOverlay.padding(18) }
         .mainRepositoryContentLifecycle(self)
+        .animation(.areaMatrixSceneFlow, value: state)
     }
 
     static func defaultSelectedSidebarID(from rows: [RepositorySidebarRowSnapshot]) -> String {

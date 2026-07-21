@@ -27,7 +27,7 @@ struct ValidatePathStepView: View {
         VStack(alignment: .center, spacing: 28) {
             AreaMatrixStepHeader(
                 systemImage: "checklist",
-                tint: .blue,
+                tint: AreaMatrixTheme.Colors.tealBright,
                 title: String(localized: "onboarding.validate.title"),
                 subtitle: String(localized: "onboarding.validate.subtitle")
             )
@@ -63,5 +63,6 @@ struct ValidatePathStepView: View {
             )
         }
         .areaMatrixOnboardingPanel()
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
     }
 }

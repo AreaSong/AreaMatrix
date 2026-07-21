@@ -28,21 +28,21 @@ struct ValidatePathFooter: View {
     @ViewBuilder
     private var defaultFooter: some View {
         Button(action: onBack) { Text(String(localized: "onboarding.validate.back")).font(.body.weight(.medium)) }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .buttonStyle(AreaMatrixSecondaryButtonStyle())
 
         if showsCancel {
             Button(action: onCancel) { Text(String(localized: "onboarding.validate.cancel")).font(.body.weight(.medium)) }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
         }
 
         Spacer()
 
         Button(action: onChangePath) { Text(String(localized: "onboarding.validate.change")) }
+            .buttonStyle(AreaMatrixSecondaryButtonStyle())
             .controlSize(.large)
 
         Button(action: onRetry) { Text(String(localized: "onboarding.validate.retry")) }
+            .buttonStyle(AreaMatrixSecondaryButtonStyle())
             .controlSize(.large)
 
         primaryButton
@@ -51,12 +51,12 @@ struct ValidatePathFooter: View {
     private var existingRepositoryFooter: some View {
         Group {
             Button(action: onBack) { Text(String(localized: "onboarding.validate.back")).font(.body.weight(.medium)) }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
 
             Spacer()
 
             Button(action: onChangePath) { Text(String(localized: "onboarding.validate.changeLocation")) }
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .controlSize(.large)
 
             primaryButton
@@ -70,7 +70,7 @@ struct ValidatePathFooter: View {
                 .frame(minWidth: 80)
         }
         .keyboardShortcut(.defaultAction)
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(AreaMatrixPrimaryButtonStyle())
         .controlSize(.large)
         .disabled(!canContinue)
     }

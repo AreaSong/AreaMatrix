@@ -65,8 +65,9 @@ struct MainRepoErrorView: View {
             actionRow
         }
         .frame(maxWidth: 620, alignment: .leading)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(48)
+        .padding(36)
+        .areaMatrixGlassContentPanel(width: 700, padding: 0)
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .accessibilityElement(children: .contain)
     }
 
@@ -82,6 +83,7 @@ struct MainRepoErrorView: View {
         VStack(alignment: .leading, spacing: 10) {
             Label(presentation.title, systemImage: "exclamationmark.triangle")
                 .font(.title.weight(.semibold))
+                .foregroundStyle(AreaMatrixTheme.Colors.coral)
                 .accessibilityAddTraits(.isHeader)
             Text(presentation.message)
                 .font(.body)
@@ -96,14 +98,12 @@ struct MainRepoErrorView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Repository")
                 .font(.headline)
-            Text(repoPath)
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
-                .lineLimit(3)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            AreaMatrixPathBox(
+                path: repoPath,
+                style: .glass,
+                lineLimit: 3,
+                alignment: .leading
+            )
             if let activeMapping {
                 Text("Error: \(activeMapping.kind.rawValue)")
                     .font(.callout)
@@ -165,10 +165,11 @@ struct MainRepoErrorView: View {
         HStack(spacing: 12) {
             Button(primaryActionTitle, action: primaryAction)
                 .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(AreaMatrixPrimaryButtonStyle())
                 .disabled(isRetrying)
             if case .idle = externalRemoval {
                 Button("Confirm external removal", action: onConfirmExternalRemoval)
+                    .buttonStyle(AreaMatrixSecondaryButtonStyle())
                     .disabled(isRetrying)
             }
             Button("Choose another repository", action: onChooseAnotherFolder)

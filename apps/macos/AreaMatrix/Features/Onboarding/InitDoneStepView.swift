@@ -22,12 +22,13 @@ struct InitDoneStepView: View {
             footer
         }
         .areaMatrixOnboardingPanel()
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
     }
 
     private var header: some View {
         AreaMatrixStepHeader(
             systemImage: "checkmark.circle.fill",
-            tint: .green,
+            tint: AreaMatrixTheme.Colors.emerald,
             title: String(localized: "onboarding.done.title"),
             subtitle: String(localized: "onboarding.done.subtitle")
         )
@@ -75,8 +76,7 @@ struct InitDoneStepView: View {
                     await openInFinder()
                 }
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .buttonStyle(AreaMatrixSecondaryButtonStyle())
             .disabled(isOpeningFinder)
 
             if isOpeningFinder {
@@ -93,7 +93,7 @@ struct InitDoneStepView: View {
                     .font(.body.weight(.medium))
             }
             .keyboardShortcut(.defaultAction)
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.emerald))
             .controlSize(.large)
         }
         .frame(maxWidth: 440)

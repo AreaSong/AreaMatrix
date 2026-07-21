@@ -12,6 +12,7 @@ struct MainLoadingView: View {
         VStack(alignment: .leading, spacing: 18) {
             ProgressView(state.accessibilityStatusText)
                 .controlSize(.large)
+                .tint(AreaMatrixTheme.Colors.tealBright)
                 .accessibilityLabel(state.accessibilityStatusText)
             Text(String(localized: "onboarding.loading.opening"))
                 .font(.title2.weight(.semibold))
@@ -22,16 +23,19 @@ struct MainLoadingView: View {
             scanSection
             safetyText
             Button(String(localized: "onboarding.loading.cancelOpening"), action: onCancelOpening)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .accessibilityHint("Cancel opening returns to folder validation and does not modify user files.")
         }
-        .padding(48)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(36)
+        .frame(maxWidth: 680, alignment: .leading)
+        .areaMatrixGlassContentPanel(width: 720, padding: 0)
+        .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
     }
 
     private var pathBox: some View {
         AreaMatrixPathBox(
             path: state.repoPath,
-            style: .quaternary(backgroundOpacity: 0.45),
+            style: .glass,
             lineLimit: 3,
             maxWidth: 640,
             alignment: .leading

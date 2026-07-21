@@ -17,10 +17,12 @@ struct ImportBatchCopyFooterSection: View {
             Spacer()
             Button("Cancel", action: onCancel)
                 .keyboardShortcut(.cancelAction)
+                .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button("Import") {
                 Task { await importBatch() }
             }
             .keyboardShortcut(.defaultAction)
+            .buttonStyle(AreaMatrixPrimaryButtonStyle())
             .disabled(importButtonDisabled)
             .help(importButtonHelp)
         }
