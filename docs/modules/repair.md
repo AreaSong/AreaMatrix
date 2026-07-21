@@ -38,11 +38,19 @@
 
 | 选项 | 行为 |
 |---|---|
-| `preserve_diagnostics_snapshot = true` | 修复前先保留诊断快照 |
-| `full_rescan = true` | 必要时重建损坏 DB，再调用 `reindex_from_filesystem` |
+| `preserve_diagnostics_snapshot = true` | 现有 DB 存在时，修复前先保留诊断快照 |
+| `full_rescan = true` | DB 缺失时初始化 metadata；DB 损坏时保留快照并重建；随后调用 `reindex_from_filesystem` |
 | `full_rescan = false` | 仅做 metadata 健康校验，不启动 scan |
 
-`full_rescan = true` 且 DB 损坏时：先（按需）snapshot，再在 `.areamatrix/` 内构建 replacement `index.db`，然后全扫 upsert metadata。
+`full_rescan = true` 时按 metadata 状态分流：
+
+- `.areamatrix/` 缺失：先在同级临时目录创建完整 metadata，再原子安装并全扫。
+- `.areamatrix/` 存在但 `index.db` 缺失：保留孤立 WAL/SHM 诊断材料，原子安装新 DB 并全扫。
+- `index.db` 损坏：先（按需）snapshot，再构建 replacement DB、原子替换并全扫。
+- `index.db` 健康：保留快照后直接全扫。
+
+缺失 DB 时没有可复制的旧数据库，因此 `diagnostics_snapshot_path` 可以为空。初始化或重建只恢复能从
+文件系统推导的索引；tags、history、notes 等 DB-only metadata 无法凭空恢复。
 
 ## 安全边界
 
@@ -66,6 +74,7 @@
 - 并发 Running reindex 的 Conflict。
 - repair 失败不删除用户文件或 diagnostics 材料。
 - replacement DB 构建失败时的 rollback。
+- 未初始化资料库可在用户确认后创建 metadata DB，并保持用户文件字节不变。
 
 ## Related
 

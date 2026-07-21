@@ -2,6 +2,7 @@ import Combine
 import Foundation
 
 enum DatabaseRepairProgressStep: String, CaseIterable, Equatable {
+    case initializingMetadata = "Initializing metadata database"
     case scanningFiles = "Scanning files"
     case rebuildingIndex = "Rebuilding index"
     case reloadingRepository = "Reloading repository"
@@ -95,7 +96,12 @@ final class DatabaseRepairConfirmModel: ObservableObject {
     }
 
     var primaryButtonTitle: String {
-        repairState.failure == nil ? "Run Full Rescan" : "Retry Full Rescan"
+        if initialMapping?.kind == .repoNotInitialized {
+            return repairState.failure == nil
+                ? "Initialize & Full Rescan"
+                : "Retry Initialization & Full Rescan"
+        }
+        return repairState.failure == nil ? "Run Full Rescan" : "Retry Full Rescan"
     }
 
     func runStartupRecoveryCheckIfNeeded() async {
@@ -112,7 +118,9 @@ final class DatabaseRepairConfirmModel: ObservableObject {
         guard canRunFullRescan else { return }
 
         diagnosticsState = .idle
-        repairState = .running(.scanningFiles)
+        repairState = .running(
+            initialMapping?.kind == .repoNotInitialized ? .initializingMetadata : .scanningFiles
+        )
 
         do {
             let report = try await repositoryWriteCoordinator.withWriteAccess(repoPath: repoPath) {

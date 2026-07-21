@@ -4417,14 +4417,15 @@ let report = try await Task.detached(priority: .userInitiated) {
 ```
 
 metadata repair 的用户确认后 metadata repair 入口。`RepairOptions.full_rescan = true`
-表示执行全量 filesystem rescan 并返回 `scan_session_id`；`false` 只允许执行
+表示在 DB 缺失时初始化 metadata、在 DB 损坏时保留诊断并重建，随后执行全量 filesystem rescan
+并返回 `scan_session_id`；`false` 只允许执行
 metadata 层可恢复修复（metadata repair only）。`preserve_diagnostics_snapshot = true`
-时，修复前必须先保留诊断快照，并在 `RepairReport.diagnostics_snapshot_path`
-返回引用。
+且现有 DB 可读取为文件时，修复前必须先保留诊断快照，并在
+`RepairReport.diagnostics_snapshot_path` 返回引用。DB 缺失时没有旧数据库可复制，该字段为空。
 
 输入：
 
-- `repoPath`：已初始化资料库根目录。
+- `repoPath`：资料库根目录；`full_rescan = true` 时允许 metadata DB 尚未初始化。
 - `RepairOptions.full_rescan`：是否执行全量重建。
 - `RepairOptions.preserve_diagnostics_snapshot`：是否先保留损坏状态诊断引用。
 
@@ -4436,7 +4437,9 @@ metadata 层可恢复修复（metadata repair only）。`preserve_diagnostics_sn
 
 错误与副作用边界：
 
-- `InvalidPath` / `RepoNotInitialized`：同诊断快照入口的路径与初始化校验。
+- `InvalidPath`：路径为空、不安全、不是目录或无法作为资料库根目录使用。
+- `RepoNotInitialized`：`full_rescan = false` 时 metadata DB 缺失，或 `.areamatrix/` / `index.db`
+  是不安全的非目录、非普通文件或符号链接状态。
 - `Conflict`：`full_rescan = true` 且已有 Running scan session。
 - `Db`：SQLite 损坏、schema 读取、metadata upsert 或 scan session 持久化失败。
 - `PermissionDenied`：`.areamatrix/` 诊断、DB 或 metadata 写入被阻断。

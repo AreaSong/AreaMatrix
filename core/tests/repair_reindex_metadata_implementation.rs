@@ -159,6 +159,40 @@ fn repair_reindex_metadata_implementation_preserves_snapshot_then_full_rescans()
     assert_eq!(files[0].origin, FileOrigin::External);
 }
 
+#[test]
+fn repair_reindex_metadata_implementation_initializes_missing_metadata_then_full_rescans() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let readme = repo.path().join("README.md");
+    let docs = repo.path().join("docs");
+    let spec = docs.join("spec.txt");
+    fs::create_dir(&docs).expect("create docs directory");
+    fs::write(&readme, "# User project\n").expect("write user README");
+    fs::write(&spec, "spec content\n").expect("write user document");
+    let before = user_file_snapshot(&[&readme, &spec]);
+
+    let report = repair_metadata(
+        path_string(repo.path()),
+        RepairOptions {
+            full_rescan: true,
+            preserve_diagnostics_snapshot: true,
+        },
+    )
+    .expect("initialize missing metadata and full rescan");
+
+    assert!(repo.path().join(".areamatrix/index.db").is_file());
+    assert_eq!(report.diagnostics_snapshot_path, None);
+    assert!(report.scan_session_id.is_some());
+    assert_eq!(report.inserted, 2);
+    assert_eq!(report.errors, Vec::<String>::new());
+    assert_eq!(user_file_snapshot(&[&readme, &spec]), before);
+    assert_eq!(
+        list_files(path_string(repo.path()), empty_filter())
+            .expect("list initialized metadata files")
+            .len(),
+        2
+    );
+}
+
 fn user_file_snapshot(paths: &[&Path]) -> Vec<(String, Vec<u8>)> {
     paths
         .iter()

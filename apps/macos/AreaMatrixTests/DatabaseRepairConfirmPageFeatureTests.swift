@@ -133,6 +133,27 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 
     @MainActor
+    func testDatabaseRepairRepoNotInitializedUsesInitializationRescanCopy() {
+        let model = DatabaseRepairConfirmModel(
+            repoPath: "/tmp/repo",
+            scanSession: nil,
+            mapping: .databaseRepairRepairMapping(kind: .repoNotInitialized),
+            lastOpenedAt: nil,
+            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
+                result: .success(.databaseRepairRepairReportFixture())
+            ),
+            startupRecoverer: StaticStartupRecoverer(),
+            diagnosticsCollector: ShellRecordingDiagnosticsCollector(
+                result: .success(.databaseRepairDiagnosticsFixture())
+            ),
+            errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
+        )
+
+        XCTAssertEqual(model.primaryButtonTitle, "Initialize & Full Rescan")
+        XCTAssertEqual(DatabaseRepairProgressStep.allCases.first, .initializingMetadata)
+    }
+
+    @MainActor
     func testDatabaseRepairRepairReindexMetadataCoreDiagnosticsRequirePrivacyConfirmationAndCanDisableRepair() async {
         let diagnosticsCollector = ShellRecordingDiagnosticsCollector(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/repo/.areamatrix/diagnostics"))

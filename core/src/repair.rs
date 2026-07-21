@@ -11,7 +11,7 @@ use rusqlite::Connection;
 use uuid::Uuid;
 
 use crate::{
-    config, db, repo_scan, CoreError, CoreResult, DiagnosticsSnapshot, OverviewOutput,
+    config, db, repo_init, repo_scan, CoreError, CoreResult, DiagnosticsSnapshot, OverviewOutput,
     ReindexReport, RepairOptions, RepairReport,
 };
 
@@ -55,21 +55,31 @@ pub(crate) fn repair_metadata(
     repo_path: String,
     options: RepairOptions,
 ) -> CoreResult<RepairReport> {
-    let mut snapshot = if options.preserve_diagnostics_snapshot {
+    let repo = repair_repo_path(&repo_path)?;
+    let database_exists = metadata_database_exists(&repo)?;
+    let mut snapshot = if options.preserve_diagnostics_snapshot && database_exists {
         Some(create_diagnostics_snapshot(repo_path.clone())?)
     } else {
         None
     };
-    let repo = diagnostics_repo_path(&repo_path)?;
 
     let reindex_report = if options.full_rescan {
-        if let Some(repair_snapshot) =
-            prepare_full_rescan_metadata(&repo, &repo_path, snapshot.is_some())?
-        {
-            snapshot = Some(repair_snapshot);
+        if database_exists {
+            if let Some(repair_snapshot) =
+                prepare_full_rescan_metadata(&repo, &repo_path, snapshot.is_some())?
+            {
+                snapshot = Some(repair_snapshot);
+            }
+        } else {
+            initialize_missing_metadata(&repo, &repo_path)?;
         }
         reindex_from_filesystem(repo_path)?
     } else {
+        if !database_exists {
+            return Err(CoreError::repo_not_initialized(
+                "repository not initialized",
+            ));
+        }
         verify_metadata_health(&repo)?;
         ReindexReport {
             scan_session_id: None,
@@ -92,6 +102,20 @@ pub(crate) fn repair_metadata(
         skipped: reindex_report.skipped,
         errors: reindex_report.errors,
     })
+}
+
+fn initialize_missing_metadata(repo: &Path, repo_path: &str) -> CoreResult<()> {
+    let area_matrix = repo.join(AREA_MATRIX_DIR);
+    match fs::symlink_metadata(&area_matrix) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => Err(
+            CoreError::repo_not_initialized("repository not initialized"),
+        ),
+        Ok(_) => rebuild_index_db(repo, repo_path),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            repo_init::initialize_metadata_for_repair(repo_path)
+        }
+        Err(error) => Err(map_io_error(error)),
+    }
 }
 
 fn prepare_full_rescan_metadata(
@@ -135,20 +159,63 @@ fn build_replacement_index_db(temp_db: &Path, repo_path: &str) -> CoreResult<()>
 
 fn install_replacement_index_db(area_matrix: &Path, temp_db: &Path) -> CoreResult<()> {
     let index_db = area_matrix.join(INDEX_DB_FILE);
-    let retired_db = area_matrix.join(format!("{INDEX_DB_FILE}.replaced-{}", Uuid::new_v4()));
-    remove_sqlite_companions(&index_db)?;
-    fs::rename(&index_db, &retired_db).map_err(map_io_error)?;
+    match fs::symlink_metadata(&index_db) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => Err(
+            CoreError::repo_not_initialized("repository not initialized"),
+        ),
+        Ok(_) => install_replacement_for_existing_db(area_matrix, temp_db, &index_db),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            install_replacement_for_missing_db(area_matrix, temp_db, &index_db)
+        }
+        Err(error) => Err(map_io_error(error)),
+    }
+}
 
-    match fs::rename(temp_db, &index_db) {
+fn install_replacement_for_existing_db(
+    area_matrix: &Path,
+    temp_db: &Path,
+    index_db: &Path,
+) -> CoreResult<()> {
+    let retired_db = area_matrix.join(format!("{INDEX_DB_FILE}.replaced-{}", Uuid::new_v4()));
+    remove_sqlite_companions(index_db)?;
+    fs::rename(index_db, &retired_db).map_err(map_io_error)?;
+
+    match fs::rename(temp_db, index_db) {
         Ok(()) => {
             cleanup_temp_file(&retired_db);
             Ok(())
         }
         Err(error) => {
-            restore_retired_index_db(&retired_db, &index_db)?;
+            restore_retired_index_db(&retired_db, index_db)?;
             Err(map_io_error(error))
         }
     }
+}
+
+fn install_replacement_for_missing_db(
+    area_matrix: &Path,
+    temp_db: &Path,
+    index_db: &Path,
+) -> CoreResult<()> {
+    preserve_orphaned_sqlite_companions(area_matrix, index_db)?;
+    fs::rename(temp_db, index_db).map_err(map_io_error)
+}
+
+fn preserve_orphaned_sqlite_companions(area_matrix: &Path, index_db: &Path) -> CoreResult<()> {
+    let diagnostics_dir = area_matrix.join(DIAGNOSTICS_DIR);
+    for suffix in ["-wal", "-shm"] {
+        let source = sqlite_companion_path(index_db, suffix)?;
+        if !source.try_exists().map_err(map_io_error)? {
+            continue;
+        }
+        fs::create_dir_all(&diagnostics_dir).map_err(map_io_error)?;
+        let destination = diagnostics_dir.join(format!(
+            "orphaned-{INDEX_DB_FILE}-{}{suffix}",
+            Uuid::new_v4()
+        ));
+        fs::rename(source, destination).map_err(map_io_error)?;
+    }
+    Ok(())
 }
 
 fn restore_retired_index_db(retired_db: &Path, index_db: &Path) -> CoreResult<()> {
@@ -202,6 +269,16 @@ fn cleanup_temp_file(path: &Path) {
 }
 
 fn diagnostics_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
+    let repo = repair_repo_path(repo_path)?;
+    if !metadata_database_exists(&repo)? {
+        return Err(CoreError::repo_not_initialized(
+            "repository not initialized",
+        ));
+    }
+    Ok(repo)
+}
+
+fn repair_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
     if repo_path.is_empty() {
         return Err(CoreError::invalid_path("invalid path"));
     }
@@ -215,22 +292,30 @@ fn diagnostics_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
         return Err(CoreError::invalid_path("invalid path"));
     }
 
+    Ok(repo)
+}
+
+fn metadata_database_exists(repo: &Path) -> CoreResult<bool> {
     let area_matrix = repo.join(AREA_MATRIX_DIR);
-    let metadata = fs::metadata(&area_matrix).map_err(map_initialized_metadata_error)?;
-    if !metadata.is_dir() {
-        return Err(CoreError::repo_not_initialized(
-            "repository not initialized",
-        ));
+    match fs::symlink_metadata(&area_matrix) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+            return Err(CoreError::repo_not_initialized(
+                "repository not initialized",
+            ));
+        }
+        Ok(_) => {}
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(false),
+        Err(error) => return Err(map_initialized_metadata_error(error)),
     }
 
-    let db_metadata =
-        fs::metadata(area_matrix.join(INDEX_DB_FILE)).map_err(map_initialized_metadata_error)?;
-    if !db_metadata.is_file() {
-        return Err(CoreError::repo_not_initialized(
-            "repository not initialized",
-        ));
+    match fs::symlink_metadata(area_matrix.join(INDEX_DB_FILE)) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => Err(
+            CoreError::repo_not_initialized("repository not initialized"),
+        ),
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(map_initialized_metadata_error(error)),
     }
-    Ok(repo)
 }
 
 fn verify_metadata_health(repo: &Path) -> CoreResult<()> {

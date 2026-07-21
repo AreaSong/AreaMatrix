@@ -178,7 +178,7 @@ fn repair_reindex_metadata_validation_non_full_repair_does_not_reindex_user_file
 }
 
 #[test]
-fn repair_reindex_metadata_validation_uninitialized_repo_errors_without_metadata_side_effects() {
+fn repair_reindex_metadata_validation_uninitialized_repo_requires_confirmed_repair() {
     let repo = tempfile::tempdir().expect("create uninitialized repository directory");
     let readme = write_repo_file(repo.path(), "README.md", b"# User project\n");
     let before = user_file_snapshot(&[&readme]);
@@ -189,20 +189,19 @@ fn repair_reindex_metadata_validation_uninitialized_repo_errors_without_metadata
             "repository not initialized"
         ))
     );
-    assert_eq!(
-        repair_metadata(
-            path_string(repo.path()),
-            RepairOptions {
-                full_rescan: true,
-                preserve_diagnostics_snapshot: true,
-            },
-        ),
-        Err(CoreError::repo_not_initialized(
-            "repository not initialized"
-        ))
-    );
+    let report = repair_metadata(
+        path_string(repo.path()),
+        RepairOptions {
+            full_rescan: true,
+            preserve_diagnostics_snapshot: true,
+        },
+    )
+    .expect("confirmed repair should initialize missing metadata");
 
-    assert!(!repo.path().join(".areamatrix").exists());
+    assert!(repo.path().join(".areamatrix/index.db").is_file());
+    assert_eq!(report.diagnostics_snapshot_path, None);
+    assert_eq!(report.inserted, 1);
+    assert_eq!(sorted_list_paths(repo.path()), vec!["README.md"]);
     assert_eq!(user_file_snapshot(&[&readme]), before);
 }
 

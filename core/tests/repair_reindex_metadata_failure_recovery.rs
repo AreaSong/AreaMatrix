@@ -105,6 +105,44 @@ fn repair_reindex_metadata_failure_recovery_rebuilds_corrupted_db_after_snapshot
     assert_eq!(session.status, ScanSessionStatus::Completed);
 }
 
+#[test]
+fn repair_reindex_metadata_failure_recovery_recreates_missing_db_and_preserves_orphaned_wal() {
+    let repo = tempfile::tempdir().expect("create temporary repository directory");
+    let metadata_dir = repo.path().join(".areamatrix");
+    fs::create_dir(&metadata_dir).expect("create partial metadata directory");
+    let orphaned_wal = metadata_dir.join("index.db-wal");
+    fs::write(&orphaned_wal, b"orphaned wal diagnostics").expect("write orphaned WAL fixture");
+    let readme = repo.path().join("README.md");
+    fs::write(&readme, "# User project\n").expect("write user README");
+    let before = user_file_snapshot(&[&readme]);
+
+    let report = repair_metadata(
+        path_string(repo.path()),
+        RepairOptions {
+            full_rescan: true,
+            preserve_diagnostics_snapshot: true,
+        },
+    )
+    .expect("recreate missing metadata database");
+
+    assert!(metadata_dir.join("index.db").is_file());
+    assert!(!orphaned_wal.exists());
+    assert_eq!(report.diagnostics_snapshot_path, None);
+    assert_eq!(report.inserted, 1);
+    assert_eq!(indexed_paths(repo.path()), vec!["README.md"]);
+    assert_eq!(user_file_snapshot(&[&readme]), before);
+
+    let diagnostics = fs::read_dir(metadata_dir.join("diagnostics"))
+        .expect("read orphaned metadata diagnostics")
+        .map(|entry| entry.expect("read diagnostics entry").path())
+        .collect::<Vec<_>>();
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(
+        fs::read(&diagnostics[0]).expect("read preserved orphaned WAL"),
+        b"orphaned wal diagnostics"
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn repair_reindex_metadata_failure_recovery_permission_denied_records_resumable_session() {

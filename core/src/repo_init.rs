@@ -44,6 +44,40 @@ pub(crate) fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResu
     }
 }
 
+pub(crate) fn initialize_metadata_for_repair(repo_path: &str) -> CoreResult<()> {
+    let repo = PathBuf::from(repo_path);
+    let validation = repo_path::validate_repo_path(repo_path.to_owned())?;
+    if !validation.exists || !validation.is_directory {
+        return Err(CoreError::invalid_path("invalid path"));
+    }
+    if !validation.is_writable {
+        return Err(CoreError::permission_denied("permission denied"));
+    }
+    if repo
+        .join(AREA_MATRIX_DIR)
+        .try_exists()
+        .map_err(map_io_error)?
+    {
+        return Err(CoreError::config("configuration error"));
+    }
+
+    let options = RepoInitOptions {
+        mode: RepoInitMode::AdoptExisting,
+        create_default_categories: false,
+        overview_output: OverviewOutput::GeneratedOnly,
+    };
+    let init_dir = repo.join(format!("{INIT_DIR_PREFIX}{}", Uuid::new_v4()));
+    let mut rollback = InitRollback::new(repo.clone(), init_dir.clone());
+    let result = create_metadata_staging(repo_path, &init_dir, &options)
+        .and_then(|_| commit_metadata_staging(&repo, &init_dir, &mut rollback));
+    if result.is_ok() {
+        rollback.mark_complete();
+    } else {
+        rollback.rollback();
+    }
+    result
+}
+
 fn init_create_empty_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> {
     let repo = PathBuf::from(&repo_path);
     preflight_create_empty(&repo_path, &repo)?;
