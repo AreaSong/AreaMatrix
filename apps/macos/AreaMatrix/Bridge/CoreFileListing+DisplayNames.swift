@@ -80,6 +80,13 @@ enum SemanticIndexStatusSnapshot: Equatable {
 enum SemanticSearchRouteSnapshot: String, Equatable {
     case local = "Local"
     case remote = "Remote"
+
+    var displayName: String {
+        switch self {
+        case .local: L10n.string("Local")
+        case .remote: L10n.string("Remote")
+        }
+    }
 }
 
 enum SemanticSearchInputFieldSnapshot: String, Equatable {
@@ -89,6 +96,17 @@ enum SemanticSearchInputFieldSnapshot: String, Equatable {
     case noteSummary = "Note summary"
     case aiSummary = "AI summary"
     case extractedTextExcerpt = "Extracted text"
+
+    var displayName: String {
+        switch self {
+        case .fileName: L10n.string("File name")
+        case .repoRelativePath: L10n.string("Path")
+        case .category: L10n.string("Category")
+        case .noteSummary: L10n.string("Note summary")
+        case .aiSummary: L10n.string("AI summary")
+        case .extractedTextExcerpt: L10n.string("Extracted text")
+        }
+    }
 }
 
 enum SemanticSearchFallbackReasonSnapshot: String, Equatable {
@@ -102,17 +120,32 @@ enum SemanticSearchFallbackReasonSnapshot: String, Equatable {
     case normalSearchUnavailable = "Normal search unavailable"
     case rateLimited = "Rate limited"
     case timeout = "Timeout"
+
+    var displayName: String {
+        switch self {
+        case .aiDisabled: L10n.string("AI disabled")
+        case .featureDisabled: L10n.string("Semantic search disabled")
+        case .providerUnavailable: L10n.string("Provider unavailable")
+        case .privacyRule: L10n.string("Privacy rule")
+        case .semanticIndexNotReady: L10n.string("Semantic index not ready")
+        case .callLogUnavailable: L10n.string("Call log unavailable")
+        case .noEligibleInput: L10n.string("No eligible input")
+        case .normalSearchUnavailable: L10n.string("Normal search unavailable")
+        case .rateLimited: L10n.string("Rate limited")
+        case .timeout: L10n.string("Timeout")
+        }
+    }
 }
 
 extension StorageMode {
     var fileListDisplayName: String {
         switch self {
         case .moved:
-            "Moved"
+            L10n.string("Moved")
         case .copied:
-            "Copied"
+            L10n.string("Copied")
         case .indexed:
-            "Indexed"
+            L10n.string("Indexed")
         }
     }
 }
@@ -121,15 +154,15 @@ extension SearchMatchField {
     var displayName: String {
         switch self {
         case .name:
-            "Name"
+            L10n.string("Name")
         case .path:
-            "Path"
+            L10n.string("Path")
         case .note:
-            "Note"
+            L10n.string("Note")
         case .category:
-            "Category"
+            L10n.string("Category")
         case .changeLog:
-            "Change log"
+            L10n.string("Change log")
         }
     }
 }
@@ -138,11 +171,11 @@ extension SearchMatchKind {
     var displayName: String {
         switch self {
         case .exact:
-            "Exact match"
+            L10n.string("Exact match")
         case .fuzzy:
-            "Fuzzy match"
+            L10n.string("Fuzzy match")
         case .pinyinInitials:
-            "Pinyin initials"
+            L10n.string("Pinyin initials")
         }
     }
 }
@@ -150,11 +183,11 @@ extension SearchMatchKind {
 extension SearchDiagnosticKind {
     var displayName: String {
         switch self {
-        case .unclosedQuote: "Unclosed quote"
-        case .unknownField: "Unknown field"
-        case .invalidDate: "Invalid date"
-        case .unbalancedParentheses: "Unbalanced parentheses"
-        case .invalidOperator: "Invalid operator"
+        case .unclosedQuote: L10n.string("Unclosed quote")
+        case .unknownField: L10n.string("Unknown field")
+        case .invalidDate: L10n.string("Invalid date")
+        case .unbalancedParentheses: L10n.string("Unbalanced parentheses")
+        case .invalidOperator: L10n.string("Invalid operator")
         }
     }
 }
@@ -162,9 +195,9 @@ extension SearchDiagnosticKind {
 extension SearchDiagnosticSeverity {
     var displayName: String {
         switch self {
-        case .info: "Info"
-        case .warning: "Warning"
-        case .error: "Error"
+        case .info: L10n.string("Info")
+        case .warning: L10n.string("Warning")
+        case .error: L10n.string("Error")
         }
     }
 }
@@ -173,11 +206,11 @@ extension FileOrigin {
     var fileListDisplayName: String {
         switch self {
         case .imported:
-            "Imported"
+            L10n.string("Imported")
         case .adopted:
-            "Adopted"
+            L10n.string("Adopted")
         case .external:
-            "External"
+            L10n.string("External")
         }
     }
 }
@@ -299,13 +332,13 @@ extension SemanticIndexStatusSnapshot {
 
     var displayName: String {
         switch self {
-        case .ready: "Ready"
-        case .notReady: "Not ready"
-        case .building: "Building"
-        case .paused: "Paused"
-        case .canceled: "Canceled"
-        case .failed: "Failed"
-        case .partial: "Partial"
+        case .ready: L10n.string("Ready")
+        case .notReady: L10n.string("Not ready")
+        case .building: L10n.string("Building")
+        case .paused: L10n.string("Paused")
+        case .canceled: L10n.string("Canceled")
+        case .failed: L10n.string("Failed")
+        case .partial: L10n.string("Partial")
         }
     }
 }

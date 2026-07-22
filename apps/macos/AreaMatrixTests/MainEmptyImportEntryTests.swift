@@ -52,7 +52,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
         )
 
         XCTAssertEqual(model.pendingImportEntry?.kind, .multipleItems(2))
-        XCTAssertEqual(model.pendingImportEntry?.sheetTitle, "导入 2 个文件")
+        XCTAssertEqual(model.pendingImportEntry?.sheetTitle, "Import 2 files")
         XCTAssertEqual(model.pendingImportEntry?.source, .dropZone)
         XCTAssertEqual(model.pendingImportEntry?.urls, [firstURL, secondURL])
     }

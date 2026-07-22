@@ -55,7 +55,7 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
     var diagnosticsDisabledReason: String? {
         switch state {
         case .loading:
-            "Repository access capability is still loading."
+            L10n.string("Repository access capability is still loading.")
         case let .loaded(capabilities):
             capabilities.settingsDiagnosticsReason
         case let .failed(_, error):
@@ -89,7 +89,7 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
     private func capabilityError(for error: Error) async -> RepositorySettingsCapabilityError {
         if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return RepositorySettingsCapabilityError(
-                message: "Platform capabilities unavailable",
+                message: L10n.string("Platform capabilities unavailable"),
                 recovery: display.recovery,
                 detail: display.detail
             )
@@ -97,15 +97,15 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
 
         if let bridgeError = error as? CoreBridgeError {
             return RepositorySettingsCapabilityError(
-                message: "Platform capabilities unavailable",
-                recovery: "Check the Core platform capability bridge, then retry.",
+                message: L10n.string("Platform capabilities unavailable"),
+                recovery: L10n.string("Check the Core platform capability bridge, then retry."),
                 detail: bridgeError.localizedDescription
             )
         }
 
         return RepositorySettingsCapabilityError(
-            message: "Platform capabilities unavailable",
-            recovery: "Retry repository settings after the platform capability bridge is available.",
+            message: L10n.string("Platform capabilities unavailable"),
+            recovery: L10n.string("Retry repository settings after the platform capability bridge is available."),
             detail: error.localizedDescription
         )
     }
@@ -116,27 +116,27 @@ extension PlatformCapabilitiesSnapshot {
         [
             RepositorySettingsCapabilityRow(
                 id: "watcher",
-                label: "Watcher",
+                label: L10n.string("Watcher"),
                 support: watcher,
-                unavailableEffect: "Watcher-backed status stays disabled."
+                unavailableEffect: L10n.string("Watcher-backed status stays disabled.")
             ),
             RepositorySettingsCapabilityRow(
                 id: "trash",
-                label: "Trash / Recycle Bin",
+                label: L10n.string("Trash / Recycle Bin"),
                 support: trash,
-                unavailableEffect: "Recoverable destructive actions stay disabled elsewhere."
+                unavailableEffect: L10n.string("Recoverable destructive actions stay disabled elsewhere.")
             ),
             RepositorySettingsCapabilityRow(
                 id: "cloud-placeholder",
-                label: "Cloud placeholders",
+                label: L10n.string("Cloud placeholders"),
                 support: cloudPlaceholder,
-                unavailableEffect: "Cloud placeholder state is shown as unavailable or unknown."
+                unavailableEffect: L10n.string("Cloud placeholder state is shown as unavailable or unknown.")
             ),
             RepositorySettingsCapabilityRow(
                 id: "security-bookmark",
-                label: "Repository access",
+                label: L10n.string("Repository access"),
                 support: securityBookmark,
-                unavailableEffect: "Diagnostics export is disabled until repository access is available."
+                unavailableEffect: L10n.string("Diagnostics export is disabled until repository access is available.")
             )
         ]
     }
@@ -147,6 +147,6 @@ extension PlatformCapabilitiesSnapshot {
 
     var settingsDiagnosticsReason: String? {
         guard !repositorySettingsAllowsDiagnostics else { return nil }
-        return securityBookmark.reason ?? "Repository access is not available on this platform."
+        return securityBookmark.reason ?? L10n.string("Repository access is not available on this platform.")
     }
 }

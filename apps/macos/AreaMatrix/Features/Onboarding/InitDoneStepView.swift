@@ -29,8 +29,8 @@ struct InitDoneStepView: View {
         AreaMatrixStepHeader(
             systemImage: "checkmark.circle.fill",
             tint: AreaMatrixTheme.Colors.emerald,
-            title: String(localized: "onboarding.done.title"),
-            subtitle: String(localized: "onboarding.done.subtitle")
+            title: L10n.string("onboarding.done.title"),
+            subtitle: L10n.string("onboarding.done.subtitle")
         )
     }
 
@@ -58,7 +58,7 @@ struct InitDoneStepView: View {
         if let errorMapping {
             TintedOutlinedStatusBanner(tint: .red) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label(String(localized: "onboarding.done.cannotOpen"), systemImage: "exclamationmark.triangle")
+                    Label(L10n.string("onboarding.done.cannotOpen"), systemImage: "exclamationmark.triangle")
                         .font(.headline)
                     Text(errorMapping.userMessage)
                     Text(errorMapping.suggestedAction)
@@ -71,7 +71,7 @@ struct InitDoneStepView: View {
 
     private var footer: some View {
         HStack {
-            Button(String(localized: "onboarding.done.openInFinder")) {
+            Button(L10n.string("onboarding.done.openInFinder")) {
                 Task {
                     await openInFinder()
                 }
@@ -88,8 +88,8 @@ struct InitDoneStepView: View {
 
             Button(action: onOpenRepository) {
                 Text(errorMapping == nil
-                    ? String(localized: "onboarding.done.openRepository")
-                    : String(localized: "onboarding.done.retry"))
+                    ? L10n.string("onboarding.done.openRepository")
+                    : L10n.string("onboarding.done.retry"))
                     .font(.body.weight(.medium))
             }
             .keyboardShortcut(.defaultAction)
@@ -114,13 +114,17 @@ struct InitDoneStepView: View {
     private var summaryItems: [String] {
         switch result.mode {
         case .createEmpty:
-            ["已创建默认分类", "已创建本地索引", "已启用自动概览"]
+            [
+                L10n.string("onboarding.done.defaultCategoriesCreated"),
+                L10n.string("onboarding.done.localIndexCreated"),
+                L10n.string("onboarding.done.automaticOverviewEnabled")
+            ]
         case .adoptExisting:
             [
-                "已建立本地索引",
-                "已扫描现有文件",
-                "已保留原有目录结构",
-                "已生成内部概览"
+                L10n.string("onboarding.done.localIndexBuilt"),
+                L10n.string("onboarding.done.existingFilesScanned"),
+                L10n.string("onboarding.done.structurePreserved"),
+                L10n.string("onboarding.done.internalOverviewGenerated")
             ]
         }
     }

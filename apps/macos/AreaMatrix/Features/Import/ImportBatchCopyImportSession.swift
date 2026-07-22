@@ -37,7 +37,7 @@ extension ImportBatchSessionSnapshot {
             guard item.phase != .done, item.phase != .failed else { return item }
             var pendingItem = item
             pendingItem.phase = .pending
-            pendingItem.errorMessage = "Import not completed before AreaMatrix quit"
+            pendingItem.errorMessage = L10n.string("Import not completed before AreaMatrix quit")
             return pendingItem
         }
         return ImportBatchProgressSnapshot(

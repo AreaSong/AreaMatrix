@@ -146,7 +146,7 @@ struct ImportProgressRouteState: Equatable {
     }
 
     var toolbarText: String {
-        "Importing \(completed) / \(completed + failed + remaining)"
+        L10n.format("import.progress.toolbar", completed, completed + failed + remaining)
     }
 
     var bannerText: String {
@@ -155,19 +155,19 @@ struct ImportProgressRouteState: Equatable {
         }
         let extras = resultExtras
         return extras.isEmpty
-            ? "已完成 \(completed)，失败 \(failed)，剩余 \(remaining)"
-            : "已完成 \(completed)，失败 \(failed)，剩余 \(remaining)，\(extras)"
+            ? L10n.format("import.progress.summary", completed, failed, remaining)
+            : L10n.format("import.progress.summaryWithExtras", completed, failed, remaining, extras)
     }
 
     var titleText: String {
         if isFailed {
-            return "导入已暂停"
+            return L10n.string("import.progress.paused")
         }
-        return total <= 1 ? "正在导入 1 个文件" : "正在导入 \(total) 个文件"
+        return L10n.plural("import.progress.importing-files", count: total)
     }
 
     var detailsButtonTitle: String {
-        "View details"
+        L10n.string("View details")
     }
 
     func withRecoveryCheck(_ recoveryCheck: ImportProgressRecoveryCheckState) -> ImportProgressRouteState {
@@ -189,10 +189,10 @@ struct ImportProgressRouteState: Equatable {
     private var resultExtras: String {
         var parts: [String] = []
         if skipped > 0 {
-            parts.append("跳过 \(skipped)")
+            parts.append(L10n.format("import.progress.skipped", skipped))
         }
         if pending > 0 {
-            parts.append("待下载 \(pending)")
+            parts.append(L10n.format("import.progress.pendingDownload", pending))
         }
         return parts.joined(separator: "，")
     }
@@ -299,21 +299,31 @@ extension ImportProgressRouteState {
     var retryStatusText: String {
         switch recoveryCheck {
         case .unavailable:
-            return "Retry is unavailable for this item."
+            return L10n.string("Retry is unavailable for this item.")
         case .checking:
-            return "Checking recovery state..."
+            return L10n.string("Checking recovery state...")
         case let .retryAllowed(report):
             guard let report, report.hasVisibleDetails else {
-                return "Recovery state checked. Current item can be retried."
+                return L10n.string("Recovery state checked. Current item can be retried.")
             }
-            return "Recovery checked: cleaned \(report.cleanedStagingFiles), reverted \(report.revertedStagingDbRows)."
+            return L10n.format(
+                "Recovery checked: cleaned %d, reverted %d.",
+                report.cleanedStagingFiles,
+                report.revertedStagingDbRows
+            )
         case let .retryBlocked(message, _):
             return message
         }
     }
 
     var resultSummaryText: String {
-        "Imported \(completed), failed \(failed), stopped \(skipped), pending \(remaining + pending)."
+        L10n.format(
+            "Imported %d, failed %d, stopped %d, pending %d.",
+            completed,
+            failed,
+            skipped,
+            remaining + pending
+        )
     }
 
     var recoveryCheckTaskID: String {

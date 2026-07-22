@@ -86,7 +86,7 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertFalse(contentSource.contains("let onRetryCurrentList:"))
         XCTAssertFalse(contentSource.contains("let onCollectDiagnostics:"))
         XCTAssertTrue(recoverySource.contains("struct MainListErrorRecoveryActions"))
-        XCTAssertTrue(recoverySource.contains("recoveryActions.collectFallbackDiagnostics()"))
+        XCTAssertTrue(recoverySource.contains("fileListModel.requestCurrentListDiagnostics()"))
     }
 
     func testLifecycleComposesFeatureOwnedCommandHostsInExistingModifierOrder() throws {

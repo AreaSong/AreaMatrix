@@ -19,8 +19,8 @@ enum AIClassificationSuggestionRouteState: Equatable {
 
     var label: String {
         switch self {
-        case .local: "Local"
-        case .remote: "Remote"
+        case .local: L10n.string("Local")
+        case .remote: L10n.string("Remote")
         }
     }
 }
@@ -34,10 +34,10 @@ enum AIClassificationSuggestionContextFieldState: Equatable {
 
     var label: String {
         switch self {
-        case .fileName: "filename"
-        case .extension: "extension"
-        case .repoRelativePath: "repo-relative path"
-        case .limitedTextSummary: "limited text summary"
+        case .fileName: L10n.string("filename")
+        case .extension: L10n.string("extension")
+        case .repoRelativePath: L10n.string("repo-relative path")
+        case .limitedTextSummary: L10n.string("limited text summary")
         }
     }
 }

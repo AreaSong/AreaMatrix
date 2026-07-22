@@ -81,7 +81,7 @@ extension OnboardingModel {
             try finderOpener.openRepositoryInFinder(repoPath: state.repoPath)
             toastMessage = nil
         } catch {
-            toastMessage = "Repository folder cannot be revealed."
+            toastMessage = L10n.string("Repository folder cannot be revealed.")
         }
     }
 
@@ -194,8 +194,8 @@ extension OnboardingModel {
     ) {
         importProgressControlState.clearQueueContinuation()
         route = Self.mainRoute(for: state.sourceOpening)
-        toastMessage = "已导入：\(entry.currentName)"
-        accessibilityAnnouncer.announce("已导入：\(entry.currentName)")
+        toastMessage = L10n.format("import.single.imported-file", entry.currentName)
+        accessibilityAnnouncer.announce(L10n.format("import.single.imported-file", entry.currentName))
         consumeQueuedDockImportIfPossible()
     }
 

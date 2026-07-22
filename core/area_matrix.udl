@@ -2,6 +2,9 @@ namespace area_matrix {
     string get_version();
 
     [Throws=CoreError]
+    void set_app_interface_locale(string locale);
+
+    [Throws=CoreError]
     void init_logging(string level);
 
     [Throws=CoreError]

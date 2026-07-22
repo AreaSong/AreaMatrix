@@ -91,7 +91,7 @@ struct DropZoneOverlay: View {
         VStack(spacing: 10) {
             Text(presentation.headline)
                 .font(.title3.weight(.semibold))
-            Text("导入到：\(presentation.destinationLabel)")
+            Text(L10n.format("import.drop.destination", presentation.destinationLabel))
             Text("拖到左侧分类可改变目标")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -130,7 +130,7 @@ struct DropZoneOverlay: View {
     private var accessibilityLabel: String {
         var parts = [
             presentation.headline,
-            "导入到：\(presentation.destinationLabel)"
+            L10n.format("import.drop.destination", presentation.destinationLabel)
         ]
         if let warning = presentation.warning {
             parts.append(warning)

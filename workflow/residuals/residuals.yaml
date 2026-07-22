@@ -82,18 +82,20 @@ items:
     title: UI string localization pipeline from ADR-0008 is not implemented
     source: docs/adr/0008-naming-and-i18n.md
     supporting_sources:
-      - apps/macos/AreaMatrix/Localizations/en.lproj/Localizable.strings
-      - apps/macos/AreaMatrix/Features/Settings/GeneralSettingsView.swift
-      - apps/macos/AreaMatrix/Features/Onboarding/WelcomeStepView.swift
+      - apps/macos/AreaMatrix/Localizations/Localizable.xcstrings
+      - apps/macos/AreaMatrix/App/AppLanguage.swift
+      - scripts/dev_tools/checks.py
     owner: macos-frontend
     current_impact: none
     executable_task: false
     promotion_required: true
-    close_condition: Either ship the .lproj/Localizable.strings pipeline for UI copy, or amend ADR-0008 to scope localization to classifier display names only.
+    close_condition: Ship independent app-interface and per-repository content languages with complete en/zh-Hans catalog coverage and a CI drift gate.
     validation:
-      - xcodebuild AreaMatrix succeeded with Localizable.strings in app bundle
-      - Settings/Onboarding key surfaces use String(localized:)
-    notes: Closed 2026-07-21. Pipeline landed for en/zh-Hans; zh-Hant mirrors en. Remaining surfaces may localize progressively.
+      - xcodebuild AreaMatrix succeeds with Localizable.xcstrings in app bundle
+      - AppLanguage tests cover persistence, runtime switching, zh-* fallback, and legacy zh-CN canonicalization
+      - Core tests cover system content locale following the interface while explicit repository locales remain stable
+      - governance check enforces extracted UI key coverage, locale parity, and placeholder parity
+    notes: Closed evidence expanded 2026-07-22. App UI and repository content language are independent; en/zh-Hans are complete catalog locales, system content locale resolves through the current interface locale only at generation time, and obsolete zh-Hant mirror resources are removed.
   - id: global-docs-core-module-doc-coverage
     status: closed
     type: product-doc-marker

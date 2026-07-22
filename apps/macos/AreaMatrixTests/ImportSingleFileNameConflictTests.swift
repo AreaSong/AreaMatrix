@@ -35,7 +35,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
 
         await model.load(request: .importSingleFileFixture())
         model.updateNameConflictResolution(.renameIncoming("source.pdf"))
-        XCTAssertEqual(model.importDisabledReason, "新文件名仍然冲突")
+        XCTAssertEqual(model.importDisabledReason, "The new filename still conflicts")
 
         model.renameIncomingNameConflictFile(to: "renamed.pdf")
         let imported = await model.importSelectedFile()
@@ -116,7 +116,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
 
         XCTAssertTrue(model.isReplaceConfirmed)
         XCTAssertNil(model.pendingReplaceConfirmation)
-        XCTAssertEqual(model.replaceConfirmationActionTitle, "Replace confirmed")
+        XCTAssertEqual(model.replaceConfirmationActionTitle, "Replace Confirmed")
         XCTAssertEqual(model.singleFilePrimaryActionTitle, "Import")
 
         _ = await model.importSelectedFile()
@@ -186,7 +186,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
 
         XCTAssertNil(imported)
         await importer.assertNoImportedFiles()
-        XCTAssertEqual(model.importStatus, .blocked("Replace 必须先进入二次确认"))
+        XCTAssertEqual(model.importStatus, .blocked("Confirm Replace before continuing"))
     }
 
     @MainActor

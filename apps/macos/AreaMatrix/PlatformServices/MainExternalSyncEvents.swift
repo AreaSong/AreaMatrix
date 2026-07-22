@@ -20,13 +20,13 @@ enum MainExternalSyncEventKind: String, Equatable, Hashable {
     var displayName: String {
         switch self {
         case .created:
-            "created"
+            L10n.string("external-sync.event.created")
         case .renamed:
-            "renamed"
+            L10n.string("external-sync.event.renamed")
         case .removed:
-            "removed"
+            L10n.string("external-sync.event.removed")
         case .modified:
-            "modified"
+            L10n.string("external-sync.event.modified")
         }
     }
 }

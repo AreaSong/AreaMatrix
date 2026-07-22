@@ -129,6 +129,15 @@ enum ClassifierImpactPreviewFilter: String, CaseIterable, Equatable, Identifiabl
     var id: String {
         rawValue
     }
+
+    var displayName: String {
+        switch self {
+        case .all: L10n.string("All")
+        case .willUpdate: L10n.string("Will update")
+        case .needsReview: L10n.string("Needs review")
+        case .skipped: L10n.string("Skipped")
+        }
+    }
 }
 
 enum ClassifierImpactPreviewLoadState: Equatable {
@@ -192,31 +201,33 @@ struct ClassifierImpactPreviewSheetModel: Equatable {
     }
 
     var selectedBasisSummary: String {
-        let keywordSummary = selectedKeywords.isEmpty ? nil : "keyword \(selectedKeywords.joined(separator: ", "))"
+        let keywordSummary = selectedKeywords.isEmpty
+            ? nil
+            : L10n.format("classifier.rule.keywordBasis", selectedKeywords.joined(separator: ", "))
         let extensionSummary = selectedExtensions.isEmpty
             ? nil
-            : "extension \(selectedExtensions.joined(separator: ", "))"
+            : L10n.format("classifier.rule.extensionBasis", selectedExtensions.joined(separator: ", "))
         return [keywordSummary, extensionSummary].compactMap { $0 }.joined(separator: "; ")
     }
 
     var ruleSummary: String {
-        let basis = selectedBasisSummary.isEmpty ? "selected matcher values" : selectedBasisSummary
-        return "Rule: \(basis) -> \(handoff.targetCategory)"
+        let basis = selectedBasisSummary.isEmpty ? L10n.string("selected matcher values") : selectedBasisSummary
+        return L10n.format("classifier.rule.summary", basis, handoff.targetCategory)
     }
 
     var appliesSummary: String {
-        "Applies to: future imports and existing files if applied now"
+        L10n.string("Applies to: future imports and existing files if applied now")
     }
 
     var emptyStateText: String? {
         guard loadState.report?.affectedFileCount == 0 else { return nil }
-        return "This rule will only affect future imports."
+        return L10n.string("This rule will only affect future imports.")
     }
 
     var primaryApplyDisabledReason: String? {
-        guard let report = loadState.report else { return "Preview must finish before apply." }
+        guard let report = loadState.report else { return L10n.string("Preview must finish before apply.") }
         if !report.canApply {
-            return report.applyBlockedReason ?? "Resolve review items or conflicts before applying."
+            return report.applyBlockedReason ?? L10n.string("Resolve review items or conflicts before applying.")
         }
         return nil
     }

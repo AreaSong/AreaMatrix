@@ -27,7 +27,7 @@ struct SyncConflictReplaceConfirmationPanel: View {
                 onConfirm(understandsReplace)
             }
             .disabled(!canConfirm)
-            .help(disabledReason ?? "Confirm this Core replace plan before applying Use incoming version.")
+            .help(disabledReason ?? L10n.string("Confirm this Core replace plan before applying Use incoming version."))
             .accessibilityIdentifier(SyncConflictReviewAccessibilityID.replaceConfirm)
         }
         .accessibilityIdentifier(SyncConflictReviewAccessibilityID.replaceConfirmation)
@@ -41,7 +41,7 @@ struct SyncConflictReplaceConfirmationPanel: View {
                 ("New file path", plan.newPath),
                 ("Old hash", hashDisplay(plan.oldHashSha256)),
                 ("New hash", hashDisplay(plan.newHashSha256)),
-                ("Affected record", plan.affectedFileID.map(String.init) ?? "Unknown"),
+                (L10n.string("Affected record"), plan.affectedFileID.map(String.init) ?? L10n.string("Unknown")),
                 ("Old version will be kept at", backupTargetDisplay(plan)),
                 ("DB update", plan.databaseUpdate),
                 ("Change log", plan.changeLogAction),
@@ -77,7 +77,7 @@ struct SyncConflictReplaceConfirmationPanel: View {
     }
 
     private func hashDisplay(_ value: String?) -> String {
-        guard let value = clean(value) else { return "Unknown" }
+        guard let value = clean(value) else { return L10n.string("Unknown") }
         return value.count > 8 ? "\(value.prefix(8))..." : value
     }
 
@@ -86,9 +86,9 @@ struct SyncConflictReplaceConfirmationPanel: View {
             return backupTarget
         }
         if !preview.plannedTrashPaths.isEmpty {
-            return "Trash: \(preview.plannedTrashPaths.joined(separator: ", "))"
+            return L10n.format("syncConflict.replace.trashPaths", preview.plannedTrashPaths.joined(separator: ", "))
         }
-        return "Trash or Core safety backup"
+        return L10n.string("Trash or Core safety backup")
     }
 
     private func clean(_ value: String?) -> String? {

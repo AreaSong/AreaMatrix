@@ -13,7 +13,7 @@ struct RedoFeedbackRegion: View {
             Label("Checking redo...", systemImage: "arrow.uturn.forward.circle")
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-checking")
         case let .available(action):
-            redoSummary(action, status: "Available")
+            redoSummary(action, status: L10n.string("Available"))
             Button("Redo") { onRedo(action) }
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-action")
         case let .disabled(action, reason):
@@ -26,7 +26,7 @@ struct RedoFeedbackRegion: View {
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-unavailable")
         case let .redoing(action):
-            redoSummary(action, status: "Redoing...")
+            redoSummary(action, status: L10n.string("Redoing..."))
             Button("Redoing...") {}
                 .disabled(true)
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-action-busy")
@@ -39,7 +39,7 @@ struct RedoFeedbackRegion: View {
                 Text(mapping.userMessage)
                     .foregroundStyle(.secondary)
                 if let action {
-                    Text("Redo row retained: \(action.summary)")
+                    Text(L10n.format("file-actions.redo.row-retained", action.summary))
                         .foregroundStyle(.secondary)
                 }
             }

@@ -9,6 +9,10 @@ enum BatchRenameModeSnapshot: String, CaseIterable, Equatable, Identifiable {
     var id: String {
         rawValue
     }
+
+    var displayName: String {
+        L10n.string(rawValue)
+    }
 }
 
 enum BatchRenameDateSourceSnapshot: String, CaseIterable, Equatable, Identifiable {
@@ -18,6 +22,10 @@ enum BatchRenameDateSourceSnapshot: String, CaseIterable, Equatable, Identifiabl
 
     var id: String {
         rawValue
+    }
+
+    var displayName: String {
+        L10n.string(rawValue)
     }
 }
 
@@ -43,6 +51,19 @@ enum BatchRenamePreviewStatusSnapshot: String, Equatable {
     case displayOnly = "DISPLAY_ONLY"
     case unchanged = "UNCHANGED"
     case externalChange = "EXTERNAL_CHANGE"
+
+    var displayName: String {
+        switch self {
+        case .ok: L10n.string("Ready")
+        case .error: L10n.string("Error")
+        case .nameConflict: L10n.string("Name conflict")
+        case .missing: L10n.string("Missing")
+        case .readOnly: L10n.string("Read-only")
+        case .displayOnly: L10n.string("Display only")
+        case .unchanged: L10n.string("Unchanged")
+        case .externalChange: L10n.string("External change")
+        }
+    }
 }
 
 struct BatchRenamePreviewItemSnapshot: Equatable, Identifiable {
@@ -79,6 +100,10 @@ enum BatchRenameResultStatusSnapshot: String, Equatable {
     case unchanged = "Unchanged"
     case skipped = "Skipped"
     case failed = "Failed"
+
+    var displayName: String {
+        L10n.string(rawValue)
+    }
 }
 
 struct BatchRenameItemResultSnapshot: Equatable, Identifiable {

@@ -12,7 +12,7 @@ struct CommandPaletteView: View {
     @State private var selectedTargetID: String?
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Command Palette", pageID: "command-palette") {
+        MainFileActionSheetContainer(title: L10n.string("Command Palette"), pageID: "command-palette") {
             commandSearchField
             commandStatus
             commandSections
@@ -64,7 +64,7 @@ struct CommandPaletteView: View {
                 .accessibilityIdentifier("command-palette-command-index-loading")
         }
         if let error = state.errorMapping {
-            Text("\(error.userMessage) \(error.suggestedAction)")
+            Text(L10n.format("commandPalette.error.detail", error.userMessage, error.suggestedAction))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("command-palette-command-index-error")
@@ -141,14 +141,16 @@ struct CommandPaletteView: View {
     }
 
     private var emptySmartListMessage: String {
-        smartLists.isEmpty ? "No Smart Lists saved." : "No Smart Lists match this search."
+        smartLists.isEmpty
+            ? L10n.string("No Smart Lists saved.")
+            : L10n.string("No Smart Lists match this search.")
     }
 
     private var noResultsMessage: String {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty
-            ? "No commands available."
-            : "No commands found for \"\(trimmed)\". Try \"import\", \"tag\", or \"settings\"."
+            ? L10n.string("No commands available.")
+            : L10n.format("commandPalette.noResults.query", trimmed)
     }
 
     private var executableTargets: [CommandTargetSnapshot] {
@@ -261,7 +263,7 @@ private struct CommandPaletteResultRow: View {
     }
 
     private var subtitleText: String {
-        target.effectiveDisabledReason ?? target.subtitle ?? target.action.rawValue
+        target.effectiveDisabledReason ?? target.subtitle ?? target.action.displayName
     }
 
     private var accessibilityLabel: String {
@@ -271,7 +273,9 @@ private struct CommandPaletteResultRow: View {
     }
 
     private var accessibilityHint: String {
-        target.isExecutable ? "Press Enter to run this command." : "Command is unavailable."
+        target.isExecutable
+            ? L10n.string("Press Enter to run this command.")
+            : L10n.string("Command is unavailable.")
     }
 
     private var systemImage: String {

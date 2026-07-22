@@ -98,8 +98,8 @@ extension RepositorySettingsModel {
         guard hasConnectedRepository else {
             loadedConfig = nil
             loadState = .failed(RepositorySettingsLoadError(
-                message: "No repository connected.",
-                recovery: "Connect Repository"
+                message: L10n.string("No repository connected."),
+                recovery: L10n.string("Connect Repository")
             ))
             return
         }
@@ -160,11 +160,12 @@ extension RepositorySettingsModel {
         clearRepositoryActionFeedback()
         do {
             try finderOpener.openRepositoryInFinder(repoPath: repoPath)
-            repositoryActionMessage = "Repository folder revealed in Finder."
+            repositoryActionMessage = L10n.string("Repository folder revealed in Finder.")
         } catch {
             repositoryActionError = RepositorySettingsPathActionError(
-                message: "Repository folder cannot be revealed.",
-                recovery: "Check that the repository folder still exists and Finder has permission to open it."
+                message: L10n.string("Repository folder cannot be revealed."),
+                recovery: L10n
+                    .string("Check that the repository folder still exists and Finder has permission to open it.")
             )
         }
     }
@@ -173,14 +174,14 @@ extension RepositorySettingsModel {
         clearRepositoryActionFeedback()
         do {
             try pathCopier.copyPath(repoPath: repoPath, relativePath: "")
-            repositoryActionMessage = "Repository path copied."
-            accessibilityAnnouncer.announce("Repository path copied.")
+            repositoryActionMessage = L10n.string("Repository path copied.")
+            accessibilityAnnouncer.announce(L10n.string("Repository path copied."))
         } catch {
             repositoryActionError = RepositorySettingsPathActionError(
-                message: "Repository path cannot be copied.",
-                recovery: "Copy the Location row manually after checking clipboard permissions."
+                message: L10n.string("Repository path cannot be copied."),
+                recovery: L10n.string("Copy the Location row manually after checking clipboard permissions.")
             )
-            accessibilityAnnouncer.announce("Repository path cannot be copied.")
+            accessibilityAnnouncer.announce(L10n.string("Repository path cannot be copied."))
         }
     }
 
@@ -220,7 +221,7 @@ extension RepositorySettingsModel {
                 relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
             )
             overviewActionError = nil
-            repositoryActionMessage = "Generated overview revealed in Finder."
+            repositoryActionMessage = L10n.string("Generated overview revealed in Finder.")
         } catch {
             overviewActionError = overviewError(for: error)
         }
@@ -237,7 +238,7 @@ extension RepositorySettingsModel {
         do {
             return try await coreVersionLoader.coreVersion()
         } catch {
-            return "Unknown"
+            return L10n.string("Unknown")
         }
     }
 
@@ -248,7 +249,7 @@ extension RepositorySettingsModel {
 
         return RepositorySettingsLoadError(
             message: error.localizedDescription,
-            recovery: "Retry status after the repository is available."
+            recovery: L10n.string("Retry status after the repository is available.")
         )
     }
 
@@ -259,7 +260,7 @@ extension RepositorySettingsModel {
 
         return RepositorySettingsSyncError(
             message: error.localizedDescription,
-            recovery: "Retry status after the repository can be written."
+            recovery: L10n.string("Retry status after the repository can be written.")
         )
     }
 
@@ -269,8 +270,9 @@ extension RepositorySettingsModel {
         }
 
         return RepositorySettingsOverviewActionError(
-            message: "Generated overview cannot be shown in Finder.",
-            recovery: "Open the repository folder and check .areamatrix/generated/ permissions before retrying."
+            message: L10n.string("Generated overview cannot be shown in Finder."),
+            recovery: L10n
+                .string("Open the repository folder and check .areamatrix/generated/ permissions before retrying.")
         )
     }
 
@@ -278,18 +280,19 @@ extension RepositorySettingsModel {
         switch error {
         case .fileMissing:
             RepositorySettingsOverviewActionError(
-                message: "Generated overview cannot be shown in Finder.",
-                recovery: "Retry after AreaMatrix regenerates .areamatrix/generated/root.md."
+                message: L10n.string("Generated overview cannot be shown in Finder."),
+                recovery: L10n.string("Retry after AreaMatrix regenerates .areamatrix/generated/root.md.")
             )
         case .unsafeRelativePath:
             RepositorySettingsOverviewActionError(
-                message: "Generated overview path is not safe to open.",
-                recovery: "Reload repository settings before retrying."
+                message: L10n.string("Generated overview path is not safe to open."),
+                recovery: L10n.string("Reload repository settings before retrying.")
             )
         case .openRejected:
             RepositorySettingsOverviewActionError(
-                message: "Finder rejected the generated overview request.",
-                recovery: "Open the repository folder and check .areamatrix/generated/ permissions before retrying."
+                message: L10n.string("Finder rejected the generated overview request."),
+                recovery: L10n
+                    .string("Open the repository folder and check .areamatrix/generated/ permissions before retrying.")
             )
         }
     }
@@ -309,8 +312,8 @@ extension RepositorySettingsModel {
         }
 
         return RepositorySettingsDiagnosticsError(
-            message: "Diagnostics could not be exported.",
-            recovery: "Retry after the repository is available."
+            message: L10n.string("Diagnostics could not be exported."),
+            recovery: L10n.string("Retry after the repository is available.")
         )
     }
 }

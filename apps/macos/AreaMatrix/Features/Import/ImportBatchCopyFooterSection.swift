@@ -37,7 +37,7 @@ struct ImportBatchCopyFooterSection: View {
 
     private var importButtonHelp: String {
         if batchPreviewModel.status.isLoading {
-            return "Preparing preview..."
+            return L10n.string("Preparing preview...")
         }
         return batchPreviewModel.importDisabledReason ?? batchImportModel.importDisabledReason ?? ""
     }
@@ -137,9 +137,15 @@ struct ImportBatchSummarySection: View {
                     LabeledContent("总大小", value: totalSizeDescription)
                 }
                 LabeledContent("来源", value: sourceLabel)
-                LabeledContent("预计重复", value: "\(duplicateCount) 个")
-                LabeledContent("重名冲突", value: "\(nameConflictCount) 个")
-                LabeledContent("iCloud", value: "\(iCloudPlaceholderCount) 个")
+                LabeledContent("预计重复", value: L10n.plural("import.batch.duplicate-count", count: duplicateCount))
+                LabeledContent(
+                    "重名冲突",
+                    value: L10n.plural("import.batch.name-conflict-count", count: nameConflictCount)
+                )
+                LabeledContent(
+                    "iCloud",
+                    value: L10n.plural("import.batch.icloud-placeholder-count", count: iCloudPlaceholderCount)
+                )
             }
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -157,30 +163,30 @@ struct ImportConflictBatchUndoStateView: View {
         case .idle:
             EmptyView()
         case let .loading(token):
-            undoStatus("Loading Undo action \(token)...")
+            undoStatus(L10n.format("import.undo.loading-action", token))
         case let .ready(action):
             HStack(spacing: 8) {
                 undoStatus(action.summary)
                 Button("Undo", action: onUndo)
                     .keyboardShortcut("z", modifiers: [.command])
             }
-            .accessibilityLabel("Undo available. \(action.summary)")
+            .accessibilityLabel(L10n.format("import.undo.available", action.summary))
         case let .disabled(action, reason):
-            undoStatus("\(action.summary) \(reason)")
+            undoStatus(L10n.format("import.undo.unavailable", action.summary, reason))
         case let .unavailable(reason):
             undoStatus(reason)
         case let .undoing(action):
             HStack(spacing: 8) {
                 ProgressView()
                     .controlSize(.small)
-                undoStatus("Undoing \(action.summary)")
+                undoStatus(L10n.format("import.undo.in-progress", action.summary))
             }
         case let .undone(result):
             HStack(spacing: 8) {
                 undoStatus(result.summary)
                 Button("Dismiss", action: onDismiss)
             }
-            .accessibilityLabel("Undo completed. \(result.summary)")
+            .accessibilityLabel(L10n.format("import.undo.completed", result.summary))
         case let .failed(mapping, previous):
             HStack(spacing: 8) {
                 undoStatus(mapping.userMessage)
@@ -189,7 +195,7 @@ struct ImportConflictBatchUndoStateView: View {
                     Button("Dismiss", action: onDismiss)
                 }
             }
-            .accessibilityLabel("Undo failed. \(mapping.userMessage)")
+            .accessibilityLabel(L10n.format("import.undo.failed", mapping.userMessage))
         }
     }
 

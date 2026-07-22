@@ -44,17 +44,21 @@ extension MainRepositoryContentView {
     private func mainRepositorySearchBannerText(_ request: SearchQueryRequestSnapshot) -> String {
         [
             fileListModel.searchBannerContextText(for: request),
-            "范围：\(request.scope.bannerDisplayName)",
-            "模式：\(request.mode.displayName)",
-            "结果：\(mainRepositorySearchResultCountText)",
-            "过滤：\(searchActiveFilterCount)"
+            L10n.format("search.banner.scope", request.scope.bannerDisplayName),
+            L10n.format("search.banner.mode", request.mode.displayName),
+            L10n.format("search.banner.results", mainRepositorySearchResultCountText),
+            L10n.format("search.banner.filters", searchActiveFilterCount)
         ].joined(separator: "  ")
     }
 
     private var mainRepositorySearchResultCountText: String {
         guard let page = fileListModel.searchState.page else { return "-" }
         if let semanticPage = page.semanticPage {
-            return "\(semanticPage.semanticTotalCount) semantic / \(semanticPage.normalTotalCount) normal"
+            return L10n.format(
+                "search.banner.semantic-normal-count",
+                semanticPage.semanticTotalCount,
+                semanticPage.normalTotalCount
+            )
         }
         return "\(page.totalCount)"
     }
@@ -91,7 +95,7 @@ extension MainRepositoryContentView {
     @ViewBuilder
     private var mainRepositorySearchBannerDetail: some View {
         if let error = fileListModel.searchState.errorMapping {
-            Text("Search failed: \(error.userMessage)")
+            Text(L10n.format("search.failed", error.userMessage))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if let semanticPage = fileListModel.searchState.page?.semanticPage {
@@ -117,7 +121,7 @@ extension MainRepositoryContentView {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if let diagnostic = fileListModel.searchState.page?.diagnostics.first {
-            Text("\(diagnostic.severityDisplayName): \(diagnostic.message)")
+            Text(L10n.format("search.diagnostic.summary", diagnostic.severityDisplayName, diagnostic.message))
                 .font(.callout)
                 .foregroundStyle(diagnostic.isError ? Color.red : Color.secondary)
                 .accessibilityHint(diagnostic.problemAccessibilityHint)
@@ -129,13 +133,18 @@ extension MainRepositoryContentView {
     @ViewBuilder
     private func mainRepositorySearchMatchSummary(_ result: SearchFileResultSnapshot) -> some View {
         if let noteSnippet = result.noteSnippet {
-            Text("Note: \(noteSnippet)")
+            Text(L10n.format("mainList.searchMatch.note", noteSnippet))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if let match = result.matches.first {
-            Text("\(match.kindDisplayName): \(match.fieldDisplayName) - \(match.snippet)")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            Text(L10n.format(
+                "mainList.searchMatch.summary",
+                match.kindDisplayName,
+                match.fieldDisplayName,
+                match.snippet
+            ))
+            .font(.callout)
+            .foregroundStyle(.secondary)
         }
     }
 }

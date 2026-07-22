@@ -78,7 +78,7 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "AreaMatrix 没有写入该位置的权限")
+        XCTAssertEqual(model.repositoryPathError, "AreaMatrix does not have permission to write to this location")
         XCTAssertFalse(model.canContinueFromValidatePath)
         XCTAssertNil(model.choosePathAction)
     }

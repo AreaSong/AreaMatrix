@@ -146,6 +146,6 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
 
         XCTAssertEqual(model.iCloudPlaceholderCount, 2)
-        XCTAssertEqual(model.importDisabledReason, "没有可导入的批量项目")
+        XCTAssertEqual(model.importDisabledReason, "There are no batch items to import")
     }
 }

@@ -43,7 +43,7 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
         do {
             guard let cursor = try await cursorStore.getFSEventCursor(repoPath: normalizedPath) else {
                 guard isCurrent(generation: generation, repoPath: normalizedPath) else { return }
-                requestRescan(repoPath: normalizedPath, reason: "No filesystem event cursor is available.")
+                requestRescan(repoPath: normalizedPath, reason: L10n.string("external-sync.cursorUnavailable"))
                 return
             }
             guard isCurrent(generation: generation, repoPath: normalizedPath) else { return }
@@ -63,7 +63,7 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
                 kind: .startupFailed,
                 repoPath: normalizedPath,
                 resumeEventID: nil,
-                reason: "Filesystem watcher could not start: \(error.localizedDescription)"
+                reason: L10n.format("external-sync.watcherStartFailed", error.localizedDescription)
             )
         }
     }
@@ -91,7 +91,7 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
                 kind: .rootChanged,
                 repoPath: repoPath,
                 resumeEventID: nil,
-                reason: "The repository root moved, was renamed, or became unavailable."
+                reason: L10n.string("external-sync.rootUnavailable")
             )
             return
         }
@@ -100,7 +100,7 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
             | FSEventStreamEventFlags(kFSEventStreamEventFlagKernelDropped)
             | FSEventStreamEventFlags(kFSEventStreamEventFlagEventIdsWrapped)
         if events.contains(where: { $0.flags & replayInvalidatingFlags != 0 }) {
-            requestRescan(repoPath: repoPath, reason: "macOS can no longer replay the complete event history.")
+            requestRescan(repoPath: repoPath, reason: L10n.string("external-sync.historyUnavailable"))
             return
         }
 
@@ -408,8 +408,8 @@ private enum MainExternalWatcherStartError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .creationFailed: "FSEventStream creation failed."
-        case .startFailed: "FSEventStream start failed."
+        case .creationFailed: L10n.string("FSEventStream creation failed.")
+        case .startFailed: L10n.string("FSEventStream start failed.")
         }
     }
 }

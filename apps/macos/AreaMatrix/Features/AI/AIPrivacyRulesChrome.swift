@@ -38,12 +38,12 @@ struct AIPrivacyRulesRemoteGateSection: View {
     let onConfigureRemoteAI: () -> Void
 
     var body: some View {
-        AdvancedSettingsSection(title: "Remote AI privacy gate") {
-            AdvancedSettingsKeyValueRow(label: "Status", value: remoteGateStatus)
-            AdvancedSettingsKeyValueRow(label: "Remote provider", value: providerStatusText)
-            AdvancedSettingsKeyValueRow(label: "Provider verified", value: verifiedStatusText)
-            AdvancedSettingsKeyValueRow(label: "Remote provider enabled", value: enabledStatusText)
-            AdvancedSettingsKeyValueRow(label: "Feature scope", value: featureScopeText)
+        AdvancedSettingsSection(title: L10n.string("Remote AI privacy gate")) {
+            AdvancedSettingsKeyValueRow(label: L10n.string("Status"), value: remoteGateStatus)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Remote provider"), value: providerStatusText)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Provider verified"), value: verifiedStatusText)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Remote provider enabled"), value: enabledStatusText)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Feature scope"), value: featureScopeText)
             Text(
                 "This is a privacy gate, not the provider disable page. Blocking here does not delete " +
                     "Keychain credentials, provider configuration, local AI settings, summaries, tags, or call logs."

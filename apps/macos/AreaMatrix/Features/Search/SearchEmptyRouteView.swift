@@ -63,7 +63,7 @@ struct SearchEmptyRouteView: View {
                 Button("Search all file types", action: onSearchAllFileTypes)
             }
             ForEach(SearchFilterChips.items(for: request.filters)) { chip in
-                Button("Remove \(chip.label)") {
+                Button(L10n.format("search.filter.remove", chip.label)) {
                     onRemoveFilter(chip.kind)
                 }
             }
@@ -75,15 +75,15 @@ struct SearchEmptyRouteView: View {
 
     private var reasonText: String {
         if indexStatus == .indexing {
-            return "Search is still indexing. Results may appear in a moment."
+            return L10n.string("Search is still indexing. Results may appear in a moment.")
         }
         if !request.query.isEmpty, request.filters.activeFilterCount > 0 {
-            return "No files match this query and \(activeFilterText)."
+            return L10n.format("search.empty.queryAndFilters", activeFilterText)
         }
         if !request.query.isEmpty {
-            return "No files match \"\(request.query)\"."
+            return L10n.format("search.empty.query", request.query)
         }
-        return "No files match \(activeFilterText)."
+        return L10n.format("search.empty.filters", activeFilterText)
     }
 
     private var shouldShowFilterShortcuts: Bool {
@@ -91,16 +91,16 @@ struct SearchEmptyRouteView: View {
     }
 
     private var querySummary: String {
-        request.query.isEmpty ? "None" : request.query
+        request.query.isEmpty ? L10n.string("None") : request.query
     }
 
     private var filterSummary: String {
         let chips = SearchFilterChips.items(for: request.filters).map(\.label)
-        return chips.isEmpty ? "None" : chips.joined(separator: ", ")
+        return chips.isEmpty ? L10n.string("None") : chips.joined(separator: ", ")
     }
 
     private var activeFilterText: String {
         let count = request.filters.activeFilterCount
-        return count == 1 ? "1 active filter" : "\(count) active filters"
+        return L10n.plural("search.activeFilterCount", count: count)
     }
 }

@@ -57,11 +57,11 @@ struct StartupRecoveryErrorRecoveryView: View {
 
     private func recoveryReportContent(_ report: RecoveryReportSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("启动恢复已完成：\(report.startupRecoverySummaryText)")
+            Text(L10n.format("onboarding.recovery.completedSummary", report.startupRecoverySummaryText))
                 .font(.callout)
                 .accessibilityIdentifier("startup-recovery-startup-recovery-core-recovery-report")
             if !report.warnings.isEmpty {
-                Text("Warnings: \(report.warnings.count)")
+                Text(L10n.plural("startupRecovery.warningCount", count: report.warnings.count))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 ForEach(report.warnings.prefix(3), id: \.self) { warning in
@@ -74,7 +74,7 @@ struct StartupRecoveryErrorRecoveryView: View {
     }
 
     var retryButtonTitle: String {
-        isRetrying ? "Retrying..." : "Retry startup recovery"
+        isRetrying ? L10n.string("Retrying...") : L10n.string("Retry startup recovery")
     }
 
     var retryButtonIsDisabled: Bool {
@@ -84,11 +84,11 @@ struct StartupRecoveryErrorRecoveryView: View {
     private var title: String {
         switch state {
         case .checking:
-            "Startup recovery"
+            L10n.string("Startup recovery")
         case .completed:
-            "Startup recovery complete"
+            L10n.string("Startup recovery complete")
         case .failed:
-            "Startup recovery failed"
+            L10n.string("Startup recovery failed")
         }
     }
 
@@ -138,11 +138,11 @@ struct ErrorRecoveryMappedErrorView: View {
 
     private var mappingHeader: some View {
         HStack(spacing: 8) {
-            Label(mapping.kind.rawValue, systemImage: iconName)
+            Label(mapping.kind.displayName, systemImage: iconName)
                 .foregroundStyle(tint)
-            Text("Severity: \(mapping.severity.rawValue)")
+            Text(L10n.format("onboarding.recovery.severity", mapping.severity.displayName))
                 .foregroundStyle(.secondary)
-            Text("Recoverability: \(mapping.recoverability.rawValue)")
+            Text(L10n.format("onboarding.recovery.recoverability", mapping.recoverability.displayName))
                 .foregroundStyle(.secondary)
         }
         .font(.callout)
@@ -158,11 +158,12 @@ struct ErrorRecoveryMappedErrorView: View {
     }
 
     private var mappedActionText: String {
-        mapping.recoveryText(fallback: "Retry the failed action or collect diagnostics from the source page.")
+        mapping
+            .recoveryText(fallback: L10n.string("Retry the failed action or collect diagnostics from the source page."))
     }
 
     private var rawContextText: String {
-        mapping.rawContext.isEmpty ? "No technical context was provided by Core." : mapping.rawContext
+        mapping.rawContext.isEmpty ? L10n.string("onboarding.recovery.no-technical-context") : mapping.rawContext
     }
 
     private var iconName: String {

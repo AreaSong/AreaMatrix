@@ -8,6 +8,7 @@ use std::{
 
 use self::atomic_write::{write_plans_with_rollback, WritePlan};
 use crate::{
+    config,
     db::{self, OverviewChangeRow, OverviewFileRow, OverviewNodeSummary},
     CoreError, CoreResult, FileEntry, OverviewOutput,
 };
@@ -46,7 +47,7 @@ pub(crate) fn regenerate_after_import(repo: &Path, entry: &FileEntry) -> CoreRes
 pub(crate) fn regenerate_for_node(repo: &Path, node_slug: &str) -> CoreResult<()> {
     validate_node_slug(node_slug)?;
     let config = load_config(repo)?;
-    let locale = config.locale.as_str();
+    let locale = config::resolve_content_locale(&config.locale);
     let files = db::list_overview_node_files(repo, node_slug, NODE_OVERVIEW_LIMIT)?;
     let recent =
         db::list_overview_recent_changes(repo, Some(node_slug), NODE_RECENT_DAYS, RECENT_LIMIT)?;

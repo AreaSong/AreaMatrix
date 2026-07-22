@@ -10,13 +10,13 @@ enum MainDetailNoteSaveStatus: Equatable {
     var title: String {
         switch self {
         case .saved:
-            "Saved"
+            L10n.string("Saved")
         case .unsaved:
-            "Unsaved"
+            L10n.string("Unsaved")
         case .saving:
-            "Saving..."
+            L10n.string("Saving...")
         case .failed:
-            "Unsaved"
+            L10n.string("Unsaved")
         }
     }
 
@@ -35,13 +35,13 @@ enum MainDetailNoteWriteBlock: Equatable {
     var message: String {
         switch self {
         case .repoReadOnly:
-            "Repository is read-only. Note editing is disabled."
+            L10n.string("Repository is read-only. Note editing is disabled.")
         case .fileMissing:
-            "文件缺失时暂不能保存笔记"
+            L10n.string("文件缺失时暂不能保存笔记")
         case .importLocked:
-            "This file is locked by an import. Note editing is disabled."
+            L10n.string("This file is locked by an import. Note editing is disabled.")
         case .listLoading:
-            "Current list is loading. Note editing is temporarily disabled."
+            L10n.string("Current list is loading. Note editing is temporarily disabled.")
         }
     }
 }

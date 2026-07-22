@@ -65,11 +65,15 @@ struct DetailExternalCreateSyncStatusView: View {
         fileID: Int64,
         result: SyncResultSnapshot
     ) -> String {
-        """
-        \(event.relativePath) · file #\(fileID) · created \(result.detectedCreates) · \
-        renamed \(result.detectedRenames) · deleted \(result.detectedDeletes) · \
-        modified \(result.detectedModifies)
-        """
+        L10n.format(
+            "external-sync.detail.summary",
+            event.relativePath,
+            fileID,
+            result.detectedCreates,
+            result.detectedRenames,
+            result.detectedDeletes,
+            result.detectedModifies
+        )
     }
 }
 
@@ -84,13 +88,13 @@ enum TagSuggestionEditRowStatus: Equatable {
 
     var label: String {
         switch self {
-        case .ready: "Ready"
-        case .duplicate: "Duplicate"
-        case .invalid: "Invalid"
-        case .alreadyAdded: "Already added"
-        case .blocked: "Blocked"
-        case .failed: "Failed"
-        case .applied: "Applied"
+        case .ready: L10n.string("Ready")
+        case .duplicate: L10n.string("Duplicate")
+        case .invalid: L10n.string("Invalid")
+        case .alreadyAdded: L10n.string("Already added")
+        case .blocked: L10n.string("Blocked")
+        case .failed: L10n.string("Failed")
+        case .applied: L10n.string("Applied")
         }
     }
 

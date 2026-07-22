@@ -112,9 +112,9 @@ extension RepositorySettingsPane {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: String(localized: "settings.page.repository"), subtitle: model.repoPath) {
+        SettingsPageHeader(title: L10n.string("settings.page.repository"), subtitle: model.repoPath) {
             if model.isLoading {
-                SettingsHeaderProgressIndicator(label: "Checking repository configuration")
+                SettingsHeaderProgressIndicator(label: L10n.string("Checking repository configuration"))
             } else {
                 Button("Retry status") {
                     Task {
@@ -138,12 +138,12 @@ extension RepositorySettingsPane {
     }
 
     private var loadingContent: some View {
-        SettingsPageLoadingContent(title: String(localized: "settings.loading.repository"))
+        SettingsPageLoadingContent(title: L10n.string("settings.loading.repository"))
     }
 
     private func loadErrorContent(_ error: RepositorySettingsLoadError) -> some View {
         SettingsPageErrorContent(
-            title: String(localized: "settings.error.loadRepository"),
+            title: L10n.string("settings.error.loadRepository"),
             message: error.message,
             recovery: error.recovery
         ) {
@@ -220,9 +220,13 @@ extension RepositorySettingsPane {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            SettingsProgressBanner(title: "Preparing diagnostics...")
+            SettingsProgressBanner(title: L10n.string("Preparing diagnostics..."))
         case let .collected(snapshot):
-            SettingsStatusBanner(title: "Diagnostics exported", systemImage: "checkmark.circle", tint: .green) {
+            SettingsStatusBanner(
+                title: L10n.string("Diagnostics exported"),
+                systemImage: "checkmark.circle",
+                tint: .green
+            ) {
                 Text(snapshot.snapshotPath)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -238,7 +242,9 @@ extension RepositorySettingsPane {
     }
 
     private var diagnosticsButtonTitle: String {
-        model.diagnosticsState.isCollecting ? "Exporting diagnostics..." : "Export diagnostics..."
+        model.diagnosticsState.isCollecting
+            ? L10n.string("Exporting diagnostics...")
+            : L10n.string("Export diagnostics...")
     }
 
     private var diagnosticsConfirmationBinding: Binding<Bool> {

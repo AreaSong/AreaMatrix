@@ -193,9 +193,9 @@ enum RedoLatestEntryPoint: Equatable {
 
     static let noRedoMapping = CoreErrorMappingSnapshot(
         kind: .expiredAction,
-        userMessage: "No redoable action is available.",
+        userMessage: L10n.string("No redoable action is available."),
         severity: .medium,
-        suggestedAction: "Undo an AreaMatrix action before using Redo latest.",
+        suggestedAction: L10n.string("Undo an AreaMatrix action before using Redo latest."),
         recoverability: .refreshRequired,
         rawContext: "redo-action-log redo-action-log-core redo-action-log"
     )

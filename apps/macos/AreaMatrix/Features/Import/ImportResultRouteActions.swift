@@ -10,14 +10,14 @@ extension ImportResultRouteState {
     }
 
     var retryButtonTitle: String {
-        isRetryingFailedItems ? "Retrying..." : "Retry Failed"
+        isRetryingFailedItems ? L10n.string("Retrying...") : L10n.string("Retry Failed")
     }
 
     var exportDetailsText: String {
         var lines = [
-            "AreaMatrix Import Result",
+            L10n.string("AreaMatrix Import Result"),
             summaryText,
-            "No user file contents are included.",
+            L10n.string("No user file contents are included."),
             ""
         ]
         lines.append(contentsOf: items.map(exportLine(for:)))
@@ -26,11 +26,12 @@ extension ImportResultRouteState {
 
     private func exportLine(for item: Item) -> String {
         [
-            item.status.rawValue,
+            item.status.displayName,
             item.sanitizedTargetPath,
             item.reason,
-            "source \(item.sanitizedSourcePath)",
-            item.existingRelativePath.map { "existing \(Self.sanitizedPathDisplay($0))" }
+            L10n.format("import.result.export.source", item.sanitizedSourcePath),
+            item.existingRelativePath
+                .map { L10n.format("import.result.export.existing", Self.sanitizedPathDisplay($0)) }
         ].compactMap { $0 }.joined(separator: " | ")
     }
 

@@ -176,7 +176,7 @@ struct MainRepositoryDetailLocateButton: View {
 
     var body: some View {
         if let file, MainRepositoryDetailFileActionPolicy.shouldShowLocate(for: file) {
-            Button(state.isBusy(for: file.id) ? "Locating…" : "Locate…") {
+            Button(state.isBusy(for: file.id) ? L10n.string("Locating...") : L10n.string("Locate...")) {
                 onLocateMissingFile(file.id)
             }
             .disabled(!canPerformWriteAction(file.id) || state.isBusy(for: file.id))

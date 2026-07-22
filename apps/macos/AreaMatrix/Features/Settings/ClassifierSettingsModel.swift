@@ -113,13 +113,13 @@ extension ClassifierSettingsModel {
     var validationStatusLabel: String {
         switch validationState {
         case .idle:
-            "Not validated"
+            L10n.string("settings.classifier.validation.notValidated")
         case .validating:
-            "Validating..."
+            L10n.string("settings.classifier.validation.validating")
         case .passed:
-            "Validated"
+            L10n.string("settings.classifier.validation.validated")
         case .failed:
-            "Failed"
+            L10n.string("settings.classifier.validation.failed")
         }
     }
 
@@ -163,13 +163,13 @@ extension ClassifierSettingsModel {
                 repoPath: repoPath,
                 relativePath: ClassifierSettingsPaths.classifierRelativePath
             )
-            accessibilityAnnouncer.announce("classifier.yaml opened.")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.opened"))
         } catch {
             fileActionError = ClassifierSettingsFileActionError(
-                message: "无法打开分类规则文件",
-                recovery: "Use Reveal in Finder or Create default to restore classifier.yaml."
+                message: L10n.string("settings.classifier.error.open"),
+                recovery: L10n.string("settings.classifier.recovery.open")
             )
-            accessibilityAnnouncer.announce("无法打开分类规则文件")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.open"))
         }
     }
 
@@ -188,13 +188,13 @@ extension ClassifierSettingsModel {
             } else {
                 try finderOpener.openRepositoryInFinder(repoPath: repoPath)
             }
-            accessibilityAnnouncer.announce("classifier.yaml revealed in Finder.")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.revealed"))
         } catch {
             fileActionError = ClassifierSettingsFileActionError(
-                message: "无法在 Finder 中定位分类规则文件",
-                recovery: "Check that the repository folder still exists and Finder has permission."
+                message: L10n.string("settings.classifier.error.reveal"),
+                recovery: L10n.string("settings.classifier.recovery.reveal")
             )
-            accessibilityAnnouncer.announce("无法在 Finder 中定位分类规则文件")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.reveal"))
         }
     }
 
@@ -206,14 +206,14 @@ extension ClassifierSettingsModel {
         clearFileActionState()
         do {
             try classifierRulesManager.createDefaultClassifier(repoPath: repoPath)
-            accessibilityAnnouncer.announce("默认 classifier.yaml 已创建")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.defaultCreated"))
             _ = await validateClassifierRules()
         } catch {
             fileActionError = ClassifierSettingsFileActionError(
-                message: "无法创建默认分类规则文件",
-                recovery: "Check .areamatrix write permission and try again."
+                message: L10n.string("settings.classifier.error.createDefault"),
+                recovery: L10n.string("settings.classifier.recovery.createDefault")
             )
-            accessibilityAnnouncer.announce("无法创建默认分类规则文件")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.createDefault"))
         }
     }
 
@@ -248,10 +248,10 @@ extension ClassifierSettingsModel {
 
         guard classifierFileExists else {
             validationState = .failed(ClassifierSettingsValidationError(
-                message: "分类规则文件不存在",
-                recovery: "Use Create default or Reveal in Finder to restore classifier.yaml."
+                message: L10n.string("settings.classifier.error.missingFile"),
+                recovery: L10n.string("settings.classifier.recovery.missingFile")
             ))
-            accessibilityAnnouncer.announce("分类规则文件不存在")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.missingFile"))
             return false
         }
 
@@ -275,12 +275,12 @@ extension ClassifierSettingsModel {
             refreshLastValidBackupAvailability()
             publishSavedCategoryIfNeeded()
             validationState = .passed
-            accessibilityAnnouncer.announce("分类规则校验通过")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.validated"))
             return true
         } catch {
             validationState = .failed(ClassifierSettingsValidationError(
-                message: "分类规则已通过校验，但无法保存 last valid backup",
-                recovery: "Check .areamatrix write permission and run Validate again."
+                message: L10n.string("settings.classifier.error.backup"),
+                recovery: L10n.string("settings.classifier.recovery.backup")
             ))
             accessibilityAnnouncer.announce(validationStateAnnouncement)
             return false
@@ -303,13 +303,13 @@ extension ClassifierSettingsModel {
         clearFileActionState()
         do {
             try classifierRulesManager.restoreLastValidBackup(repoPath: repoPath)
-            accessibilityAnnouncer.announce("已恢复上次有效分类规则")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.reverted"))
         } catch {
             validationState = .failed(ClassifierSettingsValidationError(
-                message: "无法恢复上次有效分类规则",
-                recovery: "Validate a working classifier.yaml before trying Revert again."
+                message: L10n.string("settings.classifier.error.revert"),
+                recovery: L10n.string("settings.classifier.recovery.revert")
             ))
-            accessibilityAnnouncer.announce("无法恢复上次有效分类规则")
+            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.revert"))
             return
         }
 
@@ -370,7 +370,7 @@ extension ClassifierSettingsModel {
             return error.message
         }
 
-        return "分类规则校验失败"
+        return L10n.string("settings.classifier.error.validationFailed")
     }
 
     private func clearFileActionState() {

@@ -44,7 +44,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         writer.assertNoSavedRepoPaths()
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
         XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
-        XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
+        XCTAssertEqual(state.treeStatusText, "Directory loaded: 1 file")
     }
 
     @MainActor
@@ -73,6 +73,7 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
 
     func testMainWindowIntegrationUsesRealCoreBridgeBoundariesForBoundCapabilities() {
         let requiredBoundaries: Set<CoreBridgeBoundary> = [
+            .setAppInterfaceLocale,
             .validateInitializedRepoPath,
             .recoverOnStartup,
             .getLatestScanSession,

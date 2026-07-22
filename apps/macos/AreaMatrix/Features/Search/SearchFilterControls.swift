@@ -20,7 +20,7 @@ struct SearchFacetPicker: View {
                 }
             }
             .disabled(options.isEmpty)
-            .accessibilityLabel("\(title) filter")
+            .accessibilityLabel(L10n.format("search.filter.accessibilityLabel", title))
             if options.isEmpty {
                 Text(isLoading ? "Loading..." : emptyMessage)
                     .font(.caption)
@@ -54,7 +54,7 @@ struct SearchDateFilterSection: View {
             }
             .font(.callout)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(title) date filter, \(dateSummary)")
+            .accessibilityLabel(L10n.format("search.dateFilter.accessibilityLabel", title, dateSummary))
             if field.hasCustomRange(in: filters) {
                 customDatePickers
             }
@@ -62,7 +62,11 @@ struct SearchDateFilterSection: View {
                 Text(validationError)
                     .font(.caption)
                     .foregroundStyle(.red)
-                    .accessibilityLabel("\(title) date error, \(validationError)")
+                    .accessibilityLabel(L10n.format(
+                        "search.dateFilter.error.accessibilityLabel",
+                        title,
+                        validationError
+                    ))
             }
         }
     }
@@ -243,7 +247,7 @@ struct SearchTagFacetPicker: View {
         }
         .font(.caption)
         .foregroundStyle(.secondary)
-        .accessibilityLabel("Could not load tags. \(error.userMessage)")
+        .accessibilityLabel(L10n.format("search.tags.loadError.accessibilityLabel", error.userMessage))
     }
 
     private var tagEmptyState: some View {
@@ -318,7 +322,7 @@ extension MainSearchFacetsState {
 
 extension SearchFacetCountSnapshot {
     var displayTitle: String {
-        disabled ? "\(label) (0)" : "\(label) (\(count))"
+        L10n.format("search.facet.count", label, disabled ? 0 : count)
     }
 }
 
@@ -336,6 +340,6 @@ extension SearchStorageModeFacetCountSnapshot {
     }
 
     var displayTitle: String {
-        disabled ? "\(label) (0)" : "\(label) (\(count))"
+        L10n.format("search.facet.count", label, disabled ? 0 : count)
     }
 }

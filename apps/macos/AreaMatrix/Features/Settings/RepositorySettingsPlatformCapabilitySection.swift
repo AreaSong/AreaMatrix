@@ -21,7 +21,7 @@ struct RepoPlatformCapabilitySection: View {
     private var content: some View {
         switch state {
         case .loading:
-            SettingsInlineProgressStatus(title: "Loading platform capabilities...")
+            SettingsInlineProgressStatus(title: L10n.string("Loading platform capabilities..."))
         case let .loaded(capabilities):
             capabilityRows(capabilities.repositorySettingsRows)
         case let .failed(capabilities, error):
@@ -51,7 +51,7 @@ private struct RepositorySettingsCapabilityRowView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(row.label)
                         .font(.callout.weight(.medium))
-                    Text(row.support.status.rawValue)
+                    Text(row.support.status.displayName)
                         .font(.caption)
                         .foregroundStyle(row.support.status.tint)
                 }
@@ -71,7 +71,7 @@ private struct RepositorySettingsCapabilityRowView: View {
             return reason
         }
         if row.support.uiEnabled {
-            return row.support.requiresPermission ? "Requires platform permission." : nil
+            return row.support.requiresPermission ? L10n.string("Requires platform permission.") : nil
         }
         return row.unavailableEffect
     }

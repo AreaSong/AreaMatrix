@@ -98,7 +98,7 @@ struct RepairProgressView: View {
                             Image(systemName: "circle")
                                 .foregroundStyle(.secondary)
                         }
-                        Text(step.rawValue)
+                        Text(step.displayName)
                             .font(.callout)
                             .foregroundStyle(step == currentStep ? .primary : .secondary)
                     }

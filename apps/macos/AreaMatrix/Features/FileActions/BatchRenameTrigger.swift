@@ -26,10 +26,13 @@ struct UndoPreviewPane: View {
 
     private func undoDetails(_ action: UndoActionRecordSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Action: \(displayKind(action.kind))", systemImage: "clock.arrow.circlepath")
-                .font(.headline)
-            Text("Affected files: \(action.affectedCount)")
-            Text("Undo result: \(action.summary)")
+            Label(
+                L10n.format("file-actions.undo.action-kind", displayKind(action.kind)),
+                systemImage: "clock.arrow.circlepath"
+            )
+            .font(.headline)
+            Text(L10n.plural("file-actions.undo.affected-files", count: Int(action.affectedCount)))
+            Text(L10n.format("file-actions.undo.result", action.summary))
                 .foregroundStyle(.secondary)
             fileSamples(action.affectedFileNames)
             if !isLatest {
@@ -51,8 +54,11 @@ struct UndoPreviewPane: View {
                 undoActions: redoSourceUndoAction.map { [$0] } ?? []
             )
             VStack(alignment: .leading, spacing: 8) {
-                Label("Redo: \(displayKind(redoAction.kind))", systemImage: "arrow.uturn.forward.circle")
-                    .font(.headline)
+                Label(
+                    L10n.format("file-actions.redo.action-kind", displayKind(redoAction.kind)),
+                    systemImage: "arrow.uturn.forward.circle"
+                )
+                .font(.headline)
                 Text(redoAction.summary)
                     .foregroundStyle(.secondary)
                 Text(source.sourceText)
@@ -143,13 +149,17 @@ private struct UndoHistoryRow: View {
     private var statusText: String {
         switch action.status {
         case .pending:
-            action.canUndo ? "Available" : "Blocked"
+            if action.canUndo {
+                L10n.string("Available")
+            } else {
+                L10n.string("Blocked")
+            }
         case .blocked:
-            "Blocked"
+            L10n.string("Blocked")
         case .expired:
-            "Expired"
+            L10n.string("Expired")
         case .executed:
-            "Executed"
+            L10n.string("Executed")
         }
     }
 
@@ -211,7 +221,7 @@ struct BatchAITagSuggestionTrigger: View {
             actions.load(selectedFiles)
         }
         .disabled(openDisabledReason != nil)
-        .help(openDisabledReason ?? "Review AI suggested tags for selected files")
+        .help(openDisabledReason ?? L10n.string("Review AI suggested tags for selected files"))
         .sheet(isPresented: $isPresented) {
             BatchAITagSuggestionSheet(
                 repoPath: repoPath,
@@ -226,7 +236,7 @@ struct BatchAITagSuggestionTrigger: View {
     }
 
     private var openDisabledReason: String? {
-        if selectedCount < 2 { return "Select at least two files" }
+        if selectedCount < 2 { return L10n.string("Select at least two files") }
         return disabledReason
     }
 }
@@ -243,7 +253,7 @@ struct BatchAITagSuggestionSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Review suggested tags for \(selectedFiles.count) files")
+            Text(L10n.plural("file-actions.ai-tag-suggestion.review-files", count: selectedFiles.count))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
             Text("Review before adding tags. AI suggestions are not applied until you accept them.")

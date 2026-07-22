@@ -144,7 +144,7 @@ enum BatchTagUndoAction {
             undoStore: undoStore,
             errorMapper: errorMapper
         )
-        return loadResult.toastState ?? .unavailable(reason: "Undo action is no longer available.")
+        return loadResult.toastState ?? .unavailable(reason: L10n.string("Undo action is no longer available."))
     }
 
     static func refreshLatestToastState(
@@ -172,7 +172,7 @@ enum BatchTagUndoAction {
         }
         guard let token = normalizedToken(report.undoToken) else {
             return BatchAddTagsSheetCompletion(
-                undoState: .unavailable(reason: "Undo is unavailable for this result."),
+                undoState: .unavailable(reason: L10n.string("Undo is unavailable for this result.")),
                 closesSheet: true
             )
         }
@@ -187,7 +187,7 @@ enum BatchTagUndoAction {
             return BatchAddTagsSheetCompletion(undoState: toastState, closesSheet: true)
         }
         return BatchAddTagsSheetCompletion(
-            undoState: .unavailable(reason: "Undo action is no longer available."),
+            undoState: .unavailable(reason: L10n.string("Undo action is no longer available.")),
             closesSheet: true
         )
     }
@@ -201,7 +201,7 @@ enum BatchTagUndoAction {
         guard let token = normalizedToken(undoToken) else {
             return BatchTagUndoLoadResult(
                 action: nil,
-                unavailableReason: "Undo is unavailable for this result.",
+                unavailableReason: L10n.string("Undo is unavailable for this result."),
                 failure: nil
             )
         }
@@ -210,7 +210,7 @@ enum BatchTagUndoAction {
             guard let action = actions.first(where: { $0.actionID == token }) else {
                 return BatchTagUndoLoadResult(
                     action: nil,
-                    unavailableReason: "Undo action is no longer available.",
+                    unavailableReason: L10n.string("Undo action is no longer available."),
                     failure: nil
                 )
             }
@@ -307,13 +307,13 @@ enum BatchTagUndoAction {
         if let reason = action.disabledReason, !reason.isEmpty { return reason }
         switch action.status {
         case .blocked:
-            return "Undo action is currently blocked."
+            return L10n.string("Undo action is currently blocked.")
         case .expired:
-            return "Undo action expired."
+            return L10n.string("Undo action expired.")
         case .executed:
-            return "Undo action has already been executed."
+            return L10n.string("Undo action has already been executed.")
         case .pending:
-            return "Undo action is currently unavailable."
+            return L10n.string("Undo action is currently unavailable.")
         }
     }
 }
@@ -324,20 +324,27 @@ private struct BatchMutationReportSummary {
     var report: BatchMutationReportSnapshot
 
     var addedText: String {
-        guard fileCount > 0 else { return relationOnlyText(action: "added", emptyText: "Added to 0 files") }
-        return "Added to \(Self.countText(fileCount, singular: "file", plural: "files"))\(relationSuffix)"
+        guard fileCount > 0 else {
+            return relationOnlyText(action: L10n.string("added"), emptyText: L10n.string("Added to 0 files"))
+        }
+        return L10n.format("batchTags.report.addedFiles", fileCount) + relationSuffix
     }
 
     var skippedText: String {
         guard fileCount > 0 else {
-            return relationOnlyText(action: "already existed", emptyText: "0 files already had these tags")
+            return relationOnlyText(
+                action: L10n.string("already existed"),
+                emptyText: L10n.string("0 files already had these tags")
+            )
         }
-        return "\(Self.countText(fileCount, singular: "file", plural: "files")) already had these tags\(relationSuffix)"
+        return L10n.plural("batchTags.report.skippedFiles", count: fileCount) + relationSuffix
     }
 
     var failedText: String {
-        guard fileCount > 0 else { return relationOnlyText(action: "failed", emptyText: "0 failed") }
-        return "\(Self.countText(fileCount, singular: "file", plural: "files")) failed\(relationSuffix)"
+        guard fileCount > 0 else {
+            return relationOnlyText(action: L10n.string("failed"), emptyText: L10n.string("0 failed"))
+        }
+        return L10n.format("batchTags.report.failedFiles", fileCount) + relationSuffix
     }
 
     private var fileCount: Int64 {
@@ -346,15 +353,11 @@ private struct BatchMutationReportSummary {
 
     private var relationSuffix: String {
         guard relationCount > 0, relationCount != fileCount else { return "" }
-        return " (\(Self.countText(relationCount, singular: "tag relation", plural: "tag relations")))"
+        return L10n.format("batchTags.report.relationSuffix", relationCount)
     }
 
     private func relationOnlyText(action: String, emptyText: String) -> String {
         guard relationCount > 0 else { return emptyText }
-        return "\(Self.countText(relationCount, singular: "tag relation", plural: "tag relations")) \(action)"
-    }
-
-    private static func countText(_ count: Int64, singular: String, plural: String) -> String {
-        "\(count) \(count == 1 ? singular : plural)"
+        return L10n.format("batchTags.report.relationAction", relationCount, action)
     }
 }

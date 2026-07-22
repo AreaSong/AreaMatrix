@@ -85,7 +85,12 @@ func assertImportSingleFileICloudPlaceholderBlocked(
 ) {
     XCTAssertTrue(model.showsICloudActions, file: file, line: line)
     XCTAssertNil(model.activeConflictPage, file: file, line: line)
-    XCTAssertEqual(model.importDisabledReason, "iCloud placeholder 需要下载后才能导入", file: file, line: line)
+    XCTAssertEqual(
+        model.importDisabledReason,
+        "The iCloud placeholder must be downloaded before importing.",
+        file: file,
+        line: line
+    )
 }
 
 @MainActor
@@ -101,7 +106,7 @@ func assertImportSingleFileICloudDownloadFailure(
     XCTAssertNil(model.activeConflictPage, file: file, line: line)
     XCTAssertEqual(
         model.importDisabledReason,
-        "iCloud 下载失败后请重试下载或切换本地资料库",
+        "Retry the iCloud download or switch to a local repository.",
         file: file,
         line: line
     )

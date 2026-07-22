@@ -25,13 +25,13 @@ struct ValidatePathNotices: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if isValidating {
-                ProgressView("正在检查路径...")
+                ProgressView(L10n.string("onboarding.validate.checkingPath"))
             }
             if let errorMapping {
                 errorMappingNotice(errorMapping)
             } else if let errorMessage {
                 ValidatePathNoticeCard(
-                    title: "路径不可用",
+                    title: L10n.string("onboarding.validate.pathUnavailable"),
                     image: "exclamationmark.triangle",
                     tint: .red,
                     lines: [errorMessage]
@@ -39,19 +39,24 @@ struct ValidatePathNotices: View {
             }
             if validation?.isInitialized == true {
                 ValidatePathNoticeCard(
-                    title: "已找到 AreaMatrix 资料库",
+                    title: L10n.string("onboarding.validate.repositoryFound"),
                     image: "externaldrive.connected.to.line.below",
                     tint: .green,
                     lines: existingRepoLines
                 )
             }
             if ValidatePathNoticeRules.shouldShowAdoptExistingNotice(for: validation) {
-                ValidatePathNoticeCard(title: "将接管已有目录", image: "folder.badge.gearshape", tint: .orange, lines: [
-                    "将创建 .areamatrix/ 内部目录。",
-                    "将扫描现有文件和文件夹。",
-                    "不移动、不重命名、不删除、不覆盖任何已有文件。",
-                    "已有 README.md 和项目目录结构保持原样。"
-                ])
+                ValidatePathNoticeCard(
+                    title: L10n.string("onboarding.validate.adoptTitle"),
+                    image: "folder.badge.gearshape",
+                    tint: .orange,
+                    lines: [
+                        L10n.string("onboarding.validate.adopt.createMetadata"),
+                        L10n.string("onboarding.validate.adopt.scanFiles"),
+                        L10n.string("onboarding.validate.adopt.noFileChanges"),
+                        L10n.string("onboarding.validate.adopt.preserveStructure")
+                    ]
+                )
             }
             if validation?.isICloudPath == true {
                 ValidatePathICloudNotice(
@@ -60,10 +65,15 @@ struct ValidatePathNotices: View {
                 )
             }
             if validation?.isExternalVolume == true {
-                ValidatePathNoticeCard(title: "外置卷路径", image: "externaldrive", tint: .orange, lines: [
-                    "外置卷可能在断开连接后导致资料库不可用。",
-                    "继续前请确认该卷会保持连接。"
-                ])
+                ValidatePathNoticeCard(
+                    title: L10n.string("onboarding.validate.externalVolumeTitle"),
+                    image: "externaldrive",
+                    tint: .orange,
+                    lines: [
+                        L10n.string("onboarding.validate.externalVolumeUnavailable"),
+                        L10n.string("onboarding.validate.externalVolumeConfirm")
+                    ]
+                )
             }
             if let session = latestAdoptScanSession {
                 scanSessionNotice(session)
@@ -77,45 +87,65 @@ struct ValidatePathNotices: View {
 
     private var existingRepoLines: [String] {
         [
-            "该文件夹已经包含可打开的 .areamatrix/index.db。",
-            "AreaMatrix 将打开现有资料库，不会重新初始化或接管。",
+            L10n.string("onboarding.validate.existingRepo.databaseFound"),
+            L10n.string("onboarding.validate.existingRepo.openOnly"),
             schemaVersionLine,
             lastOpenedLine,
-            "Repo path: \(displayedPath)"
+            L10n.format("onboarding.validate.repoPath", displayedPath)
         ]
     }
 
     private var schemaVersionLine: String {
         guard let version = existingRepositoryMetadata?.schemaVersion else {
-            return "Schema version: reading metadata"
+            return L10n.string("onboarding.validate.schemaReading")
         }
 
-        return "Schema version: v\(version)"
+        return L10n.format("onboarding.validate.schemaVersion", version)
     }
 
     private var lastOpenedLine: String {
         guard let lastOpenedAt = existingRepositoryMetadata?.lastOpenedAt else {
-            return "Last opened: Not recorded"
+            return L10n.string("onboarding.validate.lastOpenedNotRecorded")
         }
 
         let date = Date(timeIntervalSince1970: TimeInterval(lastOpenedAt))
-        return "Last opened: \(date.formatted(date: .abbreviated, time: .shortened))"
+        return L10n.format(
+            "onboarding.validate.lastOpened",
+            date.formatted(date: .abbreviated, time: .shortened)
+        )
     }
 
     private func scanSessionNotice(_ session: ScanSessionSnapshot) -> some View {
-        ValidatePathNoticeCard(title: "发现未完成接管扫描", image: "arrow.clockwise.circle", tint: .orange, lines: [
-            "状态：\(session.status.rawValue)。",
-            "已索引 \(session.inserted) 个，更新 \(session.updated) 个，跳过 \(session.skipped) 个。",
-            "最后位置：\(session.lastPath ?? "尚未记录")。"
-        ])
+        ValidatePathNoticeCard(
+            title: L10n.string("onboarding.validate.unfinishedScanTitle"),
+            image: "arrow.clockwise.circle",
+            tint: .orange,
+            lines: [
+                L10n.format("onboarding.validate.scanStatus", session.status.displayName),
+                L10n.format("onboarding.validate.scanCounts", session.inserted, session.updated, session.skipped),
+                L10n.format(
+                    "onboarding.validate.lastPath",
+                    session.lastPath ?? L10n.string("onboarding.validate.notRecorded")
+                )
+            ]
+        )
     }
 
     private func errorMappingNotice(_ mapping: CoreErrorMappingSnapshot) -> some View {
-        ValidatePathNoticeCard(title: "路径不可用", image: "exclamationmark.triangle", tint: mapping.severity.tint, lines: [
-            mapping.userMessage,
-            "建议：\(mapping.suggestedAction)",
-            "严重程度：\(mapping.severity.displayName)；恢复方式：\(mapping.recoverability.displayName)"
-        ])
+        ValidatePathNoticeCard(
+            title: L10n.string("onboarding.validate.pathUnavailable"),
+            image: "exclamationmark.triangle",
+            tint: mapping.severity.tint,
+            lines: [
+                mapping.userMessage,
+                L10n.format("onboarding.validate.suggestedAction", mapping.suggestedAction),
+                L10n.format(
+                    "onboarding.validate.severityRecoverability",
+                    mapping.severity.displayName,
+                    mapping.recoverability.displayName
+                )
+            ]
+        )
     }
 }
 
@@ -126,14 +156,14 @@ private struct ValidatePathICloudNotice: View {
     var body: some View {
         TintedOutlinedStatusBanner(tint: .blue) {
             VStack(alignment: .leading, spacing: 10) {
-                Label("iCloud Drive 路径", systemImage: "icloud")
+                Label(L10n.string("onboarding.validate.icloudTitle"), systemImage: "icloud")
                     .font(.headline)
                     .foregroundStyle(.blue)
-                Text("iCloud 同步可能带来延迟、占位内容与冲突风险。")
+                Text(L10n.string("onboarding.validate.icloudRisk"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Toggle(
-                    "我理解 iCloud 同步可能带来延迟与冲突风险",
+                    L10n.string("onboarding.validate.icloudRiskAcceptance"),
                     isOn: Binding(get: { isAccepted }, set: onAcceptedChanged)
                 )
             }

@@ -15,7 +15,10 @@ extension ChangeCategorySheet {
         } else if classifierContextState.isLoading(classifierContextRequest(for: file)) {
             metadataRow("Classification source", "Loading classification...")
         } else if let failure = classifierContextState.failure(for: file.id) {
-            metadataRow("Classification source", "Cannot load classification: \(failure.userMessage)")
+            metadataRow(
+                "Classification source",
+                L10n.format("file-actions.change-category.classification-load-failed", failure.userMessage)
+            )
         } else {
             metadataRow("Classification source", "Loading classification...")
         }
@@ -67,10 +70,10 @@ extension ChangeCategorySheet {
             return file.path
         }
         if state.isChecking(request) {
-            return "Checking destination..."
+            return L10n.string("Checking destination...")
         }
         if mode == .classifierCorrection {
-            return "Select a category to preview the Core target path."
+            return L10n.string("Select a category to preview the Core target path.")
         }
         return "\(targetCategory)/\(file.currentName)"
     }
@@ -161,7 +164,7 @@ extension ChangeCategorySheet {
                 )
             } else if preview.nameConflictResolved {
                 statusLabel(
-                    "Target name exists. AreaMatrix will use \(preview.targetName).",
+                    L10n.format("file-actions.change-category.target-name-adjusted", preview.targetName),
                     systemImage: "number",
                     color: .secondary
                 )

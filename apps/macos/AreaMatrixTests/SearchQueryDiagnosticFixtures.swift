@@ -37,7 +37,8 @@ extension SearchQueryDiagnosticSnapshot {
         token: String? = nil,
         start: Int64? = nil,
         end: Int64? = nil,
-        suggestion: String? = "Use category:"
+        suggestion: String? = "Use category:",
+        isErrorSeverity: Bool = true
     ) -> SearchQueryDiagnosticSnapshot {
         SearchQueryDiagnosticSnapshot(
             kindDisplayName: kindDisplayName,
@@ -46,7 +47,8 @@ extension SearchQueryDiagnosticSnapshot {
             token: token,
             start: start,
             end: end,
-            suggestion: suggestion
+            suggestion: suggestion,
+            isErrorSeverity: isErrorSeverity
         )
     }
 

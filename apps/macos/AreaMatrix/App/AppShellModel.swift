@@ -59,8 +59,8 @@ final class OnboardingModel: ObservableObject {
 
     var validatePathPrimaryActionTitle: String {
         repositoryPathValidation?.isInitialized == true
-            ? String(localized: "onboarding.validate.openRepository")
-            : String(localized: "onboarding.validate.continue")
+            ? L10n.string("onboarding.validate.openRepository")
+            : L10n.string("onboarding.validate.continue")
     }
 
     var validatePathReturnRouteIsSettings: Bool {

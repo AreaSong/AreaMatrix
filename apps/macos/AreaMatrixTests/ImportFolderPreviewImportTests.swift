@@ -41,7 +41,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         XCTAssertEqual(progressSnapshots.last?.remaining, 0)
         XCTAssertEqual(progressSnapshots.last?.currentPath, "finance/Invoice_2026Q1.pdf")
         XCTAssertEqual(progressSnapshots.last?.items.map(\.phase), [.done, .pending, .failed])
-        XCTAssertEqual(progressSnapshots.last?.items.last?.errorMessage, "无法预览分类：missing test result")
+        XCTAssertEqual(progressSnapshots.last?.items.last?.errorMessage, "Cannot preview category: missing test result")
     }
 
     @MainActor
@@ -206,7 +206,7 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             )
         ])
         XCTAssertEqual(outcome?.succeededEntries.first?.storageMode, "Indexed")
-        assertImportRowStatusDetails(model.rows, [0: "已写入索引"])
+        assertImportRowStatusDetails(model.rows, [0: "Added to index"])
     }
 
     @MainActor

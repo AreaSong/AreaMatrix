@@ -30,7 +30,7 @@ struct BundleAppVersionReader: AppVersionReading {
         let trimmedVersion = version?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let trimmedBuild = build?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        if trimmedVersion.isEmpty { return "Unknown" }
+        if trimmedVersion.isEmpty { return L10n.string("Unknown") }
         if trimmedBuild.isEmpty { return trimmedVersion }
         return "\(trimmedVersion) (\(trimmedBuild))"
     }

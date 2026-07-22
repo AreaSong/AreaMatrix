@@ -180,7 +180,9 @@ struct AIPrivacyRulesView: View {
     }
 
     private var remoteGateStatus: String {
-        privacyModel.snapshot?.privacyGateEnabled == true ? "Remote AI allowed" : "Remote AI blocked"
+        privacyModel.snapshot?.privacyGateEnabled == true
+            ? L10n.string("Remote AI allowed")
+            : L10n.string("Remote AI blocked")
     }
 
     private var allowRemoteGateDisabled: Bool {

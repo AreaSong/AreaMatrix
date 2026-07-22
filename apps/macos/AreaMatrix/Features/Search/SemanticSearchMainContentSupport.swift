@@ -2,7 +2,7 @@ import SwiftUI
 
 extension MainRepositoryContentView {
     var searchLoadingText: String {
-        searchMode == .semantic ? "Searching semantically..." : "Searching..."
+        searchMode == .semantic ? L10n.string("Searching semantically...") : L10n.string("Searching...")
     }
 
     @ViewBuilder
@@ -11,13 +11,13 @@ extension MainRepositoryContentView {
         case .idle:
             EmptyView()
         case let .building(request):
-            Text("Building semantic index... \(semanticBuildProgressText(for: request))")
+            Text(L10n.format("search.semanticIndex.building", semanticBuildProgressText(for: request)))
         case let .completed(_, report):
             Text(semanticCompletedIndexText(report))
         case .canceled:
             Text("Semantic index build canceled.")
         case let .failed(_, error):
-            Text("Semantic index could not be built: \(error.userMessage)")
+            Text(L10n.format("search.semanticIndex.buildFailed", error.userMessage))
         }
     }
 
@@ -26,58 +26,72 @@ extension MainRepositoryContentView {
         let processed = max(0, page.semanticTotalCount - page.dedupedNormalCount)
         let total = max(page.semanticTotalCount + page.normalTotalCount, Int64(1))
         let percent = min(100, Int((Double(processed) / Double(total)) * 100))
-        return "\(percent)%  \(processed)/\(total) processed for \(request.query)"
+        return L10n.format("search.semanticIndex.progress", percent, processed, total, request.query)
     }
 
     private func semanticCompletedIndexText(_ report: SemanticIndexBuildReportSnapshot) -> String {
         switch report.status {
         case .canceled:
-            "Semantic index build canceled."
+            L10n.string("Semantic index build canceled.")
         case .paused:
-            "Semantic index build paused."
+            L10n.string("Semantic index build paused.")
         case .partial:
-            // swiftlint:disable:next line_length
-            "Semantic index partially built: \(report.processedCount)/\(report.totalCount) processed, \(report.failedCount) failed"
+            L10n.format(
+                "search.semanticIndex.partial",
+                report.processedCount,
+                report.totalCount,
+                report.failedCount
+            )
         case .failed:
-            "Semantic index could not be built."
+            L10n.string("Semantic index could not be built.")
         case .ready:
-            "Semantic index ready: \(report.processedCount)/\(report.totalCount) processed"
+            L10n.format("search.semanticIndex.ready", report.processedCount, report.totalCount)
         case .notReady, .building:
-            // swiftlint:disable:next line_length
-            "Semantic index \(report.status.displayName.lowercased()): \(report.processedCount)/\(report.totalCount) processed"
+            L10n.format(
+                "search.semanticIndex.status",
+                report.status.displayName.lowercased(),
+                report.processedCount,
+                report.totalCount
+            )
         }
     }
 
     var semanticPrivacyGateText: String {
         switch fileListModel.semanticPrivacyGateState {
         case .idle:
-            "Privacy rules: not checked yet"
+            L10n.string("Privacy rules: not checked yet")
         case .checking:
-            "Privacy rules: checking..."
+            L10n.string("Privacy rules: checking...")
         case let .allowed(_, report):
-            "Privacy rules: allowed. Sent fields: \(privacySentFields(report.sentFields))"
+            L10n.format("search.semanticIndex.privacyAllowed", privacySentFields(report.sentFields))
         case let .blocked(_, report):
-            "Privacy rules: blocked. \(report.message) Sent fields: \(privacySentFields(report.sentFields))"
+            L10n.format(
+                "search.semanticIndex.privacyBlocked",
+                report.message,
+                privacySentFields(report.sentFields)
+            )
         case let .failed(_, error):
-            "Privacy rules could not be checked: \(error.userMessage)"
+            L10n.format("search.semanticIndex.privacyCheckFailed", error.userMessage)
         }
     }
 
     var semanticIndexConfirmationMessage: String {
         [
-            "AreaMatrix will build a semantic index for searchable files.",
-            "Local indexing keeps file content on this device.",
-            "Remote indexing is used only when remote AI is explicitly enabled and allowed for Semantic search.",
+            L10n.string("AreaMatrix will build a semantic index for searchable files."),
+            L10n.string("Local indexing keeps file content on this device."),
+            L10n.string(
+                "Remote indexing is used only when remote AI is explicitly enabled and allowed for Semantic search."
+            ),
             semanticPrivacyGateText
         ].joined(separator: " ")
     }
 
     var semanticIndexCancelConfirmationMessage: String {
         [
-            "AreaMatrix will stop processing remaining files.",
-            "Already committed local index fragments can still be used.",
-            "Uncommitted index writes will be cleaned up.",
-            "Remote queues will stop and no more content will be sent."
+            L10n.string("AreaMatrix will stop processing remaining files."),
+            L10n.string("Already committed local index fragments can still be used."),
+            L10n.string("Uncommitted index writes will be cleaned up."),
+            L10n.string("Remote queues will stop and no more content will be sent.")
         ].joined(separator: " ")
     }
 
@@ -131,27 +145,41 @@ extension MainRepositoryContentView {
     }
 
     func semanticStatusText(_ page: SemanticSearchResultPageSnapshot) -> String {
-        var parts = ["Semantic index: \(page.indexStatus.displayName)"]
-        if let route = page.route { parts.append(route.rawValue) }
-        if page.lowConfidence { parts.append("Low confidence results") }
-        if let fallback = page.fallbackReason { parts.append(page.fallbackMessage ?? fallback.rawValue) }
-        if page.dedupedNormalCount > 0 { parts.append("\(page.dedupedNormalCount) duplicate normal matches folded") }
+        var parts = [L10n.format("semanticSearch.indexStatus", page.indexStatus.displayName)]
+        if let route = page.route { parts.append(route.displayName) }
+        if page.lowConfidence { parts.append(L10n.string("Low confidence results")) }
+        if let fallback = page.fallbackReason { parts.append(page.fallbackMessage ?? fallback.displayName) }
+        if page.dedupedNormalCount > 0 {
+            parts.append(L10n.format("semanticSearch.foldedNormalCount", page.dedupedNormalCount))
+        }
         return parts.joined(separator: "  ")
     }
 
     func semanticMatchText(_ presentation: SemanticResultPresentation) -> String {
         switch presentation {
         case let .semantic(match):
-            let fields = match.usedFields.map(\.rawValue).joined(separator: ", ")
-            let duplicate = match.alsoMatchedNormalSearch ? " | Also matched normal search" : ""
-            // swiftlint:disable:next line_length
-            return "Semantic | \(String(format: "%.2f", match.relevance)) | \(match.matchedReason) | \(fields)\(duplicate)"
+            let fields = match.usedFields.map(\.displayName).joined(separator: ", ")
+            let duplicate = match.alsoMatchedNormalSearch ? L10n.string(" | Also matched normal search") : ""
+            return L10n.format(
+                "semanticSearch.semanticMatchDiagnostic",
+                String(format: "%.2f", match.relevance),
+                match.matchedReason,
+                fields,
+                duplicate
+            )
         case let .normal(match):
             if let noteSnippet = match.result.noteSnippet, !noteSnippet.isEmpty {
-                return "Normal | - | Note: \(noteSnippet)"
+                return L10n.format("semanticSearch.normalNoteDiagnostic", noteSnippet)
             }
-            guard let first = match.result.matches.first else { return "Normal | - | Match" }
-            return "Normal | - | \(first.kindDisplayName): \(first.fieldDisplayName) - \(first.snippet)"
+            guard let first = match.result.matches.first else {
+                return L10n.string("Normal | - | Match")
+            }
+            return L10n.format(
+                "semanticSearch.normalMatchDiagnostic",
+                first.kindDisplayName,
+                first.fieldDisplayName,
+                first.snippet
+            )
         }
     }
 
@@ -166,8 +194,8 @@ extension MainRepositoryContentView {
                 semanticBuildIndexButton(page)
                 semanticBuildLifecycleControls
             }
-            Text("Semantic matches (\(page.semanticTotalCount))")
-            Text("Normal search matches (\(page.normalTotalCount))")
+            Text(L10n.plural("search.semanticMatchCount", count: page.semanticTotalCount))
+            Text(L10n.plural("search.normalMatchCount", count: page.normalTotalCount))
             semanticIndexBuildText
             semanticCancelStatusText
             semanticPrivacyGateDetail
@@ -227,10 +255,13 @@ extension MainRepositoryContentView {
         case .checking:
             Text("Checking privacy rules before semantic indexing...")
         case let .allowed(_, report):
-            Text("Privacy gate allowed semantic indexing. Sent fields: \(privacySentFields(report.sentFields))")
+            Text(L10n.format(
+                "search.semanticIndex.privacyGateAllowed",
+                privacySentFields(report.sentFields)
+            ))
         case let .blocked(_, report):
             HStack(spacing: 10) {
-                Text("Privacy gate blocked semantic indexing. \(report.message)")
+                Text(L10n.format("search.semanticIndex.privacyGateBlocked", report.message))
                 if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
                     Button("View privacy rule") {
                         searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
@@ -242,7 +273,7 @@ extension MainRepositoryContentView {
             }
         case let .failed(_, error):
             HStack(spacing: 10) {
-                Text("Privacy gate check failed: \(error.userMessage)")
+                Text(L10n.format("search.semanticIndex.privacyGateCheckFailed", error.userMessage))
                 Button("Retry privacy check") {
                     Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
                 }
@@ -300,7 +331,7 @@ extension MainRepositoryContentView {
             }
         case let .cancelFailed(_, error):
             HStack(spacing: 10) {
-                Text("Semantic index build could not be canceled. \(error.userMessage)")
+                Text(L10n.format("search.semanticIndex.cancelFailed", error.userMessage))
                 Button("Retry cancel") {
                     Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
                 }
@@ -312,7 +343,7 @@ extension MainRepositoryContentView {
             }
         case let .pauseFailed(_, error):
             HStack(spacing: 10) {
-                Text("Semantic index build could not be paused. \(error.userMessage)")
+                Text(L10n.format("search.semanticIndex.pauseFailed", error.userMessage))
                 Button("Use normal search") {
                     searchMode = .normal
                     Task { await rerunCurrentSearch(mode: .normal) }

@@ -10,9 +10,9 @@ enum RemoteProviderKindState: String, CaseIterable, Equatable, Identifiable {
 
     var label: String {
         switch self {
-        case .openAi: "OpenAI"
-        case .anthropic: "Anthropic"
-        case .other: "Other"
+        case .openAi: L10n.string("OpenAI")
+        case .anthropic: L10n.string("Anthropic")
+        case .other: L10n.string("Other")
         }
     }
 }
@@ -91,12 +91,12 @@ final class RemotePrivacyGateModel: ObservableObject {
     }
 
     var statusText: String {
-        if isSaving { return "Updating privacy gate..." }
-        guard let snapshot else { return "Privacy rules are loading." }
+        if isSaving { return L10n.string("Updating privacy gate...") }
+        guard let snapshot else { return L10n.string("Privacy rules are loading.") }
         if snapshot.privacyGateEnabled {
-            return "Privacy gate is on. Rules are checked before every remote AI call."
+            return L10n.string("Privacy gate is on. Rules are checked before every remote AI call.")
         }
-        return "Privacy gate is off. Remote AI calls are blocked until the gate is enabled."
+        return L10n.string("Privacy gate is off. Remote AI calls are blocked until the gate is enabled.")
     }
 
     func load() async {
@@ -107,8 +107,8 @@ final class RemotePrivacyGateModel: ObservableObject {
         } catch {
             failure = await privacyError(
                 for: error,
-                message: "Remote privacy rules could not be loaded.",
-                recovery: "Retry loading privacy rules before enabling remote AI."
+                message: L10n.string("Remote privacy rules could not be loaded."),
+                recovery: L10n.string("Retry loading privacy rules before enabling remote AI.")
             )
         }
     }
@@ -119,8 +119,8 @@ final class RemotePrivacyGateModel: ObservableObject {
             true,
             action: .enable,
             providerConfig: providerConfig,
-            message: "Remote provider was configured, but privacy gate could not be enabled.",
-            recovery: "Retry enable privacy gate, open privacy rules, or disable remote AI."
+            message: L10n.string("Remote provider was configured, but privacy gate could not be enabled."),
+            recovery: L10n.string("Retry enable privacy gate, open privacy rules, or disable remote AI.")
         )
     }
 
@@ -130,8 +130,8 @@ final class RemotePrivacyGateModel: ObservableObject {
             false,
             action: .disable,
             providerConfig: providerConfig,
-            message: "Remote AI was disabled, but privacy gate could not be disabled.",
-            recovery: "Retry disable privacy gate. Remote provider remains disabled."
+            message: L10n.string("Remote AI was disabled, but privacy gate could not be disabled."),
+            recovery: L10n.string("Retry disable privacy gate. Remote provider remains disabled.")
         )
     }
 
@@ -155,7 +155,11 @@ final class RemotePrivacyGateModel: ObservableObject {
         recovery: String
     ) async -> Bool {
         guard let providerConfig else {
-            failure = AISettingsError(message: message, recovery: recovery, detail: "Remote provider state is missing.")
+            failure = AISettingsError(
+                message: message,
+                recovery: recovery,
+                detail: L10n.string("Remote provider state is missing.")
+            )
             pendingAction = action
             return false
         }
@@ -198,7 +202,11 @@ final class RemotePrivacyGateModel: ObservableObject {
     ) -> Bool {
         snapshot = updated
         guard updated.privacyGateEnabled == expectedGate else {
-            failure = AISettingsError(message: message, recovery: recovery, detail: "Privacy gate returned unchanged.")
+            failure = AISettingsError(
+                message: message,
+                recovery: recovery,
+                detail: L10n.string("Privacy gate returned unchanged.")
+            )
             pendingAction = action
             return false
         }

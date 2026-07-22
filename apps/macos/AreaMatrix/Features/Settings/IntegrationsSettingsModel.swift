@@ -9,11 +9,11 @@ enum IntegrationsRepositoryLocation: Equatable {
     var label: String {
         switch self {
         case .iCloudDrive:
-            "iCloud Drive"
+            L10n.string("iCloud Drive")
         case .localFolder:
-            "Local folder"
+            L10n.string("Local folder")
         case .unknown:
-            "Unknown"
+            L10n.string("Unknown")
         }
     }
 }
@@ -26,11 +26,11 @@ enum IntegrationsICloudStatus: Equatable {
     var label: String {
         switch self {
         case .available:
-            "Available"
+            L10n.string("Available")
         case .unavailable:
-            "Unavailable"
+            L10n.string("Unavailable")
         case .unknown:
-            "Unknown"
+            L10n.string("Unknown")
         }
     }
 
@@ -77,7 +77,7 @@ struct IntegrationsSettingsSummary: Equatable {
 }
 
 enum IntegrationConflictListPresentation {
-    static let reviewConflictsTitle = "Review conflicts"
+    static let reviewConflictsTitle = L10n.string("Review conflicts")
     static let reviewConflictsAccessibilityID = "icloud-conflicts-icloud-conflicts-core-review-conflicts"
 }
 
@@ -165,7 +165,7 @@ final class IntegrationsSettingsModel: ObservableObject {
         } catch {
             savedConfig = nil
             summary = nil
-            loadState = await .failed(settingsError(for: error, fallbackRecovery: "Retry status"))
+            loadState = await .failed(settingsError(for: error, fallbackRecovery: L10n.string("Retry status")))
         }
     }
 
@@ -189,32 +189,36 @@ final class IntegrationsSettingsModel: ObservableObject {
         actionFeedback = nil
         do {
             try finderOpener.openRepositoryInFinder(repoPath: repoPath)
-            actionFeedback = .success("Repository folder revealed in Finder.")
+            actionFeedback = .success(L10n.string("Repository folder revealed in Finder."))
         } catch {
             actionFeedback = .failed(IntegrationsSettingsError(
-                message: "Repository folder cannot be revealed.",
-                recovery: "Check that the repository folder still exists and Finder has permission to open it."
+                message: L10n.string("Repository folder cannot be revealed."),
+                recovery: L10n
+                    .string("Check that the repository folder still exists and Finder has permission to open it.")
             ))
         }
     }
 
     func recordConflictResolveEntry(_ conflict: ICloudConflictPairSnapshot) {
-        actionFeedback = .success("Open the single-item resolver for \(conflict.fileDisplayName).")
+        actionFeedback = .success(L10n.format(
+            "settings.integrations.openSingleItemResolver",
+            conflict.fileDisplayName
+        ))
     }
 
     func recordConflictDiagnosticsEntry() {
-        actionFeedback = .success("Diagnostics can be collected from the conflict list error state.")
+        actionFeedback = .success(L10n.string("Diagnostics can be collected from the conflict list error state."))
     }
 
     func openICloudHelp() {
         actionFeedback = nil
         do {
             try helpOpener.openICloudHelp()
-            actionFeedback = .success("iCloud help opened.")
+            actionFeedback = .success(L10n.string("iCloud help opened."))
         } catch {
             actionFeedback = .failed(IntegrationsSettingsError(
-                message: "iCloud help cannot be opened.",
-                recovery: "Check the default browser or open Apple iCloud Drive help manually."
+                message: L10n.string("iCloud help cannot be opened."),
+                recovery: L10n.string("Check the default browser or open Apple iCloud Drive help manually.")
             ))
         }
     }
@@ -232,7 +236,7 @@ final class IntegrationsSettingsModel: ObservableObject {
             if let savedConfig {
                 summary = summary?.withICloudWarningsEnabled(savedConfig.iCloudWarn)
             }
-            let mappedError = await settingsError(for: error, fallbackRecovery: "Retry save")
+            let mappedError = await settingsError(for: error, fallbackRecovery: L10n.string("Retry save"))
             saveError = mappedError
             pendingRetry = config
         }

@@ -44,7 +44,7 @@ final class AISettingsModel: ObservableObject {
     private let errorMapper: any CoreErrorMapping
     private var savedSnapshot: AISettingsSnapshot?
     private var pendingSave: AISettingsConfigSnapshot?
-    private var pendingSaveFailureMessage = "AI settings could not be saved."
+    private var pendingSaveFailureMessage = L10n.string("AI settings could not be saved.")
     private var pendingSavePreservesSnapshot = false
     private var pendingPause: AISettingsConfigSnapshot?
 
@@ -88,8 +88,8 @@ final class AISettingsModel: ObservableObject {
             savedSnapshot = nil
             loadState = await .failed(settingsError(
                 for: error,
-                message: "AI settings could not be loaded.",
-                fallbackRecovery: "Retry"
+                message: L10n.string("AI settings could not be loaded."),
+                fallbackRecovery: L10n.string("Retry")
             ))
         }
     }
@@ -97,33 +97,35 @@ final class AISettingsModel: ObservableObject {
     func setAIEnabled(_ enabled: Bool) async {
         guard var config = editableConfig(), config.aiEnabled != enabled else { return }
         config.aiEnabled = enabled
-        await persist(config, failureMessage: "AI settings could not be saved.")
+        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
     }
 
     func setLocalAIEnabled(_ enabled: Bool) async {
         guard var config = editableConfig(), config.localAIEnabled != enabled else { return }
         config.localAIEnabled = enabled
-        await persist(config, failureMessage: "AI settings could not be saved.")
+        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
     }
 
     func setProviderPreference(_ preference: AISettingsProviderPreference) async {
         guard var config = editableConfig(), config.providerPreference != preference else { return }
         if preference == .remoteFirst, !config.remoteAIAllowed {
             actionFeedback = .failed(AISettingsError(
-                message: "Remote AI requires explicit setup.",
-                recovery: "Use Configure remote AI before selecting Remote first.",
-                detail: "Remote AI configuration manages provider setup, API key storage, and connection verification."
+                message: L10n.string("Remote AI requires explicit setup."),
+                recovery: L10n.string("Use Configure remote AI before selecting Remote first."),
+                detail: L10n.string(
+                    "Remote AI configuration manages provider setup, API key storage, and connection verification."
+                )
             ))
             return
         }
         config.providerPreference = preference
-        await persist(config, failureMessage: "AI settings could not be saved.")
+        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
     }
 
     func setFeature(_ feature: AISettingsFeatureKind, enabled: Bool) async {
         guard var config = editableConfig() else { return }
         config.setFeature(feature, enabled: enabled)
-        await persist(config, failureMessage: "AI settings could not be saved.")
+        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
     }
 
     func disableRemoteAI() async {
@@ -132,13 +134,13 @@ final class AISettingsModel: ObservableObject {
         if config.providerPreference == .remoteFirst {
             config.providerPreference = .localFirst
         }
-        await persist(config, failureMessage: "AI settings could not be saved.")
+        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
     }
 
     func pauseAllAI() async {
         guard var config = editableConfig(), config.aiEnabled else { return }
         config.aiEnabled = false
-        await persist(config, failureMessage: "AI could not be paused.", restoreOnFailure: true)
+        await persist(config, failureMessage: L10n.string("AI could not be paused."), restoreOnFailure: true)
     }
 
     func retrySave() async {
@@ -152,13 +154,13 @@ final class AISettingsModel: ObservableObject {
 
     func retryPause() async {
         guard let pendingPause else { return }
-        await persist(pendingPause, failureMessage: "AI could not be paused.", restoreOnFailure: true)
+        await persist(pendingPause, failureMessage: L10n.string("AI could not be paused."), restoreOnFailure: true)
     }
 
     func revertChanges() {
         snapshot = savedSnapshot
         pendingSave = nil
-        pendingSaveFailureMessage = "AI settings could not be saved."
+        pendingSaveFailureMessage = L10n.string("AI settings could not be saved.")
         pendingSavePreservesSnapshot = false
         pendingPause = nil
         saveError = nil
@@ -166,37 +168,36 @@ final class AISettingsModel: ObservableObject {
     }
 
     func openRemoteConfigurationEntry() {
-        actionFeedback = .success("Open Remote AI configuration to manage providers and API keys.")
+        actionFeedback = .success(L10n.string("Open Remote AI configuration to manage providers and API keys."))
     }
 
     func openLocalModelStatusEntry() {
-        actionFeedback = .success("Open Local model status to check installation and diagnostics.")
+        actionFeedback = .success(L10n.string("Open Local model status to check installation and diagnostics."))
     }
 
     func openPrivacyRulesEntry() {
-        actionFeedback = .success("Open Privacy rules to manage AI data boundaries.")
+        actionFeedback = .success(L10n.string("Open Privacy rules to manage AI data boundaries."))
     }
 
     func openCallLogEntry() {
-        actionFeedback = .success("Open AI call log to review recent AI activity.")
+        actionFeedback = .success(L10n.string("Open AI call log to review recent AI activity."))
     }
 
     func allowRemoteAIAfterProviderConsent() async -> AISettingsPrivacyGateUpdateResult {
         guard let config = editableConfig() else { return .failed }
         guard config.remoteAIAllowed else {
             actionFeedback = .failed(AISettingsError(
-                message: "Remote AI requires provider consent.",
-                recovery: "Configure remote AI before allowing the privacy gate.",
-                detail: "Remote AI configuration manages provider setup, API key storage, " +
-                    "connection verification, and remote scope."
+                message: L10n.string("Remote AI requires provider consent."),
+                recovery: L10n.string("Configure remote AI before allowing the privacy gate."),
+                detail: L10n.string("ai.settings.remoteProviderConsentDetail")
             ))
             return .needsRemoteConfiguration
         }
-        return await setPrivacyGateEnabled(true, successMessage: "Remote AI privacy gate is allowed.")
+        return await setPrivacyGateEnabled(true, successMessage: L10n.string("Remote AI privacy gate is allowed."))
     }
 
     func blockRemoteAIWithPrivacyGate() async -> AISettingsPrivacyGateUpdateResult {
-        await setPrivacyGateEnabled(false, successMessage: "Remote AI is blocked by the privacy gate.")
+        await setPrivacyGateEnabled(false, successMessage: L10n.string("Remote AI is blocked by the privacy gate."))
     }
 
     func syncPrivacyGateFromPrivacyRules(_ enabled: Bool) async -> AISettingsError? {
@@ -212,10 +213,9 @@ final class AISettingsModel: ObservableObject {
             return nil
         case .needsRemoteConfiguration, .failed:
             return saveError ?? AISettingsError(
-                message: "AI settings privacy summary could not be refreshed.",
-                recovery: "Retry save before returning to AI settings.",
-                detail: "AI settings privacy gate state did not sync after the " +
-                    "privacy rules save."
+                message: L10n.string("AI settings privacy summary could not be refreshed."),
+                recovery: L10n.string("Retry save before returning to AI settings."),
+                detail: L10n.string("ai.settings.privacySummarySyncDetail")
             )
         }
     }
@@ -241,15 +241,19 @@ final class AISettingsModel: ObservableObject {
             snapshot = updated
             savedSnapshot = updated
             pendingSave = nil
-            pendingSaveFailureMessage = "AI settings could not be saved."
+            pendingSaveFailureMessage = L10n.string("AI settings could not be saved.")
             pendingSavePreservesSnapshot = false
             pendingPause = nil
             actionFeedback = successMessage.map(AISettingsActionFeedback.success) ??
-                (restoreOnFailure ? .success("AI paused.") : nil)
+                (restoreOnFailure ? .success(L10n.string("AI paused.")) : nil)
             isSaving = false
             return true
         } catch {
-            let mapped = await settingsError(for: error, message: failureMessage, fallbackRecovery: "Retry save")
+            let mapped = await settingsError(
+                for: error,
+                message: failureMessage,
+                fallbackRecovery: L10n.string("Retry save")
+            )
             if restoreOnFailure {
                 snapshot = savedSnapshot
                 pendingPause = config
@@ -290,7 +294,7 @@ final class AISettingsModel: ObservableObject {
         config.privacyGateEnabled = enabled
         let saved = await persist(
             config,
-            failureMessage: "Remote AI privacy gate could not be updated.",
+            failureMessage: L10n.string("Remote AI privacy gate could not be updated."),
             preserveSavedSnapshotOnFailure: true,
             successMessage: successMessage
         )
@@ -298,7 +302,9 @@ final class AISettingsModel: ObservableObject {
     }
 
     private func privacyGateSyncSuccess(_ enabled: Bool) -> String {
-        enabled ? "Remote AI privacy gate is allowed." : "Remote AI is blocked by the privacy gate."
+        enabled
+            ? L10n.string("Remote AI privacy gate is allowed.")
+            : L10n.string("Remote AI is blocked by the privacy gate.")
     }
 }
 

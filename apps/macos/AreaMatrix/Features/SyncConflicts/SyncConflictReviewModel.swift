@@ -105,54 +105,58 @@ final class SyncConflictReviewModel: ObservableObject {
     }
 
     var applyDisabledReason: String? {
-        guard let conflict else { return "Conflict details are not loaded." }
+        guard let conflict else { return L10n.string("Conflict details are not loaded.") }
         guard case let .loaded(preview) = previewState else {
-            return previewState.isLoading ? "Resolution impact is still loading." : "Resolution impact is required."
+            return previewState.isLoading
+                ? L10n.string("Resolution impact is still loading.")
+                : L10n.string("Resolution impact is required.")
         }
         if case .succeeded = applyState {
-            return "Resolution has already been applied."
+            return L10n.string("Resolution has already been applied.")
         }
         if applyState.isApplying {
-            return "Resolution is already applying."
+            return L10n.string("Resolution is already applying.")
         }
         if preview.conflictID != conflict.conflictID || preview.resolution != selectedResolution {
-            return "Resolution impact does not match the selected conflict."
+            return L10n.string("Resolution impact does not match the selected conflict.")
         }
         if requiresReplaceConfirmation(preview), !isReplaceConfirmed(for: preview) {
             return replaceConfirmationDisabledReason
-                ?? "Confirm the replace-resolution replace plan before applying Use incoming version."
+                ?? L10n.string("Confirm the replace-resolution replace plan before applying Use incoming version.")
         }
         if !preview.canApply, !canApplyConfirmedReplace(preview) {
-            return preview.blockedReasonDisplay ?? "Core reported this resolution cannot be applied."
+            return preview.blockedReasonDisplay ?? L10n.string("Core reported this resolution cannot be applied.")
         }
         if preview.normalizedPreviewToken == nil {
-            return "Core did not return a resolution preview token."
+            return L10n.string("Core did not return a resolution preview token.")
         }
         return nil
     }
 
     var replaceConfirmationDisabledReason: String? {
-        guard let conflict else { return "Conflict details are not loaded." }
+        guard let conflict else { return L10n.string("Conflict details are not loaded.") }
         guard case let .loaded(preview) = previewState else {
-            return previewState.isLoading ? "Resolution impact is still loading." : "Resolution impact is required."
+            return previewState.isLoading
+                ? L10n.string("Resolution impact is still loading.")
+                : L10n.string("Resolution impact is required.")
         }
         guard selectedResolution == .useIncoming || preview.requiresReplaceConfirmation else {
-            return "Replace confirmation is only required for Use incoming version."
+            return L10n.string("Replace confirmation is only required for Use incoming version.")
         }
         if preview.conflictID != conflict.conflictID || preview.resolution != selectedResolution {
-            return "Resolution impact does not match the selected conflict."
+            return L10n.string("Resolution impact does not match the selected conflict.")
         }
         guard preview.replacePlan != nil else {
-            return "Core did not return a replace plan."
+            return L10n.string("Core did not return a replace plan.")
         }
         guard preview.normalizedPreviewToken != nil else {
-            return "Core did not return a resolution preview token."
+            return L10n.string("Core did not return a resolution preview token.")
         }
         if !preview.hasRecoverableOldVersion {
-            return preview.blockedReasonDisplay ?? "Replace requires Trash or a Core safety backup."
+            return preview.blockedReasonDisplay ?? L10n.string("Replace requires Trash or a Core safety backup.")
         }
         if !preview.canApply, !preview.blocksOnlyForReplaceConfirmation {
-            return preview.blockedReasonDisplay ?? "Core reported this replace plan cannot be applied."
+            return preview.blockedReasonDisplay ?? L10n.string("Core reported this replace plan cannot be applied.")
         }
         return nil
     }

@@ -48,23 +48,23 @@ struct ChangeLogEntrySnapshot: Equatable, Identifiable {
     var actionDisplayName: String {
         switch action {
         case "imported":
-            "Imported"
+            L10n.string("Imported")
         case "adopted":
-            "Adopted"
+            L10n.string("Adopted")
         case "renamed":
-            "Renamed"
+            L10n.string("Renamed")
         case "moved":
-            "Moved"
+            L10n.string("Moved")
         case "edited_note":
-            "Edited note"
+            L10n.string("Edited note")
         case "deleted":
-            "Deleted"
+            L10n.string("Deleted")
         case "removed_from_index":
-            "Removed from index"
+            L10n.string("Removed from index")
         case "restored":
-            "Restored"
+            L10n.string("Restored")
         case "external_modified":
-            "External change"
+            L10n.string("External change")
         default:
             action
         }
@@ -119,14 +119,14 @@ private enum ChangeLogDetailSummary {
         guard let data = detailJSON.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else {
-            return "Detail unavailable"
+            return L10n.string("Detail unavailable")
         }
 
         let parts = object.keys.sorted().compactMap { key -> String? in
             guard let value = object[key] else { return nil }
             return "\(key): \(safeDisplay(value, for: key))"
         }
-        return parts.isEmpty ? "Detail unavailable" : parts.joined(separator: " · ")
+        return parts.isEmpty ? L10n.string("Detail unavailable") : parts.joined(separator: " · ")
     }
 
     private static func safeDisplay(_ value: Any, for key: String) -> String {

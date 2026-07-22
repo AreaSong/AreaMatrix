@@ -13,7 +13,7 @@ private func detailRow(_ label: String, _ value: String) -> some View {
 }
 
 func aiCallLogPrivacyRulesCheckedLabel(_ checked: Bool) -> String {
-    checked ? "yes" : "not recorded"
+    checked ? L10n.string("yes") : L10n.string("not recorded")
 }
 
 struct AICallLogView: View {
@@ -178,14 +178,20 @@ struct AICallLogView: View {
     private var detailPane: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let record = model.selectedRecord {
-                detailRow("File or batch", fileBatchLabel(record))
-                detailRow("Provider", record.providerName ?? record.route.map(aiCallLogRouteLabel) ?? "Not recorded")
-                detailRow("Model", record.modelName ?? "Not recorded")
-                detailRow("Sent fields", sentFieldSummary(record.sentFields))
-                detailRow("Privacy rules checked", aiCallLogPrivacyRulesCheckedLabel(record.privacyRulesChecked))
-                detailRow("Privacy match", privacyMatchLabel(record))
-                detailRow("Result summary", record.resultSummary)
-                if let code = record.errorCode { detailRow("Error", code) }
+                detailRow(L10n.string("File or batch"), fileBatchLabel(record))
+                detailRow(
+                    L10n.string("Provider"),
+                    record.providerName ?? record.route.map(aiCallLogRouteLabel) ?? L10n.string("Not recorded")
+                )
+                detailRow(L10n.string("Model"), record.modelName ?? L10n.string("Not recorded"))
+                detailRow(L10n.string("Sent fields"), sentFieldSummary(record.sentFields))
+                detailRow(
+                    L10n.string("Privacy rules checked"),
+                    aiCallLogPrivacyRulesCheckedLabel(record.privacyRulesChecked)
+                )
+                detailRow(L10n.string("Privacy match"), privacyMatchLabel(record))
+                detailRow(L10n.string("Result summary"), record.resultSummary)
+                if let code = record.errorCode { detailRow(L10n.string("Error"), code) }
             } else {
                 Text("Select an AI call to inspect its redacted details.").foregroundStyle(.secondary)
             }
@@ -212,25 +218,19 @@ struct AICallLogView: View {
     }
 
     private var confirmationTitle: String {
-        if confirmation == .clearAll { return "Clear AI call log?" }
+        if confirmation == .clearAll { return L10n.string("Clear AI call log?") }
         return model.deleteConfirmationTitle
     }
 
     private var confirmationButtonTitle: String {
-        confirmation == .clearAll ? "Clear log" : "Delete log entries"
+        confirmation == .clearAll ? L10n.string("Clear log") : L10n.string("Delete log entries")
     }
 
     private var confirmationMessage: String {
         if confirmation == .clearAll {
-            return """
-            This deletes all AI call log entries on this Mac. It will not delete files, \
-            AI results, tags, summaries, notes, AI settings, or API keys.
-            """
+            return L10n.string("ai.callLog.clearAllConfirmationMessage")
         }
-        return """
-        This only deletes log entries. It will not delete files, AI results, tags, \
-        summaries, notes, or AI settings.
-        """
+        return L10n.string("ai.callLog.deleteSelectedConfirmationMessage")
     }
 
     private func confirmDestructiveAction() async {

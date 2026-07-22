@@ -2,8 +2,12 @@ import Foundation
 
 extension ImportSingleFilePreviewModel {
     var reasonSummary: String {
-        guard let prediction else { return "暂无分类解释" }
-        return "\(prediction.reason.displayLabel) · \(prediction.confidencePercent)%"
+        guard let prediction else { return L10n.string("import.preview.noExplanation") }
+        return L10n.format(
+            "import.preview.classification-reason",
+            prediction.reason.displayLabel,
+            Int64(prediction.confidencePercent)
+        )
     }
 
     var sourceSizeDescription: String? {
@@ -18,7 +22,7 @@ extension ImportSingleFilePreviewModel {
 
     var preflightMessage: String? {
         if isICloudDownloading {
-            return "正在下载 iCloud 文件..."
+            return L10n.string("正在下载 iCloud 文件...")
         }
         return preflightStatus.message
     }
@@ -80,19 +84,19 @@ extension ImportSingleFilePreviewModel {
 
     var importDisabledReason: String? {
         if importStatus.isImporting {
-            return importStatus.blockingMessage ?? "正在导入"
+            return importStatus.blockingMessage ?? L10n.string("import.progress.importing")
         }
         if importStatus.isImported {
-            return "文件已导入"
+            return L10n.string("文件已导入")
         }
         if importStatus.isSkippedDuplicate {
-            return "重复文件已跳过"
+            return L10n.string("重复文件已跳过")
         }
         if !hasReadyPrediction {
-            return status.message ?? "导入预检未完成"
+            return status.message ?? L10n.string("import.preflight.incomplete")
         }
         if selectedCategory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "请选择导入分类"
+            return L10n.string("请选择导入分类")
         }
         if let filenameValidationMessage {
             return filenameValidationMessage

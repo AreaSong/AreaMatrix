@@ -26,6 +26,16 @@ enum BatchDeletePreviewStatusSnapshot: String, Equatable {
     case missing = "Missing"
     case skipped = "Skipped"
     case blocked = "Blocked"
+
+    var displayName: String {
+        switch self {
+        case .willMoveToTrash: L10n.string("Trash")
+        case .indexOnly: L10n.string("Index only")
+        case .missing: L10n.string("Missing")
+        case .skipped: L10n.string("Skipped")
+        case .blocked: L10n.string("Blocked")
+        }
+    }
 }
 
 struct BatchDeletePreviewItemSnapshot: Equatable, Identifiable {

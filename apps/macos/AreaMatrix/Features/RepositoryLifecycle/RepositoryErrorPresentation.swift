@@ -46,86 +46,104 @@ struct RepositoryErrorPresentation: Equatable {
         }
     }
 
-    private static let missingFolder = RepositoryErrorPresentation(
-        title: "Folder is missing",
-        message: "AreaMatrix cannot find this folder. It may have been moved, renamed, or disconnected.",
-        primaryAction: .reconnectFolder,
-        primaryActionTitle: "Reconnect folder",
-        runningActionTitle: "Checking folder...",
-        showsTechnicalDetails: true
-    )
+    private static var missingFolder: RepositoryErrorPresentation {
+        RepositoryErrorPresentation(
+            title: L10n.string("repository.error.missingFolder.title"),
+            message: L10n.string("repository.error.missingFolder.message"),
+            primaryAction: .reconnectFolder,
+            primaryActionTitle: L10n.string("repository.error.reconnect.action"),
+            runningActionTitle: L10n.string("repository.error.missingFolder.running"),
+            showsTechnicalDetails: true
+        )
+    }
 
-    private static let permissionDenied = RepositoryErrorPresentation(
-        title: "Repository needs permission",
-        message: "AreaMatrix no longer has permission to read this folder.",
-        primaryAction: .reconnectFolder,
-        primaryActionTitle: "Reconnect folder",
-        runningActionTitle: "Checking permission...",
-        showsTechnicalDetails: true
-    )
+    private static var permissionDenied: RepositoryErrorPresentation {
+        RepositoryErrorPresentation(
+            title: L10n.string("repository.error.permission.title"),
+            message: L10n.string("repository.error.permission.message"),
+            primaryAction: .reconnectFolder,
+            primaryActionTitle: L10n.string("repository.error.reconnect.action"),
+            runningActionTitle: L10n.string("repository.error.permission.running"),
+            showsTechnicalDetails: true
+        )
+    }
 
-    private static let iCloudPlaceholder = RepositoryErrorPresentation(
-        title: "iCloud file is not downloaded",
-        message: "AreaMatrix needs this iCloud item to be available locally before opening the repository.",
-        primaryAction: .downloadAndRetry,
-        primaryActionTitle: "Download and retry",
-        runningActionTitle: "Retrying...",
-        showsTechnicalDetails: true
-    )
+    private static var iCloudPlaceholder: RepositoryErrorPresentation {
+        RepositoryErrorPresentation(
+            title: L10n.string("repository.error.icloud.title"),
+            message: L10n.string("repository.error.icloud.message"),
+            primaryAction: .downloadAndRetry,
+            primaryActionTitle: L10n.string("repository.error.icloud.action"),
+            runningActionTitle: L10n.string("common.status.retrying"),
+            showsTechnicalDetails: true
+        )
+    }
 
-    private static let temporarilyUnavailable = RepositoryErrorPresentation(
-        title: "Repository is temporarily unavailable",
-        message: "AreaMatrix cannot read repository metadata because it is temporarily busy.",
-        primaryAction: .retry,
-        primaryActionTitle: "Retry",
-        runningActionTitle: "Retrying...",
-        showsTechnicalDetails: true
-    )
+    private static var temporarilyUnavailable: RepositoryErrorPresentation {
+        RepositoryErrorPresentation(
+            title: L10n.string("repository.error.busy.title"),
+            message: L10n.string("repository.error.busy.message"),
+            primaryAction: .retry,
+            primaryActionTitle: L10n.string("settings.action.retry"),
+            runningActionTitle: L10n.string("common.status.retrying"),
+            showsTechnicalDetails: true
+        )
+    }
 
-    private static let metadataNeedsRepair = RepositoryErrorPresentation(
-        title: "Repository metadata needs repair",
-        message: "The repository metadata needs repair. Your files remain in the folder.",
-        primaryAction: .openRepair,
-        primaryActionTitle: "Open repair",
-        runningActionTitle: "Opening repair...",
-        showsTechnicalDetails: true
-    )
+    private static var metadataNeedsRepair: RepositoryErrorPresentation {
+        RepositoryErrorPresentation(
+            title: L10n.string("repository.error.repair.title"),
+            message: L10n.string("repository.error.repair.message"),
+            primaryAction: .openRepair,
+            primaryActionTitle: L10n.string("repository.error.repair.action"),
+            runningActionTitle: L10n.string("repository.error.repair.running"),
+            showsTechnicalDetails: true
+        )
+    }
 
-    private static let incompatibleRepository = RepositoryErrorPresentation(
-        title: "Repository metadata needs repair",
-        message: "AreaMatrix cannot confirm this folder is a compatible initialized repository.",
-        primaryAction: .openRepair,
-        primaryActionTitle: "Open repair",
-        runningActionTitle: "Opening repair...",
-        showsTechnicalDetails: true
-    )
+    private static var incompatibleRepository: RepositoryErrorPresentation {
+        RepositoryErrorPresentation(
+            title: L10n.string("repository.error.repair.title"),
+            message: L10n.string("repository.error.incompatible.message"),
+            primaryAction: .openRepair,
+            primaryActionTitle: L10n.string("repository.error.repair.action"),
+            runningActionTitle: L10n.string("repository.error.repair.running"),
+            showsTechnicalDetails: true
+        )
+    }
 
-    private static let ioFailure = RepositoryErrorPresentation(
-        title: "Repository could not be opened",
-        message: "AreaMatrix could not read the repository metadata or files.",
-        primaryAction: .retry,
-        primaryActionTitle: "Retry",
-        runningActionTitle: "Retrying...",
-        showsTechnicalDetails: true
-    )
+    private static var ioFailure: RepositoryErrorPresentation {
+        RepositoryErrorPresentation(
+            title: L10n.string("repository.error.open.title"),
+            message: L10n.string("repository.error.io.message"),
+            primaryAction: .retry,
+            primaryActionTitle: L10n.string("settings.action.retry"),
+            runningActionTitle: L10n.string("common.status.retrying"),
+            showsTechnicalDetails: true
+        )
+    }
 
-    private static let internalFailure = RepositoryErrorPresentation(
-        title: "Repository could not be opened",
-        message: "AreaMatrix hit an internal error while opening the repository.",
-        primaryAction: .retry,
-        primaryActionTitle: "Retry",
-        runningActionTitle: "Retrying...",
-        showsTechnicalDetails: true
-    )
+    private static var internalFailure: RepositoryErrorPresentation {
+        RepositoryErrorPresentation(
+            title: L10n.string("repository.error.open.title"),
+            message: L10n.string("repository.error.internal.message"),
+            primaryAction: .retry,
+            primaryActionTitle: L10n.string("settings.action.retry"),
+            runningActionTitle: L10n.string("common.status.retrying"),
+            showsTechnicalDetails: true
+        )
+    }
 
-    private static let fallback = RepositoryErrorPresentation(
-        title: "Repository could not be opened",
-        message: "AreaMatrix could not open the selected repository.",
-        primaryAction: .retry,
-        primaryActionTitle: "Retry",
-        runningActionTitle: "Retrying...",
-        showsTechnicalDetails: false
-    )
+    private static var fallback: RepositoryErrorPresentation {
+        RepositoryErrorPresentation(
+            title: L10n.string("repository.error.open.title"),
+            message: L10n.string("repository.error.open.message"),
+            primaryAction: .retry,
+            primaryActionTitle: L10n.string("settings.action.retry"),
+            runningActionTitle: L10n.string("common.status.retrying"),
+            showsTechnicalDetails: false
+        )
+    }
 }
 
 extension CoreErrorMappingSnapshot {

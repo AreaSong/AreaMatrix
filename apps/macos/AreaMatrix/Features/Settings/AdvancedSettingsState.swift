@@ -24,9 +24,9 @@ enum AdvancedSettingsOverviewOutput: String, CaseIterable, Equatable, Identifiab
     var label: String {
         switch self {
         case .generatedOnly:
-            "Generated only"
+            L10n.string("Generated only")
         case .rootAreaMatrixFile:
-            "Root AREAMATRIX.md"
+            L10n.string("Root AREAMATRIX.md")
         }
     }
 }
@@ -38,9 +38,9 @@ enum AdvancedSettingsSaveKind: Equatable {
     var message: String {
         switch self {
         case .overview:
-            "Could not save overview setting"
+            L10n.string("Could not save overview setting")
         case .replace:
-            "Could not save advanced setting"
+            L10n.string("Could not save advanced setting")
         }
     }
 }

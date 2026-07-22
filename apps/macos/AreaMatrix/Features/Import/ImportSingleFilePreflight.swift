@@ -26,17 +26,17 @@ struct ImportSingleFilePreflightResult: Equatable {
     var statusMessage: String {
         switch conflict {
         case .none:
-            "hash 预检完成；未发现内容重复。"
+            L10n.string("hash 预检完成；未发现内容重复。")
         case let .invalidFilename(message):
             message
         case let .name(path):
-            "目标目录中已经存在同名文件，但内容不同：\(path)"
+            L10n.format("import.preflight.name-conflict", path)
         case let .duplicate(path):
-            "hash 重复：\(path)"
+            L10n.format("import.preflight.hash-duplicate", path)
         case .iCloudPlaceholder:
-            "文件尚未从 iCloud 下载。需要下载后才能导入或计算 hash。"
+            L10n.string("文件尚未从 iCloud 下载。需要下载后才能导入或计算 hash。")
         case let .iCloudDownloadFailed(_, reason):
-            "iCloud 下载失败：\(reason)"
+            L10n.format("import.preflight.icloud-download-failed", reason)
         case let .corePreviewUnavailable(message):
             message
         case let .sourceUnavailable(message), let .error(message):
@@ -51,11 +51,12 @@ struct ImportSingleFilePreflightResult: Equatable {
         case let .invalidFilename(message):
             message
         case .name, .duplicate:
-            ImportSingleFileConflictPage(conflict: conflict)?.blockingReason ?? "请先完成冲突处理"
+            ImportSingleFileConflictPage(conflict: conflict)?.blockingReason ??
+                L10n.string("import.conflict.resolveFirst")
         case .iCloudPlaceholder:
-            "iCloud placeholder 需要下载后才能导入"
+            L10n.string("iCloud placeholder 需要下载后才能导入")
         case .iCloudDownloadFailed:
-            "iCloud 下载失败后请重试下载或切换本地资料库"
+            L10n.string("iCloud 下载失败后请重试下载或切换本地资料库")
         case let .corePreviewUnavailable(message):
             message
         case let .sourceUnavailable(message), let .error(message):
@@ -89,9 +90,9 @@ enum ImportSingleFilePreflightStatus: Equatable {
     func importBlockingReason() -> String? {
         switch self {
         case .idle:
-            "导入预检未开始"
+            L10n.string("导入预检未开始")
         case .checking:
-            "Checking duplicate..."
+            L10n.string("Checking duplicate...")
         case let .ready(result), let .blocked(result):
             result.importBlockingReason()
         }
@@ -138,23 +139,25 @@ enum ImportSingleFileConflictPage: Equatable {
     var title: String {
         switch self {
         case .duplicate:
-            "冲突：内容重复"
+            L10n.string("冲突：内容重复")
         case .name:
-            "冲突：目标位置已有同名文件"
+            L10n.string("冲突：目标位置已有同名文件")
         }
     }
 
     var summary: String {
         switch self {
         case .duplicate:
-            "资料库中已存在相同内容的文件。请先进入冲突处理区域决定后续策略。"
+            L10n.string(
+                L10n.string("import.conflict.duplicateRequiresResolution")
+            )
         case .name:
-            "目标目录中已经存在同名文件，但内容不同。"
+            L10n.string("目标目录中已经存在同名文件，但内容不同。")
         }
     }
 
     var blockingReason: String {
-        "请先完成 \(routeLabel) 处理"
+        L10n.format("import.preflight.complete-route-first", routeLabel)
     }
 }
 
@@ -193,22 +196,22 @@ enum ImportSingleFileReplaceOptionVisibility: Equatable {
     var label: String {
         switch self {
         case .hidden:
-            "Replace hidden"
+            L10n.string("Replace hidden")
         case .enabled:
-            "Replace available"
+            L10n.string("Replace available")
         case .disabled:
-            "Replace requires system Trash"
+            L10n.string("Replace requires system Trash")
         }
     }
 
     var blockingReason: String {
         switch self {
         case .hidden:
-            "Replace disabled by advanced settings"
+            L10n.string("Replace disabled by advanced settings")
         case .enabled:
-            "Replace 必须先进入二次确认"
+            L10n.string("Replace 必须先进入二次确认")
         case .disabled:
-            "Replace requires system Trash"
+            L10n.string("Replace requires system Trash")
         }
     }
 }
@@ -261,7 +264,9 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
                 request: request,
                 sourceSizeBytes: nil,
                 hashSha256: nil,
-                conflict: .error("导入预检失败：\(Self.readableMessage(for: error))")
+                conflict: .error(
+                    L10n.format("import.preflight.failed", Self.readableMessage(for: error))
+                )
             )
         }
     }

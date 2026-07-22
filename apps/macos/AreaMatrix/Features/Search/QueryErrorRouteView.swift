@@ -94,7 +94,7 @@ struct QueryErrorRouteView: View {
     private var accessibilityHint: String {
         [
             diagnostic.problemText,
-            diagnostic.safeSuggestion.map { "Suggestion: \($0)" },
+            diagnostic.safeSuggestion.map { L10n.format("search.queryError.suggestion", $0) },
             diagnostic.positionText
         ]
         .compactMap { $0 }
@@ -104,7 +104,7 @@ struct QueryErrorRouteView: View {
     private func applySuggestion(_ suggestion: String) {
         guard let nextQuery = QuerySuggestionApplier.applying(suggestion, diagnostic: diagnostic, query: request.query)
         else {
-            applyFailure = "Could not apply suggestion"
+            applyFailure = L10n.string("Could not apply suggestion")
             return
         }
         applyFailure = nil
@@ -229,14 +229,16 @@ private extension SearchQueryDiagnosticSnapshot {
 
     var problemText: String {
         if let token, !token.isEmpty {
-            return "\(kindDisplayName): \(token)"
+            return L10n.format("search.queryError.problemToken", kindDisplayName, token)
         }
-        return "\(kindDisplayName): \(message)"
+        return L10n.format("search.queryError.problemMessage", kindDisplayName, message)
     }
 
     var positionText: String? {
         guard let start else { return nil }
-        return end.map { "Position \(start)-\($0)" } ?? "Position \(start)"
+        return end.map {
+            L10n.format("search.queryError.positionRange", String(start), String($0))
+        } ?? L10n.format("search.queryError.position", String(start))
     }
 }
 

@@ -36,8 +36,8 @@ final class SingleFileImportIntegrationTests: XCTestCase {
 
         XCTAssertNil(model.pendingImportEntry)
         XCTAssertEqual(model.route, .mainEmpty(opening))
-        XCTAssertEqual(model.toastMessage, "已导入：source.pdf")
-        announcer.assertAnnouncements(["已导入：source.pdf"])
+        XCTAssertEqual(model.toastMessage, "Imported: source.pdf")
+        announcer.assertAnnouncements(["Imported: source.pdf"])
     }
 
     @MainActor
@@ -181,13 +181,13 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         }
         await gate.waitUntilStarted()
 
-        XCTAssertEqual(model.importDisabledReason, "正在复制导入")
+        XCTAssertEqual(model.importDisabledReason, "Copying import")
 
         await gate.finish()
         let imported = await importTask.value
 
         XCTAssertEqual(imported?.currentName, "source.pdf")
-        XCTAssertEqual(model.importDisabledReason, "文件已导入")
+        XCTAssertEqual(model.importDisabledReason, "File imported")
     }
 
     @MainActor
@@ -228,7 +228,7 @@ final class SingleFileImportIntegrationTests: XCTestCase {
         XCTAssertEqual(hiddenModel.duplicateResolution, .skip)
         XCTAssertNil(skipped)
         XCTAssertEqual(hiddenModel.importStatus, .skippedDuplicate("docs/source.pdf"))
-        XCTAssertEqual(hiddenModel.importDisabledReason, "重复文件已跳过")
+        XCTAssertEqual(hiddenModel.importDisabledReason, "Duplicate file skipped")
         await importer.assertNoImportedFiles()
     }
 }
@@ -370,11 +370,11 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
 
         model.suggestedName = "bad/name.pdf"
 
-        XCTAssertEqual(model.filenameValidationMessage, "文件名不能包含 / \\ : * ? \" < > |")
-        XCTAssertEqual(model.importDisabledReason, "文件名不能包含 / \\ : * ? \" < > |")
+        XCTAssertEqual(model.filenameValidationMessage, "Filename cannot contain / \\ : * ? \" < > |")
+        XCTAssertEqual(model.importDisabledReason, "Filename cannot contain / \\ : * ? \" < > |")
         XCTAssertEqual(
             model.currentPreflightResult?.conflict,
-            .invalidFilename("文件名不能包含 / \\ : * ? \" < > |")
+            .invalidFilename("Filename cannot contain / \\ : * ? \" < > |")
         )
         XCTAssertFalse(model.showsConflictSection)
         XCTAssertFalse(model.showsRetryPreviewAction)

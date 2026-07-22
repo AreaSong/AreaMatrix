@@ -16,11 +16,27 @@ enum TagSuggestionSourceSnapshot: String, Equatable {
     case path = "Path"
     case sourceFolder = "Source folder"
     case existingTagPattern = "Existing tag pattern"
+
+    var displayName: String {
+        switch self {
+        case .fileName: L10n.string("File name")
+        case .path: L10n.string("Path")
+        case .sourceFolder: L10n.string("Source folder")
+        case .existingTagPattern: L10n.string("Existing tag pattern")
+        }
+    }
 }
 
 enum TagSuggestionMatchSnapshot: String, Equatable {
     case strong = "Strong match"
     case weak = "Weak match"
+
+    var displayName: String {
+        switch self {
+        case .strong: L10n.string("Strong match")
+        case .weak: L10n.string("Weak match")
+        }
+    }
 }
 
 enum TagSuggestionStatusSnapshot: String, Equatable {
@@ -28,6 +44,15 @@ enum TagSuggestionStatusSnapshot: String, Equatable {
     case alreadyAdded = "Already added"
     case invalid = "Invalid"
     case blocked = "Blocked"
+
+    var displayName: String {
+        switch self {
+        case .newTag: L10n.string("New tag")
+        case .alreadyAdded: L10n.string("Already added")
+        case .invalid: L10n.string("Invalid")
+        case .blocked: L10n.string("Blocked")
+        }
+    }
 }
 
 struct TagSuggestionSnapshot: Equatable, Identifiable {

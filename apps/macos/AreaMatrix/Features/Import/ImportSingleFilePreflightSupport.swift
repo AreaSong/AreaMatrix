@@ -6,13 +6,13 @@ enum ImportSingleFileFilenameValidator {
     static func validationMessage(for filename: String) -> String? {
         let trimmed = filename.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            return "文件名不能为空"
+            return L10n.string("import.filename.empty")
         }
         if trimmed == "." || trimmed == ".." {
-            return "文件名不能是 . 或 .."
+            return L10n.string("import.filename.dotPath")
         }
         if trimmed.rangeOfCharacter(from: invalidScalars) != nil {
-            return "文件名不能包含 / \\ : * ? \" < > |"
+            return L10n.string("import.filename.invalidCharacters")
         }
         return nil
     }

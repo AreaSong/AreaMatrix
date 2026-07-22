@@ -45,10 +45,12 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: String(localized: "settings.page.integrations"), subtitle: model.repoPath) {
+        SettingsPageHeader(title: L10n.string("settings.page.integrations"), subtitle: model.repoPath) {
             if model.loadState == .loading || model.isSaving {
                 SettingsHeaderProgressIndicator(
-                    label: model.isSaving ? "Saving integration settings" : "Checking iCloud status"
+                    label: model.isSaving
+                        ? L10n.string("Saving integration settings")
+                        : L10n.string("Checking iCloud status")
                 )
             } else if model.canRetryStatus {
                 Button {
@@ -76,12 +78,12 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var loadingContent: some View {
-        SettingsPageLoadingContent(title: String(localized: "settings.loading.integrations"))
+        SettingsPageLoadingContent(title: L10n.string("settings.loading.integrations"))
     }
 
     private func loadErrorContent(_ error: IntegrationsSettingsError) -> some View {
         SettingsPageErrorContent(
-            title: String(localized: "settings.error.loadIntegrations"),
+            title: L10n.string("settings.error.loadIntegrations"),
             message: error.message,
             recovery: error.recovery
         ) {
@@ -106,17 +108,20 @@ struct IntegrationsSettingsPane: View {
     }
 
     private func iCloudDriveSection(_ summary: IntegrationsSettingsSummary) -> some View {
-        IntegrationsSettingsSection(title: "iCloud Drive") {
+        IntegrationsSettingsSection(title: L10n.string("iCloud Drive")) {
             VStack(alignment: .leading, spacing: 12) {
-                IntegrationsSettingsKeyValueRow(label: "Repository location", value: summary.repositoryLocation.label)
-                IntegrationsSettingsKeyValueRow(label: "iCloud status", value: summary.iCloudStatus.label)
                 IntegrationsSettingsKeyValueRow(
-                    label: "Placeholder handling",
-                    value: "Downloaded when AreaMatrix needs to read the file"
+                    label: L10n.string("Repository location"),
+                    value: summary.repositoryLocation.label
+                )
+                IntegrationsSettingsKeyValueRow(label: L10n.string("iCloud status"), value: summary.iCloudStatus.label)
+                IntegrationsSettingsKeyValueRow(
+                    label: L10n.string("Placeholder handling"),
+                    value: L10n.string("Downloaded when AreaMatrix needs to read the file")
                 )
                 IntegrationsSettingsKeyValueRow(
-                    label: "Conflict handling",
-                    value: "Conflicted copies are shown for review"
+                    label: L10n.string("Conflict handling"),
+                    value: L10n.string("Conflicted copies are shown for review")
                 )
 
                 iCloudDriveDescription
@@ -197,7 +202,9 @@ struct IntegrationsSettingsPane: View {
 
     private var iCloudRiskWarning: some View {
         SettingsStatusBanner(
-            title: "iCloud may delay sync, keep placeholder files offline, or create conflicted copies.",
+            title: L10n.string(
+                "iCloud may delay sync, keep placeholder files offline, or create conflicted copies."
+            ),
             systemImage: "exclamationmark.triangle",
             tint: .orange
         )
@@ -205,7 +212,7 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var externalToolsSection: some View {
-        IntegrationsSettingsSection(title: "Finder and other apps") {
+        IntegrationsSettingsSection(title: L10n.string("Finder and other apps")) {
             Text(
                 "You can open files directly in Finder. External changes are picked up by file watching when available."
             )

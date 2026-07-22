@@ -14,7 +14,7 @@ struct MainLoadingView: View {
                 .controlSize(.large)
                 .tint(AreaMatrixTheme.Colors.tealBright)
                 .accessibilityLabel(state.accessibilityStatusText)
-            Text(String(localized: "onboarding.loading.opening"))
+            Text(L10n.string("onboarding.loading.opening"))
                 .font(.title2.weight(.semibold))
             pathBox
             recoverySection
@@ -22,7 +22,7 @@ struct MainLoadingView: View {
             openingErrorSection
             scanSection
             safetyText
-            Button(String(localized: "onboarding.loading.cancelOpening"), action: onCancelOpening)
+            Button(L10n.string("onboarding.loading.cancelOpening"), action: onCancelOpening)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .accessibilityHint("Cancel opening returns to folder validation and does not modify user files.")
         }
@@ -50,7 +50,7 @@ struct MainLoadingView: View {
                 isRetrying: isRetryingStartupRecovery,
                 onRetry: onRetryStartupRecovery
             )
-            .accessibilityLabel(state.recoveryStatusText ?? "Startup recovery")
+            .accessibilityLabel(state.recoveryStatusText ?? L10n.string("Startup recovery"))
         }
     }
 
@@ -58,13 +58,13 @@ struct MainLoadingView: View {
     private var openingErrorSection: some View {
         if let mapping = state.repositoryOpeningErrorMapping {
             VStack(alignment: .leading, spacing: 8) {
-                Label(String(localized: "onboarding.loading.repoUnavailable"), systemImage: "exclamationmark.triangle")
+                Label(L10n.string("onboarding.loading.repoUnavailable"), systemImage: "exclamationmark.triangle")
                     .font(.headline)
                     .foregroundStyle(.orange)
                 Text(mapping.userMessage)
                 Text(mapping.suggestedAction)
                     .foregroundStyle(.secondary)
-                Button(String(localized: "onboarding.loading.retry"), action: onRetryOpening)
+                Button(L10n.string("onboarding.loading.retry"), action: onRetryOpening)
             }
             .font(.callout)
             .padding(14)
@@ -98,7 +98,7 @@ struct MainLoadingView: View {
             .frame(maxWidth: 640, alignment: .leading)
             .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Scanning changes. \(status)")
+            .accessibilityLabel(L10n.format("onboarding.loading.scanningChanges", status))
         }
     }
 
@@ -106,9 +106,12 @@ struct MainLoadingView: View {
     private var treeLoadingSection: some View {
         if let treeLoading = state.treeLoading {
             VStack(alignment: .leading, spacing: 8) {
-                Label(state.treeStatusText ?? String(localized: "onboarding.loading.loadingTree"), systemImage: treeIcon(for: treeLoading))
-                    .font(.headline)
-                    .foregroundStyle(treeColor(for: treeLoading))
+                Label(
+                    state.treeStatusText ?? L10n.string("onboarding.loading.loadingTree"),
+                    systemImage: treeIcon(for: treeLoading)
+                )
+                .font(.headline)
+                .foregroundStyle(treeColor(for: treeLoading))
 
                 switch treeLoading {
                 case .loading:
@@ -118,14 +121,14 @@ struct MainLoadingView: View {
                 case let .failed(mapping):
                     Text(mapping.suggestedAction)
                         .foregroundStyle(.secondary)
-                    Button(String(localized: "onboarding.loading.retryTree"), action: onRetryTree)
+                    Button(L10n.string("onboarding.loading.retryTree"), action: onRetryTree)
                 }
             }
             .padding(14)
             .frame(maxWidth: 640, alignment: .leading)
             .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(state.treeStatusText ?? "Loading repository tree")
+            .accessibilityLabel(state.treeStatusText ?? L10n.string("Loading repository tree"))
         }
     }
 

@@ -24,8 +24,8 @@ extension MainRepositoryContentView {
         case .empty:
             AreaMatrixEmptyStateView(
                 systemImage: "tray.and.arrow.down",
-                title: "这里还没有文件",
-                message: "把文件拖到这里，AreaMatrix 会自动分类、命名并记录改动。",
+                title: L10n.string("main.empty.title"),
+                message: L10n.string("main.empty.message"),
                 primaryTitle: opening.isReadOnly ? nil : "Import...",
                 primaryAction: opening.isReadOnly ? nil : onImport
             )
@@ -79,7 +79,7 @@ extension MainRepositoryContentView {
                     .foregroundStyle(.secondary)
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(fileListModel.loadingAccessibilityText ?? "Loading files")
+            .accessibilityLabel(fileListModel.loadingAccessibilityText ?? L10n.string("Loading files"))
         }
     }
 }

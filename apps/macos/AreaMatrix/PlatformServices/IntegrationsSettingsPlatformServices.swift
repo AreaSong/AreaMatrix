@@ -78,9 +78,9 @@ enum ICloudHelpOpenError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .helpURLUnavailable:
-            "iCloud help URL is unavailable."
+            L10n.string("settings.integrations.icloudHelpUnavailable")
         case .openRejected:
-            "iCloud help could not be opened."
+            L10n.string("settings.integrations.icloudHelpOpenRejected")
         }
     }
 }

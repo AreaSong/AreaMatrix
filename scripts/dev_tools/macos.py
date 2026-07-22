@@ -238,6 +238,8 @@ def _test_base_args(
         destination,
         "-derivedDataPath",
         str(derived_data_dir),
+        "-testLanguage",
+        "en",
     ]
     if result_bundle:
         base.extend(["-resultBundlePath", str(result_bundle)])
@@ -332,8 +334,48 @@ def _run_sandbox_fallback(
         )
         rc = _handle_release_app_launch_probe_result(probe_rc)
     if rc == 0:
+        _validate_localization_compiler_keys(root, derived_data_dir)
         print("macOS tests: xcrun xctest passed after xcodebuild test sandbox block.")
     return rc
+
+
+def _validate_localization_compiler_keys(root: Path, derived_data_dir: Path) -> None:
+    catalog_path = root / "apps/macos/AreaMatrix/Localizations/Localizable.xcstrings"
+    if not catalog_path.is_file():
+        fail(f"macOS localization catalog not found at {catalog_path}.")
+    try:
+        catalog_keys = set(json.loads(catalog_path.read_text(encoding="utf-8")).get("strings", {}))
+    except json.JSONDecodeError:
+        fail(f"macOS localization catalog is invalid JSON: {catalog_path}.")
+
+    compiler_keys: set[str] = set()
+    app_build_root = derived_data_dir / "Build/Intermediates.noindex/AreaMatrix.build"
+    for path in app_build_root.rglob("*.stringsdata"):
+        if "AreaMatrixTests.build" in path.parts:
+            continue
+        try:
+            tables = json.loads(path.read_text(encoding="utf-8")).get("tables", {})
+        except json.JSONDecodeError:
+            fail(f"compiler localization metadata is invalid JSON: {path}.")
+        if not isinstance(tables, dict):
+            continue
+        for entries in tables.values():
+            if not isinstance(entries, list):
+                continue
+            compiler_keys.update(
+                entry["key"]
+                for entry in entries
+                if isinstance(entry, dict) and isinstance(entry.get("key"), str)
+            )
+
+    if not compiler_keys:
+        fail("macOS compiler emitted no localization keys; verify SWIFT_EMIT_LOC_STRINGS remains enabled.")
+    missing = sorted(compiler_keys - catalog_keys)
+    if missing:
+        preview = ", ".join(repr(key) for key in missing[:10])
+        suffix = "" if len(missing) <= 10 else f" (+{len(missing) - 10} more)"
+        fail(f"macOS String Catalog is missing compiler-emitted keys: {preview}{suffix}.")
+    print(f"macOS compiler localization contract: PASS ({len(compiler_keys)} keys)")
 
 
 def _resolve_derived_data_dir(derived_data_path: str | Path | None) -> tuple[Path, bool]:
@@ -441,6 +483,7 @@ def _run_macos_tests_inner(
     print("==> xcodebuild test")
     rc = _run_and_tee(["xcodebuild", "test", *base], test_log_path, env=_xcode_test_env(only_testing))
     if rc == 0:
+        _validate_localization_compiler_keys(root, derived_data_dir)
         handled_rc = _run_release_probe_when_requested(
             root,
             derived_data_dir,
@@ -455,6 +498,7 @@ def _run_macos_tests_inner(
         print("macOS tests: xcodebuild test passed.")
         return 0
     if _xcodebuild_tests_passed_before_sandbox_teardown(test_log_path, only_testing):
+        _validate_localization_compiler_keys(root, derived_data_dir)
         handled_rc = _run_release_probe_when_requested(
             root,
             derived_data_dir,

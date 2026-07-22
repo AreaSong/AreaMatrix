@@ -227,7 +227,9 @@ extension MainFileListModel {
     }
 
     private func selectedTagSuggestionDisabledReason() -> String? {
-        selectedWriteActionDisabledMessage(noSelectionMessage: "Select a file before reviewing tag suggestions.")
+        selectedWriteActionDisabledMessage(
+            noSelectionMessage: L10n.string("Select a file before reviewing tag suggestions.")
+        )
     }
 
     private func editedSessionAfterApply(
@@ -244,9 +246,9 @@ extension MainFileListModel {
             case .applied:
                 updated.status = .applied
             case .alreadyAdded:
-                updated.status = .alreadyAdded(result.error ?? "Already added")
+                updated.status = .alreadyAdded(result.error ?? L10n.string("Already added"))
             case .failed:
-                updated.status = .failed(result.error ?? "A suggestion could not be applied.")
+                updated.status = .failed(result.error ?? L10n.string("A suggestion could not be applied."))
             }
             return updated
         }

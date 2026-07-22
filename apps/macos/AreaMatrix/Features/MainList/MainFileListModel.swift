@@ -244,7 +244,10 @@ extension MainFileListModel {
             retryExternalSync()
         } catch {
             isExternalSyncPlaceholderDownloading = false
-            externalSyncRecoveryMessage = "iCloud download could not be started: \(error.localizedDescription)"
+            externalSyncRecoveryMessage = L10n.format(
+                "mainList.externalSync.iCloudDownloadStartError",
+                error.localizedDescription
+            )
         }
     }
 

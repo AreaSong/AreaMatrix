@@ -84,15 +84,15 @@ enum ClassifierRulesFileError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidRepositoryPath:
-            "repository path is empty."
+            L10n.string("settings.classifier.repositoryPathEmpty")
         case .metadataDirectoryMissing:
-            ".areamatrix metadata directory is missing."
+            L10n.string("settings.classifier.metadataMissing")
         case .classifierAlreadyExists:
-            "classifier.yaml already exists."
+            L10n.string("settings.classifier.fileAlreadyExists")
         case .classifierMissing:
-            "classifier.yaml is missing."
+            L10n.string("settings.classifier.fileMissing")
         case .lastValidBackupMissing:
-            "last valid classifier backup is missing."
+            L10n.string("settings.classifier.backupMissing")
         }
     }
 }

@@ -28,9 +28,9 @@ enum AIPrivacyRulesRouteFocus: Equatable {
     var label: String {
         switch self {
         case let .rule(ruleID):
-            "Focused privacy rule \(normalizedRuleID(ruleID))"
+            L10n.format("ai.privacy.focusedRule", normalizedRuleID(ruleID))
         case let .field(field):
-            "Focused remote field \(aiPrivacyInputFieldLabel(field))"
+            L10n.format("ai.privacy.focusedField", aiPrivacyInputFieldLabel(field))
         }
     }
 
@@ -144,8 +144,8 @@ struct AIPrivacyRulesRouteView: View {
         } catch {
             registry = .unavailable
             loadState = .failed(AISettingsError(
-                message: "Tag and category registry could not be loaded.",
-                recovery: "Retry registry before editing Tag or Category privacy rules.",
+                message: L10n.string("Tag and category registry could not be loaded."),
+                recovery: L10n.string("Retry registry before editing Tag or Category privacy rules."),
                 detail: error.localizedDescription
             ))
         }

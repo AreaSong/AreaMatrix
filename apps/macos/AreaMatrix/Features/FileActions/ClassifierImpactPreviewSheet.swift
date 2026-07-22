@@ -27,7 +27,7 @@ struct ClassifierImpactPreviewSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Preview rule impact", pageID: "classifier-impact-preview") {
+        MainFileActionSheetContainer(title: L10n.string("Preview rule impact"), pageID: "classifier-impact-preview") {
             VStack(alignment: .leading, spacing: 12) {
                 ruleSummary
                 previewState
@@ -57,7 +57,10 @@ struct ClassifierImpactPreviewSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             metadataRow("Rule", model.ruleSummary)
             metadataRow("Applies to", model.appliesSummary)
-            metadataRow("Move preference", model.moveFiles ? "Move files to new category folders" : "Metadata only")
+            metadataRow(
+                L10n.string("Move preference"),
+                model.moveFiles ? L10n.string("Move files to new category folders") : L10n.string("Metadata only")
+            )
             Toggle("Move files to new category folders", isOn: moveFilesBinding)
                 .disabled(model.loadState.isLoading)
                 .accessibilityIdentifier("classifier-impact-preview-move-files")
@@ -89,10 +92,15 @@ struct ClassifierImpactPreviewSheet: View {
             if let empty = model.emptyStateText {
                 Text(empty).foregroundStyle(.secondary)
             } else {
-                Text("\(report.affectedFileCount) existing files match this rule")
-                Text("\(report.willUpdateCount) will change category")
-                Text("\(report.alreadyCorrectCount) already match target category")
-                Text("\(report.needsReviewCount + report.conflictCount) need review")
+                Text(L10n.plural("file-actions.classifier-impact.matching-files", count: report.affectedFileCount))
+                Text(L10n.plural("file-actions.classifier-impact.will-change", count: report.willUpdateCount))
+                Text(L10n.plural("file-actions.classifier-impact.already-correct", count: report.alreadyCorrectCount))
+                Text(
+                    L10n.plural(
+                        "file-actions.classifier-impact.need-review",
+                        count: report.needsReviewCount + report.conflictCount
+                    )
+                )
             }
             if report.warningRequired, let warning = report.warning {
                 Label(warning, systemImage: "exclamationmark.triangle")
@@ -112,7 +120,7 @@ struct ClassifierImpactPreviewSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Picker("Rows", selection: $model.filter) {
                 ForEach(ClassifierImpactPreviewFilter.allCases) { filter in
-                    Text(filter.rawValue).tag(filter)
+                    Text(filter.displayName).tag(filter)
                 }
             }
             .pickerStyle(.segmented)
@@ -152,7 +160,10 @@ struct ClassifierImpactPreviewSheet: View {
             Button("Save and apply to existing files") {}
                 .keyboardShortcut(.defaultAction)
                 .disabled(true)
-                .help(model.primaryApplyDisabledReason ?? "Review the impact preview before applying this rule.")
+                .help(
+                    model.primaryApplyDisabledReason
+                        ?? L10n.string("Review the impact preview before applying this rule.")
+                )
         }
     }
 
@@ -176,12 +187,12 @@ struct ClassifierImpactPreviewSheet: View {
 
     private func actionText(for sample: RuleImpactSampleSnapshot) -> String {
         let reasons = sample.matchReasons.map(\.displayLabel).joined(separator: ", ")
-        return reasons.isEmpty ? "Classifier matcher" : reasons
+        return reasons.isEmpty ? L10n.string("Classifier matcher") : reasons
     }
 
     private func statusCell(_ sample: RuleImpactSampleSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(sample.status.rawValue).font(.caption.weight(.semibold))
+            Text(sample.status.displayName).font(.caption.weight(.semibold))
             if let reason = sample.reason {
                 Text(reason).font(.caption).foregroundStyle(.secondary)
             }

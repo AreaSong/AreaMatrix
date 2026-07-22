@@ -8,13 +8,13 @@ enum ClassifierSettingsErrorFactory {
         if let mapping = await mapper.mapCoreErrorIfPresent(error) {
             return ClassifierSettingsLoadError(
                 message: mapping.userMessage,
-                recovery: "Retry status"
+                recovery: L10n.string("Retry status")
             )
         }
 
         return ClassifierSettingsLoadError(
             message: error.localizedDescription,
-            recovery: "Retry status after the repository is available."
+            recovery: L10n.string("Retry status after the repository is available.")
         )
     }
 
@@ -25,13 +25,13 @@ enum ClassifierSettingsErrorFactory {
         if let mapping = await mapper.mapCoreErrorIfPresent(error) {
             return ClassifierSettingsSaveError(
                 message: mapping.userMessage,
-                recovery: "Retry save"
+                recovery: L10n.string("Retry save")
             )
         }
 
         return ClassifierSettingsSaveError(
             message: error.localizedDescription,
-            recovery: "Retry save after the repository is available."
+            recovery: L10n.string("Retry save after the repository is available.")
         )
     }
 
@@ -42,13 +42,13 @@ enum ClassifierSettingsErrorFactory {
         if let mapping = await mapper.mapCoreErrorIfPresent(error) {
             return ClassifierSettingsPreviewError(
                 message: mapping.userMessage,
-                recovery: "Retry preview"
+                recovery: L10n.string("Retry preview")
             )
         }
 
         return ClassifierSettingsPreviewError(
             message: error.localizedDescription,
-            recovery: "Retry preview after the repository is available."
+            recovery: L10n.string("Retry preview after the repository is available.")
         )
     }
 
@@ -60,19 +60,19 @@ enum ClassifierSettingsErrorFactory {
             if context.kind == .config {
                 return ClassifierSettingsValidationError(
                     message: context.mapping.userMessage,
-                    recovery: "Open classifier.yaml and fix the reported configuration error."
+                    recovery: L10n.string("Open classifier.yaml and fix the reported configuration error.")
                 )
             }
 
             return ClassifierSettingsValidationError(
                 message: context.mapping.userMessage,
-                recovery: "Review the reported error, then validate classifier.yaml again."
+                recovery: L10n.string("Review the reported error, then validate classifier.yaml again.")
             )
         }
 
         return ClassifierSettingsValidationError(
             message: error.localizedDescription,
-            recovery: "Open classifier.yaml and try again."
+            recovery: L10n.string("Open classifier.yaml and try again.")
         )
     }
 }

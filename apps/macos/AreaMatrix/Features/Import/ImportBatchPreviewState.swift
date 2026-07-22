@@ -19,11 +19,11 @@ enum ImportBatchDestinationOption: Hashable {
     var title: String {
         switch self {
         case .autoClassify:
-            "自动分类（推荐）"
+            L10n.string("自动分类（推荐）")
         case let .category(slug):
             slug
         case .repositoryRoot:
-            "Repo root"
+            L10n.string("Repo root")
         }
     }
 }
@@ -59,7 +59,7 @@ enum ImportBatchPreviewRowStatus: Equatable {
     var detail: String? {
         switch self {
         case .loading:
-            "Preparing preview..."
+            L10n.string("Preparing preview...")
         case let .ready(reasonLabel), let .duplicate(_, reasonLabel), let .nameConflict(_, reasonLabel),
              let .iCloudPlaceholder(_, reasonLabel), let .blocked(reasonLabel), let .error(reasonLabel):
             reasonLabel
@@ -111,11 +111,11 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
     func displayCategory(for destination: ImportBatchDestinationOption) -> String {
         switch destination {
         case .autoClassify:
-            predictedCategory ?? "未生成"
+            predictedCategory ?? L10n.string("未生成")
         case let .category(slug):
             slug
         case .repositoryRoot:
-            "repo root"
+            L10n.string("repo root")
         }
     }
 
@@ -143,7 +143,13 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
             sizeBytes: (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init),
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
-            status: .ready(reasonLabel: "\(prediction.reason.displayLabel) · \(prediction.confidencePercent)%")
+            status: .ready(
+                reasonLabel: L10n.format(
+                    "import.preview.classification-reason",
+                    prediction.reason.displayLabel,
+                    Int64(prediction.confidencePercent)
+                )
+            )
         )
     }
 
@@ -158,7 +164,10 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
             sizeBytes: (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init),
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
-            status: .duplicate(existingPath: existingPath, reasonLabel: "Skip: \(existingPath)")
+            status: .duplicate(
+                existingPath: existingPath,
+                reasonLabel: L10n.format("import.preview.duplicate-skip", existingPath)
+            )
         )
     }
 
@@ -173,7 +182,10 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
             sizeBytes: (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init),
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
-            status: .nameConflict(existingPath: existingPath, reasonLabel: "Keep both (auto-number): \(existingPath)")
+            status: .nameConflict(
+                existingPath: existingPath,
+                reasonLabel: L10n.format("import.preview.keep-both-auto-number", existingPath)
+            )
         )
     }
 
@@ -216,7 +228,11 @@ enum ImportBatchPreviewStatus: Equatable {
         case .idle:
             nil
         case let .loading(completed, total):
-            total > 0 ? "Preparing preview... \(completed)/\(total)" : "Preparing preview..."
+            if total > 0 {
+                L10n.format("import.preview.preparingProgress", completed, total)
+            } else {
+                L10n.string("Preparing preview...")
+            }
         case let .loaded(successful, total, failed):
             loadedMessage(successful: successful, total: total, failed: failed)
         case let .unsupported(message):
@@ -226,23 +242,22 @@ enum ImportBatchPreviewStatus: Equatable {
 
     private func loadedMessage(successful: Int, total: Int, failed: Int) -> String {
         if failed == 0 {
-            return "已完成 \(total) 个文件的导入预览"
+            return L10n.plural("import.preview.completed-files", count: total)
         }
         if successful == 0 {
-            return "未能完成导入预览：\(failed) 个文件失败"
+            return L10n.plural("import.preview.failed-files", count: failed)
         }
-        let failedPart = failed > 0 ? "，\(failed) 个失败" : ""
-        return "已完成 \(successful)/\(total) 个文件的导入预览\(failedPart)"
+        return L10n.format("import.preview.completedWithFailures", successful, total, failed)
     }
 }
 
 extension ImportEntrySource {
     var batchSourceLabel: String {
         switch self {
-        case .filePicker: "Finder 选择"
-        case .dropZone: "Finder 拖入"
-        case .dockOpenFile: "Dock 打开"
-        case .importConflictBatch: "Import conflict batch"
+        case .filePicker: L10n.string("import.source.finderSelection")
+        case .dropZone: L10n.string("import.source.finderDrop")
+        case .dockOpenFile: L10n.string("import.source.dockOpen")
+        case .importConflictBatch: L10n.string("import.source.conflictBatch")
         }
     }
 }

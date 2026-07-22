@@ -49,9 +49,13 @@
 
 ### 语言与外观
 
-通用页提供 `system`、`zh-CN`、`en`。`system` 在打开资料库时解析为当前系统支持的内容语言；
-`zh-CN` 在 Swift 持久化层保持用户选择，并在 Core 边界归一化为 `zh-Hans`。该值控制当前资料库的树和
-生成内容语言，不代表整个 SwiftUI 界面已完成运行时本地化切换。
+通用页提供两套彼此独立的语言设置：
+
+- **界面语言**是应用级 `AppLanguage`，保存到 UserDefaults，选项为跟随系统、简体中文、English。它控制菜单、窗口、按钮、错误、确认与 Accessibility 文案；切换后立即刷新，不重置当前业务状态。
+- **资料库内容语言**是每资料库 `RepositoryContentLanguage`，保存到 `RepoConfig.locale`，选项为跟随界面、简体中文、English。它控制分类显示名、目录树和之后生成的概述；切换不会自动重写已有概述。
+
+正式 locale 只有 `zh-Hans` 与 `en`。读取旧 `zh-CN` 时兼容并规范写回 `zh-Hans`；跟随系统时，所有
+`zh-*`（包括繁体中文系统偏好）当前解析为 `zh-Hans`，其他不支持语言回退 `en`。用户文件名和正文永不翻译。
 
 外观当前只显示并锁定为 `system`，应用跟随系统外观。
 
@@ -71,7 +75,9 @@
   分享前必须审阅 snapshot 及其 companion files。
 - 更新资料库配置中的概览输出、locale、iCloud 警告和未匹配文件回落策略。
 
-资料库配置读取兼容 `system`、`zh-Hans`、`zh-CN`、`en`；保存时使用设置页稳定值，调用 Core 前执行上述归一化。它仍是资料库内容配置，不是应用 UI 语言开关。
+资料库配置读取兼容 `system`、`zh-Hans`、`zh-CN`、`en`；保存统一写 `system`、`zh-Hans` 或 `en`。
+其中 `system` 的产品含义是“跟随界面”。应用通过独立的 `set_app_interface_locale` 调用把解析后的稳定
+界面 locale 同步给 Core，资料库配置仍保留 `system`；它不是应用 UI 语言开关。
 
 更换资料库不会在设置页直接移动旧资料库内容，而是进入资料库选择和校验流程。
 

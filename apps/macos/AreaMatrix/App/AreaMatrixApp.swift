@@ -4,29 +4,32 @@ import SwiftUI
 @main
 struct AreaMatrixApp: App {
     @NSApplicationDelegateAdaptor(AreaMatrixDockOpenAppDelegate.self) private var appDelegate
+    @StateObject private var languageStore = AppLanguageStore()
 
     var body: some Scene {
         WindowGroup {
             MainWindow()
+                .environmentObject(languageStore)
+                .environment(\.locale, languageStore.resolvedLocale)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(after: .sidebar) {
-                Button("Import...") {
+                Button(languageStore.localizedString("app.command.import")) {
                     AreaMatrixImportCommandRelay.publish()
                 }
                 .keyboardShortcut("i", modifiers: [.command])
-                Button("Settings") {
+                Button(languageStore.localizedString("app.command.settings")) {
                     AreaMatrixSettingsCommandRelay.publish()
                 }
                 .keyboardShortcut(",", modifiers: [.command])
                 Divider()
-                Button("Command Palette") {
+                Button(languageStore.localizedString("app.command.commandPalette")) {
                     AreaMatrixCommandPaletteCommandRelay.publish()
                 }
                 .keyboardShortcut("k", modifiers: [.command])
-                Button("Undo History") {
+                Button(languageStore.localizedString("app.command.undoHistory")) {
                     AreaMatrixUndoHistoryCommandRelay.publish()
                 }
                 .keyboardShortcut("z", modifiers: [.command, .option])

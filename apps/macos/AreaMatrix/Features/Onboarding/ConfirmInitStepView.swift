@@ -16,22 +16,26 @@ struct ConfirmInitStepView: View {
         ".areamatrix/generated/", ".areamatrix/staging/"
     ]
 
-    private let adoptItems = [
-        "创建 .areamatrix/ 内部目录",
-        "创建 .areamatrix/ignore.yaml",
-        "创建本地索引数据库",
-        "扫描现有文件和文件夹",
-        "将已有文件标记为 adopted / indexed",
-        "生成 .areamatrix/generated/root.md"
-    ]
+    private var adoptItems: [String] {
+        [
+            L10n.string("onboarding.confirm.adopt.createMetadata"),
+            L10n.string("onboarding.confirm.adopt.createIgnoreFile"),
+            L10n.string("onboarding.confirm.adopt.createIndex"),
+            L10n.string("onboarding.confirm.adopt.scanFiles"),
+            L10n.string("onboarding.confirm.adopt.markIndexed"),
+            L10n.string("onboarding.confirm.adopt.generateOverview")
+        ]
+    }
 
-    private let safetyItems = [
-        "不移动已有文件",
-        "不重命名已有文件",
-        "不删除已有文件",
-        "不覆盖已有 README.md",
-        "不修改已有项目目录结构"
-    ]
+    private var safetyItems: [String] {
+        [
+            L10n.string("onboarding.confirm.safety.noMove"),
+            L10n.string("onboarding.confirm.safety.noRename"),
+            L10n.string("onboarding.confirm.safety.noDelete"),
+            L10n.string("onboarding.confirm.safety.noReadmeOverwrite"),
+            L10n.string("onboarding.confirm.safety.noStructureChange")
+        ]
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -51,11 +55,11 @@ struct ConfirmInitStepView: View {
         .padding(40)
         .areaMatrixGlassContentPanel(width: 720, padding: 0)
         .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
-        .confirmationDialog(String(localized: "onboarding.confirm.quitSetup"), isPresented: $isCancelConfirmationPresented) {
-            Button(String(localized: "onboarding.confirm.quit"), role: .destructive, action: onCancelSetup)
-            Button(String(localized: "settings.action.cancel"), role: .cancel) {}
+        .confirmationDialog(L10n.string("onboarding.confirm.quitSetup"), isPresented: $isCancelConfirmationPresented) {
+            Button(L10n.string("onboarding.confirm.quit"), role: .destructive, action: onCancelSetup)
+            Button(L10n.string("settings.action.cancel"), role: .cancel) {}
         } message: {
-            Text(String(localized: "onboarding.confirm.cancelSetupMessage"))
+            Text(L10n.string("onboarding.confirm.cancelSetupMessage"))
         }
     }
 
@@ -64,16 +68,16 @@ struct ConfirmInitStepView: View {
             systemImage: isCreateMode ? "plus.rectangle.on.folder" : "folder.badge.plus",
             tint: AreaMatrixTheme.Colors.tealBright,
             title: isCreateMode
-                ? String(localized: "onboarding.confirm.createTitle")
-                : String(localized: "onboarding.confirm.adoptTitle"),
-            subtitle: String(localized: "onboarding.confirm.subtitle")
+                ? L10n.string("onboarding.confirm.createTitle")
+                : L10n.string("onboarding.confirm.adoptTitle"),
+            subtitle: L10n.string("onboarding.confirm.subtitle")
         )
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var pathBox: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "onboarding.confirm.repoPath"))
+            Text(L10n.string("onboarding.confirm.repoPath"))
                 .font(.headline)
             AreaMatrixPathBox(
                 path: draft.validation.repoPath,
@@ -87,14 +91,18 @@ struct ConfirmInitStepView: View {
     private var planSection: some View {
         InitPlanList(
             title: isCreateMode
-                ? String(localized: "onboarding.confirm.willCreate")
-                : String(localized: "onboarding.confirm.willExecute"),
+                ? L10n.string("onboarding.confirm.willCreate")
+                : L10n.string("onboarding.confirm.willExecute"),
             items: isCreateMode ? createItems : adoptItems
         )
     }
 
     private var safetySection: some View {
-        InitPlanList(title: String(localized: "onboarding.confirm.willNotExecute"), items: safetyItems, iconName: "checkmark.shield")
+        InitPlanList(
+            title: L10n.string("onboarding.confirm.willNotExecute"),
+            items: safetyItems,
+            iconName: "checkmark.shield"
+        )
     }
 
     @ViewBuilder
@@ -113,7 +121,7 @@ struct ConfirmInitStepView: View {
     private var iCloudWarning: some View {
         if draft.validation.isICloudPath {
             Label(
-                String(localized: "onboarding.confirm.icloudWarning"),
+                L10n.string("onboarding.confirm.icloudWarning"),
                 systemImage: "icloud"
             )
             .font(.callout)
@@ -124,30 +132,30 @@ struct ConfirmInitStepView: View {
     private var footer: some View {
         HStack {
             if footerActions.contains(.back) {
-                Button(String(localized: "onboarding.confirm.back"), action: onBack)
+                Button(L10n.string("onboarding.confirm.back"), action: onBack)
                     .buttonStyle(AreaMatrixSecondaryButtonStyle())
             }
             if footerActions.contains(.cancelSetup) {
-                Button(String(localized: "onboarding.confirm.cancelSetup")) {
+                Button(L10n.string("onboarding.confirm.cancelSetup")) {
                     isCancelConfirmationPresented = true
                 }
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
             }
             if footerActions.contains(.changePath) {
-                Button(String(localized: "onboarding.confirm.changePath"), action: onChangePath)
+                Button(L10n.string("onboarding.confirm.changePath"), action: onChangePath)
                     .buttonStyle(AreaMatrixSecondaryButtonStyle())
             }
             Spacer()
             if footerActions.contains(.primary) {
                 Button(
                     isCreateMode
-                        ? String(localized: "onboarding.confirm.createRepository")
-                        : String(localized: "onboarding.confirm.adoptFolder"),
+                        ? L10n.string("onboarding.confirm.createRepository")
+                        : L10n.string("onboarding.confirm.adoptFolder"),
                     action: primaryAction
                 )
-                    .keyboardShortcut(.defaultAction)
-                    .buttonStyle(AreaMatrixPrimaryButtonStyle())
-                    .disabled(!canRunPrimaryAction)
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(AreaMatrixPrimaryButtonStyle())
+                .disabled(!canRunPrimaryAction)
             }
         }
         .frame(maxWidth: 680)
@@ -209,32 +217,32 @@ enum ConfirmInitStepRules {
         let validation = draft.validation
 
         guard validation.exists, validation.isDirectory else {
-            return "路径状态已变化，请返回校验页。"
+            return L10n.string("onboarding.confirm.blocked.pathChanged")
         }
         guard validation.isReadable, validation.isWritable else {
-            return "路径权限已变化，请返回校验页。"
+            return L10n.string("onboarding.confirm.blocked.permissionsChanged")
         }
         guard !validation.isInsideAreaMatrix else {
-            return "请选择资料库根目录，而不是 .areamatrix 内部目录。"
+            return L10n.string("onboarding.confirm.blocked.insideMetadata")
         }
         guard !validation.isInitialized else {
-            return "该路径已经是 AreaMatrix 资料库，请返回校验页。"
+            return L10n.string("onboarding.confirm.blocked.alreadyInitialized")
         }
         guard !validation.hasUnfinishedScanSession else {
-            return "该资料库存在未完成的扫描记录，请返回修复流程。"
+            return L10n.string("onboarding.confirm.blocked.unfinishedScan")
         }
         guard !validation.hasMissingEnvironmentChecks else {
-            return "路径环境检查缺失，请返回校验页。"
+            return L10n.string("onboarding.confirm.blocked.missingChecks")
         }
         guard validation.recommendedMode == draft.mode else {
-            return "路径初始化模式已变化，请返回校验页。"
+            return L10n.string("onboarding.confirm.blocked.modeChanged")
         }
 
         switch draft.mode {
         case .createEmpty:
-            return validation.isEmpty ? nil : "路径已不是空目录，请返回校验页。"
+            return validation.isEmpty ? nil : L10n.string("onboarding.confirm.blocked.noLongerEmpty")
         case .adoptExisting:
-            return validation.isEmpty ? "路径已变为空目录，请返回校验页。" : nil
+            return validation.isEmpty ? L10n.string("onboarding.confirm.blocked.nowEmpty") : nil
         }
     }
 }

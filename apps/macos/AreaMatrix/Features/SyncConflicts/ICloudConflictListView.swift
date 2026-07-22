@@ -1,23 +1,57 @@
 import SwiftUI
 
 enum ICloudConflictListCopy {
-    static let title = "iCloud Conflicts"
-    static let iCloudConflictVisualTitle = "解决 iCloud 冲突"
-    static let subtitle = """
-    iCloud created conflict copies for these files. AreaMatrix will not delete any version automatically.
-    """
-    static let iCloudConflictVisualSubtitle = """
-    Select a conflict found by Core before comparing versions. Listing is read-only and will not move files.
-    """
-    static let loadingTitle = "Checking iCloud conflicts..."
-    static let emptyTitle = "No iCloud conflicts found"
-    static let errorTitle = "Unable to list iCloud conflicts"
-    static let refreshAction = "Refresh"
-    static let revealRepositoryAction = "Reveal repository in Finder"
-    static let resolveAction = "Resolve..."
-    static let revealAction = "Reveal"
-    static let closeAction = "Close"
-    static let diagnosticsAction = "Collect Diagnostics..."
+    static var title: String {
+        L10n.string("iCloud Conflicts")
+    }
+
+    static var iCloudConflictVisualTitle: String {
+        L10n.string("icloud.conflict.title")
+    }
+
+    static var subtitle: String {
+        L10n.string("icloud.conflict.list.subtitle")
+    }
+
+    static var iCloudConflictVisualSubtitle: String {
+        L10n.string("icloud.conflict.list.selectionHint")
+    }
+
+    static var loadingTitle: String {
+        L10n.string("Checking iCloud conflicts...")
+    }
+
+    static var emptyTitle: String {
+        L10n.string("No iCloud conflicts found")
+    }
+
+    static var errorTitle: String {
+        L10n.string("Unable to list iCloud conflicts")
+    }
+
+    static var refreshAction: String {
+        L10n.string("Refresh")
+    }
+
+    static var revealRepositoryAction: String {
+        L10n.string("Reveal repository in Finder")
+    }
+
+    static var resolveAction: String {
+        L10n.string("Resolve...")
+    }
+
+    static var revealAction: String {
+        L10n.string("Reveal")
+    }
+
+    static var closeAction: String {
+        L10n.string("Close")
+    }
+
+    static var diagnosticsAction: String {
+        L10n.string("Collect Diagnostics...")
+    }
 }
 
 enum ICloudConflictListAccessibilityID {
@@ -86,16 +120,16 @@ enum ICloudConflictListPageContext: Equatable {
         case .iCloudConflictListList:
             ICloudConflictListCopy.loadingTitle
         case .iCloudConflictVisualConflictVisual:
-            "Loading conflict details..."
+            L10n.string("Loading conflict details...")
         }
     }
 
     func countLabel(conflictCount: Int) -> String {
         switch self {
         case .iCloudConflictListList:
-            "\(conflictCount) conflicts"
+            L10n.plural("syncConflict.iCloud.count", count: conflictCount)
         case .iCloudConflictVisualConflictVisual:
-            "\(conflictCount) conflict groups found"
+            L10n.plural("syncConflict.iCloud.groupCount", count: conflictCount)
         }
     }
 }
@@ -227,7 +261,11 @@ struct ICloudConflictListView: View {
             VStack(spacing: 4) {
                 Text(mapping.userMessage)
                 Text(mapping.suggestedAction)
-                Text("Severity: \(mapping.severity.rawValue); Recoverability: \(mapping.recoverability.rawValue)")
+                Text(L10n.format(
+                    "syncConflict.error.severityRecoverability",
+                    mapping.severity.rawValue,
+                    mapping.recoverability.rawValue
+                ))
                 if !mapping.rawContext.isEmpty {
                     Text(mapping.rawContext)
                         .font(.system(.caption, design: .monospaced))

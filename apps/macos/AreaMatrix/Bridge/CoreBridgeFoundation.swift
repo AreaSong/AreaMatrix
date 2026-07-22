@@ -56,6 +56,10 @@ enum ScanSessionStatusSnapshot: String, Equatable {
     case paused = "Paused"
     case failed = "Failed"
     case interrupted = "Interrupted"
+
+    var displayName: String {
+        L10n.string(rawValue)
+    }
 }
 
 enum RepoPathIssueSnapshot: String, Equatable {

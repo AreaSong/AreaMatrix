@@ -22,7 +22,7 @@ struct ImportProgressView: View {
                 Text(state.titleText)
                     .font(.headline)
                 Text(state.bannerText)
-                Text("当前：\(state.currentPath)")
+                Text(L10n.format("import.progress.current-path", state.currentPath))
                     .textSelection(.enabled)
             }
             .padding(14)
@@ -77,10 +77,10 @@ struct ImportProgressView: View {
                 .font(.headline)
                 .foregroundStyle(.red)
             Text("已完成 \(state.completed)，失败 \(state.failed)，未开始 \(state.remaining + state.pending)")
-            Text("当前失败项：\(state.currentPath)")
+            Text(L10n.format("import.progress.current-failure", state.currentPath))
                 .textSelection(.enabled)
             if let errorMapping = state.errorMapping {
-                Text("错误代码：\(errorMapping.kind.rawValue)")
+                Text(L10n.format("import.progress.error-code", errorMapping.kind.displayName))
                 Text(errorMapping.suggestedAction)
                     .foregroundStyle(.secondary)
             }
@@ -118,24 +118,30 @@ struct ImportProgressView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):
-            Label("Diagnostics collected: \(snapshot.snapshotPath)", systemImage: "doc.badge.gearshape")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Label(
+                L10n.format("import.progress.diagnostics-collected", snapshot.snapshotPath),
+                systemImage: "doc.badge.gearshape"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
         case let .failed(mapping):
-            Label("Diagnostics failed: \(mapping.userMessage)", systemImage: "exclamationmark.triangle")
-                .font(.caption)
-                .foregroundStyle(.red)
+            Label(
+                L10n.format("import.progress.diagnostics-failed", mapping.userMessage),
+                systemImage: "exclamationmark.triangle"
+            )
+            .font(.caption)
+            .foregroundStyle(.red)
         }
     }
 
     private var stopButtonTitle: String {
         switch state.stopState {
         case .idle:
-            "Stop after current file"
+            L10n.string("Stop after current file")
         case .stopping:
-            "Stopping..."
+            L10n.string("Stopping...")
         case .stopped:
-            "Stopped"
+            L10n.string("Stopped")
         }
     }
 

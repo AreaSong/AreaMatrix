@@ -6,7 +6,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     @Published private(set) var status: ImportBatchCopyImportStatus = .idle
     @Published var selectedStorageMode: ImportSingleFileStorageMode = .copy
     @Published var selectedNamingStrategy: ImportBatchNamingStrategy = .suggestedName
-    @Published var namingPrefix = "Import"
+    @Published var namingPrefix = L10n.string("import.batch-naming.default-prefix")
     @Published var isICloudDownloading = false
     @Published private(set) var replaceConfirmationErrorMessage: String?
     @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
@@ -54,10 +54,7 @@ extension ImportBatchCopyImportModel {
     }
 
     func collectReplaceConfirmationDiagnostics() {
-        replaceConfirmationDiagnosticsMessage = [
-            "Diagnostics collected for replace confirmation state.",
-            "No user file contents included."
-        ].joined(separator: " ")
+        replaceConfirmationDiagnosticsMessage = L10n.string("import.replace-confirmation.diagnostics-collected")
     }
 
     func clearReplaceConfirmationRecovery() {

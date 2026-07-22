@@ -31,7 +31,7 @@ struct ImportFolderConflictSection: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button(isExpanded ? "Hide" : "Review conflicts") {
+            Button(isExpanded ? L10n.string("Hide") : L10n.string("Review conflicts")) {
                 isExpanded.toggle()
             }
         }
@@ -75,7 +75,7 @@ struct ImportFolderConflictSection: View {
                 strategyView(for: row)
             }
             TableColumn("Status") { row in
-                Text(row.status.detail ?? row.status.tag)
+                Text(row.status.detail ?? L10n.string(row.status.tag))
             }
             TableColumn("Action") { row in
                 actionView(for: row)
@@ -85,7 +85,12 @@ struct ImportFolderConflictSection: View {
     }
 
     private var conflictSummary: String {
-        "\(model.duplicateCount) duplicates · \(model.nameConflictCount) name conflicts · \(model.blockedCount) blocked"
+        L10n.format(
+            "import.folder.conflict-summary",
+            model.duplicateCount,
+            model.nameConflictCount,
+            model.blockedCount
+        )
     }
 
     @ViewBuilder
@@ -194,7 +199,7 @@ struct ImportFolderConflictSection: View {
     }
 
     private func replaceButton(row: ImportFolderPreviewRow, isConfirmed: Bool) -> some View {
-        Button(isConfirmed ? "Replace confirmed" : "Confirm Replace...") {
+        Button(isConfirmed ? L10n.string("Replace confirmed") : L10n.string("Confirm Replace...")) {
             guard let context = model.beginReplaceConfirmation(for: row.id) else { return }
             pendingReplaceConfirmation = ImportFolderReplaceConfirmation(rowID: row.id, context: context)
         }

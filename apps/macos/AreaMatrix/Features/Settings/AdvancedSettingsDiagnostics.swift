@@ -47,7 +47,7 @@ struct AdvancedSettingsVersionInfo: Equatable {
     )
 
     var repoSchemaVersionLabel: String {
-        repoSchemaVersion.map { "v\($0)" } ?? "Unknown"
+        repoSchemaVersion.map { "v\($0)" } ?? L10n.string("Unknown")
     }
 }
 
@@ -81,9 +81,9 @@ enum AdvancedSettingsLogFolderError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .missing(path):
-            "Logs folder is missing: \(path)"
+            L10n.format("settings.advanced.logsMissing", path)
         case let .openRejected(path):
-            "Finder rejected opening logs folder: \(path)"
+            L10n.format("settings.advanced.logsOpenRejected", path)
         }
     }
 }
@@ -94,7 +94,7 @@ enum AdvancedSettingsDiagnosticSummaryError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .copyRejected:
-            "Pasteboard rejected the diagnostic summary."
+            L10n.string("settings.advanced.diagnosticsCopyRejected")
         }
     }
 }

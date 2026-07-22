@@ -39,7 +39,7 @@ final class AreaMatrixShellTests: XCTestCase {
         model.updateRepositoryPath("  ")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "请输入资料库路径")
+        XCTAssertEqual(model.repositoryPathError, "Enter a repository path")
         XCTAssertFalse(model.canContinueFromChoosePath)
         await validator.assertNoRepoPathRequests()
     }
@@ -52,7 +52,7 @@ final class AreaMatrixShellTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo/.areamatrix")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "请选择资料库根目录，而不是 .areamatrix 内部目录")
+        XCTAssertEqual(model.repositoryPathError, "Choose the repository root, not a directory inside .areamatrix")
         XCTAssertFalse(model.canContinueFromChoosePath)
         await validator.assertNoRepoPathRequests()
     }
@@ -191,9 +191,9 @@ final class AreaMatrixShellTests: XCTestCase {
             error: CoreError.Db(message: "database error")
         )
 
-        XCTAssertEqual(config.title, "Repository settings are invalid")
-        XCTAssertEqual(permission.title, "Repository settings need permission")
-        XCTAssertEqual(io.title, "Repository settings are unavailable")
-        XCTAssertEqual(db.title, "Repository metadata cannot be opened")
+        XCTAssertEqual(config.title, "Repository Settings Are Invalid")
+        XCTAssertEqual(permission.title, "Repository Settings Need Permission")
+        XCTAssertEqual(io.title, "Repository Settings Are Unavailable")
+        XCTAssertEqual(db.title, "Repository Metadata Cannot Be Opened")
     }
 }

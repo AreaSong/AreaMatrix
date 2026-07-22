@@ -13,13 +13,13 @@ enum DetailPaneTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .meta:
-            "Meta"
+            L10n.string("Meta")
         case .summary:
-            "Summary"
+            L10n.string("Summary")
         case .log:
-            "Log"
+            L10n.string("Log")
         case .note:
-            "Note"
+            L10n.string("Note")
         }
     }
 }

@@ -13,6 +13,10 @@ enum PlatformIdSnapshot: String, Equatable, Hashable {
     case windows = "Windows"
     case linux = "Linux"
     case unknown = "Unknown"
+
+    var displayName: String {
+        self == .unknown ? L10n.string("Unknown") : rawValue
+    }
 }
 
 enum PlatformCapabilityStatusSnapshot: String, Equatable, Hashable {
@@ -20,6 +24,10 @@ enum PlatformCapabilityStatusSnapshot: String, Equatable, Hashable {
     case limited = "Limited"
     case notAvailable = "Not available"
     case unknown = "Unknown"
+
+    var displayName: String {
+        L10n.string(rawValue)
+    }
 }
 
 struct PlatformCapabilitySupportSnapshot: Equatable {

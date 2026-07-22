@@ -25,7 +25,10 @@ struct WelcomeStepView: View {
     static var hasPlayedLaunchAnimation = false
     @State private var mouseParallax = AreaMatrixParallax.zero
     @State private var scanTerminalLines = [
-        AreaMatrixTerminalLine(text: "等待系统指令...", colorToken: AreaMatrixTheme.Colors.tealText)
+        AreaMatrixTerminalLine(
+            text: L10n.string("onboarding.welcome.terminal.waiting"),
+            colorToken: AreaMatrixTheme.Colors.tealText
+        )
     ]
     @State private var scanCursorColorToken = AreaMatrixTheme.Colors.tealText
     @State private var scanTask: Task<Void, Never>?
@@ -183,7 +186,7 @@ private extension WelcomeStepView {
                 action: onLearnMore,
                 label: {
                     AreaMatrixLinkActionLabel(
-                        title: String(localized: "onboarding.welcome.learnMore"),
+                        title: L10n.string("onboarding.welcome.learnMore"),
                         iconName: "questionmark.circle",
                         isHovered: isLearnMoreHovered
                     )
@@ -223,7 +226,7 @@ private extension WelcomeStepView {
                         shimmerPhase: $shimmerPhase
                     ) {
                         AreaMatrixPrimaryActionLabel(
-                            title: String(localized: "onboarding.welcome.chooseFolder"),
+                            title: L10n.string("onboarding.welcome.chooseFolder"),
                             iconName: "folder.badge.plus",
                             shortcut: "⌘O",
                             isHovered: isCtaHovered
@@ -297,10 +300,10 @@ private extension WelcomeStepView {
 
         scanTask = Task { @MainActor in
             let logs = [
-                ("准备打开本地文件夹选择器...", AreaMatrixTheme.Colors.tealText),
-                ("加载文件安全与分类说明...", AreaMatrixTheme.Colors.tealText),
-                ("选择文件夹前不会写入任何资料...", AreaMatrixTheme.Colors.tealText),
-                ("准备请求文件夹访问权限...", AreaMatrixTheme.Colors.goldText)
+                (L10n.string("onboarding.welcome.terminal.preparePicker"), AreaMatrixTheme.Colors.tealText),
+                (L10n.string("onboarding.welcome.terminal.loadSafety"), AreaMatrixTheme.Colors.tealText),
+                (L10n.string("onboarding.welcome.terminal.noWriteBeforeSelection"), AreaMatrixTheme.Colors.tealText),
+                (L10n.string("onboarding.welcome.terminal.requestAccess"), AreaMatrixTheme.Colors.goldText)
             ]
             let scenes: [WelcomeScene] = [.feat1, .feat2, .feat3, .feat4]
 
@@ -315,7 +318,10 @@ private extension WelcomeStepView {
 
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
-            guard await typeScanLog(">>> 正在打开文件夹选择器 <<<", colorToken: AreaMatrixTheme.Colors.goldText) else { return }
+            guard await typeScanLog(
+                L10n.string("onboarding.welcome.terminal.openingPicker"),
+                colorToken: AreaMatrixTheme.Colors.goldText
+            ) else { return }
             withAnimation(.areaMatrixProgressStep) {
                 scanProgressFraction = 1.0
                 activeScene = .feat5

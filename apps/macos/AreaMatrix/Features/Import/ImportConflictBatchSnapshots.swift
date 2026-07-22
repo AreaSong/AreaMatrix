@@ -6,8 +6,8 @@ enum ImportConflictBatchConflictTypeSnapshot: String, Equatable, Hashable {
 
     var title: String {
         switch self {
-        case .duplicateHash: "Duplicate content"
-        case .sameNameDifferentContent: "Same name, different content"
+        case .duplicateHash: L10n.string("Duplicate content")
+        case .sameNameDifferentContent: L10n.string("Same name, different content")
         }
     }
 }
@@ -20,10 +20,10 @@ enum ImportConflictBatchStrategySnapshot: String, Equatable, Hashable {
 
     var title: String {
         switch self {
-        case .skip: "Skip"
-        case .keepBoth: "Keep both"
-        case .replace: "Replace"
-        case .askPerItem: "Ask per item"
+        case .skip: L10n.string("Skip")
+        case .keepBoth: L10n.string("Keep both")
+        case .replace: L10n.string("Replace")
+        case .askPerItem: L10n.string("Ask per item")
         }
     }
 }
@@ -34,6 +34,10 @@ enum ImportConflictBatchPreviewStatusSnapshot: String, Equatable, Hashable {
     case needsConfirmation = "Needs confirmation"
     case blocked = "Blocked"
     case failed = "Failed"
+
+    var title: String {
+        L10n.string(rawValue)
+    }
 }
 
 enum ImportConflictBatchResultStatusSnapshot: String, Equatable, Hashable {
@@ -43,6 +47,10 @@ enum ImportConflictBatchResultStatusSnapshot: String, Equatable, Hashable {
     case queuedForPerItem = "Queued for per item"
     case pending = "Pending"
     case failed = "Failed"
+
+    var title: String {
+        L10n.string(rawValue)
+    }
 }
 
 // swiftlint:disable:next type_name
@@ -99,7 +107,7 @@ struct ImportConflictBatchPreviewItemSnapshot: Equatable, Identifiable {
             willSkip: false,
             willAskPerItem: false,
             indexOnly: false,
-            riskSummary: "Waiting for Core preview.",
+            riskSummary: L10n.string("Waiting for Core preview."),
             reason: nil
         )
     }
@@ -190,7 +198,7 @@ struct ImportConflictBatchPerItemQueue: Equatable {
     var routes: [ImportConflictBatchPerItemRoute]
 
     var summary: String {
-        "Queued \(routes.count) conflicts for per-item review."
+        L10n.plural("import.conflict.per-item-queue-summary", count: routes.count)
     }
 
     static func make(from preview: ImportConflictBatchPreviewReportSnapshot) -> ImportConflictBatchPerItemQueue? {
@@ -270,7 +278,7 @@ extension ImportConflictBatchPreviewReportSnapshot {
             trashAvailable: false,
             undoAvailable: false,
             canApply: false,
-            applyBlockedReason: "Select at least one conflict.",
+            applyBlockedReason: L10n.string("Select at least one conflict."),
             replaceConfirmationRequired: false,
             replaceConfirmationSummary: nil,
             items: items.map(\.notSelected)
@@ -294,7 +302,7 @@ extension ImportConflictBatchPreviewItemSnapshot {
         copy.willKeepBoth = false
         copy.willSkip = false
         copy.willAskPerItem = false
-        copy.reason = "Not selected"
+        copy.reason = L10n.string("Not selected")
         return copy
     }
 }
@@ -310,42 +318,45 @@ extension ImportBatchCopyImportModel {
     }
 
     var conflictBatchScopeSummary: String {
-        if hasEmptyManualConflictBatchScope { return "Select at least one conflict." }
-        guard let preview = conflictBatchPreviewReport else { return "Checking conflicts..." }
+        if hasEmptyManualConflictBatchScope { return L10n.string("Select at least one conflict.") }
+        guard let preview = conflictBatchPreviewReport else { return L10n.string("Checking conflicts...") }
         if preview.applyToAllSimilarConflicts {
-            return "Will apply to \(preview.duplicateConflictCount) duplicate conflicts and " +
-                "\(preview.sameNameConflictCount) same-name conflicts."
+            return L10n.format(
+                "import.conflict.all-similar-scope-summary",
+                preview.duplicateConflictCount,
+                preview.sameNameConflictCount
+            )
         }
-        return "Will apply to \(preview.includedCount) selected conflicts."
+        return L10n.plural("import.conflict.selected-scope-summary", count: Int(preview.includedCount))
     }
 
     var conflictBatchApplyDisabledReason: String? {
-        if isConflictBatchApplying { return "Applying..." }
-        if hasEmptyManualConflictBatchScope { return "Select at least one conflict." }
-        guard let preview = conflictBatchPreviewReport else { return "Checking conflicts..." }
+        if isConflictBatchApplying { return L10n.string("Applying...") }
+        if hasEmptyManualConflictBatchScope { return L10n.string("Select at least one conflict.") }
+        guard let preview = conflictBatchPreviewReport else { return L10n.string("Checking conflicts...") }
         if !preview.canApply {
-            return preview.applyBlockedReason ?? "Could not prepare conflict strategy."
+            return preview.applyBlockedReason ?? L10n.string("Could not prepare conflict strategy.")
         }
         if ImportConflictBatchValidation.actionableIncludedCount(preview: preview) == 0 {
-            return "All conflicts in this scope are blocked."
+            return L10n.string("All conflicts in this scope are blocked.")
         }
         let replaceConfirmed = isConflictBatchReplaceConfirmed || preview.replaceConfirmationRequired
         guard let request = makeImportConflictBatchApplyRequest(replaceConfirmed: replaceConfirmed),
               ImportConflictBatchValidation.canApply(preview: preview, request: request, isApplying: false) else {
-            return "Refresh conflict strategy preview."
+            return L10n.string("Refresh conflict strategy preview.")
         }
         return nil
     }
 
     var conflictBatchAskPerItemDisabledReason: String? {
-        if isConflictBatchApplying { return "Applying..." }
-        if hasEmptyManualConflictBatchScope { return "Select at least one conflict." }
-        guard let preview = conflictBatchPreviewReport else { return "Checking conflicts..." }
+        if isConflictBatchApplying { return L10n.string("Applying...") }
+        if hasEmptyManualConflictBatchScope { return L10n.string("Select at least one conflict.") }
+        guard let preview = conflictBatchPreviewReport else { return L10n.string("Checking conflicts...") }
         if ImportConflictBatchValidation.canAskPerItem(preview: preview, isApplying: false) { return nil }
         if preview.includedCount > 0 {
-            return "All conflicts in this scope are blocked."
+            return L10n.string("All conflicts in this scope are blocked.")
         }
-        return preview.applyBlockedReason ?? "Select at least one conflict."
+        return preview.applyBlockedReason ?? L10n.string("Select at least one conflict.")
     }
 
     var hasEmptyManualConflictBatchScope: Bool {

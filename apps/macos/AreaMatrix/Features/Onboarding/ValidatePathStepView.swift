@@ -28,8 +28,8 @@ struct ValidatePathStepView: View {
             AreaMatrixStepHeader(
                 systemImage: "checklist",
                 tint: AreaMatrixTheme.Colors.tealBright,
-                title: String(localized: "onboarding.validate.title"),
-                subtitle: String(localized: "onboarding.validate.subtitle")
+                title: L10n.string("onboarding.validate.title"),
+                subtitle: L10n.string("onboarding.validate.subtitle")
             )
 
             VStack(spacing: 24) {

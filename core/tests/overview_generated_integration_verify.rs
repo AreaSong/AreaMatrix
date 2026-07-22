@@ -72,6 +72,7 @@ fn assert_contains(haystack: &str, needle: &str) {
 #[test]
 fn overview_generated_integration_verify_api_udl_and_rust_wiring_are_real() {
     for fragment in [
+        "void set_app_interface_locale(string locale);",
         "void init_repo(string repo_path, RepoInitOptions options);",
         "FileEntry import_file(",
         "void update_config(string repo_path, RepoConfig new_config);",
@@ -83,6 +84,7 @@ fn overview_generated_integration_verify_api_udl_and_rust_wiring_are_real() {
     }
 
     for fragment in [
+        "pub fn set_app_interface_locale(locale: String) -> CoreResult<()>",
         "generated overview uses `RepoInitOptions::overview_output`",
         "later overview-regeneration triggers read the",
         "generated overview uses a successful import as a generated-overview trigger",

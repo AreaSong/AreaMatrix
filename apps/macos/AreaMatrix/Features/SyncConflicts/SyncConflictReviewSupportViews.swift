@@ -76,7 +76,7 @@ private struct SyncConflictReviewVersionCard: View {
                     ("Modified", file.modifiedDisplay),
                     ("Hash", file.hashDisplay),
                     ("Source platform", file.sourceDisplay),
-                    ("File ID", file.fileID.map(String.init) ?? "Unknown")
+                    (L10n.string("File ID"), file.fileID.map(String.init) ?? L10n.string("Unknown"))
                 ])
             }
         }
@@ -128,7 +128,7 @@ struct SyncConflictReviewApplySuccess: View {
                 ("Kept paths", SyncConflictReviewDisplayValue.list(report.keptPaths)),
                 ("Retained paths", SyncConflictReviewDisplayValue.list(report.retainedPaths)),
                 ("Trashed paths", SyncConflictReviewDisplayValue.list(report.trashedPaths)),
-                ("Undo token", report.undoToken ?? "None")
+                (L10n.string("Undo token"), report.undoToken ?? L10n.string("None"))
             ])
         }
         .accessibilityIdentifier(SyncConflictReviewAccessibilityID.applySuccess)
@@ -182,6 +182,6 @@ enum SyncConflictReviewDisplayValue {
     }
 
     static func yesNo(_ value: Bool) -> String {
-        value ? "Yes" : "No"
+        value ? L10n.string("Yes") : L10n.string("No")
     }
 }

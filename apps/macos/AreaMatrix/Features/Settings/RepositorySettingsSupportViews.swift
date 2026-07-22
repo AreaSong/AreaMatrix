@@ -7,12 +7,12 @@ struct RepositorySettingsPathSection: View {
     let onChangeRepository: () -> Void
 
     var body: some View {
-        RepositorySettingsSection(title: "路径") {
-            RepositorySettingsKeyValueRow(label: "Repository name", value: summary.repositoryName)
-            RepositorySettingsKeyValueRow(label: "Location", value: summary.location)
-            RepositorySettingsKeyValueRow(label: "Type", value: summary.locationType)
-            RepositorySettingsKeyValueRow(label: "Core version", value: summary.coreVersion)
-            RepositorySettingsKeyValueRow(label: "Metadata", value: summary.metadataStatus)
+        RepositorySettingsSection(title: L10n.string("settings.repository.section.path")) {
+            RepositorySettingsKeyValueRow(label: L10n.string("Repository name"), value: summary.repositoryName)
+            RepositorySettingsKeyValueRow(label: L10n.string("Location"), value: summary.location)
+            RepositorySettingsKeyValueRow(label: L10n.string("Type"), value: summary.locationType)
+            RepositorySettingsKeyValueRow(label: L10n.string("Core version"), value: summary.coreVersion)
+            RepositorySettingsKeyValueRow(label: L10n.string("Metadata"), value: summary.metadataStatus)
             repositoryPathActions
         }
     }
@@ -42,14 +42,20 @@ struct RepositorySettingsHealthSection: View {
     }()
 
     var body: some View {
-        RepositorySettingsSection(title: "健康") {
+        RepositorySettingsSection(title: L10n.string("settings.repository.section.health")) {
             VStack(alignment: .leading, spacing: 10) {
-                RepositorySettingsKeyValueRow(label: "Database", value: summary?.databaseStatus.label ?? "—")
-                RepositorySettingsKeyValueRow(label: "Schema version", value: schemaVersionValue)
-                RepositorySettingsKeyValueRow(label: "Files indexed", value: filesIndexedValue)
-                RepositorySettingsKeyValueRow(label: "Last opened", value: lastOpenedValue)
-                RepositorySettingsKeyValueRow(label: "Last scan", value: lastScanValue)
-                RepositorySettingsKeyValueRow(label: "Watcher", value: summary?.watcherStatus.label ?? "Paused")
+                RepositorySettingsKeyValueRow(
+                    label: L10n.string("Database"),
+                    value: summary?.databaseStatus.label ?? "—"
+                )
+                RepositorySettingsKeyValueRow(label: L10n.string("Schema version"), value: schemaVersionValue)
+                RepositorySettingsKeyValueRow(label: L10n.string("Files indexed"), value: filesIndexedValue)
+                RepositorySettingsKeyValueRow(label: L10n.string("Last opened"), value: lastOpenedValue)
+                RepositorySettingsKeyValueRow(label: L10n.string("Last scan"), value: lastScanValue)
+                RepositorySettingsKeyValueRow(
+                    label: L10n.string("Watcher"),
+                    value: summary?.watcherStatus.label ?? L10n.string("Paused")
+                )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -57,7 +63,7 @@ struct RepositorySettingsHealthSection: View {
 
     private var schemaVersionValue: String {
         guard let schemaVersion = summary?.schemaVersion else {
-            return "Unknown"
+            return L10n.string("Unknown")
         }
         return "v\(schemaVersion)"
     }
@@ -72,7 +78,7 @@ struct RepositorySettingsHealthSection: View {
 
     private var lastScanValue: String {
         guard let timestamp = summary?.lastScanAt else {
-            return "Not available"
+            return L10n.string("Not available")
         }
 
         return Date(timeIntervalSince1970: TimeInterval(timestamp))
@@ -81,7 +87,7 @@ struct RepositorySettingsHealthSection: View {
 
     private var lastOpenedValue: String {
         guard let timestamp = summary?.lastOpenedAt else {
-            return "Unknown"
+            return L10n.string("Unknown")
         }
 
         return Date(timeIntervalSince1970: TimeInterval(timestamp))
@@ -98,7 +104,7 @@ struct RepositorySettingsSafeActionsSection: View {
     let onExportDiagnostics: () -> Void
 
     var body: some View {
-        RepositorySettingsSection(title: "Actions") {
+        RepositorySettingsSection(title: L10n.string("Actions")) {
             Button("Reconnect Repository", action: onReconnectRepository)
                 .accessibilityIdentifier("repository-settings-reconnect-repository")
 
@@ -107,7 +113,7 @@ struct RepositorySettingsSafeActionsSection: View {
 
             Button(diagnosticsButtonTitle, action: onExportDiagnostics)
                 .disabled(isDiagnosticsDisabled)
-                .help(diagnosticsDisabledReason ?? "Diagnostics export is available.")
+                .help(diagnosticsDisabledReason ?? L10n.string("Diagnostics export is available."))
                 .accessibilityIdentifier("repository-settings-export-diagnostics")
 
             Text("Diagnostics do not include your original file contents and are not uploaded automatically.")

@@ -10,8 +10,8 @@
 > 现状更正（2026-07-21）：三层分离原则（FS 英文 slug、用户文件名保留）仍有效，以下声明按当前实现更正：
 >
 > - 内置分类 slug 实际为 6 个：docs / code / design / media / finance / inbox（`core/resources/classifier.yaml`），正文原「10 个」处已就地更正。
-> - 「`Localizations/{en,zh-Hans,zh-Hant}.lproj/Localizable.strings` 编译进 app bundle」**已实现**（2026-07-21）：Settings 与 Onboarding 关键 UI 已通过 `String(localized:)` 接入 `apps/macos/AreaMatrix/Localizations/` 管线（en / zh-Hans；zh-Hant 暂镜像 en 内容作 fallback）；其余 UI 表面仍可按需渐进接入。
-> - 「UI 显示按 `Locale.preferredLanguages.first` 取本地化字符串」**部分实现**：Settings / Onboarding 关键文案已走系统 locale 与 bundle strings；`preferredLanguages` 仍同时用于推导仓库配置 locale（`apps/macos/AreaMatrix/Bridge/CoreRepositoryOpening.swift`）驱动分类 `display_name`（仅 zh-Hans / en）；MainList / Detail 等其余表面尚未全面接入。
+> - 本地化资源已统一为 `Localizations/Localizable.xcstrings`，正式只维护 `en` 与 `zh-Hans`；旧 `zh-Hant` 英文镜像已删除，所有 `zh-*` 系统语言当前统一回退到简体中文。
+> - 应用界面语言与资料库内容语言已拆分。`AppLanguage` 是 UserDefaults 中的应用级设置，控制全部 macOS UI；`RepositoryContentLanguage` 是每资料库配置，控制分类显示名、目录树和之后生成的概述。两者均支持跟随选项，但不共享持久化状态。
 > - 「DB 中 path 列做 NFC 归一 + case-insensitive 索引」未实现：`files.path` 为 `TEXT NOT NULL UNIQUE`，无 `COLLATE NOCASE`、无 NFC 归一（`core/src/db/schema.rs`）；unicode NFC 归一目前仅用于分类关键词匹配。
 
 ## 上下文
@@ -33,19 +33,19 @@ AreaMatrix 是面向中文用户为主的本地资料管理工具，但要兼顾
 |---|---|
 | **文件系统**（分类目录、staging 等内部目录） | 英文 slug，内置 6 个：`docs`, `code`, `design`, `media`, `finance`, `inbox`（更正：见顶部现状说明） |
 | **数据库**（files.category 列） | 同 FS：英文 slug |
-| **UI 显示**（侧栏、详情、设置） | 按系统 locale 取 bundle 本地化字符串（Settings / Onboarding 已接入；其余表面渐进） |
+| **应用界面文案**（菜单、按钮、错误、设置标签） | 按应用级 `AppLanguage` 从 String Catalog 取本地化字符串 |
+| **资料库内容显示**（分类显示名、目录树、生成概述） | 按每资料库 `RepositoryContentLanguage` 显示；`system` 跟随当前已解析的界面语言 |
 | **用户文件名** | **完全保留**，不做翻译 / 拼音化 / 转码 |
 
-**Locale 配置文件**（Settings / Onboarding 已接入，见顶部现状说明）：每个 locale 一个 strings 文件，编译进 app bundle：
+**Locale 配置文件**：单一 String Catalog 编译进 app bundle：
 
 ```text
-apps/macos/AreaMatrix/Localizations/
-├── en.lproj/Localizable.strings
-├── zh-Hans.lproj/Localizable.strings
-└── zh-Hant.lproj/Localizable.strings
+apps/macos/AreaMatrix/Localizations/Localizable.xcstrings
 ```
 
 `classifier.yaml` 中 category 的 `display_name` 字段提供国际化别名（[ADR](../api/classifier-yaml.md)）。
+平台层通过 `set_app_interface_locale` 将当前稳定界面 locale 同步给 Core；该进程内状态只用于解析
+`RepoConfig.locale = system` 的后续生成，不修改资料库配置，也不重写已有概述。
 
 ## 理由
 
@@ -129,7 +129,7 @@ apps/macos/AreaMatrix/Localizations/
 
 ### 风险
 
-- 用户改了 macOS locale 但应用没自动跟随 → 提供"语言切换"设置项
+- 用户改了 macOS locale 但应用没自动跟随 → `AppLanguage.system` 每次解析当前首个受支持系统语言
 - 用户文件名包含 NTFS / FAT 不允许的字符（`:`, `?`, `*` 等）→ 在导入时验证 + 转义建议
 - 大小写敏感性：APFS 默认不敏感、ext4 敏感 → 跨平台同步时可能出冲突
   - 缓解：DB 中 path 列做 NFC 归一 + case-insensitive 索引（更正：未实现，见顶部现状说明）

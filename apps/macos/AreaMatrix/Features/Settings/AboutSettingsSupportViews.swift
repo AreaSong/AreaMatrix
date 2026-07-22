@@ -27,7 +27,7 @@ struct AboutSettingsHeader: View {
             }
             Spacer()
             if isLoadingVersionInfo {
-                SettingsHeaderProgressIndicator(label: "Loading version information")
+                SettingsHeaderProgressIndicator(label: L10n.string("Loading version information"))
             } else {
                 Button {
                     onRetryVersionCheck()
@@ -50,10 +50,10 @@ struct AboutSettingsVersionsSection: View {
     let onCopyVersions: () -> Void
 
     var body: some View {
-        AboutSettingsSection(title: "Versions") {
-            AboutSettingsKeyValueRow(label: "App version", value: versionInfo.appVersion)
-            AboutSettingsKeyValueRow(label: "Core version", value: versionInfo.coreVersion)
-            AboutSettingsKeyValueRow(label: "Schema version", value: versionInfo.schemaVersion)
+        AboutSettingsSection(title: L10n.string("Versions")) {
+            AboutSettingsKeyValueRow(label: L10n.string("App version"), value: versionInfo.appVersion)
+            AboutSettingsKeyValueRow(label: L10n.string("Core version"), value: versionInfo.coreVersion)
+            AboutSettingsKeyValueRow(label: L10n.string("Schema version"), value: versionInfo.schemaVersion)
             Button {
                 onCopyVersions()
             } label: {
@@ -66,7 +66,7 @@ struct AboutSettingsVersionsSection: View {
 
 struct AboutSettingsLicenseSection: View {
     var body: some View {
-        AboutSettingsSection(title: "License") {
+        AboutSettingsSection(title: L10n.string("License")) {
             Text("PolyForm Noncommercial")
                 .font(.callout)
                 .textSelection(.enabled)
@@ -80,7 +80,7 @@ struct AboutSettingsLinksSection: View {
     let onCopyLink: (AboutExternalLink) -> Void
 
     var body: some View {
-        AboutSettingsSection(title: "Links") {
+        AboutSettingsSection(title: L10n.string("Links")) {
             ForEach(AboutExternalLink.allCases) { link in
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 10) {
@@ -120,7 +120,7 @@ struct AboutSettingsDiagnosticsSection: View {
     let onCopyError: (AboutSettingsError) -> Void
 
     var body: some View {
-        AboutSettingsSection(title: "Diagnostics") {
+        AboutSettingsSection(title: L10n.string("Diagnostics")) {
             Button {
                 onRequestDiagnostics()
             } label: {
@@ -144,9 +144,13 @@ struct AboutSettingsDiagnosticsSection: View {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            SettingsProgressBanner(title: "Collecting redacted diagnostics...")
+            SettingsProgressBanner(title: L10n.string("Collecting redacted diagnostics..."))
         case let .collected(snapshot):
-            SettingsStatusBanner(title: "Diagnostics exported", systemImage: "checkmark.circle", tint: .green) {
+            SettingsStatusBanner(
+                title: L10n.string("Diagnostics exported"),
+                systemImage: "checkmark.circle",
+                tint: .green
+            ) {
                 Text(snapshot.exportPath)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -182,7 +186,7 @@ struct AboutSettingsLogsSection: View {
     let onCopyLogsPath: () -> Void
 
     var body: some View {
-        AboutSettingsSection(title: "Logs") {
+        AboutSettingsSection(title: L10n.string("Logs")) {
             HStack(spacing: 10) {
                 Button {
                     onOpenLogs()

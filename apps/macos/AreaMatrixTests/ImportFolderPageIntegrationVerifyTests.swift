@@ -46,8 +46,8 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         )
 
         XCTAssertEqual(model.route, .mainEmpty(opening))
-        XCTAssertEqual(model.toastMessage, "已导入：invoice.pdf")
-        announcer.assertAnnouncements(["已导入：invoice.pdf"])
+        XCTAssertEqual(model.toastMessage, "Imported: invoice.pdf")
+        announcer.assertAnnouncements(["Imported: invoice.pdf"])
     }
 
     @MainActor
@@ -102,7 +102,7 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         )
 
         await model.load(request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a")))
-        XCTAssertEqual(model.importDisabledReason, "预扫描存在错误，请先 Retry scan 或 Cancel")
+        XCTAssertEqual(model.importDisabledReason, "Resolve pre-scan errors by retrying the scan or canceling")
         let blockedOutcome = await model.importReadyFiles()
         XCTAssertNil(blockedOutcome)
         await importer.assertImportedBatchFiles([])

@@ -153,11 +153,15 @@ extension FileEntrySnapshot {
     var statusDisplay: String {
         switch availability {
         case .missing:
-            "Missing"
+            L10n.string("Missing")
         case .iCloudPlaceholder:
-            "iCloud"
+            L10n.string("iCloud")
         case .available:
-            storageMode == "Indexed" ? "Index-only" : "OK"
+            if storageMode == "Indexed" {
+                L10n.string("Index-only")
+            } else {
+                L10n.string("OK")
+            }
         }
     }
 }

@@ -20,14 +20,22 @@ struct ValidatePathChecklist: View {
     private var rows: [ValidatePathCheckRow] {
         guard let validation else {
             return [
-                .init("路径存在且是文件夹", displayedPath, .checking),
-                .init("可读权限", "等待 Core 校验", .checking),
-                .init("可写权限", "等待 Core 校验", .checking),
-                .init("可用空间", "等待容量检查", .checking),
-                .init("iCloud 路径", "等待 Core 校验", .checking),
-                .init("是否外置卷", "等待卷信息", .checking),
-                .init("已有 AreaMatrix repo", "等待 Core 校验", .checking),
-                .init("非空目录", "等待 Core 校验", .checking)
+                .init(L10n.string("onboarding.validate.check.directory"), displayedPath, .checking),
+                .init(L10n.string("onboarding.validate.check.readable"), waitingForCore, .checking),
+                .init(L10n.string("onboarding.validate.check.writable"), waitingForCore, .checking),
+                .init(
+                    L10n.string("onboarding.validate.check.capacity"),
+                    L10n.string("onboarding.validate.check.waitingCapacity"),
+                    .checking
+                ),
+                .init(L10n.string("onboarding.validate.check.icloud"), waitingForCore, .checking),
+                .init(
+                    L10n.string("onboarding.validate.check.externalVolume"),
+                    L10n.string("onboarding.validate.check.waitingVolume"),
+                    .checking
+                ),
+                .init(L10n.string("onboarding.validate.check.existingRepo"), waitingForCore, .checking),
+                .init(L10n.string("onboarding.validate.check.nonEmpty"), waitingForCore, .checking)
             ]
         }
 
@@ -36,31 +44,69 @@ struct ValidatePathChecklist: View {
 
         return [
             .init(
-                "路径存在且是文件夹",
-                isUsableDirectory ? "可作为候选目录" : "请选择已存在的文件夹",
+                L10n.string("onboarding.validate.check.directory"),
+                isUsableDirectory
+                    ? L10n.string("onboarding.validate.check.candidateDirectory")
+                    : L10n.string("onboarding.validate.check.chooseExistingFolder"),
                 isUsableDirectory ? .passed : .failed
             ),
-            .init("可读权限", validation.isReadable ? "Passed" : "Failed", validation.isReadable ? .passed : .failed),
-            .init("可写权限", validation.isWritable ? "Passed" : "Failed", validation.isWritable ? .passed : .failed),
-            .init("可用空间", capacityDetail(for: validation), capacityStatus(for: validation)),
             .init(
-                "iCloud 路径",
-                validation.isICloudPath ? "Warning" : "Passed",
+                L10n.string("onboarding.validate.check.readable"),
+                statusDetail(validation.isReadable),
+                validation.isReadable ? .passed : .failed
+            ),
+            .init(
+                L10n.string("onboarding.validate.check.writable"),
+                statusDetail(validation.isWritable),
+                validation.isWritable ? .passed : .failed
+            ),
+            .init(
+                L10n.string("onboarding.validate.check.capacity"),
+                capacityDetail(for: validation),
+                capacityStatus(for: validation)
+            ),
+            .init(
+                L10n.string("onboarding.validate.check.icloud"),
+                validation.isICloudPath ? warningDetail : passedDetail,
                 validation.isICloudPath ? .warning : .passed
             ),
-            .init("是否外置卷", externalVolumeDetail(for: validation), externalVolumeStatus(for: validation)),
             .init(
-                "已有 AreaMatrix repo",
-                validation.isInitialized ? "Warning" : "Passed",
+                L10n.string("onboarding.validate.check.externalVolume"),
+                externalVolumeDetail(for: validation),
+                externalVolumeStatus(for: validation)
+            ),
+            .init(
+                L10n.string("onboarding.validate.check.existingRepo"),
+                validation.isInitialized ? warningDetail : passedDetail,
                 validation.isInitialized ? .warning : .passed
             ),
-            .init("非空目录", hasNonEmptyDirectory ? "Warning" : "Passed", hasNonEmptyDirectory ? .warning : .passed)
+            .init(
+                L10n.string("onboarding.validate.check.nonEmpty"),
+                hasNonEmptyDirectory ? warningDetail : passedDetail,
+                hasNonEmptyDirectory ? .warning : .passed
+            )
         ]
+    }
+
+    private var waitingForCore: String {
+        L10n.string("onboarding.validate.check.waitingCore")
+    }
+
+    private var passedDetail: String {
+        L10n.string("onboarding.validate.check.passed")
+    }
+
+    private var warningDetail: String {
+        L10n.string("onboarding.validate.check.warning")
+    }
+
+    private func statusDetail(_ passed: Bool) -> String {
+        passed ? passedDetail : L10n.string("onboarding.validate.check.failed")
     }
 
     private func capacityDetail(for validation: RepoPathValidationSnapshot) -> String {
         guard let bytes = validation.availableCapacityBytes else {
-            return "检查结果缺失"
+            return L10n.string("onboarding.validate.check.missingResult")
         }
 
         return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
@@ -76,9 +122,9 @@ struct ValidatePathChecklist: View {
 
     private func externalVolumeDetail(for validation: RepoPathValidationSnapshot) -> String {
         switch validation.isExternalVolume {
-        case .some(true): "Warning"
-        case .some(false): "Passed"
-        case nil: "检查结果缺失"
+        case .some(true): warningDetail
+        case .some(false): passedDetail
+        case nil: L10n.string("onboarding.validate.check.missingResult")
         }
     }
 
@@ -111,7 +157,7 @@ private struct ValidatePathCheckRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(row.title)
                     .font(.body.weight(.medium))
-                Text("\(row.status.text): \(row.detail)")
+                Text(L10n.format("onboarding.validate.checkStatusDetail", row.status.text, row.detail))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

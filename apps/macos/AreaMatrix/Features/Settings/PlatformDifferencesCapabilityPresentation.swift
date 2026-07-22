@@ -13,52 +13,56 @@ extension PlatformCapabilitiesSnapshot {
     var pageSpecRows: [PlatformDifferencesCapabilityDisplayRow] {
         [
             PlatformDifferencesCapabilityDisplayRow(
-                name: "Repository access",
+                name: L10n.string("Repository access"),
                 support: securityBookmark,
-                detail: "Uses platform repository permission or bookmark state from Core.",
-                alternative: "Open repository settings if access needs to be renewed."
+                detail: L10n.string("Uses platform repository permission or bookmark state from Core."),
+                alternative: L10n.string("Open repository settings if access needs to be renewed.")
             ),
             PlatformDifferencesCapabilityDisplayRow(
-                name: "File import",
+                name: L10n.string("File import"),
                 support: limitedFrom(
                     securityBookmark,
-                    reason: "Import flows still rerun picker, permission, and duplicate preflight."
+                    reason: L10n.string("Import flows still rerun picker, permission, and duplicate preflight.")
                 ),
-                detail: "Files and folders are imported only through their source flow.",
-                alternative: "Return to the real import entry before choosing files."
+                detail: L10n.string("Files and folders are imported only through their source flow."),
+                alternative: L10n.string("Return to the real import entry before choosing files.")
             ),
             PlatformDifferencesCapabilityDisplayRow(
-                name: "File watcher",
+                name: L10n.string("File watcher"),
                 support: watcher,
-                detail: "Shows whether the platform can support repository change watching.",
-                alternative: "Use manual rescan where watcher support is limited."
+                detail: L10n.string("Shows whether the platform can support repository change watching."),
+                alternative: L10n.string("Use manual rescan where watcher support is limited.")
             ),
             PlatformDifferencesCapabilityDisplayRow(
-                name: "Cloud provider",
+                name: L10n.string("Cloud provider"),
                 support: cloudPlaceholder,
-                detail: "Shows cloud placeholder or provider limitations without reporting sync progress.",
-                alternative: "Use the platform cloud provider UI for exact sync state."
+                detail: L10n.string(
+                    "Shows cloud placeholder or provider limitations without reporting sync progress."
+                ),
+                alternative: L10n.string("Use the platform cloud provider UI for exact sync state.")
             ),
             PlatformDifferencesCapabilityDisplayRow(
-                name: "Trash / Recycle Bin",
+                name: L10n.string("Trash / Recycle Bin"),
                 support: trash,
-                detail: "Controls whether recoverable destructive actions may be enabled elsewhere.",
-                alternative: "Keep dangerous actions disabled when this row is not available."
+                detail: L10n.string("Controls whether recoverable destructive actions may be enabled elsewhere."),
+                alternative: L10n.string("Keep dangerous actions disabled when this row is not available.")
             ),
             PlatformDifferencesCapabilityDisplayRow(
-                name: "Share integration",
+                name: L10n.string("Share integration"),
                 support: shareExtension,
-                detail: "Shows whether the platform exposes share or handoff entry points.",
-                alternative: "Use file picker or drag and drop when share integration is unavailable."
+                detail: L10n.string("Shows whether the platform exposes share or handoff entry points."),
+                alternative: L10n.string("Use file picker or drag and drop when share integration is unavailable.")
             ),
             PlatformDifferencesCapabilityDisplayRow(
-                name: "Camera import",
+                name: L10n.string("Camera import"),
                 support: limitedFrom(
                     shareExtension,
-                    reason: "Camera capture is validated by the camera import flow, not this page."
+                    reason: L10n.string("Camera capture is validated by the camera import flow, not this page.")
                 ),
-                detail: "This page only explains camera entry availability; capture preflight stays in import.",
-                alternative: "Open the camera import flow for the final permission check."
+                detail: L10n.string(
+                    "This page only explains camera entry availability; capture preflight stays in import."
+                ),
+                alternative: L10n.string("Open the camera import flow for the final permission check.")
             )
         ]
     }

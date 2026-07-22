@@ -101,7 +101,7 @@ final class AISummaryEditorModel: ObservableObject {
             guard token == entryLoadToken else { return }
             failedAction = .load
             operation = await .failed(
-                summaryError(for: error, message: "Summary could not be loaded.")
+                summaryError(for: error, message: L10n.string("Summary could not be loaded."))
             )
             return
         }
@@ -159,7 +159,7 @@ final class AISummaryEditorModel: ObservableObject {
             guard token == generationToken else { return }
             failedAction = .generate
             operation = await .failed(
-                summaryError(for: error, message: "Summary could not be generated.")
+                summaryError(for: error, message: L10n.string("Summary could not be generated."))
             )
         }
     }
@@ -185,7 +185,7 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             failedAction = .save
             operation = await .failed(
-                summaryError(for: error, message: "Summary could not be saved.")
+                summaryError(for: error, message: L10n.string("Summary could not be saved."))
             )
             return false
         }
@@ -214,7 +214,7 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             failedAction = .clear
             operation = await .failed(
-                summaryError(for: error, message: "Summary could not be cleared.")
+                summaryError(for: error, message: L10n.string("Summary could not be cleared."))
             )
         }
     }
@@ -237,7 +237,10 @@ final class AISummaryEditorModel: ObservableObject {
             gateState = .allowed
             return nil
         } catch {
-            let mapping = await summaryError(for: error, message: "AI privacy rules could not be checked.")
+            let mapping = await summaryError(
+                for: error,
+                message: L10n.string("AI privacy rules could not be checked.")
+            )
             gateState = .failed(mapping)
             return AISummaryEditorPresentationSupport.privacyUnavailableNotice(mapping)
         }
@@ -279,7 +282,7 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             failedAction = .generate
             operation = await .failed(
-                summaryError(for: error, message: "Summary could not be generated.")
+                summaryError(for: error, message: L10n.string("Summary could not be generated."))
             )
         }
     }

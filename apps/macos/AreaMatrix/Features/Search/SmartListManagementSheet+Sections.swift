@@ -92,7 +92,7 @@ extension SmartListManagementSheet {
 
     var deleteContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Delete \"\(model.original.name)\"?")
+            Text(L10n.format("smartList.delete.confirmation", model.original.name))
                 .font(.callout.weight(.semibold))
             Text(SmartListEditorModel.deleteSafetyMessage)
                 .font(.callout).foregroundStyle(.secondary)
@@ -122,7 +122,7 @@ extension SmartListManagementSheet {
     }
 
     var pinSummary: String {
-        model.original.pinned ? "Pinned" : "Not pinned"
+        model.original.pinned ? L10n.string("Pinned") : L10n.string("Not pinned")
     }
 
     func resetChanges() {

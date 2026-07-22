@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -474,6 +475,278 @@ def _check_macos_governance_test_membership(root: Path, failures: FailureCollect
             failures.fail(f"macOS governance test missing PBXBuildFile: {source_path}")
         elif build_file_ids.isdisjoint(target_source_ids):
             failures.fail(f"macOS governance test missing AreaMatrixTests Sources membership: {source_path}")
+
+
+MACOS_DISPLAY_ARGUMENT_NAMES = (
+    "accessibilityHint",
+    "accessibilityLabel",
+    "alternative",
+    "blockedReason",
+    "blockedHelpSuffix",
+    "caption",
+    "description",
+    "detail",
+    "disabledReason",
+    "emptyMessage",
+    "fallbackMessage",
+    "fallbackRecovery",
+    "fallback",
+    "fieldError",
+    "hint",
+    "label",
+    "loadMoreTitle",
+    "message",
+    "prefix",
+    "prompt",
+    "reasonLabel",
+    "recovery",
+    "suggestedAction",
+    "statusText",
+    "subtitle",
+    "title",
+    "toast",
+    "userMessage",
+    "warning",
+    "defaultHelp",
+)
+
+
+def _localization_placeholders_match(
+    source_value: str,
+    translated_value: str,
+    placeholder_pattern: re.Pattern[str],
+) -> bool:
+    source_placeholders = placeholder_pattern.findall(source_value.replace("%%", ""))
+    translated_placeholders = placeholder_pattern.findall(translated_value.replace("%%", ""))
+    all_placeholders = source_placeholders + translated_placeholders
+    if all_placeholders and all(re.match(r"%\d+\$", item) for item in all_placeholders):
+        return sorted(source_placeholders) == sorted(translated_placeholders)
+    return source_placeholders == translated_placeholders
+
+
+def _swift_raw_display_string_violations(source: str) -> list[tuple[int, str]]:
+    argument_names = "|".join(map(re.escape, MACOS_DISPLAY_ARGUMENT_NAMES))
+    pattern = re.compile(
+        rf'(?<![A-Za-z0-9_\".])(?P<name>{argument_names})\s*:\s*'
+        rf'(?P<literal>\"\"\".*?\"\"\"|\"(?:\\.|[^\"\\])*\")',
+        re.DOTALL,
+    )
+    violations: list[tuple[int, str]] = []
+    for match in pattern.finditer(source):
+        name = match.group("name")
+        literal = match.group("literal")
+        if literal in {'""', '""""""'}:
+            continue
+        prefix = source[max(0, match.start() - 120):match.start()]
+        if name == "message" and re.search(r"\bCoreError\.[A-Za-z][A-Za-z0-9_]*\s*\(\s*$", prefix):
+            continue
+        if name == "label" and literal.startswith('"tag:\\('):
+            continue
+        without_interpolation = re.sub(r"\\\([^)]*\)", "", literal)
+        visible_remainder = without_interpolation.strip('" \t\r\n:|/.,;!?-=>()[]{}')
+        if not visible_remainder:
+            continue
+        line = source.count("\n", 0, match.start()) + 1
+        violations.append((line, name))
+    return violations
+
+
+def _swift_raw_localized_error_violations(source: str) -> list[int]:
+    block_pattern = re.compile(
+        r"var\s+errorDescription\s*:\s*String\?\s*\{(?P<body>.*?)(?=^\s*\})",
+        re.DOTALL | re.MULTILINE,
+    )
+    literal_pattern = re.compile(
+        r'^\s*(?:return\s+)?(?:""".*?"""|"(?:\\.|[^"\\])*")\s*$',
+        re.DOTALL | re.MULTILINE,
+    )
+    violations: list[int] = []
+    for block in block_pattern.finditer(source):
+        body = block.group("body")
+        for literal in literal_pattern.finditer(body):
+            line = source.count("\n", 0, block.start("body") + literal.start()) + 1
+            violations.append(line)
+    return violations
+
+
+def _swift_unlocalized_dynamic_display_violations(source: str) -> list[tuple[int, str]]:
+    violations: list[tuple[int, str]] = []
+    lines = source.splitlines()
+    for index, line in enumerate(lines, start=1):
+        if "Text(" in line and ".status.tag" in line and "L10n." not in line:
+            violations.append((index, "status.tag"))
+        if "L10n." in line or "\\(" not in line:
+            continue
+        context = "\n".join(lines[max(0, index - 12):index])
+        property_match = re.findall(
+            r"\bvar\s+(statusDisplay|searchFiltersAccessibilityLabel)\s*:\s*String\s*\{",
+            context,
+        )
+        if property_match:
+            violations.append((index, property_match[-1]))
+
+    state_pattern = re.compile(
+        r"\b(?P<name>namingPrefix|replaceConfirmationDiagnosticsMessage)\s*=\s*"
+        r'(?P<literal>""".*?"""|"(?:\\.|[^"\\])*"|\[\s*"(?:\\.|[^"\\])*\")',
+        re.DOTALL,
+    )
+    for match in state_pattern.finditer(source):
+        line = source.count("\n", 0, match.start()) + 1
+        violations.append((line, match.group("name")))
+    return violations
+
+
+def _check_macos_localization_contract(root: Path, failures: FailureCollector) -> None:
+    catalog_path = root / "apps/macos/AreaMatrix/Localizations/Localizable.xcstrings"
+    project_path = root / "apps/macos/AreaMatrix.xcodeproj/project.pbxproj"
+    source_root = root / "apps/macos/AreaMatrix"
+    if not catalog_path.is_file():
+        failures.fail("missing macOS String Catalog: apps/macos/AreaMatrix/Localizations/Localizable.xcstrings")
+        return
+
+    try:
+        catalog = json.loads(_read(catalog_path))
+    except (OSError, json.JSONDecodeError) as error:
+        failures.fail(f"invalid macOS String Catalog: {error}")
+        return
+
+    if catalog.get("sourceLanguage") != "en":
+        failures.fail("macOS String Catalog sourceLanguage must be en")
+    strings = catalog.get("strings")
+    if not isinstance(strings, dict):
+        failures.fail("macOS String Catalog strings must be an object")
+        return
+
+    placeholder_pattern = re.compile(r"%(?:\d+\$)?(?:[-+#0 ]*\d*(?:\.\d+)?)?(?:ll|l|h)?[@a-zA-Z]|%arg")
+
+    def translated_units(localization: object) -> dict[str, str] | None:
+        if not isinstance(localization, dict):
+            return None
+        unit = localization.get("stringUnit")
+        if isinstance(unit, dict):
+            value = unit.get("value")
+            if unit.get("state") == "translated" and isinstance(value, str):
+                return {"other": value}
+            return None
+        plural = localization.get("variations", {}).get("plural")
+        if not isinstance(plural, dict) or "other" not in plural:
+            return None
+        values: dict[str, str] = {}
+        for category, variation in plural.items():
+            variation_unit = variation.get("stringUnit", {}) if isinstance(variation, dict) else {}
+            value = variation_unit.get("value")
+            if variation_unit.get("state") != "translated" or not isinstance(value, str):
+                return None
+            values[category] = value
+        return values
+
+    for key, entry in strings.items():
+        localizations = entry.get("localizations") if isinstance(entry, dict) else None
+        if not isinstance(localizations, dict) or set(localizations) != {"en", "zh-Hans"}:
+            failures.fail(f"macOS localization key must have exactly en and zh-Hans: {key!r}")
+            continue
+        values: dict[str, dict[str, str]] = {}
+        for locale in ("en", "zh-Hans"):
+            units = translated_units(localizations.get(locale))
+            if units is None:
+                failures.fail(f"macOS localization key is not translated for {locale}: {key!r}")
+                continue
+            values[locale] = units
+        if len(values) == 2:
+            for category, en_value in values["en"].items():
+                zh_value = values["zh-Hans"].get(category, values["zh-Hans"].get("other", ""))
+                if not _localization_placeholders_match(en_value, zh_value, placeholder_pattern):
+                    failures.fail(
+                        f"macOS localization placeholders differ between en and zh-Hans: {key!r} ({category})"
+                    )
+
+    project_text = _read(project_path) if project_path.is_file() else ""
+    for required in ("Localizable.xcstrings in Resources", '"zh-Hans"'):
+        if required not in project_text:
+            failures.fail(f"macOS project localization contract missing: {required}")
+    for forbidden in ("Localizable.strings in Resources", '"zh-Hant"'):
+        if forbidden in project_text:
+            failures.fail(f"macOS project localization contract contains obsolete value: {forbidden}")
+
+    swift_files = sorted(
+        path for path in source_root.rglob("*.swift")
+        if "UniFFI" not in path.parts and "Generated" not in path.parts
+    )
+    forbidden_api_pattern = re.compile(r"\b(?:String\s*\(\s*localized:|NSLocalizedString\s*\()")
+    explicit_l10n_key_pattern = re.compile(
+        r'\bL10n\.(?:string|format|plural)\(\s*"((?:\\.|[^"\\])*)"'
+    )
+    cjk_literal_pattern = re.compile(r'"(?:\\.|[^"\\])*[\u3400-\u9fff](?:\\.|[^"\\])*"')
+    auto_localized_call_pattern = re.compile(
+        r"\b(?:Text|Button|Label|Toggle|Picker|Menu|Section|GroupBox|TextField|SecureField|Link|"
+        r"SettingsLink|TableColumn|LabeledContent|DisclosureGroup|ProgressView)\s*\(|\.alert\s*\(|\.help\s*\("
+    )
+    for path in swift_files:
+        source = _read(path)
+        if forbidden_api_pattern.search(source):
+            failures.fail(f"macOS source bypasses AppLanguageRuntime: {path.relative_to(root)}")
+        for line, argument_name in _swift_raw_display_string_violations(source):
+            failures.fail(
+                "macOS source passes a raw string to a custom display argument; use L10n: "
+                f"{path.relative_to(root)}:{line} ({argument_name})"
+            )
+        for line in _swift_raw_localized_error_violations(source):
+            failures.fail(
+                "macOS LocalizedError.errorDescription contains a raw display string; use L10n: "
+                f"{path.relative_to(root)}:{line}"
+            )
+        for line, display_name in _swift_unlocalized_dynamic_display_violations(source):
+            failures.fail(
+                "macOS dynamic display state bypasses localization; use L10n at the display boundary: "
+                f"{path.relative_to(root)}:{line} ({display_name})"
+            )
+        for raw_key in explicit_l10n_key_pattern.findall(source):
+            try:
+                key = json.loads(f'"{raw_key}"')
+            except json.JSONDecodeError:
+                failures.fail(f"macOS source contains an invalid L10n key: {path.relative_to(root)}")
+                continue
+            if key not in strings:
+                failures.fail(
+                    "macOS explicit L10n key is missing from Localizable.xcstrings: "
+                    f"{key!r} ({path.relative_to(root)})"
+                )
+        lines = source.splitlines()
+        for index, line in enumerate(lines):
+            if not cjk_literal_pattern.search(line) or "L10n." in line:
+                continue
+            context = "\n".join(lines[max(0, index - 4):index + 1])
+            if auto_localized_call_pattern.search(context):
+                continue
+            failures.fail(
+                "macOS source contains a CJK string outside L10n or a compiler-localized SwiftUI API: "
+                f"{path.relative_to(root)}:{index + 1}"
+            )
+
+    tool = shutil.which("xcrun")
+    if tool is None:
+        failures.fail("xcrun is required to validate the macOS localization extraction contract")
+        return
+    with tempfile.TemporaryDirectory(prefix="areamatrix-l10n-") as output_dir:
+        command = [
+            tool, "xcstringstool", "extract", "--SwiftUI", "--modern-localizable-strings",
+            "-s", "L10n.string", "-s", "L10n.format", "-s", "L10n.plural",
+            "--output-format", "xcstrings", "--output-directory", output_dir,
+            *map(str, swift_files),
+        ]
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        extracted_path = Path(output_dir) / "Localizable.xcstrings"
+        if result.returncode != 0 or not extracted_path.is_file():
+            detail = result.stderr.strip() or result.stdout.strip() or "no catalog was produced"
+            failures.fail(f"macOS localization extraction failed: {detail}")
+            return
+        try:
+            extracted = json.loads(_read(extracted_path)).get("strings", {})
+        except (OSError, json.JSONDecodeError) as error:
+            failures.fail(f"invalid extracted macOS localization catalog: {error}")
+            return
+        for key in sorted(set(extracted) - set(strings)):
+            failures.fail(f"macOS user-visible string is missing from Localizable.xcstrings: {key!r}")
 
 
 def _check_ai_runtime_environment_contract(root: Path, failures: FailureCollector) -> None:
@@ -1081,6 +1354,7 @@ def run_governance_check(root: Path | None = None) -> int:
         _check_file(root, failures, rel_path)
 
     _check_macos_governance_test_membership(root, failures)
+    _check_macos_localization_contract(root, failures)
     _check_ai_runtime_environment_contract(root, failures)
     _check_feature_evolution_evidence(root, failures)
     _check_enterprise_governance_baseline(root, failures)

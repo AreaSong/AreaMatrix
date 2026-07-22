@@ -603,6 +603,111 @@ documents:
 
             self.assertEqual(failures.count, 1)
 
+    def test_localization_placeholders_allow_explicit_position_reordering(self) -> None:
+        pattern = checks.re.compile(r"%(?:\d+\$)?(?:ll|l)?[@a-zA-Z]")
+
+        self.assertTrue(
+            checks._localization_placeholders_match(
+                "%1$ld%% %2$lld/%3$lld for %4$@",
+                "%1$ld%% 已为 %4$@ 处理 %2$lld/%3$lld",
+                pattern,
+            )
+        )
+        self.assertFalse(checks._localization_placeholders_match("%@ %lld", "%lld %@", pattern))
+
+    def test_raw_display_string_scan_finds_custom_argument_literals(self) -> None:
+        source = '''
+        StatusCard(
+            title: "Unavailable",
+            message: """
+            This custom status message is not compiler-localized.
+            """
+        )
+        '''
+
+        self.assertEqual(
+            checks._swift_raw_display_string_violations(source),
+            [(3, "title"), (4, "message")],
+        )
+
+    def test_raw_display_string_scan_allows_non_display_contract_literals(self) -> None:
+        source = '''
+        StatusCard(title: L10n.string("Unavailable"), description: "")
+        SearchFilterChip(kind: .tags, label: "tag:\\(tag)")
+        MappingRow(title: "\\(source) -> \\(target)")
+        throw CoreError.Internal(message: "technical invariant failed")
+        throw CoreError.Db(message: "schema_version is empty")
+        '''
+
+        self.assertEqual(checks._swift_raw_display_string_violations(source), [])
+
+    def test_raw_localized_error_scan_rejects_unlocalized_description(self) -> None:
+        source = '''
+        enum PlatformError: LocalizedError {
+            var errorDescription: String? {
+                switch self {
+                case .missing:
+                    "Repository folder is missing."
+                }
+            }
+        }
+        '''
+
+        self.assertEqual(checks._swift_raw_localized_error_violations(source), [6])
+
+    def test_raw_localized_error_scan_allows_l10n_and_technical_errors(self) -> None:
+        source = '''
+        enum PlatformError: LocalizedError {
+            var errorDescription: String? {
+                switch self {
+                case .missing: L10n.string("Repository folder is missing.")
+                }
+            }
+        }
+        throw CoreError.Db(message: "schema_version is empty")
+        '''
+
+        self.assertEqual(checks._swift_raw_localized_error_violations(source), [])
+
+    def test_dynamic_display_scan_rejects_status_and_state_literals(self) -> None:
+        source = '''
+        Text(row.status.tag)
+        @Published var namingPrefix = "Import"
+        replaceConfirmationDiagnosticsMessage = ["Diagnostics collected."]
+        var statusDisplay: String {
+            return "\(status): \(reason)"
+        }
+        var searchFiltersAccessibilityLabel: String {
+            "\(title), \(summary)"
+        }
+        '''
+
+        self.assertEqual(
+            checks._swift_unlocalized_dynamic_display_violations(source),
+            [
+                (2, "status.tag"),
+                (6, "statusDisplay"),
+                (9, "searchFiltersAccessibilityLabel"),
+                (3, "namingPrefix"),
+                (4, "replaceConfirmationDiagnosticsMessage"),
+            ],
+        )
+
+    def test_dynamic_display_scan_allows_l10n_and_internal_state(self) -> None:
+        source = '''
+        Text(L10n.string(row.status.tag))
+        @Published var namingPrefix = L10n.string("import.batch-naming.default-prefix")
+        var statusDisplay: String {
+            L10n.format("icloud.conflict.status-reason", status, reason)
+        }
+        var searchFiltersAccessibilityLabel: String {
+            L10n.format("search.filters.accessibility-label", title, summary)
+        }
+        let routeID = "import-progress"
+        '''
+
+        self.assertEqual(checks._swift_unlocalized_dynamic_display_violations(source), [])
+
     def test_enterprise_governance_baseline_accepts_complete_fixture(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

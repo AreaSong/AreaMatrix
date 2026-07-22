@@ -96,8 +96,8 @@ enum BatchDeleteEntryPolicy {
     static func openHelp(disabledReason: String?) -> String {
         MainFileBatchEntryPolicy.openHelp(
             disabledReason: disabledReason,
-            defaultHelp: "Review deletion impact for the selected files",
-            blockedHelpSuffix: "Review deletion impact before any files move to Trash."
+            defaultHelp: L10n.string("Review deletion impact for the selected files"),
+            blockedHelpSuffix: L10n.string("Review deletion impact before any files move to Trash.")
         )
     }
 }
@@ -186,7 +186,7 @@ enum BatchDeleteUndoAction {
                 shouldRefreshConsumer: report?.shouldRefreshConsumerAfterApply == true,
                 undoToken: report?.undoToken,
                 failure: failure,
-                unavailableResultReason: "Undo is unavailable for this deletion result."
+                unavailableResultReason: L10n.string("Undo is unavailable for this deletion result.")
             ),
             undoStore: undoStore,
             errorMapper: errorMapper
@@ -234,15 +234,19 @@ struct BatchDeletePreviewReportPresentation: Equatable {
     var safetySummaryText: String
 
     init(report: BatchDeletePreviewReportSnapshot) {
-        trashSummaryText = "\(Self.itemText(report.willTrashCount)) will move to Trash"
-        indexOnlySummaryText = "\(Self.itemText(report.indexOnlyCount)) can be removed from the index"
-        blockedSummaryText = "\(Self.itemText(report.blockedCount)) blocked and excluded"
-        undoSummaryText = report.undoAvailable ? "Undo: available after completion" : "Undo: unavailable"
-        safetySummaryText = "No files will be permanently deleted"
-    }
-
-    private static func itemText(_ count: Int64) -> String {
-        count == 1 ? "1 item" : "\(count) items"
+        trashSummaryText = L10n.plural("file-actions.delete.preview.move-to-trash", count: Int(report.willTrashCount))
+        indexOnlySummaryText = L10n.plural(
+            "file-actions.delete.preview.remove-from-index",
+            count: Int(report.indexOnlyCount)
+        )
+        blockedSummaryText = L10n.plural(
+            "file-actions.delete.preview.blocked-and-excluded",
+            count: Int(report.blockedCount)
+        )
+        undoSummaryText = report.undoAvailable
+            ? L10n.string("Undo: available after completion")
+            : L10n.string("Undo: unavailable")
+        safetySummaryText = L10n.string("No files will be permanently deleted")
     }
 }
 
@@ -253,13 +257,14 @@ struct BatchDeleteReportPresentation: Equatable {
     var undoSummaryText: String
 
     init(report: BatchDeleteReportSnapshot) {
-        successSummaryText = "\(Self.itemText(report.successfulDeleteCount)) processed"
-        skippedSummaryText = "\(Self.itemText(report.skippedCount)) skipped"
-        failedSummaryText = "\(Self.itemText(report.failedCount)) failed"
-        undoSummaryText = report.undoToken == nil ? "Undo action unavailable" : "Undo action recorded"
-    }
-
-    private static func itemText(_ count: Int64) -> String {
-        count == 1 ? "1 item" : "\(count) items"
+        successSummaryText = L10n.plural(
+            "file-actions.delete.result.processed",
+            count: Int(report.successfulDeleteCount)
+        )
+        skippedSummaryText = L10n.plural("file-actions.delete.result.skipped", count: Int(report.skippedCount))
+        failedSummaryText = L10n.plural("file-actions.delete.result.failed", count: Int(report.failedCount))
+        undoSummaryText = report.undoToken == nil
+            ? L10n.string("Undo action unavailable")
+            : L10n.string("Undo action recorded")
     }
 }

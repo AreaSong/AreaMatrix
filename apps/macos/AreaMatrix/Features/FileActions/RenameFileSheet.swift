@@ -35,7 +35,7 @@ struct RenameFileSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Rename File", pageID: "rename-file") {
+        MainFileActionSheetContainer(title: L10n.string("Rename File"), pageID: "rename-file") {
             if let file {
                 VStack(alignment: .leading, spacing: 12) {
                     summaryRows(file)
@@ -58,7 +58,7 @@ struct RenameFileSheet: View {
         )
         .frame(height: 22)
         .accessibilityIdentifier("rename-file-new-name")
-        .accessibilityHint(draft.validationMessage ?? "Enter a new file name")
+        .accessibilityHint(draft.validationMessage ?? L10n.string("Enter a new file name"))
     }
 
     private func summaryRows(_ file: FileEntrySnapshot) -> some View {
@@ -89,7 +89,9 @@ struct RenameFileSheet: View {
     }
 
     private func helperText(for file: FileEntrySnapshot) -> some View {
-        let indexOnlyPrefix = file.storageMode == "Indexed" ? "Index-only: source files stay in place. " : ""
+        let indexOnlyPrefix = file.storageMode == "Indexed"
+            ? L10n.string("Index-only: source files stay in place. ")
+            : ""
         return Text("\(indexOnlyPrefix)Only the file name changes. Category and notes stay attached to this file.")
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -137,12 +139,12 @@ struct RenameFileSheet: View {
 
     private func primaryActionTitle(for file: FileEntrySnapshot) -> String {
         if state.isRenaming {
-            return "Renaming..."
+            return L10n.string("Renaming...")
         }
         if state.failure(for: file.id) != nil {
-            return "Retry"
+            return L10n.string("Retry")
         }
-        return "Rename"
+        return L10n.string("Rename")
     }
 
     private var draft: RenameFileDraft {
@@ -212,7 +214,7 @@ private struct RenameFilenameTextField: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSTextField {
         let textField = NSTextField(string: text)
-        textField.placeholderString = "New name"
+        textField.placeholderString = L10n.string("New name")
         textField.delegate = context.coordinator
         textField.isBordered = true
         textField.isBezeled = true
@@ -282,19 +284,19 @@ struct RenameFileDraft: Equatable {
 
     var validationMessage: String? {
         guard let file else { return nil }
-        if sanitizedName.isEmpty { return "File name is required" }
+        if sanitizedName.isEmpty { return L10n.string("File name is required") }
         if sanitizedName == "." || sanitizedName == ".." {
-            return "File name cannot be \(sanitizedName)"
+            return L10n.format("file-actions.rename.invalid-name", sanitizedName)
         }
         if sanitizedName.count > 255 {
-            return "File name is too long"
+            return L10n.string("File name is too long")
         }
         if let illegalCharacter = illegalCharacter(in: sanitizedName) {
-            return "File name cannot contain \"\(illegalCharacter)\""
+            return L10n.format("file-actions.rename.illegal-character", illegalCharacter)
         }
-        if sanitizedName == file.currentName { return "Enter a different file name" }
+        if sanitizedName == file.currentName { return L10n.string("Enter a different file name") }
         if conflictingFile != nil {
-            return "A file with this name already exists in \(file.categoryPathDisplay)"
+            return L10n.format("file-actions.rename.name-exists", file.categoryPathDisplay)
         }
         return nil
     }
@@ -315,7 +317,7 @@ struct RenameFileDraft: Equatable {
             return String(scalar)
         }
         if name.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) {
-            return "control character"
+            return L10n.string("file-actions.rename.control-character")
         }
         return nil
     }

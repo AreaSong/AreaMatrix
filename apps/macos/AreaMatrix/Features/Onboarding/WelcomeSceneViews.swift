@@ -32,8 +32,8 @@ struct WelcomeDefaultSceneView: View {
             AreaMatrixLaunchBrandVisual()
 
             AreaMatrixLaunchCopyText(
-                title: String(localized: "onboarding.welcome.default.title"),
-                description: String(localized: "onboarding.welcome.default.description")
+                title: L10n.string("onboarding.welcome.default.title"),
+                description: L10n.string("onboarding.welcome.default.description")
             )
         }
     }
@@ -47,8 +47,8 @@ struct WelcomeStartSceneView: View {
             AreaMatrixFolderLaunchVisual()
 
             AreaMatrixSceneText(
-                title: String(localized: "onboarding.welcome.start.title"),
-                description: String(localized: "onboarding.welcome.start.description")
+                title: L10n.string("onboarding.welcome.start.title"),
+                description: L10n.string("onboarding.welcome.start.description")
             )
         }
     }

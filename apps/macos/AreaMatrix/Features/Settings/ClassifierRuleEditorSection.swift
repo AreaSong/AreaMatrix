@@ -4,7 +4,7 @@ struct ClassifierRuleEditorSection: View {
     @ObservedObject var model: ClassifierSettingsModel
 
     var body: some View {
-        ClassifierSettingsSection(title: "可视化分类规则") {
+        ClassifierSettingsSection(title: L10n.string("settings.classifier.section.visualRules")) {
             VStack(alignment: .leading, spacing: 12) {
                 header
                 status

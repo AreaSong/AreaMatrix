@@ -150,6 +150,6 @@ struct AIPrivacyRuleTestResultView: View {
     }
 
     private func providerGateText(_ report: AiPrivacyEvaluationReport) -> String {
-        report.providerGateReason?.aiPrivacyRulesLabel ?? "none"
+        report.providerGateReason?.aiPrivacyRulesLabel ?? L10n.string("None")
     }
 }

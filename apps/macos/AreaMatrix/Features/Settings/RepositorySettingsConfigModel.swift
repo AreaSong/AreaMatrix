@@ -25,63 +25,22 @@ enum RepositorySettingsConfigOverviewOutput: String, CaseIterable, Equatable, Id
     var label: String {
         switch self {
         case .generatedOnly:
-            "Generated only"
+            L10n.string("Generated only")
         case .rootAreaMatrixFile:
-            "Root AREAMATRIX.md"
+            L10n.string("Root AREAMATRIX.md")
         }
-    }
-}
-
-enum RepositorySettingsConfigLocale: String, CaseIterable, Equatable, Identifiable {
-    case system
-    case zhHans
-    case zhCN
-    case en
-
-    var id: String {
-        rawValue
-    }
-
-    init(snapshotValue: String) {
-        switch snapshotValue.trimmingCharacters(in: .whitespacesAndNewlines) {
-        case "zh-Hans":
-            self = .zhHans
-        case "zh-CN":
-            self = .zhCN
-        case "en":
-            self = .en
-        default:
-            self = .system
-        }
-    }
-
-    var snapshotValue: String {
-        switch self {
-        case .system:
-            "system"
-        case .zhHans:
-            "zh-Hans"
-        case .zhCN:
-            "zh-CN"
-        case .en:
-            "en"
-        }
-    }
-
-    var label: String {
-        snapshotValue
     }
 }
 
 struct RepositorySettingsConfigDraft: Equatable {
     var overviewOutput: RepositorySettingsConfigOverviewOutput
-    var locale: RepositorySettingsConfigLocale
+    var contentLanguage: RepositoryContentLanguage
     var iCloudWarn: Bool
     var fallbackToInbox: Bool
 
     init(config: RepoConfigSnapshot) {
         overviewOutput = RepositorySettingsConfigOverviewOutput(snapshotValue: config.overviewOutput)
-        locale = RepositorySettingsConfigLocale(snapshotValue: config.locale)
+        contentLanguage = RepositoryContentLanguage(snapshotValue: config.locale)
         iCloudWarn = config.iCloudWarn
         fallbackToInbox = config.fallbackToInbox
     }
@@ -89,7 +48,7 @@ struct RepositorySettingsConfigDraft: Equatable {
     static var empty: RepositorySettingsConfigDraft {
         RepositorySettingsConfigDraft(
             overviewOutput: .generatedOnly,
-            locale: .system,
+            contentLanguage: .followInterface,
             iCloudWarn: true,
             fallbackToInbox: true
         )
@@ -97,12 +56,12 @@ struct RepositorySettingsConfigDraft: Equatable {
 
     private init(
         overviewOutput: RepositorySettingsConfigOverviewOutput,
-        locale: RepositorySettingsConfigLocale,
+        contentLanguage: RepositoryContentLanguage,
         iCloudWarn: Bool,
         fallbackToInbox: Bool
     ) {
         self.overviewOutput = overviewOutput
-        self.locale = locale
+        self.contentLanguage = contentLanguage
         self.iCloudWarn = iCloudWarn
         self.fallbackToInbox = fallbackToInbox
     }
@@ -110,7 +69,7 @@ struct RepositorySettingsConfigDraft: Equatable {
     func applying(to config: RepoConfigSnapshot) -> RepoConfigSnapshot {
         var updated = config
         updated.overviewOutput = overviewOutput.snapshotValue
-        updated.locale = locale.snapshotValue
+        updated.locale = contentLanguage.snapshotValue
         updated.iCloudWarn = iCloudWarn
         updated.fallbackToInbox = fallbackToInbox
         return updated
@@ -166,19 +125,19 @@ final class RepositorySettingsConfigModel: ObservableObject {
         guard !saveState.isSaving else { return false }
         let newConfig = draft.applying(to: currentConfig)
         guard newConfig != currentConfig else {
-            saveState = .saved("Repository settings already match Core config.")
+            saveState = .saved(L10n.string("Repository settings already match Core config."))
             return true
         }
 
         saveState = .saving
         do {
             try await updater.updateConfig(repoPath: repoPath, newConfig: newConfig)
-            saveState = .saved("Repository settings saved.")
-            accessibilityAnnouncer.announce("Repository settings saved.")
+            saveState = .saved(L10n.string("Repository settings saved."))
+            accessibilityAnnouncer.announce(L10n.string("Repository settings saved."))
             return true
         } catch {
             saveState = await .failed(configError(for: error))
-            accessibilityAnnouncer.announce("Repository settings could not be saved.")
+            accessibilityAnnouncer.announce(L10n.string("Repository settings could not be saved."))
             return false
         }
     }
@@ -189,8 +148,8 @@ final class RepositorySettingsConfigModel: ObservableObject {
         }
 
         return RepositorySettingsConfigError(
-            message: "Repository settings could not be saved.",
-            recovery: "Retry after the repository is available and writable."
+            message: L10n.string("Repository settings could not be saved."),
+            recovery: L10n.string("Retry after the repository is available and writable.")
         )
     }
 }

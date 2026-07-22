@@ -30,16 +30,16 @@ enum ImportFolderPreviewStatus: Equatable {
         case .idle:
             return nil
         case let .scanning(path):
-            return "正在预扫描 \(path)"
+            return L10n.format("import.folder.prescan-path", path)
         case .checkingConflicts:
-            return "Checking conflicts..."
+            return L10n.string("Checking conflicts...")
         case let .loaded(ready, total, failed):
             if failed == 0 {
-                return "已完成 \(total) 个文件的分类预览"
+                return L10n.plural("import.folder.completed-classification-preview", count: total)
             }
-            return "已完成 \(ready)/\(total) 个文件的分类预览，\(failed) 个失败"
+            return L10n.format("import.folder.previewCompletedWithFailures", ready, total, failed)
         case .empty:
-            return "没有可导入文件"
+            return L10n.string("import.folder.noImportableFiles")
         case let .failed(message):
             return message
         }
@@ -93,26 +93,26 @@ enum ImportFolderPreviewRowStatus: Equatable {
     var detail: String? {
         switch self {
         case .loading:
-            return "Preparing preview..."
+            return L10n.string("Preparing preview...")
         case let .ready(reasonLabel):
             return reasonLabel
         case let .duplicate(existingPath, strategy, isReplaceConfirmed):
             if strategy == .replace, isReplaceConfirmed {
-                return "Replace confirmed: \(existingPath)"
+                return L10n.format("import.conflict.replace-confirmed", existingPath)
             }
-            return "\(strategy.title): \(existingPath)"
+            return L10n.format("import.conflict.strategy-path", strategy.title, existingPath)
         case let .nameConflict(existingPath, resolution):
-            return "\(resolution.title): \(existingPath)"
+            return L10n.format("import.conflict.resolution-path", resolution.title, existingPath)
         case let .iCloudPlaceholder(path):
-            return "iCloud placeholder 需要下载后才能导入：\(path)"
+            return L10n.format("import.conflict.icloud-download-required", path)
         case let .blocked(message):
             return message
         case let .importing(mode):
             return mode.importingMessage
         case let .skippedDuplicate(existingPath):
-            return "Duplicate skipped: \(existingPath)"
+            return L10n.format("import.preview.duplicate-skipped", existingPath)
         case let .skippedICloud(path):
-            return "iCloud pending: \(path)"
+            return L10n.format("import.conflict.icloud-pending", path)
         case let .imported(mode):
             return mode.folderImportedMessage
         case let .error(message):
@@ -225,13 +225,13 @@ struct ImportFolderPreviewRow: Identifiable, Equatable {
     var conflictLabel: String {
         switch status {
         case .duplicate, .skippedDuplicate:
-            "Duplicate content"
+            L10n.string("Duplicate content")
         case .nameConflict:
-            "Same name, different content"
+            L10n.string("Same name, different content")
         case .iCloudPlaceholder, .skippedICloud:
-            "iCloud placeholder"
+            L10n.string("iCloud placeholder")
         case .blocked:
-            "Blocked"
+            L10n.string("Blocked")
         case .loading, .ready, .importing, .imported, .error:
             "-"
         }
@@ -254,7 +254,13 @@ struct ImportFolderPreviewRow: Identifiable, Equatable {
         var row = self
         row.predictedCategory = prediction.category
         row.suggestedName = prediction.suggestedName.isEmpty ? originalName : prediction.suggestedName
-        row.status = .ready(reasonLabel: "\(prediction.reason.displayLabel) · \(prediction.confidencePercent)%")
+        row.status = .ready(
+            reasonLabel: L10n.format(
+                "import.preview.classification-reason",
+                prediction.reason.displayLabel,
+                Int64(prediction.confidencePercent)
+            )
+        )
         return row
     }
 
@@ -285,11 +291,11 @@ private extension ImportSingleFileStorageMode {
     var folderImportedMessage: String {
         switch self {
         case .copy:
-            "已复制导入"
+            L10n.string("import.result.copied")
         case .move:
-            "已移动导入"
+            L10n.string("import.result.moved")
         case .indexOnly:
-            "已写入索引"
+            L10n.string("import.result.indexed")
         }
     }
 }

@@ -78,14 +78,14 @@ final class AIClassificationPrivacyRuleReferenceModel: ObservableObject {
     private func privacyRuleError(for error: Error) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
-                message: "AI privacy rule could not be loaded.",
-                recovery: mapping.recoveryText(fallback: "Retry"),
+                message: L10n.string("AI privacy rule could not be loaded."),
+                recovery: mapping.recoveryText(fallback: L10n.string("Retry")),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(
-            message: "AI privacy rule could not be loaded.",
-            recovery: "Retry",
+            message: L10n.string("AI privacy rule could not be loaded."),
+            recovery: L10n.string("Retry"),
             detail: error.localizedDescription
         )
     }
@@ -160,7 +160,10 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
             referenceRow("Type", kindLabel(reference.kind))
             referenceRow("Pattern", reference.pattern)
             referenceRow("Applies to", appliesToLabel(reference.appliesTo))
-            referenceRow("Status", reference.enabled ? "Enabled" : "Disabled")
+            referenceRow(
+                L10n.string("Status"),
+                reference.enabled ? L10n.string("Enabled") : L10n.string("Disabled")
+            )
             referenceRow("Matches", "\(reference.matchCount)")
             if let lastMatchedAt = reference.lastMatchedAt {
                 referenceRow("Last matched", "\(lastMatchedAt)")
@@ -179,7 +182,7 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Privacy rule could not be found.", systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
-            Text("Rule \(ruleID) is not present in the current privacy rules snapshot.")
+            Text(L10n.format("ai.privacy.rule.missing", ruleID))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button("Retry") { Task { await model.load() } }
@@ -215,18 +218,18 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
 
     private func kindLabel(_ kind: AiPrivacyRuleKind) -> String {
         switch kind {
-        case .folder: "Folder"
-        case .category: "Category"
-        case .keyword: "Keyword"
-        case .extension: "Extension"
-        case .tag: "Tag"
+        case .folder: L10n.string("Folder")
+        case .category: L10n.string("Category")
+        case .keyword: L10n.string("Keyword")
+        case .extension: L10n.string("Extension")
+        case .tag: L10n.string("Tag")
         }
     }
 
     private func appliesToLabel(_ appliesTo: AiPrivacyRuleAppliesTo) -> String {
         switch appliesTo {
-        case .remoteAi: "Remote AI"
-        case .localAndRemoteAi: "Local and remote AI"
+        case .remoteAi: L10n.string("Remote AI")
+        case .localAndRemoteAi: L10n.string("Local and remote AI")
         }
     }
 }

@@ -37,9 +37,9 @@ enum AISummaryEditorGateState: Equatable {
 extension AISummaryEditorNotice {
     static func aiDisabled() -> AISummaryEditorNotice {
         AISummaryEditorNotice(
-            title: "AI summaries are off",
-            detail: "AI is disabled for this repository.",
-            recovery: "Open AI settings and turn on AI features.",
+            title: L10n.string("AI summaries are off"),
+            detail: L10n.string("AI is disabled for this repository."),
+            recovery: L10n.string("Open AI settings and turn on AI features."),
             capability: "ai-summary-core",
             opensAISettings: true,
             privacyRuleID: nil,
@@ -50,9 +50,9 @@ extension AISummaryEditorNotice {
 
     static func featureDisabled(_ detail: String?) -> AISummaryEditorNotice {
         AISummaryEditorNotice(
-            title: "Auto summaries are off",
-            detail: detail ?? "The Auto summaries feature is disabled.",
-            recovery: "Open AI settings and enable Auto summaries.",
+            title: L10n.string("Auto summaries are off"),
+            detail: detail ?? L10n.string("The Auto summaries feature is disabled."),
+            recovery: L10n.string("Open AI settings and enable Auto summaries."),
             capability: "ai-summary-core",
             opensAISettings: true,
             privacyRuleID: nil,
@@ -63,9 +63,9 @@ extension AISummaryEditorNotice {
 
     static func providerUnavailable(_ detail: String?) -> AISummaryEditorNotice {
         AISummaryEditorNotice(
-            title: "AI provider is unavailable",
-            detail: detail ?? "No local or remote AI route is enabled for summaries.",
-            recovery: "Open AI settings and enable a summary provider.",
+            title: L10n.string("AI provider is unavailable"),
+            detail: detail ?? L10n.string("No local or remote AI route is enabled for summaries."),
+            recovery: L10n.string("Open AI settings and enable a summary provider."),
             capability: "ai-summary-core",
             opensAISettings: true,
             privacyRuleID: nil,
@@ -76,9 +76,9 @@ extension AISummaryEditorNotice {
 
     static func remoteScopeBlocked(_ detail: String) -> AISummaryEditorNotice {
         AISummaryEditorNotice(
-            title: "AI provider is unavailable",
+            title: L10n.string("AI provider is unavailable"),
             detail: detail,
-            recovery: "Open AI settings and configure remote summaries.",
+            recovery: L10n.string("Open AI settings and configure remote summaries."),
             capability: "ai-summary-core",
             opensAISettings: true,
             privacyRuleID: nil,

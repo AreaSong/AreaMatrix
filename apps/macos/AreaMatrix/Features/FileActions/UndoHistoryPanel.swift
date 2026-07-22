@@ -149,8 +149,10 @@ struct UndoHistoryPanel: View {
     private var statusText: String {
         let undoCount = state.actions.filter { $0.status == .pending && $0.canUndo }.count
         let redoCount = state.snapshot.redoActions.filter { $0.status == .available && $0.canRedo }.count
-        if redoCount > 0 { return "\(redoCount) action can be redone" }
-        return undoCount == 0 ? "No undoable actions" : "\(undoCount) actions can be undone"
+        if redoCount > 0 { return L10n.plural("file-actions.undo.redoable-actions", count: redoCount) }
+        return undoCount == 0
+            ? L10n.string("No undoable actions")
+            : L10n.plural("file-actions.undo.undoable-actions", count: undoCount)
     }
 
     @MainActor

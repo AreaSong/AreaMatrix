@@ -11,7 +11,10 @@ struct DeleteFileConfirmSheet: View {
     @State private var isConfirmed = false
 
     var body: some View {
-        MainFileActionSheetContainer(title: operation?.title ?? "Move File to Trash?", pageID: "delete-file") {
+        MainFileActionSheetContainer(
+            title: operation?.title ?? L10n.string("Move File to Trash?"),
+            pageID: "delete-file"
+        ) {
             if let file, let operation {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(operation.message)
@@ -116,12 +119,17 @@ struct DeleteFileConfirmSheet: View {
 
 extension BatchAITagSuggestionSheet {
     var confirmationTitle: String {
-        "Apply suggested tags to \(state.review?.selectedFileCount ?? 0) files?"
+        L10n.plural(
+            "file-actions.ai-tag-suggestion.apply-confirmation",
+            count: state.review?.selectedFileCount ?? 0
+        )
     }
 
     var confirmationMessage: String {
-        "AreaMatrix will add \(state.review?.selectedTagCount ?? 0) reviewed tags. " +
-            "Low confidence tags are excluded, and existing tags will not be duplicated."
+        L10n.plural(
+            "file-actions.ai-tag-suggestion.apply-message",
+            count: state.review?.selectedTagCount ?? 0
+        )
     }
 
     var isAIBlocked: Bool {
@@ -140,11 +148,11 @@ extension BatchAITagSuggestionSheet {
     func routeLabel(_ route: AiTagSuggestionRoute?) -> String {
         switch route {
         case .local:
-            "Local"
+            L10n.string("Local")
         case .remote:
-            "Remote"
+            L10n.string("Remote")
         case nil:
-            "No provider"
+            L10n.string("No provider")
         }
     }
 
@@ -165,36 +173,42 @@ extension BatchAITagSuggestionSheet {
     }
 
     func usedContextText(_ fields: [AiTagSuggestionInputField]) -> String {
-        fields.isEmpty ? "none" : fields.map(aiTagInputFieldText).joined(separator: ", ")
+        fields.isEmpty ? L10n.string("none") : fields.map(aiTagInputFieldText).joined(separator: ", ")
     }
 
     func aiTagInputFieldText(_ field: AiTagSuggestionInputField) -> String {
         switch field {
         case .fileName:
-            "filename"
+            L10n.string("filename")
         case .repoRelativePath:
-            "repo-relative path"
+            L10n.string("repo-relative path")
         case .extractedTextExcerpt:
-            "extracted text"
+            L10n.string("extracted text")
         case .aiSummary:
-            "AI summary"
+            L10n.string("AI summary")
         case .noteSummary:
-            "note summary"
+            L10n.string("note summary")
         case .existingTags:
-            "existing tags"
+            L10n.string("existing tags")
         case .tagRegistry:
-            "tag registry"
+            L10n.string("tag registry")
         }
     }
 
     func mergeText(_ suggestion: AiTagSuggestion) -> String {
         switch suggestion.mergeAction {
         case .createTag:
-            "Will create tag \(suggestion.slug)"
+            L10n.format("file-actions.tag-suggestion.will-create", suggestion.slug)
         case .useExistingTag:
-            "Will use existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
+            L10n.format(
+                "file-actions.tag-suggestion.will-use-existing",
+                suggestion.matchedExistingSlug ?? suggestion.slug
+            )
         case .mergeWithExistingTag:
-            "Merge with existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
+            L10n.format(
+                "file-actions.tag-suggestion.merge-existing",
+                suggestion.matchedExistingSlug ?? suggestion.slug
+            )
         }
     }
 
@@ -202,32 +216,32 @@ extension BatchAITagSuggestionSheet {
         if let reason = suggestion.disabledReason { return reason }
         switch suggestion.status {
         case .suggested:
-            return "Suggested"
+            return L10n.string("Suggested")
         case .lowConfidence:
-            return "Low confidence"
+            return L10n.string("Low confidence")
         case .alreadyApplied:
-            return "Already applied"
+            return L10n.string("Already applied")
         case .invalid:
-            return "Invalid"
+            return L10n.string("Invalid")
         case .blocked:
-            return "Blocked"
+            return L10n.string("Blocked")
         }
     }
 
     func skipReasonText(_ reason: AiTagSuggestionSkipReason) -> String {
         switch reason {
         case .aiDisabled:
-            "AI tag suggestions are off"
+            L10n.string("AI tag suggestions are off")
         case .featureDisabled:
-            "Auto tags are off"
+            L10n.string("Auto tags are off")
         case .providerUnavailable:
-            "AI provider is unavailable"
+            L10n.string("AI provider is unavailable")
         case .privacyRule:
-            "Skipped by privacy rule"
+            L10n.string("Skipped by privacy rule")
         case .noEligibleInput:
-            "No eligible tag context"
+            L10n.string("No eligible tag context")
         case .callLogUnavailable:
-            "AI call log is unavailable"
+            L10n.string("AI call log is unavailable")
         }
     }
 

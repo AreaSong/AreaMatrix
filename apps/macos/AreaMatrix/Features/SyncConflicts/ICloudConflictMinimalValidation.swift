@@ -17,12 +17,12 @@ struct ICloudConflictVersionSnapshot: Equatable, Identifiable {
     }
 
     var displayName: String {
-        guard let path, !path.isEmpty else { return "Unknown file" }
+        guard let path, !path.isEmpty else { return L10n.string("Unknown file") }
         return URL(fileURLWithPath: path).lastPathComponent
     }
 
     var pathLabel: String {
-        path ?? "Unknown path"
+        path ?? L10n.string("Unknown path")
     }
 }
 
@@ -224,25 +224,25 @@ final class ICloudConflictMinimalModel: ObservableObject {
     private static func blockingReasons(for validation: RepoPathValidationSnapshot) -> [String] {
         var reasons: [String] = []
         if !validation.exists || validation.issues.contains(.missingPath) {
-            reasons.append("Repository folder is missing.")
+            reasons.append(L10n.string("Repository folder is missing."))
         }
         if !validation.isDirectory || validation.issues.contains(.notDirectory) {
-            reasons.append("Selected path is not a folder.")
+            reasons.append(L10n.string("Selected path is not a folder."))
         }
         if !validation.isReadable || validation.issues.contains(.notReadable) {
-            reasons.append("Repository folder is not readable.")
+            reasons.append(L10n.string("Repository folder is not readable."))
         }
         if !validation.isWritable || validation.issues.contains(.notWritable) {
-            reasons.append("Repository folder is not writable.")
+            reasons.append(L10n.string("Repository folder is not writable."))
         }
         if validation.isInsideAreaMatrix || validation.issues.contains(.insideAreaMatrix) {
-            reasons.append("Use the repository root, not the .areamatrix metadata folder.")
+            reasons.append(L10n.string("Use the repository root, not the .areamatrix metadata folder."))
         }
         if !validation.isInitialized {
-            reasons.append("This folder is not an initialized AreaMatrix repository.")
+            reasons.append(L10n.string("This folder is not an initialized AreaMatrix repository."))
         }
         if validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession) {
-            reasons.append("Repository scan is unfinished; refresh after the scan completes.")
+            reasons.append(L10n.string("Repository scan is unfinished; refresh after the scan completes."))
         }
         return reasons
     }
@@ -250,7 +250,7 @@ final class ICloudConflictMinimalModel: ObservableObject {
     private static func warnings(for validation: RepoPathValidationSnapshot) -> [String] {
         var warnings: [String] = []
         if validation.isICloudPath || validation.issues.contains(.iCloudPath) {
-            warnings.append("Repository is in iCloud Drive; validation does not download placeholders.")
+            warnings.append(L10n.string("Repository is in iCloud Drive; validation does not download placeholders."))
         }
         return warnings
     }
@@ -280,21 +280,21 @@ final class ICloudConflictMinimalModel: ObservableObject {
                     destructive: true,
                     requiresTrash: true,
                     enabled: false,
-                    disabledReason: "Core preview is unavailable for this route."
+                    disabledReason: L10n.string("Core preview is unavailable for this route.")
                 ),
                 ICloudConflictResolutionOptionSnapshot(
                     resolution: .keepConflictedCopyOnly,
                     destructive: true,
                     requiresTrash: true,
                     enabled: false,
-                    disabledReason: "Core preview is unavailable for this route."
+                    disabledReason: L10n.string("Core preview is unavailable for this route.")
                 )
             ],
             metadataComplete: false,
             trashAvailable: false,
             canKeepBoth: true,
             canResolveDestructive: false,
-            blockedReason: "Core preview is unavailable for this route."
+            blockedReason: L10n.string("Core preview is unavailable for this route.")
         )
     }
 
@@ -313,7 +313,7 @@ final class ICloudConflictMinimalModel: ObservableObject {
             destructive: strategy.requiresSecondConfirmation,
             requiresTrash: strategy.requiresSecondConfirmation,
             enabled: false,
-            disabledReason: "Conflict no longer exists"
+            disabledReason: L10n.string("Conflict no longer exists")
         )
     }
 

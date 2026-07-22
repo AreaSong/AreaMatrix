@@ -39,10 +39,10 @@ enum RemoteProviderConfigErrorFactory {
 
     static func testFailureTitle(_ status: RemoteProviderTestStatusState) -> String {
         switch status {
-        case .providerRejected: "The API key was rejected by the provider."
-        case .connectionFailed: "Connection failed. Check your network or endpoint URL."
-        case .unsupportedProvider: "This provider is not supported yet."
-        case .succeeded: "Remote provider could not be verified."
+        case .providerRejected: L10n.string("The API key was rejected by the provider.")
+        case .connectionFailed: L10n.string("Connection failed. Check your network or endpoint URL.")
+        case .unsupportedProvider: L10n.string("This provider is not supported yet.")
+        case .succeeded: L10n.string("Remote provider could not be verified.")
         }
     }
 }

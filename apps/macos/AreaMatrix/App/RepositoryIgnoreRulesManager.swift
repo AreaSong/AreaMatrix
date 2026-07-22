@@ -59,19 +59,19 @@ enum RepositoryIgnoreRulesError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .metadataDirectoryMissing:
-            ".areamatrix metadata folder is missing."
+            L10n.string("settings.ignore.metadataMissing")
         case .metadataPathNotDirectory:
-            ".areamatrix is not a folder."
+            L10n.string("settings.ignore.metadataNotDirectory")
         case .ignoreRulesMissing:
-            ".areamatrix/ignore.yaml is missing."
+            L10n.string("settings.ignore.fileMissing")
         case .ignoreRulesNotRegularFile:
-            ".areamatrix/ignore.yaml is not a regular file."
+            L10n.string("settings.ignore.notRegularFile")
         case .ignoreRulesAlreadyExists:
-            ".areamatrix/ignore.yaml already exists."
+            L10n.string("settings.ignore.alreadyExists")
         case let .createRejected(reason):
-            "Could not create .areamatrix/ignore.yaml: \(reason)"
+            L10n.format("settings.ignore.createRejected", reason)
         case .openRejected:
-            "The system editor rejected opening ignore.yaml."
+            L10n.string("settings.ignore.openRejected")
         }
     }
 }

@@ -93,11 +93,11 @@ extension SemanticSearchResultPageSnapshot {
     func detailPresentation(for fileID: Int64) -> SemanticSearchDetailPresentation? {
         guard let match = semanticMatches.first(where: { $0.result.file.id == fileID }) else { return nil }
         return SemanticSearchDetailPresentation(
-            title: "From semantic search",
+            title: L10n.string("From semantic search"),
             relevance: String(format: "%.2f", match.relevance),
             matchedReason: match.matchedReason,
             whyThisMatched: match.semanticExplanationText,
-            routeLabel: match.route.rawValue,
+            routeLabel: match.route.displayName,
             alsoMatchedNormalSearch: match.alsoMatchedNormalSearch
         )
     }
@@ -145,11 +145,11 @@ extension SemanticSearchRowPresentation {
         id = match.result.file.id
         file = match.result.file
         group = .semantic
-        matchSource = "Semantic"
+        matchSource = L10n.string("Semantic")
         relevance = String(format: "%.2f", match.relevance)
         matchedReason = match.matchedReason
         whyThisMatched = match.semanticExplanationText
-        routeLabel = match.route.rawValue
+        routeLabel = match.route.displayName
         alsoMatchedNormalSearch = match.alsoMatchedNormalSearch
         isFoldedDuplicate = false
     }
@@ -158,7 +158,7 @@ extension SemanticSearchRowPresentation {
         id = match.result.file.id
         file = match.result.file
         group = .normal
-        matchSource = "Normal"
+        matchSource = L10n.string("Normal")
         relevance = "-"
         matchedReason = match.normalReasonText
         whyThisMatched = match.normalExplanationText
@@ -170,24 +170,26 @@ extension SemanticSearchRowPresentation {
 
 private extension SemanticSearchMatchSnapshot {
     var semanticExplanationText: String {
-        let fields = usedFields.map(\.rawValue).joined(separator: ", ")
-        let route = "Route: \(route.rawValue)"
-        let reason = matchedReason.isEmpty ? "Semantic result matched the query." : matchedReason
-        let duplicate = alsoMatchedNormalSearch ? " Also matched normal search." : ""
-        return "\(reason) Fields: \(fields). \(route).\(duplicate)"
+        let fields = usedFields.map(\.displayName).joined(separator: ", ")
+        let route = L10n.format("semanticSearch.route", route.rawValue)
+        let reason = matchedReason.isEmpty ? L10n.string("Semantic result matched the query.") : matchedReason
+        let duplicate = alsoMatchedNormalSearch ? L10n.string(" Also matched normal search.") : ""
+        return L10n.format("semanticSearch.explanation", reason, fields, route, duplicate)
     }
 }
 
 private extension SemanticNormalSearchMatchSnapshot {
     var normalReasonText: String {
         if let noteSnippet = result.noteSnippet, !noteSnippet.isEmpty {
-            return "Note: \(noteSnippet)"
+            return L10n.format("semanticSearch.noteSnippet", noteSnippet)
         }
-        guard let match = result.matches.first else { return "Normal search match" }
+        guard let match = result.matches.first else { return L10n.string("Normal search match") }
         return "\(match.kindDisplayName): \(match.fieldDisplayName) - \(match.snippet)"
     }
 
     var normalExplanationText: String {
-        dedupedBySemantic ? "Folded because the same file is already shown in Semantic matches." : normalReasonText
+        dedupedBySemantic
+            ? L10n.string("Folded because the same file is already shown in Semantic matches.")
+            : normalReasonText
     }
 }

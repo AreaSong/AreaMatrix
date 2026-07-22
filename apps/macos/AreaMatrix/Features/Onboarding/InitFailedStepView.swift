@@ -29,13 +29,13 @@ struct InitFailedStepView: View {
         .areaMatrixOnboardingPanel()
         .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .confirmationDialog(
-            String(localized: "onboarding.failed.collectDiagnostics"),
+            L10n.string("onboarding.failed.collectDiagnostics"),
             isPresented: $isDiagnosticsPrivacyPresented
         ) {
-            Button(String(localized: "onboarding.failed.collectDiagnosticsButton")) {
+            Button(L10n.string("onboarding.failed.collectDiagnosticsButton")) {
                 Task { await onCollectDiagnostics() }
             }
-            Button(String(localized: "settings.action.cancel"), role: .cancel) {}
+            Button(L10n.string("settings.action.cancel"), role: .cancel) {}
         } message: {
             Text(
                 "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
@@ -49,24 +49,33 @@ struct InitFailedStepView: View {
         AreaMatrixStepHeader(
             systemImage: "exclamationmark.triangle",
             tint: AreaMatrixTheme.Colors.coral,
-            title: String(localized: "onboarding.failed.title"),
-            subtitle: String(localized: "onboarding.failed.subtitle")
+            title: L10n.string("onboarding.failed.title"),
+            subtitle: L10n.string("onboarding.failed.subtitle")
         )
     }
 
     private var errorSummary: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "onboarding.failed.errorSummary"))
+            Text(L10n.string("onboarding.failed.errorSummary"))
                 .font(.headline)
-            Text(mapping?.userMessage ?? "Unknown initialization error")
+            Text(mapping?.userMessage ?? L10n.string("Unknown initialization error"))
             Text("路径：\(repoPath)")
                 .font(.system(.callout, design: .monospaced))
                 .textSelection(.enabled)
-            Text("错误代码：\(mapping?.kind.rawValue ?? "Unknown")")
-            Text("严重程度：\(mapping?.severity.rawValue ?? "Unknown")")
+            Text(L10n.format(
+                "onboarding.failed.errorCode",
+                mapping?.kind.rawValue ?? L10n.string("Unknown")
+            ))
+            Text(L10n.format(
+                "onboarding.failed.severity",
+                mapping?.severity.rawValue ?? L10n.string("Unknown")
+            ))
             DisclosureGroup("Show details", isExpanded: $isDetailsExpanded) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Recoverability: \(mapping?.recoverability.rawValue ?? "Unknown")")
+                    Text(L10n.format(
+                        "onboarding.failed.recoverability",
+                        mapping?.recoverability.rawValue ?? L10n.string("Unknown")
+                    ))
                     Text("Raw context: \(mapping?.rawContext ?? repoPath)")
                         .textSelection(.enabled)
                 }
@@ -82,10 +91,10 @@ struct InitFailedStepView: View {
 
     private var recoveryAdvice: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "onboarding.failed.recoveryAdvice"))
+            Text(L10n.string("onboarding.failed.recoveryAdvice"))
                 .font(.headline)
             Text(mapping?.suggestedAction ??
-                "请检查文件夹权限、释放磁盘空间，或选择其他资料库位置后重试。")
+                L10n.string("onboarding.failed.defaultRecoveryAdvice"))
         }
         .font(.callout)
         .frame(maxWidth: 720, alignment: .leading)
@@ -140,24 +149,24 @@ struct InitFailedStepView: View {
 
     private var footer: some View {
         HStack {
-            Button(action: onQuit) { Text(String(localized: "onboarding.failed.quit")) }
+            Button(action: onQuit) { Text(L10n.string("onboarding.failed.quit")) }
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
 
             Spacer()
 
-            Button(String(localized: "onboarding.failed.diagnostics")) {
+            Button(L10n.string("onboarding.failed.diagnostics")) {
                 isDiagnosticsPrivacyPresented = true
             }
             .buttonStyle(AreaMatrixSecondaryButtonStyle())
             .controlSize(.large)
             .disabled(isActionInFlight)
 
-            Button(String(localized: "onboarding.failed.changeLocation"), action: onChangePath)
+            Button(L10n.string("onboarding.failed.changeLocation"), action: onChangePath)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .controlSize(.large)
                 .disabled(isActionInFlight)
 
-            Button(String(localized: "onboarding.failed.retry"), action: onRetry)
+            Button(L10n.string("onboarding.failed.retry"), action: onRetry)
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.coral))
                 .controlSize(.large)

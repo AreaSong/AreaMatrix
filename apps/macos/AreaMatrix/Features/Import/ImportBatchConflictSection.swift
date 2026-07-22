@@ -54,7 +54,7 @@ struct ImportBatchConflictSection: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button(isExpanded ? "Hide" : "Review conflicts") {
+            Button(isExpanded ? L10n.string("Hide") : L10n.string("Review conflicts")) {
                 isExpanded.toggle()
             }
         }
@@ -211,7 +211,7 @@ struct ImportBatchConflictSection: View {
                 Text(item.selectedStrategy.title)
             }
             TableColumn("Status") { item in
-                Text(item.status.rawValue)
+                Text(item.status.title)
             }
             TableColumn("Reason") { item in
                 Text(item.reason ?? item.riskSummary)
@@ -296,7 +296,7 @@ struct ImportBatchConflictSection: View {
                 strategyView(for: row)
             }
             TableColumn("Status") { row in
-                Text(row.status.detail ?? row.status.tag)
+                Text(row.status.detail ?? L10n.string(row.status.tag))
             }
             TableColumn("Action") { row in
                 actionView(for: row)
@@ -306,12 +306,13 @@ struct ImportBatchConflictSection: View {
     }
 
     private var conflictSummary: String {
-        [
-            "\(batchImportModel.duplicateCount) duplicates",
-            "\(batchImportModel.nameConflictCount) name conflict",
-            "\(batchImportModel.iCloudPlaceholderCount) iCloud",
-            "\(batchImportModel.blockedCount) blocked"
-        ].joined(separator: " · ")
+        L10n.format(
+            "import.conflict.summary",
+            batchImportModel.duplicateCount,
+            batchImportModel.nameConflictCount,
+            batchImportModel.iCloudPlaceholderCount,
+            batchImportModel.blockedCount
+        )
     }
 }
 
@@ -319,9 +320,11 @@ private extension ImportBatchCopyImportModel {
     var conflictBatchReplaceConfirmationMessage: String {
         let summary = conflictBatchPreviewReport?.replaceConfirmationSummary ?? conflictBatchScopeSummary
         return [
-            "Existing files in the selected scope will be moved to Trash before imported files take their place.",
-            "AreaMatrix does not permanently delete files.",
-            "Scope: \(summary)"
+            L10n.string(
+                "Existing files in the selected scope will be moved to Trash before imported files take their place."
+            ),
+            L10n.string("AreaMatrix does not permanently delete files."),
+            L10n.format("import.conflict.scope", summary)
         ].joined(separator: " ")
     }
 }

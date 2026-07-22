@@ -171,13 +171,13 @@ struct DetailLogTabView: View {
 extension MainFileListModel {
     var loadingStatusText: String? {
         guard isLoading else { return nil }
-        if searchState.isActive { return "Searching..." }
-        return "正在加载 \(currentCategoryDisplayName)..."
+        if searchState.isActive { return L10n.string("Searching...") }
+        return L10n.format("detail.log.loadingCategory", currentCategoryDisplayName)
     }
 
     var loadingAccessibilityText: String? {
         guard let loadingStatusText else { return nil }
-        return "Loading files. \(loadingStatusText)"
+        return L10n.format("detail.log.loadingFilesStatus", loadingStatusText)
     }
 
     func canApplyDetailLogDiagnosticsResult(fileID: Int64) -> Bool {

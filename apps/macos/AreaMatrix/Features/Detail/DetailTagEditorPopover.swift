@@ -55,7 +55,7 @@ struct TagEditorPopover: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         } else if let reason = disabledReason {
-            Text(reason.rawValue)
+            Text(reason.message)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -70,12 +70,12 @@ struct TagEditorPopover: View {
                 }
             }
             if candidateTags.isEmpty {
-                Text(state.tagSet == nil ? "Could not load tags" : "No tags yet")
+                Text(state.tagSet == nil ? L10n.string("Could not load tags") : L10n.string("No tags yet"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
             if canCreateTag {
-                Button("Create \"\(normalizedQuery)\"") {
+                Button(L10n.format("detail.tag.create", normalizedQuery)) {
                     onAddTag(normalizedQuery)
                 }
             }
@@ -111,9 +111,11 @@ struct TagEditorPopover: View {
 
     private var tagValidationMessage: String? {
         let tag = normalizedQuery
-        if tag.isEmpty { return "Tag is empty." }
-        if tag.count > 64 { return "Tag is too long." }
-        if tag.contains("/") || tag.contains(":") || tag.contains("\0") { return "Tag contains illegal characters." }
+        if tag.isEmpty { return L10n.string("Tag is empty.") }
+        if tag.count > 64 { return L10n.string("Tag is too long.") }
+        if tag.contains("/") || tag.contains(":") || tag.contains("\0") {
+            return L10n.string("Tag contains illegal characters.")
+        }
         return nil
     }
 

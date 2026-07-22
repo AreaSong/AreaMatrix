@@ -9,11 +9,13 @@
 /* Begin PBXBuildFile section */
 		0A0000000000000000000902 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000903 /* AppIcon.icon */; };
 		0A0000000000000000000900 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000901 /* Assets.xcassets */; };
-		0A0000000000000000000964 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000960 /* Localizable.strings */; };
+		0A0000000000000000000964 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000960 /* Localizable.xcstrings */; };
 		0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000013 /* AreaMatrixApp.swift */; };
+		0A0000000000000000002000 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000002001 /* AppLanguage.swift */; };
 		0A0000000000000000000003 /* MainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000014 /* MainWindow.swift */; };
 		0A0000000000000000000868 /* MainWindowRouteContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000869 /* MainWindowRouteContent.swift */; };
 		0A0000000000000000000004 /* AreaMatrixAppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000015 /* AreaMatrixAppSmokeTests.swift */; };
+		0A0000000000000000002002 /* AppLanguageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000002003 /* AppLanguageTests.swift */; };
 		0A0000000000000000000FE6 /* AreaMatrixAppSmokeTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FE7 /* AreaMatrixAppSmokeTestDoubleSupport.swift */; };
 		0A000000000000000000109C /* AreaMatrixAppSmokeFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000109D /* AreaMatrixAppSmokeFixtures.swift */; };
 		0A0000000000000000000005 /* CoreBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000017 /* CoreBridge.swift */; };
@@ -543,6 +545,7 @@
 		0A0000000000000000000841 /* MainMultiSelectionDetailPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000842 /* MainMultiSelectionDetailPane.swift */; };
 		0A000000000000000000060C /* CoreFileListing+DisplayNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000060D /* CoreFileListing+DisplayNames.swift */; };
 		0A000000000000000000060E /* CommandPaletteState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000060F /* CommandPaletteState.swift */; };
+		0A0000000000000000001B04 /* CommandTargetPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001B05 /* CommandTargetPresentation.swift */; };
 		0A0000000000000000000610 /* MainFileListExternalSyncActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000611 /* MainFileListExternalSyncActions.swift */; };
 		0A0000000000000000000612 /* ImportBatchICloudPlaceholderActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000613 /* ImportBatchICloudPlaceholderActions.swift */; };
 		0A0000000000000000000614 /* SearchFilterChipsBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000615 /* SearchFilterChipsBar.swift */; };
@@ -766,15 +769,15 @@
 /* Begin PBXFileReference section */
 		0A0000000000000000000901 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AreaMatrix/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000903 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AreaMatrix/Resources/AppIcon.icon; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000961 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
-		0A0000000000000000000962 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
-		0A0000000000000000000963 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		0A0000000000000000000960 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		0A0000000000000000000011 /* AreaMatrixShellApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix.xcodeproj/Shell/AreaMatrixShellApp.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000012 /* AreaMatrix.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AreaMatrix.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A0000000000000000000013 /* AreaMatrixApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AreaMatrixApp.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000002001 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppLanguage.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000014 /* MainWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/MainWindow.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000869 /* MainWindowRouteContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/MainWindowRouteContent.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000015 /* AreaMatrixAppSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AreaMatrixAppSmokeTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000002003 /* AppLanguageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AppLanguageTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FE7 /* AreaMatrixAppSmokeTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixAppSmokeTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000109D /* AreaMatrixAppSmokeFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixAppSmokeFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000016 /* AreaMatrixTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AreaMatrixTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -979,6 +982,7 @@
 		0A0000000000000000000863 /* MainFileActionRoutingSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileActionRoutingSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000865 /* MainBatchFileActionRoutingSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainBatchFileActionRoutingSupport.swift; sourceTree = SOURCE_ROOT; };
 			0A000000000000000000060F /* CommandPaletteState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/CommandPalette/CommandPaletteState.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000001B05 /* CommandTargetPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/CommandPalette/CommandTargetPresentation.swift; sourceTree = SOURCE_ROOT; };
 			0A0000000000000000000503 /* MainFileClassifierCorrectionRoutingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/MainFileClassifierCorrectionRoutingActions.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000002CF /* ChangeCategoryPageFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ChangeCategoryPageFeatureTests.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000008B1 /* ChangeCategoryPageTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ChangeCategoryPageTestSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -1581,6 +1585,7 @@
 			isa = PBXGroup;
 			children = (
 					0A0000000000000000000013 /* AreaMatrixApp.swift */,
+					0A0000000000000000002001 /* AppLanguage.swift */,
 					0A0000000000000000000018 /* AppShellModel.swift */,
 					0A0000000000000000000FE5 /* AppShellBootstrap.swift */,
 					0A0000000000000000000D41 /* MainExternalCreatedFileActions.swift */,
@@ -2006,6 +2011,7 @@
 				isa = PBXGroup;
 				children = (
 					0A000000000000000000060F /* CommandPaletteState.swift */,
+					0A0000000000000000001B05 /* CommandTargetPresentation.swift */,
 					0A0000000000000000000617 /* CommandPaletteView.swift */,
 					0A0000000000000000000867 /* CommandPaletteRoutingSupport.swift */,
 					0A0000000000000000000FAE /* MainRepositoryContentCommandPaletteActions.swift */,
@@ -2154,24 +2160,15 @@
 		0A0000000000000000000965 /* Localizations */ = {
 			isa = PBXGroup;
 			children = (
-				0A0000000000000000000960 /* Localizable.strings */,
+				0A0000000000000000000960 /* Localizable.xcstrings */,
 			);
 			path = AreaMatrix/Localizations;
 			sourceTree = SOURCE_ROOT;
 		};
-		0A0000000000000000000960 /* Localizable.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				0A0000000000000000000961 /* en */,
-				0A0000000000000000000962 /* zh-Hans */,
-				0A0000000000000000000963 /* zh-Hant */,
-			);
-			name = Localizable.strings;
-			sourceTree = "<group>";
-		};
 		0A000000000000000000003A /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				0A0000000000000000002003 /* AppLanguageTests.swift */,
 				0A000000000000000000001A /* AreaMatrixShellTests.swift */,
 				0A00000000000000000008F7 /* AreaMatrixShellValidatePathTests.swift */,
 				0A0000000000000000000FE7 /* AreaMatrixAppSmokeTestDoubleSupport.swift */,
@@ -2567,7 +2564,6 @@
 				en,
 				Base,
 				"zh-Hans",
-				"zh-Hant",
 			);
 			mainGroup = 0A0000000000000000000031;
 			productRefGroup = 0A0000000000000000000034 /* Products */;
@@ -2587,7 +2583,7 @@
 			files = (
 				0A0000000000000000000902 /* AppIcon.icon in Resources */,
 				0A0000000000000000000900 /* Assets.xcassets in Resources */,
-				0A0000000000000000000964 /* Localizable.strings in Resources */,
+				0A0000000000000000000964 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2627,6 +2623,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */,
+				0A0000000000000000002000 /* AppLanguage.swift in Sources */,
 				0A0000000000000000000D40 /* MainExternalCreatedFileActions.swift in Sources */,
 				0A0000000000000000000228 /* MainExternalCreatedFileWatcher.swift in Sources */,
 				0A0000000000000000000003 /* MainWindow.swift in Sources */,
@@ -2668,6 +2665,7 @@
 				0A0000000000000000000862 /* MainFileActionRoutingSupport.swift in Sources */,
 				0A0000000000000000000864 /* MainBatchFileActionRoutingSupport.swift in Sources */,
 				0A000000000000000000060E /* CommandPaletteState.swift in Sources */,
+				0A0000000000000000001B04 /* CommandTargetPresentation.swift in Sources */,
 				0A0000000000000000000848 /* MainICloudConflictRoutingActions.swift in Sources */,
 				0A0000000000000000000502 /* MainFileClassifierCorrectionRoutingActions.swift in Sources */,
 				0A00000000000000000002D8 /* ICloudConflictMinimalValidation.swift in Sources */,
@@ -3047,6 +3045,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A0000000000000000002002 /* AppLanguageTests.swift in Sources */,
 					0A0000000000000000000004 /* AreaMatrixAppSmokeTests.swift in Sources */,
 					0A0000000000000000000FE6 /* AreaMatrixAppSmokeTestDoubleSupport.swift in Sources */,
 					0A000000000000000000109C /* AreaMatrixAppSmokeFixtures.swift in Sources */,
@@ -3410,6 +3409,7 @@
 					"$(inherited)",
 					"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)",
 				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
@@ -3423,6 +3423,7 @@
 					"$(inherited)",
 					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
 				);
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "AreaMatrix/AreaMatrix-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
@@ -3449,6 +3450,7 @@
 					"$(inherited)",
 					"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)",
 				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
@@ -3462,6 +3464,7 @@
 					"$(inherited)",
 					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
 				);
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "AreaMatrix/AreaMatrix-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};

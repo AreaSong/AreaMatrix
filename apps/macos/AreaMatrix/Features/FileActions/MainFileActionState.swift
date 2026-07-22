@@ -30,22 +30,26 @@ enum MainFileActionDestination: Equatable {
     var pageTitle: String {
         switch self {
         case .rename:
-            "Rename File"
+            L10n.string("Rename File")
         case .aiClassificationSuggestion:
-            "AI Category Suggestion"
+            L10n.string("AI Category Suggestion")
         case let .changeCategory(_, _, mode, ruleRoute):
             switch ruleRoute {
             case .saveRule:
-                "Save Classifier Rule"
+                L10n.string("Save Classifier Rule")
             case .impactPreview:
-                "Preview Classifier Impact"
+                L10n.string("Preview Classifier Impact")
             case nil:
-                mode == .classifierCorrection ? "Correct Classification" : "Change Category"
+                if mode == .classifierCorrection {
+                    L10n.string("Correct Classification")
+                } else {
+                    L10n.string("Change Category")
+                }
             }
         case .delete:
-            "Move File to Trash?"
+            L10n.string("Move File to Trash?")
         case .iCloudConflict:
-            "Resolve iCloud Conflict"
+            L10n.string("Resolve iCloud Conflict")
         }
     }
 
@@ -115,54 +119,54 @@ enum MainFileDeleteOperation: String, Equatable {
     var title: String {
         switch self {
         case .moveToTrash:
-            "Move File to Trash?"
+            L10n.string("Move File to Trash?")
         case .removeFromIndex:
-            "Remove from Index?"
+            L10n.string("Remove from Index?")
         }
     }
 
     var message: String {
         switch self {
         case .moveToTrash:
-            "AreaMatrix will move this file to the system Trash and keep a change-log record."
+            L10n.string("AreaMatrix will move this file to the system Trash and keep a change-log record.")
         case .removeFromIndex:
-            "This removes the AreaMatrix index entry. It does not delete the original file."
+            L10n.string("This removes the AreaMatrix index entry. It does not delete the original file.")
         }
     }
 
     var confirmationText: String {
         switch self {
         case .moveToTrash:
-            "我理解该文件会被移到系统废纸篓"
+            L10n.string("我理解该文件会被移到系统废纸篓")
         case .removeFromIndex:
-            "我理解该条目会从 AreaMatrix 索引中移除"
+            L10n.string("我理解该条目会从 AreaMatrix 索引中移除")
         }
     }
 
     var actionTitle: String {
         switch self {
         case .moveToTrash:
-            "Move to Trash"
+            L10n.string("Move to Trash")
         case .removeFromIndex:
-            "Remove from Index"
+            L10n.string("Remove from Index")
         }
     }
 
     var runningTitle: String {
         switch self {
         case .moveToTrash:
-            "Moving to Trash..."
+            L10n.string("Moving to Trash...")
         case .removeFromIndex:
-            "Removing..."
+            L10n.string("Removing...")
         }
     }
 
     var failureTitle: String {
         switch self {
         case .moveToTrash:
-            "Move to Trash failed"
+            L10n.string("Move to Trash failed")
         case .removeFromIndex:
-            "Remove from Index failed"
+            L10n.string("Remove from Index failed")
         }
     }
 }
@@ -190,7 +194,7 @@ enum MainFileDeleteState: Equatable {
 
     func primaryActionTitle(fileID: Int64, operation: MainFileDeleteOperation) -> String {
         if isDeleting(fileID: fileID) { return operation.runningTitle }
-        if failure(for: fileID) != nil { return "Retry" }
+        if failure(for: fileID) != nil { return L10n.string("Retry") }
         return operation.actionTitle
     }
 }
@@ -201,7 +205,14 @@ enum MainFileWriteActionDisabledReason: String, Equatable {
     case importLocked = "This file is locked by an import"
 
     var message: String {
-        rawValue
+        switch self {
+        case .repoReadOnly:
+            L10n.string("Repository is read-only")
+        case .listLoading:
+            L10n.string("Current list is loading")
+        case .importLocked:
+            L10n.string("This file is locked by an import")
+        }
     }
 }
 

@@ -2,9 +2,17 @@ import SwiftUI
 
 private enum MainSidebarTagFilterEntry {
     static let id = "tag-filters-sidebar-tags-filter"
-    static let title = "Tags"
-    static let accessibilityLabel = "Tags filter"
-    static let accessibilityHint = "Open tag filters for the current search scope."
+    static var title: String {
+        L10n.string("Tags")
+    }
+
+    static var accessibilityLabel: String {
+        L10n.string("Tags filter")
+    }
+
+    static var accessibilityHint: String {
+        L10n.string("Open tag filters for the current search scope.")
+    }
 }
 
 extension MainRepositoryContentView {
@@ -165,7 +173,11 @@ extension MainRepositoryContentView {
 
     private func sidebarAccessibilityLabel(_ row: RepositorySidebarRowSnapshot) -> String {
         guard row.isSmartList else { return "\(row.displayName) \(row.totalFileCount)" }
-        return "Smart List \(row.displayName), \(smartListStatus(for: row).accessibilityValue)"
+        return L10n.format(
+            "Smart List %@, %@",
+            row.displayName,
+            smartListStatus(for: row).accessibilityValue
+        )
     }
 
     @ViewBuilder

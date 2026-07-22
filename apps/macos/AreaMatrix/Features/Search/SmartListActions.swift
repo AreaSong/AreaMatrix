@@ -3,7 +3,8 @@ import Foundation
 extension MainFileListModel {
     func searchBannerContextText(for request: SearchQueryRequestSnapshot) -> String {
         activeSmartListSearch
-            .map { "Smart List: \($0.name)  query=\"\(request.query)\"" } ?? "搜索：\"\(request.query)\""
+            .map { L10n.format("search.smartList.context", $0.name, request.query) } ??
+            L10n.format("search.query.context", request.query)
     }
 
     func restoreSavedSearch(_ savedSearch: SavedSearchSnapshot) async {

@@ -178,7 +178,9 @@ extension MainFileListModel {
     }
 
     func selectedAITagSuggestionDisabledReason() -> String? {
-        selectedWriteActionDisabledMessage(noSelectionMessage: "Select a file before reviewing AI tag suggestions.")
+        selectedWriteActionDisabledMessage(
+            noSelectionMessage: L10n.string("Select a file before reviewing AI tag suggestions.")
+        )
     }
 
     private func aiTagSettingsBlockedReport(fileID: Int64) async throws -> AiTagSuggestionReport? {

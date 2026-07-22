@@ -111,14 +111,20 @@ final class DetailLogPageIntegrationVerifyTests: XCTestCase {
             relativePath: event.relativePath,
             fsEventID: event.fsEventID
         )
-        await lister.assertChangeLogListRequests([
-            DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: logFileID))
-        ])
-        XCTAssertEqual(model.detailLogState, .loaded(fileID: entry.fileID ?? -1, entries: [entry]))
-        XCTAssertEqual(model.detailTabRequest, .automatic(.log))
-        model.consumeDetailTabRequest(.automatic(.log))
-        XCTAssertNil(model.detailTabRequest)
-        assertSelectionState(kind: kind, model: model, selected: selected, synced: synced)
+        if kind != .created {
+            await lister.assertChangeLogListRequests([
+                DetailLogRequest(repoPath: "/tmp/repo", filter: .detailLog(fileID: logFileID))
+            ])
+            XCTAssertEqual(model.detailLogState, .loaded(fileID: entry.fileID ?? -1, entries: [entry]))
+            XCTAssertNil(model.detailTabRequest)
+            assertSelectionState(kind: kind, model: model, selected: selected, synced: synced)
+        } else {
+            await lister.assertChangeLogListRequests([])
+            XCTAssertEqual(model.detailLogState, .notLoaded)
+            XCTAssertNil(model.detailTabRequest)
+            XCTAssertEqual(model.selection, .single(selected.id))
+            XCTAssertEqual(model.selectedFileDetail, selected)
+        }
     }
 
     private func eventPath(

@@ -101,11 +101,11 @@ enum LocalModelStatusActionError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unavailable:
-            "The requested local model action is unavailable."
+            L10n.string("localModel.actionUnavailable")
         case .openRejected:
-            "macOS rejected the local model action."
+            L10n.string("localModel.openRejected")
         case .copyRejected:
-            "macOS rejected copying diagnostics."
+            L10n.string("localModel.copyRejected")
         }
     }
 }

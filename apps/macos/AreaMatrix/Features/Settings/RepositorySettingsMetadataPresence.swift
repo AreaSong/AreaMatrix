@@ -9,6 +9,8 @@ struct RepoMetadataPresence: Equatable {
     var hasMetadataDatabase: Bool
 
     var directoryStatusLabel: String {
-        hasMetadataDirectory ? ".areamatrix/ found" : ".areamatrix/ missing"
+        hasMetadataDirectory
+            ? L10n.string("settings.repository.metadataFound")
+            : L10n.string("settings.repository.metadataMissing")
     }
 }

@@ -5,10 +5,10 @@ extension AiFallbackStatus {
         operation: .classificationSuggestion,
         kind: .internalFailure,
         category: .unavailable,
-        title: "Resolving AI status...",
-        message: "AreaMatrix is mapping the AI category fallback reason.",
+        title: L10n.string("Resolving AI status..."),
+        message: L10n.string("AreaMatrix is mapping the AI category fallback reason."),
         retryable: false,
-        retryDisabledReason: "Recovery actions are disabled until status mapping completes.",
+        retryDisabledReason: L10n.string("Recovery actions are disabled until status mapping completes."),
         primaryAction: .retry,
         secondaryAction: nil,
         nonAiFallbackAction: .classifyManually,
@@ -30,12 +30,12 @@ struct AIClassificationFallbackStatusRegion: View {
 
     var body: some View {
         ReasonStatusCard(
-            badge: isResolving ? "Resolving" : badgeText,
+            badge: isResolving ? L10n.string("Resolving") : badgeText,
             badgeTint: badgeTint,
             accessibilityIdentifier: "ai-fallback-ai-classification-suggestion-ai-fallback",
             badgeAccessibilityIdentifier: "ai-fallback-ai-classification-suggestion-reason-badge"
         ) {
-            Text(isResolving ? "Resolving AI status..." : status.title)
+            Text(isResolving ? L10n.string("Resolving AI status...") : status.title)
                 .font(.subheadline.weight(.semibold))
         } message: {
             Text(isResolving ? resolvingMessage : status.message)
@@ -90,24 +90,26 @@ struct AIClassificationFallbackStatusRegion: View {
     }
 
     private var resolvingMessage: String {
-        "AreaMatrix is mapping the AI category fallback reason. Recovery actions are disabled until it completes."
+        L10n.string(
+            "AreaMatrix is mapping the AI category fallback reason. Recovery actions are disabled until it completes."
+        )
     }
 
     private var badgeText: String {
         switch status.kind {
-        case .aiDisabled: "AI disabled"
-        case .featureDisabled: "Feature disabled"
-        case .localModelNotReady: "Local not ready"
-        case .remoteNotConfigured: "Remote not configured"
-        case .remoteFailed: "Remote failed"
-        case .providerUnavailable: "Provider unavailable"
-        case .privacySkipped: "Privacy skipped"
-        case .noEligibleInput: "No eligible input"
-        case .callLogUnavailable: "Call log unavailable"
-        case .rateLimited: "Rate limited"
-        case .timeout: "Timeout"
-        case .internalFailure: "Internal failure"
-        case .semanticIndexNotReady, .normalSearchUnavailable: "Not available"
+        case .aiDisabled: L10n.string("AI disabled")
+        case .featureDisabled: L10n.string("Feature disabled")
+        case .localModelNotReady: L10n.string("Local not ready")
+        case .remoteNotConfigured: L10n.string("Remote not configured")
+        case .remoteFailed: L10n.string("Remote failed")
+        case .providerUnavailable: L10n.string("Provider unavailable")
+        case .privacySkipped: L10n.string("Privacy skipped")
+        case .noEligibleInput: L10n.string("No eligible input")
+        case .callLogUnavailable: L10n.string("Call log unavailable")
+        case .rateLimited: L10n.string("Rate limited")
+        case .timeout: L10n.string("Timeout")
+        case .internalFailure: L10n.string("Internal failure")
+        case .semanticIndexNotReady, .normalSearchUnavailable: L10n.string("Not available")
         }
     }
 

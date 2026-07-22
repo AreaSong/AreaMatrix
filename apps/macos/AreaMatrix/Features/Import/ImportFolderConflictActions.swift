@@ -36,7 +36,7 @@ struct CoreImportFolderConflictPrechecker: ImportFolderConflictPrechecking {
             }
         } catch {
             return candidates.reduce(into: [:]) { results, row in
-                results[row.id] = .blocked("Conflict precheck failed: \(error.localizedDescription)")
+                results[row.id] = .blocked(L10n.format("import.conflict.precheck-failed", error.localizedDescription))
             }
         }
     }
@@ -57,7 +57,7 @@ struct CoreImportFolderConflictPrechecker: ImportFolderConflictPrechecking {
             }
             return nil
         } catch {
-            return .blocked("Conflict precheck failed: \(error.localizedDescription)")
+            return .blocked(L10n.format("import.conflict.precheck-failed", error.localizedDescription))
         }
     }
 }
@@ -141,7 +141,7 @@ extension ImportFolderPreviewModel {
         decision: SingleFileReplaceConfirmationDecision
     ) -> Bool {
         guard decision.understandsReplace else {
-            recordReplaceConfirmationFailure("Replace 需要先勾选二次确认")
+            recordReplaceConfirmationFailure(L10n.string("import.replace.checkboxRequired"))
             return false
         }
         guard let expected = currentReplaceConfirmationContext(for: rowID), expected == decision.context else {

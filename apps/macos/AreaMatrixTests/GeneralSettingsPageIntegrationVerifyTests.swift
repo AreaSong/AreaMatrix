@@ -82,14 +82,14 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         ignoreRulesManager.assertCreatedPaths([repoURL.path])
         ignoreRulesManager.assertOpenedPaths([repoURL.path, repoURL.path])
 
-        await model.updateLocale(GeneralSettingsLocale.en)
-        XCTAssertEqual(model.draft?.locale, .system)
+        await model.updateContentLanguage(RepositoryContentLanguage.en)
+        XCTAssertEqual(model.draft?.contentLanguage, .followInterface)
         XCTAssertEqual(model.saveError?.message, "配置错误")
 
         await model.retrySave()
 
         await updater.assertRequestedConfigValues(\.locale, ["system", "system", "en", "en"])
-        XCTAssertEqual(model.draft?.locale, .en)
+        XCTAssertEqual(model.draft?.contentLanguage, .en)
         XCTAssertNil(model.saveError)
     }
 

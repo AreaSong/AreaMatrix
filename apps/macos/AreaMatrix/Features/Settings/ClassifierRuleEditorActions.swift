@@ -6,7 +6,7 @@ private enum ClassifierRuleEditorActionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingRuleDraft:
-            "No classifier rule draft is selected."
+            L10n.string("settings.classifier.ruleDraftMissing")
         }
     }
 }

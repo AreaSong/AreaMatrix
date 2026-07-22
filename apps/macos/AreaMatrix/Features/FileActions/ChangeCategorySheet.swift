@@ -122,12 +122,12 @@ struct ChangeCategorySheet: View {
 
     func primaryActionTitle(for file: FileEntrySnapshot) -> String {
         if state.isMoving(fileID: file.id) {
-            return mode == .classifierCorrection ? "Applying..." : "Moving..."
+            return mode == .classifierCorrection ? L10n.string("Applying...") : L10n.string("Moving...")
         }
         if state.failureOperation(for: file.id, targetCategory: targetCategory) == failureOperation {
-            return "Retry"
+            return L10n.string("Retry")
         }
-        return mode == .classifierCorrection ? "Apply correction" : "Change Category"
+        return mode == .classifierCorrection ? L10n.string("Apply correction") : L10n.string("Change Category")
     }
 
     func actionDisabled(for file: FileEntrySnapshot) -> Bool {
@@ -163,7 +163,7 @@ struct ChangeCategorySheet: View {
 
     func failureMessage(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> String {
         if hasUnresolvedNameConflict(for: file) {
-            return "Cannot create a safe target name. Rename the file first."
+            return L10n.string("Cannot create a safe target name. Rename the file first.")
         }
         return failure.userMessage
     }
@@ -185,7 +185,7 @@ struct ChangeCategorySheet: View {
     }
 
     var pageTitle: String {
-        mode == .classifierCorrection ? "Correct classification" : "Change Category"
+        mode == .classifierCorrection ? L10n.string("Correct classification") : L10n.string("Change Category")
     }
 
     var classifierOptions: MainFileCategoryMoveOptions {
@@ -204,14 +204,20 @@ struct ChangeCategorySheet: View {
     }
 
     func moveDisabledReason(for file: FileEntrySnapshot) -> String {
-        if file.availability == .missing { return "Missing files can only update classification metadata." }
-        if file.storageMode == "Indexed" { return "Index-only files are not moved by classifier correction." }
-        if file.origin != "Imported" { return "Adopted or external files default to metadata-only correction." }
-        return "This file cannot be moved from this correction sheet."
+        if file.availability == .missing {
+            return L10n.string("Missing files can only update classification metadata.")
+        }
+        if file.storageMode == "Indexed" {
+            return L10n.string("Index-only files are not moved by classifier correction.")
+        }
+        if file.origin != "Imported" {
+            return L10n.string("Adopted or external files default to metadata-only correction.")
+        }
+        return L10n.string("This file cannot be moved from this correction sheet.")
     }
 
     func ruleSuggestionText(for _: FileEntrySnapshot) -> String {
-        "Safe keyword, extension, and priority candidates are reviewed before any rule is saved."
+        L10n.string("Safe keyword, extension, and priority candidates are reviewed before any rule is saved.")
     }
 
     func classifierContextRequest(
@@ -226,13 +232,25 @@ struct ChangeCategorySheet: View {
     func classificationReasonText(_ result: ClassifyResultSnapshot) -> String {
         switch result.reason {
         case .keyword:
-            "Matched keyword rule -> \(result.category) (\(result.confidencePercent)% confidence)"
+            L10n.format(
+                "file-actions.change-category.keyword-match",
+                result.category,
+                Int64(result.confidencePercent)
+            )
         case .extension:
-            "Matched extension rule -> \(result.category) (\(result.confidencePercent)% confidence)"
+            L10n.format(
+                "file-actions.change-category.extension-match",
+                result.category,
+                Int64(result.confidencePercent)
+            )
         case .aiPredicted:
-            "AI prediction -> \(result.category) (\(result.confidencePercent)% confidence)"
+            L10n.format(
+                "file-actions.change-category.ai-prediction",
+                result.category,
+                Int64(result.confidencePercent)
+            )
         case .default:
-            "Default rule -> \(result.category)"
+            L10n.format("file-actions.change-category.default-rule", result.category)
         }
     }
 

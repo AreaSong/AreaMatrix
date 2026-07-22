@@ -23,7 +23,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         await model.continueFromChoosePath()
         await model.continueFromValidatePath()
 
-        XCTAssertEqual(model.validatePathPrimaryActionTitle, "Open Repository")
+        XCTAssertEqual(model.validatePathPrimaryActionTitle, L10n.string("Open Repository"))
         XCTAssertEqual(model.validatePathAction, .openExistingRepositoryRequested(validation))
         await opener.assertRequestedRepoPaths(["/tmp/repo"])
         writer.assertSavedRepoPaths(["/tmp/repo"])
@@ -121,7 +121,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "路径环境检查缺失，请重试或选择其他路径")
+        XCTAssertEqual(model.repositoryPathError, "Path environment checks are missing. Retry or choose another path.")
         XCTAssertFalse(model.canContinueFromValidatePath)
         XCTAssertNil(model.validatePathAction)
     }
@@ -138,7 +138,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "路径环境检查缺失，请重试或选择其他路径")
+        XCTAssertEqual(model.repositoryPathError, "Path environment checks are missing. Retry or choose another path.")
         XCTAssertFalse(model.canContinueFromValidatePath)
         XCTAssertNil(model.validatePathAction)
     }
@@ -160,6 +160,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
             pathValidator: RepairRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.createdFixture())),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -210,7 +211,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         XCTAssertEqual(ConfirmInitStepRules.footerActions(for: staleCreateDraft), [.back, .cancelSetup])
         XCTAssertEqual(
             ConfirmInitStepRules.blockingMessage(for: staleCreateDraft),
-            "路径已不是空目录，请返回校验页。"
+            "The path is no longer empty. Return to validation."
         )
     }
 
@@ -226,6 +227,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
             pathValidator: RepairRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.createdFixture())),
             helpOpener: NoopWelcomeHelpOpener()
         )
 
@@ -284,7 +286,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         await initializer.assertAdoptedRepoPaths([])
         writer.assertNoSavedRepoPaths()
         XCTAssertEqual(model.repositoryPathValidation, changedValidation)
-        XCTAssertEqual(model.repositoryPathError, "路径状态已变化，请返回重新校验")
+        XCTAssertEqual(model.repositoryPathError, "The path state changed. Return and validate it again.")
         XCTAssertEqual(model.route, .validatePath)
     }
 }

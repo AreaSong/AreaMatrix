@@ -39,7 +39,7 @@ struct ImportResultView: View {
                     Text(displayCategory(for: item.targetPath))
                 }
                 TableColumn("状态") { item in
-                    Text(item.status.rawValue)
+                    Text(item.status.displayName)
                 }
                 TableColumn("原因") { item in
                     Text(item.reason)
@@ -69,7 +69,7 @@ struct ImportResultView: View {
             changeLogSection
 
             HStack {
-                Text("当前：\(state.currentPath)")
+                Text(L10n.format("import.progress.current-path", state.currentPath))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -146,7 +146,7 @@ struct ImportResultView: View {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case let .exported(path):
-            Text("Exported details to \(path)")
+            Text(L10n.format("import.result.details-exported", path))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case let .failed(message):
@@ -163,7 +163,7 @@ struct ImportResultView: View {
 
     private func displayCategory(for path: String) -> String {
         let category = (path as NSString).deletingLastPathComponent
-        return category.isEmpty ? "repo root" : category
+        return category.isEmpty ? L10n.string("repo root") : category
     }
 
     private var changeLogSection: some View {
@@ -203,7 +203,7 @@ struct ImportResultView: View {
                         Text(entry.filename)
                     }
                     TableColumn("分类") { entry in
-                        Text(entry.category.isEmpty ? "repo root" : entry.category)
+                        Text(entry.category.isEmpty ? L10n.string("repo root") : entry.category)
                     }
                     TableColumn("动作") { entry in
                         Text(entry.actionDisplayName)
@@ -239,7 +239,7 @@ private struct ImportErrorDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Result details", systemImage: item.status.detailSystemImage)
                 .font(.headline)
-            detailRow("Status", item.status.rawValue)
+            detailRow(L10n.string("Status"), item.status.displayName)
             detailRow("Source", item.sanitizedSourcePath)
             detailRow("Target", item.sanitizedTargetPath)
             detailRow("Reason", item.reason)

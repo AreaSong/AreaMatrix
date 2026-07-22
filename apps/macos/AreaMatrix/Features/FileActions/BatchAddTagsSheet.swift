@@ -53,7 +53,7 @@ struct BatchAddTagsSheet: View {
     @State private var showsDetails = false
 
     var body: some View {
-        MainFileActionSheetContainer(title: "批量添加标签", pageID: "batch-add-tags") {
+        MainFileActionSheetContainer(title: L10n.string("fileActions.batchTags.title"), pageID: "batch-add-tags") {
             if selectedCount == 0 {
                 Text("No files selected")
                     .foregroundStyle(.secondary)
@@ -192,7 +192,7 @@ private struct BatchAddTagsSheetContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("已选择 \(selectedCount) 个文件")
+            Text(L10n.plural("file-actions.add-tags.selected-files", count: selectedCount))
                 .font(.callout)
             tagInput
             tagCandidates
@@ -249,7 +249,9 @@ private struct BatchAddTagsSheetContent: View {
             }
         }
         .disabled(tag.selected || tag.disabled || isApplying)
-        .accessibilityLabel("\(tag.displayName), \(candidateStatusText(tag))")
+        .accessibilityLabel(
+            L10n.format("file-actions.tag-suggestion.accessibility-summary", tag.displayName, candidateStatusText(tag))
+        )
     }
 
     @ViewBuilder
@@ -268,7 +270,7 @@ private struct BatchAddTagsSheetContent: View {
         NeutralCapsuleChip {
             HStack(spacing: 8) {
                 Text(chip.value)
-                Text(chip.status.rawValue).foregroundStyle(.secondary)
+                Text(chip.status.displayName).foregroundStyle(.secondary)
                 Button {
                     draft.pendingTags.removeAll { $0 == chip.value }
                 } label: {
@@ -276,11 +278,13 @@ private struct BatchAddTagsSheetContent: View {
                 }
                 .buttonStyle(.borderless)
                 .disabled(isApplying)
-                .accessibilityLabel("Remove pending tag \(chip.value)")
+                .accessibilityLabel(L10n.format("file-actions.add-tags.remove-pending", chip.value))
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Pending tag \(chip.value), \(chip.status.rawValue)")
+        .accessibilityLabel(
+            L10n.format("file-actions.add-tags.pending-summary", chip.value, chip.status.displayName)
+        )
     }
 
     private var preview: some View {
@@ -314,8 +318,15 @@ private struct BatchAddTagsSheetContent: View {
             Button("View details") { showsDetails.toggle() }
             if showsDetails {
                 ForEach(report.itemResults.filter { $0.status == .failed }) { item in
-                    Text("File \(item.fileID), \(item.tag): \(item.error ?? "Failed")")
-                        .font(.caption).foregroundStyle(.secondary)
+                    Text(
+                        L10n.format(
+                            "file-actions.add-tags.file-error",
+                            item.fileID,
+                            item.tag,
+                            item.error ?? L10n.string("Failed")
+                        )
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
                 }
             }
         }
@@ -332,7 +343,7 @@ private struct BatchAddTagsSheetContent: View {
             Button("Cancel", action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .disabled(isApplying)
-            Button(isApplying ? "Applying..." : "Apply", action: onApply)
+            Button(isApplying ? L10n.string("Applying...") : L10n.string("Apply"), action: onApply)
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canApply)
                 .accessibilityIdentifier("batch-add-tags-batch-add-tags-apply")
@@ -340,15 +351,18 @@ private struct BatchAddTagsSheetContent: View {
     }
 
     private var previewText: String {
-        guard !draft.pendingTags.isEmpty else { return "未选择任何标签。" }
-        return """
-        将为 \(selectedCount) 个文件添加标签：\(pendingChips.map(\.value).joined(separator: ", "))
-        已包含这些标签的文件会跳过重复写入。
-        """
+        guard !draft.pendingTags.isEmpty else {
+            return L10n.string("fileActions.batchTags.noneSelected")
+        }
+        return L10n.format(
+            "fileActions.batchTags.preview",
+            selectedCount,
+            pendingChips.map(\.value).joined(separator: ", ")
+        )
     }
 
     private var inputHelpText: String {
-        draft.fieldError ?? disabledReason.map { _ in "Tag store is read-only." } ?? ""
+        draft.fieldError ?? disabledReason.map { _ in L10n.string("Tag store is read-only.") } ?? ""
     }
 
     private var candidateTags: [TagRecordSnapshot] {
@@ -375,8 +389,8 @@ private struct BatchAddTagsSheetContent: View {
     }
 
     private func candidateStatusText(_ tag: TagRecordSnapshot) -> String {
-        if tag.disabled { return "Blocked" }
-        if tag.selected { return "Already selected" }
-        return "\(tag.fileCount) files"
+        if tag.disabled { return L10n.string("Blocked") }
+        if tag.selected { return L10n.string("Already selected") }
+        return L10n.plural("file-actions.add-tags.file-count", count: tag.fileCount)
     }
 }

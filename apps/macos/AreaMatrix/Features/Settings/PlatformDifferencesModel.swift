@@ -45,7 +45,7 @@ final class PlatformDifferencesModel: ObservableObject {
         hostPlatform: PlatformIdSnapshot = .macos,
         appVersion: String? = nil,
         appVersionReader: any AppVersionReading = PlatformDifferencesPlatformServices.appVersionReader,
-        repositoryText: String = "Not connected",
+        repositoryText: String = L10n.string("Not connected"),
         selectedTargetPlatform: BindingTargetPlatformSnapshot = .swift,
         bindingVersion: Int64 = 1,
         contractInspector: any CoreBindingContractInspecting = AppCoreServices.bindingContractInspector,
@@ -63,7 +63,7 @@ final class PlatformDifferencesModel: ObservableObject {
     }
 
     var contractActionTitle: String {
-        isInspectingContract ? "Checking contract..." : "Check contract"
+        isInspectingContract ? L10n.string("Checking contract...") : L10n.string("Check contract")
     }
 
     func load() async {
@@ -119,7 +119,7 @@ final class PlatformDifferencesModel: ObservableObject {
     private func contractError(for error: Error) async -> PlatformDifferencesContractError {
         if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return PlatformDifferencesContractError(
-                message: "Binding contract unavailable",
+                message: L10n.string("Binding contract unavailable"),
                 recovery: display.recovery,
                 detail: display.detail
             )
@@ -127,15 +127,15 @@ final class PlatformDifferencesModel: ObservableObject {
 
         if let bridgeError = error as? CoreBridgeError {
             return PlatformDifferencesContractError(
-                message: "Binding contract unavailable",
-                recovery: "Check the Core bridge integration, then retry.",
+                message: L10n.string("Binding contract unavailable"),
+                recovery: L10n.string("Check the Core bridge integration, then retry."),
                 detail: bridgeError.localizedDescription
             )
         }
 
         return PlatformDifferencesContractError(
-            message: "Binding contract unavailable",
-            recovery: "Retry the contract check.",
+            message: L10n.string("Binding contract unavailable"),
+            recovery: L10n.string("Retry the contract check."),
             detail: error.localizedDescription
         )
     }
@@ -143,7 +143,7 @@ final class PlatformDifferencesModel: ObservableObject {
     private func capabilityError(for error: Error) async -> PlatformDifferencesCapabilityError {
         if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return PlatformDifferencesCapabilityError(
-                message: "Capability snapshot unavailable",
+                message: L10n.string("Capability snapshot unavailable"),
                 recovery: display.recovery,
                 detail: display.detail
             )
@@ -151,15 +151,15 @@ final class PlatformDifferencesModel: ObservableObject {
 
         if let bridgeError = error as? CoreBridgeError {
             return PlatformDifferencesCapabilityError(
-                message: "Capability snapshot unavailable",
-                recovery: "Check the Core platform capability bridge, then retry.",
+                message: L10n.string("Capability snapshot unavailable"),
+                recovery: L10n.string("Check the Core platform capability bridge, then retry."),
                 detail: bridgeError.localizedDescription
             )
         }
 
         return PlatformDifferencesCapabilityError(
-            message: "Capability snapshot unavailable",
-            recovery: "Retry the platform capability check.",
+            message: L10n.string("Capability snapshot unavailable"),
+            recovery: L10n.string("Retry the platform capability check."),
             detail: error.localizedDescription
         )
     }

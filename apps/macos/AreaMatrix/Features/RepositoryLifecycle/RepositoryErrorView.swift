@@ -105,10 +105,10 @@ struct MainRepoErrorView: View {
                 alignment: .leading
             )
             if let activeMapping {
-                Text("Error: \(activeMapping.kind.rawValue)")
+                Text(L10n.format("repository.error.kind", activeMapping.kind.displayName))
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text("Action: \(activeMapping.suggestedAction)")
+                Text(L10n.format("repository.error.action", activeMapping.suggestedAction))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 technicalDetails(activeMapping)
@@ -117,9 +117,12 @@ struct MainRepoErrorView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             if let validation {
-                Text("Last validation: initialized=\(validation.isInitialized ? "yes" : "no")")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                Text(L10n.format(
+                    "repository.lastValidationInitialized",
+                    L10n.string(validation.isInitialized ? "yes" : "no")
+                ))
+                .font(.callout)
+                .foregroundStyle(.secondary)
             }
             externalRemovalStatus
         }
@@ -149,11 +152,11 @@ struct MainRepoErrorView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .synced(result):
-            Text("External removals synced: \(result.detectedDeletes)")
+            Text(L10n.plural("repository.externalRemoval.syncedCount", count: result.detectedDeletes))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .failed(mapping):
-            Text("External removal sync failed: \(mapping.userMessage)")
+            Text(L10n.format("repository.externalRemoval.syncFailed", mapping.userMessage))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case .unavailable:
@@ -227,7 +230,7 @@ struct MainRepoErrorView: View {
                 }
             }
         case let .failed(mapping):
-            Text("Diagnostics failed: \(mapping.userMessage)")
+            Text(L10n.format("repository.diagnostics.failed", mapping.userMessage))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -249,10 +252,13 @@ struct MainRepoErrorView: View {
     }
 
     private var lastOpenedLine: String {
-        guard let lastOpenedAt else { return "Last opened: Not recorded" }
+        guard let lastOpenedAt else { return L10n.string("Last opened: Not recorded") }
 
         let date = Date(timeIntervalSince1970: TimeInterval(lastOpenedAt))
-        return "Last opened: \(date.formatted(date: .abbreviated, time: .shortened))"
+        return L10n.format(
+            "repository.lastOpened",
+            date.formatted(date: .abbreviated, time: .shortened)
+        )
     }
 
     private var shouldShowRevealFolder: Bool {

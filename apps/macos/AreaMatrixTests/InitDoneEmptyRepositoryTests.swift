@@ -185,7 +185,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         finderOpener.assertRepoPaths(["/tmp/adopted-repo"])
         XCTAssertEqual(model.route, .initializationDone(result))
-        XCTAssertTrue(message.contains("无法在 Finder 中打开资料库"))
+        XCTAssertTrue(message.contains("Could not open the repository in Finder"))
         accessibilityAnnouncer.assertAnnouncements([message])
     }
 

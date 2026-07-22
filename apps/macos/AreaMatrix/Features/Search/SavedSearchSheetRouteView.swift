@@ -56,7 +56,7 @@ struct SavedSearchSheetRouteView: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Save Search", pageID: "saved-search") {
+        MainFileActionSheetContainer(title: L10n.string("Save Search"), pageID: "saved-search") {
             Text("Save the current query as a Smart List. Files are not moved or duplicated.")
                 .font(.callout)
                 .foregroundStyle(.secondary)

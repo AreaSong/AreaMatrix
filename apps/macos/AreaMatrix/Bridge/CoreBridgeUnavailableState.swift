@@ -24,17 +24,17 @@ struct ConfigLoadFailure: Equatable {
         if let bridgeError = error as? CoreBridgeError {
             return ConfigLoadFailure(
                 repoPath: repoPath,
-                title: "Unable to load repository settings",
+                title: L10n.string("repository.loadError.title"),
                 message: bridgeError.localizedDescription,
-                recoveryAction: "Check the Core bridge integration, then retry opening the repository."
+                recoveryAction: L10n.string("repository.loadError.bridgeRecovery")
             )
         }
 
         return ConfigLoadFailure(
             repoPath: repoPath,
-            title: "Unable to load repository settings",
+            title: L10n.string("repository.loadError.title"),
             message: error.localizedDescription,
-            recoveryAction: "Retry opening the repository or start setup again with a different folder."
+            recoveryAction: L10n.string("repository.loadError.defaultRecovery")
         )
     }
 
@@ -43,37 +43,37 @@ struct ConfigLoadFailure: Equatable {
         case let .Config(reason):
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: "Repository settings are invalid",
-                message: "AreaMatrix could not read the saved settings: \(reason)",
-                recoveryAction: "Start setup again or choose a different repository folder."
+                title: L10n.string("repository.loadError.invalidTitle"),
+                message: L10n.format("repository.loadError.invalidMessage", reason),
+                recoveryAction: L10n.string("repository.loadError.invalidRecovery")
             )
         case let .PermissionDenied(path):
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: "Repository settings need permission",
-                message: "AreaMatrix cannot read repository settings at \(path).",
-                recoveryAction: "Grant folder access, then retry opening the repository."
+                title: L10n.string("repository.loadError.permissionTitle"),
+                message: L10n.format("repository.loadError.permissionMessage", path),
+                recoveryAction: L10n.string("repository.loadError.permissionRecovery")
             )
         case let .Io(message):
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: "Repository settings are unavailable",
-                message: "File system error while reading settings: \(message)",
-                recoveryAction: "Make sure the folder is available, then retry."
+                title: L10n.string("repository.loadError.ioTitle"),
+                message: L10n.format("repository.loadError.ioMessage", message),
+                recoveryAction: L10n.string("repository.loadError.ioRecovery")
             )
         case let .Db(message):
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: "Repository metadata cannot be opened",
-                message: "Database error while reading settings: \(message)",
-                recoveryAction: "Retry opening the repository or start setup again."
+                title: L10n.string("repository.loadError.databaseTitle"),
+                message: L10n.format("repository.loadError.databaseMessage", message),
+                recoveryAction: L10n.string("repository.loadError.databaseRecovery")
             )
         default:
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: "Unable to load repository settings",
+                title: L10n.string("repository.loadError.title"),
                 message: coreError.localizedDescription,
-                recoveryAction: "Retry opening the repository or start setup again with a different folder."
+                recoveryAction: L10n.string("repository.loadError.defaultRecovery")
             )
         }
     }
@@ -81,6 +81,7 @@ struct ConfigLoadFailure: Equatable {
 
 enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case getVersion = "get_version"
+    case setAppInterfaceLocale = "set_app_interface_locale"
     case initLogging = "init_logging"
     case inspectBindingContract = "inspect_binding_contract"
     case getPlatformCapabilities = "get_platform_capabilities"
@@ -143,12 +144,14 @@ struct CoreBridgeUnavailableState: Equatable {
         true
     }
 
-    static let generatedBindingsUnavailable = CoreBridgeUnavailableState(
-        statusLabel: "Core bridge unavailable",
-        generatedBindingsPath: "apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift",
-        coreLibraryStatus: "UniFFI bindings and static library are unavailable for this build",
-        declaredBoundaryCount: CoreBridgeBoundary.allCases.count
-    )
+    static var generatedBindingsUnavailable: CoreBridgeUnavailableState {
+        CoreBridgeUnavailableState(
+            statusLabel: L10n.string("bridge.unavailable.status"),
+            generatedBindingsPath: "apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift",
+            coreLibraryStatus: L10n.string("bridge.unavailable.libraryStatus"),
+            declaredBoundaryCount: CoreBridgeBoundary.allCases.count
+        )
+    }
 }
 
 enum CoreBridgeError: Error, Equatable, LocalizedError {
@@ -160,7 +163,7 @@ enum CoreBridgeError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .generatedBindingsUnavailable(boundary, state):
-            "\(state.statusLabel): \(boundary.rawValue) requires generated UniFFI bindings."
+            L10n.format("bridge.unavailable.boundaryMessage", state.statusLabel, boundary.rawValue)
         }
     }
 }

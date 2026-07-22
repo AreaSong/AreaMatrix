@@ -70,11 +70,11 @@ struct BatchDeleteConfirmSheet: View {
     }
 
     private var title: String {
-        guard selectedCount > 0 else { return "Review deletion" }
+        guard selectedCount > 0 else { return L10n.string("Review deletion") }
         if previewState.report?.blockedCount ?? 0 > 0 || previewState.report?.indexOnlyCount ?? 0 > 0 {
-            return "Review deletion for \(selectedCount) selected items"
+            return L10n.plural("file-actions.delete.review-selected-items", count: selectedCount)
         }
-        return "Move \(selectedCount) files to Trash?"
+        return L10n.plural("file-actions.delete.move-files-confirmation", count: selectedCount)
     }
 
     private var content: some View {
@@ -286,12 +286,14 @@ struct BatchDeleteConfirmSheet: View {
     }
 
     private var removeFromIndexTitle: String {
-        isApplying && deleteMode == .removeFromIndex ? "Removing..." : "Remove from index"
+        isApplying && deleteMode == .removeFromIndex
+            ? L10n.string("Removing...")
+            : L10n.string("Remove from index")
     }
 
     private var primaryTitle: String {
-        if isApplying, deleteMode == .moveToTrash { return "Moving..." }
-        if previewState.report?.blockedCount ?? 0 > 0 { return "Move available files to Trash" }
-        return "Move to Trash"
+        if isApplying, deleteMode == .moveToTrash { return L10n.string("Moving...") }
+        if previewState.report?.blockedCount ?? 0 > 0 { return L10n.string("Move available files to Trash") }
+        return L10n.string("Move to Trash")
     }
 }

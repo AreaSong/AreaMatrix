@@ -117,13 +117,13 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             .keepConflictedCopyOnly
         ])
         XCTAssertEqual(ICloudConflictResolutionStrategy.allCases.map(\.title), [
-            "保留两份（推荐）",
-            "仅保留第一份（把另一份移到回收站）",
-            "仅保留第二份（把另一份移到回收站）"
+            "Keep Both (Recommended)",
+            "Keep First Version (Move the Other to Trash)",
+            "Keep Second Version (Move the Other to Trash)"
         ])
         XCTAssertEqual(
             ICloudConflictResolutionStrategy.keepOriginalOnly.actionTitle,
-            "Move other version to Trash and Apply"
+            "Move Other Version to Trash and Apply"
         )
         XCTAssertTrue(ICloudConflictResolutionStrategy.keepOriginalOnly.requiresSecondConfirmation)
         assertTestMirrorDescription(of: body, contains: [

@@ -167,10 +167,10 @@ enum RemoteProviderCredentialStoreError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .emptyKey: "API key is required."
-        case let .keychainReadFailed(status): "Keychain read failed with status \(status)."
-        case let .keychainWriteFailed(status): "Keychain write failed with status \(status)."
-        case let .keychainDeleteFailed(status): "Keychain delete failed with status \(status)."
+        case .emptyKey: L10n.string("API key is required.")
+        case let .keychainReadFailed(status): L10n.format("remoteProvider.keychainReadFailed", status)
+        case let .keychainWriteFailed(status): L10n.format("remoteProvider.keychainWriteFailed", status)
+        case let .keychainDeleteFailed(status): L10n.format("remoteProvider.keychainDeleteFailed", status)
         }
     }
 }

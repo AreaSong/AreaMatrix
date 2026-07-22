@@ -47,11 +47,11 @@ extension ClassifierSettingsPane {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: String(localized: "settings.page.classifier"), subtitle: model.repoPath) {
+        SettingsPageHeader(title: L10n.string("settings.page.classifier"), subtitle: model.repoPath) {
             if model.isLoading {
-                SettingsHeaderProgressIndicator(label: "Checking classifier settings")
+                SettingsHeaderProgressIndicator(label: L10n.string("Checking classifier settings"))
             } else if model.isSaving {
-                SettingsHeaderProgressIndicator(label: "Saving classifier settings")
+                SettingsHeaderProgressIndicator(label: L10n.string("Saving classifier settings"))
             } else {
                 Button("Retry status") {
                     Task {
@@ -76,12 +76,12 @@ extension ClassifierSettingsPane {
     }
 
     private var loadingContent: some View {
-        SettingsPageLoadingContent(title: String(localized: "settings.loading.classifier"))
+        SettingsPageLoadingContent(title: L10n.string("settings.loading.classifier"))
     }
 
     private func loadErrorContent(_ error: ClassifierSettingsLoadError) -> some View {
         SettingsPageErrorContent(
-            title: String(localized: "settings.error.loadClassifier"),
+            title: L10n.string("settings.error.loadClassifier"),
             message: error.message,
             recovery: error.recovery
         ) {

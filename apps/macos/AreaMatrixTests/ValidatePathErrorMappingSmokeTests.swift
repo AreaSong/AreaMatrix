@@ -27,7 +27,7 @@ final class ValidatePathErrorMappingTests: XCTestCase {
         let mapping = await CoreBridge().mapCoreError(CoreError.PermissionDenied(path: "/restricted/repo"))
 
         XCTAssertEqual(mapping.kind, .permissionDenied)
-        XCTAssertEqual(mapping.userMessage, "无访问权限")
+        XCTAssertEqual(mapping.userMessage, "AreaMatrix does not have permission to access this item")
         XCTAssertEqual(mapping.severity, .high)
         XCTAssertEqual(mapping.recoverability, .userActionRequired)
         XCTAssertEqual(mapping.rawContext, "/restricted/repo")
@@ -92,7 +92,7 @@ final class ValidatePathIntegrationSmokeTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "可用空间不足，请释放空间或选择其他路径")
+        XCTAssertEqual(model.repositoryPathError, "Not enough available space. Free some space or choose another path.")
         XCTAssertFalse(model.canContinueFromValidatePath)
     }
 }

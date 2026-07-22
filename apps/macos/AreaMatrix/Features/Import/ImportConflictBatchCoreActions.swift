@@ -76,7 +76,7 @@ enum ImportConflictBatchValidation {
 
     static func confirmationTitle(for preview: ImportConflictBatchPreviewReportSnapshot?) -> String {
         let count = preview?.replaceCount ?? 0
-        return "Replace \(count) existing \(count == 1 ? "file" : "files")?"
+        return L10n.plural("import.conflict.replace-existing-confirmation", count: Int(count))
     }
 
     private static func selectedStrategiesMatch(

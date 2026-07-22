@@ -43,35 +43,38 @@ struct MainLoadingState: Equatable {
 
     var scanStatusText: String? {
         if let scanSessionErrorMapping {
-            return "扫描状态不可用：\(scanSessionErrorMapping.userMessage)"
+            return L10n.format("onboarding.loading.scanUnavailable", scanSessionErrorMapping.userMessage)
         }
 
         guard let scanSession else { return nil }
 
         switch scanSession.status {
         case .running:
-            return "正在扫描资料库 \(scanSession.processedCount)"
+            return L10n.format("onboarding.loading.scanRunning", scanSession.processedCount)
         case .completed:
-            return "\(scanSession.kind.completedStatusPrefix) \(scanSession.processedCount)"
+            return scanSession.kind.statusText(for: .completed, count: scanSession.processedCount)
         case .paused:
-            return "\(scanSession.kind.pausedStatusPrefix) \(scanSession.processedCount)"
+            return scanSession.kind.statusText(for: .paused, count: scanSession.processedCount)
         case .failed:
-            return "\(scanSession.kind.failedStatusPrefix) \(scanSession.processedCount)"
+            return scanSession.kind.statusText(for: .failed, count: scanSession.processedCount)
         case .interrupted:
-            return "\(scanSession.kind.interruptedStatusPrefix) \(scanSession.processedCount)"
+            return scanSession.kind.statusText(for: .interrupted, count: scanSession.processedCount)
         }
     }
 
     var scanProgressText: String? {
         guard let scanSession else { return nil }
-        return """
-        新增 \(scanSession.inserted)，更新 \(scanSession.updated)，跳过 \(scanSession.skipped)
-        """
+        return L10n.format(
+            "onboarding.loading.scanProgress",
+            scanSession.inserted,
+            scanSession.updated,
+            scanSession.skipped
+        )
     }
 
     var scanCurrentPathText: String? {
         guard let lastPath = scanSession?.lastPath, !lastPath.isEmpty else { return nil }
-        return "当前路径：\(lastPath)"
+        return L10n.format("onboarding.loading.currentPath", lastPath)
     }
 
     var scanWarningText: String? {
@@ -84,18 +87,14 @@ struct MainLoadingState: Equatable {
 
         switch startupRecovery {
         case .checking:
-            return "正在执行启动恢复检查..."
+            return L10n.string("Checking startup recovery state...")
         case let .completed(report):
             guard let report, report.hasVisibleDetails else {
-                return "启动恢复检查完成"
+                return L10n.string("Startup recovery check completed.")
             }
-
-            return """
-            启动恢复已完成：清理 \(report.cleanedStagingFiles) 个临时文件，\
-            回滚 \(report.revertedStagingDbRows) 条 staging 记录
-            """
+            return L10n.format("onboarding.recovery.completedSummary", report.startupRecoverySummaryText)
         case let .failed(mapping):
-            return "启动恢复失败：\(mapping.userMessage)"
+            return L10n.format("onboarding.loading.recoveryFailed", mapping.userMessage)
         }
     }
 
@@ -115,11 +114,11 @@ struct MainLoadingState: Equatable {
 
         switch treeLoading {
         case .loading:
-            return "正在加载资料库目录..."
+            return L10n.string("onboarding.loading.loadingTree")
         case let .loaded(tree):
-            return "目录已加载：\(tree.totalFileCount) 个文件"
+            return L10n.plural("onboarding.loading.treeFileCount", count: tree.totalFileCount)
         case let .failed(mapping):
-            return "目录加载失败：\(mapping.userMessage)"
+            return L10n.format("onboarding.loading.treeFailed", mapping.userMessage)
         }
     }
 
@@ -128,7 +127,9 @@ struct MainLoadingState: Equatable {
     }
 
     var repositoryOpeningErrorText: String? {
-        repositoryOpeningErrorMapping.map { "资料库暂时不可用：\($0.userMessage)" }
+        repositoryOpeningErrorMapping.map {
+            L10n.format("onboarding.loading.repositoryUnavailable", $0.userMessage)
+        }
     }
 
     func withRepositoryOpeningError(_ mapping: CoreErrorMappingSnapshot) -> MainLoadingState {
@@ -140,7 +141,7 @@ struct MainLoadingState: Equatable {
 
     var accessibilityStatusText: String {
         [
-            "Opening repository",
+            L10n.string("onboarding.loading.opening"),
             recoveryStatusText,
             scanAccessibilityStatusText,
             scanStatusText,
@@ -153,7 +154,7 @@ struct MainLoadingState: Equatable {
 
     private var scanAccessibilityStatusText: String? {
         guard scanSession != nil || scanSessionErrorMapping != nil else { return nil }
-        return "Scanning changes"
+        return L10n.string("onboarding.loading.scanning")
     }
 }
 
@@ -178,39 +179,30 @@ private extension ScanSessionSnapshot {
 }
 
 private extension ScanSessionKindSnapshot {
-    var completedStatusPrefix: String {
-        switch self {
-        case .adopt:
-            "接管扫描已完成"
-        case .reindex:
-            "重新扫描已完成"
-        }
+    func statusText(for status: ScanSessionStatusSnapshot, count: Int64) -> String {
+        L10n.format("onboarding.loading.scanStatus", statusPrefix(for: status), count)
     }
 
-    var pausedStatusPrefix: String {
-        switch self {
-        case .adopt:
-            "接管扫描已暂停"
-        case .reindex:
-            "重新扫描已暂停"
-        }
-    }
-
-    var failedStatusPrefix: String {
-        switch self {
-        case .adopt:
-            "接管扫描失败"
-        case .reindex:
-            "重新扫描失败"
-        }
-    }
-
-    var interruptedStatusPrefix: String {
-        switch self {
-        case .adopt:
-            "接管扫描已中断"
-        case .reindex:
-            "重新扫描已中断"
+    private func statusPrefix(for status: ScanSessionStatusSnapshot) -> String {
+        switch (status, self) {
+        case (.running, _):
+            L10n.string("正在扫描资料库")
+        case (.completed, .adopt):
+            L10n.string("onboarding.initializing.scanCompleted")
+        case (.completed, .reindex):
+            L10n.string("onboarding.loading.reindexCompleted")
+        case (.paused, .adopt):
+            L10n.string("onboarding.initializing.scanPaused")
+        case (.paused, .reindex):
+            L10n.string("onboarding.loading.reindexPaused")
+        case (.failed, .adopt):
+            L10n.string("onboarding.initializing.scanFailed")
+        case (.failed, .reindex):
+            L10n.string("onboarding.loading.reindexFailed")
+        case (.interrupted, .adopt):
+            L10n.string("onboarding.initializing.scanInterrupted")
+        case (.interrupted, .reindex):
+            L10n.string("onboarding.loading.reindexInterrupted")
         }
     }
 }

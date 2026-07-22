@@ -42,14 +42,16 @@ final class ImportFolderPreviewModel: ObservableObject {
         self.scanner = scanner
         self.placeholderDownloader = placeholderDownloader
     }
+}
 
+extension ImportFolderPreviewModel {
     var folderURL: URL? {
         request?.urls.first
     }
 
     var folderPathLabel: String {
         guard let path = folderURL?.path else {
-            return "未知文件夹"
+            return L10n.string("import.folder.unknown")
         }
         return (path as NSString).abbreviatingWithTildeInPath
     }
@@ -109,10 +111,7 @@ final class ImportFolderPreviewModel: ObservableObject {
     }
 
     func collectReplaceConfirmationDiagnostics() {
-        replaceConfirmationDiagnosticsMessage = [
-            "Diagnostics collected for replace confirmation state.",
-            "No user file contents included."
-        ].joined(separator: " ")
+        replaceConfirmationDiagnosticsMessage = L10n.string("import.replace-confirmation.diagnostics-collected")
     }
 
     func clearReplaceConfirmationRecovery() {
@@ -143,22 +142,22 @@ final class ImportFolderPreviewModel: ObservableObject {
 
     var importDisabledReason: String? {
         if status.isScanning {
-            return "预扫描完成前不能导入"
+            return L10n.string("预扫描完成前不能导入")
         }
         if isICloudDownloading {
-            return "正在下载 iCloud 文件"
+            return L10n.string("正在下载 iCloud 文件")
         }
         if rows.contains(where: \.status.isImporting) {
             return selectedStorageMode.importingBlockingMessage
         }
         if !scanErrors.isEmpty {
-            return "预扫描存在错误，请先 Retry scan 或 Cancel"
+            return L10n.string("预扫描存在错误，请先 Retry scan 或 Cancel")
         }
         if blockedCount > 0 {
-            return "存在 BLOCKED 项，请先完成冲突处理"
+            return L10n.string("存在 BLOCKED 项，请先完成冲突处理")
         }
         if rows.isEmpty || importableRows.isEmpty {
-            return "没有可导入文件"
+            return L10n.string("没有可导入文件")
         }
         return nil
     }
@@ -168,9 +167,9 @@ final class ImportFolderPreviewModel: ObservableObject {
         case .copy:
             nil
         case .move:
-            "Move 模式会移走源文件夹中的已就绪文件；请确认这些文件要移入资料库。"
+            L10n.string("Move 模式会移走源文件夹中的已就绪文件；请确认这些文件要移入资料库。")
         case .indexOnly:
-            "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。"
+            L10n.string("Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。")
         }
     }
 
@@ -185,7 +184,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         }
 
         guard case .folder = request.kind, let rootURL = request.urls.first else {
-            reset(message: "此 sheet 只处理文件夹递归导入")
+            reset(message: L10n.string("import.folder.unsupportedRequest"))
             return
         }
 
@@ -211,7 +210,9 @@ final class ImportFolderPreviewModel: ObservableObject {
         scanErrors = result.errors
 
         guard !rows.isEmpty else {
-            status = result.errors.isEmpty ? .empty : .failed(result.errors.first?.message ?? "预扫描失败")
+            status = result.errors.isEmpty
+                ? .empty
+                : .failed(result.errors.first?.message ?? L10n.string("import.folder.prescanFailed"))
             return
         }
 
@@ -241,12 +242,18 @@ final class ImportFolderPreviewModel: ObservableObject {
             do {
                 try await placeholderDownloader.downloadPlaceholder(at: url)
             } catch {
-                failures.append("\(url.lastPathComponent): \(error.localizedDescription)")
+                failures.append(
+                    L10n.format("import.folder.scan-item-error", url.lastPathComponent, error.localizedDescription)
+                )
             }
         }
 
         guard failures.isEmpty else {
-            iCloudDownloadErrorMessage = "iCloud 下载失败：\(failures.count) 个，\(failures[0])"
+            iCloudDownloadErrorMessage = L10n.format(
+                "import.icloud.downloadFailed",
+                failures.count,
+                failures[0]
+            )
             return false
         }
 
@@ -333,25 +340,23 @@ final class ImportFolderPreviewModel: ObservableObject {
 
     private static func previewMessage(for error: Error) -> String {
         guard let context = CoreErrorRawContextSnapshot(error) else {
-            return "无法完成分类预览"
+            return L10n.string("import.preview.unavailable")
         }
 
         switch context.kind {
         case .config:
-            return "分类规则无效：\(context.rawContext)"
+            return L10n.format("import.preview.invalidRules", context.rawContext)
         case .classify:
-            return "无法预览分类：\(context.rawContext)"
+            return L10n.format("import.preview.category-unavailable", context.rawContext)
         case .permissionDenied:
-            return "无法读取分类预览路径：\(context.rawContext)"
+            return L10n.format("import.preview.pathUnreadable", context.rawContext)
         case .io:
-            return "分类预览文件读取失败：\(context.rawContext)"
+            return L10n.format("import.preview.fileReadFailed", context.rawContext)
         default:
-            return "无法完成分类预览"
+            return L10n.string("import.preview.unavailable")
         }
     }
-}
 
-extension ImportFolderPreviewModel {
     func targetRelativePath(for row: ImportFolderPreviewRow) -> String {
         let filename = row.resolvedIncomingName.trimmingCharacters(in: .whitespacesAndNewlines)
         if selectedDestination == .repositoryRoot {

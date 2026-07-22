@@ -58,8 +58,8 @@ struct ClassifierRuleDetailView: View {
         if let draft = model.classifierRuleEditor.draft {
             VStack(alignment: .leading, spacing: 12) {
                 fields(draft)
-                chips(title: "Extensions", values: draft.extensions, isExtension: true)
-                chips(title: "Keywords", values: draft.keywords, isExtension: false)
+                chips(title: L10n.string("Extensions"), values: draft.extensions, isExtension: true)
+                chips(title: L10n.string("Keywords"), values: draft.keywords, isExtension: false)
                 riskConfirmation
                 validation(draft)
                 actions
@@ -83,7 +83,7 @@ struct ClassifierRuleDetailView: View {
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("classifier-rule-editor-description")
             Stepper(value: priorityBinding, in: ClassifierRuleEditorValidation.priorityRange) {
-                Text("Priority \(draft.priority)")
+                Text(L10n.format("settings.classifier.priorityValue", draft.priority))
             }
             TextField("naming template", text: draftBinding(\.namingTemplate))
                 .textFieldStyle(.roundedBorder)
@@ -99,7 +99,7 @@ struct ClassifierRuleDetailView: View {
             HStack {
                 TextField(isExtension ? ".pdf" : "invoice", text: pendingBinding(isExtension: isExtension))
                     .textFieldStyle(.roundedBorder)
-                Button(isExtension ? "Add extension" : "Add keyword") {
+                Button(isExtension ? L10n.string("Add extension") : L10n.string("Add keyword")) {
                     addChip(isExtension: isExtension)
                 }
                 .disabled(model.classifierRuleEditor.isBusy)
@@ -289,13 +289,20 @@ private extension ClassifierRuleDetailView {
     }
 
     func matcherImpactCopy(_ removal: ClassifierRuleMatcherRemoval) -> String {
-        "Removing \(removal.kind.rawValue) '\(removal.value)' from \(removal.categoryName) " +
-            "only changes the draft classifier rule. Existing files are not moved or deleted."
+        L10n.format(
+            "settings.classifier.matcherRemovalImpact",
+            removal.kind.rawValue,
+            removal.value,
+            removal.categoryName
+        )
     }
 
     func categoryDeleteDetail(_ deletion: ClassifierRuleDeleteConfirmation) -> String {
-        "Category: \(deletion.categoryName). Replacement category for future metadata fallback: " +
-            "\(deletion.replacementCategory ?? "none")."
+        L10n.format(
+            "settings.classifier.categoryDeleteDetail",
+            deletion.categoryName,
+            deletion.replacementCategory ?? L10n.string("none")
+        )
     }
 }
 

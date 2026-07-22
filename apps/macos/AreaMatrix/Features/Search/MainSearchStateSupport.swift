@@ -12,7 +12,7 @@ enum SearchFilterDateField {
         if let after, let before {
             return "\(dateText(after)) - \(dateText(before))"
         }
-        return after.map { "Since \(dateText($0))" } ?? "Any"
+        return after.map { L10n.format("search.sinceDate", dateText($0)) } ?? L10n.string("Any")
     }
 
     func hasCustomRange(in filters: SearchFilterStateSnapshot) -> Bool {

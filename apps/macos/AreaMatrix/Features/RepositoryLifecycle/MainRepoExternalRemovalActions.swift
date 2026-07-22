@@ -79,9 +79,9 @@ extension CoreErrorMappingSnapshot {
     static func missingFromExternalChange(fileID: Int64) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .fileNotFound,
-            userMessage: "The selected file is missing.",
+            userMessage: L10n.string("The selected file is missing."),
             severity: .medium,
-            suggestedAction: "Refresh the current list or remove the stale index entry.",
+            suggestedAction: L10n.string("Refresh the current list or remove the stale index entry."),
             recoverability: .refreshRequired,
             rawContext: "file_id=\(fileID)"
         )

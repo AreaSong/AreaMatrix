@@ -3,9 +3,10 @@ import SwiftUI
 extension MainRepositoryContentView {
     var listCountText: String {
         if fileListModel.searchState.isActive {
-            return "\(fileListModel.searchState.page?.totalCount ?? Int64(visibleFiles.count)) results"
+            let count = fileListModel.searchState.page?.totalCount ?? Int64(visibleFiles.count)
+            return L10n.plural("mainList.searchResultCount", count: count)
         }
-        return "\(visibleFiles.count) files loaded"
+        return L10n.plural("mainList.filesLoaded", count: visibleFiles.count)
     }
 
     var visibleFiles: [FileEntrySnapshot] {
@@ -28,10 +29,15 @@ extension MainRepositoryContentView {
             return semanticMatchText(semantic)
         }
         if let noteSnippet = result.noteSnippet, !noteSnippet.isEmpty {
-            return "Note: \(noteSnippet)"
+            return L10n.format("mainList.searchMatch.note", noteSnippet)
         }
-        guard let match = result.matches.first else { return "Match" }
-        return "\(match.kindDisplayName): \(match.fieldDisplayName) - \(match.snippet)"
+        guard let match = result.matches.first else { return L10n.string("Match") }
+        return L10n.format(
+            "mainList.searchMatch.summary",
+            match.kindDisplayName,
+            match.fieldDisplayName,
+            match.snippet
+        )
     }
 
     @ViewBuilder
@@ -40,11 +46,15 @@ extension MainRepositoryContentView {
             if let destination = fileListModel.searchPageDestination {
                 searchRouteStatus(destination)
             } else {
-                Text(fileListModel.searchState.isActive ? "No search results" : "No files in this category")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .padding(16)
-                    .areaMatrixGlassCard(cornerRadius: 10)
+                Text(
+                    fileListModel.searchState.isActive
+                        ? L10n.string("No search results")
+                        : L10n.string("No files in this category")
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .padding(16)
+                .areaMatrixGlassCard(cornerRadius: 10)
             }
         }
     }

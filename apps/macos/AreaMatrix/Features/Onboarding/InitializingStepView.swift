@@ -35,8 +35,8 @@ struct InitializingStepView: View {
     private var header: some View {
         AreaMatrixStepHeader(
             title: isCreateMode
-                ? String(localized: "onboarding.initializing.createTitle")
-                : String(localized: "onboarding.initializing.adoptTitle"),
+                ? L10n.string("onboarding.initializing.createTitle")
+                : L10n.string("onboarding.initializing.adoptTitle"),
             subtitle: detailText
         ) {
             ProgressView()
@@ -52,7 +52,7 @@ struct InitializingStepView: View {
 
     private var progressSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "onboarding.initializing.progress"))
+            Text(L10n.string("onboarding.initializing.progress"))
                 .font(.headline)
             VStack(alignment: .leading, spacing: 6) {
                 Text(statusText)
@@ -70,7 +70,7 @@ struct InitializingStepView: View {
     private var recoverySection: some View {
         if let recoveryReport, recoveryReport.hasVisibleDetails {
             VStack(alignment: .leading, spacing: 8) {
-                Label("启动恢复已执行", systemImage: "arrow.clockwise.circle")
+                Label(L10n.string("onboarding.initializing.recoveryExecuted"), systemImage: "arrow.clockwise.circle")
                     .font(.headline)
                 Text(recoveryReport.summaryText)
                     .font(.callout)
@@ -114,7 +114,7 @@ struct InitializingStepView: View {
 
         if let scanSession, !scanSession.errors.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Label("接管扫描 warning", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("onboarding.initializing.scanWarning"), systemImage: "exclamationmark.triangle")
                     .font(.callout.weight(.semibold))
                 ForEach(scanSession.errors.prefix(3), id: \.self) { error in
                     Text(error)
@@ -127,7 +127,7 @@ struct InitializingStepView: View {
     }
 
     private var safetyText: some View {
-        Text(String(localized: "onboarding.initializing.safety"))
+        Text(L10n.string("onboarding.initializing.safety"))
             .font(.callout)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
@@ -141,14 +141,14 @@ struct InitializingStepView: View {
             if isCancellationRequested {
                 ProgressView()
                     .controlSize(.small)
-                Text(String(localized: "onboarding.initializing.pausing"))
+                Text(L10n.string("onboarding.initializing.pausing"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.trailing, 8)
             }
 
             Button(action: onCancel) {
-                Text(String(localized: "onboarding.initializing.cancel"))
+                Text(L10n.string("onboarding.initializing.cancel"))
                     .font(.body.weight(.medium))
             }
             .buttonStyle(AreaMatrixSecondaryButtonStyle())
@@ -161,79 +161,89 @@ struct InitializingStepView: View {
 
     private var statusText: String {
         if isCancellationRequested {
-            return "正在等待 Core 到达安全点"
+            return L10n.string("onboarding.initializing.waitingForSafePoint")
         }
 
         if isCreateMode {
-            return "正在初始化本地索引"
+            return L10n.string("onboarding.initializing.creatingIndex")
         }
 
         guard let scanSession else {
-            return "正在创建内部元数据并等待接管扫描状态"
+            return L10n.string("onboarding.initializing.waitingForAdoptScan")
         }
 
         switch scanSession.status {
         case .running:
-            return "正在扫描现有文件"
+            return L10n.string("onboarding.initializing.scanningFiles")
         case .completed:
-            return "接管扫描已完成"
+            return L10n.string("onboarding.initializing.scanCompleted")
         case .paused:
-            return "接管扫描已暂停"
+            return L10n.string("onboarding.initializing.scanPaused")
         case .failed:
-            return "接管扫描失败"
+            return L10n.string("onboarding.initializing.scanFailed")
         case .interrupted:
-            return "接管扫描已中断"
+            return L10n.string("onboarding.initializing.scanInterrupted")
         }
     }
 
     private var detailText: String {
-        isCreateMode ? "Core 正在创建空资料库所需的 .areamatrix/ 元数据。"
-            : "Core 正在接管目录；已有文件只会被扫描和索引。"
+        isCreateMode ? L10n.string("onboarding.initializing.createDetail")
+            : L10n.string("onboarding.initializing.adoptDetail")
     }
 
     private var scanCountText: String {
         guard !isCreateMode else {
-            return "已扫描：不适用"
+            return L10n.string("onboarding.initializing.scanCountNotApplicable")
         }
 
         guard let scanSession else {
-            return "已扫描：等待 Core 回报"
+            return L10n.string("onboarding.initializing.scanCountWaiting")
         }
 
-        return """
-        已扫描：\(scanSession.processedCount) 个文件（新增 \(scanSession.inserted)，\
-        更新 \(scanSession.updated)，跳过 \(scanSession.skipped)）
-        """
+        return L10n.format(
+            "onboarding.initializing.scanCount",
+            scanSession.processedCount,
+            scanSession.inserted,
+            scanSession.updated,
+            scanSession.skipped
+        )
     }
 
     private var currentFileText: String {
         guard !isCreateMode else {
-            return "当前文件：不适用"
+            return L10n.string("onboarding.initializing.currentFileNotApplicable")
         }
 
-        return "当前文件：\(scanSession?.lastPath ?? "等待 Core 回报")"
+        let path = scanSession?.lastPath ?? L10n.string("onboarding.initializing.waitingForCore")
+        return L10n.format("onboarding.initializing.currentFile", path)
     }
 
     private var accessibilityProgressLabel: String {
-        "\(statusText)。\(scanCountText)。\(currentFileText)。"
+        L10n.format("onboarding.initializing.accessibility-progress", statusText, scanCountText, currentFileText)
     }
 
     private var stepRows: [InitializingStepRow] {
         if isCreateMode {
             return [
-                .pending("创建 .areamatrix/ 内部目录"),
-                .pending("初始化 index.db"),
-                .pending("创建默认分类与 ignore.yaml"),
-                .pending("写入 .areamatrix/generated/root.md")
+                .pending(L10n.string("onboarding.initializing.step.createMetadata")),
+                .pending(L10n.string("onboarding.initializing.step.initializeIndex")),
+                .pending(L10n.string("onboarding.initializing.step.createDefaults")),
+                .pending(L10n.string("onboarding.initializing.step.writeOverview"))
             ]
         }
 
         return [
-            .completed("创建 .areamatrix/ 内部目录", when: scanSession != nil),
-            .completed("初始化 index.db", when: scanSession != nil),
-            .running("扫描现有文件", when: scanSession?.status == .running),
-            .completed("写入索引", when: scanSession?.hasIndexedFiles == true),
-            .completed("生成资料库概览", when: scanSession?.status == .completed)
+            .completed(L10n.string("onboarding.initializing.step.createMetadata"), when: scanSession != nil),
+            .completed(L10n.string("onboarding.initializing.step.initializeIndex"), when: scanSession != nil),
+            .running(L10n.string("onboarding.initializing.step.scanFiles"), when: scanSession?.status == .running),
+            .completed(
+                L10n.string("onboarding.initializing.step.writeIndex"),
+                when: scanSession?.hasIndexedFiles == true
+            ),
+            .completed(
+                L10n.string("onboarding.initializing.step.generateOverview"),
+                when: scanSession?.status == .completed
+            )
         ]
     }
 }
@@ -250,9 +260,6 @@ private extension ScanSessionSnapshot {
 
 private extension RecoveryReportSnapshot {
     var summaryText: String {
-        """
-        已清理临时文件：\(cleanedStagingFiles)；\
-        已回滚 staging 记录：\(revertedStagingDbRows)
-        """
+        L10n.format("onboarding.recovery.cleanupSummary", cleanedStagingFiles, revertedStagingDbRows)
     }
 }

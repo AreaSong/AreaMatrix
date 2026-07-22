@@ -50,7 +50,11 @@ struct MainRepositoryDetailFileActionMenu: View {
                     .accessibilityIdentifier("icloud-conflict-minimal-resolve-icloud-conflict")
                 }
                 if MainRepositoryDetailFileActionPolicy.shouldShowLocate(for: detail) {
-                    Button(missingFileRelinkState.isBusy(for: detail.id) ? "Locating…" : "Locate…") {
+                    Button(
+                        missingFileRelinkState.isBusy(for: detail.id)
+                            ? L10n.string("Locating...")
+                            : L10n.string("Locate...")
+                    ) {
                         onLocateMissingFile(detail.id)
                     }
                     .disabled(disabledReason != nil || missingFileRelinkState.isBusy(for: detail.id))
@@ -66,7 +70,7 @@ struct MainRepositoryDetailFileActionMenu: View {
             } label: {
                 Label("More", systemImage: "ellipsis.circle")
             }
-            .help(disabledReason?.rawValue ?? "File actions")
+            .help(disabledReason?.message ?? L10n.string("File actions"))
             .accessibilityIdentifier("file-detail-file-action-menu")
         }
     }

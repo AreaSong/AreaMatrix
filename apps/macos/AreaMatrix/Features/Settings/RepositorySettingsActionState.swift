@@ -103,22 +103,22 @@ final class LocalModelStatusModel: ObservableObject {
     }
 
     var statusText: String {
-        "Status: \(availabilityLabel)"
+        L10n.format("settings.repository.actionStatus", availabilityLabel)
     }
 
     var availabilityLabel: String {
         switch snapshot?.availability ?? .unknown {
-        case .unknown: "Unknown"
-        case .ready: "Ready"
-        case .notInstalled: "Not installed"
-        case .pathUnreadable: "Path unreadable"
-        case .versionIncompatible: "Version incompatible"
-        case .checking: "Checking"
-        case .verifying: "Verifying"
-        case .loading: "Loading"
-        case .corrupted: "Corrupted"
-        case .runtimeFailed: "Runtime failed"
-        case .error: "Error"
+        case .unknown: L10n.string("Unknown")
+        case .ready: L10n.string("Ready")
+        case .notInstalled: L10n.string("Not installed")
+        case .pathUnreadable: L10n.string("Path unreadable")
+        case .versionIncompatible: L10n.string("Version incompatible")
+        case .checking: L10n.string("Checking")
+        case .verifying: L10n.string("Verifying")
+        case .loading: L10n.string("Loading")
+        case .corrupted: L10n.string("Corrupted")
+        case .runtimeFailed: L10n.string("Runtime failed")
+        case .error: L10n.string("Error")
         }
     }
 
@@ -127,12 +127,12 @@ final class LocalModelStatusModel: ObservableObject {
     }
 
     var formattedSize: String {
-        guard let sizeBytes = snapshot?.sizeBytes else { return "Unknown" }
+        guard let sizeBytes = snapshot?.sizeBytes else { return L10n.string("Unknown") }
         return ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file)
     }
 
     var lastCheckedLabel: String {
-        guard let timestamp = snapshot?.lastCheckedAt else { return "Never" }
+        guard let timestamp = snapshot?.lastCheckedAt else { return L10n.string("Never") }
         return Date(timeIntervalSince1970: TimeInterval(timestamp)).formatted(date: .abbreviated, time: .shortened)
     }
 
@@ -149,12 +149,14 @@ final class LocalModelStatusModel: ObservableObject {
         guard snapshot?.recommendedAction == .repairMetadata || snapshot?.availability == .corrupted else {
             return nil
         }
-        return "Repair metadata from the diagnostics screen before running another local model check."
+        return L10n.string("Repair metadata from the diagnostics screen before running another local model check.")
     }
 
     func checkStatus() async {
         guard !isChecking else { return }
-        phase = .checking(cachedStatus == nil ? "Checking local model status..." : "Retrying local model status...")
+        phase = .checking(cachedStatus == nil
+            ? L10n.string("Checking local model status...")
+            : L10n.string("Retrying local model status..."))
         feedback = nil
         do {
             let status = try await statusReader.getLocalModelStatus(repoPath: repoPath, request: statusRequest())
@@ -164,8 +166,8 @@ final class LocalModelStatusModel: ObservableObject {
         } catch {
             phase = await .failed(localModelError(
                 for: error,
-                message: "Local model status could not be checked.",
-                fallbackRecovery: "Retry status check"
+                message: L10n.string("Local model status could not be checked."),
+                fallbackRecovery: L10n.string("Retry status check")
             ))
         }
     }
@@ -174,11 +176,11 @@ final class LocalModelStatusModel: ObservableObject {
         feedback = nil
         do {
             try installHelpOpener.openLocalModelInstallHelp()
-            feedback = .success("Install help opened. Return here and run Retry status check.")
+            feedback = .success(L10n.string("Install help opened. Return here and run Retry status check."))
         } catch {
             feedback = .failed(LocalModelStatusError(
-                message: "Install help could not be opened.",
-                recovery: "Retry or use diagnostics.",
+                message: L10n.string("Install help could not be opened."),
+                recovery: L10n.string("Retry or use diagnostics."),
                 detail: error.localizedDescription
             ))
         }
@@ -191,19 +193,19 @@ final class LocalModelStatusModel: ObservableObject {
             let location = try await statusReader.locateLocalModelFolder(repoPath: repoPath, request: folderRequest())
             guard location.openable else {
                 feedback = .failed(LocalModelStatusError(
-                    message: "Model location could not be opened.",
-                    recovery: "Retry status check or open install help.",
-                    detail: location.unavailableReason ?? "The folder is not available."
+                    message: L10n.string("Model location could not be opened."),
+                    recovery: L10n.string("Retry status check or open install help."),
+                    detail: location.unavailableReason ?? L10n.string("The folder is not available.")
                 ))
                 return
             }
             try folderOpener.openLocalModelFolder(location)
-            feedback = .success("Model location opened.")
+            feedback = .success(L10n.string("Model location opened."))
         } catch {
             feedback = await .failed(localModelError(
                 for: error,
-                message: "Model location could not be opened.",
-                fallbackRecovery: "Retry status check"
+                message: L10n.string("Model location could not be opened."),
+                fallbackRecovery: L10n.string("Retry status check")
             ))
         }
     }
@@ -217,14 +219,14 @@ final class LocalModelStatusModel: ObservableObject {
     }
 
     func copyDiagnosticsSummary() {
-        let summary = snapshot?.diagnosticsSummary ?? "Local model status has not been checked yet."
+        let summary = snapshot?.diagnosticsSummary ?? L10n.string("Local model status has not been checked yet.")
         do {
             try diagnosticsCopier.copyLocalModelDiagnostics(summary)
-            feedback = .success("Diagnostics summary copied.")
+            feedback = .success(L10n.string("Diagnostics summary copied."))
         } catch {
             feedback = .failed(LocalModelStatusError(
-                message: "Diagnostics summary could not be copied.",
-                recovery: "Retry copy.",
+                message: L10n.string("Diagnostics summary could not be copied."),
+                recovery: L10n.string("Retry copy."),
                 detail: error.localizedDescription
             ))
         }
@@ -260,17 +262,17 @@ final class LocalModelStatusModel: ObservableObject {
     // swiftlint:disable:next cyclomatic_complexity
     private static func statusDetail(for availability: LocalModelAvailabilityState) -> String {
         switch availability {
-        case .unknown: "Local model status has not been checked yet."
-        case .ready: "Local model runtime is available."
-        case .notInstalled: "Local model is not installed."
-        case .pathUnreadable: "Local model path cannot be read."
-        case .versionIncompatible: "Local model version is not compatible."
-        case .checking: "Checking local model status..."
-        case .verifying: "Verifying model manifest..."
-        case .loading: "Loading model runtime..."
-        case .corrupted: "Model files are corrupted."
-        case .runtimeFailed: "Runtime failed to start."
-        case .error: "Local model status is not available yet."
+        case .unknown: L10n.string("Local model status has not been checked yet.")
+        case .ready: L10n.string("Local model runtime is available.")
+        case .notInstalled: L10n.string("Local model is not installed.")
+        case .pathUnreadable: L10n.string("Local model path cannot be read.")
+        case .versionIncompatible: L10n.string("Local model version is not compatible.")
+        case .checking: L10n.string("Checking local model status...")
+        case .verifying: L10n.string("Verifying model manifest...")
+        case .loading: L10n.string("Loading model runtime...")
+        case .corrupted: L10n.string("Model files are corrupted.")
+        case .runtimeFailed: L10n.string("Runtime failed to start.")
+        case .error: L10n.string("Local model status is not available yet.")
         }
     }
 }

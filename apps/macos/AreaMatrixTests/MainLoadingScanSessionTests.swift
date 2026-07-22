@@ -37,9 +37,9 @@ final class MainLoadingScanSessionTests: XCTestCase {
 
         XCTAssertEqual(state.repoPath, "/tmp/adopted-repo")
         XCTAssertEqual(state.scanSession, scanSession)
-        XCTAssertEqual(state.scanStatusText, "正在扫描资料库 15")
-        XCTAssertEqual(state.scanProgressText, "新增 12，更新 2，跳过 1")
-        XCTAssertEqual(state.scanCurrentPathText, "当前路径：docs/plan.md")
+        XCTAssertEqual(state.scanStatusText, "Scanning repository: 15 processed")
+        XCTAssertEqual(state.scanProgressText, "Added 12, updated 2, skipped 1")
+        XCTAssertEqual(state.scanCurrentPathText, "Current path: docs/plan.md")
 
         await opener.finishOpen()
         await openTask.value
@@ -78,7 +78,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
         }
 
         XCTAssertEqual(state.scanSessionErrorMapping, mapping)
-        XCTAssertEqual(state.scanStatusText, "扫描状态不可用：扫描状态暂不可用")
+        XCTAssertEqual(state.scanStatusText, "Scan status is unavailable: 扫描状态暂不可用")
 
         await opener.finishOpen()
         await openTask.value
@@ -115,8 +115,8 @@ final class MainLoadingScanSessionTests: XCTestCase {
         }
 
         await treeLister.assertRequestedRepoPaths(["/tmp/saved-repo"])
-        XCTAssertEqual(state.scanStatusText, "正在扫描资料库 15")
-        XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
+        XCTAssertEqual(state.scanStatusText, "Scanning repository: 15 processed")
+        XCTAssertEqual(state.treeStatusText, "Directory loaded: 1 file")
 
         await opener.finishOpen()
         await bootstrapTask.value
@@ -131,13 +131,13 @@ final class MainLoadingScanSessionTests: XCTestCase {
         )
 
         var state = MainLoadingState(repoPath: mainLoadingRepoPath(), scanSession: runningSession)
-        XCTAssertEqual(state.scanStatusText, "正在扫描资料库 324")
-        XCTAssertEqual(state.scanProgressText, "新增 300，更新 20，跳过 4")
-        XCTAssertEqual(state.scanCurrentPathText, "当前路径：docs/contracts/customer.pdf")
+        XCTAssertEqual(state.scanStatusText, "Scanning repository: 324 processed")
+        XCTAssertEqual(state.scanProgressText, "Added 300, updated 20, skipped 4")
+        XCTAssertEqual(state.scanCurrentPathText, "Current path: docs/contracts/customer.pdf")
         XCTAssertTrue(state.accessibilityStatusText.contains("Scanning changes"))
 
         state.scanSession = failedSession
-        XCTAssertEqual(state.scanStatusText, "重新扫描失败 324")
+        XCTAssertEqual(state.scanStatusText, "Rescan failed · 324 processed")
         XCTAssertEqual(state.scanWarningText, "docs/contracts/customer.pdf could not be indexed")
     }
 

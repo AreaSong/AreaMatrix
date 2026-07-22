@@ -88,9 +88,9 @@ struct RedoUndoSourcePresentation: Equatable {
 
     var sourceText: String {
         guard let sourceUndoAction else {
-            return "Source undo \(redoAction.sourceUndoActionID)"
+            return L10n.format("redo.sourceUndo.id", redoAction.sourceUndoActionID)
         }
-        return "Source undo: \(sourceUndoAction.summary)"
+        return L10n.format("redo.sourceUndo.summary", sourceUndoAction.summary)
     }
 
     var accessibilityText: String {
@@ -99,7 +99,7 @@ struct RedoUndoSourcePresentation: Equatable {
 
     var statusText: String {
         if redoAction.status == .available, redoAction.canRedo {
-            return "Available until the next file operation"
+            return L10n.string("Available until the next file operation")
         }
         return RedoActionFeedback.disabledReason(for: redoAction)
     }
@@ -205,13 +205,13 @@ enum UndoHistoryActionLog {
         if let reason = action.disabledReason, !reason.isEmpty { return reason }
         switch action.status {
         case .blocked:
-            return "Review details before undoing this action."
+            return L10n.string("Review details before undoing this action.")
         case .expired:
-            return "This action expired after app restart or later changes."
+            return L10n.string("This action expired after app restart or later changes.")
         case .executed:
-            return "This action has already been undone."
+            return L10n.string("This action has already been undone.")
         case .pending:
-            return "Undo newer actions first."
+            return L10n.string("Undo newer actions first.")
         }
     }
 
@@ -245,7 +245,7 @@ enum UndoHistoryActionLog {
             kind: .conflict,
             userMessage: reason,
             severity: .medium,
-            suggestedAction: "Review details in Undo History.",
+            suggestedAction: L10n.string("Review details in Undo History."),
             recoverability: .refreshRequired,
             rawContext: "undo-history undo-action-log undo-action-log"
         )
@@ -256,7 +256,7 @@ enum UndoHistoryActionLog {
             kind: action.status == .expired ? .expiredAction : .conflict,
             userMessage: RedoActionFeedback.disabledReason(for: action),
             severity: .medium,
-            suggestedAction: "Review details in Undo History.",
+            suggestedAction: L10n.string("Review details in Undo History."),
             recoverability: .refreshRequired,
             rawContext: "redo-action-log redo-action-log-core redo-action-log"
         )

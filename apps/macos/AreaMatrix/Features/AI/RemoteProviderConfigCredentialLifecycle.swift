@@ -17,14 +17,14 @@ extension RemoteProviderConfigModel {
                 retainCredentialDraftAfterCleanupFailure(draft)
                 return credentialCleanupError(
                     for: error,
-                    message: "API key draft could not be discarded after the connection test failed.",
-                    recovery: "Retry Remove unused key or cancel after cleanup succeeds."
+                    message: L10n.string("API key draft could not be discarded after the connection test failed."),
+                    recovery: L10n.string("Retry Remove unused key or cancel after cleanup succeeds.")
                 )
             }
             return await remoteError(
                 for: error,
-                message: "Remote provider could not be tested.",
-                fallbackRecovery: "Check the key, model, endpoint, and network."
+                message: L10n.string("Remote provider could not be tested."),
+                fallbackRecovery: L10n.string("Check the key, model, endpoint, and network.")
             )
         }
     }
@@ -64,8 +64,8 @@ extension RemoteProviderConfigModel {
             retainCredentialDraftAfterCleanupFailure(draft)
             outcome = .failed(credentialCleanupError(
                 for: error,
-                message: "API key draft could not be discarded after the connection test failed.",
-                recovery: "Retry Remove unused key or cancel after cleanup succeeds."
+                message: L10n.string("API key draft could not be discarded after the connection test failed."),
+                recovery: L10n.string("Retry Remove unused key or cancel after cleanup succeeds.")
             ))
             return
         }
@@ -73,7 +73,7 @@ extension RemoteProviderConfigModel {
         verifiedCredentialDraft = nil
         outcome = .failed(AISettingsError(
             message: testFailureTitle(result.status),
-            recovery: "Edit the provider details and test again.",
+            recovery: L10n.string("Edit the provider details and test again."),
             detail: result.sanitizedMessage
         ))
     }
@@ -132,8 +132,8 @@ extension RemoteProviderConfigModel {
             retainCredentialDraftAfterCleanupFailure(draft)
             outcome = .failed(credentialCleanupError(
                 for: error,
-                message: "API key draft could not be discarded after provider details changed.",
-                recovery: "Retry Cancel or remove the unused key."
+                message: L10n.string("API key draft could not be discarded after provider details changed."),
+                recovery: L10n.string("Retry Cancel or remove the unused key.")
             ))
         }
     }

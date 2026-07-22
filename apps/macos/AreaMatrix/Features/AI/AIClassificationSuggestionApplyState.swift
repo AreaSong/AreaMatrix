@@ -3,68 +3,68 @@ import Foundation
 
 func aiCallLogFeatureLabel(_ feature: AiCallLogFeature) -> String {
     switch feature {
-    case .classification: "Classification"
-    case .summary: "Summary"
-    case .tags: "Tags"
-    case .semanticSearch: "Semantic search"
-    case .providerTest: "Provider Test"
+    case .classification: L10n.string("Classification")
+    case .summary: L10n.string("Summary")
+    case .tags: L10n.string("Tags")
+    case .semanticSearch: L10n.string("Semantic search")
+    case .providerTest: L10n.string("Provider Test")
     }
 }
 
 func aiCallLogRouteLabel(_ route: AiCallLogRoute) -> String {
     switch route {
-    case .local: "Local"
-    case .remote: "Remote"
+    case .local: L10n.string("Local")
+    case .remote: L10n.string("Remote")
     }
 }
 
 func aiCallLogStatusLabel(_ status: AiCallLogStatus) -> String {
     switch status {
-    case .success: "Success"
-    case .failed: "Failed"
-    case .skipped: "Skipped"
-    case .unavailable: "Unavailable"
+    case .success: L10n.string("Success")
+    case .failed: L10n.string("Failed")
+    case .skipped: L10n.string("Skipped")
+    case .unavailable: L10n.string("Unavailable")
     }
 }
 
 func aiCallLogSentFieldLabel(_ field: AiCallLogSentField) -> String {
     switch field {
-    case .fileName: "filename"
-    case .repoRelativePath: "repo-relative path"
-    case .extension: "extension"
-    case .extractedTextExcerpt: "extracted text excerpt"
-    case .aiSummary: "AI summary"
-    case .noteSummary: "note summary"
-    case .tagCategoryContext: "tag/category context"
+    case .fileName: L10n.string("filename")
+    case .repoRelativePath: L10n.string("repo-relative path")
+    case .extension: L10n.string("extension")
+    case .extractedTextExcerpt: L10n.string("extracted text excerpt")
+    case .aiSummary: L10n.string("AI summary")
+    case .noteSummary: L10n.string("note summary")
+    case .tagCategoryContext: L10n.string("tag/category context")
     }
 }
 
 func sentFieldSummary(_ fields: [AiCallLogSentField]) -> String {
-    fields.isEmpty ? "none" : fields.map(aiCallLogSentFieldLabel).joined(separator: ", ")
+    fields.isEmpty ? L10n.string("none") : fields.map(aiCallLogSentFieldLabel).joined(separator: ", ")
 }
 
 func fileBatchLabel(_ record: AiCallLogRecord) -> String {
-    if record.feature == .providerTest { return "None" }
+    if record.feature == .providerTest { return L10n.string("None") }
     if let name = record.fileDisplayName { return name }
     if let batch = record.batchId { return batch }
-    return record.scope ?? "None"
+    return record.scope ?? L10n.string("None")
 }
 
 func privacyMatchLabel(_ record: AiCallLogRecord) -> String {
     let rule = record.privacyRuleName ?? record.privacyRuleId
     let field = record.matchedFieldType.map(aiCallLogSentFieldLabel)
     let text = [rule, field].compactMap { $0 }.joined(separator: " - ")
-    return text.isEmpty ? "None" : text
+    return text.isEmpty ? L10n.string("None") : text
 }
 
 func rowAccessibility(_ record: AiCallLogRecord) -> String {
     [
         "\(record.occurredAt)",
         aiCallLogFeatureLabel(record.feature),
-        record.route.map(aiCallLogRouteLabel) ?? "No route",
+        record.route.map(aiCallLogRouteLabel) ?? L10n.string("No route"),
         aiCallLogStatusLabel(record.status),
-        record.route == .remote ? "Remote" : nil,
-        record.status == .skipped ? "Skipped" : nil
+        record.route == .remote ? L10n.string("Remote") : nil,
+        record.status == .skipped ? L10n.string("Skipped") : nil
     ].compactMap { $0 }.joined(separator: ", ")
 }
 
@@ -81,9 +81,9 @@ struct AICallLogRowPresentation: Equatable {
     init(record: AiCallLogRecord) {
         time = "\(record.occurredAt)"
         feature = aiCallLogFeatureLabel(record.feature)
-        provider = record.providerName ?? record.route.map(aiCallLogRouteLabel) ?? "Not recorded"
-        remote = record.route == .remote ? "Remote" : "-"
-        scope = record.scope ?? "Not recorded"
+        provider = record.providerName ?? record.route.map(aiCallLogRouteLabel) ?? L10n.string("Not recorded")
+        remote = record.route == .remote ? L10n.string("Remote") : "-"
+        scope = record.scope ?? L10n.string("Not recorded")
         status = aiCallLogStatusLabel(record.status)
         duration = record.durationMs.map { "\($0) ms" } ?? "-"
         result = record.resultSummary
@@ -162,7 +162,7 @@ final class AICallLogModel: ObservableObject {
     }
 
     var deleteDisabledReason: String? {
-        selectedRecordIDs.isEmpty ? "Select log entries to delete" : nil
+        selectedRecordIDs.isEmpty ? L10n.string("Select log entries to delete") : nil
     }
 
     var hasActiveFilters: Bool {
@@ -176,37 +176,40 @@ final class AICallLogModel: ObservableObject {
 
     var dateRangeSummary: String {
         switch dateRangePreset {
-        case .any: "Date range: Any"
-        case .last7Days: "Date range: Last 7 days"
-        case .last30Days: "Date range: Last 30 days"
-        case .thisYear: "Date range: This year"
+        case .any: L10n.string("Date range: Any")
+        case .last7Days: L10n.string("Date range: Last 7 days")
+        case .last30Days: L10n.string("Date range: Last 30 days")
+        case .thisYear: L10n.string("Date range: This year")
         }
     }
 
     var emptyStateTitle: String {
-        hasActiveFilters ? "No AI calls match these filters." : "No AI calls yet"
+        hasActiveFilters
+            ? L10n.string("No AI calls match these filters.")
+            : L10n.string("No AI calls yet")
     }
 
     var emptyStateDescription: String {
-        // swiftlint:disable:next line_length
-        hasActiveFilters ? "Adjust the current filters or clear them." : "AI is off by default or has not been used yet."
+        hasActiveFilters
+            ? L10n.string("Adjust the current filters or clear them.")
+            : L10n.string("AI is off by default or has not been used yet.")
     }
 
     var emptyStateActionTitle: String? {
-        hasActiveFilters ? "Clear filters" : nil
+        hasActiveFilters ? L10n.string("Clear filters") : nil
     }
 
     var deleteConfirmationTitle: String {
         selectedRecordIDs.count == 1 ?
-            "Delete this AI call log entry?" :
-            "Delete selected AI call log entries?"
+            L10n.string("Delete this AI call log entry?") :
+            L10n.string("Delete selected AI call log entries?")
     }
 
     var exportDisabledReason: String? {
-        if isLoading { return "AI call log is loading" }
-        if case .failed = state { return "AI call log could not be loaded" }
-        if !hasLoadedRecords { return "No AI call log entries to export" }
-        return "Use the export flow to save a redacted copy of the AI call log."
+        if isLoading { return L10n.string("AI call log is loading") }
+        if case .failed = state { return L10n.string("AI call log could not be loaded") }
+        if !hasLoadedRecords { return L10n.string("No AI call log entries to export") }
+        return L10n.string("Use the export flow to save a redacted copy of the AI call log.")
     }
 
     func load() async {
@@ -249,7 +252,7 @@ final class AICallLogModel: ObservableObject {
     func clearAll() async {
         await performClear(
             request: AiCallLogClearRequest(scope: .all, entryIds: [], olderThan: nil),
-            toast: "AI call log cleared."
+            toast: L10n.string("AI call log cleared.")
         )
     }
 
@@ -261,7 +264,7 @@ final class AICallLogModel: ObservableObject {
                 entryIds: selectedRecordIDs.sorted(),
                 olderThan: nil
             ),
-            toast: "AI log entries deleted."
+            toast: L10n.string("AI log entries deleted.")
         )
     }
 
@@ -320,14 +323,14 @@ final class AICallLogModel: ObservableObject {
     private func callLogError(for error: Error) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
-                message: "AI call log could not be loaded.",
-                recovery: mapping.recoveryText(fallback: "Retry"),
+                message: L10n.string("AI call log could not be loaded."),
+                recovery: mapping.recoveryText(fallback: L10n.string("Retry")),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(
-            message: "AI call log could not be loaded.",
-            recovery: "Retry",
+            message: L10n.string("AI call log could not be loaded."),
+            recovery: L10n.string("Retry"),
             detail: error.localizedDescription
         )
     }
@@ -347,11 +350,11 @@ struct AIClassificationSuggestionReturnContext: Equatable {
     var message: String {
         switch ruleStatus {
         case .saved:
-            "Classification applied to \(appliedCategory). Rule saved for future imports."
+            L10n.format("ai.classification.applied.ruleSaved", appliedCategory)
         case .cancelled:
-            "Classification applied to \(appliedCategory). Rule was not saved."
+            L10n.format("ai.classification.applied.ruleNotSaved", appliedCategory)
         case nil:
-            "Classification applied to \(appliedCategory)."
+            L10n.format("ai.classification.applied", appliedCategory)
         }
     }
 }
@@ -393,6 +396,6 @@ extension ClassifierRuleAIProvenance {
     }
 
     var usedContextSummary: String {
-        usedContext.isEmpty ? "None" : usedContext.joined(separator: ", ")
+        usedContext.isEmpty ? L10n.string("None") : usedContext.joined(separator: ", ")
     }
 }

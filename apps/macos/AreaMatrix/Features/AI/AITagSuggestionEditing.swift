@@ -10,10 +10,7 @@ struct AITagSuggestionRejectedFeedback: Equatable, Identifiable {
     }
 
     var message: String {
-        if rejectedIDs.count == 1 {
-            return "Suggestion rejected. Feedback recorded for this review."
-        }
-        return "\(rejectedIDs.count) suggestions rejected. Feedback recorded for this review."
+        L10n.plural("ai.tagSuggestions.rejectedFeedback", count: rejectedIDs.count)
     }
 }
 
@@ -247,18 +244,18 @@ enum AITagSuggestionAction {
         disabledReason: String?,
         seen: inout Set<String>
     ) -> TagSuggestionEditRowStatus {
-        if disabledReason != nil { return .blocked("Tag store is read-only.") }
+        if disabledReason != nil { return .blocked(L10n.string("Tag store is read-only.")) }
         guard let suggestion = report.suggestions.first(where: { $0.suggestionId == draft.suggestionID }) else {
-            return .blocked("Suggestion is no longer available.")
+            return .blocked(L10n.string("tag-suggestion.no-longer-available"))
         }
-        if suggestion.status == .alreadyApplied { return .alreadyAdded("Already applied") }
+        if suggestion.status == .alreadyApplied { return .alreadyAdded(L10n.string("Already applied")) }
         if suggestion.status == .blocked || suggestion.disabledReason != nil {
-            return .blocked(suggestion.disabledReason ?? "Suggestion is blocked.")
+            return .blocked(suggestion.disabledReason ?? L10n.string("Suggestion is blocked."))
         }
         guard let normalized = TagInputNormalization.normalizedValue(draft.slug) else {
             return .invalid(TagInputNormalization.invalidMessage)
         }
-        if seen.contains(normalized) { return .duplicate("Duplicate slug in selected tags.") }
+        if seen.contains(normalized) { return .duplicate(L10n.string("tag-suggestion.duplicate-selected-slug")) }
         seen.insert(normalized)
         return .ready
     }
@@ -266,8 +263,8 @@ enum AITagSuggestionAction {
     private static func rowStatus(for result: AiTagSuggestionApplyItemResult) -> TagSuggestionEditRowStatus {
         switch result.status {
         case .applied: .applied
-        case .alreadyAdded: .alreadyAdded(result.error ?? "Already applied")
-        case .failed: .failed(result.error ?? "A suggestion could not be applied.")
+        case .alreadyAdded: .alreadyAdded(result.error ?? L10n.string("Already applied"))
+        case .failed: .failed(result.error ?? L10n.string("A suggestion could not be applied."))
         }
     }
 

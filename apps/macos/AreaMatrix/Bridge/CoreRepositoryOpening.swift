@@ -33,10 +33,7 @@ enum CoreRepositoryTreeLocaleResolver {
     }
 
     private static func supportedLocale(for normalizedLocale: String) -> String? {
-        if normalizedLocale == "zh-cn"
-            || normalizedLocale.hasPrefix("zh-cn-")
-            || normalizedLocale == "zh-hans"
-            || normalizedLocale.hasPrefix("zh-hans-") {
+        if normalizedLocale == "zh" || normalizedLocale.hasPrefix("zh-") {
             return "zh-Hans"
         }
         if normalizedLocale == "en" || normalizedLocale.hasPrefix("en-") {
@@ -286,7 +283,7 @@ extension CoreBridge: CoreEmptyRepositoryOpening, CoreRepositoryTreeListing {
     func listTree(repoPath: String, locale: String) async throws -> RepositoryTreeNodeSnapshot {
         let coreLocale = CoreRepositoryTreeLocaleResolver.resolve(
             locale,
-            preferredLanguages: Locale.preferredLanguages
+            preferredLanguages: AppLanguageRuntime.shared.preferredContentLanguages()
         )
         let treeJSON = try await listTreeJSON(repoPath: repoPath, locale: coreLocale)
         return try decodeOpeningTreeSnapshot(treeJSON)

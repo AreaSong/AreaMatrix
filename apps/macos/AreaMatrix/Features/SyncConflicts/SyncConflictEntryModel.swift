@@ -35,7 +35,7 @@ struct SyncConflictEntrySnapshot: Equatable {
     }
 
     var latestDetectedDisplay: String {
-        guard let latestDetectedAt else { return "Unknown" }
+        guard let latestDetectedAt else { return L10n.string("Unknown") }
         return Date(timeIntervalSince1970: TimeInterval(latestDetectedAt))
             .formatted(date: .abbreviated, time: .shortened)
     }
@@ -47,9 +47,9 @@ struct SyncConflictEntrySnapshot: Equatable {
     }
 
     var severitySummary: String {
-        if conflicts.contains(where: { $0.severity == .high }) { return "High" }
-        if conflicts.contains(where: { $0.severity == .medium }) { return "Medium" }
-        return "Low"
+        if conflicts.contains(where: { $0.severity == .high }) { return L10n.string("High") }
+        if conflicts.contains(where: { $0.severity == .medium }) { return L10n.string("Medium") }
+        return L10n.string("Low")
     }
 }
 

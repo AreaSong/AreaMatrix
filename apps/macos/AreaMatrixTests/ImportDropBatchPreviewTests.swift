@@ -18,7 +18,7 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         XCTAssertEqual(model.rows[1].predictedCategory, "docs")
         XCTAssertEqual(model.rows[1].suggestedName, "2026Q1_合同.pdf")
         assertImportRowStatusTags(model.rows, ["OK", "OK"])
-        assertImportStatusMessage(model.status, "已完成 2 个文件的导入预览")
+        assertImportStatusMessage(model.status, "Completed the import preview for 2 files")
         assertImportEnabled(model.importDisabledReason)
     }
 
@@ -55,9 +55,9 @@ final class ImportDropBatchPreviewTests: XCTestCase {
         assertImportRowStatusTags(model.rows, ["OK", "DUP", "ERROR"])
         assertImportRowStatusDetails(model.rows, [
             1: "Skip: finance/existing.pdf",
-            2: "分类规则无效：classifier.yaml line 7"
+            2: "Classification rules are invalid: classifier.yaml line 7"
         ])
-        assertImportStatusMessage(model.status, "已完成 2/3 个文件的导入预览，1 个失败")
+        assertImportStatusMessage(model.status, "Prepared 2/3 file previews; 1 failed")
         XCTAssertTrue(model.showsRetryPreview)
     }
 

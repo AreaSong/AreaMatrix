@@ -87,7 +87,7 @@ struct BatchTagUndoToastHost: View {
             return
         }
         guard let result = applied.result else {
-            undoState = .unavailable(reason: "Undo action finished without a result.")
+            undoState = .unavailable(reason: L10n.string("Undo action finished without a result."))
             return
         }
 
@@ -141,7 +141,7 @@ struct BatchTagUndoToastHost: View {
             return
         }
         guard let result = applied.result else {
-            redoState = .unavailable(reason: "Redo action finished without a result.")
+            redoState = .unavailable(reason: L10n.string("Redo action finished without a result."))
             return
         }
 
@@ -255,13 +255,13 @@ struct UndoToastHistoryRouteSheet: View {
     }
 
     private var title: String {
-        request.source == .viewDetails ? "Undo Details" : "Undo History"
+        request.source == .viewDetails ? L10n.string("Undo Details") : L10n.string("Undo History")
     }
 
     private var message: String {
         request.source == .viewDetails ?
-            "Undo details will open in Undo History." :
-            "Undo History will show recent undo actions."
+            L10n.string("Undo details will open in Undo History.") :
+            L10n.string("Undo History will show recent undo actions.")
     }
 
     private var systemImage: String {

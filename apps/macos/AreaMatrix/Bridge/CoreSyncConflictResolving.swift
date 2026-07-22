@@ -26,22 +26,24 @@ enum SyncConflictResolutionStrategySnapshot: String, CaseIterable, Equatable, Id
     var title: String {
         switch self {
         case .keepBoth:
-            "Keep both"
+            L10n.string("Keep both")
         case .useExisting:
-            "Use existing version"
+            L10n.string("Use existing version")
         case .useIncoming:
-            "Use incoming version"
+            L10n.string("Use incoming version")
         }
     }
 
     var impactSummary: String {
         switch self {
         case .keepBoth:
-            "Both versions remain visible. Core keeps or creates visible records and closes the conflict."
+            L10n.string(
+                "Both versions remain visible. Core keeps or creates visible records and closes the conflict."
+            )
         case .useExisting:
-            "The existing version remains canonical. Incoming remains visible as a retained copy."
+            L10n.string("The existing version remains canonical. Incoming remains visible as a retained copy.")
         case .useIncoming:
-            "Incoming becomes canonical only after replace confirmation; existing must move to Trash or safety backup."
+            L10n.string("syncConflict.incomingCanonicalDetail")
         }
     }
 }
@@ -62,15 +64,15 @@ struct SyncConflictVersionImpactSnapshot: Equatable, Identifiable {
     }
 
     var fileIDDisplay: String {
-        fileID.map(String.init) ?? "Unknown"
+        fileID.map(String.init) ?? L10n.string("Unknown")
     }
 
     var recoveryDisplay: String {
-        clean(recoveryTarget) ?? "None"
+        clean(recoveryTarget) ?? L10n.string("None")
     }
 
     var reasonDisplay: String {
-        clean(reason) ?? "Core did not provide an additional note."
+        clean(reason) ?? L10n.string("Core did not provide an additional note.")
     }
 
     private func clean(_ value: String?) -> String? {

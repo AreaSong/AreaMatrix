@@ -76,7 +76,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
 
         XCTAssertTrue(model.isReplaceConfirmed)
         XCTAssertEqual(model.singleFilePrimaryActionTitle, "Import")
-        XCTAssertEqual(model.duplicateReplaceConfirmationActionTitle, "Replace confirmed")
+        XCTAssertEqual(model.duplicateReplaceConfirmationActionTitle, "Replace Confirmed")
 
         _ = await model.importSelectedFile()
         await importer.assertLastImportedFile(ImportSingleFileImportRequest(
@@ -114,7 +114,7 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
 
         XCTAssertFalse(model.isReplaceConfirmed)
         XCTAssertEqual(model.pendingReplaceConfirmation, currentContext)
-        XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
+        XCTAssertEqual(model.replaceConfirmationErrorMessage, "The Replace confirmation expired")
         XCTAssertEqual(model.duplicateReplaceConfirmationActionTitle, "Confirm Replace...")
 
         model.collectReplaceConfirmationDiagnostics()

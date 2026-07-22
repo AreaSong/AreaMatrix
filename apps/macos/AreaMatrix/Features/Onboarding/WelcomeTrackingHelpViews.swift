@@ -8,8 +8,8 @@ struct WelcomeTrackingSceneView: View {
             AreaMatrixTimelineDiorama()
                 .areaMatrixSceneVisualMotion()
             AreaMatrixSceneText(
-                title: String(localized: "onboarding.welcome.tracking.title"),
-                description: String(localized: "onboarding.welcome.tracking.description"),
+                title: L10n.string("onboarding.welcome.tracking.title"),
+                description: L10n.string("onboarding.welcome.tracking.description"),
                 gradient: LinearGradient(
                     colors: [
                         colorScheme == .dark ? AreaMatrixTheme.Colors.coral : AreaMatrixTheme.Colors.coralDeep,
@@ -33,8 +33,8 @@ struct WelcomeHelpSceneView: View {
                 .areaMatrixSceneVisualMotion()
                 .offset(x: parallax.horizontal * 10, y: parallax.vertical * 10)
             AreaMatrixSceneText(
-                title: String(localized: "onboarding.welcome.help.title"),
-                description: String(localized: "onboarding.welcome.help.description"),
+                title: L10n.string("onboarding.welcome.help.title"),
+                description: L10n.string("onboarding.welcome.help.description"),
                 gradient: LinearGradient(
                     colors: [
                         colorScheme == .dark ? AreaMatrixTheme.Colors.purple : AreaMatrixTheme.Colors.purpleDeep,

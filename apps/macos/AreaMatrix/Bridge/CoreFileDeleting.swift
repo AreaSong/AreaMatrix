@@ -34,9 +34,9 @@ enum AISettingsProviderPreference: String, CaseIterable, Equatable, Identifiable
 
     var label: String {
         switch self {
-        case .localFirst: "Local first"
-        case .localOnly: "Local only"
-        case .remoteFirst: "Remote first"
+        case .localFirst: L10n.string("Local first")
+        case .localOnly: L10n.string("Local only")
+        case .remoteFirst: L10n.string("Remote first")
         }
     }
 }
@@ -50,18 +50,18 @@ enum AISettingsFeatureKind: String, CaseIterable, Equatable, Identifiable {
 
     var title: String {
         switch self {
-        case .classificationSuggestions: "Classification suggestions"
-        case .autoSummaries: "Auto summaries"
-        case .autoTags: "Auto tags"
-        case .semanticSearch: "Semantic search"
+        case .classificationSuggestions: L10n.string("Classification suggestions")
+        case .autoSummaries: L10n.string("Auto summaries")
+        case .autoTags: L10n.string("Auto tags")
+        case .semanticSearch: L10n.string("Semantic search")
         }
     }
 
     var providerLabel: String {
         switch self {
-        case .classificationSuggestions: "Local preferred"
-        case .autoSummaries, .autoTags: "Local or remote"
-        case .semanticSearch: "Local index by default"
+        case .classificationSuggestions: L10n.string("Local preferred")
+        case .autoSummaries, .autoTags: L10n.string("Local or remote")
+        case .semanticSearch: L10n.string("Local index by default")
         }
     }
 }
@@ -273,11 +273,11 @@ extension AISettingsCapabilitySnapshot {
         config: AISettingsConfigSnapshot,
         toggle: AISettingsFeatureConfigSnapshot
     ) -> String? {
-        if !config.aiEnabled { return "AI is off" }
-        if !toggle.enabled { return "Feature is off" }
+        if !config.aiEnabled { return L10n.string("AI is off") }
+        if !toggle.enabled { return L10n.string("Feature is off") }
         if config.localAIEnabled { return nil }
         if config.remoteAIAllowed, toggle.allowRemote, config.privacyGateEnabled { return nil }
-        return "No AI route is enabled"
+        return L10n.string("No AI route is enabled")
     }
 }
 

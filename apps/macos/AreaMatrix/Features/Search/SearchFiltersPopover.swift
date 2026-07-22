@@ -41,7 +41,7 @@ struct SearchFiltersPopover: View {
     @ViewBuilder
     private var facetStatus: some View {
         if let error = facetsState.errorMapping {
-            Label("Could not load filters: \(error.userMessage)", systemImage: "exclamationmark.triangle")
+            Label(L10n.format("search.filters.loadError", error.userMessage), systemImage: "exclamationmark.triangle")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if facetsState.isLoading {
@@ -49,7 +49,7 @@ struct SearchFiltersPopover: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if let facets = facetsState.facets {
-            Label("\(facets.totalCount) matching files", systemImage: "number")
+            Label(L10n.plural("search.matchingFileCount", count: facets.totalCount), systemImage: "number")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else {
@@ -62,20 +62,20 @@ struct SearchFiltersPopover: View {
     private var filterControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             SearchFacetPicker(
-                title: "Category",
-                allLabel: "All categories",
+                title: L10n.string("Category"),
+                allLabel: L10n.string("All categories"),
                 selection: $filters.category,
                 options: facetsState.facets?.categories ?? [],
                 isLoading: facetsState.isLoading,
-                emptyMessage: "No categories yet"
+                emptyMessage: L10n.string("No categories yet")
             )
             SearchFacetPicker(
-                title: "Type",
-                allLabel: "All types",
+                title: L10n.string("Type"),
+                allLabel: L10n.string("All types"),
                 selection: $filters.fileKind,
                 options: facetsState.facets?.fileKinds ?? [],
                 isLoading: facetsState.isLoading,
-                emptyMessage: "No file types yet"
+                emptyMessage: L10n.string("No file types yet")
             )
             SearchTagFacetPicker(
                 filters: $filters,
@@ -87,13 +87,13 @@ struct SearchFiltersPopover: View {
                 onRetryTagRegistry: onRetryTagRegistry
             )
             SearchDateFilterSection(
-                title: "Modified",
+                title: L10n.string("Modified"),
                 field: .modified,
                 bounds: facetsState.facets?.dateBounds,
                 filters: $filters
             )
             SearchDateFilterSection(
-                title: "Imported",
+                title: L10n.string("Imported"),
                 field: .imported,
                 bounds: facetsState.facets?.dateBounds,
                 filters: $filters
@@ -137,6 +137,6 @@ struct SearchFiltersPopover: View {
 
     private var activeSummary: String {
         let count = facetsState.facets?.activeFilterCount ?? filters.activeFilterCount
-        return "\(count) filters active"
+        return L10n.plural("search.activeFilterCount", count: count)
     }
 }

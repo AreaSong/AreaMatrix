@@ -33,7 +33,7 @@ struct RenameRuleEditor: View {
         VStack(alignment: .leading, spacing: 10) {
             Picker("Strategy", selection: $draft.mode) {
                 ForEach(BatchRenameModeSnapshot.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+                    Text(mode.displayName).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
@@ -65,7 +65,7 @@ private struct DatePrefixFields: View {
     var body: some View {
         HStack {
             Picker("Date source", selection: $draft.dateSource) {
-                ForEach(BatchRenameDateSourceSnapshot.allCases) { Text($0.rawValue).tag($0) }
+                ForEach(BatchRenameDateSourceSnapshot.allCases) { Text($0.displayName).tag($0) }
             }
             TextField("Date format", text: $draft.dateFormat).textFieldStyle(.roundedBorder)
             TextField("Separator", text: $draft.separator).textFieldStyle(.roundedBorder).frame(width: 90)
@@ -81,8 +81,16 @@ private struct SequenceFields: View {
     var body: some View {
         HStack {
             TextField("Separator", text: $draft.separator).textFieldStyle(.roundedBorder).frame(width: 120)
-            Stepper("Start \(draft.startNumber)", value: $draft.startNumber, in: 0 ... 999_999)
-            Stepper("Padding \(draft.padding)", value: $draft.padding, in: 1 ... 12)
+            Stepper(
+                L10n.format("import.batch-naming.start-number", Int64(draft.startNumber)),
+                value: $draft.startNumber,
+                in: 0 ... 999_999
+            )
+            Stepper(
+                L10n.format("import.batch-naming.padding", Int64(draft.padding)),
+                value: $draft.padding,
+                in: 1 ... 12
+            )
         }
         .disabled(isDisabled)
     }
@@ -117,7 +125,7 @@ struct BatchRenamePreviewSection: View {
             }
             if let previewFailure = previewState.failure {
                 Label(
-                    "Could not preview rename: \(previewFailure.userMessage)",
+                    L10n.format("import.batch-naming.preview-failed", previewFailure.userMessage),
                     systemImage: "exclamationmark.triangle"
                 )
             }
@@ -174,9 +182,9 @@ private struct BatchRenamePreviewTable: View {
     }
 
     private func rowText(_ item: BatchRenamePreviewItemSnapshot) -> String {
-        let original = item.originalName ?? item.currentPath ?? "File \(item.fileID)"
+        let original = item.originalName ?? item.currentPath ?? L10n.format("File %lld", item.fileID)
         let reason = item.reason.map { " - \($0)" } ?? ""
-        return "\(original) -> \(item.newName ?? "-") | \(item.status.rawValue)\(reason)"
+        return "\(original) -> \(item.newName ?? "-") | \(item.status.displayName)\(reason)"
     }
 }
 
@@ -192,7 +200,13 @@ struct BatchRenameResultSummary: View {
                     Text(presentation.unchangedSummaryText)
                     Text(presentation.failedSummaryText)
                     ForEach(result.itemResults.filter { $0.status == .failed }) { item in
-                        Text("File \(item.fileID): \(item.error ?? "Failed")").font(.caption)
+                        Text(
+                            L10n.format(
+                                "import.common.file-error",
+                                item.fileID,
+                                item.error ?? L10n.string("Failed")
+                            )
+                        ).font(.caption)
                     }
                 }
             }
@@ -208,15 +222,14 @@ struct BatchRenamePreviewReportPresentation: Equatable {
     var conflictSummaryText: String
 
     init(report: BatchRenamePreviewReportSnapshot) {
-        renameSummaryText = "\(Self.itemText(report.willRenameCount)) will rename files"
-        displayOnlySummaryText = "\(Self.itemText(report.displayOnlyCount)) will update display names"
-        unchangedSummaryText = "\(Self.itemText(report.unchangedCount)) unchanged"
-        blockedSummaryText = "\(Self.itemText(report.blockedCount)) blocked"
-        conflictSummaryText = "\(Self.itemText(report.conflictCount)) conflicts"
-    }
-
-    private static func itemText(_ count: Int64) -> String {
-        count == 1 ? "1 item" : "\(count) items"
+        renameSummaryText = L10n.plural("import.batch-naming.preview.will-rename", count: Int(report.willRenameCount))
+        displayOnlySummaryText = L10n.plural(
+            "import.batch-naming.preview.display-only",
+            count: Int(report.displayOnlyCount)
+        )
+        unchangedSummaryText = L10n.plural("import.batch-naming.preview.unchanged", count: Int(report.unchangedCount))
+        blockedSummaryText = L10n.plural("import.batch-naming.preview.blocked", count: Int(report.blockedCount))
+        conflictSummaryText = L10n.plural("import.batch-naming.preview.conflicts", count: Int(report.conflictCount))
     }
 }
 
@@ -226,12 +239,11 @@ struct BatchRenameReportPresentation: Equatable {
     var failedSummaryText: String
 
     init(report: BatchRenameReportSnapshot) {
-        renamedSummaryText = "\(Self.itemText(report.successfulRenameCount)) renamed"
-        unchangedSummaryText = "\(Self.itemText(report.unchangedCount + report.skippedCount)) skipped or unchanged"
-        failedSummaryText = "\(Self.itemText(report.failedCount)) failed"
-    }
-
-    private static func itemText(_ count: Int64) -> String {
-        count == 1 ? "1 item" : "\(count) items"
+        renamedSummaryText = L10n.plural("import.batch-naming.result.renamed", count: Int(report.successfulRenameCount))
+        unchangedSummaryText = L10n.plural(
+            "import.batch-naming.result.skipped-or-unchanged",
+            count: Int(report.unchangedCount + report.skippedCount)
+        )
+        failedSummaryText = L10n.plural("import.batch-naming.result.failed", count: Int(report.failedCount))
     }
 }

@@ -28,7 +28,7 @@ struct AIClassificationSuggestionRejectedFeedback: Equatable {
     }
 
     var message: String {
-        "Suggestion rejected. Feedback recorded for this review."
+        L10n.string("Suggestion rejected. Feedback recorded for this review.")
     }
 
     func matches(_ suggestion: AIClassificationSuggestionState) -> Bool {
@@ -102,8 +102,11 @@ extension AIClassificationSuggestionPanel {
     func suggestedReviewContent(_ suggestion: AIClassificationSuggestionState) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Suggested category: \(suggestion.suggestedCategory ?? "Unknown")")
-                    .font(.subheadline.weight(.semibold))
+                Text(L10n.format(
+                    "ai.classification.suggestedCategory",
+                    suggestion.suggestedCategory ?? L10n.string("Unknown")
+                ))
+                .font(.subheadline.weight(.semibold))
                 AISuggestionConfidenceBadge(confidence: suggestion.confidence)
                 if let route = suggestion.route {
                     Text(route.label)
@@ -111,11 +114,20 @@ extension AIClassificationSuggestionPanel {
                         .foregroundStyle(.secondary)
                 }
             }
-            Text("Current category: \(suggestion.currentCategory ?? "None")")
-            Text("Reason: \(suggestion.reason ?? "No reason provided.")")
+            Text(L10n.format(
+                "ai.classification.currentCategory",
+                suggestion.currentCategory ?? L10n.string("None")
+            ))
+            Text(L10n.format(
+                "ai.classification.reason",
+                suggestion.reason ?? L10n.string("No reason provided.")
+            ))
             Text("Used: \(usedContextText(for: suggestion))")
                 .foregroundStyle(.secondary)
-            Text("Target category: \(suggestion.suggestedCategory ?? "Unknown")")
+            Text(L10n.format(
+                "ai.classification.targetCategory",
+                suggestion.suggestedCategory ?? L10n.string("Unknown")
+            ))
             applyPreviewContent(for: suggestion)
             Toggle("Create rule from this correction", isOn: $rememberRule)
                 .disabled(model.state.isLoading || moveState.isMoving(fileID: suggestion.fileID))
@@ -207,7 +219,7 @@ extension AIClassificationSuggestionPanel {
     ) -> some View {
         if let failure = moveState.failure(for: suggestion.fileID, targetCategory: targetCategory),
            moveState.failureOperation(for: suggestion.fileID, targetCategory: targetCategory) == .preview {
-            applyFailureView(failure, title: "Target path preview failed.")
+            applyFailureView(failure, title: L10n.string("Target path preview failed."))
         } else {
             Text("Target path: Waiting for Core preview...")
         }
@@ -218,7 +230,7 @@ extension AIClassificationSuggestionPanel {
         if let category = targetCategory(for: suggestion),
            let failure = moveState.failure(for: suggestion.fileID, targetCategory: category),
            moveState.failureOperation(for: suggestion.fileID, targetCategory: category) == .correction {
-            applyFailureView(failure, title: "Apply failed.")
+            applyFailureView(failure, title: L10n.string("Apply failed."))
             HStack {
                 Button("Retry apply") {
                     showApplyConfirmation = true
@@ -251,22 +263,24 @@ extension AIClassificationSuggestionPanel {
 
 extension AIClassificationSuggestionPanel {
     func acceptDisabledReason(for suggestion: AIClassificationSuggestionState) -> String? {
-        if model.state.isLoading { return "Suggestion is still loading." }
+        if model.state.isLoading { return L10n.string("Suggestion is still loading.") }
         if let reason = model.acceptDisabledReason { return reason }
-        guard let category = targetCategory(for: suggestion) else { return "Target category is missing." }
+        guard let category = targetCategory(for: suggestion) else { return L10n.string("Target category is missing.") }
         let request = MainFileCategoryMovePreviewRequest(fileID: suggestion.fileID, targetCategory: category)
-        if moveState.isChecking(request) { return "Checking target path before apply." }
-        if moveState.isMoving(fileID: suggestion.fileID) { return "Applying AI category..." }
+        if moveState.isChecking(request) { return L10n.string("Checking target path before apply.") }
+        if moveState.isMoving(fileID: suggestion.fileID) { return L10n.string("Applying AI category...") }
         if let operation = moveState.failureOperation(for: suggestion.fileID, targetCategory: category),
            operation == .preview {
-            return "Resolve the target path preview failure before accepting."
+            return L10n.string("Resolve the target path preview failure before accepting.")
         }
-        if moveState.preview(for: request) == nil { return "Target path preview is required before accepting." }
+        if moveState.preview(for: request) == nil {
+            return L10n.string("Target path preview is required before accepting.")
+        }
         return nil
     }
 
     func primaryApplyTitle(for suggestion: AIClassificationSuggestionState) -> String {
-        moveState.isMoving(fileID: suggestion.fileID) ? "Applying..." : "Accept"
+        moveState.isMoving(fileID: suggestion.fileID) ? L10n.string("Applying...") : L10n.string("Accept")
     }
 
     @discardableResult
@@ -314,23 +328,30 @@ extension AIClassificationSuggestionPanel {
 
     func applyPreviewPolicyText(_ preview: MoveToCategoryPreviewSnapshot) -> String {
         if preview.indexOnly {
-            return "AreaMatrix will update category metadata and change log only."
+            return L10n.string("AreaMatrix will update category metadata and change log only.")
         }
         if preview.nameConflictResolved {
-            return "Existing user files will not be overwritten. AreaMatrix will use \(preview.targetName)."
+            return L10n.format(
+                "Existing user files will not be overwritten. AreaMatrix will use %@.",
+                preview.targetName
+            )
         }
-        return "AreaMatrix will update the category and move the file to the target folder."
+        return L10n.string("AreaMatrix will update the category and move the file to the target folder.")
     }
 
     func applyConfirmationMessage(_ context: AIClassificationApplyConfirmationContext) -> String {
         let action = context.moveFile
-            ? "AreaMatrix will update the category and move the file to the target folder."
-            : "AreaMatrix will update the category metadata and change log."
+            ? L10n.string("AreaMatrix will update the category and move the file to the target folder.")
+            : L10n.string("AreaMatrix will update the category metadata and change log.")
         let conflict = context.preview.nameConflictResolved
-            ? " Existing user files will not be overwritten; target name: \(context.preview.targetName)."
-            : " Existing user files will not be overwritten."
-        // swiftlint:disable:next line_length
-        return "\(action)\(conflict) Target path: \(context.preview.targetPath). If apply fails, the file keeps its original category and path."
+            ? L10n.format("ai.classification.conflictTargetName", context.preview.targetName)
+            : L10n.string(" Existing user files will not be overwritten.")
+        return L10n.format(
+            "ai.classification.applyConfirmation",
+            action,
+            conflict,
+            context.preview.targetPath
+        )
     }
 
     func privacyRuleID(for suggestion: AIClassificationSuggestionState) -> String? {
@@ -340,17 +361,18 @@ extension AIClassificationSuggestionPanel {
     }
 
     func usedContextText(for suggestion: AIClassificationSuggestionState) -> String {
-        suggestion.usedContext.isEmpty ? "none" : suggestion.usedContext.map(\.label).joined(separator: ", ")
+        suggestion.usedContext.isEmpty ? L10n.string("none") : suggestion.usedContext.map(\.label)
+            .joined(separator: ", ")
     }
 
     func skipReasonText(_ reason: AIClassificationSuggestionSkipReasonState) -> String {
         switch reason {
-        case .aiDisabled: "AI classification suggestions are off"
-        case .featureDisabled: "AI classification feature is off"
-        case .ruleResultConfident: "rule classification is already confident"
-        case .noEligibleContext: "no eligible context"
-        case .privacyRule: "skipped by privacy rule"
-        case .providerUnavailable: "provider unavailable"
+        case .aiDisabled: L10n.string("AI classification suggestions are off")
+        case .featureDisabled: L10n.string("AI classification feature is off")
+        case .ruleResultConfident: L10n.string("rule classification is already confident")
+        case .noEligibleContext: L10n.string("no eligible context")
+        case .privacyRule: L10n.string("skipped by privacy rule")
+        case .providerUnavailable: L10n.string("provider unavailable")
         }
     }
 }

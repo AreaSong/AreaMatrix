@@ -124,7 +124,7 @@ fn init_create_empty_inner(
         create_default_category_dirs(repo, rollback)?;
     }
     if config.overview_output == OverviewOutput::RootAreaMatrixFile {
-        overview::write_root_areamatrix_file(repo, &config.locale)?;
+        overview::write_root_areamatrix_file(repo, config::resolve_content_locale(&config.locale))?;
         rollback.mark_root_entry_created();
     }
 
@@ -161,7 +161,10 @@ fn create_metadata_staging(
 
     let config = config::default_repo_config(repo_path.to_owned(), options.overview_output.clone());
     db::initialize_repository_db(&init_dir.join("index.db"), &config)?;
-    overview::write_generated_root(&init_dir.join("generated"), &config.locale)?;
+    overview::write_generated_root(
+        &init_dir.join("generated"),
+        config::resolve_content_locale(&config.locale),
+    )?;
     Ok(config)
 }
 

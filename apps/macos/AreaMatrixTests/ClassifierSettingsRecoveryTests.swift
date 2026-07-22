@@ -47,7 +47,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
 
         XCTAssertEqual(try String(contentsOf: classifierURL(repoURL: repoURL), encoding: .utf8), existing)
         XCTAssertFalse(FileManager.default.fileExists(atPath: lastValidBackupURL(repoURL: repoURL).path))
-        XCTAssertEqual(model.fileActionError?.message, "无法创建默认分类规则文件")
+        XCTAssertEqual(model.fileActionError?.message, L10n.string("settings.classifier.error.createDefault"))
         await predictor.assertNoCategoryPredictionRequests()
     }
 

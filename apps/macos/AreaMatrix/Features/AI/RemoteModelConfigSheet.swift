@@ -112,7 +112,7 @@ struct RemoteModelConfigSheet: View {
     }
 
     private var providerSection: some View {
-        AdvancedSettingsSection(title: "Provider") {
+        AdvancedSettingsSection(title: L10n.string("Provider")) {
             Picker("Provider", selection: $model.provider) {
                 ForEach(RemoteProviderKindState.allCases) { provider in
                     Text(provider.label).tag(provider)
@@ -132,7 +132,7 @@ struct RemoteModelConfigSheet: View {
     }
 
     private var credentialSection: some View {
-        AdvancedSettingsSection(title: "Credential") {
+        AdvancedSettingsSection(title: L10n.string("Credential")) {
             SecureField("API key", text: $model.apiKey)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-api-key")
@@ -153,7 +153,7 @@ struct RemoteModelConfigSheet: View {
     }
 
     private var scopeSection: some View {
-        AdvancedSettingsSection(title: "Usage scope") {
+        AdvancedSettingsSection(title: L10n.string("Usage scope")) {
             ForEach(AISettingsFeatureKind.allCases) { feature in
                 Toggle(feature.title, isOn: scopeBinding(feature))
                     .accessibilityIdentifier(
@@ -167,7 +167,7 @@ struct RemoteModelConfigSheet: View {
     }
 
     private var privacySection: some View {
-        AdvancedSettingsSection(title: "Privacy") {
+        AdvancedSettingsSection(title: L10n.string("Privacy")) {
             privacyGateStatus
             privacyGateFailureBanner
             Text(
@@ -245,14 +245,14 @@ struct RemoteModelConfigSheet: View {
     }
 
     private var testButtonTitle: String {
-        model.loadState == .testing ? "Testing..." : "Test connection"
+        model.loadState == .testing ? L10n.string("Testing...") : L10n.string("Test connection")
     }
 
     private var retryPrivacyGateTitle: String {
         switch privacyModel.pendingAction {
-        case .enable: "Retry enable privacy gate"
-        case .disable: "Retry disable privacy gate"
-        case nil: "Retry privacy gate"
+        case .enable: L10n.string("Retry enable privacy gate")
+        case .disable: L10n.string("Retry disable privacy gate")
+        case nil: L10n.string("Retry privacy gate")
         }
     }
 
@@ -290,13 +290,15 @@ struct RemoteModelConfigSheet: View {
     private func sentFieldsText(for feature: AISettingsFeatureKind) -> String {
         switch feature {
         case .classificationSuggestions:
-            "May send file name, repo-relative path, extension, tag and category context."
+            L10n.string("May send file name, repo-relative path, extension, tag and category context.")
         case .autoSummaries:
-            "May send extracted text snippets and existing AI summary context."
+            L10n.string("May send extracted text snippets and existing AI summary context.")
         case .autoTags:
-            "May send file name, extension, extracted text snippets, tag and category context."
+            L10n.string("May send file name, extension, extracted text snippets, tag and category context.")
         case .semanticSearch:
-            "May send repo-relative path, extracted text snippets and note summary, never full Note text."
+            L10n.string(
+                "May send repo-relative path, extracted text snippets and note summary, never full Note text."
+            )
         }
     }
 }

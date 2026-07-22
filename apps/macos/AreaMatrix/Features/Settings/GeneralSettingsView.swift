@@ -56,8 +56,8 @@ extension GeneralSettingsView {
             storageConfirmationTitle,
             isPresented: storageConfirmationBinding
         ) {
-            Button(String(localized: "settings.action.cancel"), role: .cancel, action: model.cancelPendingStorageMode)
-            Button(String(localized: "settings.action.confirm")) {
+            Button(L10n.string("settings.action.cancel"), role: .cancel, action: model.cancelPendingStorageMode)
+            Button(L10n.string("settings.action.confirm")) {
                 Task {
                     await model.confirmPendingStorageMode()
                 }
@@ -78,33 +78,33 @@ extension GeneralSettingsView {
             )
         }
         .confirmationDialog(
-            String(localized: "settings.ignore.createTitle"),
+            L10n.string("settings.ignore.createTitle"),
             isPresented: ignoreRulesCreateBinding
         ) {
-            Button(String(localized: "settings.action.cancel"), role: .cancel, action: model.cancelCreateDefaultIgnoreRules)
-            Button(String(localized: "settings.ignore.createButton")) {
+            Button(L10n.string("settings.action.cancel"), role: .cancel, action: model.cancelCreateDefaultIgnoreRules)
+            Button(L10n.string("settings.ignore.createButton")) {
                 model.createDefaultIgnoreRulesAndOpen()
             }
         } message: {
-            Text(String(localized: "settings.ignore.createMessage"))
+            Text(L10n.string("settings.ignore.createMessage"))
         }
     }
 
     private var sidebar: some View {
         List(selection: $selectedTab) {
-            Label(String(localized: "settings.tab.general"), systemImage: "gearshape")
+            Label(L10n.string("settings.tab.general"), systemImage: "gearshape")
                 .tag("general")
-            Label(String(localized: "settings.tab.repository"), systemImage: "folder")
+            Label(L10n.string("settings.tab.repository"), systemImage: "folder")
                 .tag("repository")
-            Label(String(localized: "settings.tab.classifier"), systemImage: "tag")
+            Label(L10n.string("settings.tab.classifier"), systemImage: "tag")
                 .tag("classifier")
-            Label(String(localized: "settings.tab.ai"), systemImage: "sparkles")
+            Label(L10n.string("settings.tab.ai"), systemImage: "sparkles")
                 .tag("ai")
-            Label(String(localized: "settings.tab.integrations"), systemImage: "point.3.connected.trianglepath.dotted")
+            Label(L10n.string("settings.tab.integrations"), systemImage: "point.3.connected.trianglepath.dotted")
                 .tag("integrations")
-            Label(String(localized: "settings.tab.advanced"), systemImage: "wrench.and.screwdriver")
+            Label(L10n.string("settings.tab.advanced"), systemImage: "wrench.and.screwdriver")
                 .tag("advanced")
-            Label(String(localized: "settings.tab.about"), systemImage: "info.circle")
+            Label(L10n.string("settings.tab.about"), systemImage: "info.circle")
                 .tag("about")
         }
         .listStyle(.sidebar)
@@ -165,16 +165,16 @@ extension GeneralSettingsView {
 
     private func loadingErrorContent(_ error: GeneralSettingsSaveError) -> some View {
         SettingsPageErrorContent(
-            title: String(localized: "settings.error.unableToLoad"),
+            title: L10n.string("settings.error.unableToLoad"),
             message: error.message,
             recovery: error.recovery
         ) {
-            Button(String(localized: "settings.action.retry")) {
+            Button(L10n.string("settings.action.retry")) {
                 Task {
                     await model.load()
                 }
             }
-            Button(String(localized: "settings.action.close"), action: onClose)
+            Button(L10n.string("settings.action.close"), action: onClose)
         }
     }
 
@@ -185,11 +185,11 @@ extension GeneralSettingsView {
     private var storageConfirmationTitle: String {
         switch model.pendingStorageConfirmation {
         case .move:
-            String(localized: "settings.storage.confirmMove")
+            L10n.string("settings.storage.confirmMove")
         case .indexOnly:
-            String(localized: "settings.storage.confirmIndexOnly")
+            L10n.string("settings.storage.confirmIndexOnly")
         default:
-            String(localized: "settings.storage.confirmDefault")
+            L10n.string("settings.storage.confirmDefault")
         }
     }
 

@@ -32430,6 +32430,12 @@ public func semanticSearch(repoPath: String, query: String, filter: SearchFilter
     )
 })
 }
+public func setAppInterfaceLocale(locale: String)throws  {try rustCallWithError(FfiConverterTypeCoreError.lift) {
+    uniffi_area_matrix_core_fn_func_set_app_interface_locale(
+        FfiConverterString.lower(locale),$0
+    )
+}
+}
 public func setFsEventCursor(repoPath: String, lastEventId: Int64)throws  {try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_set_fs_event_cursor(
         FfiConverterString.lower(repoPath),
@@ -32816,6 +32822,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_semantic_search() != 798) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_area_matrix_core_checksum_func_set_app_interface_locale() != 8380) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_set_fs_event_cursor() != 62271) {

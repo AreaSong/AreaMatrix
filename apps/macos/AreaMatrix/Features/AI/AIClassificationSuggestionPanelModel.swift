@@ -56,30 +56,32 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
     var statusText: String {
         switch state {
         case .idle:
-            "No AI category suggestion is available."
+            L10n.string("No AI category suggestion is available.")
         case .loading:
-            "Loading AI suggestion..."
+            L10n.string("Loading AI suggestion...")
         case let .loaded(suggestion):
             fallbackStatus?.title ?? Self.statusText(for: suggestion)
         case let .failed(_, fallback):
-            fallback?.title ?? "AI suggestion failed."
+            fallback?.title ?? L10n.string("AI suggestion failed.")
         }
     }
 
     var acceptDisabledReason: String? {
-        guard let suggestion else { return "No suggestion to accept." }
+        guard let suggestion else { return L10n.string("No suggestion to accept.") }
         switch suggestion.status {
         case .suggested:
             if suggestion.suggestedCategory?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false {
-                return "Target category is missing."
+                return L10n.string("Target category is missing.")
             }
-            return suggestion.requiresUserConfirmation ? nil : "AI suggestion must require user confirmation."
+            return suggestion.requiresUserConfirmation
+                ? nil
+                : L10n.string("AI suggestion must require user confirmation.")
         case .noSuggestion:
-            return "No suggestion to accept."
+            return L10n.string("No suggestion to accept.")
         case .skipped:
             return Self.skippedText(for: suggestion.skippedReason)
         case .unavailable:
-            return fallbackStatus?.retryDisabledReason ?? "AI suggestion is unavailable."
+            return fallbackStatus?.retryDisabledReason ?? L10n.string("AI suggestion is unavailable.")
         }
     }
 
@@ -114,14 +116,14 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
     private func suggestionError(for error: Error) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
-                message: "AI category suggestion could not be loaded.",
-                recovery: mapping.recoveryText(fallback: "Retry or classify manually."),
+                message: L10n.string("AI category suggestion could not be loaded."),
+                recovery: mapping.recoveryText(fallback: L10n.string("Retry or classify manually.")),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(
-            message: "AI category suggestion could not be loaded.",
-            recovery: "Retry or classify manually.",
+            message: L10n.string("AI category suggestion could not be loaded."),
+            recovery: L10n.string("Retry or classify manually."),
             detail: error.localizedDescription
         )
     }
@@ -129,32 +131,32 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
     private static func statusText(for suggestion: AIClassificationSuggestionState) -> String {
         switch suggestion.status {
         case .suggested:
-            "AI suggested a category."
+            L10n.string("AI suggested a category.")
         case .noSuggestion:
-            "No AI category suggestion is available."
+            L10n.string("No AI category suggestion is available.")
         case .skipped:
             skippedText(for: suggestion.skippedReason)
         case .unavailable:
-            "AI suggestion is unavailable."
+            L10n.string("AI suggestion is unavailable.")
         }
     }
 
     private static func skippedText(for reason: AIClassificationSuggestionSkipReasonState?) -> String {
         switch reason {
         case .aiDisabled:
-            "AI classification suggestions are off."
+            L10n.string("AI classification suggestions are off.")
         case .featureDisabled:
-            "AI classification feature is off."
+            L10n.string("AI classification feature is off.")
         case .ruleResultConfident:
-            "Rule classification is already confident."
+            L10n.string("Rule classification is already confident.")
         case .noEligibleContext:
-            "No eligible context is available for AI."
+            L10n.string("No eligible context is available for AI.")
         case .privacyRule:
-            "Skipped by privacy rule."
+            L10n.string("Skipped by privacy rule.")
         case .providerUnavailable:
-            "AI provider is unavailable."
+            L10n.string("AI provider is unavailable.")
         case nil:
-            "AI suggestion was skipped."
+            L10n.string("AI suggestion was skipped.")
         }
     }
 
@@ -213,10 +215,10 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
             operation: .classificationSuggestion,
             kind: .internalFailure,
             category: .error,
-            title: "AI fallback status could not be loaded.",
+            title: L10n.string("AI fallback status could not be loaded."),
             message: message,
             retryable: false,
-            retryDisabledReason: "Classify manually or retry after the fallback status is available.",
+            retryDisabledReason: L10n.string("Classify manually or retry after the fallback status is available."),
             primaryAction: .classifyManually,
             secondaryAction: request.callLogId == nil ? nil : .viewCallLog,
             nonAiFallbackAction: .classifyManually,
@@ -229,15 +231,17 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
 
     private func fallbackReaderFailureMessage(for error: Error) async -> String {
         guard let mapping = await errorMapper.mapCoreErrorIfPresent(error) else {
-            return "AreaMatrix could not read the standardized AI category fallback state."
+            return L10n.string("AreaMatrix could not read the standardized AI category fallback state.")
         }
         switch mapping.kind {
         case .config:
-            return "AreaMatrix could not read the AI category fallback state because fallback metadata is invalid."
+            return L10n.string(
+                "AreaMatrix could not read the AI category fallback state because fallback metadata is invalid."
+            )
         case .permissionDenied:
-            return "AreaMatrix does not have permission to read the AI category fallback metadata."
+            return L10n.string("AreaMatrix does not have permission to read the AI category fallback metadata.")
         default:
-            return "AreaMatrix could not read the standardized AI category fallback state."
+            return L10n.string("AreaMatrix could not read the standardized AI category fallback state.")
         }
     }
 }

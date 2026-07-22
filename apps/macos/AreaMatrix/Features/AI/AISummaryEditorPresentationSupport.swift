@@ -3,7 +3,7 @@ import Foundation
 enum AISummaryEditorPresentationSupport {
     static func privacyUnavailableNotice(_ mapping: AISettingsError) -> AISummaryEditorNotice {
         notice(
-            title: "AI privacy rules could not be checked",
+            title: L10n.string("AI privacy rules could not be checked"),
             detail: mapping.detail,
             recovery: mapping.recovery,
             reason: .privacyUnavailable,
@@ -13,12 +13,12 @@ enum AISummaryEditorPresentationSupport {
     }
 
     static func privacyBlockedNotice(_ skip: AISummaryPrivacySkip) -> AISummaryEditorNotice {
-        let reason: AISummaryEditorGateReason = skip.reasonLabel == "No eligible summary input" ?
+        let reason: AISummaryEditorGateReason = skip.skippedReason == .noEligibleInput ?
             .noEligibleInput(skip) : .privacyBlocked(skip)
         return notice(
             title: skip.reasonLabel,
             detail: skip.message,
-            recovery: "Review privacy rules before generating this summary.",
+            recovery: L10n.string("Review privacy rules before generating this summary."),
             reason: reason,
             opensAISettings: false,
             capability: "ai-privacy-rules-core",
@@ -38,8 +38,8 @@ enum AISummaryEditorPresentationSupport {
         case .privacyRule:
             notice(
                 title: aiSummarySkipReasonLabel(reason),
-                detail: "No content was sent because the summary was skipped by privacy rules.",
-                recovery: "Review privacy rules before generating this summary.",
+                detail: L10n.string("No content was sent because the summary was skipped by privacy rules."),
+                recovery: L10n.string("Review privacy rules before generating this summary."),
                 reason: .privacyBlocked(AISummaryPrivacySkip(summaryReason: reason)),
                 opensAISettings: false,
                 capability: "ai-privacy-rules-core"
@@ -47,8 +47,8 @@ enum AISummaryEditorPresentationSupport {
         case .noEligibleInput:
             notice(
                 title: aiSummarySkipReasonLabel(reason),
-                detail: "This file has no eligible metadata or extracted text for AI summaries.",
-                recovery: "Return to detail or choose a file with readable summary input.",
+                detail: L10n.string("This file has no eligible metadata or extracted text for AI summaries."),
+                recovery: L10n.string("Return to detail or choose a file with readable summary input."),
                 reason: .noEligibleInput(AISummaryPrivacySkip(summaryReason: reason)),
                 opensAISettings: false,
                 capability: "ai-privacy-rules-core"
@@ -56,8 +56,8 @@ enum AISummaryEditorPresentationSupport {
         case .callLogUnavailable:
             notice(
                 title: aiSummarySkipReasonLabel(reason),
-                detail: "Summary generation cannot proceed because AI call logging is unavailable.",
-                recovery: "Retry after repository metadata is writable.",
+                detail: L10n.string("Summary generation cannot proceed because AI call logging is unavailable."),
+                recovery: L10n.string("Retry after repository metadata is writable."),
                 reason: .callLogUnavailable,
                 opensAISettings: false
             )
@@ -72,13 +72,13 @@ enum AISummaryEditorPresentationSupport {
         guard let mapping = await errorMapper.mapCoreErrorIfPresent(error) else {
             return AISettingsError(
                 message: message,
-                recovery: "Retry or return to detail.",
+                recovery: L10n.string("Retry or return to detail."),
                 detail: error.localizedDescription
             )
         }
         return AISettingsError(
             message: message,
-            recovery: mapping.recoveryText(fallback: "Retry or return to detail."),
+            recovery: mapping.recoveryText(fallback: L10n.string("Retry or return to detail.")),
             detail: mapping.userMessage
         )
     }

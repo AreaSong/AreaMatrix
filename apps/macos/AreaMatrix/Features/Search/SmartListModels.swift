@@ -8,17 +8,17 @@ enum SavedSearchResultCountState: Equatable {
     var summary: String {
         switch self {
         case .loading:
-            "Counting results..."
+            L10n.string("Counting results...")
         case let .loaded(count):
-            count == 1 ? "1 file" : "\(count) files"
+            L10n.plural("common.fileCount", count: count)
         case .failed:
-            "Result count unavailable"
+            L10n.string("Result count unavailable")
         }
     }
 
     var emptyResultWarning: String? {
         guard case .loaded(0) = self else { return nil }
-        return "This Smart List is currently empty."
+        return L10n.string("This Smart List is currently empty.")
     }
 }
 
@@ -49,10 +49,10 @@ struct SavedSearchSheetModel {
 
     var validationMessage: String? {
         let trimmed = trimmedName
-        if trimmed.isEmpty { return "Name is required." }
-        if trimmed.count > 64 { return "Name must be 64 characters or fewer." }
+        if trimmed.isEmpty { return L10n.string("Name is required.") }
+        if trimmed.count > 64 { return L10n.string("Name must be 64 characters or fewer.") }
         if existingNames.contains(trimmed.lowercased()) {
-            return "A Smart List named \"\(trimmed)\" already exists."
+            return L10n.format("A Smart List named \"%@\" already exists.", trimmed)
         }
         return nil
     }
@@ -62,7 +62,7 @@ struct SavedSearchSheetModel {
     }
 
     var primaryActionTitle: String {
-        isSaving ? "Saving..." : "Save"
+        isSaving ? L10n.string("Saving...") : L10n.string("Save")
     }
 
     var createRequest: CreateSavedSearchRequestSnapshot {
@@ -76,11 +76,13 @@ struct SavedSearchSheetModel {
     }
 
     var querySummary: String {
-        request.query.isEmpty ? "Filtered search" : request.query
+        request.query.isEmpty ? L10n.string("Filtered search") : request.query
     }
 
     var filterSummary: String {
-        request.filters.isEmpty ? "None" : "\(request.filters.activeFilterCount) active"
+        request.filters.isEmpty
+            ? L10n.string("None")
+            : L10n.format("%d active", request.filters.activeFilterCount)
     }
 
     var resultCountSummary: String {
@@ -102,7 +104,7 @@ struct SavedSearchSheetModel {
     private static func defaultName(for request: SearchQueryRequestSnapshot) -> String {
         let trimmed = request.query.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { return trimmed.prefix(64).description }
-        return request.filters.isEmpty ? "Saved Search" : "Filtered Search"
+        return request.filters.isEmpty ? L10n.string("Saved Search") : L10n.string("Filtered Search")
     }
 }
 
@@ -115,8 +117,8 @@ struct SmartListSidebarRowStatus: Equatable {
     var accessibilityValue: String {
         [
             badgeAccessibilityText,
-            pinned ? "Pinned" : "Not pinned",
-            warningMessage.map { "warning: \($0)" }
+            pinned ? L10n.string("Pinned") : L10n.string("Not pinned"),
+            warningMessage.map { L10n.format("warning: %@", $0) }
         ].compactMap { $0 }.joined(separator: ", ")
     }
 
@@ -126,17 +128,22 @@ struct SmartListSidebarRowStatus: Equatable {
         searchState: MainSearchState
     ) -> SmartListSidebarRowStatus {
         guard let savedSearch else {
-            return make("--", "Result count unavailable", "Smart List metadata unavailable.", false)
+            return make(
+                "--",
+                L10n.string("Result count unavailable"),
+                L10n.string("Smart List metadata unavailable."),
+                false
+            )
         }
         let pinned = savedSearch.pinned
-        guard isCurrent else { return make("Ready", "Ready", nil, pinned) }
+        guard isCurrent else { return make(L10n.string("Ready"), L10n.string("Ready"), nil, pinned) }
         switch searchState {
         case .idle:
-            return make("Ready", "Ready", nil, pinned)
+            return make(L10n.string("Ready"), L10n.string("Ready"), nil, pinned)
         case .loading:
-            return make("...", "Counting results", nil, pinned)
+            return make("...", L10n.string("Counting results"), nil, pinned)
         case let .failed(_, error):
-            return make("--", "Result count unavailable", error.userMessage, pinned)
+            return make("--", L10n.string("Result count unavailable"), error.userMessage, pinned)
         case let .loaded(_, page):
             return loaded(page, pinned: pinned)
         }
@@ -144,16 +151,23 @@ struct SmartListSidebarRowStatus: Equatable {
 
     private static func loaded(_ page: SearchResultPageSnapshot, pinned: Bool) -> SmartListSidebarRowStatus {
         if let diagnostic = page.diagnostics.first(where: \.isError) {
-            return make("Invalid query", "Invalid query", diagnostic.message, pinned)
+            return make(L10n.string("Invalid query"), L10n.string("Invalid query"), diagnostic.message, pinned)
         }
         switch page.indexStatus {
         case .ready:
-            let resultText = page.totalCount == 1 ? "1 result" : "\(page.totalCount) results"
+            let resultText = page.totalCount == 1
+                ? L10n.string("1 result")
+                : L10n.format("%d results", page.totalCount)
             return make("\(page.totalCount)", resultText, nil, pinned)
         case .indexing:
-            return make("...", "Counting results", nil, pinned)
+            return make("...", L10n.string("Counting results"), nil, pinned)
         case .unavailable:
-            return make("--", "Result count unavailable", "Search index unavailable.", pinned)
+            return make(
+                "--",
+                L10n.string("Result count unavailable"),
+                L10n.string("Search index unavailable."),
+                pinned
+            )
         }
     }
 
@@ -181,13 +195,13 @@ enum SmartListManagementMode: Equatable {
     var title: String {
         switch self {
         case .rename:
-            "Rename Smart List"
+            L10n.string("Rename Smart List")
         case .duplicate:
-            "Duplicate Smart List"
+            L10n.string("Duplicate Smart List")
         case .editQuery:
-            "Edit Smart List"
+            L10n.string("Edit Smart List")
         case .delete:
-            "Delete Smart List"
+            L10n.string("Delete Smart List")
         }
     }
 }
@@ -203,7 +217,9 @@ struct SmartListManagementRoute: Identifiable, Equatable {
 }
 
 struct SmartListEditorModel {
-    static let deleteSafetyMessage = "This only removes the Smart List. Files will not be deleted or moved."
+    static var deleteSafetyMessage: String {
+        L10n.string("This only removes the Smart List. Files will not be deleted or moved.")
+    }
 
     var mode: SmartListManagementMode
     var original: SavedSearchSnapshot
@@ -243,14 +259,14 @@ struct SmartListEditorModel {
     var validationMessage: String? {
         guard mode != .delete else { return nil }
         let trimmed = trimmedName
-        if trimmed.isEmpty { return "Name is required." }
-        if trimmed.count > 64 { return "Name must be 64 characters or fewer." }
-        if isDuplicate(trimmed) { return "A Smart List named \"\(trimmed)\" already exists." }
+        if trimmed.isEmpty { return L10n.string("Name is required.") }
+        if trimmed.count > 64 { return L10n.string("Name must be 64 characters or fewer.") }
+        if isDuplicate(trimmed) { return L10n.format("A Smart List named \"%@\" already exists.", trimmed) }
         if mode == .editQuery, query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, filters.isEmpty {
-            return "Query or filters are required."
+            return L10n.string("Query or filters are required.")
         }
         if mode == .editQuery, isQueryDiagnosticCurrent, queryDiagnostic?.isError == true {
-            return "Fix query syntax before saving changes."
+            return L10n.string("Fix query syntax before saving changes.")
         }
         return nil
     }
@@ -263,13 +279,13 @@ struct SmartListEditorModel {
         if isSaving { return savingTitle }
         switch mode {
         case .rename:
-            return "Save"
+            return L10n.string("Save")
         case .editQuery:
-            return "Save changes"
+            return L10n.string("Save changes")
         case .duplicate:
-            return "Create"
+            return L10n.string("Create")
         case .delete:
-            return "Delete Smart List"
+            return L10n.string("Delete Smart List")
         }
     }
 
@@ -303,7 +319,7 @@ struct SmartListEditorModel {
     }
 
     var filterSummary: String {
-        filters.isEmpty ? "None" : "\(filters.activeFilterCount) active"
+        filters.isEmpty ? L10n.string("None") : L10n.format("%d active", filters.activeFilterCount)
     }
 
     var resultCountSummary: String {
@@ -360,11 +376,11 @@ struct SmartListEditorModel {
     private var savingTitle: String {
         switch mode {
         case .delete:
-            "Deleting..."
+            L10n.string("Deleting...")
         case .duplicate:
-            "Creating..."
+            L10n.string("Creating...")
         case .rename, .editQuery:
-            "Saving..."
+            L10n.string("Saving...")
         }
     }
 
@@ -379,6 +395,6 @@ struct SmartListEditorModel {
     }
 
     private static func copyName(for name: String) -> String {
-        "\(name) Copy"
+        L10n.format("%@ Copy", name)
     }
 }

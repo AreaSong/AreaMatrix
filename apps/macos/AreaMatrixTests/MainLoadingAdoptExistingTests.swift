@@ -41,7 +41,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
 
         XCTAssertEqual(
             recoveredState.recoveryStatusText,
-            "启动恢复已完成：清理 2 个临时文件，回滚 1 条 staging 记录"
+            "Startup recovery completed: Temporary files cleaned: 2; staging records reverted: 1"
         )
 
         await opener.finishOpen()
@@ -78,7 +78,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         XCTAssertEqual(state.recoveryErrorMapping, mapping)
         XCTAssertEqual(state.treeLoading, .failed(mapping))
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
-        XCTAssertEqual(state.treeStatusText, "目录加载失败：扫描状态暂不可用")
+        XCTAssertEqual(state.treeStatusText, "Repository tree failed to load: 扫描状态暂不可用")
     }
 
     @MainActor
@@ -129,10 +129,10 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         XCTAssertEqual(model.mainRepoRecoveryErrorMapping, mapping)
         guard let state = requireMainLoadingState(model, message: "expected inline main loading error") else { return }
         XCTAssertEqual(state.repoPath, mainLoadingRepoPath())
-        XCTAssertEqual(state.recoveryStatusText, "启动恢复检查完成")
+        XCTAssertEqual(state.recoveryStatusText, "Startup recovery check completed.")
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
         XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
-        XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
+        XCTAssertEqual(state.treeStatusText, "Directory loaded: 1 file")
     }
 
     @MainActor
@@ -164,7 +164,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         }
 
         await treeLister.assertRequestedRepoPaths([mainLoadingRepoPath()])
-        XCTAssertEqual(state.treeStatusText, "目录已加载：1 个文件")
+        XCTAssertEqual(state.treeStatusText, "Directory loaded: 1 file")
         XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
 
         await opener.finishOpen()
@@ -206,7 +206,7 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             return
         }
 
-        XCTAssertEqual(failedState.treeStatusText, "目录加载失败：扫描状态暂不可用")
+        XCTAssertEqual(failedState.treeStatusText, "Repository tree failed to load: 扫描状态暂不可用")
 
         await model.retryMainLoadingTree()
 

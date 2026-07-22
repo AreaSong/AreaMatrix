@@ -37,7 +37,7 @@ struct TagSuggestionsPanel: View {
             Text("Suggestions come from file name and path keywords. File contents are not read.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Text("Reviewing \(file.currentName)")
+            Text(L10n.format("file-actions.tag-suggestion.reviewing-file", file.currentName))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -90,8 +90,8 @@ struct TagSuggestionsPanel: View {
 
     private func privacyStatus(_ report: TagSuggestionReportSnapshot) -> some View {
         let status = report.contentsRead || report.aiUsed || report.networkUsed ?
-            "Privacy boundary needs review." :
-            "Non-AI suggestions. No content or network access."
+            L10n.string("tag-suggestion.privacy-review-required") :
+            L10n.string("tag-suggestion.local-privacy-safe")
         return Text(status)
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -112,7 +112,7 @@ struct TagSuggestionsPanel: View {
                 Button("Select all", action: onSelectAll)
                 Button("Clear selection", action: onClearSelection)
                 Spacer()
-                Text("\(state.selectedIDs.count) selected")
+                Text(L10n.plural("file-actions.tag-suggestion.selected-count", count: state.selectedIDs.count))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -135,9 +135,14 @@ struct TagSuggestionsPanel: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if session.attentionCount > 0 {
-                Text("\(session.attentionCount) tags need attention before applying.")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                Text(
+                    L10n.plural(
+                        "file-actions.tag-suggestion.attention-count",
+                        count: session.attentionCount
+                    )
+                )
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
             }
             ForEach(session.drafts) { draft in
                 SuggestedTagEditRow(
@@ -157,8 +162,11 @@ struct TagSuggestionsPanel: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Applied \(report.appliedCount), skipped \(report.skippedCount), failed \(report.failedCount).")
             ForEach(report.itemResults.filter { $0.status == .failed }) { failed in
-                Text(failed.error ?? "\(failed.slug) could not be applied.")
-                    .foregroundStyle(.secondary)
+                Text(
+                    failed.error
+                        ?? L10n.format("file-actions.tag-suggestion.apply-failed", failed.slug)
+                )
+                .foregroundStyle(.secondary)
             }
             if report.failedCount > 0 {
                 HStack {
@@ -232,14 +240,14 @@ private struct SuggestedTagRow: View {
                 HStack(spacing: 6) {
                     Text(suggestion.displayName)
                         .font(.callout.weight(.semibold))
-                    Text(suggestion.matchStrength.rawValue)
-                    Text(suggestion.status.rawValue)
+                    Text(suggestion.matchStrength.displayName)
+                    Text(suggestion.status.displayName)
                 }
                 .font(.caption)
                 Text(suggestion.reason)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(suggestion.source.rawValue)
+                Text(suggestion.source.displayName)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 if let reason = suggestion.disabledReason {
@@ -254,8 +262,14 @@ private struct SuggestedTagRow: View {
     }
 
     private var accessibilityLabel: String {
-        "\(suggestion.displayName), \(suggestion.reason), \(suggestion.matchStrength.rawValue), " +
-            "\(suggestion.status.rawValue), \(isSelected ? "selected" : "not selected")"
+        L10n.format(
+            "tag-suggestion.accessibility-label",
+            suggestion.displayName,
+            suggestion.reason,
+            suggestion.matchStrength.displayName,
+            suggestion.status.displayName,
+            isSelected ? L10n.string("Selected") : L10n.string("Not selected")
+        )
     }
 }
 
@@ -306,6 +320,11 @@ private struct SuggestedTagEditRow: View {
     }
 
     private var accessibilityLabel: String {
-        "\(draft.originalDisplayName), \(draft.reason), \(draft.status.label)"
+        L10n.format(
+            "tag-suggestion.edit-accessibility-label",
+            draft.originalDisplayName,
+            draft.reason,
+            draft.status.label
+        )
     }
 }

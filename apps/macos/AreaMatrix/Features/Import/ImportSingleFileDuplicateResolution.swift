@@ -12,22 +12,22 @@ enum SingleFileDuplicateResolutionStrategy: String, CaseIterable, Identifiable, 
     var title: String {
         switch self {
         case .skip:
-            "跳过导入（推荐）"
+            L10n.string("import.duplicate.skipTitle")
         case .keepBoth:
-            "保留两份（自动编号）"
+            L10n.string("import.duplicate.keepBothTitle")
         case .replace:
-            "替换已有文件（危险）"
+            L10n.string("import.duplicate.replaceTitle")
         }
     }
 
     var detail: String {
         switch self {
         case .skip:
-            "不会创建新文件，保留资料库中的已有条目。"
+            L10n.string("import.duplicate.skipDetail")
         case .keepBoth:
-            "最终点击 Import 后由 Core 使用 KeepBoth 策略写入。"
+            L10n.string("import.duplicate.keepBothDetail")
         case .replace:
-            "必须先完成二次确认；最终点击 Import 后由 Core 安全替换。"
+            L10n.string("import.duplicate.replaceDetail")
         }
     }
 
@@ -79,9 +79,9 @@ extension ImportSingleFilePreviewModel {
 
     var singleFilePrimaryActionTitle: String {
         if isPendingReplaceConfirmation {
-            return "Continue"
+            return L10n.string("Continue")
         }
-        return "Import"
+        return L10n.string("Import")
     }
 
     var didSkipDuplicate: Bool {
@@ -99,12 +99,14 @@ extension ImportSingleFilePreviewModel {
         case .skip:
             return nil
         case .keepBoth:
-            return result.keepBothTargetRelativePath == nil ? "无法生成可用文件名" : nil
+            return result.keepBothTargetRelativePath == nil
+                ? L10n.string("import.conflict.filenameUnavailable")
+                : nil
         case .replace:
             if replaceOptionVisibility == .disabled {
                 return replaceOptionVisibility.blockingReason
             }
-            return isReplaceConfirmed ? nil : "Replace 必须先进入二次确认"
+            return isReplaceConfirmed ? nil : L10n.string("import.replace.confirmationRequired")
         }
     }
 
@@ -177,12 +179,12 @@ extension ImportSingleFilePreviewModel {
 
     func applyReplaceConfirmation(_ decision: SingleFileReplaceConfirmationDecision) {
         guard pendingReplaceConfirmation == decision.context else {
-            setReplaceConfirmationFailure("Replace confirmation context expired")
+            setReplaceConfirmationFailure(L10n.string("import.replace.contextExpired"))
             markReplaceConfirmed(false)
             return
         }
         guard decision.understandsReplace else {
-            setReplaceConfirmationFailure("Replace 需要先勾选二次确认")
+            setReplaceConfirmationFailure(L10n.string("import.replace.checkboxRequired"))
             markReplaceConfirmed(false)
             return
         }
@@ -196,7 +198,9 @@ extension ImportSingleFilePreviewModel {
     }
 
     var replaceConfirmationActionTitle: String {
-        isReplaceConfirmed ? "Replace confirmed" : "Confirm Replace..."
+        isReplaceConfirmed
+            ? L10n.string("import.replace.confirmed")
+            : L10n.string("import.replace.confirmAction")
     }
 
     var duplicateReplaceConfirmationActionTitle: String {
@@ -285,22 +289,22 @@ enum ImportSingleFileNameConflictResolution: Hashable {
     var title: String {
         switch self {
         case .keepBoth:
-            "保留两份（自动编号，推荐）"
+            L10n.string("import.nameConflict.keepBothTitle")
         case .renameIncoming:
-            "重命名导入文件..."
+            L10n.string("import.nameConflict.renameTitle")
         case .replace:
-            "替换已有文件（危险）"
+            L10n.string("import.duplicate.replaceTitle")
         }
     }
 
     var detail: String {
         switch self {
         case .keepBoth:
-            "导入文件会使用自动编号，不覆盖已有文件。"
+            L10n.string("import.nameConflict.keepBothDetail")
         case let .renameIncoming(name):
-            "导入文件将保存为 \(name)，已有文件保持不变。"
+            L10n.format("import.single.keep-both-explanation", name)
         case .replace:
-            "必须先完成二次确认；旧文件会移到系统废纸篓。"
+            L10n.string("import.nameConflict.replaceDetail")
         }
     }
 }
@@ -356,7 +360,9 @@ extension ImportSingleFilePreviewModel {
         guard let result = currentPreflightResult, case .name = result.conflict else { return nil }
         switch nameConflictResolution {
         case .keepBoth:
-            return result.keepBothTargetRelativePath == nil ? "无法生成可用文件名" : nil
+            return result.keepBothTargetRelativePath == nil
+                ? L10n.string("import.conflict.filenameUnavailable")
+                : nil
         case let .renameIncoming(name):
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
             if let validation = ImportSingleFileFilenameValidator.validationMessage(for: trimmed) {
@@ -366,12 +372,14 @@ extension ImportSingleFilePreviewModel {
                 category: selectedCategory,
                 filename: trimmed
             )
-            return result.existingPaths.contains(targetPath) ? "新文件名仍然冲突" : nil
+            return result.existingPaths.contains(targetPath)
+                ? L10n.string("import.nameConflict.stillConflicts")
+                : nil
         case .replace:
             if replaceOptionVisibility == .disabled {
                 return replaceOptionVisibility.blockingReason
             }
-            return isReplaceConfirmed ? nil : "Replace 必须先进入二次确认"
+            return isReplaceConfirmed ? nil : L10n.string("import.replace.confirmationRequired")
         }
     }
 

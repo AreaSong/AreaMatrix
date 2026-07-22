@@ -76,15 +76,20 @@ extension ImportEntrySheetView {
                     .font(.headline)
                     .lineLimit(2)
                 if let sourceSizeDescription = previewModel.sourceSizeDescription {
-                    Text("大小：\(sourceSizeDescription)")
+                    Text(L10n.format("import.single.source-size", sourceSizeDescription))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
-                Text("来源：\(previewModel.source?.sourcePath ?? request.destinationLabel)")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                    .textSelection(.enabled)
+                Text(
+                    L10n.format(
+                        "import.single.source-path",
+                        previewModel.source?.sourcePath ?? request.destinationLabel
+                    )
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .textSelection(.enabled)
             }
         }
     }

@@ -29,9 +29,9 @@ enum ImportSingleFilePreviewStatus: Equatable {
         case .idle:
             nil
         case .loading:
-            "正在预览分类..."
+            L10n.string("正在预览分类...")
         case .ready:
-            "分类预览完成"
+            L10n.string("分类预览完成")
         case let .failed(message), let .unsupported(message):
             message
         }
@@ -58,13 +58,13 @@ enum ImportSingleFileImportStatus: Equatable {
         case let .importing(mode):
             mode.importingMessage
         case let .imported(entry):
-            "已导入：\(entry.currentName)"
+            L10n.format("import.single.imported-file", entry.currentName)
         case let .failed(mapping):
             mapping.userMessage
         case let .blocked(message):
             message
         case let .skippedDuplicate(existingPath):
-            "已跳过重复文件：\(existingPath)"
+            L10n.format("import.single.duplicate-skipped", existingPath)
         }
     }
 }
@@ -76,6 +76,14 @@ enum ImportSingleFileStorageMode: String, CaseIterable, Codable, Equatable, Iden
 
     var id: String {
         rawValue
+    }
+
+    var displayName: String {
+        switch self {
+        case .copy: L10n.string("Copy")
+        case .move: L10n.string("Move")
+        case .indexOnly: L10n.string("Index-only")
+        }
     }
 
     init(coreSnapshotValue: String) {
@@ -92,33 +100,33 @@ enum ImportSingleFileStorageMode: String, CaseIterable, Codable, Equatable, Iden
     var explanation: String {
         switch self {
         case .copy:
-            "保留原文件，复制到 AreaMatrix 资料库。"
+            L10n.string("保留原文件，复制到 AreaMatrix 资料库。")
         case .move:
-            "源文件会从原位置移走，并安全写入 AreaMatrix 资料库。"
+            L10n.string("源文件会从原位置移走，并安全写入 AreaMatrix 资料库。")
         case .indexOnly:
-            "不复制，只记录引用路径；源文件移动后会缺失。"
+            L10n.string("不复制，只记录引用路径；源文件移动后会缺失。")
         }
     }
 
     var importingMessage: String {
         switch self {
         case .copy:
-            "正在复制导入..."
+            L10n.string("正在复制导入...")
         case .move:
-            "正在移动导入..."
+            L10n.string("正在移动导入...")
         case .indexOnly:
-            "正在写入索引..."
+            L10n.string("正在写入索引...")
         }
     }
 
     var importingBlockingMessage: String {
         switch self {
         case .copy:
-            "正在复制导入"
+            L10n.string("正在复制导入")
         case .move:
-            "正在移动导入"
+            L10n.string("正在移动导入")
         case .indexOnly:
-            "正在写入索引"
+            L10n.string("正在写入索引")
         }
     }
 }

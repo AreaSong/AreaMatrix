@@ -153,8 +153,8 @@ struct NSOpenPanelRepositoryDirectoryPicker: RepositoryDirectoryPicking {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = false
-        panel.prompt = "Choose"
-        panel.message = "Choose a repository folder."
+        panel.prompt = L10n.string("Choose")
+        panel.message = L10n.string("Choose a repository folder.")
 
         return panel.runModal() == .OK ? panel.url : nil
     }
@@ -168,8 +168,8 @@ struct NSOpenPanelRepositoryImportPicker: RepositoryImportPicking {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
         panel.canCreateDirectories = false
-        panel.prompt = "Import"
-        panel.message = "Choose files or folders to import."
+        panel.prompt = L10n.string("Import")
+        panel.message = L10n.string("Choose files or folders to import.")
 
         return panel.runModal() == .OK ? panel.urls : nil
     }
@@ -183,8 +183,8 @@ struct NSOpenPanelRepositoryMissingFilePicker: RepositoryMissingFilePicking {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = false
-        panel.prompt = "Locate"
-        panel.message = "Choose the existing local file to relink. AreaMatrix will not move or modify it."
+        panel.prompt = L10n.string("Locate")
+        panel.message = L10n.string("Choose the existing local file to relink. AreaMatrix will not move or modify it.")
         if let lastKnownPath, !lastKnownPath.isEmpty {
             let expandedPath = NSString(string: lastKnownPath).expandingTildeInPath
             panel.directoryURL = URL(fileURLWithPath: expandedPath).deletingLastPathComponent()
@@ -298,7 +298,7 @@ struct NSSavePanelImportResultDetailsExporter: ImportResultDetailsExporting {
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = suggestedFilename
         panel.allowedContentTypes = [.plainText]
-        panel.message = "Export import result details with redacted paths and no file contents."
+        panel.message = L10n.string("Export import result details with redacted paths and no file contents.")
 
         guard panel.runModal() == .OK, let url = panel.url else {
             throw ImportResultExportError.cancelled
@@ -334,9 +334,9 @@ enum RepositoryFinderOpenError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .repositoryFolderMissing(path):
-            "Repository folder is missing: \(path)"
+            L10n.format("platform.repositoryFinder.missing", path)
         case let .openRejected(path):
-            "Finder rejected opening repository: \(path)"
+            L10n.format("platform.repositoryFinder.openRejected", path)
         }
     }
 }
@@ -349,11 +349,11 @@ enum RepositoryFileActionError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .unsafeRelativePath(path):
-            "File path is outside this repository: \(path)"
+            L10n.format("platform.repositoryFile.outside", path)
         case let .fileMissing(path):
-            "File is missing from this repository: \(path)"
+            L10n.format("platform.repositoryFile.missing", path)
         case let .openRejected(path):
-            "File opener rejected this path: \(path)"
+            L10n.format("platform.repositoryFile.openRejected", path)
         }
     }
 }
@@ -364,7 +364,7 @@ enum ImportResultExportError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .cancelled:
-            "Import result export was cancelled."
+            L10n.string("import.result.export.cancelled")
         }
     }
 }

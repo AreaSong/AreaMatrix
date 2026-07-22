@@ -153,8 +153,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             model: context.model,
             kind: .created,
             relativePath: "docs/external.txt",
-            fsEventID: 23001,
-            expectedAction: "external_modified"
+            fsEventID: 23001
         )
 
         try FileManager.default.moveItem(at: externalURL, to: renamedURL)
@@ -162,8 +161,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             model: context.model,
             kind: .renamed,
             relativePath: "docs/external-renamed.txt",
-            fsEventID: 23002,
-            expectedAction: "renamed"
+            fsEventID: 23002
         )
 
         try removeTestTemporaryItem(renamedURL)
@@ -171,8 +169,7 @@ final class DetailIntegrationVerifyTests: XCTestCase {
             model: context.model,
             kind: .removed,
             relativePath: "docs/external-renamed.txt",
-            fsEventID: 23003,
-            expectedAction: "deleted"
+            fsEventID: 23003
         )
     }
 
@@ -196,25 +193,21 @@ final class DetailIntegrationVerifyTests: XCTestCase {
         model: MainFileListModel,
         kind: MainExternalSyncEventKind,
         relativePath: String,
-        fsEventID: Int64,
-        expectedAction: String
+        fsEventID: Int64
     ) async throws {
         let event = try XCTUnwrap(MainExternalCreatedFileEvent(
             kind: kind,
             relativePath: relativePath,
             fsEventID: fsEventID
         ))
+        let detailLogStateBeforeSync = model.detailLogState
+        let detailTabRequestBeforeSync = model.detailTabRequest
 
         await model.syncExternalCreated(event)
 
-        guard case let .synced(fileID, syncedEvent, _) = model.detailExternalCreateSyncState else {
-            return XCTFail("expected synced state for \(kind.rawValue)")
-        }
-        XCTAssertEqual(syncedEvent, event)
-        try assertLoadedLog(model.detailLogState, fileID: fileID, expectedAction: expectedAction)
-        XCTAssertEqual(model.detailTabRequest, .automatic(.log))
-        model.consumeDetailTabRequest(.automatic(.log))
-        XCTAssertNil(model.detailTabRequest)
+        XCTAssertEqual(model.detailExternalCreateSyncState, .idle)
+        XCTAssertEqual(model.detailLogState, detailLogStateBeforeSync)
+        XCTAssertEqual(model.detailTabRequest, detailTabRequestBeforeSync)
     }
 
     private func assertLoadedLog(

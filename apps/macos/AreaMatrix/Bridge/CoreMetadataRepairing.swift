@@ -29,7 +29,7 @@ extension RepairReportSnapshot {
     }
 
     var summaryText: String {
-        "Inserted \(inserted), updated \(updated), skipped \(skipped)."
+        L10n.format("metadataRepair.summary", inserted, updated, skipped)
     }
 }
 

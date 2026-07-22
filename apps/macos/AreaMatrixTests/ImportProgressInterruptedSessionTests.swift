@@ -90,7 +90,10 @@ final class ImportProgressInterruptedSessionTests: XCTestCase {
             "Import not completed before AreaMatrix quit",
             "Import not completed before AreaMatrix quit"
         ])
-        XCTAssertEqual(model.toastMessage, "检测到上次未完成的批量导入。")
+        XCTAssertEqual(
+            model.toastMessage,
+            "An unfinished batch import from the previous session was found."
+        )
     }
 
     @MainActor

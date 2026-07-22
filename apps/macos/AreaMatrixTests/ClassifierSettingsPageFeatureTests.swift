@@ -171,7 +171,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
 
         XCTAssertFalse(passed)
         XCTAssertEqual(model.validationStatusLabel, "Failed")
-        XCTAssertEqual(model.validationError?.message, "分类规则文件不存在")
+        XCTAssertEqual(model.validationError?.message, L10n.string("settings.classifier.error.missingFile"))
         await predictor.assertNoCategoryPredictionRequests()
     }
 

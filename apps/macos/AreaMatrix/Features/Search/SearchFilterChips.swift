@@ -22,18 +22,23 @@ struct SearchFilterChip: Identifiable, Equatable {
 enum SearchFilterChips {
     static func items(for filters: SearchFilterStateSnapshot) -> [SearchFilterChip] {
         var chips: [SearchFilterChip] = []
-        append(filters.category, kind: .category, prefix: "Category", to: &chips)
-        append(filters.fileKind, kind: .fileKind, prefix: "Type", to: &chips)
+        append(filters.category, kind: .category, prefix: L10n.string("Category"), to: &chips)
+        append(filters.fileKind, kind: .fileKind, prefix: L10n.string("Type"), to: &chips)
         if !filters.tags.isEmpty {
             chips.append(SearchFilterChip(kind: .tags, label: "tag:\(filters.tags.joined(separator: ","))"))
         }
-        appendDate(.modified, filters: filters, kind: .modifiedDate, title: "Modified", to: &chips)
-        appendDate(.imported, filters: filters, kind: .importedDate, title: "Imported", to: &chips)
+        appendDate(.modified, filters: filters, kind: .modifiedDate, title: L10n.string("Modified"), to: &chips)
+        appendDate(.imported, filters: filters, kind: .importedDate, title: L10n.string("Imported"), to: &chips)
         if let storageMode = filters.storageMode {
-            chips.append(SearchFilterChip(kind: .storage, label: "Storage: \(storageMode.displayName)"))
+            chips.append(
+                SearchFilterChip(
+                    kind: .storage,
+                    label: L10n.format("search.filter.storage", storageMode.displayName)
+                )
+            )
         }
         if filters.includeDeleted {
-            chips.append(SearchFilterChip(kind: .includeDeleted, label: "Include deleted"))
+            chips.append(SearchFilterChip(kind: .includeDeleted, label: L10n.string("Include deleted")))
         }
         return chips
     }

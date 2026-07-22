@@ -37,13 +37,13 @@ struct LocalSourcePreflightInspector: SourcePreflightInspecting {
         }
         guard FileManager.default.fileExists(atPath: sourceURL.path) else {
             throw ImportSingleFilePreflightError(
-                .sourceUnavailable("来源文件已消失，请重试 preview"),
+                .sourceUnavailable(L10n.string("import.source.disappeared")),
                 sourceSizeBytes: nil
             )
         }
         guard FileManager.default.isReadableFile(atPath: sourceURL.path) else {
             throw ImportSingleFilePreflightError(
-                .sourceUnavailable("来源文件不可读，请检查权限"),
+                .sourceUnavailable(L10n.string("import.source.unreadable")),
                 sourceSizeBytes: nil
             )
         }
@@ -54,7 +54,7 @@ struct LocalSourcePreflightInspector: SourcePreflightInspecting {
         ])
         guard values.isRegularFile == true else {
             throw ImportSingleFilePreflightError(
-                .sourceUnavailable("只支持单文件导入"),
+                .sourceUnavailable(L10n.string("import.source.singleFileOnly")),
                 sourceSizeBytes: nil
             )
         }
@@ -97,7 +97,10 @@ private func scanFolderSync(
             rows: [],
             folderCount: 0,
             skippedRules: [],
-            errors: [ImportFolderScanError(path: rootURL.path, message: "无法读取文件夹")]
+            errors: [ImportFolderScanError(
+                path: rootURL.path,
+                message: L10n.string("import.folder.unreadable")
+            )]
         )
     }
 
@@ -143,7 +146,7 @@ private struct ImportFolderScanAccumulator {
         followSymlinks: Bool
     ) {
         guard let values = try? url.resourceValues(forKeys: LocalImportFolderScannerKeys.resourceKeys) else {
-            record(error: nil, at: url, fallbackMessage: "无法读取文件属性")
+            record(error: nil, at: url, fallbackMessage: L10n.string("import.folder.attributesUnreadable"))
             return
         }
 
@@ -162,7 +165,7 @@ private struct ImportFolderScanAccumulator {
     mutating func record(error: Error?, at url: URL, fallbackMessage: String? = nil) {
         errors.append(ImportFolderScanError(
             path: url.path,
-            message: fallbackMessage ?? error?.localizedDescription ?? "无法读取文件夹"
+            message: fallbackMessage ?? error?.localizedDescription ?? L10n.string("import.folder.unreadable")
         ))
     }
 
@@ -245,7 +248,7 @@ private struct ImportFolderScanAccumulator {
         if values.isDirectory == true {
             enumerator.skipDescendants()
         }
-        incrementSkip("隐藏文件")
+        incrementSkip(L10n.string("import.folder.hiddenFiles"))
         return true
     }
 
@@ -259,7 +262,7 @@ private struct ImportFolderScanAccumulator {
         if values.isDirectory == true {
             enumerator.skipDescendants()
         }
-        incrementSkip("符号链接")
+        incrementSkip(L10n.string("import.folder.symbolicLinks"))
         return true
     }
 

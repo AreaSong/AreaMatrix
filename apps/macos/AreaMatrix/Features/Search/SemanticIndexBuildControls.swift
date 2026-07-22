@@ -94,7 +94,7 @@ private extension SemanticSearchResultPageSnapshot {
         var copy = self
         copy.indexStatus = status
         copy.fallbackReason = status == .canceled ? .semanticIndexNotReady : fallbackReason
-        copy.fallbackMessage = status == .canceled ? "Semantic index build canceled." : fallbackMessage
+        copy.fallbackMessage = status == .canceled ? L10n.string("Semantic index build canceled.") : fallbackMessage
         return copy
     }
 }
@@ -102,18 +102,22 @@ private extension SemanticSearchResultPageSnapshot {
 private enum SemanticIndexBuildControlError {
     static let pauseUnsupported = CoreErrorMappingSnapshot(
         kind: .config,
-        userMessage: "Pause index build requires a Core pause API that is not available in semantic-search-core.",
+        userMessage: L10n.string(
+            "Pause index build requires a Core pause API that is not available in semantic-search-core."
+        ),
         severity: .high,
-        suggestedAction: "Use Cancel index build to stop the active build, or retry after Core exposes pause support.",
+        suggestedAction: L10n.string(
+            "Use Cancel index build to stop the active build, or retry after Core exposes pause support."
+        ),
         recoverability: .userActionRequired,
         rawContext: "semantic-search pause index build missing Core API"
     )
 
     static let noActiveBuild = CoreErrorMappingSnapshot(
         kind: .validation,
-        userMessage: "No active semantic index build is available to cancel.",
+        userMessage: L10n.string("No active semantic index build is available to cancel."),
         severity: .medium,
-        suggestedAction: "Start a semantic index build before canceling.",
+        suggestedAction: L10n.string("Start a semantic index build before canceling."),
         recoverability: .refreshRequired,
         rawContext: "semantic-search cancel index build without active task"
     )

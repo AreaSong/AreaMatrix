@@ -226,10 +226,10 @@ private struct TagChipView: View {
                 }
                 .buttonStyle(.borderless)
                 .disabled(disabled)
-                .accessibilityLabel("Remove tag \(tag.displayName)")
+                .accessibilityLabel(L10n.format("detail.tag.remove.accessibilityLabel", tag.displayName))
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Tag \(tag.displayName)")
+        .accessibilityLabel(L10n.format("detail.tag.accessibilityLabel", tag.displayName))
     }
 }

@@ -15,7 +15,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
         )
         var draft = RepositorySettingsConfigDraft(config: current)
         draft.overviewOutput = .rootAreaMatrixFile
-        draft.locale = .en
+        draft.contentLanguage = .en
         draft.iCloudWarn = false
         draft.fallbackToInbox = false
 
@@ -49,12 +49,12 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
             accessibilityAnnouncer: announcer
         )
         var draft = RepositorySettingsConfigDraft(config: current)
-        draft.locale = .zhCN
+        draft.contentLanguage = .en
 
         let didSave = await model.save(draft: draft, currentConfig: current)
 
         XCTAssertFalse(didSave)
-        await updater.assertRequestedConfigValues(\.locale, ["zh-CN"])
+        await updater.assertRequestedConfigValues(\.locale, ["en"])
         await mapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
         XCTAssertEqual(model.saveState, .failed(RepositorySettingsConfigError(
             message: "权限错误",

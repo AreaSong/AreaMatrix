@@ -1,19 +1,57 @@
 import SwiftUI
 
 enum SyncConflictReviewCopy {
-    static let title = "Review sync conflict"
-    static let subtitle = "Compare detected versions before choosing a resolution."
-    static let loadingTitle = "Loading conflict details..."
-    static let emptyTitle = "Conflict no longer exists."
-    static let errorTitle = "Unable to load sync conflict"
-    static let backAction = "Back to Needs Review"
-    static let refreshAction = "Refresh"
-    static let closeAction = "Close"
-    static let applyAction = "Apply resolution"
-    static let applyingAction = "Applying resolution..."
-    static let impactTitle = "Impact summary"
-    static let resolutionTitle = "Resolution"
-    static let replaceConfirmAction = "Confirm replace plan"
+    static var title: String {
+        L10n.string("Review sync conflict")
+    }
+
+    static var subtitle: String {
+        L10n.string("Compare detected versions before choosing a resolution.")
+    }
+
+    static var loadingTitle: String {
+        L10n.string("Loading conflict details...")
+    }
+
+    static var emptyTitle: String {
+        L10n.string("Conflict no longer exists.")
+    }
+
+    static var errorTitle: String {
+        L10n.string("Unable to load sync conflict")
+    }
+
+    static var backAction: String {
+        L10n.string("Back to Needs Review")
+    }
+
+    static var refreshAction: String {
+        L10n.string("Refresh")
+    }
+
+    static var closeAction: String {
+        L10n.string("Close")
+    }
+
+    static var applyAction: String {
+        L10n.string("Apply resolution")
+    }
+
+    static var applyingAction: String {
+        L10n.string("Applying resolution...")
+    }
+
+    static var impactTitle: String {
+        L10n.string("Impact summary")
+    }
+
+    static var resolutionTitle: String {
+        L10n.string("Resolution")
+    }
+
+    static var replaceConfirmAction: String {
+        L10n.string("Confirm replace plan")
+    }
 }
 
 enum SyncConflictReviewAccessibilityID {
@@ -149,7 +187,11 @@ private extension SyncConflictReviewView {
             VStack(spacing: 4) {
                 Text(mapping.userMessage)
                 Text(mapping.suggestedAction)
-                Text("Severity: \(mapping.severity.rawValue); Recoverability: \(mapping.recoverability.rawValue)")
+                Text(L10n.format(
+                    "syncConflict.error.severityRecoverability",
+                    mapping.severity.rawValue,
+                    mapping.recoverability.rawValue
+                ))
                 if !mapping.rawContext.isEmpty {
                     Text(mapping.rawContext)
                         .font(.system(.caption, design: .monospaced))
@@ -219,27 +261,33 @@ private extension SyncConflictReviewView {
             HStack(spacing: 8) {
                 ProgressView()
                     .controlSize(.small)
-                Text("Building impact for \(strategy.title)...")
+                Text(L10n.format("syncConflict.impact.building", strategy.title))
             }
             .foregroundStyle(.secondary)
         case let .loaded(preview):
             previewSummary(preview)
         case let .failed(strategy, mapping):
-            SyncConflictReviewMappedFailure(title: "Could not build \(strategy.title) impact.", mapping: mapping)
+            SyncConflictReviewMappedFailure(
+                title: L10n.format("syncConflict.impact.buildFailed", strategy.title),
+                mapping: mapping
+            )
         }
     }
 
     private func previewSummary(_ preview: SyncConflictResolutionPreviewSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             SyncConflictReviewMetadataGrid(rows: [
-                ("Strategy", preview.resolution.title),
-                ("Status after apply", preview.statusAfter.displayName),
-                ("Canonical path", preview.canonicalPath ?? "Unchanged"),
-                ("Change log", preview.changeLogAction),
-                ("Affected records", SyncConflictReviewDisplayValue.list(preview.affectedFileIDs.map(String.init))),
-                ("Kept paths", SyncConflictReviewDisplayValue.list(preview.keptPaths)),
-                ("Retained paths", SyncConflictReviewDisplayValue.list(preview.retainedPaths)),
-                ("Trash paths", SyncConflictReviewDisplayValue.list(preview.plannedTrashPaths))
+                (L10n.string("Strategy"), preview.resolution.title),
+                (L10n.string("Status after apply"), preview.statusAfter.displayName),
+                (L10n.string("Canonical path"), preview.canonicalPath ?? L10n.string("Unchanged")),
+                (L10n.string("Change log"), preview.changeLogAction),
+                (
+                    L10n.string("Affected records"),
+                    SyncConflictReviewDisplayValue.list(preview.affectedFileIDs.map(String.init))
+                ),
+                (L10n.string("Kept paths"), SyncConflictReviewDisplayValue.list(preview.keptPaths)),
+                (L10n.string("Retained paths"), SyncConflictReviewDisplayValue.list(preview.retainedPaths)),
+                (L10n.string("Trash paths"), SyncConflictReviewDisplayValue.list(preview.plannedTrashPaths))
             ])
             if preview.requiresReplaceConfirmation {
                 Label(
@@ -279,8 +327,11 @@ private extension SyncConflictReviewView {
         case let .succeeded(report):
             SyncConflictReviewApplySuccess(report: report)
         case let .failed(strategy, mapping):
-            SyncConflictReviewMappedFailure(title: "Apply failed for \(strategy.title).", mapping: mapping)
-                .accessibilityIdentifier(SyncConflictReviewAccessibilityID.applyFailure)
+            SyncConflictReviewMappedFailure(
+                title: L10n.format("syncConflict.apply.failed", strategy.title),
+                mapping: mapping
+            )
+            .accessibilityIdentifier(SyncConflictReviewAccessibilityID.applyFailure)
         }
     }
 
@@ -299,7 +350,7 @@ private extension SyncConflictReviewView {
                 }
             }
             .disabled(!model.canApplyResolution)
-            .help(model.applyDisabledReason ?? "Apply the selected Core sync conflict resolution.")
+            .help(model.applyDisabledReason ?? L10n.string("Apply the selected Core sync conflict resolution."))
             .keyboardShortcut(.defaultAction)
             .accessibilityIdentifier(SyncConflictReviewAccessibilityID.apply)
             Button(SyncConflictReviewCopy.closeAction, action: onClose)

@@ -56,9 +56,9 @@ extension CoreErrorMappingSnapshot {
     static func batchTagFileSelectionMissing() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .fileNotFound,
-            userMessage: "No files selected",
+            userMessage: L10n.string("No files selected"),
             severity: .medium,
-            suggestedAction: "Select files before adding tags.",
+            suggestedAction: L10n.string("Select files before adding tags."),
             recoverability: .userActionRequired,
             rawContext: "batch-add-tags batch-add-tags-core batch_add_tags"
         )
@@ -94,14 +94,23 @@ enum BatchPendingTagStatus: String, Equatable {
     var preventsApply: Bool {
         self != .ready
     }
+
+    var displayName: String {
+        switch self {
+        case .ready: L10n.string("Ready")
+        case .alreadySelected: L10n.string("Already selected")
+        case .invalid: L10n.string("Invalid")
+        case .blocked: L10n.string("Blocked")
+        }
+    }
 }
 
 enum BatchAddTagsEntryPolicy {
     static func openHelp(disabledReason: String?) -> String {
         MainFileBatchEntryPolicy.openHelp(
             disabledReason: disabledReason,
-            defaultHelp: "Add tags to the selected files",
-            blockedHelpSuffix: "You can still review selected files and tag candidates."
+            defaultHelp: L10n.string("Add tags to the selected files"),
+            blockedHelpSuffix: L10n.string("You can still review selected files and tag candidates.")
         )
     }
 }
@@ -180,7 +189,7 @@ enum BatchTagValidation {
             return BatchTagPendingState(
                 input: input,
                 pendingTags: pendingTags,
-                fieldError: "Tag store is read-only."
+                fieldError: L10n.string("Tag store is read-only.")
             )
         }
         guard let normalizedValue = TagInputNormalization.normalizedValue(input) else {
@@ -192,10 +201,18 @@ enum BatchTagValidation {
         }
         let value = matchingKnownTagValue(normalizedValue, catalog: catalog) ?? normalizedValue
         if pendingTags.contains(where: { normalized($0) == value }) {
-            return BatchTagPendingState(input: input, pendingTags: pendingTags, fieldError: "Tag already selected.")
+            return BatchTagPendingState(
+                input: input,
+                pendingTags: pendingTags,
+                fieldError: L10n.string("Tag already selected.")
+            )
         }
         if catalog?.allKnownTags.first(where: { $0.value == value })?.disabled == true {
-            return BatchTagPendingState(input: input, pendingTags: pendingTags, fieldError: "Tag store is read-only.")
+            return BatchTagPendingState(
+                input: input,
+                pendingTags: pendingTags,
+                fieldError: L10n.string("Tag store is read-only.")
+            )
         }
         return BatchTagPendingState(input: "", pendingTags: pendingTags + [value], fieldError: nil)
     }
@@ -204,13 +221,21 @@ enum BatchTagValidation {
         var seenTags: Set<String> = []
         return pendingTags.map { tag in
             guard disabledReason == nil else {
-                return BatchPendingTagChip(value: tag, status: .blocked, message: "Tag store is read-only.")
+                return BatchPendingTagChip(
+                    value: tag,
+                    status: .blocked,
+                    message: L10n.string("Tag store is read-only.")
+                )
             }
             guard let normalized = TagInputNormalization.normalizedValue(tag) else {
                 return BatchPendingTagChip(value: tag, status: .invalid, message: TagInputNormalization.invalidMessage)
             }
             if seenTags.contains(normalized) {
-                return BatchPendingTagChip(value: tag, status: .alreadySelected, message: "Tag already selected.")
+                return BatchPendingTagChip(
+                    value: tag,
+                    status: .alreadySelected,
+                    message: L10n.string("Tag already selected.")
+                )
             }
             seenTags.insert(normalized)
             return BatchPendingTagChip(value: normalized, status: .ready, message: nil)

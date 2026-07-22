@@ -45,7 +45,7 @@ struct AIClassificationSuggestionRouteView: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "AI Category Suggestion", pageID: "ai-category-suggestion") {
+        MainFileActionSheetContainer(title: L10n.string("AI Category Suggestion"), pageID: "ai-category-suggestion") {
             if let file {
                 AIClassificationSuggestionPanel(
                     model: model,
@@ -304,16 +304,16 @@ struct AIClassificationSuggestionPanel: View {
 
     private func actionTitle(for action: AiFallbackAction) -> String {
         switch action {
-        case .retry: "Retry"
-        case .retryLater: "Retry later"
-        case .openAiSettings: "Open AI settings"
-        case .openLocalModelStatus: "Open local model status"
-        case .configureRemoteAi: "Configure remote AI"
-        case .viewPrivacyRule: "View privacy rule"
-        case .viewCallLog: "View call log"
-        case .buildSemanticIndex: "Build semantic index"
-        case .useNormalSearch: "Use normal search"
-        case .classifyManually: "Classify manually"
+        case .retry: L10n.string("Retry")
+        case .retryLater: L10n.string("Retry later")
+        case .openAiSettings: L10n.string("Open AI settings")
+        case .openLocalModelStatus: L10n.string("Open local model status")
+        case .configureRemoteAi: L10n.string("Configure remote AI")
+        case .viewPrivacyRule: L10n.string("View privacy rule")
+        case .viewCallLog: L10n.string("View call log")
+        case .buildSemanticIndex: L10n.string("Build semantic index")
+        case .useNormalSearch: L10n.string("Use normal search")
+        case .classifyManually: L10n.string("Classify manually")
         }
     }
 
@@ -354,7 +354,9 @@ struct AISuggestionConfidenceBadge: View {
     }
 
     private var label: String {
-        lowConfidence ? "Low confidence \(percent)%" : "Confidence \(percent)%"
+        lowConfidence
+            ? L10n.format("ai.classification.lowConfidencePercent", percent)
+            : L10n.format("ai.classification.confidencePercent", percent)
     }
 
     private var percent: Int {

@@ -96,10 +96,12 @@ extension AdvancedSettingsPane {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: String(localized: "settings.page.advanced"), subtitle: model.repoPath) {
+        SettingsPageHeader(title: L10n.string("settings.page.advanced"), subtitle: model.repoPath) {
             if model.isSaving || model.loadState == .loading {
                 SettingsHeaderProgressIndicator(
-                    label: model.isSaving ? "Saving advanced settings" : "Loading advanced settings"
+                    label: model.isSaving
+                        ? L10n.string("Saving advanced settings")
+                        : L10n.string("Loading advanced settings")
                 )
             } else {
                 Button {
@@ -127,12 +129,12 @@ extension AdvancedSettingsPane {
     }
 
     private var loadingContent: some View {
-        SettingsPageLoadingContent(title: String(localized: "settings.loading.advanced"))
+        SettingsPageLoadingContent(title: L10n.string("settings.loading.advanced"))
     }
 
     private func loadErrorContent(_ error: AdvancedSettingsError) -> some View {
         SettingsPageErrorContent(
-            title: String(localized: "settings.error.loadAdvanced"),
+            title: L10n.string("settings.error.loadAdvanced"),
             message: error.message,
             recovery: error.recovery
         ) {
@@ -176,9 +178,13 @@ extension AdvancedSettingsPane {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            SettingsProgressBanner(title: "Preparing repository diagnostics...")
+            SettingsProgressBanner(title: L10n.string("Preparing repository diagnostics..."))
         case let .collected(snapshot):
-            SettingsStatusBanner(title: "Diagnostics exported", systemImage: "checkmark.circle", tint: .green) {
+            SettingsStatusBanner(
+                title: L10n.string("Diagnostics exported"),
+                systemImage: "checkmark.circle",
+                tint: .green
+            ) {
                 Text(snapshot.snapshotPath)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -335,6 +341,8 @@ extension AdvancedSettingsPane {
     }
 
     private var diagnosticsButtonTitle: String {
-        model.diagnosticsState.isCollecting ? "Exporting diagnostics..." : "Export diagnostics..."
+        model.diagnosticsState.isCollecting
+            ? L10n.string("Exporting diagnostics...")
+            : L10n.string("Export diagnostics...")
     }
 }

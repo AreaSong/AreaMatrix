@@ -134,7 +134,7 @@ enum BatchChangeCategoryUndoAction {
                 shouldRefreshConsumer: report?.shouldRefreshConsumerAfterApply == true,
                 undoToken: report?.undoToken,
                 failure: failure,
-                unavailableResultReason: "Undo is unavailable for this result."
+                unavailableResultReason: L10n.string("Undo is unavailable for this result.")
             ),
             undoStore: undoStore,
             errorMapper: errorMapper
@@ -217,8 +217,8 @@ enum BatchChangeCategoryEntryPolicy {
     static func openHelp(disabledReason: String?) -> String {
         MainFileBatchEntryPolicy.openHelp(
             disabledReason: disabledReason,
-            defaultHelp: "Change category for the selected files",
-            blockedHelpSuffix: "You can still preview selected files and category impact."
+            defaultHelp: L10n.string("Change category for the selected files"),
+            blockedHelpSuffix: L10n.string("You can still preview selected files and category impact.")
         )
     }
 }
@@ -254,7 +254,7 @@ enum BatchChangeCategorySelection {
                 if lhs.value != rhs.value { return lhs.value > rhs.value }
                 return lhs.key.localizedCaseInsensitiveCompare(rhs.key) == .orderedAscending
             }
-            .map { "\($0.key) (\($0.value))" }
+            .map { L10n.format("file-actions.category-distribution.item", $0.key, $0.value) }
             .joined(separator: ", ")
     }
 

@@ -55,9 +55,9 @@ struct AISettingsPane: View {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: String(localized: "settings.page.ai"), subtitle: model.repoPath) {
+        SettingsPageHeader(title: L10n.string("settings.page.ai"), subtitle: model.repoPath) {
             if model.isSaving {
-                SettingsHeaderProgressIndicator(label: "Saving AI settings")
+                SettingsHeaderProgressIndicator(label: L10n.string("Saving AI settings"))
             }
         }
     }
@@ -117,7 +117,7 @@ private extension AISettingsPane {
 
 private extension AISettingsPane {
     var statusSection: some View {
-        AdvancedSettingsSection(title: "AI features") {
+        AdvancedSettingsSection(title: L10n.string("AI features")) {
             Toggle("Enable AI features", isOn: aiEnabledBinding)
                 .disabled(writesDisabled)
             Text(statusText)
@@ -128,9 +128,9 @@ private extension AISettingsPane {
     }
 
     var providerSection: some View {
-        AdvancedSettingsSection(title: "Providers") {
-            AdvancedSettingsKeyValueRow(label: "Local model", value: localModelLabel)
-            AdvancedSettingsKeyValueRow(label: "Remote model", value: remoteModelLabel)
+        AdvancedSettingsSection(title: L10n.string("Providers")) {
+            AdvancedSettingsKeyValueRow(label: L10n.string("Local model"), value: localModelLabel)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Remote model"), value: remoteModelLabel)
             Picker("Provider preference", selection: providerPreferenceBinding) {
                 ForEach(AISettingsProviderPreference.allCases) { preference in
                     Text(preference.label).tag(preference)
@@ -149,7 +149,7 @@ private extension AISettingsPane {
     }
 
     var featureSection: some View {
-        AdvancedSettingsSection(title: "Feature toggles") {
+        AdvancedSettingsSection(title: L10n.string("Feature toggles")) {
             ForEach(featureRows) { row in
                 AISettingsFeatureRow(row: row, isOn: featureBinding(row.feature))
                     .disabled(writesDisabled || !isFeatureEditable(row))
@@ -158,16 +158,16 @@ private extension AISettingsPane {
     }
 
     var privacySection: some View {
-        AdvancedSettingsSection(title: "Privacy") {
-            AdvancedSettingsKeyValueRow(label: "Privacy rules", value: privacyRulesLabel)
-            AdvancedSettingsKeyValueRow(label: "Remote AI", value: remoteScopeLabel)
+        AdvancedSettingsSection(title: L10n.string("Privacy")) {
+            AdvancedSettingsKeyValueRow(label: L10n.string("Privacy rules"), value: privacyRulesLabel)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Remote AI"), value: remoteScopeLabel)
             Button("Manage privacy rules", action: openPrivacyRules)
                 .accessibilityIdentifier("ai-privacy-rules-ai-settings-config-manage-privacy-rules")
         }
     }
 
     var logSection: some View {
-        AdvancedSettingsSection(title: "Log") {
+        AdvancedSettingsSection(title: L10n.string("Log")) {
             Button("View AI call log") { model.openCallLogEntry(); isCallLogPresented = true }
                 .accessibilityIdentifier("ai-call-log-ai-call-log-core-open-ai-call-log")
             Text("See when AI was used and whether it was local or remote.")
@@ -177,7 +177,7 @@ private extension AISettingsPane {
     }
 
     var safetySection: some View {
-        AdvancedSettingsSection(title: "Safety") {
+        AdvancedSettingsSection(title: L10n.string("Safety")) {
             Button("Pause all AI", action: pauseAllAI)
                 .disabled(writesDisabled || !(model.snapshot?.config.aiEnabled ?? false))
             Button("Clear AI generated suggestions...", action: model.openCallLogEntry)
@@ -196,36 +196,38 @@ private extension AISettingsPane {
 
     var statusText: String {
         guard let config = model.snapshot?.config else {
-            return "Loading AI settings..."
+            return L10n.string("Loading AI settings...")
         }
         if !config.aiEnabled {
-            return "AI is off. AreaMatrix will not call local or remote models."
+            return L10n.string("AI is off. AreaMatrix will not call local or remote models.")
         }
         if config.remoteAIAllowed {
-            return "Remote AI is enabled for selected features."
+            return L10n.string("Remote AI is enabled for selected features.")
         }
-        return "Local AI is enabled. Files stay on this device."
+        return L10n.string("Local AI is enabled. Files stay on this device.")
     }
 
     var localModelLabel: String {
-        guard let config = model.snapshot?.config else { return "Loading" }
-        return config.localAIEnabled ? "Ready" : "Not installed"
+        guard let config = model.snapshot?.config else { return L10n.string("Loading") }
+        return config.localAIEnabled ? L10n.string("Ready") : L10n.string("Not installed")
     }
 
     var remoteModelLabel: String {
-        guard let config = model.snapshot?.config else { return "Loading" }
-        return config.remoteAIAllowed ? "Configured" : "Off"
+        guard let config = model.snapshot?.config else { return L10n.string("Loading") }
+        return config.remoteAIAllowed ? L10n.string("Configured") : L10n.string("Off")
     }
 
     var privacyRulesLabel: String {
-        guard let config = model.snapshot?.config else { return "Loading" }
-        guard config.privacyGateEnabled else { return "Off" }
-        return config.privacyPolicyRef ?? "Default gate enabled"
+        guard let config = model.snapshot?.config else { return L10n.string("Loading") }
+        guard config.privacyGateEnabled else { return L10n.string("Off") }
+        return config.privacyPolicyRef ?? L10n.string("Default gate enabled")
     }
 
     var remoteScopeLabel: String {
-        guard let config = model.snapshot?.config else { return "Loading" }
-        return config.remoteAIAllowed ? "Allowed for selected features" : "Remote AI is not configured"
+        guard let config = model.snapshot?.config else { return L10n.string("Loading") }
+        return config.remoteAIAllowed
+            ? L10n.string("Allowed for selected features")
+            : L10n.string("Remote AI is not configured")
     }
 
     var featureRows: [AISettingsFeatureRowSnapshot] {
@@ -267,13 +269,13 @@ private extension AISettingsPane {
         )
     }
 
-    func isFeatureEditable(_ row: AISettingsFeatureRowSnapshot) -> Bool {
-        model.snapshot?.config.aiEnabled == true && row.disabledReason != "AI is off"
+    func isFeatureEditable(_: AISettingsFeatureRowSnapshot) -> Bool {
+        model.snapshot?.config.aiEnabled == true
     }
 
     func remoteScopeText(_ capability: AISettingsCapabilitySnapshot) -> String {
-        if capability.remoteAllowed { return "Remote scope allowed" }
-        return "Remote scope blocked"
+        if capability.remoteAllowed { return L10n.string("Remote scope allowed") }
+        return L10n.string("Remote scope blocked")
     }
 }
 
@@ -324,7 +326,7 @@ private extension AISettingsPane {
 
 private struct AISettingsLoadingView: View {
     var body: some View {
-        AdvancedSettingsSection(title: "AI features") {
+        AdvancedSettingsSection(title: L10n.string("AI features")) {
             ProgressView("Loading AI settings...")
             Text("AI controls are disabled until settings finish loading.")
                 .font(.callout)
@@ -375,7 +377,7 @@ private struct AISettingsFeatureRow: View {
     private var accessibilityLabel: String {
         [
             row.feature.title,
-            row.enabled ? "on" : "off",
+            row.enabled ? L10n.string("On") : L10n.string("Off"),
             row.providerLabel,
             row.remoteScope,
             row.disabledReason ?? ""

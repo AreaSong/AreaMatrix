@@ -130,7 +130,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         XCTAssertEqual(result.total, 2)
         XCTAssertEqual(result.failedCount, 0)
         assertImportRowStatusTags(importModel.rows, ["IMPORTED", "IMPORTED"])
-        assertImportStatusMessage(importModel.status, "批量导入完成：成功 2，失败 0")
+        assertImportStatusMessage(importModel.status, "Batch import completed: 2 succeeded, 0 failed")
         XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 2,
             total: 2,
@@ -169,7 +169,7 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         XCTAssertEqual(result.total, 2)
         assertImportRowStatusTags(model.rows, ["ERROR", "IMPORTED"])
         assertImportRowStatusDetails(model.rows, [0: "无访问权限"])
-        assertImportStatusMessage(model.status, "批量导入完成：成功 1，失败 1")
+        assertImportStatusMessage(model.status, "Batch import completed: 1 succeeded, 1 failed")
         XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 1,
             failed: 1,
@@ -277,13 +277,20 @@ final class ImportBatchStorageModeTests: XCTestCase {
 
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         model.selectedStorageMode = .move
-        XCTAssertEqual(model.storageModeRiskMessage, "Move 模式会移走源文件；请确认批量队列只包含要移入资料库的文件。")
+        XCTAssertEqual(
+            model.storageModeRiskMessage,
+            "Move removes source files from their current locations. " +
+                "Confirm the batch contains only files you want moved into the repository."
+        )
         assertImportEnabled(model.importDisabledReason)
         let moved = await model.importReadyFiles(selectedDestination: .autoClassify)
         XCTAssertEqual(moved?.succeededEntries.count, 1)
         model.applyPreviewRows(rows, request: request, selectedDestination: .autoClassify)
         model.selectedStorageMode = .indexOnly
-        XCTAssertEqual(model.storageModeRiskMessage, "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。")
+        XCTAssertEqual(
+            model.storageModeRiskMessage,
+            "Index-only does not copy files. If a source is moved or deleted, it will appear missing."
+        )
         assertImportEnabled(model.importDisabledReason)
         let indexed = await model.importReadyFiles(selectedDestination: .autoClassify)
         XCTAssertEqual(indexed?.succeededEntries.count, 1)

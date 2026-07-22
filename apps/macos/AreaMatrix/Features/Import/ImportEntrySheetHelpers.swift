@@ -16,12 +16,12 @@ enum ImportEntrySheetHelper {
 
     static func primaryFileLabel(urls: [URL]) -> String {
         guard let firstURL = urls.first else {
-            return "No valid file URL"
+            return L10n.string("No valid file URL")
         }
         if urls.count == 1 {
             return firstURL.path
         }
-        return "\(firstURL.path) and \(urls.count - 1) more"
+        return L10n.format("import.entry.additional-files", firstURL.path, urls.count - 1)
     }
 }
 
@@ -104,7 +104,7 @@ struct ImportBatchDestinationSection: View {
         VStack(alignment: .leading, spacing: 4) {
             Picker("存储模式", selection: $selectedStorageMode) {
                 ForEach(ImportSingleFileStorageMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+                    Text(mode.displayName).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
@@ -134,7 +134,7 @@ struct ImportBatchRowsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            DisclosureGroup("查看 \(itemCount) 个项目") {
+            DisclosureGroup(L10n.plural("import.batch.view-items", count: itemCount)) {
                 Table(rows) {
                     TableColumn("原文件名") { row in
                         sourceCell(for: row)
@@ -168,7 +168,7 @@ struct ImportBatchRowsSection: View {
     private func categoryPicker(for row: ImportBatchCopyImportRow) -> some View {
         Picker("建议分类", selection: categoryBinding(for: row)) {
             ForEach(categoryOptions(row, selectedDestination), id: \.self) {
-                Text($0).tag($0)
+                Text($0 == "repo root" ? L10n.string("repo root") : $0).tag($0)
             }
         }
         .labelsHidden()
@@ -178,7 +178,7 @@ struct ImportBatchRowsSection: View {
 
     private func statusCell(for row: ImportBatchCopyImportRow) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(row.status.tag)
+            Text(L10n.string(row.status.tag))
                 .font(.caption.weight(.semibold))
             if let detail = row.status.detail {
                 Text(detail)

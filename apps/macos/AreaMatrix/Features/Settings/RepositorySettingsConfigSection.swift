@@ -36,11 +36,14 @@ struct RepositorySettingsConfigSection: View {
     @ViewBuilder
     private var content: some View {
         if let config {
-            RepositorySettingsConfigValueRow(label: "Default import mode", value: config.defaultMode)
-            RepositorySettingsConfigValueRow(label: "AI", value: config.aiEnabled ? "Enabled" : "Disabled")
+            RepositorySettingsConfigValueRow(label: L10n.string("Default import mode"), value: config.defaultMode)
             RepositorySettingsConfigValueRow(
-                label: "Replace default",
-                value: config.allowReplaceDuringImport ? "Allowed" : "Disabled"
+                label: L10n.string("AI"),
+                value: config.aiEnabled ? L10n.string("Enabled") : L10n.string("Disabled")
+            )
+            RepositorySettingsConfigValueRow(
+                label: L10n.string("Replace default"),
+                value: config.allowReplaceDuringImport ? L10n.string("Allowed") : L10n.string("Disabled")
             )
             controls
             saveFeedback
@@ -58,9 +61,9 @@ struct RepositorySettingsConfigSection: View {
                     Text(output.label).tag(output)
                 }
             }
-            Picker("Locale", selection: $draft.locale) {
-                ForEach(RepositorySettingsConfigLocale.allCases) { locale in
-                    Text(locale.label).tag(locale)
+            Picker(L10n.string("settings.language.content.title"), selection: $draft.contentLanguage) {
+                ForEach(RepositoryContentLanguage.allCases) { language in
+                    Text(L10n.string(language.labelKey)).tag(language)
                 }
             }
             Toggle("Show cloud location warnings", isOn: $draft.iCloudWarn)
@@ -127,17 +130,20 @@ struct RepositorySettingsConfigSection: View {
     }
 
     private var saveTitle: String {
-        model.saveState.isSaving ? "Saving repository settings..." : "Save repository settings"
+        model.saveState.isSaving
+            ? L10n.string("Saving repository settings...")
+            : L10n.string("Save repository settings")
     }
 
     private var editingDisabledReason: String? {
         switch capabilityState {
         case .loading:
-            "Repository access capability is still loading."
+            L10n.string("Repository access capability is still loading.")
         case let .loaded(capabilities):
             capabilities.securityBookmark.uiEnabled
                 ? nil
-                : capabilities.securityBookmark.reason ?? "Repository access is not available on this platform."
+                : capabilities.securityBookmark.reason
+                ?? L10n.string("Repository access is not available on this platform.")
         case let .failed(_, error):
             error.recovery
         }
@@ -157,7 +163,7 @@ private struct RepositorySettingsConfigValueRow: View {
                 .textSelection(.enabled)
                 .lineLimit(2)
                 .truncationMode(.middle)
-                .accessibilityLabel("\(label): \(value)")
+                .accessibilityLabel(L10n.format("settings.repository.valueAccessibility", label, value))
         }
         .font(.callout)
     }

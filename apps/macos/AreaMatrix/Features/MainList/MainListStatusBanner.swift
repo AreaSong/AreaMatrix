@@ -18,39 +18,35 @@ enum MainListStatusBanner: Equatable {
     var message: String {
         switch self {
         case .renamedPreservedSelection:
-            return "File renamed. The same file remains selected."
+            return L10n.string("File renamed. The same file remains selected.")
         case .removedSelectedFile:
-            return "Selected file is missing or was removed outside AreaMatrix."
+            return L10n.string("Selected file is missing or was removed outside AreaMatrix.")
         case .relinkedMissingFile:
-            return "Missing file relinked. AreaMatrix updated metadata without moving or modifying the selected file."
+            return L10n
+                .string(
+                    "Missing file relinked. AreaMatrix updated metadata without moving or modifying the selected file."
+                )
         case .unsavedNoteDraftPreserved:
-            return "无法保存笔记。草稿已保留，返回该文件的 Note tab 后可继续重试。"
+            return L10n.string("无法保存笔记。草稿已保留，返回该文件的 Note tab 后可继续重试。")
         case .movedFileToTrash:
-            return "Moved to Trash. Metadata retained for traceability."
+            return L10n.string("Moved to Trash. Metadata retained for traceability.")
         case .removedFileFromIndex:
-            return "Removed from AreaMatrix index. Original file was not deleted."
+            return L10n.string("Removed from AreaMatrix index. Original file was not deleted.")
         case let .batchDeleted(count):
-            return "Processed \(count) selected items. List and undo action log are refreshed."
+            return L10n.format("mainList.status.batchDeleted", count)
         case let .changedCategory(_, category):
-            return "Category changed to \(category). Tree, list, detail, and change log are refreshed."
+            return L10n.format("mainList.status.categoryChanged", category)
         case let .correctedClassification(_, category, ruleConfirmationRequired):
             if ruleConfirmationRequired {
-                return """
-                Classification corrected to \(category). Current file and change log are updated; \
-                rule still needs confirmation.
-                """
+                return L10n.format("mainList.status.classificationCorrectedRuleConfirmation", category)
             }
-            return "Classification corrected to \(category). Current file and change log are updated."
+            return L10n.format("mainList.status.classificationCorrected", category)
         case let .savedClassifierRule(category):
-            return """
-            Classification rule saved for \(category). Future classification uses the updated classifier config.
-            """
+            return L10n.format("mainList.status.classificationRuleSaved", category)
         case let .changedBatchCategory(count, category):
-            return "Changed \(count) files to \(category). List and undo action log are refreshed."
+            return L10n.format("mainList.status.batchCategoryChanged", count, category)
         case let .changedCategoryTreeRefreshFailed(_, category):
-            return """
-            Category changed to \(category). List, detail, and change log are refreshed. Retry to refresh Tree counts.
-            """
+            return L10n.format("mainList.status.categoryChangedTreeRefreshFailed", category)
         case let .resolvedICloudConflict(_, strategy):
             return strategy.successMessage
         }

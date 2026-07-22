@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct GeneralSettingsLoadedContent: View {
+    @EnvironmentObject private var languageStore: AppLanguageStore
     @ObservedObject var model: GeneralSettingsModel
     let onClose: () -> Void
 
@@ -20,9 +21,9 @@ struct GeneralSettingsLoadedContent: View {
     }
 
     private var header: some View {
-        SettingsPageHeader(title: String(localized: "settings.page.general"), subtitle: model.repoPath) {
+        SettingsPageHeader(title: L10n.string("settings.page.general"), subtitle: model.repoPath) {
             if model.isSaving {
-                SettingsHeaderProgressIndicator(label: "Saving settings")
+                SettingsHeaderProgressIndicator(label: L10n.string("Saving settings"))
             }
         }
     }
@@ -54,7 +55,7 @@ struct GeneralSettingsLoadedContent: View {
     }
 
     private var storageSection: some View {
-        SettingsFormSection(title: "默认存储模式") {
+        SettingsFormSection(title: L10n.string("settings.general.section.storage")) {
             Picker("Default storage mode", selection: storageSelection) {
                 ForEach(GeneralSettingsStorageMode.allCases) { mode in
                     Text(mode.label).tag(mode)
@@ -69,7 +70,7 @@ struct GeneralSettingsLoadedContent: View {
     }
 
     private var overviewSection: some View {
-        SettingsFormSection(title: "资料库概览") {
+        SettingsFormSection(title: L10n.string("settings.general.section.overview")) {
             Picker("Repository overview output", selection: overviewSelection) {
                 Text("仅保存在 .areamatrix/generated/").tag(GeneralSettingsOverviewOutput.generatedOnly)
                 Text("同时在根目录生成 AREAMATRIX.md").tag(GeneralSettingsOverviewOutput.rootAreaMatrixFile)
@@ -83,7 +84,7 @@ struct GeneralSettingsLoadedContent: View {
     }
 
     private var ignoreRulesSection: some View {
-        SettingsFormSection(title: "忽略规则") {
+        SettingsFormSection(title: L10n.string("settings.general.section.ignoreRules")) {
             Button("Open ignore.yaml", action: model.openIgnoreRules)
                 .disabled(writesDisabled)
             Text("Missing ignore.yaml can be recreated only inside .areamatrix/.")
@@ -93,20 +94,32 @@ struct GeneralSettingsLoadedContent: View {
     }
 
     private var languageSection: some View {
-        SettingsFormSection(title: "语言") {
-            Picker("Language", selection: localeSelection) {
-                ForEach(GeneralSettingsLocale.allCases) { locale in
-                    Text(locale.label).tag(locale)
+        SettingsFormSection(title: L10n.string("settings.language.section")) {
+            Picker(L10n.string("settings.language.interface.title"), selection: interfaceLanguageSelection) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(L10n.string(language.labelKey)).tag(language)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 360)
+
+            Picker(L10n.string("settings.language.content.title"), selection: contentLanguageSelection) {
+                ForEach(RepositoryContentLanguage.allCases) { language in
+                    Text(L10n.string(language.labelKey)).tag(language)
                 }
             }
             .pickerStyle(.segmented)
             .disabled(writesDisabled)
-            .frame(maxWidth: 260)
+            .frame(maxWidth: 360)
+
+            Text(L10n.string("settings.language.content.description"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
     }
 
     private var appearanceSection: some View {
-        SettingsFormSection(title: "外观") {
+        SettingsFormSection(title: L10n.string("settings.general.section.appearance")) {
             Picker("Appearance", selection: .constant(GeneralSettingsAppearance.system)) {
                 ForEach(GeneralSettingsAppearance.allCases) { appearance in
                     Text(appearance.label).tag(appearance)
@@ -127,7 +140,7 @@ struct GeneralSettingsLoadedContent: View {
             }
             .disabled(writesDisabled)
             Spacer()
-            Button(String(localized: "settings.action.close"), action: onClose)
+            Button(L10n.string("settings.action.close"), action: onClose)
                 .keyboardShortcut(.cancelAction)
         }
         .padding(.horizontal, 34)
@@ -164,12 +177,19 @@ struct GeneralSettingsLoadedContent: View {
         )
     }
 
-    private var localeSelection: Binding<GeneralSettingsLocale> {
+    private var interfaceLanguageSelection: Binding<AppLanguage> {
         Binding(
-            get: { model.draft?.locale ?? .system },
-            set: { locale in
+            get: { languageStore.selection },
+            set: languageStore.select
+        )
+    }
+
+    private var contentLanguageSelection: Binding<RepositoryContentLanguage> {
+        Binding(
+            get: { model.draft?.contentLanguage ?? .followInterface },
+            set: { language in
                 Task {
-                    await model.updateLocale(locale)
+                    await model.updateContentLanguage(language)
                 }
             }
         )
@@ -180,8 +200,8 @@ struct GeneralSettingsLoadingContent: View {
     let onClose: () -> Void
 
     var body: some View {
-        SettingsPageLoadingContent(title: String(localized: "settings.loading.settings")) {
-            Button(String(localized: "settings.action.close"), action: onClose)
+        SettingsPageLoadingContent(title: L10n.string("settings.loading.settings")) {
+            Button(L10n.string("settings.action.close"), action: onClose)
                 .keyboardShortcut(.cancelAction)
                 .accessibilityIdentifier("general-settings-loading-close-settings")
         }

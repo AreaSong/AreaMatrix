@@ -97,7 +97,7 @@ extension RepositorySettingsModel {
             healthError = RepositorySettingsHealthError(
                 databaseStatus: .needsRecovery,
                 message: error.localizedDescription,
-                recovery: "Retry status after the repository is available."
+                recovery: L10n.string("Retry status after the repository is available.")
             )
         }
         return updatedSummary

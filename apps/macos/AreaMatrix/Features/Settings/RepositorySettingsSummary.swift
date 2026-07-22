@@ -27,11 +27,11 @@ enum RepositorySettingsDatabaseStatus: Equatable {
     var label: String {
         switch self {
         case .ok:
-            "OK"
+            L10n.string("OK")
         case .locked:
-            "Locked"
+            L10n.string("Locked")
         case .needsRecovery:
-            "Needs recovery"
+            L10n.string("Needs recovery")
         }
     }
 }
@@ -43,9 +43,9 @@ enum RepositorySettingsWatcherStatus: Equatable {
     var label: String {
         switch self {
         case .running:
-            "Running"
+            L10n.string("Running")
         case .paused:
-            "Paused"
+            L10n.string("Paused")
         }
     }
 }
@@ -94,8 +94,8 @@ struct RepositorySettingsSummary: Equatable {
         self.coreVersion = coreVersion
         overviewMode = Self.overviewModeLabel(for: config.overviewOutput)
         generatedPath = Self.generatedOverviewRelativePath
-        rootFile = config.overviewOutput == "RootAreaMatrixFile" ? "AREAMATRIX.md" : "Off"
-        readmePolicy = "User file, never managed by AreaMatrix"
+        rootFile = config.overviewOutput == "RootAreaMatrixFile" ? "AREAMATRIX.md" : L10n.string("Off")
+        readmePolicy = L10n.string("User file, never managed by AreaMatrix")
     }
 
     private static func repositoryName(for path: String) -> String {
@@ -106,19 +106,21 @@ struct RepositorySettingsSummary: Equatable {
     private static func locationType(for path: String) -> String {
         let normalizedPath = path.lowercased()
         if normalizedPath.contains("mobile documents") || normalizedPath.contains("icloud") {
-            return "iCloud Drive"
+            return L10n.string("iCloud Drive")
         }
         if normalizedPath.contains("onedrive") {
-            return "OneDrive"
+            return L10n.string("OneDrive")
         }
         if normalizedPath.hasPrefix("smb://") || normalizedPath.hasPrefix("/volumes/") {
-            return "Network mount"
+            return L10n.string("Network mount")
         }
-        return path.isEmpty ? "Unknown" : "Local folder"
+        return path.isEmpty ? L10n.string("Unknown") : L10n.string("Local folder")
     }
 
     private static func overviewModeLabel(for value: String) -> String {
-        value == "RootAreaMatrixFile" ? "Root AREAMATRIX.md enabled" : "Generated only"
+        value == "RootAreaMatrixFile"
+            ? L10n.string("Root AREAMATRIX.md enabled")
+            : L10n.string("Generated only")
     }
 }
 

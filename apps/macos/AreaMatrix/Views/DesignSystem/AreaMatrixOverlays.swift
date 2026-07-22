@@ -230,7 +230,7 @@ struct AreaMatrixScanOverlay: View {
 }
 
 struct AreaMatrixDropOverlay: View {
-    var message = "释放以交由 AreaMatrix 接管"
+    var message = L10n.string("import.drop.releaseToImport")
     var iconName = "tray.and.arrow.down"
     var accent = AreaMatrixTheme.Colors.tealBright
 

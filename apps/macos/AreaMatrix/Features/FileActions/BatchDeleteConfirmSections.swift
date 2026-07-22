@@ -11,7 +11,7 @@ struct BatchDeletePreviewSummary: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(presentation.trashSummaryText)
                 Text(presentation.indexOnlySummaryText)
-                Text("\(preview.missingCount) missing items can be removed from the index")
+                Text(L10n.plural("file-actions.delete.preview.missing-items", count: Int(preview.missingCount)))
                 Text(presentation.blockedSummaryText)
                 Text(presentation.undoSummaryText)
                 Text(presentation.safetySummaryText)
@@ -31,8 +31,8 @@ struct BatchDeletePreviewSummary: View {
         if !preview.trashAvailable {
             Label(
                 [
-                    "Trash is not available for this location.",
-                    "AreaMatrix will not permanently delete these files."
+                    L10n.string("Trash is not available for this location."),
+                    L10n.string("AreaMatrix will not permanently delete these files.")
                 ].joined(separator: " "),
                 systemImage: "trash.slash"
             )
@@ -49,7 +49,7 @@ struct BatchDeletePreviewSummary: View {
         } else {
             BatchDeletePreviewTable(items: Array(preview.items.prefix(8)))
             if preview.items.count > 8 {
-                Text("+\(preview.items.count - 8) more")
+                Text(L10n.plural("file-actions.delete.preview.more-items", count: preview.items.count - 8))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -81,9 +81,15 @@ struct BatchDeleteResultSummary: View {
             Button("View details", action: onToggleDetails)
             if showsDetails {
                 ForEach(result.itemResults.filter { $0.status == .failed }) { item in
-                    Text("File \(item.fileID): \(item.error ?? "Failed")")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        L10n.format(
+                            "file-actions.common.file-error",
+                            item.fileID,
+                            item.error ?? L10n.string("Failed")
+                        )
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
         }
@@ -105,9 +111,9 @@ struct BatchDeletePreviewTable: View {
     }
 
     private func rowText(_ item: BatchDeletePreviewItemSnapshot) -> String {
-        let name = item.currentName ?? item.currentPath ?? "File \(item.fileID)"
+        let name = item.currentName ?? item.currentPath ?? L10n.format("File %lld", item.fileID)
         let reason = item.reason.map { " - \($0)" } ?? ""
-        return "\(name): \(item.status.rawValue)\(reason)"
+        return "\(name): \(item.status.displayName)\(reason)"
     }
 }
 
@@ -142,18 +148,31 @@ extension BatchAITagSuggestionSheet {
     func impactSummary(_ review: AITagBatchSuggestionReview) -> some View {
         NeutralSummaryPanel {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(review.selectedFileCount) files will receive \(review.selectedTagCount) tags.")
-                Text("Low confidence tags are excluded.")
-                Text("Existing tags will not be duplicated.")
+                Text(L10n.format(
+                    "file-actions.ai-tag-suggestion.impact",
+                    review.selectedFileCount,
+                    review.selectedTagCount
+                ))
+                Text(L10n.string("Low confidence tags are excluded."))
+                Text(L10n.string("Existing tags will not be duplicated."))
                 Text(
-                    "Excluded: \(review.lowConfidenceExcludedCount) low confidence, \(review.duplicateCount) duplicate."
+                    L10n.format(
+                        "file-actions.ai-tag-suggestion.excluded",
+                        review.lowConfidenceExcludedCount,
+                        review.duplicateCount
+                    )
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 if review.invalidCount > 0 {
-                    Text("\(review.invalidCount) invalid or blocked suggestions must be rejected before applying.")
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                    Text(
+                        L10n.plural(
+                            "file-actions.ai-tag-suggestion.invalid-or-blocked",
+                            count: review.invalidCount
+                        )
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.red)
                 }
             }
         }
@@ -174,11 +193,17 @@ extension BatchAITagSuggestionSheet {
         VStack(alignment: .leading, spacing: 6) {
             Text("Files").font(.caption).foregroundStyle(.secondary)
             ForEach(review.files) { file in
-                Text("\(file.currentName): \(fileStatus(file, review: review))")
-                    .font(.caption)
+                Text(
+                    L10n.format(
+                        "file-actions.tag-suggestion.file-status",
+                        file.currentName,
+                        fileStatus(file, review: review)
+                    )
+                )
+                .font(.caption)
             }
             ForEach(review.loadFailures.sorted(by: { $0.key < $1.key }), id: \.key) { fileID, failure in
-                Text("File \(fileID): \(failure.userMessage)")
+                Text(L10n.format("file-actions.common.file-error", fileID, failure.userMessage))
                     .font(.caption)
                     .foregroundStyle(.red)
             }
@@ -202,14 +227,20 @@ extension BatchAITagSuggestionSheet {
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(file.currentName).font(.callout.weight(.semibold))
-            Text("Confidence threshold: \(percent(report.confidenceThreshold))% - \(routeLabel(report.route))")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text("Used fields: \(usedContextText(report.usedContext))")
+            Text(
+                L10n.format(
+                    "file-actions.tag-suggestion.confidence-threshold",
+                    Int64(percent(report.confidenceThreshold)),
+                    routeLabel(report.route)
+                )
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            Text(L10n.format("file-actions.tag-suggestion.used-fields", usedContextText(report.usedContext)))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if report.suggestions.isEmpty {
-                Text(report.skippedReason.map(skipReasonText) ?? "No tag suggestions for this file.")
+                Text(report.skippedReason.map(skipReasonText) ?? L10n.string("No tag suggestions for this file."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -231,7 +262,7 @@ extension BatchAITagSuggestionSheet {
         let draft = review.editSessionsByFileID[fileID]?.drafts.first { $0.suggestionID == suggestion.suggestionId }
         return VStack(alignment: .leading, spacing: 3) {
             HStack {
-                Button(selected ? "Reject" : "Add") {
+                Button(selected ? L10n.string("Reject") : L10n.string("Add")) {
                     actions.toggle(fileID, suggestion.suggestionId)
                 }
                 .disabled(state.isApplying || (!selected && !canAdd))
@@ -240,10 +271,15 @@ extension BatchAITagSuggestionSheet {
                 }
                 .disabled(state.isApplying || suggestion.status == .alreadyApplied)
                 Text(suggestion.displayName).font(.callout.weight(.semibold))
-                Text("\(percent(suggestion.confidence))%").font(.caption)
+                Text(
+                    L10n.format(
+                        "file-actions.common.percentage",
+                        Int64(percent(suggestion.confidence))
+                    )
+                ).font(.caption)
                 Text(candidateStatusText(suggestion)).foregroundStyle(.secondary)
             }
-            Text("Reason: \(suggestion.reason)")
+            Text(L10n.format("file-actions.tag-suggestion.reason", suggestion.reason))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(mergeText(suggestion))
@@ -326,7 +362,7 @@ extension BatchAITagSuggestionSheet {
                 Text("Applied \(review.appliedTagCount) tags, failed \(review.failedTagCount) tags.")
                 Text("Invalid \(review.invalidCount), duplicate \(review.duplicateCount).")
                 ForEach(review.applyFailures.sorted(by: { $0.key < $1.key }), id: \.key) { fileID, failure in
-                    Text("File \(fileID): \(failure.userMessage)")
+                    Text(L10n.format("file-actions.common.file-error", fileID, failure.userMessage))
                         .font(.caption)
                         .foregroundStyle(.red)
                 }

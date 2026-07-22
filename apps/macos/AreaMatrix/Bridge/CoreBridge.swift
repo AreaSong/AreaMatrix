@@ -35,6 +35,10 @@ actor CoreBridge {
         "generated-bindings"
     }
 
+    nonisolated static func updateAppInterfaceLocale(_ locale: String) throws {
+        try setAppInterfaceLocale(locale: locale)
+    }
+
     func declaredBoundaries() -> [CoreBridgeBoundary] {
         CoreBridgeBoundary.allCases
     }

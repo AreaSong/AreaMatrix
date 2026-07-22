@@ -25,6 +25,9 @@ namespace area_matrix {
     string get_version();
 
     [Throws=CoreError]
+    void set_app_interface_locale(string locale);
+
+    [Throws=CoreError]
     void init_logging(string level);
 
     [Throws=CoreError]
@@ -2549,6 +2552,11 @@ interface CoreError {
 };
 ```
 
+`RepoConfig.locale` 是资料库内容语言，不控制 macOS 应用界面。Swift 层兼容读取 `zh-CN` 并统一写为
+`zh-Hans`；`system` 表示跟随当前应用界面语言。平台层通过
+`set_app_interface_locale(locale)` 把当前已解析的界面 locale 同步给 Core，Core 仅在生成内容时把
+`system` 解析为 `zh-Hans` 或 `en`。同步界面 locale 和更新资料库配置都不会主动重写已有概述。
+
 详细错误体系：[error-codes.md](error-codes.md)。
 
 ---
@@ -2600,6 +2608,7 @@ interface CoreError {
 | 函数 | 类别 | Throws | 主要错误 |
 |---|---|---|---|
 | `get_version()` | meta | × | — |
+| `set_app_interface_locale(locale)` | meta | √ | Config |
 | `init_logging(level)` | meta | √ | Config |
 | `inspect_binding_contract(request)` | ffi | √ | Config / Internal |
 | `get_platform_capabilities(platform, app_version)` | platform | √ | Config |
@@ -2729,6 +2738,15 @@ print("AreaMatrix Core \(version)")
 ```
 
 返回 `Cargo.toml` 中的版本，形如 `"0.1.0"`。永不抛错。
+
+### `set_app_interface_locale(locale: String) throws`
+
+把平台层当前已解析的应用界面 locale 同步到 Core 的进程内状态。正式输入为 `zh-Hans` 或 `en`；
+`zh`、`zh-CN` 和其他 `zh-*` 输入统一规范为 `zh-Hans`，其他值返回 `CoreError.Config`。
+
+该调用不读取资料库，不修改 `RepoConfig.locale`，也不生成或重写概述。只有当某资料库保存的
+`RepoConfig.locale == "system"` 时，之后正常发生的概述生成才读取这个进程内状态；资料库显式保存
+`zh-Hans` 或 `en` 时不受应用界面切换影响。
 
 ### `init_logging(level: String) throws`
 
@@ -6395,7 +6413,7 @@ sidebar.update(tree)
 输入：
 
 - `repoPath`：已初始化的资料库根目录。
-- `locale`：显示名 locale，例如 `zh-Hans` 或 `en`；未知 locale 可回退到稳定 slug。
+- `locale`：已解析的资料库内容 locale，例如 `zh-Hans` 或 `en`；它不控制应用 UI，未知值可回退到稳定 slug。
 
 输出为 Swift 可解码的 `TreeNode` JSON 字符串，而非跨 FFI 返回
 `TreeNode` 对象，避免大 sequence 多次拷贝。JSON 根节点和所有子节点使用同一

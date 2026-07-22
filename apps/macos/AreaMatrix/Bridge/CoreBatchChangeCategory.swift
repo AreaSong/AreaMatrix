@@ -32,6 +32,16 @@ enum BatchCategoryPreviewStatusSnapshot: String, Equatable {
     case unchanged = "Unchanged"
     case skipped = "Skipped"
     case blocked = "Blocked"
+
+    var displayName: String {
+        switch self {
+        case .willMove: L10n.string("Will move")
+        case .metadataOnly: L10n.string("Metadata only")
+        case .unchanged: L10n.string("Unchanged")
+        case .skipped: L10n.string("Skipped")
+        case .blocked: L10n.string("Blocked")
+        }
+    }
 }
 
 struct BatchCategoryPreviewItemSnapshot: Equatable, Identifiable {

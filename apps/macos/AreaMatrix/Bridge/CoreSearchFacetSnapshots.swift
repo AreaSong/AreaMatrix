@@ -21,11 +21,11 @@ enum SearchStorageModeSnapshot: String, CaseIterable, Equatable, Identifiable {
     var displayName: String {
         switch self {
         case .moved:
-            "Moved"
+            L10n.string("Moved")
         case .copied:
-            "Copied"
+            L10n.string("Copied")
         case .indexed:
-            "Indexed"
+            L10n.string("Indexed")
         }
     }
 }

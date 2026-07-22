@@ -3,13 +3,17 @@ import SwiftUI
 extension AITagSuggestionsPanel {
     func reportView(_ report: AiTagSuggestionReport) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Confidence threshold: \(percent(report.confidenceThreshold))% - \(routeLabel(report.route))")
-                .font(.caption)
-            Text("Used fields: \(usedContextText(report.usedContext))")
+            Text(L10n.format(
+                "ai.tagSuggestion.confidenceThreshold",
+                String(percent(report.confidenceThreshold)),
+                routeLabel(report.route)
+            ))
+            .font(.caption)
+            Text(L10n.format("ai.tagSuggestion.usedFields", usedContextText(report.usedContext)))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if report.status == .noSuggestion || report.suggestions.isEmpty {
-                Text(report.skippedReason.map(skipReasonText) ?? "No tag suggestions for this file.")
+                Text(report.skippedReason.map(skipReasonText) ?? L10n.string("No tag suggestions for this file."))
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(report.suggestions, id: \.suggestionId, content: suggestionRow)
@@ -28,7 +32,11 @@ extension AITagSuggestionsPanel {
     func suggestionRow(_ suggestion: AiTagSuggestion) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Button(state.selectedIDs.contains(suggestion.suggestionId) ? "Reject" : "Add") {
+                Button(
+                    state.selectedIDs.contains(suggestion.suggestionId)
+                        ? L10n.string("Reject")
+                        : L10n.string("Add")
+                ) {
                     if state.selectedIDs.contains(suggestion.suggestionId) {
                         onToggleSuggestion(suggestion.suggestionId)
                     } else {
@@ -40,11 +48,15 @@ extension AITagSuggestionsPanel {
                 AISuggestionConfidenceBadge(confidence: suggestion.confidence)
                 Text(candidateStatusText(suggestion)).foregroundStyle(.secondary)
             }
-            Text("Reason: \(suggestion.reason)").font(.caption)
+            Text(L10n.format("ai.tagSuggestion.reason", suggestion.reason)).font(.caption)
             Text(mergeText(suggestion)).font(.caption).foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(suggestion.displayName), confidence \(percent(suggestion.confidence)) percent")
+        .accessibilityLabel(L10n.format(
+            "ai.tagSuggestion.accessibilityLabel",
+            suggestion.displayName,
+            String(percent(suggestion.confidence))
+        ))
     }
 
     func editRow(_ draft: AITagSuggestionEditDraft) -> some View {
@@ -75,55 +87,57 @@ extension AITagSuggestionsPanel {
 
     func routeLabel(_ route: AiTagSuggestionRoute?) -> String {
         switch route {
-        case .local: "Local"
-        case .remote: "Remote"
-        case nil: "No provider"
+        case .local: L10n.string("Local")
+        case .remote: L10n.string("Remote")
+        case nil: L10n.string("No provider")
         }
     }
 
     func usedContextText(_ fields: [AiTagSuggestionInputField]) -> String {
-        fields.isEmpty ? "none" : fields.map(aiTagInputFieldText).joined(separator: ", ")
+        fields.isEmpty ? L10n.string("none") : fields.map(aiTagInputFieldText).joined(separator: ", ")
     }
 
     func aiTagInputFieldText(_ field: AiTagSuggestionInputField) -> String {
         switch field {
-        case .fileName: "filename"
-        case .repoRelativePath: "repo-relative path"
-        case .extractedTextExcerpt: "extracted text"
-        case .aiSummary: "AI summary"
-        case .noteSummary: "note summary"
-        case .existingTags: "existing tags"
-        case .tagRegistry: "tag registry"
+        case .fileName: L10n.string("filename")
+        case .repoRelativePath: L10n.string("repo-relative path")
+        case .extractedTextExcerpt: L10n.string("extracted text")
+        case .aiSummary: L10n.string("AI summary")
+        case .noteSummary: L10n.string("note summary")
+        case .existingTags: L10n.string("existing tags")
+        case .tagRegistry: L10n.string("tag registry")
         }
     }
 
     func skipReasonText(_ reason: AiTagSuggestionSkipReason) -> String {
         switch reason {
-        case .aiDisabled: "AI tag suggestions are off"
-        case .featureDisabled: "Auto tags are off"
-        case .providerUnavailable: "AI provider is unavailable"
-        case .privacyRule: "Skipped by privacy rule"
-        case .noEligibleInput: "No eligible tag context"
-        case .callLogUnavailable: "AI call log is unavailable"
+        case .aiDisabled: L10n.string("AI tag suggestions are off")
+        case .featureDisabled: L10n.string("Auto tags are off")
+        case .providerUnavailable: L10n.string("AI provider is unavailable")
+        case .privacyRule: L10n.string("Skipped by privacy rule")
+        case .noEligibleInput: L10n.string("No eligible tag context")
+        case .callLogUnavailable: L10n.string("AI call log is unavailable")
         }
     }
 
     func candidateStatusText(_ suggestion: AiTagSuggestion) -> String {
         if let reason = suggestion.disabledReason { return reason }
         return switch suggestion.status {
-        case .suggested: "Suggested"
-        case .lowConfidence: "Low confidence"
-        case .alreadyApplied: "Already applied"
-        case .invalid: "Invalid"
-        case .blocked: "Blocked"
+        case .suggested: L10n.string("Suggested")
+        case .lowConfidence: L10n.string("Low confidence")
+        case .alreadyApplied: L10n.string("Already applied")
+        case .invalid: L10n.string("Invalid")
+        case .blocked: L10n.string("Blocked")
         }
     }
 
     func mergeText(_ suggestion: AiTagSuggestion) -> String {
         switch suggestion.mergeAction {
-        case .createTag: "Will create tag \(suggestion.slug)"
-        case .useExistingTag: "Will use existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
-        case .mergeWithExistingTag: "Merge with existing tag \(suggestion.matchedExistingSlug ?? suggestion.slug)"
+        case .createTag: L10n.format("ai.tagSuggestion.merge.create", suggestion.slug)
+        case .useExistingTag:
+            L10n.format("ai.tagSuggestion.merge.useExisting", suggestion.matchedExistingSlug ?? suggestion.slug)
+        case .mergeWithExistingTag:
+            L10n.format("ai.tagSuggestion.merge.mergeExisting", suggestion.matchedExistingSlug ?? suggestion.slug)
         }
     }
 

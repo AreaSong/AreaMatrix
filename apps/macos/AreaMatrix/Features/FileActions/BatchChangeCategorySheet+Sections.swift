@@ -13,8 +13,8 @@ extension BatchChangeCategorySheet {
 
     var summarySection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Selected: \(selectedCount) files")
-            Text("Current categories: \(currentCategoriesText)")
+            Text(L10n.plural("file-actions.change-category.selected-files", count: selectedCount))
+            Text(L10n.format("file-actions.change-category.current-categories", currentCategoriesText))
             ForEach(selectedFiles.prefix(5)) { file in
                 Text(file.currentName)
                     .font(.caption)
@@ -85,7 +85,7 @@ extension BatchChangeCategorySheet {
                 if let reason = preview.applyBlockedReason, !reason.isEmpty {
                     Text(reason).foregroundStyle(.secondary)
                 }
-                Button(showsDetails ? "Hide details" : "Show details") {
+                Button(showsDetails ? L10n.string("Hide details") : L10n.string("Show details")) {
                     showsDetails.toggle()
                 }
                 if showsDetails {
@@ -123,9 +123,15 @@ extension BatchChangeCategorySheet {
         Button("View details") { showsDetails.toggle() }
         if showsDetails {
             ForEach(report.itemResults.filter { $0.status == .failed }) { item in
-                Text("File \(item.fileID): \(item.error ?? "Failed")")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    L10n.format(
+                        "file-actions.common.file-error",
+                        item.fileID,
+                        item.error ?? L10n.string("Failed")
+                    )
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
     }
@@ -138,7 +144,7 @@ extension BatchChangeCategorySheet {
             Button("Cancel", action: onClose)
                 .keyboardShortcut(.cancelAction)
                 .disabled(isApplying)
-            Button(isApplying ? "Applying..." : "Apply") {
+            Button(isApplying ? L10n.string("Applying...") : L10n.string("Apply")) {
                 Task { await apply() }
             }
             .keyboardShortcut(.defaultAction)

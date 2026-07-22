@@ -69,7 +69,7 @@ enum BatchRenameUndoAction {
                 shouldRefreshConsumer: report?.shouldRefreshConsumerAfterApply == true,
                 undoToken: report?.undoToken,
                 failure: failure,
-                unavailableResultReason: "Undo is unavailable for this rename result."
+                unavailableResultReason: L10n.string("Undo is unavailable for this rename result.")
             ),
             undoStore: undoStore,
             errorMapper: errorMapper
@@ -139,15 +139,15 @@ enum RedoActionFeedback {
         if let reason = action.disabledReason, !reason.isEmpty { return reason }
         switch action.status {
         case .available:
-            return "Redo action is currently unavailable."
+            return L10n.string("Redo action is currently unavailable.")
         case .cleared:
-            return "Redo was cleared by the next file operation."
+            return L10n.string("Redo was cleared by the next file operation.")
         case .blocked:
-            return "Review details before redoing this action."
+            return L10n.string("Review details before redoing this action.")
         case .expired:
-            return "Redo expired after app restart or later changes."
+            return L10n.string("Redo expired after app restart or later changes.")
         case .executed:
-            return "This action has already been redone."
+            return L10n.string("This action has already been redone.")
         }
     }
 

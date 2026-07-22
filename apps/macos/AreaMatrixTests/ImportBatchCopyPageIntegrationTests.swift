@@ -73,7 +73,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
             model,
             message: "Expected import-progress import progress route"
         ) else { return }
-        XCTAssertEqual(state.titleText, "正在导入 2 个文件")
+        XCTAssertEqual(state.titleText, "Importing 2 files")
         XCTAssertEqual(state.toolbarText, "Importing 1 / 2")
     }
 

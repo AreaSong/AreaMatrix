@@ -59,7 +59,9 @@ struct CoreImportBatchNameConflictPrechecker: ImportBatchNameConflictPrechecking
             }
         } catch {
             return rows.reduce(into: [:]) { conflicts, row in
-                conflicts[row.id] = .failed("Name conflict precheck failed: \(error.localizedDescription)")
+                conflicts[row.id] = .failed(
+                    L10n.format("import.conflict.name-precheck-failed", error.localizedDescription)
+                )
             }
         }
     }
@@ -122,7 +124,9 @@ struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
             }
         } catch {
             return readableURLs.reduce(into: placeholderResults) { results, sourceURL in
-                results[sourceURL.path] = .failed("Duplicate precheck failed: \(error.localizedDescription)")
+                results[sourceURL.path] = .failed(
+                    L10n.format("import.conflict.duplicate-precheck-failed", error.localizedDescription)
+                )
             }
         }
     }
@@ -138,7 +142,7 @@ struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
             }
             return .duplicate(existingPath: duplicate.path)
         } catch {
-            return .failed("Duplicate precheck failed: \(error.localizedDescription)")
+            return .failed(L10n.format("import.conflict.duplicate-precheck-failed", error.localizedDescription))
         }
     }
 }

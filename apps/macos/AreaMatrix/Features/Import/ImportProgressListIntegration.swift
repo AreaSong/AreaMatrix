@@ -151,7 +151,7 @@ struct CommandPaletteSmartListTarget: Equatable, Identifiable {
     }
 
     var helpText: String {
-        "Open Smart List"
+        L10n.string("Open Smart List")
     }
 
     var accessibilityIdentifier: String {

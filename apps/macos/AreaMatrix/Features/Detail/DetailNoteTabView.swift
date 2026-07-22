@@ -162,7 +162,7 @@ private struct NoteSaveStatusView: View {
         Text(status.title)
             .font(.caption.weight(.semibold))
             .foregroundStyle(color)
-            .accessibilityLabel("Note save status \(status.title)")
+            .accessibilityLabel(L10n.format("detail.note.saveStatus.accessibilityLabel", status.title))
     }
 
     private var color: Color {

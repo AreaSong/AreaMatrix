@@ -20,22 +20,22 @@ enum ImportDropTarget: Equatable {
     var explicitLabel: String {
         switch self {
         case .autoClassify:
-            "Auto classify"
+            L10n.string("Auto classify")
         case let .category(slug):
             slug
         case .repositoryRoot:
-            "repo root"
+            L10n.string("repo root")
         }
     }
 
     var sidebarHelp: String {
         switch self {
         case .autoClassify:
-            "Import with automatic classification"
+            L10n.string("Import with automatic classification")
         case let .category(slug):
-            "Import into \"\(slug)\""
+            L10n.format("import.drop.import-into-category", slug)
         case .repositoryRoot:
-            "Import into repository root"
+            L10n.string("Import into repository root")
         }
     }
 
@@ -67,8 +67,12 @@ struct ImportDropPreviewPresentation: Equatable {
     var predictionLabel: String? {
         guard let prediction else { return nil }
 
-        return "Classification preview: \(prediction.category) · " +
-            "\(prediction.reason.displayLabel) · \(prediction.confidencePercent)%"
+        return L10n.format(
+            "import.drop.classification-preview",
+            prediction.category,
+            prediction.reason.displayLabel,
+            Int64(prediction.confidencePercent)
+        )
     }
 }
 
@@ -95,7 +99,7 @@ final class ImportDropPreviewModel: ObservableObject {
             return
         }
 
-        let warning = validURLs.count == urls.count ? nil : "Some items cannot be imported"
+        let warning = validURLs.count == urls.count ? nil : L10n.string("Some items cannot be imported")
         let kind = ImportEntryKind.resolved(for: validURLs)
         let shouldPredictCategory = target == .autoClassify
         presentation = ImportDropPreviewPresentation(
@@ -150,7 +154,7 @@ final class ImportDropPreviewModel: ObservableObject {
             kind: .singleFile,
             itemCount: 0,
             prediction: nil,
-            warning: "Cannot import this item",
+            warning: L10n.string("Cannot import this item"),
             isPredicting: false
         )
     }
@@ -190,16 +194,16 @@ final class ImportDropPreviewModel: ObservableObject {
 
     private static func classifyWarning(for error: Error) -> String {
         guard let context = CoreErrorRawContextSnapshot(error) else {
-            return "Cannot preview category"
+            return L10n.string("Cannot preview category")
         }
 
         switch context.kind {
         case .config:
-            return "Classifier settings are invalid: \(context.rawContext)"
+            return L10n.format("import.preview.classifier-settings-invalid", context.rawContext)
         case .classify:
-            return "Cannot preview category: \(context.rawContext)"
+            return L10n.format("import.preview.category-unavailable", context.rawContext)
         default:
-            return "Cannot preview category"
+            return L10n.string("Cannot preview category")
         }
     }
 }

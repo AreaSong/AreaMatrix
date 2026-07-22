@@ -43,7 +43,7 @@ final class ImportBatchPreviewModel: ObservableObject {
     }
 
     var sourceLabel: String {
-        request?.source.batchSourceLabel ?? "未知来源"
+        request?.source.batchSourceLabel ?? L10n.string("import.source.unknown")
     }
 
     var successfulPreviewCount: Int {
@@ -60,7 +60,7 @@ final class ImportBatchPreviewModel: ObservableObject {
 
     var importDisabledReason: String? {
         if status.isLoading {
-            return "Preparing preview..."
+            return L10n.string("Preparing preview...")
         }
         return nil
     }
@@ -70,9 +70,9 @@ final class ImportBatchPreviewModel: ObservableObject {
         case .autoClassify:
             nil
         case .category:
-            "已覆盖自动分类结果；本次导入仍保留每个文件的分类建议作为参考。"
+            L10n.string("import.batch.destination.categoryOverrideHelp")
         case .repositoryRoot:
-            "当前入口保留在资料库根目录；分类建议只作为预览，不会自动写入。"
+            L10n.string("import.batch.destination.repositoryRootHelp")
         }
     }
 
@@ -88,7 +88,7 @@ final class ImportBatchPreviewModel: ObservableObject {
 
         guard case .multipleItems = request.kind, request.urls.count > 1 else {
             rows = []
-            status = .unsupported("此 sheet 只处理批量文件导入")
+            status = .unsupported(L10n.string("import.batch.unsupportedRequest"))
             return
         }
 
@@ -137,7 +137,7 @@ final class ImportBatchPreviewModel: ObservableObject {
         selectedDestination = request.initialBatchDestination
         let rowStatus = ImportBatchPreviewRowStatus.nameConflict(
             existingPath: "Core import session \(route.importSessionID)",
-            reasonLabel: "Waiting for Core conflict batch preview"
+            reasonLabel: L10n.string("Waiting for Core conflict batch preview")
         )
         rows = route.conflictIDs.map {
             ImportBatchPreviewRow(
@@ -190,7 +190,7 @@ final class ImportBatchPreviewModel: ObservableObject {
             case let .conflict(existingPath):
                 return row.withStatus(.nameConflict(
                     existingPath: existingPath,
-                    reasonLabel: "Keep both (auto-number): \(existingPath)"
+                    reasonLabel: L10n.format("import.preview.keep-both-auto-number", existingPath)
                 ))
             case let .failed(message):
                 return row.withStatus(.error(message))
@@ -209,7 +209,7 @@ final class ImportBatchPreviewModel: ObservableObject {
         case let .nameConflict(existingPath):
             .nameConflict(url: url, prediction: prediction, existingPath: existingPath)
         case .iCloudPlaceholder:
-            .iCloudPlaceholder(url: url, message: "iCloud placeholder 需要下载后才能导入")
+            .iCloudPlaceholder(url: url, message: L10n.string("import.icloud.downloadRequired"))
         case let .blocked(message):
             .failed(url: url, message: message)
         case let .failed(message):
@@ -223,22 +223,22 @@ final class ImportBatchPreviewModel: ObservableObject {
 
     private static func previewMessage(for error: Error) -> String {
         guard let context = CoreErrorRawContextSnapshot(error) else {
-            return "无法完成分类预览"
+            return L10n.string("import.preview.unavailable")
         }
 
         switch context.kind {
         case .config:
-            return "分类规则无效：\(context.rawContext)"
+            return L10n.format("import.preview.invalidRules", context.rawContext)
         case .classify:
-            return "无法预览分类：\(context.rawContext)"
+            return L10n.format("import.preview.category-unavailable", context.rawContext)
         case .permissionDenied:
-            return "无法读取分类预览路径：\(context.rawContext)"
+            return L10n.format("import.preview.pathUnreadable", context.rawContext)
         case .io:
-            return "分类预览文件读取失败：\(context.rawContext)"
+            return L10n.format("import.preview.fileReadFailed", context.rawContext)
         case .db:
-            return "分类预览数据库读取失败：\(context.rawContext)"
+            return L10n.format("import.preview.databaseReadFailed", context.rawContext)
         default:
-            return "无法完成分类预览"
+            return L10n.string("import.preview.unavailable")
         }
     }
 }

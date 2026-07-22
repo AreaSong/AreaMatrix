@@ -72,7 +72,8 @@ struct LocalModelStatusView: View {
         .frame(minWidth: 620, minHeight: 540, alignment: .topLeading)
         .sheet(isPresented: diagnosticsBinding) {
             LocalModelDiagnosticsView(
-                summary: model.snapshot?.diagnosticsSummary ?? "Local model status has not been checked yet.",
+                summary: model.snapshot?.diagnosticsSummary ?? L10n
+                    .string("Local model status has not been checked yet."),
                 onCopy: model.copyDiagnosticsSummary,
                 onBack: model.closeDiagnostics
             )
@@ -103,20 +104,23 @@ struct LocalModelStatusView: View {
     }
 
     private var statusSection: some View {
-        AdvancedSettingsSection(title: "Status") {
+        AdvancedSettingsSection(title: L10n.string("Status")) {
             Label(model.statusText, systemImage: statusIcon)
                 .font(.headline)
                 .accessibilityIdentifier("local-model-status-local-model-status-core-status")
             Text(model.statusDetail)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            AdvancedSettingsKeyValueRow(label: "Model", value: model.modelID)
-            AdvancedSettingsKeyValueRow(label: "Version", value: model.snapshot?.version ?? "Unknown")
-            AdvancedSettingsKeyValueRow(label: "Storage", value: model.storageLocation)
-            AdvancedSettingsKeyValueRow(label: "Disk usage", value: model.formattedSize)
-            AdvancedSettingsKeyValueRow(label: "Last checked", value: model.lastCheckedLabel)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Model"), value: model.modelID)
+            AdvancedSettingsKeyValueRow(
+                label: L10n.string("Version"),
+                value: model.snapshot?.version ?? L10n.string("Unknown")
+            )
+            AdvancedSettingsKeyValueRow(label: L10n.string("Storage"), value: model.storageLocation)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Disk usage"), value: model.formattedSize)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Last checked"), value: model.lastCheckedLabel)
             if let lastError = model.snapshot?.lastError, !lastError.isEmpty {
-                AdvancedSettingsKeyValueRow(label: "Last error", value: lastError)
+                AdvancedSettingsKeyValueRow(label: L10n.string("Last error"), value: lastError)
             }
             if let reason = model.repairUnavailableReason {
                 Text(reason)
@@ -127,7 +131,7 @@ struct LocalModelStatusView: View {
     }
 
     private var supportSection: some View {
-        AdvancedSettingsSection(title: "Feature support") {
+        AdvancedSettingsSection(title: L10n.string("Feature support")) {
             if model.snapshot?.featureStatuses.isEmpty != false {
                 Text("Local feature support will appear after Check status returns a Core snapshot.")
                     .font(.callout)
@@ -141,7 +145,7 @@ struct LocalModelStatusView: View {
     }
 
     private var actionSection: some View {
-        AdvancedSettingsSection(title: "Actions") {
+        AdvancedSettingsSection(title: L10n.string("Actions")) {
             HStack(spacing: 10) {
                 Button(primaryStatusButtonTitle) {
                     Task { await model.checkStatus() }
@@ -168,17 +172,16 @@ struct LocalModelStatusView: View {
                 Button("Open diagnostics", action: model.showDiagnostics)
                     .accessibilityIdentifier("local-model-status-local-model-status-core-open-diagnostics")
             }
-            Text(
-                "Status checks and diagnostics use only local model metadata " +
-                    "and do not enable remote AI."
-            )
+            Text(L10n.string(
+                "Status checks and diagnostics use only local model metadata and do not enable remote AI."
+            ))
             .font(.callout)
             .foregroundStyle(.secondary)
         }
     }
 
     private var primaryStatusButtonTitle: String {
-        model.snapshot == nil ? "Check status" : "Retry status check"
+        model.snapshot == nil ? L10n.string("Check status") : L10n.string("Retry status check")
     }
 
     private var statusIcon: String {
@@ -209,7 +212,7 @@ struct LocalModelFeatureRow: View {
         HStack {
             Label(status.feature.title, systemImage: status.available ? "checkmark.circle" : "minus.circle")
             Spacer()
-            Text(status.available ? "Available" : status.unavailableReason ?? "Unavailable")
+            Text(status.available ? L10n.string("Available") : status.unavailableReason ?? L10n.string("Unavailable"))
                 .foregroundStyle(status.available ? Color.green : Color.secondary)
         }
         .font(.callout)

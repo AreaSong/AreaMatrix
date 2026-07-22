@@ -38,24 +38,24 @@ struct WelcomeFeatureCardsGrid: View {
             AreaMatrixFeatureCardSpec(
                 id: .feat1,
                 icon: "arrow.down.doc",
-                title: "拖拽归档，智能分类",
-                description: "识别、重命名并自动落位",
+                title: L10n.string("onboarding.welcome.feature.classify.title"),
+                description: L10n.string("onboarding.welcome.feature.classify.description"),
                 accentColor: AreaMatrixTheme.Colors.tealBright,
                 entranceDelay: AreaMatrixMotionTokens.EntranceDelay.featureCard1
             ),
             AreaMatrixFeatureCardSpec(
                 id: .feat2,
                 icon: "checkmark.shield",
-                title: "零侵入，绝对安全",
-                description: "不碰原文件，真相在文件系统",
+                title: L10n.string("onboarding.welcome.feature.safety.title"),
+                description: L10n.string("onboarding.welcome.feature.safety.description"),
                 accentColor: AreaMatrixTheme.Colors.gold,
                 entranceDelay: AreaMatrixMotionTokens.EntranceDelay.featureCard2
             ),
             AreaMatrixFeatureCardSpec(
                 id: .feat3,
                 icon: "rectangle.split.2x1",
-                title: "全局概览，改动追溯",
-                description: "生成大纲，双向同步改动日志",
+                title: L10n.string("onboarding.welcome.feature.overview.title"),
+                description: L10n.string("onboarding.welcome.feature.overview.description"),
                 accentColor: AreaMatrixTheme.Colors.coral,
                 entranceDelay: AreaMatrixMotionTokens.EntranceDelay.featureCard3
             )

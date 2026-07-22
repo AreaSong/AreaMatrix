@@ -15,18 +15,18 @@ enum SearchScopeSnapshot: String, CaseIterable, Equatable, Identifiable {
     var displayName: String {
         switch self {
         case .all:
-            "All"
+            L10n.string("search.scope.all")
         case .current:
-            "Current"
+            L10n.string("search.scope.current")
         }
     }
 
     var bannerDisplayName: String {
         switch self {
         case .all:
-            "全库"
+            L10n.string("search.scope.repository")
         case .current:
-            "当前"
+            L10n.string("search.scope.currentShort")
         }
     }
 }
@@ -44,13 +44,13 @@ enum SearchSortSnapshot: String, CaseIterable, Equatable, Identifiable {
     var displayName: String {
         switch self {
         case .relevance:
-            "Relevance"
+            L10n.string("Relevance")
         case .newestImported:
-            "Newest imported"
+            L10n.string("Newest imported")
         case .newestModified:
-            "Newest modified"
+            L10n.string("Newest modified")
         case .nameAsc:
-            "Name A-Z"
+            L10n.string("Name A-Z")
         }
     }
 }
@@ -72,9 +72,9 @@ enum SearchModeSnapshot: String, CaseIterable, Equatable, Identifiable {
     var displayName: String {
         switch self {
         case .normal:
-            "Normal"
+            L10n.string("Normal")
         case .semantic:
-            "Semantic"
+            L10n.string("Semantic")
         }
     }
 }
@@ -172,25 +172,30 @@ struct SearchQueryDiagnosticSnapshot: Equatable {
     var start: Int64?
     var end: Int64?
     var suggestion: String?
+    private var isErrorSeverity: Bool
 
     init(
         kindDisplayName: String = "unknown", severityDisplayName: String, message: String, token: String? = nil,
-        start: Int64? = nil, end: Int64? = nil, suggestion: String? = nil
+        start: Int64? = nil, end: Int64? = nil, suggestion: String? = nil, isErrorSeverity: Bool = false
     ) {
         self.kindDisplayName = kindDisplayName; self.severityDisplayName = severityDisplayName
         self.message = message; self.token = token; self.start = start
         self.end = end; self.suggestion = suggestion
+        self.isErrorSeverity = isErrorSeverity
     }
 
     var isError: Bool {
-        severityDisplayName == "Error"
+        isErrorSeverity
     }
 
     var problemAccessibilityHint: String {
         [
-            token.map { "Token \($0)" },
-            start.map { value in end.map { "Position \(value)-\($0)" } ?? "Position \(value)" },
-            suggestion.map { "Suggestion \($0)" }
+            token.map { L10n.format("search.diagnostic.token", $0) },
+            start.map { value in
+                end.map { L10n.format("search.diagnostic.positionRange", value, $0) }
+                    ?? L10n.format("search.diagnostic.position", value)
+            },
+            suggestion.map { L10n.format("search.diagnostic.suggestion", $0) }
         ]
         .compactMap { $0 }
         .joined(separator: ". ")
@@ -304,7 +309,8 @@ extension SearchQueryDiagnosticSnapshot {
         self.init(
             kindDisplayName: coreDiagnostic.kind.displayName, severityDisplayName: coreDiagnostic.severity.displayName,
             message: coreDiagnostic.message, token: coreDiagnostic.token, start: coreDiagnostic.start,
-            end: coreDiagnostic.end, suggestion: coreDiagnostic.suggestion
+            end: coreDiagnostic.end, suggestion: coreDiagnostic.suggestion,
+            isErrorSeverity: coreDiagnostic.severity == .error
         )
     }
 }

@@ -294,7 +294,7 @@ extension ImportBatchCopyImportModel {
         decision: SingleFileReplaceConfirmationDecision
     ) -> Bool {
         guard decision.understandsReplace else {
-            recordReplaceConfirmationFailure("Replace 需要先勾选二次确认")
+            recordReplaceConfirmationFailure(L10n.string("import.replace.checkboxRequired"))
             return false
         }
         guard let expected = currentReplaceConfirmationContext(for: rowID), expected == decision.context else {
@@ -342,7 +342,7 @@ extension ImportBatchCopyImportModel {
         case .queuedForPerItem, .pending:
             fallback
         case .failed:
-            .error(result.error ?? "Import conflict strategy failed.")
+            .error(result.error ?? L10n.string("Import conflict strategy failed."))
         }
     }
 

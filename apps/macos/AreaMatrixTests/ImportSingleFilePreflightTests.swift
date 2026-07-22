@@ -59,7 +59,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(actual.keepBothTargetRelativePath, "docs/source_1.pdf")
         XCTAssertEqual(actual.existingFile?.path, "docs/existing.pdf")
         XCTAssertEqual(actual.existingFile?.sizeBytes, 12)
-        XCTAssertEqual(actual.importBlockingReason(), "请先完成 duplicate-conflict conflict-duplicate 处理")
+        XCTAssertEqual(actual.importBlockingReason(), "Complete duplicate-conflict conflict-duplicate first")
     }
 
     func testCorePreflightDetectsSameNameDifferentHashForNameConflict() async throws {
@@ -89,7 +89,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(actual.keepBothTargetRelativePath, "docs/source_2.pdf")
         XCTAssertEqual(actual.existingPaths, ["docs/source.pdf", "docs/source_1.pdf"])
         XCTAssertEqual(actual.existingFile, sameName)
-        XCTAssertEqual(actual.importBlockingReason(), "请先完成 name-conflict conflict-name 处理")
+        XCTAssertEqual(actual.importBlockingReason(), "Complete name-conflict conflict-name first")
     }
 
     func testCorePreflightRejectsInvalidTargetFilenameBeforeImport() async throws {
@@ -110,11 +110,11 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(result.hashSha256, nil)
         XCTAssertEqual(
             result.conflict,
-            .invalidFilename("文件名不能包含 / \\ : * ? \" < > |")
+            .invalidFilename("Filename cannot contain / \\ : * ? \" < > |")
         )
         XCTAssertEqual(
             result.importBlockingReason(),
-            "文件名不能包含 / \\ : * ? \" < > |"
+            "Filename cannot contain / \\ : * ? \" < > |"
         )
     }
 
@@ -146,7 +146,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
             ))
 
         XCTAssertEqual(result.conflict, .iCloudPlaceholder(path: sourceURL.path))
-        XCTAssertEqual(result.importBlockingReason(), "iCloud placeholder 需要下载后才能导入")
+        XCTAssertEqual(result.importBlockingReason(), "The iCloud placeholder must be downloaded before importing.")
         await fileLoader.assertRequestedFileLoads([])
     }
 }

@@ -17,17 +17,17 @@ struct MultiSelectionDetailSummary: Equatable {
     }
 
     var title: String {
-        "\(selectedCount) 个文件已选中"
+        L10n.plural("detail.multiSelection.selectedFiles", count: selectedCount)
     }
 
     var subtitle: String {
         if categories.count == 1, let category = categories.first {
-            return "\(category) 中的 \(selectedCount) 个项目"
+            return L10n.format("detail.multiSelection.singleCategory", category, selectedCount)
         }
         if categories.count > 1 {
-            return "跨 \(categories.count) 个分类的 \(selectedCount) 个项目"
+            return L10n.format("detail.multiSelection.multipleCategories", categories.count, selectedCount)
         }
-        return "\(selectedCount) 个项目"
+        return L10n.plural("detail.multiSelection.itemCount", count: selectedCount)
     }
 
     var paths: [String] {
@@ -36,19 +36,25 @@ struct MultiSelectionDetailSummary: Equatable {
 
     var warningMessages: [String] {
         var warnings: [String] = []
-        if unresolvedMetadataCount > 0 { warnings.append("部分选中项无法读取元数据") }
-        if missingCount > 0 { warnings.append("选中的文件中有 \(missingCount) 个缺失条目") }
-        if indexOnlyCount > 0 { warnings.append("某些条目的来源路径可能在资料库外") }
+        if unresolvedMetadataCount > 0 {
+            warnings.append(L10n.string("detail.multiSelection.metadataUnavailable"))
+        }
+        if missingCount > 0 {
+            warnings.append(L10n.plural("detail.multiSelection.missingEntryWarning", count: missingCount))
+        }
+        if indexOnlyCount > 0 {
+            warnings.append(L10n.string("detail.multiSelection.externalSourceWarning"))
+        }
         return warnings
     }
 
     var statisticRows: [MultiSelectionSummaryRow] {
         [
-            MultiSelectionSummaryRow(label: "Total size", value: totalSizeDisplay),
-            MultiSelectionSummaryRow(label: "Categories", value: categoriesDisplay),
-            MultiSelectionSummaryRow(label: "Storage modes", value: storageModesDisplay),
-            MultiSelectionSummaryRow(label: "Earliest imported", value: importedDateDisplay { $0.min() }),
-            MultiSelectionSummaryRow(label: "Latest imported", value: importedDateDisplay { $0.max() })
+            MultiSelectionSummaryRow(label: L10n.string("Total size"), value: totalSizeDisplay),
+            MultiSelectionSummaryRow(label: L10n.string("Categories"), value: categoriesDisplay),
+            MultiSelectionSummaryRow(label: L10n.string("Storage modes"), value: storageModesDisplay),
+            MultiSelectionSummaryRow(label: L10n.string("Earliest imported"), value: importedDateDisplay { $0.min() }),
+            MultiSelectionSummaryRow(label: L10n.string("Latest imported"), value: importedDateDisplay { $0.max() })
         ]
     }
 
@@ -90,7 +96,7 @@ struct MultiSelectionDetailSummary: Equatable {
 
     private func importedDateDisplay(_ valueSelector: ([Int64]) -> Int64?) -> String {
         let importedValues = files.map(\.importedAt)
-        guard let timestamp = valueSelector(importedValues) else { return "Not available" }
+        guard let timestamp = valueSelector(importedValues) else { return L10n.string("Not available") }
         return FileEntrySnapshot.mainDisplayDateFormatter.string(
             from: Date(timeIntervalSince1970: TimeInterval(timestamp))
         )
@@ -108,13 +114,13 @@ struct MultiSelectionDetailSummary: Equatable {
         let fileExtension = (file.currentName as NSString).pathExtension.lowercased()
         switch fileExtension {
         case "pdf":
-            return "PDF"
+            return L10n.string("PDF")
         case "md", "markdown":
-            return "Markdown"
+            return L10n.string("Markdown")
         case "png", "jpg", "jpeg", "gif", "heic", "webp":
-            return "Image"
+            return L10n.string("Image")
         case "":
-            return "No Extension"
+            return L10n.string("No Extension")
         default:
             return fileExtension.uppercased()
         }
@@ -125,7 +131,7 @@ struct MultiSelectionDetailSummary: Equatable {
     }
 
     private func displayList(_ values: [String]) -> String {
-        values.isEmpty ? "Not available" : values.joined(separator: ", ")
+        values.isEmpty ? L10n.string("Not available") : values.joined(separator: ", ")
     }
 }
 

@@ -38,13 +38,13 @@ struct BatchTagUndoToastView: View {
         case .loading:
             Label("Loading undo action...", systemImage: "arrow.uturn.backward.circle")
         case let .ready(action):
-            undoSummary(action, status: "Undo available")
+            undoSummary(action, status: L10n.string("Undo available"))
         case let .disabled(action, reason):
             disabledUndoSummary(action, reason: reason)
         case let .unavailable(reason):
             Label(reason, systemImage: "exclamationmark.triangle")
         case let .undoing(action):
-            undoSummary(action, status: "Undoing...")
+            undoSummary(action, status: L10n.string("Undoing..."))
         case let .undone(result):
             VStack(alignment: .leading, spacing: 3) {
                 Label(result.summary, systemImage: "checkmark.circle")

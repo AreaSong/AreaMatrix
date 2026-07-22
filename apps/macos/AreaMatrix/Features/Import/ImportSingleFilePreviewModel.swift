@@ -128,7 +128,7 @@ extension ImportSingleFilePreviewModel {
     @discardableResult
     func importSelectedFile() async -> FileEntrySnapshot? {
         guard let request, let sourceURL = request.urls.first else {
-            importStatus = .blocked("没有可导入的单文件来源")
+            importStatus = .blocked(L10n.string("import.single.sourceUnavailable"))
             return nil
         }
         if let existingPath = skippedDuplicateExistingPath {
@@ -136,7 +136,7 @@ extension ImportSingleFilePreviewModel {
             return nil
         }
         if isPendingReplaceConfirmation {
-            importStatus = .blocked("Replace 必须先进入二次确认")
+            importStatus = .blocked(L10n.string("import.replace.confirmationRequired"))
             return nil
         }
         if let disabledReason = importDisabledReason {
@@ -282,16 +282,16 @@ private extension ImportSingleFilePreviewModel {
 
     private static func classifyMessage(for error: Error) -> String {
         guard let context = CoreErrorRawContextSnapshot(error) else {
-            return "无法预览分类"
+            return L10n.string("import.preview.categoryUnavailable")
         }
 
         switch context.kind {
         case .config:
-            return "分类规则无效：\(context.rawContext)"
+            return L10n.format("import.preview.invalidRules", context.rawContext)
         case .classify:
-            return "无法预览分类：\(context.rawContext)"
+            return L10n.format("import.preview.category-unavailable", context.rawContext)
         default:
-            return "无法预览分类"
+            return L10n.string("import.preview.categoryUnavailable")
         }
     }
 
@@ -315,7 +315,7 @@ private extension ImportSingleFilePreviewModel {
 
     private func singleFileSourceURL(from request: ImportEntryRequest) -> URL? {
         guard request.kind == .singleFile, request.urls.count == 1, let sourceURL = request.urls.first else {
-            resetForUnsupportedRequest("此 sheet 只处理单文件导入")
+            resetForUnsupportedRequest(L10n.string("import.single.unsupportedRequest"))
             return nil
         }
         return sourceURL
@@ -383,10 +383,7 @@ extension ImportSingleFilePreviewModel {
     }
 
     func collectReplaceConfirmationDiagnostics() {
-        replaceConfirmationDiagnosticsMessage = [
-            "Diagnostics collected for replace confirmation state.",
-            "No user file contents included."
-        ].joined(separator: " ")
+        replaceConfirmationDiagnosticsMessage = L10n.string("import.replace-confirmation.diagnostics-collected")
     }
 
     func clearReplaceConfirmationRecovery() {

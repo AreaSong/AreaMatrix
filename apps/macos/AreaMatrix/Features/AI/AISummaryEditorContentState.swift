@@ -9,7 +9,7 @@ struct AISummaryEditorContentState {
     private(set) var status: AISummaryEditorStatus = .empty
 
     var characterCountText: String {
-        "\(draftText.count) characters"
+        L10n.plural("ai.summary.characterCount", count: draftText.count)
     }
 
     var hasSummaryContent: Bool {

@@ -9,13 +9,13 @@ enum ClassifyReasonSnapshot: String, Equatable {
     var displayLabel: String {
         switch self {
         case .keyword:
-            "keyword"
+            L10n.string("keyword")
         case .extension:
-            "extension"
+            L10n.string("extension")
         case .aiPredicted:
-            "AI"
+            L10n.string("AI")
         case .default:
-            "default"
+            L10n.string("default")
         }
     }
 }

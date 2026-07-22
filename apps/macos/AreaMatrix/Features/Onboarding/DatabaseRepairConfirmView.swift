@@ -96,8 +96,10 @@ struct DBRepairConfirmView: View {
         AreaMatrixStepHeader(
             systemImage: "wrench.and.screwdriver",
             tint: AreaMatrixTheme.Colors.gold,
-            title: "Repair Repository Metadata?",
-            subtitle: "AreaMatrix cannot read the repository metadata database. Your files remain in the repository folder."
+            title: L10n.string("Repair Repository Metadata?"),
+            subtitle: L10n.string(
+                "AreaMatrix cannot read the repository metadata database. Your files remain in the repository folder."
+            )
         )
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -113,7 +115,7 @@ struct DBRepairConfirmView: View {
                 alignment: .leading
             )
             if let mapping = model.initialMapping {
-                Text("Error: \(mapping.kind.rawValue)")
+                Text(L10n.format("onboarding.databaseRepair.errorKind", mapping.kind.displayName))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Text(mapping.userMessage)
@@ -145,8 +147,16 @@ struct DBRepairConfirmView: View {
 
     private var repairPlan: some View {
         VStack(alignment: .leading, spacing: 16) {
-            RepairChecklistSection(title: "Will do", systemImage: "arrow.clockwise.circle", items: willDoItems)
-            RepairChecklistSection(title: "Will not do", systemImage: "checkmark.shield", items: willNotDoItems)
+            RepairChecklistSection(
+                title: L10n.string("Will do"),
+                systemImage: "arrow.clockwise.circle",
+                items: willDoItems
+            )
+            RepairChecklistSection(
+                title: L10n.string("Will not do"),
+                systemImage: "checkmark.shield",
+                items: willNotDoItems
+            )
             Toggle(
                 "我理解修复只处理 AreaMatrix 元数据，不会删除我的资料库文件",
                 isOn: Binding(
@@ -290,10 +300,13 @@ struct DBRepairConfirmView: View {
 
     private var lastOpenedLine: String {
         guard let lastOpenedAt = model.lastOpenedAt else {
-            return "Last successful open: Not recorded"
+            return L10n.string("Last successful open: Not recorded")
         }
 
         let date = Date(timeIntervalSince1970: TimeInterval(lastOpenedAt))
-        return "Last successful open: \(date.formatted(date: .abbreviated, time: .shortened))"
+        return L10n.format(
+            "onboarding.databaseRepair.lastSuccessfulOpen",
+            date.formatted(date: .abbreviated, time: .shortened)
+        )
     }
 }

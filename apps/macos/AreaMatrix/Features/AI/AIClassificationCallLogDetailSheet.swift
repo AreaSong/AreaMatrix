@@ -66,14 +66,14 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
     private func callLogError(for error: Error) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
-                message: "AI call log could not be loaded.",
-                recovery: mapping.recoveryText(fallback: "Retry"),
+                message: L10n.string("AI call log could not be loaded."),
+                recovery: mapping.recoveryText(fallback: L10n.string("Retry")),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(
-            message: "AI call log could not be loaded.",
-            recovery: "Retry",
+            message: L10n.string("AI call log could not be loaded."),
+            recovery: L10n.string("Retry"),
             detail: error.localizedDescription
         )
     }
@@ -122,7 +122,7 @@ struct AIClassificationCallLogDetailSheet: View {
             Text("AI Call Detail")
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
-            Text("Call log \(model.callLogID)")
+            Text(L10n.format("ai.classification.callLog.title", model.callLogID))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -145,12 +145,15 @@ struct AIClassificationCallLogDetailSheet: View {
     private func loadedContent(_ record: AiCallLogRecord) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             callRow("Feature", aiCallLogFeatureLabel(record.feature))
-            callRow("Route", record.route.map(aiCallLogRouteLabel) ?? "Not recorded")
-            callRow("Provider", record.providerName ?? "Not recorded")
-            callRow("Model", record.modelName ?? "Not recorded")
+            callRow(L10n.string("Route"), record.route.map(aiCallLogRouteLabel) ?? L10n.string("Not recorded"))
+            callRow(L10n.string("Provider"), record.providerName ?? L10n.string("Not recorded"))
+            callRow(L10n.string("Model"), record.modelName ?? L10n.string("Not recorded"))
             callRow("Status", aiCallLogStatusLabel(record.status))
             callRow("Sent fields", sentFieldSummary(record.sentFields))
-            callRow("Privacy rule", record.privacyRuleName ?? record.privacyRuleId ?? "None")
+            callRow(
+                L10n.string("Privacy rule"),
+                record.privacyRuleName ?? record.privacyRuleId ?? L10n.string("None")
+            )
             callRow("Result", record.resultSummary)
             if let errorCode = record.errorCode {
                 callRow("Error", errorCode)
@@ -163,7 +166,7 @@ struct AIClassificationCallLogDetailSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("AI call log entry could not be found.", systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
-            Text("Entry \(callLogID) is not present in the current classification call log page.")
+            Text(L10n.format("ai.classification.callLog.entryMissing", callLogID))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button("Retry") { Task { await model.load() } }

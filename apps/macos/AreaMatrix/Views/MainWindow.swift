@@ -197,19 +197,23 @@ extension MainWindow {
     }
 
     private var setupQuitConfirmationTitle: String {
-        isConfirmingInitializationCancel ? "退出初始化？" : "Quit setup?"
+        isConfirmingInitializationCancel
+            ? L10n.string("onboarding.quit.initializationTitle")
+            : L10n.string("onboarding.confirm.quitSetup")
     }
 
     private var setupQuitConfirmationActionTitle: String {
-        isConfirmingInitializationCancel ? "Stop at Safe Point" : "Quit"
+        isConfirmingInitializationCancel
+            ? L10n.string("onboarding.quit.stopAtSafePoint")
+            : L10n.string("onboarding.confirm.quit")
     }
 
     private var setupQuitConfirmationMessage: String {
         if isConfirmingInitializationCancel {
-            return "AreaMatrix 会在当前 Core 操作到达安全点后停止；不会删除用户原文件。"
+            return L10n.string("onboarding.quit.safePointMessage")
         }
 
-        return "AreaMatrix will not create .areamatrix/ or save this repository selection."
+        return L10n.string("onboarding.quit.setupMessage")
     }
 
     private var activeMainRepositoryPath: String? {

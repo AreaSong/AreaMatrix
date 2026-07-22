@@ -107,7 +107,7 @@ final class MainExternalCreatedFileWatcherTests: XCTestCase {
                 cursorWatermark: 330
             ),
             MainExternalCreatedFileEvent(
-                kind: .modified,
+                kind: .created,
                 relativePath: "docs/first.pdf",
                 fsEventID: 330
             )

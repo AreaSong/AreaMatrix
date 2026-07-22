@@ -20,7 +20,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
 
         assertTestMirrorDescription(of: completedView.body, contains: [
             "Startup recovery complete",
-            "启动恢复已完成",
+            "Startup recovery completed",
             "startup-recovery-startup-recovery-core-startup-recovery",
             "startup-recovery-startup-recovery-core-recovery-report"
         ])
@@ -140,7 +140,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             message: "Expected startup-recovery startup recovery to stay in main loading"
         ) else { return }
         XCTAssertEqual(failedState.recoveryErrorMapping, mapping)
-        XCTAssertEqual(failedState.recoveryStatusText, "启动恢复失败：Startup recovery could not finish")
+        XCTAssertEqual(failedState.recoveryStatusText, "Startup recovery failed: Startup recovery could not finish")
 
         let retryTask = Task {
             await model.retryMainRepositoryFromError(repoPath: "/tmp/repo")

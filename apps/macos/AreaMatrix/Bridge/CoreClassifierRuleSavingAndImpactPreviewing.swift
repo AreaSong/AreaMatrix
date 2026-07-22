@@ -40,9 +40,9 @@ enum RuleImpactMatchReasonSnapshot: String, Equatable {
 
     var displayLabel: String {
         switch self {
-        case .keyword: "Keyword"
-        case .extension: "Extension"
-        case .category: "Category"
+        case .keyword: L10n.string("Keyword")
+        case .extension: L10n.string("Extension")
+        case .category: L10n.string("Category")
         }
     }
 }
@@ -54,6 +54,17 @@ enum RuleImpactStatusSnapshot: String, Equatable {
     case conflict = "Name conflict if moved"
     case missing = "Missing file"
     case indexOnly = "Index-only"
+
+    var displayName: String {
+        switch self {
+        case .willUpdate: L10n.string("Will update")
+        case .alreadyCorrect: L10n.string("Already correct")
+        case .needsReview: L10n.string("Needs review")
+        case .conflict: L10n.string("Name conflict if moved")
+        case .missing: L10n.string("Missing file")
+        case .indexOnly: L10n.string("Index-only")
+        }
+    }
 }
 
 enum RuleImpactConflictKindSnapshot: String, Equatable {

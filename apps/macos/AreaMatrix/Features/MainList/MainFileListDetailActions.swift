@@ -135,7 +135,7 @@ extension MainFileListModel {
             guard recoveryState.canLocate else {
                 missingFileRelinkState = .unavailable(
                     fileID: fileID,
-                    message: "AreaMatrix cannot relink this missing file from its current state."
+                    message: L10n.string("AreaMatrix cannot relink this missing file from its current state.")
                 )
                 return
             }
@@ -148,7 +148,7 @@ extension MainFileListModel {
             guard !ImportPlatformServices.isICloudPlaceholder(selectedURL) else {
                 missingFileRelinkState = .unavailable(
                     fileID: fileID,
-                    message: "Download the selected file in Finder, then choose Locate again."
+                    message: L10n.string("Download the selected file in Finder, then choose Locate again.")
                 )
                 return
             }
@@ -190,13 +190,13 @@ extension MainFileListModel {
             guard canApplyMissingFileRelinkResult(fileID: fileID) else { return }
             missingFileRelinkState = .hashMismatch(
                 fileID: fileID,
-                message: report.message ?? "The selected file does not match the stored file hash."
+                message: report.message ?? L10n.string("The selected file does not match the stored file hash.")
             )
         case .missing, .present, .relinked, .recordRemoved, .blocked:
             guard canApplyMissingFileRelinkResult(fileID: fileID) else { return }
             missingFileRelinkState = .unavailable(
                 fileID: fileID,
-                message: report.message ?? "The selected file could not be relinked."
+                message: report.message ?? L10n.string("The selected file could not be relinked.")
             )
         }
     }

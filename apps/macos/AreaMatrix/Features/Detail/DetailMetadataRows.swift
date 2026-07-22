@@ -40,20 +40,20 @@ private struct DetailMetadataRow: View {
 
 func detailMetaMetadataRows(for detail: FileEntrySnapshot) -> [DetailMetaMetadataRow] {
     var rows: [DetailMetaMetadataRow] = []
-    rows.append(DetailMetaMetadataRow(label: "Category", value: detail.category))
-    rows.append(DetailMetaMetadataRow(label: "Path", value: detail.path))
-    rows.append(DetailMetaMetadataRow(label: "Size", value: detail.sizeDisplay))
-    rows.append(DetailMetaMetadataRow(label: "Storage", value: detail.storageMode))
-    rows.append(DetailMetaMetadataRow(label: "Origin", value: detail.origin))
-    rows.append(DetailMetaMetadataRow(label: "Imported", value: detail.importedAtDisplay))
-    rows.append(DetailMetaMetadataRow(label: "Modified", value: detail.updatedAtDisplay))
-    rows.append(DetailMetaMetadataRow(label: "SHA-256", value: detail.hashSha256))
-    rows.append(DetailMetaMetadataRow(label: "Source", value: detailMetaDisplayValue(detail.sourcePath)))
-    rows.append(DetailMetaMetadataRow(label: "Status", value: detail.statusDisplay))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("Category"), value: detail.category))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("Path"), value: detail.path))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("Size"), value: detail.sizeDisplay))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("Storage"), value: detail.storageMode))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("Origin"), value: detail.origin))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("Imported"), value: detail.importedAtDisplay))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("Modified"), value: detail.updatedAtDisplay))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("SHA-256"), value: detail.hashSha256))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("Source"), value: detailMetaDisplayValue(detail.sourcePath)))
+    rows.append(DetailMetaMetadataRow(label: L10n.string("Status"), value: detail.statusDisplay))
     return rows
 }
 
 private func detailMetaDisplayValue(_ value: String?) -> String {
-    guard let value, !value.isEmpty else { return "Not available" }
+    guard let value, !value.isEmpty else { return L10n.string("Not available") }
     return value
 }

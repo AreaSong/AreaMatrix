@@ -16,6 +16,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.createdFixture())),
             scanSessionReader: StaticScanSessionReader(session: scanSession),
             helpOpener: NoopWelcomeHelpOpener()
         )
@@ -126,6 +127,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: startupRecoverer,
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.createdFixture())),
             helpOpener: NoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
@@ -161,6 +163,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: startupRecoverer,
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.createdFixture())),
             helpOpener: NoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
@@ -222,6 +225,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
             pathValidator: InitializingRecordingPathValidator(validation: validation),
             repositoryInitializer: initializer,
             startupRecoverer: StaticStartupRecoverer(),
+            externalChangesSyncer: RecordingExternalChangesSyncer(result: .success(.createdFixture())),
             helpOpener: NoopWelcomeHelpOpener()
         )
         model.updateRepositoryPath("/tmp/adopt")
@@ -245,7 +249,8 @@ final class InitializingStepIntegrationTests: XCTestCase {
         XCTAssertEqual(model.route, .welcome)
         XCTAssertEqual(
             model.toastMessage,
-            "初始化已在安全点停止。下次选择同一资料库时，AreaMatrix 会继续或进入恢复。"
+            "Initialization stopped at a safe point. " +
+                "When you choose the same repository again, AreaMatrix will continue or enter recovery."
         )
     }
 

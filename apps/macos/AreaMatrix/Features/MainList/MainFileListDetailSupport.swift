@@ -90,7 +90,7 @@ enum MultiSelectionDetailLoader {
 
 extension MainFileListModel {
     var currentCategoryDisplayName: String {
-        guard let currentCategory, !currentCategory.isEmpty else { return "files" }
+        guard let currentCategory, !currentCategory.isEmpty else { return L10n.string("files") }
         return currentCategory
     }
 

@@ -1,4 +1,33 @@
+import AppKit
 import SwiftUI
+
+private enum MainRepositoryToolbarAssets {
+    static let darkLogo = resizedLogo(named: "AreaMatrixLogoMarkDark")
+    static let lightLogo = resizedLogo(named: "AreaMatrixLogoMarkLight")
+
+    private static func resizedLogo(named name: String) -> NSImage {
+        guard let source = NSImage(named: name),
+              let logo = source.copy() as? NSImage
+        else {
+            return NSImage(size: NSSize(width: 18, height: 18))
+        }
+
+        logo.size = NSSize(width: 18, height: 18)
+        return logo
+    }
+}
+
+private struct MainRepositoryToolbarLogo: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Image(nsImage: colorScheme == .dark
+            ? MainRepositoryToolbarAssets.darkLogo
+            : MainRepositoryToolbarAssets.lightLogo)
+            .frame(width: 18, height: 18)
+            .accessibilityHidden(true)
+    }
+}
 
 extension MainRepositoryContentView {
     var toolbar: some View {
@@ -8,10 +37,7 @@ extension MainRepositoryContentView {
                 Button("Settings", action: onOpenSettings)
             } label: {
                 HStack(spacing: 5) {
-                    Image("AreaMatrixLogoMark")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 18, height: 18)
+                    MainRepositoryToolbarLogo()
                     Text("AreaMatrix")
                     Image(systemName: "chevron.down")
                         .font(.caption)
@@ -85,6 +111,6 @@ extension MainRepositoryContentView {
     }
 
     private var statusText: String {
-        state == .empty ? "Idle" : "Synced"
+        state == .empty ? L10n.string("Idle") : L10n.string("Synced")
     }
 }

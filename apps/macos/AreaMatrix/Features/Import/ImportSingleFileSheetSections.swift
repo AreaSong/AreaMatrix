@@ -7,7 +7,7 @@ struct ImportSingleFileStorageModeSection: View {
         VStack(alignment: .leading, spacing: 4) {
             Picker("存储模式", selection: $selectedMode) {
                 ForEach(ImportSingleFileStorageMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+                    Text(mode.displayName).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
@@ -180,7 +180,7 @@ struct ImportSingleFileConflictSection: View {
 
             if duplicateResolution == .keepBoth {
                 if let keepBothPath = result.keepBothTargetRelativePath {
-                    Text("新文件名：\(keepBothPath)")
+                    Text(L10n.format("import.single.keep-both-name", keepBothPath))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
@@ -239,7 +239,7 @@ struct ImportSingleFileConflictSection: View {
         switch nameConflictResolution {
         case .keepBoth:
             if result.keepBothTargetRelativePath != nil {
-                Text("最终文件名：\(resolvedNameConflictFilename)")
+                Text(L10n.format("import.single.resolved-filename", resolvedNameConflictFilename))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
@@ -258,7 +258,7 @@ struct ImportSingleFileConflictSection: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             } else {
-                Text("最终路径：\(resolvedNameConflictPath)")
+                Text(L10n.format("import.single.resolved-path", resolvedNameConflictPath))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -360,7 +360,7 @@ struct ImportSingleFileConflictSection: View {
                         countStyle: .file
                     ))
                 }
-                LabeledContent("hash 结论", value: "同名但内容不同")
+                LabeledContent("hash 结论", value: L10n.string("import.conflict.sameNameDifferentContent"))
             }
             .font(.caption)
         case .none, .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,

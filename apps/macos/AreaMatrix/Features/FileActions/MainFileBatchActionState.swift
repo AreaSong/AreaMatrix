@@ -13,7 +13,7 @@ enum MainFileBatchActionEligibility {
         isLoading: Bool,
         writeLockedFileIDs: Set<Int64>
     ) -> String? {
-        if selectedFiles.isEmpty { return "No files selected" }
+        if selectedFiles.isEmpty { return L10n.string("No files selected") }
         return selectedFiles.compactMap {
             MainFileWriteActionEligibility.disabledReason(
                 fileID: $0.id,
@@ -29,7 +29,7 @@ enum MainFileBatchActionEligibility {
         blocksWhileUpdating: Bool,
         writeActionDisabledReason: (Int64) -> MainFileWriteActionDisabledReason?
     ) -> String? {
-        if summary.selectedCount == 0 { return "No files selected" }
+        if summary.selectedCount == 0 { return L10n.string("No files selected") }
         if blocksWhileUpdating, summary.isUpdating {
             return MainFileWriteActionDisabledReason.listLoading.message
         }
@@ -43,7 +43,9 @@ enum MainFileBatchEntryPolicy {
         defaultHelp: String,
         blockedHelpSuffix: String
     ) -> String {
-        disabledReason.map { "\($0). \(blockedHelpSuffix)" } ?? defaultHelp
+        disabledReason.map {
+            L10n.format("file-actions.batch.disabled-help", $0, blockedHelpSuffix)
+        } ?? defaultHelp
     }
 
     static func disabledReason(

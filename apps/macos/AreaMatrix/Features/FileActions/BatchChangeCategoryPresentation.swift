@@ -7,14 +7,22 @@ struct BatchCategoryPreviewReportPresentation: Equatable {
     var blockedSummaryText: String
 
     init(report: BatchCategoryPreviewReportSnapshot) {
-        moveSummaryText = "\(Self.fileText(report.willMoveCount)) will move"
-        metadataSummaryText = "\(Self.fileText(report.metadataOnlyCount)) will update only"
-        skippedSummaryText = "\(Self.fileText(report.skippedCount)) cannot move"
-        blockedSummaryText = "\(Self.fileText(report.blockedCount)) blocked"
-    }
-
-    private static func fileText(_ count: Int64) -> String {
-        count == 1 ? "1 file" : "\(count) files"
+        moveSummaryText = L10n.plural(
+            "file-actions.change-category.preview.will-move",
+            count: Int(report.willMoveCount)
+        )
+        metadataSummaryText = L10n.plural(
+            "file-actions.change-category.preview.metadata-only",
+            count: Int(report.metadataOnlyCount)
+        )
+        skippedSummaryText = L10n.plural(
+            "file-actions.change-category.preview.cannot-move",
+            count: Int(report.skippedCount)
+        )
+        blockedSummaryText = L10n.plural(
+            "file-actions.change-category.preview.blocked",
+            count: Int(report.blockedCount)
+        )
     }
 }
 
@@ -25,12 +33,14 @@ struct BatchCategoryChangeReportPresentation: Equatable {
 
     init(report: BatchCategoryChangeReportSnapshot) {
         let changed = report.movedCount + report.metadataOnlyCount
-        changedSummaryText = "\(Self.fileText(changed)) changed"
-        skippedSummaryText = "\(Self.fileText(report.skippedCount + report.unchangedCount)) skipped or unchanged"
-        failedSummaryText = "\(Self.fileText(report.failedCount)) failed"
-    }
-
-    private static func fileText(_ count: Int64) -> String {
-        count == 1 ? "1 file" : "\(count) files"
+        changedSummaryText = L10n.plural("file-actions.change-category.result.changed", count: Int(changed))
+        skippedSummaryText = L10n.plural(
+            "file-actions.change-category.result.skipped-or-unchanged",
+            count: Int(report.skippedCount + report.unchangedCount)
+        )
+        failedSummaryText = L10n.plural(
+            "file-actions.change-category.result.failed",
+            count: Int(report.failedCount)
+        )
     }
 }

@@ -10,7 +10,7 @@ enum ImportConflictBatchUndoAction {
     ) async -> BatchTagUndoState? {
         guard failure == nil, let report, report.shouldRefreshUndoActionLogAfterApply else { return nil }
         guard let token = normalizedToken(report.undoToken) else {
-            return .unavailable(reason: "Undo is unavailable for this import conflict result.")
+            return .unavailable(reason: L10n.string("Undo is unavailable for this import conflict result."))
         }
 
         let loadResult = await BatchTagUndoAction.loadAction(
@@ -19,7 +19,7 @@ enum ImportConflictBatchUndoAction {
             undoStore: undoStore,
             errorMapper: errorMapper
         )
-        return loadResult.toastState ?? .unavailable(reason: "Undo action is no longer available.")
+        return loadResult.toastState ?? .unavailable(reason: L10n.string("Undo action is no longer available."))
     }
 
     static func undo(

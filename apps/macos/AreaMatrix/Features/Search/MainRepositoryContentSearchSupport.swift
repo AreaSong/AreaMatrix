@@ -27,24 +27,30 @@ extension MainRepositoryContentView {
     }
 
     var searchFiltersButtonTitle: String {
-        searchActiveFilterCount > 0 ? "Filters (\(searchActiveFilterCount))" : "Filters"
+        searchActiveFilterCount > 0
+            ? L10n.plural("search.filterButtonCount", count: searchActiveFilterCount)
+            : L10n.string("Filters")
     }
 
     var searchFiltersAccessibilityLabel: String {
-        "\(searchFiltersButtonTitle), \(searchFilterSummaryText)"
+        L10n.format("search.filters.accessibility-label", searchFiltersButtonTitle, searchFilterSummaryText)
     }
 
     var searchFilterSummaryText: String {
         if fileListModel.isEditingSmartListFilterDraft {
-            return "\(searchActiveFilterCount) draft filters active"
+            return L10n.plural("search.draftActiveFilterCount", count: searchActiveFilterCount)
         }
         if let error = fileListModel.searchFacetsState.errorMapping {
-            return "Could not load filters: \(error.userMessage)"
+            return L10n.format("search.filters.loadError", error.userMessage)
         }
         if let facets = fileListModel.searchFacetsState.facets {
-            return "\(facets.activeFilterCount) filters active, \(facets.totalCount) matching files"
+            return L10n.format(
+                "%d filters active, %d matching files",
+                facets.activeFilterCount,
+                facets.totalCount
+            )
         }
-        return "\(searchFilters.activeFilterCount) filters active"
+        return L10n.plural("search.activeFilterCount", count: searchFilters.activeFilterCount)
     }
 
     var searchActiveFilterCount: Int64 {
@@ -57,12 +63,12 @@ extension MainRepositoryContentView {
     var searchSaveDisabledReason: String? {
         guard !fileListModel.canSaveCurrentSearch else { return nil }
         if fileListModel.searchState.page?.hasDiagnosticError == true {
-            return "Fix query syntax before saving"
+            return L10n.string("Fix query syntax before saving")
         }
         if fileListModel.searchState.request == nil {
-            return "Enter a query before saving"
+            return L10n.string("Enter a query before saving")
         }
-        return "Wait for search results"
+        return L10n.string("Wait for search results")
     }
 
     func clearSearch() {

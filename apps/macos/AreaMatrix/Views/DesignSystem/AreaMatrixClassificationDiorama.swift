@@ -113,7 +113,7 @@ struct AreaMatrixClassificationDiorama: View {
     }
 
     private var miniAppWindow: some View {
-        AreaMatrixMiniWindow(title: "AreaMatrix", width: 340, height: 180) {
+        AreaMatrixMiniWindow(title: L10n.string("AreaMatrix"), width: 340, height: 180) {
             VStack(alignment: .leading, spacing: 12) {
                 dropZone
                 folderTree

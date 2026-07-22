@@ -10,7 +10,7 @@ enum ICloudPlaceholderDownloadError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .timedOut(path):
-            "Timed out waiting for iCloud to download \(path)."
+            L10n.format("icloud.download.timeout", path)
         }
     }
 }

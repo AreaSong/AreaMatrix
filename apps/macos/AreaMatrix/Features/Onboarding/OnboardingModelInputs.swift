@@ -64,7 +64,7 @@ extension OnboardingModel {
     func routeValidationFailure(_ error: Error, repoPath: String) async {
         guard let mapping = await errorMapper.mapKnownErrorIfPresent(error) else {
             repositoryPathErrorMapping = nil
-            repositoryPathError = "路径字符串无法解析"
+            repositoryPathError = L10n.string("路径字符串无法解析")
             return
         }
 
@@ -90,30 +90,33 @@ extension OnboardingModel {
         let checks: [(Bool, String)] = [
             (
                 validation.isInsideAreaMatrix || validation.issues.contains(.insideAreaMatrix),
-                "请选择资料库根目录，而不是 .areamatrix 内部目录"
+                L10n.string("请选择资料库根目录，而不是 .areamatrix 内部目录")
             ),
             (
                 !validation.exists || validation.issues.contains(.missingPath),
-                "路径不存在，请选择已存在的文件夹"
+                L10n.string("路径不存在，请选择已存在的文件夹")
             ),
-            (!validation.isDirectory || validation.issues.contains(.notDirectory), "请选择文件夹路径"),
+            (
+                !validation.isDirectory || validation.issues.contains(.notDirectory),
+                L10n.string("onboarding.validate.chooseFolderPath")
+            ),
             (
                 !validation.isReadable || validation.issues.contains(.notReadable),
-                "AreaMatrix 没有读取该位置的权限"
+                L10n.string("AreaMatrix 没有读取该位置的权限")
             ),
             (
                 !validation.isWritable || validation.issues.contains(.notWritable),
-                "AreaMatrix 没有写入该位置的权限"
+                L10n.string("AreaMatrix 没有写入该位置的权限")
             ),
-            (validation.hasInsufficientAvailableCapacity, "可用空间不足，请释放空间或选择其他路径"),
-            (validation.hasMissingEnvironmentChecks, "路径环境检查缺失，请重试或选择其他路径"),
+            (validation.hasInsufficientAvailableCapacity, L10n.string("可用空间不足，请释放空间或选择其他路径")),
+            (validation.hasMissingEnvironmentChecks, L10n.string("路径环境检查缺失，请重试或选择其他路径")),
             (
                 validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession),
-                "该资料库存在未完成的扫描记录，请先进入修复流程"
+                L10n.string("该资料库存在未完成的扫描记录，请先进入修复流程")
             ),
             (
                 validation.recommendedMode == nil && !validation.isInitialized,
-                "该路径暂时不能作为资料库使用"
+                L10n.string("该路径暂时不能作为资料库使用")
             )
         ]
 
@@ -123,10 +126,10 @@ extension OnboardingModel {
     func localRepositoryPathError(for value: String) -> String? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if trimmed.isEmpty { return "请输入资料库路径" }
-        if trimmed.contains("\0") { return "路径字符串无法解析" }
+        if trimmed.isEmpty { return L10n.string("请输入资料库路径") }
+        if trimmed.contains("\0") { return L10n.string("路径字符串无法解析") }
         if Self.pathContainsAreaMatrixComponent(trimmed) {
-            return "请选择资料库根目录，而不是 .areamatrix 内部目录"
+            return L10n.string("请选择资料库根目录，而不是 .areamatrix 内部目录")
         }
         return nil
     }

@@ -12,29 +12,29 @@ enum ICloudConflictResolutionStrategy: String, CaseIterable, Equatable, Identifi
     var title: String {
         switch self {
         case .keepBoth:
-            "保留两份（推荐）"
+            L10n.string("icloud.conflict.keepBoth")
         case .keepOriginalOnly:
-            "仅保留第一份（把另一份移到回收站）"
+            L10n.string("icloud.conflict.keepOriginal")
         case .keepConflictedCopyOnly:
-            "仅保留第二份（把另一份移到回收站）"
+            L10n.string("icloud.conflict.keepCopy")
         }
     }
 
     var actionTitle: String {
         switch self {
         case .keepBoth:
-            "Apply"
+            L10n.string("icloud.conflict.apply")
         case .keepOriginalOnly, .keepConflictedCopyOnly:
-            "Move other version to Trash and Apply"
+            L10n.string("icloud.conflict.trashAndApply")
         }
     }
 
     var runningTitle: String {
         switch self {
         case .keepBoth:
-            "Applying..."
+            L10n.string("icloud.conflict.applying")
         case .keepOriginalOnly, .keepConflictedCopyOnly:
-            "Moving to Trash..."
+            L10n.string("icloud.conflict.movingToTrash")
         }
     }
 
@@ -45,11 +45,11 @@ enum ICloudConflictResolutionStrategy: String, CaseIterable, Equatable, Identifi
     var successMessage: String {
         switch self {
         case .keepBoth:
-            "Both iCloud conflict versions kept. Conflict state and change log were refreshed."
+            L10n.string("icloud.conflict.keepBothSuccess")
         case .keepOriginalOnly:
-            "Original version kept. The other version was handled through Core resolution."
+            L10n.string("icloud.conflict.keepOriginalSuccess")
         case .keepConflictedCopyOnly:
-            "Conflicted copy kept. The other version was handled through Core resolution."
+            L10n.string("icloud.conflict.keepCopySuccess")
         }
     }
 }
@@ -86,7 +86,7 @@ enum ICloudConflictResolutionState: Equatable {
         selectedStrategy: ICloudConflictResolutionStrategy
     ) -> String {
         if isApplying(fileID: fileID) { return selectedStrategy.runningTitle }
-        if failure(fileID: fileID) != nil { return "Retry" }
+        if failure(fileID: fileID) != nil { return L10n.string("Retry") }
         return selectedStrategy.actionTitle
     }
 }
@@ -102,14 +102,9 @@ struct ICloudConflictResolutionBlocker: Equatable {
     }
 
     static let missingCoreResolutionEndpoint = ICloudConflictResolutionBlocker(
-        title: "Core resolution unavailable",
-        message: """
-        icloud-conflict-minimal can validate the repository and map errors, but the Core resolution endpoint that \
-        clears conflict state and writes change_log is not available yet.
-        """,
-        suggestedAction: """
-        Keep the conflict unresolved and return after the iCloud conflict resolution capability is implemented.
-        """,
+        title: L10n.string("Core resolution unavailable"),
+        message: L10n.string("icloud.conflict.resolutionUnavailable.message"),
+        suggestedAction: L10n.string("icloud.conflict.resolutionUnavailable.recovery"),
         rawContext: "Missing Core API: resolve_icloud_conflict or mark_icloud_conflict_resolved"
     )
 }

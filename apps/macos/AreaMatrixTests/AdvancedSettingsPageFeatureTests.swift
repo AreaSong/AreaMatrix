@@ -127,7 +127,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         await model.confirmRootOverview()
 
         XCTAssertEqual(model.draft?.overviewOutput, .generatedOnly)
-        XCTAssertEqual(model.saveError?.message, "Could not save overview setting")
+        XCTAssertEqual(model.saveError?.message, L10n.string("Could not save overview setting"))
         XCTAssertEqual(model.retrySaveAccessibilityIdentifier, "advanced-settings-overview-generated-retry-save")
         XCTAssertTrue(model.hasRetryableSave)
 
@@ -140,8 +140,11 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testOverviewOutputSectionIsTaggedAsAdvancedSettingsOverviewGeneratedCoreFeature() {
-        XCTAssertEqual(AdvancedSettingsOverviewOutput.generatedOnly.label, "Generated only")
-        XCTAssertEqual(AdvancedSettingsOverviewOutput.rootAreaMatrixFile.label, "Root AREAMATRIX.md")
+        XCTAssertEqual(AdvancedSettingsOverviewOutput.generatedOnly.label, L10n.string("Generated only"))
+        XCTAssertEqual(
+            AdvancedSettingsOverviewOutput.rootAreaMatrixFile.label,
+            L10n.string("Root AREAMATRIX.md")
+        )
         XCTAssertEqual(
             AdvancedSettingsAccessibilityID.overviewOutput,
             "advanced-settings-overview-generated-overview-output"
@@ -179,7 +182,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         await model.confirmAllowReplaceDuringImport()
 
         XCTAssertEqual(model.draft?.allowReplaceDuringImport, false)
-        XCTAssertEqual(model.saveError?.message, "Could not save advanced setting")
+        XCTAssertEqual(model.saveError?.message, L10n.string("Could not save advanced setting"))
         XCTAssertEqual(model.saveError?.recovery, "Retry save")
         XCTAssertTrue(model.hasRetryableSave)
 

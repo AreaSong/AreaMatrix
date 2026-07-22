@@ -23,13 +23,13 @@ private struct ClassifierSettingsConfigPathSection: View {
     @ObservedObject var model: ClassifierSettingsModel
 
     var body: some View {
-        ClassifierSettingsSection(title: "配置路径") {
+        ClassifierSettingsSection(title: L10n.string("settings.classifier.section.configPath")) {
             ClassifierSettingsKeyValueRow(
-                label: "classifier.yaml",
+                label: L10n.string("classifier.yaml"),
                 value: model.classifierConfigPath
             )
             ClassifierSettingsKeyValueRow(
-                label: "Validation",
+                label: L10n.string("settings.classifier.label.validation"),
                 value: model.validationStatusLabel
             )
         }
@@ -40,7 +40,7 @@ private struct ClassifierSettingsRulesSection: View {
     @ObservedObject var model: ClassifierSettingsModel
 
     var body: some View {
-        ClassifierSettingsSection(title: "规则引擎") {
+        ClassifierSettingsSection(title: L10n.string("settings.classifier.section.ruleEngine")) {
             VStack(alignment: .leading, spacing: 12) {
                 Toggle("Enable extension rules", isOn: extensionRulesSelection)
                     .accessibilityIdentifier("classifier-settings-enable-extension-rules")
@@ -62,7 +62,7 @@ private struct ClassifierSettingsRulesSection: View {
             }
             .disabled(writesDisabled)
 
-            Text("这些开关写入当前资料库配置。")
+            Text(L10n.string("settings.classifier.repositoryScope"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -111,7 +111,7 @@ private struct ClassifierSettingsYAMLActionsSection: View {
     @Binding var showingRevertConfirmation: Bool
 
     var body: some View {
-        ClassifierSettingsSection(title: "YAML 操作") {
+        ClassifierSettingsSection(title: L10n.string("settings.classifier.section.yamlActions")) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
                     Button {
@@ -225,7 +225,7 @@ private struct ClassifierSettingsPreviewSection: View {
     @ObservedObject var model: ClassifierSettingsModel
 
     var body: some View {
-        ClassifierSettingsSection(title: "分类预览") {
+        ClassifierSettingsSection(title: L10n.string("settings.classifier.section.preview")) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     TextField("Invoice_2026Q1.pdf", text: previewFilenameBinding)
@@ -282,12 +282,24 @@ private struct ClassifierSettingsPreviewSection: View {
 
     private func previewResultView(_ result: ClassifyResultSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("预览结果")
+            Text(L10n.string("settings.classifier.preview.result"))
                 .font(.subheadline.weight(.semibold))
-            ClassifierSettingsKeyValueRow(label: "分类", value: result.category)
-            ClassifierSettingsKeyValueRow(label: "建议名称", value: result.suggestedName)
-            ClassifierSettingsKeyValueRow(label: "原因", value: result.reason.displayLabel)
-            ClassifierSettingsKeyValueRow(label: "置信度", value: "\(result.confidencePercent)%")
+            ClassifierSettingsKeyValueRow(
+                label: L10n.string("settings.classifier.label.category"),
+                value: result.category
+            )
+            ClassifierSettingsKeyValueRow(
+                label: L10n.string("settings.classifier.label.suggestedName"),
+                value: result.suggestedName
+            )
+            ClassifierSettingsKeyValueRow(
+                label: L10n.string("settings.classifier.label.reason"),
+                value: result.reason.displayLabel
+            )
+            ClassifierSettingsKeyValueRow(
+                label: L10n.string("settings.classifier.label.confidence"),
+                value: L10n.format("settings.classifier.confidencePercent", result.confidencePercent)
+            )
         }
         .accessibilityIdentifier("classifier-settings-preview-result")
     }

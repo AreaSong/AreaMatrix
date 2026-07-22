@@ -88,7 +88,7 @@ func assertImportBlockedByUnresolvedConflicts(
     file: StaticString = #filePath,
     line: UInt = #line
 ) {
-    XCTAssertEqual(importDisabledReason, "存在 BLOCKED 项，请先完成冲突处理", file: file, line: line)
+    XCTAssertEqual(importDisabledReason, "Resolve conflicts before importing blocked items", file: file, line: line)
 }
 
 func assertImportEnabled(

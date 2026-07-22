@@ -34,10 +34,10 @@ struct RemoteProviderConfigDraft: Equatable {
     }
 
     func enableDisabledReason(verifiedToken: String?) -> String {
-        if trimmedAPIKey.isEmpty { return "API key is required." }
-        if selectedScopes.isEmpty { return "Select at least one usage scope." }
-        if !dataFlowConfirmed { return "Confirm the remote data flow." }
-        if verifiedToken == nil { return "Verify the connection before enabling remote AI." }
+        if trimmedAPIKey.isEmpty { return L10n.string("API key is required.") }
+        if selectedScopes.isEmpty { return L10n.string("Select at least one usage scope.") }
+        if !dataFlowConfirmed { return L10n.string("Confirm the remote data flow.") }
+        if verifiedToken == nil { return L10n.string("Verify the connection before enabling remote AI.") }
         return ""
     }
 

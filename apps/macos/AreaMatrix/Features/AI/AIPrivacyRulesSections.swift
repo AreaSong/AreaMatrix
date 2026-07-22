@@ -2,7 +2,7 @@ import SwiftUI
 
 extension AIPrivacyRulesView {
     var fieldSection: some View {
-        AdvancedSettingsSection(title: "Remote allowed fields") {
+        AdvancedSettingsSection(title: L10n.string("Remote allowed fields")) {
             if !privacyModel.canEditRemoteFields {
                 Text("Remote AI is blocked.").font(.callout).foregroundStyle(.secondary)
             }
@@ -16,9 +16,13 @@ extension AIPrivacyRulesView {
                 Text(aiPrivacyInputFieldLabel(field.field))
             }
             .disabled(!privacyModel.canEditRemoteFields)
-            Text("\(field.allowRemote ? "Allowed" : "Blocked") - \(field.lastMatchedCount) recent matches")
-                .font(.caption)
-                .foregroundStyle(field.allowRemote ? Color.secondary : Color.orange)
+            Text(L10n.format(
+                "ai.privacy.fieldMatchSummary",
+                field.allowRemote ? L10n.string("Allowed") : L10n.string("Blocked"),
+                field.lastMatchedCount
+            ))
+            .font(.caption)
+            .foregroundStyle(field.allowRemote ? Color.secondary : Color.orange)
             if field.field == .noteSummary {
                 Text("Derived from your note. Full note text is never sent.")
                     .font(.caption)
@@ -30,7 +34,7 @@ extension AIPrivacyRulesView {
     }
 
     var ruleListSection: some View {
-        AdvancedSettingsSection(title: "Privacy rules") {
+        AdvancedSettingsSection(title: L10n.string("Privacy rules")) {
             if privacyModel.rules.isEmpty {
                 AIPrivacyEmptyRulesView(
                     onAddRule: beginAddRule,
@@ -48,7 +52,8 @@ extension AIPrivacyRulesView {
 
     func ruleRow(_ rule: AiPrivacyRuleRecord) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(rule.enabled ? "Enabled" : "Disabled").frame(width: 70, alignment: .leading)
+            Text(rule.enabled ? L10n.string("Enabled") : L10n.string("Disabled"))
+                .frame(width: 70, alignment: .leading)
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(rule.kind.aiPrivacyRulesLabel): \(rule.pattern)")
                     .font(.callout.weight(.medium))
@@ -65,7 +70,7 @@ extension AIPrivacyRulesView {
             }
             Spacer()
             Button("Edit") { beginEditRule(rule) }
-            Button(rule.enabled ? "Disable" : "Enable") { toggleRule(rule) }
+            Button(rule.enabled ? L10n.string("Disable") : L10n.string("Enable")) { toggleRule(rule) }
             Button("Delete...") { deletionCandidate = rule }
         }
         .font(.callout)
@@ -79,7 +84,7 @@ extension AIPrivacyRulesView {
     var ruleEditorSection: some View {
         if editorMode == .visible {
             AIPrivacyRuleEditorView(
-                title: editorDraft.isEditing ? "Edit rule" : "Add rule",
+                title: editorDraft.isEditing ? L10n.string("Edit rule") : L10n.string("Add rule"),
                 draft: $editorDraft,
                 registry: registry,
                 isSaving: privacyModel.isSaving,
@@ -90,7 +95,7 @@ extension AIPrivacyRulesView {
     }
 
     var testRulesSection: some View {
-        AdvancedSettingsSection(title: "Test rules") {
+        AdvancedSettingsSection(title: L10n.string("Test rules")) {
             TextField("Test repo-relative path", text: testPath)
                 .textFieldStyle(.roundedBorder)
             TextField("Current category", text: testCategoryBinding)

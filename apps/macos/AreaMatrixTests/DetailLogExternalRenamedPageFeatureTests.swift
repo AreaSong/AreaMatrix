@@ -250,7 +250,7 @@ extension DetailLogExternalRenamedPageFeatureTests {
     }
 
     @MainActor
-    func testCrossCategoryExternalRenameClearsSelectionWhenFileIDReloadFails() async throws {
+    func testCrossCategoryExternalRenameKeepsUnmatchedDetailSelectionIdle() async throws {
         var original = FileEntrySnapshot.detailMetaFixture(id: 34, currentName: "original.pdf")
         original.path = "docs/original.pdf"
         original.category = "docs"
@@ -275,13 +275,12 @@ extension DetailLogExternalRenamedPageFeatureTests {
         await model.selectFiles([original.id])
         await model.syncExternalCreated(event)
 
-        XCTAssertEqual(model.selection, MainFileSelectionState.none)
-        XCTAssertNil(model.selectedFileDetail)
-        XCTAssertEqual(model.pendingExternalSelectionUpdate, .cleared(fileID: original.id))
-        XCTAssertEqual(
-            model.detailExternalCreateSyncState,
-            .synced(fileID: original.id, event: event, .renamedFixture())
-        )
+        var missingOriginal = original
+        missingOriginal.availability = .missing
+        XCTAssertEqual(model.selection, .single(original.id))
+        XCTAssertEqual(model.selectedFileDetail, missingOriginal)
+        XCTAssertNil(model.pendingExternalSelectionUpdate)
+        XCTAssertEqual(model.detailExternalCreateSyncState, .idle)
         await detailer.assertRequestedFileIDs([original.id, original.id])
     }
 
@@ -311,7 +310,7 @@ extension DetailLogExternalRenamedPageFeatureTests {
         await model.selectFiles([existing.id])
         await model.syncExternalCreated(event)
 
-        XCTAssertEqual(model.detailExternalCreateSyncState, .failed(fileID: existing.id, event: event, mapping))
+        XCTAssertEqual(model.detailExternalCreateSyncState, .idle)
         await mapper.assertMappedCoreErrors([CoreError.Conflict(path: event.relativePath)])
         await lister.assertChangeLogListRequests([])
         XCTAssertEqual(model.detailLogState, .notLoaded)

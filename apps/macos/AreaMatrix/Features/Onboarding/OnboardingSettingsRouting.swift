@@ -9,7 +9,7 @@ extension OnboardingModel {
         case .settingsGeneral:
             break
         default:
-            toastMessage = "Open a repository before changing repository settings."
+            toastMessage = L10n.string("Open a repository before changing repository settings.")
         }
     }
 

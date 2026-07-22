@@ -1,18 +1,49 @@
 import SwiftUI
 
 enum SyncConflictEntryCopy {
-    static let bannerTitle = "Sync conflict needs review"
-    static let bannerMessage =
-        "AreaMatrix found files that may represent different versions. No version has been deleted."
-    static let reviewAction = "Review"
-    static let laterAction = "Later"
-    static let listTitle = "Needs Review"
-    static let loadingTitle = "Checking conflicts..."
-    static let emptyTitle = "No items need review."
-    static let errorTitle = "Could not load review items"
-    static let retryAction = "Try again"
-    static let repairAction = "Repair index first"
-    static let detailTitle = "This file has a sync conflict"
+    static var bannerTitle: String {
+        L10n.string("Sync conflict needs review")
+    }
+
+    static var bannerMessage: String {
+        L10n.string("AreaMatrix found files that may represent different versions. No version has been deleted.")
+    }
+
+    static var reviewAction: String {
+        L10n.string("Review")
+    }
+
+    static var laterAction: String {
+        L10n.string("Later")
+    }
+
+    static var listTitle: String {
+        L10n.string("Needs Review")
+    }
+
+    static var loadingTitle: String {
+        L10n.string("Checking conflicts...")
+    }
+
+    static var emptyTitle: String {
+        L10n.string("No items need review.")
+    }
+
+    static var errorTitle: String {
+        L10n.string("Could not load review items")
+    }
+
+    static var retryAction: String {
+        L10n.string("Try again")
+    }
+
+    static var repairAction: String {
+        L10n.string("Repair index first")
+    }
+
+    static var detailTitle: String {
+        L10n.string("This file has a sync conflict")
+    }
 }
 
 enum SyncConflictEntryAccessibilityID {
@@ -150,10 +181,10 @@ private extension SyncConflictEntryPanel {
 
     private func metadataSummary(_ snapshot: SyncConflictEntrySnapshot) -> some View {
         HStack(spacing: 12) {
-            Text("\(snapshot.count) conflicts")
-            Text("Latest \(snapshot.latestDetectedDisplay)")
+            Text(L10n.plural("syncConflict.count", count: snapshot.count))
+            Text(L10n.format("syncConflict.latestDetected", snapshot.latestDetectedDisplay))
             Text(snapshot.typeSummary)
-            Text("Severity \(snapshot.severitySummary)")
+            Text(L10n.format("syncConflict.severity", snapshot.severitySummary))
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -169,9 +200,14 @@ private extension SyncConflictEntryPanel {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                Text("\(conflict.conflictType.displayName) - \(conflict.sourceDisplay) - \(conflict.detectedDisplay)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(L10n.format(
+                    "syncConflict.entry.summary",
+                    conflict.conflictType.displayName,
+                    conflict.sourceDisplay,
+                    conflict.detectedDisplay
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             Spacer()
             reviewButton(conflict)
@@ -231,11 +267,11 @@ private extension SyncConflictEntryPanel {
     private func badgeTitle(_ conflict: SyncConflictSnapshot) -> String {
         switch conflict.conflictType {
         case .missingVersion:
-            "Missing version"
+            L10n.string("Missing version")
         case .unknown:
-            "Unknown source"
+            L10n.string("Unknown source")
         case .sameNameDifferentContent, .concurrentModification, .metadataMismatch:
-            "Conflict"
+            L10n.string("Conflict")
         }
     }
 
@@ -280,7 +316,11 @@ struct SyncConflictDetailBanner: View {
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(SyncConflictEntryCopy.detailTitle). \(conflict.fileDisplayName). Review.")
+            .accessibilityLabel(L10n.format(
+                "syncConflict.detail.accessibilityLabel",
+                SyncConflictEntryCopy.detailTitle,
+                conflict.fileDisplayName
+            ))
             .accessibilityIdentifier(SyncConflictEntryAccessibilityID.detailBanner)
         }
     }

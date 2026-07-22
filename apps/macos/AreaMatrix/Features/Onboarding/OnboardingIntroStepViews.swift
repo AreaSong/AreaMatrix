@@ -62,8 +62,8 @@ struct ChoosePathStepView: View {
 
     private var header: some View {
         AreaMatrixStepHeader(
-            title: "选择资料库位置",
-            subtitle: "资料库是一个普通文件夹，你可以随时在 Finder 中访问它。\n接管已有目录不会移动、重命名或删除你的任何原文件。"
+            title: L10n.string("onboarding.location.title"),
+            subtitle: L10n.string("onboarding.location.subtitle")
         ) {
             ZStack {
                 Image(systemName: "folder.badge.gearshape")

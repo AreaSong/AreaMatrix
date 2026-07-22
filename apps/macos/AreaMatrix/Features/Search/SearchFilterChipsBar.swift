@@ -11,7 +11,7 @@ struct SearchFilterChipsBar: View {
                     ForEach(chips) { chip in
                         SearchFilterChipButton(
                             title: chip.label,
-                            accessibilityLabel: "Remove filter \(chip.label)"
+                            accessibilityLabel: L10n.format("search.filter.remove.accessibilityLabel", chip.label)
                         ) {
                             filters = SearchFilterEditing.removing(chip.kind, from: filters)
                         }
@@ -19,7 +19,7 @@ struct SearchFilterChipsBar: View {
                 }
             }
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("\(chips.count) active filters")
+            .accessibilityLabel(L10n.plural("search.activeFilterCount", count: chips.count))
         }
     }
 }
@@ -37,7 +37,10 @@ struct SelectedTagChips: View {
                     ForEach(filters.tags, id: \.self) { tag in
                         SearchFilterChipButton(
                             title: label(for: tag),
-                            accessibilityLabel: "Remove tag filter \(label(for: tag))"
+                            accessibilityLabel: L10n.format(
+                                "search.tagFilter.remove.accessibilityLabel",
+                                label(for: tag)
+                            )
                         ) {
                             filters = SearchFilterEditing.removingTag(tag, from: filters)
                         }

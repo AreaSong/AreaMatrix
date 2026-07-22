@@ -24,11 +24,11 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.loadState, .loaded)
         XCTAssertEqual(model.draft?.defaultStorageMode, .indexOnly)
         XCTAssertEqual(model.draft?.overviewOutput, .rootAreaMatrixFile)
-        XCTAssertEqual(model.draft?.locale, .en)
+        XCTAssertEqual(model.draft?.contentLanguage, .en)
     }
 
     @MainActor
-    func testCopyAndLocaleSaveThroughUpdateConfigWithoutMockState() async {
+    func testCopyAndContentLanguageSaveThroughUpdateConfigWithoutMockState() async {
         let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = await loadedModel(updater: updater, config: .generalSettingsFixture(
             repoPath: "/tmp/repo",
@@ -38,26 +38,26 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         ))
 
         await model.requestStorageMode(.copy)
-        await model.updateLocale(.zhCN)
-        await model.updateLocale(.system)
+        await model.updateContentLanguage(.zhHans)
+        await model.updateContentLanguage(.followInterface)
 
         await updater.assertRequestedRepoPaths(["/tmp/repo", "/tmp/repo", "/tmp/repo"])
         await updater.assertRequestedConfigValue(at: 0, \.defaultMode, "Copied")
-        await updater.assertRequestedConfigValue(at: 1, \.locale, "zh-CN")
+        await updater.assertRequestedConfigValue(at: 1, \.locale, "zh-Hans")
         await updater.assertRequestedConfigValue(at: 2, \.locale, "system")
         XCTAssertEqual(model.draft?.defaultStorageMode, .copy)
-        XCTAssertEqual(model.draft?.locale, .system)
+        XCTAssertEqual(model.draft?.contentLanguage, .followInterface)
     }
 
     @MainActor
-    func testLocaleMappingKeepsSystemZhCNAndEnglishAsDistinctRoundTripStates() {
-        XCTAssertEqual(GeneralSettingsLocale.system.snapshotValue, "system")
-        XCTAssertEqual(GeneralSettingsLocale.zhCN.snapshotValue, "zh-CN")
-        XCTAssertEqual(GeneralSettingsLocale.en.snapshotValue, "en")
-        XCTAssertEqual(GeneralSettingsLocale(snapshotValue: "system"), .system)
-        XCTAssertEqual(GeneralSettingsLocale(snapshotValue: "zh-CN"), .zhCN)
-        XCTAssertEqual(GeneralSettingsLocale(snapshotValue: "en"), .en)
-        XCTAssertEqual(GeneralSettingsLocale(snapshotValue: "zh-Hans"), .zhCN)
+    func testContentLanguageMappingCanonicalizesLegacyChineseLocale() {
+        XCTAssertEqual(RepositoryContentLanguage.followInterface.snapshotValue, "system")
+        XCTAssertEqual(RepositoryContentLanguage.zhHans.snapshotValue, "zh-Hans")
+        XCTAssertEqual(RepositoryContentLanguage.en.snapshotValue, "en")
+        XCTAssertEqual(RepositoryContentLanguage(snapshotValue: "system"), .followInterface)
+        XCTAssertEqual(RepositoryContentLanguage(snapshotValue: "zh-CN"), .zhHans)
+        XCTAssertEqual(RepositoryContentLanguage(snapshotValue: "en"), .en)
+        XCTAssertEqual(RepositoryContentLanguage(snapshotValue: "zh-Hans"), .zhHans)
     }
 
     func testCoreRepositoryTreeLocaleResolverNormalizesStoredLocales() {
@@ -86,7 +86,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
                 "system",
                 preferredLanguages: ["zh-Hant-TW", "fr-FR"]
             ),
-            "en"
+            "zh-Hans"
         )
     }
 
@@ -191,16 +191,16 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         let updater = RecordingConfigurationUpdater(failureThenSuccess: CoreError.Db(message: "locked"))
         let model = await loadedModel(updater: updater)
 
-        await model.updateLocale(.en)
+        await model.updateContentLanguage(.en)
 
-        XCTAssertEqual(model.draft?.locale, .system)
+        XCTAssertEqual(model.draft?.contentLanguage, .followInterface)
         XCTAssertEqual(model.saveError?.message, "数据库错误")
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
 
         await updater.assertRequestedConfigValues(\.locale, ["en", "en"])
-        XCTAssertEqual(model.draft?.locale, .en)
+        XCTAssertEqual(model.draft?.contentLanguage, .en)
         XCTAssertNil(model.saveError)
     }
 
@@ -216,17 +216,17 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         await model.requestStorageMode(.indexOnly)
         XCTAssertEqual(model.pendingStorageConfirmation, .indexOnly)
         await model.confirmPendingStorageMode()
-        await model.updateLocale(.en)
+        await model.updateContentLanguage(.en)
         var reloaded = try await bridge.loadConfig(repoPath: repoURL.path)
 
         XCTAssertEqual(reloaded.defaultMode, "Indexed")
         XCTAssertEqual(reloaded.locale, "en")
-        await model.updateLocale(.system)
+        await model.updateContentLanguage(.followInterface)
         reloaded = try await bridge.loadConfig(repoPath: repoURL.path)
         XCTAssertEqual(reloaded.locale, "system")
-        await model.updateLocale(.zhCN)
+        await model.updateContentLanguage(.zhHans)
         reloaded = try await bridge.loadConfig(repoPath: repoURL.path)
-        XCTAssertEqual(reloaded.locale, "zh-CN")
+        XCTAssertEqual(reloaded.locale, "zh-Hans")
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
     }

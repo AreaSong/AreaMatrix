@@ -35,9 +35,9 @@ struct DetailTagUndoToast: Equatable, Identifiable {
     var message: String {
         switch action {
         case .removeAddedTag:
-            "Added tag \"\(displayName)\"."
+            L10n.format("detail.tag.added", displayName)
         case .restoreRemovedTag:
-            "Removed tag \"\(displayName)\"."
+            L10n.format("detail.tag.removed", displayName)
         }
     }
 
@@ -137,7 +137,10 @@ extension TagSetSnapshot {
 }
 
 enum TagInputNormalization {
-    static let invalidMessage = "Tag name is invalid."
+    static var invalidMessage: String {
+        L10n.string("Tag name is invalid.")
+    }
+
     private static let maxTagLength = 64
     private static let reservedValues: Set<String> = [".", "..", ".areamatrix", "areamatrix"]
 
@@ -224,7 +227,7 @@ enum TagFilterRegistryPresentation {
 extension SearchFacetCountSnapshot {
     var countDisplayText: String {
         if count < 0 || disabled { return "--" }
-        return "\(count) files"
+        return L10n.plural("common.fileCount", count: count)
     }
 
     func isSelected(in filters: SearchFilterStateSnapshot) -> Bool {
@@ -232,9 +235,9 @@ extension SearchFacetCountSnapshot {
     }
 
     func accessibilityLabel(isSelected: Bool) -> String {
-        let state = isSelected ? "selected" : "not selected"
-        let availability = disabled ? "disabled" : countDisplayText
-        return "\(label), \(availability), \(state)"
+        let state = isSelected ? L10n.string("selected") : L10n.string("not selected")
+        let availability = disabled ? L10n.string("disabled") : countDisplayText
+        return L10n.format("detail.tag.accessibility", label, availability, state)
     }
 }
 
@@ -242,9 +245,9 @@ extension SearchTagMatchModeSnapshot {
     var accessibilityText: String {
         switch self {
         case .any:
-            "Any selected tag"
+            L10n.string("Any selected tag")
         case .all:
-            "All selected tags"
+            L10n.string("All selected tags")
         }
     }
 }

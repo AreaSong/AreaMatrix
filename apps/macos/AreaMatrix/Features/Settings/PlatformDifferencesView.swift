@@ -7,7 +7,7 @@ struct PlatformDifferencesView: View {
 
     @MainActor
     init(
-        repositoryText: String = "Not connected",
+        repositoryText: String = L10n.string("Not connected"),
         onOpenRepositorySettings: @escaping () -> Void = {},
         onClose: @escaping () -> Void = {}
     ) {
@@ -54,10 +54,10 @@ struct PlatformDifferencesView: View {
 
     private var summary: some View {
         VStack(alignment: .leading, spacing: 6) {
-            PlatformDifferencesKeyValueRow(label: "Platform", value: model.hostPlatform.rawValue)
-            PlatformDifferencesKeyValueRow(label: "Repository", value: model.repositoryText)
-            PlatformDifferencesKeyValueRow(label: "App version", value: model.appVersion)
-            PlatformDifferencesKeyValueRow(label: "Core version", value: coreVersionText)
+            PlatformDifferencesKeyValueRow(label: L10n.string("Platform"), value: model.hostPlatform.displayName)
+            PlatformDifferencesKeyValueRow(label: L10n.string("Repository"), value: model.repositoryText)
+            PlatformDifferencesKeyValueRow(label: L10n.string("App version"), value: model.appVersion)
+            PlatformDifferencesKeyValueRow(label: L10n.string("Core version"), value: coreVersionText)
             Text("Capability matrix does not replace operation-time permission checks.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -68,7 +68,7 @@ struct PlatformDifferencesView: View {
         HStack(alignment: .center, spacing: 12) {
             Picker("Binding target", selection: selectedTargetBinding) {
                 ForEach(BindingTargetPlatformSnapshot.allCases, id: \.self) { targetPlatform in
-                    Text(targetPlatform.rawValue).tag(targetPlatform)
+                    Text(targetPlatform.displayName).tag(targetPlatform)
                 }
             }
             .pickerStyle(.segmented)
@@ -91,7 +91,7 @@ struct PlatformDifferencesView: View {
     private var capabilityContent: some View {
         switch model.capabilityState {
         case .loading:
-            SettingsInlineProgressStatus(title: "Checking platform capabilities...")
+            SettingsInlineProgressStatus(title: L10n.string("Checking platform capabilities..."))
         case let .loaded(capabilities):
             capabilityMatrix(capabilities)
         case let .failed(capabilities, error):
@@ -104,7 +104,7 @@ struct PlatformDifferencesView: View {
     private var contractContent: some View {
         switch model.contractState {
         case .loading:
-            SettingsInlineProgressStatus(title: "Checking binding contract...")
+            SettingsInlineProgressStatus(title: L10n.string("Checking binding contract..."))
         case let .loaded(report):
             contractReport(report)
         case let .failed(error):
@@ -124,10 +124,10 @@ struct PlatformDifferencesView: View {
 
     private func contractReport(_ report: BindingContractReportSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            PlatformDifferencesKeyValueRow(label: "Target", value: report.targetPlatform.rawValue)
-            PlatformDifferencesKeyValueRow(label: "Contract version", value: "\(report.bindingVersion)")
-            PlatformDifferencesKeyValueRow(label: "Core version", value: report.coreVersion)
-            contractRows(title: "Supported APIs", rows: report.supportedApis.map {
+            PlatformDifferencesKeyValueRow(label: L10n.string("Target"), value: report.targetPlatform.displayName)
+            PlatformDifferencesKeyValueRow(label: L10n.string("Contract version"), value: "\(report.bindingVersion)")
+            PlatformDifferencesKeyValueRow(label: L10n.string("Core version"), value: report.coreVersion)
+            contractRows(title: L10n.string("Supported APIs"), rows: report.supportedApis.map {
                 PlatformDifferencesStatusRow(
                     title: $0.name,
                     detail: $0.capability,
@@ -135,7 +135,7 @@ struct PlatformDifferencesView: View {
                     reason: $0.reason
                 )
             })
-            contractRows(title: "Type mappings", rows: report.typeMappings.map {
+            contractRows(title: L10n.string("Type mappings"), rows: report.typeMappings.map {
                 PlatformDifferencesStatusRow(
                     title: "\($0.rustType) -> \($0.targetType)",
                     detail: $0.udlType,
@@ -167,7 +167,7 @@ struct PlatformDifferencesView: View {
                 .font(.callout)
                 .foregroundStyle(.green)
         } else {
-            contractRows(title: "Limited or missing capabilities", rows: rows.map {
+            contractRows(title: L10n.string("Limited or missing capabilities"), rows: rows.map {
                 PlatformDifferencesStatusRow(
                     title: $0.label,
                     detail: $0.capability,
@@ -201,7 +201,7 @@ struct PlatformDifferencesView: View {
         case let .loaded(report):
             report.coreVersion
         default:
-            "Unknown"
+            L10n.string("Unknown")
         }
     }
 

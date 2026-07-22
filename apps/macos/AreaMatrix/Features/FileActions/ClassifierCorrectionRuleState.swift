@@ -56,42 +56,64 @@ struct ClassifierRuleHandoffSummaryRow: Equatable {
 extension ClassifierRuleHandoff {
     var summaryRows: [ClassifierRuleHandoffSummaryRow] {
         [
-            ClassifierRuleHandoffSummaryRow(label: "Source", value: sourcePageID),
-            ClassifierRuleHandoffSummaryRow(label: "File", value: fileName),
-            ClassifierRuleHandoffSummaryRow(label: "Current category before correction", value: currentCategory),
-            ClassifierRuleHandoffSummaryRow(label: "Target category", value: targetCategory),
-            ClassifierRuleHandoffSummaryRow(label: "Path", value: sourcePath ?? fileName),
-            ClassifierRuleHandoffSummaryRow(label: "Move preference", value: moveFile ? "Move file" : "Metadata only"),
+            ClassifierRuleHandoffSummaryRow(label: L10n.string("Source"), value: sourcePageID),
+            ClassifierRuleHandoffSummaryRow(label: L10n.string("File"), value: fileName),
+            ClassifierRuleHandoffSummaryRow(
+                label: L10n.string("Current category before correction"),
+                value: currentCategory
+            ),
+            ClassifierRuleHandoffSummaryRow(label: L10n.string("Target category"), value: targetCategory),
+            ClassifierRuleHandoffSummaryRow(label: L10n.string("Path"), value: sourcePath ?? fileName),
+            ClassifierRuleHandoffSummaryRow(
+                label: L10n.string("Move preference"),
+                value: moveFile ? L10n.string("Move file") : L10n.string("Metadata only")
+            ),
             aiProvenance.map {
-                ClassifierRuleHandoffSummaryRow(label: "AI suggested category", value: $0.suggestedCategory)
+                ClassifierRuleHandoffSummaryRow(
+                    label: L10n.string("AI suggested category"),
+                    value: $0.suggestedCategory
+                )
             },
             aiProvenance.map {
-                ClassifierRuleHandoffSummaryRow(label: "AI final category", value: $0.finalCategory)
+                ClassifierRuleHandoffSummaryRow(label: L10n.string("AI final category"), value: $0.finalCategory)
             },
             aiProvenance.map {
-                ClassifierRuleHandoffSummaryRow(label: "AI confidence", value: "\($0.confidencePercent)%")
+                ClassifierRuleHandoffSummaryRow(
+                    label: L10n.string("AI confidence"),
+                    value: L10n.format("file-actions.common.percentage", Int64($0.confidencePercent))
+                )
             },
             aiProvenance.flatMap { provenance in
-                provenance.reason.map { ClassifierRuleHandoffSummaryRow(label: "AI reason", value: $0) }
+                provenance.reason.map {
+                    ClassifierRuleHandoffSummaryRow(label: L10n.string("AI reason"), value: $0)
+                }
             },
             aiProvenance.map {
-                ClassifierRuleHandoffSummaryRow(label: "AI used context", value: $0.usedContextSummary)
+                ClassifierRuleHandoffSummaryRow(label: L10n.string("AI used context"), value: $0.usedContextSummary)
             },
             aiProvenance.flatMap { provenance in
-                provenance.callLogID.map { ClassifierRuleHandoffSummaryRow(label: "AI call log", value: "\($0)") }
+                provenance.callLogID.map {
+                    ClassifierRuleHandoffSummaryRow(label: L10n.string("AI call log"), value: "\($0)")
+                }
             },
-            ClassifierRuleHandoffSummaryRow(label: "Keyword candidates", value: keywordCandidateSummary),
-            ClassifierRuleHandoffSummaryRow(label: "Extension candidates", value: extensionCandidateSummary),
-            ClassifierRuleHandoffSummaryRow(label: "Priority", value: "\(draft.priority)")
+            ClassifierRuleHandoffSummaryRow(label: L10n.string("Keyword candidates"), value: keywordCandidateSummary),
+            ClassifierRuleHandoffSummaryRow(
+                label: L10n.string("Extension candidates"),
+                value: extensionCandidateSummary
+            ),
+            ClassifierRuleHandoffSummaryRow(
+                label: L10n.string("Priority"),
+                value: L10n.format("file-actions.classifier-rule.priority-value", Int64(draft.priority))
+            )
         ].compactMap { $0 }
     }
 
     private var keywordCandidateSummary: String {
-        draft.keywordCandidates.isEmpty ? "None" : draft.keywordCandidates.joined(separator: ", ")
+        draft.keywordCandidates.isEmpty ? L10n.string("None") : draft.keywordCandidates.joined(separator: ", ")
     }
 
     private var extensionCandidateSummary: String {
-        draft.extensionCandidates.isEmpty ? "None" : draft.extensionCandidates.joined(separator: ", ")
+        draft.extensionCandidates.isEmpty ? L10n.string("None") : draft.extensionCandidates.joined(separator: ", ")
     }
 }
 
@@ -216,23 +238,23 @@ struct ClassifierRuleSaveSheetModel: Equatable {
 
     var validationMessage: String? {
         if selectedKeywords.isEmpty, selectedExtensions.isEmpty {
-            return "Select at least one keyword or extension."
+            return L10n.string("Select at least one keyword or extension.")
         }
         if !Self.priorityRange.contains(priority) {
-            return "Priority must be between -1000 and 1000."
+            return L10n.string("Priority must be between -1000 and 1000.")
         }
         if requiresPreviewBeforeSave {
-            return "Extension-only rules must be previewed before saving."
+            return L10n.string("Extension-only rules must be previewed before saving.")
         }
         return nil
     }
 
     var warningMessage: String? {
         if requiresPreviewBeforeSave {
-            return "This rule may affect many documents."
+            return L10n.string("This rule may affect many documents.")
         }
         if !selectedExtensions.isEmpty {
-            return "Extensions are saved as independent classifier matcher values."
+            return L10n.string("Extensions are saved as independent classifier matcher values.")
         }
         return nil
     }
@@ -257,7 +279,7 @@ struct ClassifierRuleSaveSheetModel: Equatable {
     }
 
     var primaryActionTitle: String {
-        isSaving ? "Saving..." : "Save rule"
+        isSaving ? L10n.string("Saving...") : L10n.string("Save rule")
     }
 
     var saveRequest: ClassifierRuleSnapshot {

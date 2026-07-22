@@ -62,7 +62,7 @@ struct ImportFolderPreviewView: View {
                     onShowExistingFile: onShowExistingFile
                 )
             }
-            Text("导入目标：\(model.selectedDestination.title)")
+            Text(L10n.format("import.folder.destination", model.selectedDestination.title))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -112,10 +112,13 @@ struct ImportFolderSummarySection: View {
                 .font(.headline)
             LabeledContent("文件夹", value: folderPath)
             HStack(spacing: 16) {
-                LabeledContent("已发现", value: "\(fileCount) 个文件")
-                LabeledContent("总大小", value: totalSizeDescription ?? "计算中")
-                LabeledContent("子文件夹", value: "\(folderCount) 个")
-                LabeledContent("iCloud", value: "\(iCloudPlaceholderCount) 个")
+                LabeledContent("已发现", value: L10n.plural("import.folder.file-count", count: fileCount))
+                LabeledContent("总大小", value: totalSizeDescription ?? L10n.string("import.folder.calculating"))
+                LabeledContent("子文件夹", value: L10n.plural("import.folder.subfolder-count", count: folderCount))
+                LabeledContent(
+                    "iCloud",
+                    value: L10n.plural("import.folder.icloud-placeholder-count", count: iCloudPlaceholderCount)
+                )
             }
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -143,14 +146,18 @@ struct ImportFolderExclusionSection: View {
     }
 
     private var defaultRules: [String] {
-        [".DS_Store", ".git/", ".areamatrix/", "node_modules/", "隐藏文件", "符号链接"]
+        [
+            ".DS_Store", ".git/", ".areamatrix/", "node_modules/",
+            L10n.string("import.folder.hiddenFiles"),
+            L10n.string("import.folder.symbolicLinks")
+        ]
     }
 
     private func ruleLabel(_ rule: String) -> String {
         guard let skipped = skippedRules.first(where: { $0.label == rule }) else {
             return rule
         }
-        return "\(rule) · \(skipped.count)"
+        return L10n.format("import.folder.rule-skip-count", rule, Int64(skipped.count))
     }
 }
 
@@ -183,7 +190,7 @@ struct ImportFolderStorageModeSection: View {
         VStack(alignment: .leading, spacing: 4) {
             Picker("存储模式", selection: $selectedStorageMode) {
                 ForEach(ImportSingleFileStorageMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+                    Text(mode.displayName).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
@@ -236,7 +243,7 @@ struct ImportFolderErrorSummary: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("预扫描错误")
                     .font(.headline)
-                Text("\(firstError.path)：\(firstError.message)")
+                Text(L10n.format("import.folder.scan-error", firstError.path, firstError.message))
                     .font(.caption)
                     .foregroundStyle(.orange)
                     .lineLimit(2)
@@ -256,7 +263,7 @@ struct ImportFolderICloudSummarySection: View {
         if iCloudPlaceholderCount > 0 || isDownloading || downloadErrorMessage != nil {
             VStack(alignment: .leading, spacing: 6) {
                 if iCloudPlaceholderCount > 0 {
-                    Text("\(iCloudPlaceholderCount) files are still in iCloud")
+                    Text(L10n.plural("import.folder.files-still-in-icloud", count: iCloudPlaceholderCount))
                         .font(.headline)
                 }
                 if let downloadErrorMessage {
@@ -292,7 +299,7 @@ struct ImportFolderRowsSection: View {
                     Text(row.relativePath)
                 }
                 TableColumn("Suggested category") { row in
-                    Text(row.predictedCategory ?? "未生成")
+                    Text(row.predictedCategory ?? L10n.string("未生成"))
                 }
                 TableColumn("Suggested name") { row in
                     Text(row.suggestedName)
@@ -308,7 +315,7 @@ struct ImportFolderRowsSection: View {
 
     private func statusCell(for row: ImportFolderPreviewRow) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(row.status.tag)
+            Text(L10n.string(row.status.tag))
                 .font(.caption.weight(.semibold))
             if let detail = row.status.detail {
                 Text(detail)

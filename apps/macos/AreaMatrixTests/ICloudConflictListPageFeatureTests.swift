@@ -265,7 +265,7 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         ).body, contains: [
             ICloudConflictListAccessibilityID.iCloudConflictVisualPage,
             ICloudConflictListCopy.iCloudConflictVisualTitle,
-            "1 conflict groups found"
+            "1 conflict group found"
         ], doesNotContain: [
             "icloud-conflict-review-icloud-conflict-visual-icloud-conflict-visual"
         ])

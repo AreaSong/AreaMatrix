@@ -63,7 +63,10 @@ struct ICloudConflictMinimalSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: "解决 iCloud 冲突", pageID: "icloud-conflict-review") {
+        MainFileActionSheetContainer(
+            title: L10n.string("icloud.conflict.title"),
+            pageID: "icloud-conflict-review"
+        ) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("This is an iCloud conflicted copy. AreaMatrix will not delete any version automatically.")
                     .font(.callout)
@@ -147,7 +150,11 @@ struct ICloudConflictMinimalSheet: View {
 
     private func applyFailureView(_ failure: CoreErrorMappingSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            statusLabel("Apply failed: \(failure.kind.rawValue)", systemImage: "exclamationmark.triangle", color: .red)
+            statusLabel(
+                L10n.format("iCloudConflict.apply.failed", failure.kind.rawValue),
+                systemImage: "exclamationmark.triangle",
+                color: .red
+            )
             Text(failure.userMessage)
                 .font(.caption)
             Text(failure.suggestedAction)
@@ -207,7 +214,7 @@ struct ICloudConflictMinimalSheet: View {
 
     var versionListTitle: String {
         let count = model.previewVersions.count
-        return count > 2 ? "\(count) versions found" : "Versions"
+        return count > 2 ? L10n.plural("iCloudConflict.versionCount", count: count) : L10n.string("Versions")
     }
 
     var currentResolutionState: ICloudConflictResolutionState {
@@ -236,12 +243,12 @@ struct ICloudConflictMinimalSheet: View {
     }
 
     func modifiedLabel(for timestamp: Int64?) -> String {
-        guard let timestamp else { return "Unknown" }
+        guard let timestamp else { return L10n.string("Unknown") }
         return Date(timeIntervalSince1970: TimeInterval(timestamp)).formatted(date: .abbreviated, time: .shortened)
     }
 
     func sizeLabel(for bytes: Int64?) -> String {
-        guard let bytes else { return "Unknown" }
+        guard let bytes else { return L10n.string("Unknown") }
         return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 }

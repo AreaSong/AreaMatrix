@@ -14,7 +14,7 @@ extension ImportBatchCopyImportModel {
         } catch {
             setStatus(.iCloudPlaceholder(
                 path: path,
-                message: "iCloud 下载失败：\(error.localizedDescription)"
+                message: L10n.format("import.preflight.icloud-download-failed", error.localizedDescription)
             ), for: rowID)
             return false
         }

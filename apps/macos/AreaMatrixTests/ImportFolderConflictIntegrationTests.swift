@@ -287,7 +287,7 @@ private func importFolderFatalRetryContext(sourcePath: String) -> ImportProgress
 }
 
 private func assertImportFolderFatalPause(_ pausedState: ImportProgressRouteState) {
-    XCTAssertEqual(pausedState.titleText, "导入已暂停")
+    XCTAssertEqual(pausedState.titleText, "Import Paused")
     XCTAssertEqual(pausedState.items.map(\.phase), [.done, .failed, .pending])
     assertImportProgressRecoveryCheckPending(pausedState)
 }

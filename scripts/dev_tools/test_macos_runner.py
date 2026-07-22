@@ -130,7 +130,8 @@ class MacOSTestRunnerTest(unittest.TestCase):
             log_path.write_text("Test Suite 'All tests' passed\n", encoding="utf-8")
             return 0
 
-        with patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee):
+        with patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee), \
+            patch("scripts.dev_tools.macos._validate_localization_compiler_keys"):
             result = _run_macos_tests_inner(
                 self.tmp_path,
                 project,
@@ -285,6 +286,18 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
         self.assertNotIn("-parallel-testing-enabled", args)
 
+    def test_macos_tests_use_deterministic_english_language(self) -> None:
+        args = _test_base_args(
+            self.tmp_path / "AreaMatrix.xcodeproj",
+            "AreaMatrix",
+            "platform=macOS,arch=arm64",
+            self.tmp_path / "DerivedData",
+            None,
+            [],
+        )
+
+        self.assertEqual(args[args.index("-testLanguage") + 1], "en")
+
     def test_code_coverage_flag_is_explicit(self) -> None:
         args = _test_base_args(
             self.tmp_path / "AreaMatrix.xcodeproj",
@@ -354,6 +367,7 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
         with patch("scripts.dev_tools.macos._find_or_build_test_bundle", return_value=bundle), \
             patch("scripts.dev_tools.macos._run_filtered_xctest_bundle", return_value=0), \
+            patch("scripts.dev_tools.macos._validate_localization_compiler_keys"), \
             patch("scripts.dev_tools.macos.run_release_app_launch_probe", return_value=RELEASE_APP_LAUNCH_BLOCKED):
             result = _run_sandbox_fallback(
                 self.tmp_path,
@@ -438,6 +452,7 @@ class MacOSTestRunnerTest(unittest.TestCase):
             return 75
 
         with patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee), \
+            patch("scripts.dev_tools.macos._validate_localization_compiler_keys"), \
             patch(
                 "scripts.dev_tools.macos.run_release_app_launch_probe",
                 return_value=RELEASE_APP_LAUNCH_BLOCKED,

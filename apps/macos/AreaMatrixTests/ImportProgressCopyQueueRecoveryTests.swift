@@ -264,7 +264,7 @@ extension ImportProgressCopyQueueRecoveryTests {
         ])
         await scenario.importer.assertImportedOverrideFilenames(fatalCopyRetryFilenames)
         XCTAssertEqual(scenario.model.route, .mainEmpty(scenario.opening))
-        XCTAssertEqual(scenario.model.toastMessage, "已导入：third.pdf")
+        XCTAssertEqual(scenario.model.toastMessage, "Imported: third.pdf")
     }
 
     static func readyRow(_ url: URL, _ suggestedName: String) -> ImportBatchPreviewRow {

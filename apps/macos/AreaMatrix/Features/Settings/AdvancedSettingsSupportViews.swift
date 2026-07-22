@@ -32,11 +32,11 @@ struct AdvancedSettingsDiagnosticsSection: View {
     let onExportDiagnostics: () -> Void
 
     var body: some View {
-        AdvancedSettingsSection(title: "Diagnostics") {
-            AdvancedSettingsKeyValueRow(label: "App version", value: versionInfo.appVersion)
-            AdvancedSettingsKeyValueRow(label: "Core version", value: versionInfo.coreVersion)
+        AdvancedSettingsSection(title: L10n.string("Diagnostics")) {
+            AdvancedSettingsKeyValueRow(label: L10n.string("App version"), value: versionInfo.appVersion)
+            AdvancedSettingsKeyValueRow(label: L10n.string("Core version"), value: versionInfo.coreVersion)
             AdvancedSettingsKeyValueRow(
-                label: "Repo schema version",
+                label: L10n.string("Repo schema version"),
                 value: versionInfo.repoSchemaVersionLabel
             )
 
@@ -66,7 +66,7 @@ struct AdvancedSettingsLogsSection: View {
     let onCopyDiagnosticSummary: () -> Void
 
     var body: some View {
-        AdvancedSettingsSection(title: "Logs") {
+        AdvancedSettingsSection(title: L10n.string("Logs")) {
             HStack(spacing: 10) {
                 Button {
                     onOpenLogsFolder()
@@ -96,7 +96,7 @@ struct AdvancedSettingsOverviewOutputSection: View {
     let writesDisabled: Bool
 
     var body: some View {
-        AdvancedSettingsSection(title: "Generated overview output") {
+        AdvancedSettingsSection(title: L10n.string("Generated overview output")) {
             Picker("Generated overview output", selection: selection) {
                 ForEach(AdvancedSettingsOverviewOutput.allCases) { output in
                     Text(output.label).tag(output)
@@ -125,7 +125,7 @@ struct AdvancedSettingsAllowReplaceSection: View {
     let writesDisabled: Bool
 
     var body: some View {
-        AdvancedSettingsSection(title: "Dangerous import option") {
+        AdvancedSettingsSection(title: L10n.string("Dangerous import option")) {
             Toggle("Allow replace during import", isOn: isOn)
                 .disabled(writesDisabled)
                 .accessibilityIdentifier("advanced-settings-repository-config-allow-replace")

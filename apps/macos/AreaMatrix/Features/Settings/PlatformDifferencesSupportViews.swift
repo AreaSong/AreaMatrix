@@ -9,14 +9,17 @@ struct PlatformDifferencesCapabilityRow: View {
                 Text(row.name)
                     .font(.callout)
                 Spacer()
-                TintedCapsuleBadge(title: row.support.status.rawValue, tint: statusTint)
+                TintedCapsuleBadge(title: row.support.status.displayName, tint: statusTint)
             }
             Text(row.detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("UI enabled: \(row.support.uiEnabled ? "Yes" : "No")")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Text(L10n.format(
+                "settings.platformDifferences.uiEnabled",
+                L10n.string(row.support.uiEnabled ? "Yes" : "No")
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
             if row.support.requiresPermission {
                 Text("Requires platform permission before use.")
                     .font(.caption)
@@ -81,7 +84,7 @@ struct PlatformDifferencesStatusRow: View, Identifiable {
                     .font(.callout)
                     .textSelection(.enabled)
                 Spacer()
-                TintedCapsuleBadge(title: status.rawValue, tint: statusTint)
+                TintedCapsuleBadge(title: status.displayName, tint: statusTint)
             }
             Text(detail)
                 .font(.caption)

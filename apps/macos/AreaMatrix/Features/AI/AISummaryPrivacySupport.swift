@@ -8,50 +8,50 @@ extension AiPrivacyFieldRule {
 
 func aiPrivacyInputFieldLabel(_ field: AiPrivacyInputField) -> String {
     switch field {
-    case .fileName: "filename"
-    case .repoRelativePath: "repo-relative path"
-    case .extension: "extension"
-    case .extractedTextExcerpt: "extracted text"
-    case .aiSummary: "AI summary"
-    case .noteSummary: "note summary"
-    case .tagCategoryContext: "tag/category context"
+    case .fileName: L10n.string("filename")
+    case .repoRelativePath: L10n.string("repo-relative path")
+    case .extension: L10n.string("extension")
+    case .extractedTextExcerpt: L10n.string("extracted text")
+    case .aiSummary: L10n.string("AI summary")
+    case .noteSummary: L10n.string("note summary")
+    case .tagCategoryContext: L10n.string("tag/category context")
     }
 }
 
 func privacySentFields(_ fields: [AiPrivacyInputField]) -> String {
-    fields.isEmpty ? "none" : fields.map(aiPrivacyInputFieldLabel).joined(separator: ", ")
+    fields.isEmpty ? L10n.string("none") : fields.map(aiPrivacyInputFieldLabel).joined(separator: ", ")
 }
 
 func summaryUsedFields(_ fields: [AiSummaryInputField]) -> String {
-    fields.isEmpty ? "none" : fields.map(aiSummaryInputFieldLabel).joined(separator: ", ")
+    fields.isEmpty ? L10n.string("none") : fields.map(aiSummaryInputFieldLabel).joined(separator: ", ")
 }
 
 func aiSummaryRouteLabel(_ route: AiSummaryRoute) -> String {
     switch route {
-    case .local: "Generated locally"
-    case .remote: "Generated remotely"
+    case .local: L10n.string("Generated locally")
+    case .remote: L10n.string("Generated remotely")
     }
 }
 
 func aiSummaryInputFieldLabel(_ field: AiSummaryInputField) -> String {
     switch field {
-    case .fileName: "filename"
-    case .repoRelativePath: "repo-relative path"
-    case .extractedTextExcerpt: "extracted text"
-    case .existingAiSummary: "existing AI summary"
-    case .noteSummary: "note summary"
-    case .tagCategoryContext: "tag/category context"
+    case .fileName: L10n.string("filename")
+    case .repoRelativePath: L10n.string("repo-relative path")
+    case .extractedTextExcerpt: L10n.string("extracted text")
+    case .existingAiSummary: L10n.string("existing AI summary")
+    case .noteSummary: L10n.string("note summary")
+    case .tagCategoryContext: L10n.string("tag/category context")
     }
 }
 
 func aiSummarySkipReasonLabel(_ reason: AiSummarySkipReason) -> String {
     switch reason {
-    case .aiDisabled: "AI summaries are off"
-    case .featureDisabled: "Auto summaries are off"
-    case .providerUnavailable: "AI provider is unavailable"
-    case .privacyRule: "Skipped by privacy rule"
-    case .noEligibleInput: "No eligible summary input"
-    case .callLogUnavailable: "AI call log is unavailable"
+    case .aiDisabled: L10n.string("AI summaries are off")
+    case .featureDisabled: L10n.string("Auto summaries are off")
+    case .providerUnavailable: L10n.string("AI provider is unavailable")
+    case .privacyRule: L10n.string("Skipped by privacy rule")
+    case .noEligibleInput: L10n.string("No eligible summary input")
+    case .callLogUnavailable: L10n.string("AI call log is unavailable")
     }
 }
 
@@ -150,7 +150,7 @@ struct AISummaryPrivacySkip: Equatable {
         if let providerGateReason {
             return providerGateReason.summaryPrivacyReasonLabel
         }
-        return skippedReason?.summaryPrivacyReasonLabel ?? "Privacy gate blocked this summary."
+        return skippedReason?.summaryPrivacyReasonLabel ?? L10n.string("Privacy gate blocked this summary.")
     }
 
     var shouldRecordSkippedCall: Bool {
@@ -248,11 +248,11 @@ extension AiPrivacyRuleInput {
 private extension AiPrivacyProviderGateReason {
     var summaryPrivacyReasonLabel: String {
         switch self {
-        case .privacyGateDisabled: "Privacy gate is disabled for remote summaries."
-        case .scopeNotAllowed: "Remote summaries are outside the allowed provider scope."
-        case .providerNotConfigured: "Remote provider is not configured."
-        case .providerNotVerified: "Remote provider has not been verified."
-        case .providerDisabled: "Remote provider is disabled."
+        case .privacyGateDisabled: L10n.string("Privacy gate is disabled for remote summaries.")
+        case .scopeNotAllowed: L10n.string("Remote summaries are outside the allowed provider scope.")
+        case .providerNotConfigured: L10n.string("Remote provider is not configured.")
+        case .providerNotVerified: L10n.string("Remote provider has not been verified.")
+        case .providerDisabled: L10n.string("Remote provider is disabled.")
         }
     }
 }
@@ -260,14 +260,14 @@ private extension AiPrivacyProviderGateReason {
 private extension AiPrivacySkippedReason {
     var summaryPrivacyReasonLabel: String {
         switch self {
-        case .privacyGateDisabled: "Privacy gate is disabled for remote summaries."
-        case .scopeNotAllowed: "Remote summaries are outside the allowed provider scope."
-        case .providerNotConfigured: "Remote provider is not configured."
-        case .providerNotVerified: "Remote provider has not been verified."
-        case .providerDisabled: "Remote provider is disabled."
-        case .privacyRule: "A privacy rule blocked the summary input."
-        case .fieldRule: "Field-level privacy rules blocked all summary input."
-        case .noEligibleInput: "No eligible summary input remains after privacy checks."
+        case .privacyGateDisabled: L10n.string("Privacy gate is disabled for remote summaries.")
+        case .scopeNotAllowed: L10n.string("Remote summaries are outside the allowed provider scope.")
+        case .providerNotConfigured: L10n.string("Remote provider is not configured.")
+        case .providerNotVerified: L10n.string("Remote provider has not been verified.")
+        case .providerDisabled: L10n.string("Remote provider is disabled.")
+        case .privacyRule: L10n.string("A privacy rule blocked the summary input.")
+        case .fieldRule: L10n.string("Field-level privacy rules blocked all summary input.")
+        case .noEligibleInput: L10n.string("No eligible summary input remains after privacy checks.")
         }
     }
 }

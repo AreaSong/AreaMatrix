@@ -34,10 +34,10 @@ struct ReplaceConfirmSheet: View {
 
     private var replaceSummary: some View {
         VStack(alignment: .leading, spacing: 10) {
-            fileSummary(title: "将被替换", path: context.existingPath,
+            fileSummary(title: L10n.string("import.replace.existingFile"), path: context.existingPath,
                         sizeBytes: context.existingSizeBytes, modifiedAt: context.existingModifiedAt)
             Divider()
-            fileSummary(title: "替换为", path: context.incomingPath,
+            fileSummary(title: L10n.string("import.replace.incomingFile"), path: context.incomingPath,
                         sizeBytes: context.incomingSizeBytes, modifiedAt: context.incomingModifiedAt)
             LabeledContent("目标位置", value: context.targetRelativePath)
         }
@@ -94,7 +94,7 @@ struct ReplaceConfirmSheet: View {
             }
             .keyboardShortcut(.defaultAction)
             .disabled(isReplaceDisabled)
-            .help(replaceDisabledReason ?? "确认替换选择；实际导入仍在来源 ImportSheet 中执行")
+            .help(replaceDisabledReason ?? L10n.string("import.replace.confirmHelp"))
         }
     }
 
@@ -104,10 +104,10 @@ struct ReplaceConfirmSheet: View {
 
     private var replaceDisabledReason: String? {
         if !understandsReplace {
-            return "请先勾选我理解这是替换操作"
+            return L10n.string("import.replace.understandingRequired")
         }
         if !context.isTrashAvailable {
-            return "Replace requires system Trash"
+            return L10n.string("Replace requires system Trash")
         }
         return nil
     }

@@ -111,7 +111,9 @@ final class AdvancedSettingsModel: ObservableObject {
         } catch {
             savedConfig = nil
             draft = nil
-            loadState = await .failed(mappedError(for: error, fallbackMessage: "Unable to load advanced settings"))
+            loadState = await .failed(
+                mappedError(for: error, fallbackMessage: L10n.string("Unable to load advanced settings"))
+            )
         }
     }
 
@@ -142,7 +144,7 @@ final class AdvancedSettingsModel: ObservableObject {
             guard diagnosticsGeneration.isCurrent(generation) else { return }
             diagnosticsState = await .failed(mappedError(
                 for: error,
-                fallbackMessage: "Diagnostics could not be exported"
+                fallbackMessage: L10n.string("Diagnostics could not be exported")
             ))
         }
     }
@@ -151,11 +153,13 @@ final class AdvancedSettingsModel: ObservableObject {
         actionFeedback = nil
         do {
             let openedPath = try logsOpener.openLogsFolder(repoPath: repoPath)
-            actionFeedback = .success("Logs folder opened: \(openedPath)")
+            actionFeedback = .success(L10n.format("Logs folder opened: %@", openedPath))
         } catch {
             actionFeedback = .failed(AdvancedSettingsError(
-                message: "Open logs folder failed",
-                recovery: "Check that .areamatrix/logs exists, then retry after Core logging is initialized."
+                message: L10n.string("Open logs folder failed"),
+                recovery: L10n.string(
+                    "Check that .areamatrix/logs exists, then retry after Core logging is initialized."
+                )
             ))
         }
     }
@@ -164,11 +168,13 @@ final class AdvancedSettingsModel: ObservableObject {
         actionFeedback = nil
         do {
             try summaryCopier.copyDiagnosticSummary(diagnosticSummary())
-            actionFeedback = .success("Diagnostic summary copied.")
+            actionFeedback = .success(L10n.string("Diagnostic summary copied."))
         } catch {
             actionFeedback = .failed(AdvancedSettingsError(
-                message: "Diagnostic summary could not be copied",
-                recovery: "Copy the version and repository rows manually after checking clipboard permission."
+                message: L10n.string("Diagnostic summary could not be copied"),
+                recovery: L10n.string(
+                    "Copy the version and repository rows manually after checking clipboard permission."
+                )
             ))
         }
     }
@@ -276,13 +282,17 @@ final class AdvancedSettingsModel: ObservableObject {
         do {
             info.coreVersion = try await coreVersionReader.coreVersion()
         } catch {
-            await failures.append(mappedError(for: error, fallbackMessage: "Core version unavailable"))
+            await failures.append(
+                mappedError(for: error, fallbackMessage: L10n.string("Core version unavailable"))
+            )
         }
 
         do {
             info.repoSchemaVersion = try await metadataReader.metadata(repoPath: repoPath).schemaVersion
         } catch {
-            await failures.append(mappedError(for: error, fallbackMessage: "Repo schema version unavailable"))
+            await failures.append(
+                mappedError(for: error, fallbackMessage: L10n.string("Repo schema version unavailable"))
+            )
         }
 
         versionInfo = info
@@ -305,25 +315,24 @@ final class AdvancedSettingsModel: ObservableObject {
         guard failures.count > 1 else { return first }
 
         return AdvancedSettingsError(
-            message: "Some diagnostics values are unavailable",
+            message: L10n.string("Some diagnostics values are unavailable"),
             recovery: failures.map(\.message).joined(separator: "; ")
         )
     }
 
     private func diagnosticSummary() -> String {
         let schema = versionInfo.repoSchemaVersionLabel
-        let overview = draft?.overviewOutput.snapshotValue ?? "Unknown"
+        let overview = draft?.overviewOutput.snapshotValue ?? L10n.string("Unknown")
         let replace = draft?.allowReplaceDuringImport == true ? "true" : "false"
         let repoName = URL(fileURLWithPath: repoPath, isDirectory: true).lastPathComponent
-        return """
-        AreaMatrix diagnostic summary
-        Repository: \(repoName.isEmpty ? "Unknown" : repoName)
-        App version: \(versionInfo.appVersion)
-        Core version: \(versionInfo.coreVersion)
-        Repo schema version: \(schema)
-        Overview output: \(overview)
-        Allow replace during import: \(replace)
-        Diagnostics exclude original file contents and are not uploaded automatically.
-        """
+        return L10n.format(
+            "advanced.diagnosticSummary",
+            repoName.isEmpty ? L10n.string("Unknown") : repoName,
+            versionInfo.appVersion,
+            versionInfo.coreVersion,
+            schema,
+            overview,
+            replace
+        )
     }
 }

@@ -21,7 +21,7 @@ final class ExternalSyncWindowDrainTests: XCTestCase {
                 cursorWatermark: 342
             ))
         ]
-        let syncer = RecordingExternalChangesSyncer(result: .success(SyncResultSnapshot(
+        let syncer = RecordingExternalChangesSyncer(result: .success(.testFixture(
             detectedCreates: 1,
             detectedRenames: 0,
             detectedDeletes: 0,
@@ -55,7 +55,7 @@ final class ExternalSyncWindowDrainTests: XCTestCase {
             relativePath: "docs/report.pdf.md",
             fsEventID: 350
         ))
-        let syncer = RecordingExternalChangesSyncer(result: .success(SyncResultSnapshot(
+        let syncer = RecordingExternalChangesSyncer(result: .success(.testFixture(
             detectedCreates: 0,
             detectedRenames: 0,
             detectedDeletes: 0,
@@ -96,7 +96,7 @@ final class ExternalSyncWindowDrainTests: XCTestCase {
                 cursorWatermark: 362
             ))
         ]
-        let syncer = RecordingExternalChangesSyncer(result: .success(SyncResultSnapshot(
+        let syncer = RecordingExternalChangesSyncer(result: .success(.testFixture(
             detectedCreates: 1,
             detectedRenames: 0,
             detectedDeletes: 0,

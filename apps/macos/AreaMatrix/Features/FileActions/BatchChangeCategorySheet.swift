@@ -116,7 +116,7 @@ struct BatchChangeCategorySheet: View {
 
     var body: some View {
         MainFileActionSheetContainer(
-            title: "Change category for \(selectedCount) files",
+            title: L10n.plural("file-actions.change-category.sheet-title", count: selectedCount),
             pageID: "batch-change-category"
         ) {
             if selectedCount == 0 {
@@ -279,7 +279,7 @@ struct BatchChangeCategoryPicker: View {
     }
 
     private var emptyMessage: String {
-        categories.isEmpty ? "No categories available" : "No matching categories"
+        categories.isEmpty ? L10n.string("No categories available") : L10n.string("No matching categories")
     }
 }
 
@@ -298,9 +298,9 @@ struct BatchChangeCategoryPreviewTable: View {
     }
 
     private func rowText(_ item: BatchCategoryPreviewItemSnapshot) -> String {
-        let source = item.currentPath ?? "File \(item.fileID)"
+        let source = item.currentPath ?? L10n.format("File %lld", item.fileID)
         let target = item.targetPath ?? item.toCategory
         let reason = item.reason.map { " - \($0)" } ?? ""
-        return "\(source) -> \(target): \(item.status.rawValue)\(reason)"
+        return "\(source) -> \(target): \(item.status.displayName)\(reason)"
     }
 }

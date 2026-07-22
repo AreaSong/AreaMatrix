@@ -79,6 +79,10 @@ struct ImportResultRouteState: Equatable {
         case skipped = "Skipped"
         case failed = "Failed"
         case pending = "Pending"
+
+        var displayName: String {
+            L10n.string(rawValue)
+        }
     }
 
     struct Item: Identifiable, Equatable {
@@ -178,11 +182,11 @@ struct ImportResultRouteState: Equatable {
     }
 
     var summaryText: String {
-        "成功 \(imported) · 停止 \(stopped) · 失败 \(failed) · 待处理 \(pending)"
+        L10n.format("import.result.summary", imported, stopped, failed, pending)
     }
 
     var resultSummaryText: String {
-        "Imported \(imported), failed \(failed), stopped \(stopped), pending \(pending)."
+        L10n.format("onboarding.importResult.summary", imported, failed, stopped, pending)
     }
 
     var canRetryFailedItems: Bool {
@@ -258,11 +262,11 @@ struct ImportResultRouteState: Equatable {
         case .done:
             return "-"
         case .failed:
-            return "Import failed"
+            return L10n.string("Import failed")
         case .pending:
-            return "Not imported before the queue stopped"
+            return L10n.string("Not imported before the queue stopped")
         case .copying, .moving, .hashing, .classifying, .writingIndex:
-            return "Import not completed"
+            return L10n.string("Import not completed")
         }
     }
 
@@ -280,9 +284,9 @@ struct ImportResultRouteState: Equatable {
     }
 
     private static func fallbackReason(failed: Int, stopped: Int, pending: Int) -> String {
-        if failed > 0 { return "Import failed" }
-        if stopped > 0 { return "Stopped before import" }
-        if pending > 0 { return "Import not completed" }
+        if failed > 0 { return L10n.string("Import failed") }
+        if stopped > 0 { return L10n.string("Stopped before import") }
+        if pending > 0 { return L10n.string("Import not completed") }
         return "-"
     }
 

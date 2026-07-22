@@ -13,13 +13,13 @@ enum ImportBatchNamingStrategy: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .suggestedName:
-            "使用建议命名"
+            L10n.string("使用建议命名")
         case .originalName:
-            "保留原名"
+            L10n.string("保留原名")
         case .normalizedCharacters:
-            "仅标准化字符"
+            L10n.string("仅标准化字符")
         case .uniformPrefix:
-            "统一前缀"
+            L10n.string("统一前缀")
         }
     }
 }

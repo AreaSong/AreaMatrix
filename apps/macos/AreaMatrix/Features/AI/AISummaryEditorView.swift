@@ -136,7 +136,7 @@ struct AISummaryEditor: View {
         if let provenance = model.provenance {
             VStack(alignment: .leading, spacing: 4) {
                 Text(provenanceTitle(provenance))
-                Text("Model: \(provenance.modelName ?? "Not recorded")")
+                Text(L10n.format("ai.summary.model", provenance.modelName ?? L10n.string("Not recorded")))
                 Text("Used fields: \(summaryUsedFields(provenance.usedContext))")
                 if let generatedAt = provenance.generatedAt {
                     Text("Generated: \(generatedAt)")
@@ -177,7 +177,7 @@ struct AISummaryEditor: View {
 
     private func provenanceTitle(_ provenance: AISummaryProvenance) -> String {
         if model.privacySkip == nil {
-            return provenance.route.map(aiSummaryRouteLabel) ?? "Draft"
+            return provenance.route.map(aiSummaryRouteLabel) ?? L10n.string("Draft")
         }
         return model.status.label
     }
@@ -269,7 +269,7 @@ struct AISummaryEditor: View {
     }
 
     private var saveTitle: String {
-        model.operation == .saving ? "Saving summary..." : "Save"
+        model.operation == .saving ? L10n.string("Saving summary...") : L10n.string("Save")
     }
 
     private func performConfirmedAction() {

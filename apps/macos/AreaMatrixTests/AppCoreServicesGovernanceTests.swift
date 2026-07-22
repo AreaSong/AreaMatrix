@@ -39,6 +39,7 @@ private let expectedAppCoreServiceSurface = [
     "App/AppCoreServices.swift:static var iCloudConflictReviewer",
     "App/AppCoreServices.swift:static var initializedRepositoryPathValidator",
     "App/AppCoreServices.swift:static var localModelStatusReader",
+    "App/AppCoreServices.swift:static var missingFileRecoverer",
     "App/AppCoreServices.swift:static var noteStore",
     "App/AppCoreServices.swift:static var platformCapabilityLoader",
     "App/AppCoreServices.swift:static var redoActionStore",

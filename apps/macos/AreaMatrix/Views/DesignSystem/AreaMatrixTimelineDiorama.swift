@@ -104,7 +104,7 @@ struct AreaMatrixTimelineDiorama: View {
     }
 
     private var finderWindow: some View {
-        AreaMatrixMiniWindow(title: "Finder", width: 180, height: 150) {
+        AreaMatrixMiniWindow(title: L10n.string("Finder"), width: 180, height: 150) {
             HStack(spacing: 0) {
                 Rectangle()
                     .fill(Color.primary.opacity(0.06))
@@ -139,7 +139,7 @@ struct AreaMatrixTimelineDiorama: View {
     }
 
     private var markdownWindow: some View {
-        AreaMatrixMiniWindow(title: "AREAMATRIX.md", width: 220, height: 150, useDarkBackground: true) {
+        AreaMatrixMiniWindow(title: L10n.string("AREAMATRIX.md"), width: 220, height: 150, useDarkBackground: true) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("# Index Graph")
                     .foregroundColor(Color(red: 0.337, green: 0.612, blue: 0.839))

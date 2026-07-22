@@ -60,8 +60,8 @@ enum BatchRenameEntryPolicy {
     static func openHelp(disabledReason: String?) -> String {
         MainFileBatchEntryPolicy.openHelp(
             disabledReason: disabledReason,
-            defaultHelp: "Preview batch rename for the selected files",
-            blockedHelpSuffix: "Preview new file names before renaming."
+            defaultHelp: L10n.string("Preview batch rename for the selected files"),
+            blockedHelpSuffix: L10n.string("Preview new file names before renaming.")
         )
     }
 }
@@ -96,13 +96,13 @@ struct BatchRenameRuleDraft: Equatable {
     var validationMessage: String? {
         switch mode {
         case .datePrefix where dateFormat.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty:
-            "Date format is required."
+            L10n.string("Date format is required.")
         case .keepBaseSequence where startNumber < 0:
-            "Start number must be 0 or greater."
+            L10n.string("Start number must be 0 or greater.")
         case .keepBaseSequence where padding < 1:
-            "Padding must be 1 or greater."
+            L10n.string("Padding must be 1 or greater.")
         case .replaceText where find.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty:
-            "Find is required."
+            L10n.string("Find is required.")
         case .prefix, .datePrefix, .keepBaseSequence, .replaceText:
             nil
         }

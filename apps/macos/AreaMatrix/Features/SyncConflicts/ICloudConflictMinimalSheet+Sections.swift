@@ -76,7 +76,7 @@ extension ICloudConflictMinimalSheet {
     func mappedPreviewError(_ mapping: CoreErrorMappingSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             statusLabel(
-                "Conflict detail failed: \(mapping.kind.rawValue)",
+                L10n.format("iCloudConflict.detail.failed", mapping.kind.rawValue),
                 systemImage: "exclamationmark.triangle",
                 color: .red
             )
@@ -85,9 +85,13 @@ extension ICloudConflictMinimalSheet {
             Text(mapping.suggestedAction)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("Severity: \(mapping.severity.rawValue); Recoverability: \(mapping.recoverability.rawValue)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Text(L10n.format(
+                "syncConflict.error.severityRecoverability",
+                mapping.severity.rawValue,
+                mapping.recoverability.rawValue
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
             if !mapping.rawContext.isEmpty {
                 Text(mapping.rawContext)
                     .font(.system(.caption, design: .monospaced))
@@ -143,7 +147,7 @@ extension ICloudConflictMinimalSheet {
     func mappedErrorStatus(_ mapping: CoreErrorMappingSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             statusLabel(
-                "Repository check failed: \(mapping.kind.rawValue)",
+                L10n.format("iCloudConflict.repositoryCheck.failed", mapping.kind.rawValue),
                 systemImage: "exclamationmark.triangle",
                 color: .red
             )
@@ -152,9 +156,13 @@ extension ICloudConflictMinimalSheet {
             Text(mapping.suggestedAction)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("Severity: \(mapping.severity.rawValue); Recoverability: \(mapping.recoverability.rawValue)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Text(L10n.format(
+                "syncConflict.error.severityRecoverability",
+                mapping.severity.rawValue,
+                mapping.recoverability.rawValue
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
             if !mapping.rawContext.isEmpty {
                 Text(mapping.rawContext)
                     .font(.system(.caption, design: .monospaced))

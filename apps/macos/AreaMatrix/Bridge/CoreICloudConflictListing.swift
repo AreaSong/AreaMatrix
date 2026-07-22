@@ -11,9 +11,9 @@ enum ICloudConflictStatusSnapshot: String, Equatable {
     var displayName: String {
         switch self {
         case .needsReview:
-            "Needs review"
+            L10n.string("Needs review")
         case .resolved:
-            "Resolved"
+            L10n.string("Resolved")
         }
     }
 }
@@ -25,9 +25,9 @@ enum ICloudConflictVersionRoleSnapshot: String, Equatable {
     var displayName: String {
         switch self {
         case .original:
-            "Original"
+            L10n.string("Original")
         case .conflictedCopy:
-            "Conflicted copy"
+            L10n.string("Conflicted copy")
         }
     }
 }
@@ -40,11 +40,11 @@ enum ICloudConflictPreviewStatusSnapshot: String, Equatable {
     var displayName: String {
         switch self {
         case .available:
-            "Preview available"
+            L10n.string("Preview available")
         case .metadataOnly:
-            "Metadata only"
+            L10n.string("Metadata only")
         case .unavailable:
-            "Preview unavailable"
+            L10n.string("Preview unavailable")
         }
     }
 }
@@ -65,11 +65,11 @@ struct ICloudConflictPairSnapshot: Equatable, Identifiable {
     var fileDisplayName: String {
         let path = originalPath ?? conflictedCopyPath
         let name = URL(fileURLWithPath: path).lastPathComponent
-        return name.isEmpty ? "Unknown file" : name
+        return name.isEmpty ? L10n.string("Unknown file") : name
     }
 
     var originalVersionDisplay: String {
-        originalPath ?? "Unknown original version"
+        originalPath ?? L10n.string("Unknown original version")
     }
 
     var conflictedCopyDisplay: String {
@@ -85,7 +85,7 @@ struct ICloudConflictPairSnapshot: Equatable, Identifiable {
         guard status == .needsReview, let uncertaintyReason, !uncertaintyReason.isEmpty else {
             return status.displayName
         }
-        return "\(status.displayName): \(uncertaintyReason)"
+        return L10n.format("icloud.conflict.status-reason", status.displayName, uncertaintyReason)
     }
 }
 
@@ -109,7 +109,7 @@ struct ICloudConflictVersionMetadataSnapshot: Equatable, Identifiable {
     }
 
     var hashDisplay: String {
-        guard let hashSha256, !hashSha256.isEmpty else { return "Unknown" }
+        guard let hashSha256, !hashSha256.isEmpty else { return L10n.string("Unknown") }
         return hashSha256.count > 12 ? "\(hashSha256.prefix(12))..." : hashSha256
     }
 

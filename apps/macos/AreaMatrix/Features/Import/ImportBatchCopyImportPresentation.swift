@@ -16,16 +16,16 @@ extension ImportBatchCopyImportModel {
             return selectedStorageMode.importingBlockingMessage
         }
         if isICloudDownloading {
-            return "正在下载 iCloud 文件"
+            return L10n.string("正在下载 iCloud 文件")
         }
         if blockedCount > 0 {
-            return "存在 BLOCKED 项，请先完成冲突处理"
+            return L10n.string("存在 BLOCKED 项，请先完成冲突处理")
         }
         if isAllRowsUnavailable {
-            return "没有可导入的批量项目"
+            return L10n.string("没有可导入的批量项目")
         }
         if !hasActionableRows {
-            return "没有可导入或可跳过的批量项目"
+            return L10n.string("没有可导入或可跳过的批量项目")
         }
         return nil
     }

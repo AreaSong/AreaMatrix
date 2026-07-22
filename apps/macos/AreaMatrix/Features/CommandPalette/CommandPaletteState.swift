@@ -71,15 +71,15 @@ struct CommandTargetSnapshot: Equatable, Identifiable {
 
     init(coreTarget: CommandTarget) {
         id = coreTarget.id
-        title = coreTarget.title
-        subtitle = coreTarget.subtitle
+        title = CommandTargetPresentation.title(for: coreTarget)
+        subtitle = CommandTargetPresentation.subtitle(for: coreTarget)
         group = CommandTargetGroupSnapshot(coreGroup: coreTarget.group)
         kind = CommandTargetKindSnapshot(coreKind: coreTarget.kind)
         action = CommandTargetActionSnapshot(coreAction: coreTarget.action)
         route = coreTarget.route
         shortcut = coreTarget.shortcut
         disabled = coreTarget.disabled
-        disabledReason = coreTarget.disabledReason
+        disabledReason = CommandTargetPresentation.disabledReason(for: coreTarget)
         requiresConfirmation = coreTarget.requiresConfirmation
         fileID = coreTarget.fileId
         savedSearchID = coreTarget.savedSearchId
@@ -141,6 +141,17 @@ enum CommandTargetGroupSnapshot: String, Equatable {
     case smartLists = "Smart Lists"
     case fileCandidates = "File Candidates"
 
+    var displayName: String {
+        switch self {
+        case .commands: L10n.string("Commands")
+        case .navigation: L10n.string("Navigation")
+        case .currentSelection: L10n.string("Current Selection")
+        case .recent: L10n.string("Recent")
+        case .smartLists: L10n.string("Smart Lists")
+        case .fileCandidates: L10n.string("File Candidates")
+        }
+    }
+
     init(coreGroup: CommandTargetGroup) {
         switch coreGroup {
         case .commands:
@@ -191,6 +202,18 @@ enum CommandTargetActionSnapshot: String, Equatable {
     case openSearch = "Open Search"
     case lowRiskAction = "Low Risk Action"
 
+    var displayName: String {
+        switch self {
+        case .navigate: L10n.string("Navigate")
+        case .openSheet: L10n.string("Open Sheet")
+        case .openConfirmation: L10n.string("Open Confirmation")
+        case .runSmartList: L10n.string("Run Smart List")
+        case .focusFile: L10n.string("Focus File")
+        case .openSearch: L10n.string("Open Search")
+        case .lowRiskAction: L10n.string("Low Risk Action")
+        }
+    }
+
     init(coreAction: CommandTargetAction) {
         switch coreAction {
         case .navigate:
@@ -217,7 +240,7 @@ extension CommandTargetSnapshot {
     }
 
     var confirmationLabel: String? {
-        requiresConfirmation ? "Requires confirmation" : nil
+        requiresConfirmation ? L10n.string("Requires confirmation") : nil
     }
 
     var effectiveDisabledReason: String? {
@@ -336,27 +359,27 @@ extension CommandPaletteSnapshot {
         generatedAt = coreIndex.generatedAt
         sections = [
             CommandPaletteSectionSnapshot(
-                title: CommandTargetGroupSnapshot.commands.rawValue,
+                title: CommandTargetGroupSnapshot.commands.displayName,
                 targets: coreIndex.commands
             ),
             CommandPaletteSectionSnapshot(
-                title: CommandTargetGroupSnapshot.navigation.rawValue,
+                title: CommandTargetGroupSnapshot.navigation.displayName,
                 targets: coreIndex.navigationTargets
             ),
             CommandPaletteSectionSnapshot(
-                title: CommandTargetGroupSnapshot.currentSelection.rawValue,
+                title: CommandTargetGroupSnapshot.currentSelection.displayName,
                 targets: coreIndex.currentSelectionTargets
             ),
             CommandPaletteSectionSnapshot(
-                title: CommandTargetGroupSnapshot.recent.rawValue,
+                title: CommandTargetGroupSnapshot.recent.displayName,
                 targets: coreIndex.recentTargets
             ),
             CommandPaletteSectionSnapshot(
-                title: CommandTargetGroupSnapshot.smartLists.rawValue,
+                title: CommandTargetGroupSnapshot.smartLists.displayName,
                 targets: coreIndex.smartLists
             ),
             CommandPaletteSectionSnapshot(
-                title: CommandTargetGroupSnapshot.fileCandidates.rawValue,
+                title: CommandTargetGroupSnapshot.fileCandidates.displayName,
                 targets: coreIndex.fileCandidates
             )
         ]

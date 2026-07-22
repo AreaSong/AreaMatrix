@@ -36,25 +36,29 @@ final class AIPrivacyRemoteProviderStateModel: ObservableObject {
 
     var providerStatusText: String {
         switch loadState {
-        case .loading: "Loading remote provider..."
-        case .failed: "Remote provider state unavailable"
+        case .loading: L10n.string("Loading remote provider...")
+        case .failed: L10n.string("Remote provider state unavailable")
         case .loaded: loadedProviderStatusText
         }
     }
 
     var verifiedStatusText: String {
-        guard let snapshot else { return "Loading" }
-        return snapshot.providerVerified ? "Connection tested" : "Connection test required"
+        guard let snapshot else { return L10n.string("Loading") }
+        return snapshot.providerVerified
+            ? L10n.string("Connection tested")
+            : L10n.string("Connection test required")
     }
 
     var enabledStatusText: String {
-        guard let snapshot else { return "Loading" }
-        return snapshot.remoteProviderEnabled ? "Remote provider enabled" : "Remote provider disabled"
+        guard let snapshot else { return L10n.string("Loading") }
+        return snapshot.remoteProviderEnabled
+            ? L10n.string("Remote provider enabled")
+            : L10n.string("Remote provider disabled")
     }
 
     var featureScopeText: String {
-        guard let snapshot else { return "Loading" }
-        guard !snapshot.featureScope.isEmpty else { return "No remote usage scope selected" }
+        guard let snapshot else { return L10n.string("Loading") }
+        guard !snapshot.featureScope.isEmpty else { return L10n.string("No remote usage scope selected") }
         return snapshot.featureScope.map(\.title).joined(separator: ", ")
     }
 
@@ -70,25 +74,25 @@ final class AIPrivacyRemoteProviderStateModel: ObservableObject {
     }
 
     private var loadedProviderStatusText: String {
-        guard let snapshot else { return "Remote provider state unavailable" }
-        if !snapshot.providerConfigured { return "Configure remote AI required" }
-        if !snapshot.providerVerified { return "Remote provider needs connection test." }
-        if !snapshot.remoteProviderEnabled { return "Remote provider is disabled in AI settings." }
-        if snapshot.featureScope.isEmpty { return "Remote scope is not selected." }
-        return "Configured"
+        guard let snapshot else { return L10n.string("Remote provider state unavailable") }
+        if !snapshot.providerConfigured { return L10n.string("Configure remote AI required") }
+        if !snapshot.providerVerified { return L10n.string("Remote provider needs connection test.") }
+        if !snapshot.remoteProviderEnabled { return L10n.string("Remote provider is disabled in AI settings.") }
+        if snapshot.featureScope.isEmpty { return L10n.string("Remote scope is not selected.") }
+        return L10n.string("Configured")
     }
 
     private func providerError(for error: Error) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
-                message: "Remote provider state could not be loaded.",
-                recovery: mapping.recoveryText(fallback: "Retry or configure remote AI."),
+                message: L10n.string("Remote provider state could not be loaded."),
+                recovery: mapping.recoveryText(fallback: L10n.string("Retry or configure remote AI.")),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(
-            message: "Remote provider state could not be loaded.",
-            recovery: "Retry or configure remote AI.",
+            message: L10n.string("Remote provider state could not be loaded."),
+            recovery: L10n.string("Retry or configure remote AI."),
             detail: error.localizedDescription
         )
     }

@@ -6,6 +6,10 @@ enum DatabaseRepairProgressStep: String, CaseIterable, Equatable {
     case scanningFiles = "Scanning files"
     case rebuildingIndex = "Rebuilding index"
     case reloadingRepository = "Reloading repository"
+
+    var displayName: String {
+        L10n.string(rawValue)
+    }
 }
 
 enum DatabaseRepairState: Equatable {
@@ -98,10 +102,10 @@ final class DatabaseRepairConfirmModel: ObservableObject {
     var primaryButtonTitle: String {
         if initialMapping?.kind == .repoNotInitialized {
             return repairState.failure == nil
-                ? "Initialize & Full Rescan"
-                : "Retry Initialization & Full Rescan"
+                ? L10n.string("Initialize & Full Rescan")
+                : L10n.string("Retry Initialization & Full Rescan")
         }
-        return repairState.failure == nil ? "Run Full Rescan" : "Retry Full Rescan"
+        return repairState.failure == nil ? L10n.string("Run Full Rescan") : L10n.string("Retry Full Rescan")
     }
 
     func runStartupRecoveryCheckIfNeeded() async {

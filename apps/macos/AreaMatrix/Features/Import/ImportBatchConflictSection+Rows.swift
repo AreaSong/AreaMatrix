@@ -137,7 +137,7 @@ extension ImportBatchConflictSection {
     }
 
     func replaceButton(row: ImportBatchCopyImportRow, isConfirmed: Bool) -> some View {
-        Button(isConfirmed ? "Replace confirmed" : "Confirm Replace...") {
+        Button(isConfirmed ? L10n.string("Replace confirmed") : L10n.string("Confirm Replace...")) {
             guard let context = batchImportModel.beginReplaceConfirmation(for: row.id) else { return }
             pendingReplaceConfirmation = ImportBatchReplaceConfirmation(rowID: row.id, context: context)
         }

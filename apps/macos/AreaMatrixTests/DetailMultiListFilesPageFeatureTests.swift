@@ -23,8 +23,8 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
             files: [indexed, pdf]
         )
 
-        XCTAssertEqual(summary.title, "2 个文件已选中")
-        XCTAssertEqual(summary.subtitle, "docs 中的 2 个项目")
+        XCTAssertEqual(summary.title, "2 files selected")
+        XCTAssertEqual(summary.subtitle, "2 items in docs")
         XCTAssertEqual(summary.paths, [pdf.path, indexed.path])
         XCTAssertEqual(
             summary.statisticRows.value(for: "Total size"),
@@ -36,7 +36,7 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
             MultiSelectionSummaryRow(label: "Markdown", value: "1"),
             MultiSelectionSummaryRow(label: "PDF", value: "1")
         ])
-        XCTAssertEqual(summary.warningMessages, ["某些条目的来源路径可能在资料库外"])
+        XCTAssertEqual(summary.warningMessages, ["Some source paths may be outside the repository"])
     }
 
     func testDetailMultiSelectKeepsPartialSummaryWhenGetFileDetailCoreMetadataIsUnavailable() {
@@ -61,8 +61,8 @@ final class DetailMultiListFilesPageFeatureTests: XCTestCase {
         XCTAssertEqual(summary.selectedCount, 3)
         XCTAssertEqual(summary.unresolvedMetadataCount, 1)
         XCTAssertEqual(summary.warningMessages, [
-            "部分选中项无法读取元数据",
-            "选中的文件中有 1 个缺失条目"
+            "Metadata is unavailable for some selected items",
+            "1 selected file is missing"
         ])
     }
 

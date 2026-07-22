@@ -8,8 +8,8 @@ struct WelcomeClassifySceneView: View {
             AreaMatrixClassificationDiorama()
                 .areaMatrixSceneVisualMotion()
             AreaMatrixSceneText(
-                title: String(localized: "onboarding.welcome.classify.title"),
-                description: String(localized: "onboarding.welcome.classify.description"),
+                title: L10n.string("onboarding.welcome.classify.title"),
+                description: L10n.string("onboarding.welcome.classify.description"),
                 gradient: LinearGradient(
                     colors: [
                         colorScheme == .dark ? AreaMatrixTheme.Colors.tealBright : AreaMatrixTheme.Colors.tealDeep,
@@ -31,8 +31,8 @@ struct WelcomeSecuritySceneView: View {
             AreaMatrixProtectionDiorama()
                 .areaMatrixSceneVisualMotion()
             AreaMatrixSceneText(
-                title: String(localized: "onboarding.welcome.security.title"),
-                description: String(localized: "onboarding.welcome.security.description"),
+                title: L10n.string("onboarding.welcome.security.title"),
+                description: L10n.string("onboarding.welcome.security.description"),
                 gradient: LinearGradient(
                     colors: [
                         colorScheme == .dark ? AreaMatrixTheme.Colors.gold : AreaMatrixTheme.Colors.goldDeep,

@@ -81,7 +81,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         XCTAssertNil(model.prediction)
         XCTAssertEqual(model.selectedCategory, "inbox")
         XCTAssertEqual(model.suggestedName, "source.pdf")
-        XCTAssertEqual(model.status, .failed("无法预览分类：classifier unavailable"))
+        XCTAssertEqual(model.status, .failed("Cannot preview category: classifier unavailable"))
     }
 
     @MainActor
@@ -108,7 +108,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
         await predictor.assertCategoryPredictionRequests([])
         XCTAssertNil(model.prediction)
-        XCTAssertEqual(model.status, .unsupported("此 sheet 只处理单文件导入"))
+        XCTAssertEqual(model.status, .unsupported("This sheet only handles single-file imports"))
     }
 
     @MainActor
@@ -189,7 +189,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         await model.importSelectedFile()
 
         await importer.assertNoImportedFiles()
-        XCTAssertEqual(model.importStatus, .blocked("没有可导入的单文件来源"))
+        XCTAssertEqual(model.importStatus, .blocked("No single-file source is available to import"))
     }
 
     @MainActor

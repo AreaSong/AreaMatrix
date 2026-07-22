@@ -127,31 +127,31 @@ struct AIPrivacyRuleEditorDraft: Equatable {
     }
 
     func canSave(registry: AIPrivacyRuleRegistrySnapshot) -> Bool {
-        validationMessage(registry: registry) == "Ready to save." && hasChanges
+        validationMessage(registry: registry) == L10n.string("Ready to save.") && hasChanges
     }
 
     func validationMessage(registry: AIPrivacyRuleRegistrySnapshot) -> String {
-        if trimmedPattern.isEmpty { return "Pattern is required." }
+        if trimmedPattern.isEmpty { return L10n.string("Pattern is required.") }
         if kind == .folder, trimmedPattern.hasPrefix("/") {
-            return "Use a path relative to the AreaMatrix repository root."
+            return L10n.string("Use a path relative to the AreaMatrix repository root.")
         }
         if kind == .extension, !trimmedPattern.hasPrefix(".") {
-            return "Extension patterns must start with a dot."
+            return L10n.string("Extension patterns must start with a dot.")
         }
         if kind == .category, registry.categories.isEmpty {
-            return "Category registry is unavailable."
+            return L10n.string("Category registry is unavailable.")
         }
         if kind == .category, !registry.categories.isEmpty, !registry.containsCategory(trimmedPattern) {
-            return "Choose an existing category from the registry."
+            return L10n.string("Choose an existing category from the registry.")
         }
         if kind == .tag, registry.tags.isEmpty {
-            return "Tag registry is unavailable."
+            return L10n.string("Tag registry is unavailable.")
         }
         if kind == .tag, !registry.tags.isEmpty, !registry.containsTag(trimmedPattern) {
-            return "Choose an existing tag from the registry."
+            return L10n.string("Choose an existing tag from the registry.")
         }
-        if !hasChanges { return "No changes to save." }
-        return "Ready to save."
+        if !hasChanges { return L10n.string("No changes to save.") }
+        return L10n.string("Ready to save.")
     }
 
     private var trimmedPattern: String {
@@ -181,9 +181,9 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .privateFinanceFolders: "Private finance folders"
-        case .secretsAndKeyFiles: "Secrets and key files"
-        case .confidentialKeywords: "Confidential keywords"
+        case .privateFinanceFolders: L10n.string("Private finance folders")
+        case .secretsAndKeyFiles: L10n.string("Secrets and key files")
+        case .confidentialKeywords: L10n.string("Confidential keywords")
         }
     }
 
@@ -197,7 +197,7 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
                 pattern: "finance/private/",
                 appliesTo: .remoteAi,
                 enabled: true,
-                description: "Blocks finance/private from remote AI."
+                description: L10n.string("Blocks finance/private from remote AI.")
             )
         case .secretsAndKeyFiles:
             AiPrivacyRuleInput(
@@ -207,7 +207,7 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
                 pattern: ".key",
                 appliesTo: .remoteAi,
                 enabled: true,
-                description: "Blocks key files from remote AI."
+                description: L10n.string("Blocks key files from remote AI.")
             )
         case .confidentialKeywords:
             AiPrivacyRuleInput(
@@ -217,7 +217,7 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
                 pattern: "confidential",
                 appliesTo: .localAndRemoteAi,
                 enabled: true,
-                description: "Blocks confidential metadata and derived text."
+                description: L10n.string("Blocks confidential metadata and derived text.")
             )
         }
     }
@@ -239,16 +239,17 @@ extension AiPrivacyRuleInput {
 
 extension AiPrivacyRuleRecord {
     var aiPrivacyRulesLastMatchedText: String {
-        lastMatchedAt.map { "last matched \($0)" } ?? "last matched unknown"
+        lastMatchedAt.map { L10n.format("ai.privacy.lastMatched", $0) }
+            ?? L10n.string("ai.privacy.lastMatchedUnknown")
     }
 
     var aiPrivacyRulesAccessibilityLabel: String {
         [
-            enabled ? "Enabled" : "Disabled",
+            enabled ? L10n.string("Enabled") : L10n.string("Disabled"),
             kind.aiPrivacyRulesLabel,
             pattern,
             appliesTo.aiPrivacyRulesLabel,
-            "\(matchCount) matches",
+            L10n.plural("ai.privacy.matchCount", count: matchCount),
             aiPrivacyRulesLastMatchedText
         ].joined(separator: ", ")
     }
@@ -298,10 +299,10 @@ extension AiFeatureKind {
 
     var aiPrivacyRulesLabel: String {
         switch self {
-        case .classificationSuggestions: "Classification suggestions"
-        case .autoSummaries: "Remote summary"
-        case .autoTags: "Local tags"
-        case .semanticSearch: "Semantic search"
+        case .classificationSuggestions: L10n.string("Classification suggestions")
+        case .autoSummaries: L10n.string("Remote summary")
+        case .autoTags: L10n.string("Local tags")
+        case .semanticSearch: L10n.string("Semantic search")
         }
     }
 }
@@ -311,11 +312,11 @@ extension AiPrivacyRuleKind {
 
     var aiPrivacyRulesLabel: String {
         switch self {
-        case .folder: "Folder"
-        case .category: "Category"
-        case .keyword: "Keyword"
-        case .extension: "Extension"
-        case .tag: "Tag"
+        case .folder: L10n.string("Folder")
+        case .category: L10n.string("Category")
+        case .keyword: L10n.string("Keyword")
+        case .extension: L10n.string("Extension")
+        case .tag: L10n.string("Tag")
         }
     }
 }
@@ -323,8 +324,8 @@ extension AiPrivacyRuleKind {
 extension AiPrivacyRuleAppliesTo {
     var aiPrivacyRulesLabel: String {
         switch self {
-        case .remoteAi: "Remote AI"
-        case .localAndRemoteAi: "Local and remote AI"
+        case .remoteAi: L10n.string("Remote AI")
+        case .localAndRemoteAi: L10n.string("Local and remote AI")
         }
     }
 }
@@ -332,9 +333,9 @@ extension AiPrivacyRuleAppliesTo {
 extension AiPrivacyDecision {
     var aiPrivacyRulesLabel: String {
         switch self {
-        case .allowed: "Allowed"
-        case .denied: "Denied"
-        case .skipped: "Skipped"
+        case .allowed: L10n.string("Allowed")
+        case .denied: L10n.string("Denied")
+        case .skipped: L10n.string("Skipped")
         }
     }
 }
@@ -342,14 +343,14 @@ extension AiPrivacyDecision {
 extension AiPrivacySkippedReason {
     var aiPrivacyRulesLabel: String {
         switch self {
-        case .privacyGateDisabled: "privacy gate disabled"
-        case .scopeNotAllowed: "scope not allowed"
-        case .providerNotConfigured: "provider not configured"
-        case .providerNotVerified: "provider not verified"
-        case .providerDisabled: "provider disabled"
-        case .privacyRule: "privacy rule"
-        case .fieldRule: "field rule"
-        case .noEligibleInput: "no eligible input"
+        case .privacyGateDisabled: L10n.string("privacy gate disabled")
+        case .scopeNotAllowed: L10n.string("scope not allowed")
+        case .providerNotConfigured: L10n.string("provider not configured")
+        case .providerNotVerified: L10n.string("provider not verified")
+        case .providerDisabled: L10n.string("provider disabled")
+        case .privacyRule: L10n.string("privacy rule")
+        case .fieldRule: L10n.string("field rule")
+        case .noEligibleInput: L10n.string("no eligible input")
         }
     }
 }

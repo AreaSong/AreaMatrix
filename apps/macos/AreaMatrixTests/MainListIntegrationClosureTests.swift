@@ -297,8 +297,8 @@ final class MainListIntegrationClosureTests: XCTestCase {
 
         let loadingTask = Task { await model.loadCurrentCategory("docs") }
         await lister.waitForRequest()
-        XCTAssertEqual(model.loadingStatusText, "正在加载 docs...")
-        XCTAssertEqual(model.loadingAccessibilityText, "Loading files. 正在加载 docs...")
+        XCTAssertEqual(model.loadingStatusText, "Loading docs...")
+        XCTAssertEqual(model.loadingAccessibilityText, "Loading files. Loading docs...")
         await lister.finish()
         await loadingTask.value
     }

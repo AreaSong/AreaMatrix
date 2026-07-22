@@ -11,9 +11,9 @@ enum SyncConflictStatusSnapshot: String, Equatable {
     var displayName: String {
         switch self {
         case .needsReview:
-            "Needs review"
+            L10n.string("Needs review")
         case .resolved:
-            "Resolved"
+            L10n.string("Resolved")
         }
     }
 }
@@ -28,15 +28,15 @@ enum SyncConflictTypeSnapshot: String, Equatable {
     var displayName: String {
         switch self {
         case .sameNameDifferentContent:
-            "Same name, different content"
+            L10n.string("Same name, different content")
         case .concurrentModification:
-            "Concurrent modification"
+            L10n.string("Concurrent modification")
         case .metadataMismatch:
-            "Metadata mismatch"
+            L10n.string("Metadata mismatch")
         case .missingVersion:
-            "Missing version"
+            L10n.string("Missing version")
         case .unknown:
-            "Unknown"
+            L10n.string("Unknown")
         }
     }
 }
@@ -47,7 +47,11 @@ enum SyncConflictSeveritySnapshot: String, Equatable {
     case high = "High"
 
     var displayName: String {
-        rawValue
+        switch self {
+        case .low: L10n.string("Low")
+        case .medium: L10n.string("Medium")
+        case .high: L10n.string("High")
+        }
     }
 }
 
@@ -61,15 +65,15 @@ enum SyncConflictFileRoleSnapshot: String, Equatable {
     var displayName: String {
         switch self {
         case .existing:
-            "Existing file"
+            L10n.string("Existing file")
         case .incoming:
-            "Incoming file"
+            L10n.string("Incoming file")
         case .conflictCopy:
-            "Conflict copy"
+            L10n.string("Conflict copy")
         case .missing:
-            "Missing file"
+            L10n.string("Missing file")
         case .unknown:
-            "Unknown role"
+            L10n.string("Unknown role")
         }
     }
 }
@@ -96,17 +100,17 @@ struct SyncConflictSnapshot: Equatable, Identifiable {
     }
 
     var sourceDisplay: String {
-        clean(sourceProvider) ?? "Unknown"
+        clean(sourceProvider) ?? L10n.string("Unknown")
     }
 
     var detectedDisplay: String {
-        guard let detectedAt else { return "Unknown" }
+        guard let detectedAt else { return L10n.string("Unknown") }
         return Date(timeIntervalSince1970: TimeInterval(detectedAt))
             .formatted(date: .abbreviated, time: .shortened)
     }
 
     var summaryDisplay: String {
-        clean(summary) ?? "Conflict details need review."
+        clean(summary) ?? L10n.string("Conflict details need review.")
     }
 
     private func clean(_ value: String?) -> String? {
@@ -132,25 +136,25 @@ struct SyncConflictAffectedFileSnapshot: Equatable, Identifiable {
     }
 
     var modifiedDisplay: String {
-        guard let modifiedAt else { return "Unknown" }
+        guard let modifiedAt else { return L10n.string("Unknown") }
         return Date(timeIntervalSince1970: TimeInterval(modifiedAt))
             .formatted(date: .abbreviated, time: .shortened)
     }
 
     var sizeDisplay: String {
-        guard let sizeBytes else { return "Unknown" }
+        guard let sizeBytes else { return L10n.string("Unknown") }
         return ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file)
     }
 
     var hashDisplay: String {
         let trimmed = hashSha256?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !trimmed.isEmpty else { return "Unknown" }
+        guard !trimmed.isEmpty else { return L10n.string("Unknown") }
         return trimmed.count > 8 ? "\(trimmed.prefix(8))..." : trimmed
     }
 
     var sourceDisplay: String {
         let trimmed = sourcePlatform?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return trimmed.isEmpty ? "Unknown" : trimmed
+        return trimmed.isEmpty ? L10n.string("Unknown") : trimmed
     }
 }
 

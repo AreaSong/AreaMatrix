@@ -1,32 +1,12 @@
 import SwiftUI
 
 extension CoreErrorSeveritySnapshot {
-    var displayName: String {
-        switch self {
-        case .low: "Low"
-        case .medium: "Medium"
-        case .high: "High"
-        case .critical: "Critical"
-        }
-    }
-
     var tint: Color {
         switch self {
         case .low: .yellow
         case .medium: .orange
         case .high: .red
         case .critical: .purple
-        }
-    }
-}
-
-extension CoreErrorRecoverabilitySnapshot {
-    var displayName: String {
-        switch self {
-        case .retryable: "Retryable"
-        case .userActionRequired: "User action required"
-        case .refreshRequired: "Refresh required"
-        case .fatal: "Fatal"
         }
     }
 }
@@ -39,10 +19,10 @@ enum ValidatePathCheckStatus: Equatable {
 
     var text: String {
         switch self {
-        case .checking: "Checking"
-        case .passed: "Passed"
-        case .warning: "Warning"
-        case .failed: "Failed"
+        case .checking: L10n.string("Checking")
+        case .passed: L10n.string("Passed")
+        case .warning: L10n.string("Warning")
+        case .failed: L10n.string("Failed")
         }
     }
 

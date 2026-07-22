@@ -11,12 +11,20 @@ enum BindingTargetPlatformSnapshot: String, CaseIterable, Equatable, Hashable {
     case swift = "Swift"
     case kotlin = "Kotlin"
     case python = "Python"
+
+    var displayName: String {
+        rawValue
+    }
 }
 
 enum BindingSupportStatusSnapshot: String, Equatable, Hashable {
     case supported = "Supported"
     case limited = "Limited"
     case missing = "Missing"
+
+    var displayName: String {
+        L10n.string(rawValue)
+    }
 }
 
 struct BindingApiContractSnapshot: Equatable, Identifiable {

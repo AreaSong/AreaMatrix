@@ -34,11 +34,11 @@ enum GeneralSettingsStorageMode: String, CaseIterable, Equatable, Identifiable {
     var label: String {
         switch self {
         case .copy:
-            "Copy (recommended)"
+            L10n.string("Copy (recommended)")
         case .move:
-            "Move"
+            L10n.string("Move")
         case .indexOnly:
-            "Index-only"
+            L10n.string("Index-only")
         }
     }
 
@@ -47,9 +47,9 @@ enum GeneralSettingsStorageMode: String, CaseIterable, Equatable, Identifiable {
         case .copy:
             nil
         case .move:
-            "Imported source files will disappear from their original location after import."
+            L10n.string("Imported source files will disappear from their original location after import.")
         case .indexOnly:
-            "Moving source files later can make indexed entries missing."
+            L10n.string("Moving source files later can make indexed entries missing.")
         }
     }
 }
@@ -76,9 +76,9 @@ enum GeneralSettingsOverviewOutput: String, CaseIterable, Equatable, Identifiabl
     }
 }
 
-enum GeneralSettingsLocale: String, CaseIterable, Equatable, Identifiable {
-    case system
-    case zhCN
+enum RepositoryContentLanguage: String, CaseIterable, Equatable, Identifiable {
+    case followInterface = "system"
+    case zhHans = "zh-Hans"
     case en
 
     var id: String {
@@ -89,36 +89,25 @@ enum GeneralSettingsLocale: String, CaseIterable, Equatable, Identifiable {
         switch snapshotValue.trimmingCharacters(in: .whitespacesAndNewlines) {
         case "en":
             self = .en
-        case "zh-CN":
-            self = .zhCN
-        case "system":
-            self = .system
-        case "zh-Hans":
-            self = .zhCN
+        case "zh-CN", "zh-Hans":
+            self = .zhHans
         default:
-            self = .system
+            self = .followInterface
         }
     }
 
     var snapshotValue: String {
-        switch self {
-        case .system:
-            "system"
-        case .zhCN:
-            "zh-CN"
-        case .en:
-            "en"
-        }
+        rawValue
     }
 
-    var label: String {
+    var labelKey: String {
         switch self {
-        case .system:
-            "system"
-        case .zhCN:
-            "zh-CN"
+        case .followInterface:
+            "settings.language.followInterface"
+        case .zhHans:
+            "settings.language.simplifiedChinese"
         case .en:
-            "en"
+            "settings.language.english"
         }
     }
 }
@@ -131,7 +120,7 @@ enum GeneralSettingsAppearance: String, CaseIterable, Equatable, Identifiable {
     }
 
     var label: String {
-        "system"
+        L10n.string("system")
     }
 }
 
@@ -144,16 +133,16 @@ enum RootOverviewFileStatus: Equatable {
     var confirmationDetail: String {
         switch self {
         case .missing:
-            "A new AREAMATRIX.md will be created at the repository root."
+            L10n.string("A new AREAMATRIX.md will be created at the repository root.")
         case .managedBlock:
-            "Only the AreaMatrix managed block will be updated."
+            L10n.string("Only the AreaMatrix managed block will be updated.")
         case .userContent:
             [
-                "AreaMatrix will append a clearly marked managed block to AREAMATRIX.md.",
-                "Existing content will remain unchanged."
+                L10n.string("AreaMatrix will append a clearly marked managed block to AREAMATRIX.md."),
+                L10n.string("Existing content will remain unchanged.")
             ].joined(separator: " ")
         case let .unsafe(reason):
-            reason.isEmpty ? "Cannot safely update AREAMATRIX.md" : reason
+            reason.isEmpty ? L10n.string("Cannot safely update AREAMATRIX.md") : reason
         }
     }
 
@@ -185,13 +174,13 @@ struct GeneralSettingsPendingSave: Equatable {
 struct GeneralSettingsDraft: Equatable {
     var defaultStorageMode: GeneralSettingsStorageMode
     var overviewOutput: GeneralSettingsOverviewOutput
-    var locale: GeneralSettingsLocale
+    var contentLanguage: RepositoryContentLanguage
     var appearance: GeneralSettingsAppearance
 
     init(config: RepoConfigSnapshot) {
         defaultStorageMode = GeneralSettingsStorageMode(snapshotValue: config.defaultMode)
         overviewOutput = GeneralSettingsOverviewOutput(snapshotValue: config.overviewOutput)
-        locale = GeneralSettingsLocale(snapshotValue: config.locale)
+        contentLanguage = RepositoryContentLanguage(snapshotValue: config.locale)
         appearance = .system
     }
 }

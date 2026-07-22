@@ -17,13 +17,13 @@ struct SemanticSearchResultsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 SemanticSearchGroupView(
-                    title: "Semantic matches",
+                    title: L10n.string("Semantic matches"),
                     count: page.semanticTotalCount,
                     rows: page.semanticRows(),
-                    emptyText: "No semantic matches. Normal search results are shown below.",
+                    emptyText: L10n.string("No semantic matches. Normal search results are shown below."),
                     selectedFileIDs: selectedFileIDs,
                     loadingMore: pagingState.isLoadingSemantic,
-                    loadMoreTitle: "Load more semantic",
+                    loadMoreTitle: L10n.string("Load more semantic"),
                     hasMore: page.hasMoreSemanticMatches,
                     pageError: pagingState.semanticError,
                     onLoadMore: onLoadMoreSemantic,
@@ -41,19 +41,23 @@ struct SemanticSearchResultsView: View {
     private var normalSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             if page.dedupedNormalCount > 0 {
-                Button(showFoldedDuplicates ? "Hide duplicate normal matches" : "Show duplicate normal matches") {
+                Button(
+                    showFoldedDuplicates
+                        ? L10n.string("Hide duplicate normal matches")
+                        : L10n.string("Show duplicate normal matches")
+                ) {
                     onToggleDuplicates()
                 }
                 .accessibilityIdentifier("semantic-search-show-duplicate-normal-matches")
             }
             SemanticSearchGroupView(
-                title: "Normal search matches",
+                title: L10n.string("Normal search matches"),
                 count: page.normalTotalCount,
                 rows: page.normalRows(showFoldedDuplicates: showFoldedDuplicates),
-                emptyText: "No normal matches. Semantic matches are shown above.",
+                emptyText: L10n.string("No normal matches. Semantic matches are shown above."),
                 selectedFileIDs: selectedFileIDs,
                 loadingMore: pagingState.isLoadingNormal,
-                loadMoreTitle: "Load more normal",
+                loadMoreTitle: L10n.string("Load more normal"),
                 hasMore: page.hasMoreNormalMatches,
                 pageError: pagingState.normalError,
                 onLoadMore: onLoadMoreNormal,

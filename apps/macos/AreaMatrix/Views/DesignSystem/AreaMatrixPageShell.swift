@@ -157,7 +157,8 @@ struct AreaMatrixPageContentEntranceModifier: ViewModifier {
 }
 
 extension View {
-    func areaMatrixGlassContentPanel(width: CGFloat? = 580, cornerRadius: CGFloat = 24, padding: CGFloat = 40) -> some View {
+    func areaMatrixGlassContentPanel(width: CGFloat? = 580, cornerRadius: CGFloat = 24,
+                                     padding: CGFloat = 40) -> some View {
         modifier(AreaMatrixGlassContentPanelModifier(width: width, cornerRadius: cornerRadius, padding: padding))
     }
 

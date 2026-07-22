@@ -203,7 +203,7 @@ extension OnboardingModel {
         if case .initializing = route {
             isSetupQuitConfirmationPresented = false
             isInitializationCancellationRequested = true
-            toastMessage = "正在暂停初始化，AreaMatrix 会等待 Core 到达安全点。"
+            toastMessage = L10n.string("onboarding.quit.pausingInitialization")
             return false
         }
 
@@ -238,7 +238,7 @@ extension OnboardingModel {
             let latestValidation = try await pathValidator.validateRepoPath(repoPath: repoPath)
             guard Self.validationStillMatchesConfirmMode(latestValidation, mode: mode) else {
                 repositoryPathValidation = latestValidation
-                repositoryPathError = "路径状态已变化，请返回重新校验"
+                repositoryPathError = L10n.string("onboarding.validate.pathChangedRevalidate")
                 route = .validatePath
                 return
             }
@@ -280,8 +280,7 @@ extension OnboardingModel {
         initializationDiagnostics = .idle
         isInitializationCancellationRequested = false
         route = .welcome
-        toastMessage = "初始化已在安全点停止。下次选择同一资料库时，" +
-            "AreaMatrix 会继续或进入恢复。"
+        toastMessage = L10n.string("onboarding.quit.stoppedAtSafePoint")
         return true
     }
 }

@@ -12,9 +12,11 @@ struct RecoveryReportSnapshot: Equatable {
     }
 
     var startupRecoverySummaryText: String {
-        """
-        清理 \(cleanedStagingFiles) 个临时文件，回滚 \(revertedStagingDbRows) 条 staging 记录
-        """
+        L10n.format(
+            "onboarding.recovery.cleanupSummary",
+            cleanedStagingFiles,
+            revertedStagingDbRows
+        )
     }
 }
 

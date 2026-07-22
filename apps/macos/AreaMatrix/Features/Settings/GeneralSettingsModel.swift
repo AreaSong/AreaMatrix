@@ -127,8 +127,9 @@ final class GeneralSettingsModel: ObservableObject {
             saveError = nil
         } catch {
             saveError = GeneralSettingsSaveError(
-                message: "AREAMATRIX.md cannot be shown in Finder.",
-                recovery: "Open the repository folder and check file permissions before enabling root overview."
+                message: L10n.string("AREAMATRIX.md cannot be shown in Finder."),
+                recovery: L10n
+                    .string("Open the repository folder and check file permissions before enabling root overview.")
             )
         }
     }
@@ -142,8 +143,8 @@ final class GeneralSettingsModel: ObservableObject {
             saveError = nil
         } catch {
             saveError = GeneralSettingsSaveError(
-                message: "ignore.yaml cannot be opened.",
-                recovery: "Check .areamatrix/ignore.yaml permissions and retry from General settings."
+                message: L10n.string("ignore.yaml cannot be opened."),
+                recovery: L10n.string("Check .areamatrix/ignore.yaml permissions and retry from General settings.")
             )
         }
     }
@@ -160,15 +161,18 @@ final class GeneralSettingsModel: ObservableObject {
             saveError = nil
         } catch {
             saveError = GeneralSettingsSaveError(
-                message: "Default ignore.yaml cannot be created.",
-                recovery: "AreaMatrix only writes .areamatrix/ignore.yaml; check metadata folder permissions and retry."
+                message: L10n.string("Default ignore.yaml cannot be created."),
+                recovery: L10n
+                    .string(
+                        "AreaMatrix only writes .areamatrix/ignore.yaml; check metadata folder permissions and retry."
+                    )
             )
         }
     }
 
-    func updateLocale(_ locale: GeneralSettingsLocale) async {
-        guard !isSaving, let savedConfig, locale != draft?.locale else { return }
-        await persist(updating: savedConfig.withLocale(locale.snapshotValue))
+    func updateContentLanguage(_ language: RepositoryContentLanguage) async {
+        guard !isSaving, let savedConfig, language != draft?.contentLanguage else { return }
+        await persist(updating: savedConfig.withLocale(language.snapshotValue))
     }
 
     func resetThisTab() async {
@@ -176,7 +180,7 @@ final class GeneralSettingsModel: ObservableObject {
         let defaults = savedConfig
             .withDefaultMode(GeneralSettingsStorageMode.copy.snapshotValue)
             .withOverviewOutput(GeneralSettingsOverviewOutput.generatedOnly.snapshotValue)
-            .withLocale(GeneralSettingsLocale.system.snapshotValue)
+            .withLocale(RepositoryContentLanguage.followInterface.snapshotValue)
         await persist(updating: defaults)
     }
 
@@ -211,7 +215,7 @@ final class GeneralSettingsModel: ObservableObject {
 
         return GeneralSettingsSaveError(
             message: error.localizedDescription,
-            recovery: "Retry saving settings after the repository is available."
+            recovery: L10n.string("Retry saving settings after the repository is available.")
         )
     }
 }

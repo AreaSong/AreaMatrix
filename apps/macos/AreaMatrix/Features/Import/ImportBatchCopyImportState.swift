@@ -47,16 +47,16 @@ enum ImportBatchCopyImportRowStatus: Equatable {
     var detail: String? {
         switch self {
         case .loading:
-            return "Preparing preview..."
+            return L10n.string("Preparing preview...")
         case let .ready(reasonLabel), let .error(reasonLabel):
             return reasonLabel
         case let .duplicate(existingPath, strategy, isReplaceConfirmed):
             if strategy == .replace, isReplaceConfirmed {
-                return "Replace confirmed: \(existingPath)"
+                return L10n.format("import.conflict.replace-confirmed", existingPath)
             }
-            return "\(strategy.title): \(existingPath)"
+            return L10n.format("import.conflict.strategy-path", strategy.title, existingPath)
         case let .nameConflict(existingPath, resolution):
-            return "\(resolution.title): \(existingPath)"
+            return L10n.format("import.conflict.resolution-path", resolution.title, existingPath)
         case let .iCloudPlaceholder(_, message):
             return message
         case let .blocked(message):
@@ -64,11 +64,11 @@ enum ImportBatchCopyImportRowStatus: Equatable {
         case let .importing(mode):
             return mode.importingMessage
         case let .skippedDuplicate(existingPath):
-            return "Duplicate skipped: \(existingPath)"
+            return L10n.format("import.preview.duplicate-skipped", existingPath)
         case let .skippedICloud(path):
-            return "iCloud pending: \(path)"
+            return L10n.format("import.conflict.icloud-pending", path)
         case .imported:
-            return "已完成导入"
+            return L10n.string("import.result.completed")
         }
     }
 
@@ -88,11 +88,11 @@ enum ImportBatchDuplicateResolutionStrategy: String, CaseIterable, Equatable {
     var title: String {
         switch self {
         case .skip:
-            "Skip"
+            L10n.string("Skip")
         case .keepBoth:
-            "Keep both"
+            L10n.string("Keep both")
         case .replace:
-            "Replace"
+            L10n.string("Replace")
         }
     }
 
@@ -120,11 +120,15 @@ enum ImportBatchNameConflictResolution: Hashable {
     var title: String {
         switch self {
         case .keepBoth:
-            "Keep both (auto-number)"
+            L10n.string("Keep both (auto-number)")
         case .renameIncoming:
-            "Rename incoming"
+            L10n.string("Rename incoming")
         case let .replace(isConfirmed):
-            isConfirmed ? "Replace confirmed" : "Replace"
+            if isConfirmed {
+                L10n.string("Replace confirmed")
+            } else {
+                L10n.string("Replace")
+            }
         }
     }
 
@@ -224,13 +228,13 @@ struct ImportBatchCopyImportRow: Identifiable, Equatable {
     var conflictLabel: String {
         switch status {
         case .duplicate, .skippedDuplicate:
-            "Duplicate content"
+            L10n.string("Duplicate content")
         case .nameConflict:
-            "Same name, different content"
+            L10n.string("Same name, different content")
         case .iCloudPlaceholder, .skippedICloud:
-            "iCloud placeholder"
+            L10n.string("iCloud placeholder")
         case .blocked:
-            "Blocked"
+            L10n.string("Blocked")
         case .loading, .ready, .importing, .imported, .error:
             "-"
         }
@@ -282,9 +286,9 @@ enum ImportBatchCopyImportStatus: Equatable {
         case .idle:
             nil
         case let .importing(completed, total, failed, _):
-            "正在导入：已完成 \(completed)/\(total)，失败 \(failed)"
+            L10n.format("import.batch.importing", completed, total, failed)
         case let .imported(successful, failed):
-            "批量导入完成：成功 \(successful)，失败 \(failed)"
+            L10n.format("import.batch.completed", successful, failed)
         }
     }
 }
@@ -295,9 +299,9 @@ extension ImportBatchCopyImportModel {
         case .copy:
             nil
         case .move:
-            "Move 模式会移走源文件；请确认批量队列只包含要移入资料库的文件。"
+            L10n.string("import.storage.moveRisk")
         case .indexOnly:
-            "Index-only 不复制文件，只写入索引；源文件移动或删除后会显示缺失。"
+            L10n.string("import.storage.indexOnlyRisk")
         }
     }
 }

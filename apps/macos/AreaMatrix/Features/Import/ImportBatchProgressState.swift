@@ -40,21 +40,21 @@ extension ImportBatchProgressSnapshot.Phase {
     var displayText: String {
         switch self {
         case .pending:
-            "Queued"
+            L10n.string("Queued")
         case .copying:
-            "Copying file"
+            L10n.string("Copying file")
         case .moving:
-            "Moving file"
+            L10n.string("Moving file")
         case .hashing:
-            "Checking file"
+            L10n.string("Checking file")
         case .classifying:
-            "Choosing category"
+            L10n.string("Choosing category")
         case .writingIndex:
-            "Saving index"
+            L10n.string("Saving index")
         case .done:
-            "Imported"
+            L10n.string("Imported")
         case .failed:
-            "Failed"
+            L10n.string("Failed")
         }
     }
 }

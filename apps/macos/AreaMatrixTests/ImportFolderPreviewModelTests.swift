@@ -41,7 +41,7 @@ final class ImportFolderPreviewModelTests: XCTestCase {
         XCTAssertEqual(rowsByName["合同.pdf"]?.suggestedName, "2026Q1_合同.pdf")
         assertImportRowStatusTags(model.rows, ["OK", "OK"])
         XCTAssertEqual(model.folderCount, 1)
-        assertImportStatusMessage(model.status, "已完成 2 个文件的分类预览")
+        assertImportStatusMessage(model.status, "Completed the classification preview for 2 files")
         assertImportEnabled(model.importDisabledReason)
     }
 
@@ -88,8 +88,8 @@ final class ImportFolderPreviewModelTests: XCTestCase {
 
         XCTAssertEqual(model.rows.count, 1)
         assertImportRowStatusTags(model.rows, ["ERROR"])
-        assertImportRowStatusDetails(model.rows, [0: "分类规则无效：classifier.yaml line 7"])
-        assertImportStatusMessage(model.status, "已完成 0/1 个文件的分类预览，1 个失败")
+        assertImportRowStatusDetails(model.rows, [0: "Classification rules are invalid: classifier.yaml line 7"])
+        assertImportStatusMessage(model.status, "Prepared 0/1 classification previews; 1 failed")
     }
 
     @MainActor

@@ -81,9 +81,9 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
             CoreErrorMappingSnapshot.internalFailure(rawContext: "undo_action returned no result"),
             CoreErrorMappingSnapshot.testFixture(
                 kind: .internal,
-                userMessage: "应用内部错误",
+                userMessage: "Internal application error",
                 severity: .critical,
-                suggestedAction: "请记录错误信息并重启应用",
+                suggestedAction: "Record the error information and restart the app",
                 recoverability: .fatal,
                 rawContext: "undo_action returned no result"
             )

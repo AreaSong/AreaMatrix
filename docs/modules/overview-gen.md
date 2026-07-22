@@ -125,7 +125,10 @@ emoji 和其他非 unreserved bytes 使用大写十六进制 `%XX` 表示。
 
 ## locale
 
-locale 控制 generated overview 和树相关显示文本。当前支持配置值由 `RepoConfig` 决定；它不是整个 macOS UI 的运行时语言开关。
+locale 控制 generated overview 和树相关显示文本。`RepoConfig.locale = system` 表示跟随当前界面语言。
+平台层通过 `set_app_interface_locale` 同步当前已解析的 `zh-Hans` 或 `en`，Core 在之后正常生成概述时
+才解析 `system`；旧 `zh-CN` 兼容读取并规范为 `zh-Hans`。切换任一语言设置都不主动重写已有概述，
+只影响目录刷新和之后的正常生成。资料库内容语言不是 macOS UI 的运行时语言开关，也不得翻译用户文件名或正文。
 
 ## 性能
 

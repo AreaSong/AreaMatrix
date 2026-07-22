@@ -20,7 +20,7 @@ final class AIPrivacyRulesModel: ObservableObject {
     private var savedSnapshot: AiPrivacyRulesSnapshot?
     private var pendingSaveRequest: AiPrivacyRulesUpdateRequest?
     private var pendingSaveSuccess = ""
-    private var pendingSaveFailureMessage = "AI privacy rules could not be saved."
+    private var pendingSaveFailureMessage = L10n.string("AI privacy rules could not be saved.")
     private var pendingSnapshotOnFailure: AiPrivacyRulesSnapshot?
 
     init(
@@ -59,7 +59,7 @@ final class AIPrivacyRulesModel: ObservableObject {
             clearPendingSave()
             loadState = .loaded
         } catch {
-            let error = await privacyError(for: error, message: "AI privacy rules could not be loaded.")
+            let error = await privacyError(for: error, message: L10n.string("AI privacy rules could not be loaded."))
             snapshot = nil
             savedSnapshot = nil
             loadState = .failed(error)
@@ -74,7 +74,7 @@ final class AIPrivacyRulesModel: ObservableObject {
             gate: enabled,
             rules: snapshot.ruleInputs,
             success: gateSuccess(enabled),
-            failureMessage: "Remote AI privacy gate could not be updated."
+            failureMessage: L10n.string("Remote AI privacy gate could not be updated.")
         )
     }
 
@@ -103,8 +103,8 @@ final class AIPrivacyRulesModel: ObservableObject {
             gate: snapshot.privacyGateEnabled,
             rules: snapshot.ruleInputs,
             fields: fields,
-            success: "Remote allowed fields saved.",
-            failureMessage: "Privacy field settings could not be saved.",
+            success: L10n.string("Remote allowed fields saved."),
+            failureMessage: L10n.string("Privacy field settings could not be saved."),
             pendingSnapshotOnFailure: pendingSnapshot
         )
     }
@@ -114,7 +114,7 @@ final class AIPrivacyRulesModel: ObservableObject {
         guard let snapshot else { return false }
         var input = AiPrivacyRuleInput(aiPrivacyRulesRecord: record)
         input.enabled = enabled
-        return await saveRule(input, base: snapshot, success: "Privacy rule saved.")
+        return await saveRule(input, base: snapshot, success: L10n.string("Privacy rule saved."))
     }
 
     @discardableResult
@@ -130,13 +130,13 @@ final class AIPrivacyRulesModel: ObservableObject {
             appliesTo: appliesTo,
             enabled: true,
             description: nil
-        ), base: snapshot, success: "Privacy rule added.")
+        ), base: snapshot, success: L10n.string("Privacy rule added."))
     }
 
     @discardableResult
     func saveRule(_ input: AiPrivacyRuleInput) async -> Bool {
         guard let snapshot else { return false }
-        let success = input.ruleId == nil ? "Privacy rule added." : "Privacy rule saved."
+        let success = input.ruleId == nil ? L10n.string("Privacy rule added.") : L10n.string("Privacy rule saved.")
         return await saveRule(input, base: snapshot, success: success)
     }
 
@@ -147,7 +147,7 @@ final class AIPrivacyRulesModel: ObservableObject {
             snapshot,
             gate: snapshot.privacyGateEnabled,
             rules: snapshot.ruleInputs + inputs,
-            success: "Recommended privacy rules added."
+            success: L10n.string("Recommended privacy rules added.")
         )
     }
 
@@ -156,7 +156,12 @@ final class AIPrivacyRulesModel: ObservableObject {
         guard let snapshot else { return false }
         let rules = snapshot.rules.filter { $0.ruleId != record.ruleId }
             .map(AiPrivacyRuleInput.init(aiPrivacyRulesRecord:))
-        return await save(snapshot, gate: snapshot.privacyGateEnabled, rules: rules, success: "Privacy rule deleted.")
+        return await save(
+            snapshot,
+            gate: snapshot.privacyGateEnabled,
+            rules: rules,
+            success: L10n.string("Privacy rule deleted.")
+        )
     }
 
     @discardableResult
@@ -193,7 +198,10 @@ final class AIPrivacyRulesModel: ObservableObject {
                 ?? featureEvaluations.first?.report
             saveError = nil
         } catch {
-            saveError = await privacyError(for: error, message: "AI privacy rules could not be tested.")
+            saveError = await privacyError(
+                for: error,
+                message: L10n.string("AI privacy rules could not be tested.")
+            )
         }
     }
 
@@ -210,8 +218,8 @@ final class AIPrivacyRulesModel: ObservableObject {
         gate: Bool,
         rules: [AiPrivacyRuleInput],
         fields: [AiPrivacyFieldRule]? = nil,
-        success: String = "Remote allowed fields saved.",
-        failureMessage: String = "AI privacy rules could not be saved.",
+        success: String = L10n.string("Remote allowed fields saved."),
+        failureMessage: String = L10n.string("AI privacy rules could not be saved."),
         pendingSnapshotOnFailure: AiPrivacyRulesSnapshot? = nil
     ) async -> Bool {
         await persist(
@@ -282,7 +290,7 @@ final class AIPrivacyRulesModel: ObservableObject {
     private func clearPendingSave() {
         pendingSaveRequest = nil
         pendingSaveSuccess = ""
-        pendingSaveFailureMessage = "AI privacy rules could not be saved."
+        pendingSaveFailureMessage = L10n.string("AI privacy rules could not be saved.")
         pendingSnapshotOnFailure = nil
     }
 
@@ -293,11 +301,13 @@ final class AIPrivacyRulesModel: ObservableObject {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(message: message, recovery: mapping.suggestedAction, detail: mapping.userMessage)
         }
-        return AISettingsError(message: message, recovery: "Retry", detail: error.localizedDescription)
+        return AISettingsError(message: message, recovery: L10n.string("Retry"), detail: error.localizedDescription)
     }
 
     private func gateSuccess(_ enabled: Bool) -> String {
-        enabled ? "Remote AI privacy gate allowed." : "Remote AI blocked by privacy gate."
+        enabled
+            ? L10n.string("Remote AI privacy gate allowed.")
+            : L10n.string("Remote AI blocked by privacy gate.")
     }
 }
 

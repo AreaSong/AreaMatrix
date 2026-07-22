@@ -21,7 +21,7 @@ extension OnboardingModel {
         openingCancellationToken = UUID()
         resetCancelledMainOpening(repoPath: state.repoPath)
         route = .validatePath
-        toastMessage = "Opening was cancelled. Repository configuration and user files were not changed."
+        toastMessage = L10n.string("Opening was cancelled. Repository configuration and user files were not changed.")
     }
 
     @MainActor
@@ -113,7 +113,10 @@ extension OnboardingModel {
             try finderOpener.openRepositoryInFinder(repoPath: result.repoPath)
             toastMessage = nil
         } catch {
-            let message = "无法在 Finder 中打开资料库：\(error.localizedDescription)"
+            let message = L10n.format(
+                "onboarding.initialization.openInFinderFailed",
+                error.localizedDescription
+            )
             toastMessage = message
             accessibilityAnnouncer.announce(message)
         }
@@ -194,7 +197,7 @@ extension OnboardingModel {
                     mapping: nil,
                     returnRoute: .validatePath
                 ))
-                toastMessage = "仍检测到未完成的扫描，请返回来源页继续处理。"
+                toastMessage = L10n.string("onboarding.recovery.unfinishedScanRemains")
                 return
             }
 
@@ -285,9 +288,15 @@ extension OnboardingModel {
 
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             guard isInitializingAdoptExisting(repoPath: repoPath) else { return }
-            initializationProgressWarning = "无法读取接管进度：\(mapping.userMessage)"
+            initializationProgressWarning = L10n.format(
+                "onboarding.initialization.progressUnavailable",
+                mapping.userMessage
+            )
         } else {
-            initializationProgressWarning = "无法读取接管进度：\(error.localizedDescription)"
+            initializationProgressWarning = L10n.format(
+                "onboarding.initialization.progressUnavailable",
+                error.localizedDescription
+            )
         }
     }
 

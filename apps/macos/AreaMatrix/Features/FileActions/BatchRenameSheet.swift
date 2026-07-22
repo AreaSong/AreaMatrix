@@ -19,7 +19,7 @@ struct BatchRenameSheet: View {
     @State private var failure: CoreErrorMappingSnapshot?
 
     var body: some View {
-        MainFileActionSheetContainer(title: "批量重命名", pageID: "batch-rename") {
+        MainFileActionSheetContainer(title: L10n.string("fileActions.batchRename.title"), pageID: "batch-rename") {
             selectedCount == 0 ? AnyView(emptyContent) : AnyView(content)
         }
         .task(id: previewTaskKey) { await refreshPreview() }
@@ -54,7 +54,7 @@ struct BatchRenameSheet: View {
                 .disabled(previewRefreshDisabled)
             Spacer()
             Button("Cancel", action: onClose).keyboardShortcut(.cancelAction).disabled(isApplying)
-            Button(isApplying ? "Renaming..." : "Apply") { Task { await apply() } }
+            Button(isApplying ? L10n.string("Renaming...") : L10n.string("Apply")) { Task { await apply() } }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canApplyPreview)
                 .accessibilityIdentifier("batch-rename-batch-rename-preview-batch-rename-apply")
@@ -130,7 +130,7 @@ private struct BatchRenameSelectedFilesSummary: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Selected: \(selectedCount) files")
+            Text(L10n.plural("file-actions.batch-rename.selected-files", count: selectedCount))
             ForEach(selectedFiles.prefix(5)) { file in
                 Text(file.currentName).font(.caption).foregroundStyle(.secondary)
             }

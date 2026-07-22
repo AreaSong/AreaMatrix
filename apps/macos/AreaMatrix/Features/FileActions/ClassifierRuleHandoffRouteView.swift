@@ -6,7 +6,7 @@ struct ClassifierRuleHandoffRouteView: View {
         case impactPreview
 
         var title: String {
-            self == .saveRule ? "Save classifier rule" : "Preview classifier impact"
+            self == .saveRule ? L10n.string("Save classifier rule") : L10n.string("Preview classifier impact")
         }
 
         var pageID: String {
@@ -15,15 +15,14 @@ struct ClassifierRuleHandoffRouteView: View {
 
         var intro: String {
             self == .saveRule
-                ? "Review the rule draft before saving it for future imports."
-                : "Preview how this rule would affect existing files before applying it."
+                ? L10n.string("Review the rule draft before saving it for future imports.")
+                : L10n.string("Preview how this rule would affect existing files before applying it.")
         }
 
         var note: String {
             self == .saveRule
-                // swiftlint:disable:next line_length
-                ? "Saving this rule only affects future classifier behavior and does not undo the current classification."
-                : "Previewing impact does not undo the current classification or save a rule."
+                ? L10n.string("file-actions.classifier-rule.futureOnlyNote")
+                : L10n.string("file-actions.classifier-rule.previewOnlyNote")
         }
     }
 
@@ -118,7 +117,7 @@ struct ClassifierRuleHandoffRouteView: View {
                 isDisabled: model.isSaving
             )
             Stepper(value: $model.priority, in: ClassifierRuleSaveSheetModel.priorityRange) {
-                Text("Priority \(model.priority)")
+                Text(L10n.format("file-actions.classifier-rule.priority", Int64(model.priority)))
             }
             .disabled(model.isSaving)
             RulePreviewCard(lines: model.rulePreviewLines)
@@ -208,13 +207,13 @@ private struct RuleBasisPicker: View {
                 .font(.callout.weight(.semibold))
             ForEach(model.keywordCandidates, id: \.self) { keyword in
                 Toggle(isOn: keywordBinding(keyword)) {
-                    Text("File name contains: \(keyword)")
+                    Text(L10n.format("file-actions.classifier-rule.filename-contains", keyword))
                 }
                 .disabled(isDisabled)
             }
             ForEach(model.extensionCandidates, id: \.self) { ext in
                 Toggle(isOn: extensionBinding(ext)) {
-                    Text("Extension is: .\(ext)")
+                    Text(L10n.format("file-actions.classifier-rule.extension-is", ext))
                 }
                 .disabled(isDisabled)
             }
@@ -256,8 +255,13 @@ private struct RulePreviewCard: View {
 
 private extension ClassifierRuleSnapshot {
     var summaryText: String {
-        let keywordText = keywords.isEmpty ? "no keywords" : keywords.joined(separator: ", ")
-        let extensionText = extensions.isEmpty ? "no extensions" : extensions.joined(separator: ", ")
-        return "Classification rule saved for \(targetCategory): \(keywordText); \(extensionText)."
+        let keywordText = keywords.isEmpty ? L10n.string("no keywords") : keywords.joined(separator: ", ")
+        let extensionText = extensions.isEmpty ? L10n.string("no extensions") : extensions.joined(separator: ", ")
+        return L10n.format(
+            "file-actions.classifier-rule.saved-summary",
+            targetCategory,
+            keywordText,
+            extensionText
+        )
     }
 }

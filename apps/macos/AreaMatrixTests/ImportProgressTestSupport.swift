@@ -107,7 +107,7 @@ func assertImportProgressRecoveryCheckAllowsRetry(
 
 func assertSingleImportProgressItem(
     _ state: ImportProgressRouteState,
-    titleText: String = "正在导入 1 个文件",
+    titleText: String = "Importing 1 file",
     sourcePath: String,
     targetPath: String,
     phase: ImportBatchProgressSnapshot.Phase,

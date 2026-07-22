@@ -7,7 +7,10 @@ struct SearchIndexingStatusRouteView: View {
     let onClose: () -> Void
 
     var body: some View {
-        MainFileActionSheetContainer(title: "Search Index Status", pageID: "search-index-status-indexing-status") {
+        MainFileActionSheetContainer(
+            title: L10n.string("Search Index Status"),
+            pageID: "search-index-status-indexing-status"
+        ) {
             Label(statusText, systemImage: "exclamationmark.triangle")
                 .font(.callout)
             metadataRow("Query", request.query)
@@ -25,17 +28,17 @@ struct SearchIndexingStatusRouteView: View {
     private var statusText: String {
         switch indexStatus {
         case .unavailable:
-            "Search index unavailable"
+            L10n.string("Search index unavailable")
         case .indexing:
-            "Search index is updating"
+            L10n.string("Search index is updating")
         case .ready:
-            "Search index ready"
+            L10n.string("Search index ready")
         case nil:
-            "Search index status unavailable"
+            L10n.string("Search index status unavailable")
         }
     }
 }
 
 func searchContextText(_ request: SearchQueryRequestSnapshot) -> String {
-    "Scope: \(request.scope.displayName) | Sort: \(request.sort.displayName)"
+    L10n.format("search.context", request.scope.displayName, request.sort.displayName)
 }

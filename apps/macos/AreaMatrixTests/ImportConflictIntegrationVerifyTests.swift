@@ -116,7 +116,7 @@ private extension ImportConflictIntegrationVerifyTests {
 
         XCTAssertNil(blockedImport)
         await importer.assertNoImportedFiles()
-        XCTAssertEqual(duplicateModel.importStatus, .blocked("Replace 必须先进入二次确认"))
+        XCTAssertEqual(duplicateModel.importStatus, .blocked("Confirm Replace before continuing"))
 
         duplicateModel.beginReplaceConfirmation()
         let duplicateContext = try XCTUnwrap(duplicateModel.pendingReplaceConfirmation)
@@ -337,7 +337,7 @@ private extension ImportConflictIntegrationVerifyTests {
         await model.refreshImportConflictBatchPreview()
 
         XCTAssertTrue(model.showsCoreConflictBatchReview)
-        XCTAssertEqual(model.conflictBatchScopeSummary, "Will apply to 1 selected conflicts.")
+        XCTAssertEqual(model.conflictBatchScopeSummary, "Will apply to 1 selected conflict.")
         XCTAssertNil(model.conflictBatchApplyDisabledReason)
         let unconfirmedApply = await model.applyImportConflictBatch(replaceConfirmed: false)
         XCTAssertNil(unconfirmedApply)

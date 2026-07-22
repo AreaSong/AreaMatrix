@@ -117,6 +117,26 @@ enum CoreErrorKindSnapshot: String, Equatable {
     case stagingRecoveryRequired = "StagingRecoveryRequired"
     case permissionDenied = "PermissionDenied"
     case `internal` = "Internal"
+
+    var displayName: String {
+        switch self {
+        case .io: L10n.string("I/O")
+        case .db: L10n.string("Database")
+        case .config: L10n.string("Configuration")
+        case .validation: L10n.string("Validation")
+        case .classify: L10n.string("Classification")
+        case .conflict: L10n.string("Conflict")
+        case .duplicateFile: L10n.string("Duplicate file")
+        case .fileNotFound: L10n.string("File not found")
+        case .expiredAction: L10n.string("Expired action")
+        case .repoNotInitialized: L10n.string("Repository not initialized")
+        case .invalidPath: L10n.string("Invalid path")
+        case .iCloudPlaceholder: L10n.string("iCloud placeholder")
+        case .stagingRecoveryRequired: L10n.string("Staging recovery required")
+        case .permissionDenied: L10n.string("Permission denied")
+        case .internal: L10n.string("Internal error")
+        }
+    }
 }
 
 enum CoreErrorSeveritySnapshot: String, Equatable {
@@ -124,6 +144,10 @@ enum CoreErrorSeveritySnapshot: String, Equatable {
     case medium = "Medium"
     case high = "High"
     case critical = "Critical"
+
+    var displayName: String {
+        L10n.string(rawValue)
+    }
 }
 
 enum CoreErrorRecoverabilitySnapshot: String, Equatable {
@@ -131,33 +155,76 @@ enum CoreErrorRecoverabilitySnapshot: String, Equatable {
     case userActionRequired = "UserActionRequired"
     case refreshRequired = "RefreshRequired"
     case fatal = "Fatal"
+
+    var displayName: String {
+        switch self {
+        case .retryable: L10n.string("Retryable")
+        case .userActionRequired: L10n.string("User action required")
+        case .refreshRequired: L10n.string("Refresh required")
+        case .fatal: L10n.string("Fatal")
+        }
+    }
 }
 
 struct CoreErrorMappingSnapshot: Equatable {
     var kind: CoreErrorKindSnapshot
-    var userMessage: String
+    private var fallbackUserMessage: String
+    private var userMessageKey: String?
     var severity: CoreErrorSeveritySnapshot
-    var suggestedAction: String
+    private var fallbackSuggestedAction: String
+    private var suggestedActionKey: String?
     var recoverability: CoreErrorRecoverabilitySnapshot
     var rawContext: String
+
+    var userMessage: String {
+        guard let userMessageKey else { return fallbackUserMessage }
+        return L10n.string(userMessageKey, fallback: fallbackUserMessage)
+    }
+
+    var suggestedAction: String {
+        guard let suggestedActionKey else { return fallbackSuggestedAction }
+        return L10n.string(suggestedActionKey, fallback: fallbackSuggestedAction)
+    }
+
+    init(
+        kind: CoreErrorKindSnapshot,
+        userMessage: String,
+        severity: CoreErrorSeveritySnapshot,
+        suggestedAction: String,
+        recoverability: CoreErrorRecoverabilitySnapshot,
+        rawContext: String
+    ) {
+        self.kind = kind
+        fallbackUserMessage = userMessage
+        userMessageKey = nil
+        self.severity = severity
+        fallbackSuggestedAction = suggestedAction
+        suggestedActionKey = nil
+        self.recoverability = recoverability
+        self.rawContext = rawContext
+    }
 }
 
 extension CoreErrorMappingSnapshot {
     init(coreMapping: ErrorMapping) {
-        kind = CoreErrorKindSnapshot(coreKind: coreMapping.kind)
-        userMessage = coreMapping.userMessage
-        severity = CoreErrorSeveritySnapshot(coreSeverity: coreMapping.severity)
-        suggestedAction = coreMapping.suggestedAction
-        recoverability = CoreErrorRecoverabilitySnapshot(coreRecoverability: coreMapping.recoverability)
-        rawContext = coreMapping.rawContext
+        self.init(
+            kind: CoreErrorKindSnapshot(coreKind: coreMapping.kind),
+            userMessage: coreMapping.userMessage,
+            severity: CoreErrorSeveritySnapshot(coreSeverity: coreMapping.severity),
+            suggestedAction: coreMapping.suggestedAction,
+            recoverability: CoreErrorRecoverabilitySnapshot(coreRecoverability: coreMapping.recoverability),
+            rawContext: coreMapping.rawContext
+        )
+        userMessageKey = kind.messageKey
+        suggestedActionKey = kind.actionKey
     }
 
     static func internalFailure(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .internal,
-            userMessage: "应用内部错误",
+            userMessage: L10n.string("error.internal.message"),
             severity: .critical,
-            suggestedAction: "请记录错误信息并重启应用",
+            suggestedAction: L10n.string("error.internal.action"),
             recoverability: .fatal,
             rawContext: rawContext
         )
@@ -196,6 +263,16 @@ extension CoreErrorMappingSnapshot {
 
     func recoveryText(fallback: String) -> String {
         suggestedAction.isEmpty ? fallback : suggestedAction
+    }
+}
+
+private extension CoreErrorKindSnapshot {
+    var messageKey: String {
+        "core.error.\(rawValue).message"
+    }
+
+    var actionKey: String {
+        "core.error.\(rawValue).action"
     }
 }
 

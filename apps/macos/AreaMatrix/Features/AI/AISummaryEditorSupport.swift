@@ -11,13 +11,13 @@ enum AISummaryEditorOperation: Equatable {
     var progressText: String? {
         switch self {
         case .loading:
-            "Loading summary..."
+            L10n.string("Loading summary...")
         case .generating:
-            "Generating..."
+            L10n.string("Generating...")
         case .saving:
-            "Saving summary..."
+            L10n.string("Saving summary...")
         case .clearing:
-            "Clearing summary..."
+            L10n.string("Clearing summary...")
         case .idle, .failed:
             nil
         }
@@ -35,12 +35,12 @@ enum AISummaryEditorStatus: Equatable {
 
     var label: String {
         switch self {
-        case .empty: "No AI summary yet."
-        case .draft: "Draft"
-        case .saved: "Saved"
-        case .dirty: "Unsaved changes"
-        case let .skipped(reason): reason.map(aiSummarySkipReasonLabel) ?? "Skipped"
-        case .unavailable: "Summary unavailable"
+        case .empty: L10n.string("No AI summary yet.")
+        case .draft: L10n.string("Draft")
+        case .saved: L10n.string("Saved")
+        case .dirty: L10n.string("Unsaved changes")
+        case let .skipped(reason): reason.map(aiSummarySkipReasonLabel) ?? L10n.string("Skipped")
+        case .unavailable: L10n.string("Summary unavailable")
         }
     }
 }
@@ -138,30 +138,24 @@ enum AISummaryConfirmation {
 
     var title: String {
         switch self {
-        case .regenerate: "Regenerate AI summary?"
-        case .clear: "Clear AI summary?"
+        case .regenerate: L10n.string("Regenerate AI summary?")
+        case .clear: L10n.string("Clear AI summary?")
         }
     }
 
     var message: String {
         switch self {
         case .regenerate:
-            """
-            This replaces the current draft or unsaved edits with a new AI-generated draft. \
-            Saved notes and the original file will not be changed.
-            """
+            L10n.string("ai.summary.regenerateConfirmationMessage")
         case .clear:
-            """
-            This clears the AI-derived summary for this file. It will not delete your note, \
-            original file, extracted text, tags, or AI call log.
-            """
+            L10n.string("ai.summary.clearConfirmationMessage")
         }
     }
 
     var actionTitle: String {
         switch self {
-        case .regenerate: "Regenerate"
-        case .clear: "Clear summary"
+        case .regenerate: L10n.string("Regenerate")
+        case .clear: L10n.string("Clear summary")
         }
     }
 
