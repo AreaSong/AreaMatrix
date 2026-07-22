@@ -31609,6 +31609,40 @@
         }
       }
     },
+    "onboarding.welcome.language.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current interface language: %1$@. Click to switch to %2$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前界面语言：%1$@。点击切换到 %2$@。"
+          }
+        }
+      }
+    },
+    "onboarding.welcome.language.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch to %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切换到 %@"
+          }
+        }
+      }
+    },
     "onboarding.welcome.learnMore" : {
       "extractionState" : "manual",
       "localizations" : {

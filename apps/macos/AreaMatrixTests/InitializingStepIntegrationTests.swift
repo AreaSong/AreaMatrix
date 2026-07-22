@@ -247,11 +247,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         await initializationTask.value
         writer.assertNoSavedRepoPaths()
         XCTAssertEqual(model.route, .welcome)
-        XCTAssertEqual(
-            model.toastMessage,
-            "Initialization stopped at a safe point. " +
-                "When you choose the same repository again, AreaMatrix will continue or enter recovery."
-        )
+        XCTAssertEqual(model.toastMessage, L10n.string("onboarding.quit.stoppedAtSafePoint"))
     }
 
     @MainActor

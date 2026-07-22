@@ -11,13 +11,68 @@ struct WelcomeTitlebar: View {
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.tertiary)
 
-            HStack {
+            HStack(spacing: 4) {
                 Spacer()
+                WelcomeLanguageCycleButton()
                 AreaMatrixThemeToggleButton(themeOverride: $themeOverride)
             }
             .padding(.trailing, 16)
         }
         .frame(height: 48)
+    }
+}
+
+private struct WelcomeLanguageCycleButton: View {
+    @EnvironmentObject private var languageStore: AppLanguageStore
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: languageStore.selectNext) {
+            languageIndicator
+                .foregroundStyle(isHovered ? .secondary : .tertiary)
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(Color.primary.opacity(isHovered ? 0.08 : 0)))
+                .scaleEffect(isHovered ? 1.15 : 1)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(helpText)
+        .accessibilityLabel(L10n.string("settings.language.interface.title"))
+        .accessibilityValue(currentLanguageName)
+        .accessibilityHint(L10n.format("onboarding.welcome.language.hint", nextLanguageName))
+        .accessibilityIdentifier("welcome-interface-language-cycle")
+        .animation(.areaMatrixQuickFade, value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+            AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+        }
+    }
+
+    @ViewBuilder
+    private var languageIndicator: some View {
+        switch languageStore.selection {
+        case .system:
+            Image(systemName: "globe")
+                .font(.system(size: 12))
+        case .zhHans:
+            Text(verbatim: "中")
+                .font(.system(size: 12, weight: .semibold))
+        case .en:
+            Text(verbatim: "EN")
+                .font(.system(size: 9, weight: .bold))
+        }
+    }
+
+    private var currentLanguageName: String {
+        L10n.string(languageStore.selection.labelKey)
+    }
+
+    private var nextLanguageName: String {
+        L10n.string(languageStore.selection.next.labelKey)
+    }
+
+    private var helpText: String {
+        L10n.format("onboarding.welcome.language.help", currentLanguageName, nextLanguageName)
     }
 }
 

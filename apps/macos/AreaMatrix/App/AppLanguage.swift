@@ -23,6 +23,17 @@ enum AppLanguage: String, CaseIterable, Equatable, Identifiable {
         }
     }
 
+    var next: AppLanguage {
+        switch self {
+        case .system:
+            .zhHans
+        case .zhHans:
+            .en
+        case .en:
+            .system
+        }
+    }
+
     init(persistedValue: String?) {
         switch persistedValue?.trimmingCharacters(in: .whitespacesAndNewlines) {
         case "zh-CN", "zh-Hans":
@@ -148,6 +159,10 @@ final class AppLanguageStore: ObservableObject {
         defaults.set(language.rawValue, forKey: defaultsKey)
         runtime.update(language)
         syncCoreLocale()
+    }
+
+    func selectNext() {
+        select(selection.next)
     }
 
     func localizedString(_ key: String) -> String {

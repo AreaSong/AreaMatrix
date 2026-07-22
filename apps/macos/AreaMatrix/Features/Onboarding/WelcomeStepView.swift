@@ -12,6 +12,7 @@ struct WelcomeStepView: View {
     let onLearnMore: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.locale) private var locale
     @State private var activeScene: WelcomeScene = .default
     @State private var hoverScene: WelcomeScene?
     @State private var isScanning = false
@@ -87,6 +88,7 @@ struct WelcomeStepView: View {
                 .animation(.areaMatrixOverlayFade, value: isScanning)
 
             welcomeContent
+                .id(locale.identifier)
                 .areaMatrixScanningContent(isScanning: isScanning)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

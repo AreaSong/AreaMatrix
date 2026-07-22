@@ -73,6 +73,7 @@ actor PausingRepositoryInitializer: CoreRepositoryInitializing, RepositoryInitia
     func waitUntilStarted() async {
         _ = await waitForActorTestValue(
             on: self,
+            delayNanoseconds: 1_000_000,
             failureMessage: { "Timed out waiting for repository initialization to start" },
             value: {
                 didStart ? true : nil

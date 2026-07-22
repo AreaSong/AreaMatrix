@@ -13,6 +13,12 @@ final class AppLanguageTests: XCTestCase {
         XCTAssertEqual(AppLanguage.system.resolvedIdentifier(preferredLanguages: []), "en")
     }
 
+    func testLanguageCycleUsesSystemChineseEnglishOrder() {
+        XCTAssertEqual(AppLanguage.system.next, .zhHans)
+        XCTAssertEqual(AppLanguage.zhHans.next, .en)
+        XCTAssertEqual(AppLanguage.en.next, .system)
+    }
+
     @MainActor
     func testLegacyChinesePreferenceIsReadAndWrittenBackCanonically() throws {
         let defaults = try makeDefaults()
@@ -42,6 +48,29 @@ final class AppLanguageTests: XCTestCase {
         XCTAssertEqual(runtime.resolvedIdentifier(preferredLanguages: ["en-US"]), "zh-Hans")
         XCTAssertEqual(syncedLocales, [initialLocale, "zh-Hans"])
         XCTAssertNil(store.coreSyncError)
+    }
+
+    @MainActor
+    func testSelectNextPersistsEveryLanguageModeAndSyncsCoreLocale() throws {
+        let defaults = try makeDefaults()
+        let runtime = AppLanguageRuntime()
+        let initialLocale = AppLanguage.system.resolvedIdentifier(preferredLanguages: Locale.preferredLanguages)
+        var syncedLocales: [String] = []
+        let store = AppLanguageStore(
+            defaults: defaults,
+            runtime: runtime,
+            coreLocaleUpdater: { syncedLocales.append($0) }
+        )
+
+        store.selectNext()
+        XCTAssertEqual(store.selection, .zhHans)
+        store.selectNext()
+        XCTAssertEqual(store.selection, .en)
+        store.selectNext()
+        XCTAssertEqual(store.selection, .system)
+
+        XCTAssertEqual(defaults.string(forKey: AppLanguage.defaultsKey), "system")
+        XCTAssertEqual(syncedLocales, [initialLocale, "zh-Hans", "en", initialLocale])
     }
 
     @MainActor
