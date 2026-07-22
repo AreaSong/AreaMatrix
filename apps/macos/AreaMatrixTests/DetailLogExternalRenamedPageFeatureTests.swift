@@ -4,8 +4,9 @@ import XCTest
 final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
     @MainActor
     func testDetailLogSyncExternalRenamedCoreProductionRelayCreatesCurrentMainWindowRenamedEvent() {
+        let repoPath = "/tmp/AreaMatrixRelayRenamed-\(UUID().uuidString)"
         let fixture = makeShellMainListFixture(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
+            opening: .detailMetaFixture(repoPath: repoPath, files: []),
             model: makeShellOnboardingModel()
         )
         let opening = fixture.opening
@@ -13,7 +14,7 @@ final class DetailLogExternalRenamedPageFeatureTests: XCTestCase {
 
         AreaMatrixExternalCreatedFileRelay.publish(
             kind: .renamed,
-            repoPath: "/tmp/repo",
+            repoPath: repoPath,
             relativePath: "docs/renamed.pdf",
             fsEventID: 9100
         )

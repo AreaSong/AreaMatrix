@@ -65,7 +65,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         guard case let .failed(error) = model.loadState else {
             return XCTFail("Expected advanced-settings advanced settings load to fail through the error state")
         }
-        XCTAssertEqual(error.message, "Unable to load advanced settings")
+        XCTAssertEqual(error.message, L10n.string("Unable to load advanced settings"))
         XCTAssertFalse(error.recovery.isEmpty)
         XCTAssertNil(model.draft)
         XCTAssertNil(model.savedConfig)
@@ -84,8 +84,10 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
 
         XCTAssertEqual(model.loadState, .loaded)
         XCTAssertEqual(model.actionFeedback, .failed(AdvancedSettingsError(
-            message: "Open logs folder failed",
-            recovery: "Check that .areamatrix/logs exists, then retry after Core logging is initialized."
+            message: L10n.string("Open logs folder failed"),
+            recovery: L10n.string(
+                "Check that .areamatrix/logs exists, then retry after Core logging is initialized."
+            )
         )))
     }
 
@@ -104,7 +106,7 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         guard case let .failed(error) = model.diagnosticsState else {
             return XCTFail("Expected diagnostics failure state")
         }
-        XCTAssertEqual(error.message, "Diagnostics could not be exported")
+        XCTAssertEqual(error.message, L10n.string("Diagnostics could not be exported"))
         XCTAssertFalse(error.recovery.isEmpty)
     }
 
@@ -153,10 +155,15 @@ private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSet
     await context.diagnosticsCollector.assertRequestedRepoPaths([context.repoURL.path])
     context.logsOpener.assertOpenedRepoPaths([context.repoURL.path])
     context.summaryCopier.assertCopiedSummary(contains: [
-        "App version: 9.8.7 (654)",
-        "Core version: 0.1.0-test",
-        "Repo schema version: v2",
-        "Diagnostics exclude original file contents"
+        L10n.format(
+            "advanced.diagnosticSummary",
+            context.repoURL.lastPathComponent,
+            "9.8.7 (654)",
+            "0.1.0-test",
+            "v2",
+            "GeneratedOnly",
+            "false"
+        )
     ])
 }
 

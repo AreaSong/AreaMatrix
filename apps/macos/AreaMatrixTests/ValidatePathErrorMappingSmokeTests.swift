@@ -273,7 +273,7 @@ final class AITagSuggestionPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.aiTagSuggestionState.rejectedFeedback?.rejectedIDs, ["ai-tag-finance", "ai-tag-tax"])
         XCTAssertEqual(
             model.aiTagSuggestionState.rejectedFeedback?.message,
-            "2 suggestions rejected. Feedback recorded for this review."
+            L10n.plural("ai.tagSuggestions.rejectedFeedback", count: 2)
         )
         await bridge.assertNoAITagSuggestionApplyRequests()
         XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), [])

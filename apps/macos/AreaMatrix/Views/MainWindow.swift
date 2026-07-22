@@ -98,6 +98,9 @@ extension MainWindow {
         .onReceive(NotificationCenter.default.publisher(for: AreaMatrixSettingsCommandRelay.notification)) { _ in
             model.handleSettingsMenuCommand()
         }
+        .sheet(isPresented: $model.isAppLanguageSettingsPresented) {
+            AppLanguageSettingsSheet(onClose: model.closeAppLanguageSettings)
+        }
         .onReceive(
             NotificationCenter.default.publisher(for: AreaMatrixExternalCreatedFileRelay.notification),
             perform: handleExternalCreatedFileRelayNotification

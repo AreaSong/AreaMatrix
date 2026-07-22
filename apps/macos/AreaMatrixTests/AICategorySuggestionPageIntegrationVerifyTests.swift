@@ -88,7 +88,7 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
 
         let feedback = panel.rejectSuggestion(suggestion)
 
-        XCTAssertEqual(feedback.message, "Suggestion rejected. Feedback recorded for this review.")
+        XCTAssertEqual(feedback.message, L10n.string("Suggestion rejected. Feedback recorded for this review."))
         XCTAssertTrue(feedback.matches(suggestion))
     }
 
@@ -126,7 +126,7 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
         XCTAssertEqual(handoff.aiProvenance?.suggestedCategory, "finance/invoices")
         XCTAssertEqual(handoff.aiProvenance?.finalCategory, "finance/invoices")
         XCTAssertEqual(handoff.aiProvenance?.callLogID, 304)
-        XCTAssertTrue(handoff.summaryRows.map(\.label).contains("AI reason"))
+        XCTAssertTrue(handoff.summaryRows.map(\.label).contains(L10n.string("AI reason")))
 
         model.cancelClassifierRuleRoute()
 
@@ -160,8 +160,8 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
     }
 
     func testCallLogPrivacyRulesCheckedLabelDoesNotInferUserContent() {
-        XCTAssertEqual(aiCallLogPrivacyRulesCheckedLabel(true), "yes")
-        XCTAssertEqual(aiCallLogPrivacyRulesCheckedLabel(false), "not recorded")
+        XCTAssertEqual(aiCallLogPrivacyRulesCheckedLabel(true), L10n.string("yes"))
+        XCTAssertEqual(aiCallLogPrivacyRulesCheckedLabel(false), L10n.string("not recorded"))
     }
 }
 

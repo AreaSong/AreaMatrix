@@ -9,8 +9,14 @@ extension OnboardingModel {
         case .settingsGeneral:
             break
         default:
-            toastMessage = L10n.string("Open a repository before changing repository settings.")
+            isAppLanguageSettingsPresented = true
+            toastMessage = nil
         }
+    }
+
+    @MainActor
+    func closeAppLanguageSettings() {
+        isAppLanguageSettingsPresented = false
     }
 
     @MainActor

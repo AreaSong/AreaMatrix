@@ -6,6 +6,7 @@ final class OnboardingModel: ObservableObject {
     @Published var route: Route = .loadingConfiguration
     @Published var toastMessage: String?
     @Published var settingsGeneralSelectedTab: String? = "general"
+    @Published var isAppLanguageSettingsPresented = false
     @Published var choosePathAction: ChoosePathAction?
     @Published var validatePathAction: ValidatePathAction?
     @Published var repositoryPathText = OnboardingModel.defaultRepositoryPathDisplay

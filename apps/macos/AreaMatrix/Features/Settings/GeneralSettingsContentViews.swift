@@ -1,5 +1,49 @@
 import SwiftUI
 
+struct AppLanguageSettingsSheet: View {
+    @EnvironmentObject private var languageStore: AppLanguageStore
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.string("settings.language.section"))
+                    .font(.title2.weight(.semibold))
+                Text(L10n.string("settings.language.interface.description"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            Picker(L10n.string("settings.language.interface.title"), selection: languageSelection) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(L10n.string(language.labelKey)).tag(language)
+                }
+            }
+            .pickerStyle(.segmented)
+            .id(languageStore.selection)
+            .accessibilityIdentifier("app-language-settings-interface-picker")
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button(L10n.string("settings.action.close"), action: onClose)
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityIdentifier("app-language-settings-close")
+            }
+        }
+        .padding(24)
+        .frame(width: 460)
+    }
+
+    private var languageSelection: Binding<AppLanguage> {
+        Binding(
+            get: { languageStore.selection },
+            set: languageStore.select
+        )
+    }
+}
+
 struct GeneralSettingsLoadedContent: View {
     @EnvironmentObject private var languageStore: AppLanguageStore
     @ObservedObject var model: GeneralSettingsModel
@@ -62,6 +106,7 @@ struct GeneralSettingsLoadedContent: View {
                 }
             }
             .pickerStyle(.radioGroup)
+            .id(languageStore.selection)
             .disabled(writesDisabled)
             Text("导入时仍可在 ImportSheet 临时更改。")
                 .font(.callout)
@@ -76,6 +121,7 @@ struct GeneralSettingsLoadedContent: View {
                 Text("同时在根目录生成 AREAMATRIX.md").tag(GeneralSettingsOverviewOutput.rootAreaMatrixFile)
             }
             .pickerStyle(.radioGroup)
+            .id(languageStore.selection)
             .disabled(writesDisabled)
             Text("AreaMatrix 永远不会覆盖已有 README.md。")
                 .font(.callout)
@@ -101,6 +147,7 @@ struct GeneralSettingsLoadedContent: View {
                 }
             }
             .pickerStyle(.segmented)
+            .id(languageStore.selection)
             .frame(maxWidth: 360)
 
             Picker(L10n.string("settings.language.content.title"), selection: contentLanguageSelection) {
@@ -109,6 +156,7 @@ struct GeneralSettingsLoadedContent: View {
                 }
             }
             .pickerStyle(.segmented)
+            .id(languageStore.selection)
             .disabled(writesDisabled)
             .frame(maxWidth: 360)
 
@@ -126,6 +174,7 @@ struct GeneralSettingsLoadedContent: View {
                 }
             }
             .pickerStyle(.segmented)
+            .id(languageStore.selection)
             .disabled(true)
             .frame(maxWidth: 180)
         }

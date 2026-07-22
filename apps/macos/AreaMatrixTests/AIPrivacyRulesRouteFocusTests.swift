@@ -5,13 +5,13 @@ final class AIPrivacyRulesRouteFocusTests: XCTestCase {
     func testAIPrivacyRulesRouteFocusTargetsRuleAndFieldRowsForOneShotHighlight() {
         let ruleFocus = AIPrivacyRulesRouteFocus.rule(ruleID: " rule-confidential ")
         XCTAssertEqual(ruleFocus.targetID, "aiPrivacyRules-rule-rule-confidential")
-        XCTAssertEqual(ruleFocus.label, "Focused privacy rule rule-confidential")
+        XCTAssertEqual(ruleFocus.label, L10n.format("ai.privacy.focusedRule", "rule-confidential"))
         XCTAssertTrue(ruleFocus.matches(ruleID: "rule-confidential"))
         XCTAssertFalse(ruleFocus.matches(ruleID: "rule-other"))
 
         let fieldFocus = AIPrivacyRulesRouteFocus.field(.noteSummary)
         XCTAssertEqual(fieldFocus.targetID, "aiPrivacyRules-field-noteSummary")
-        XCTAssertEqual(fieldFocus.label, "Focused remote field note summary")
+        XCTAssertEqual(fieldFocus.label, L10n.format("ai.privacy.focusedField", aiPrivacyInputFieldLabel(.noteSummary)))
         XCTAssertTrue(fieldFocus.matches(field: .noteSummary))
         XCTAssertFalse(fieldFocus.matches(field: .fileName))
     }

@@ -60,7 +60,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         await privacyBridge.assertProviderScope(at: 0, remoteProviderEnabled: true)
         await privacyBridge.assertUpdateFieldPolicy(at: 1, field: .noteSummary, allowRemote: false)
         await privacyBridge.assertUpdateRule(at: 2, position: .first, pattern: "finance/private/q2/")
-        await privacyBridge.assertUpdateRule(at: 3, position: .last, name: "Confidential keywords")
+        await privacyBridge.assertUpdateRule(at: 3, position: .last, name: L10n.string("Confidential keywords"))
         await privacyBridge.assertEvaluationFeatures(AiFeatureKind.aiPrivacyRulesCases)
         await privacyBridge.assertEvaluation(
             at: 0,
@@ -78,7 +78,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         folder.pattern = "/absolute/path"
         XCTAssertEqual(
             folder.validationMessage(registry: .unavailable),
-            "Use a path relative to the AreaMatrix repository root."
+            L10n.string("Use a path relative to the AreaMatrix repository root.")
         )
 
         var extensionDraft = AIPrivacyRuleEditorDraft()
@@ -86,29 +86,32 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         extensionDraft.pattern = "key"
         XCTAssertEqual(
             extensionDraft.validationMessage(registry: .unavailable),
-            "Extension patterns must start with a dot."
+            L10n.string("Extension patterns must start with a dot.")
         )
 
         var category = AIPrivacyRuleEditorDraft()
         category.kind = .category
         category.pattern = "finance"
-        XCTAssertEqual(category.validationMessage(registry: .unavailable), "Category registry is unavailable.")
+        XCTAssertEqual(
+            category.validationMessage(registry: .unavailable),
+            L10n.string("Category registry is unavailable.")
+        )
         XCTAssertEqual(
             category.validationMessage(registry: .testFixture(categories: ["docs"])),
-            "Choose an existing category from the registry."
+            L10n.string("Choose an existing category from the registry.")
         )
         XCTAssertEqual(
             category.validationMessage(registry: .testFixture(categories: ["finance"])),
-            "Ready to save."
+            L10n.string("Ready to save.")
         )
 
         var tag = AIPrivacyRuleEditorDraft()
         tag.kind = .tag
         tag.pattern = "client-private"
-        XCTAssertEqual(tag.validationMessage(registry: .unavailable), "Tag registry is unavailable.")
+        XCTAssertEqual(tag.validationMessage(registry: .unavailable), L10n.string("Tag registry is unavailable."))
         XCTAssertEqual(
             tag.validationMessage(registry: .testFixture(tags: ["client-private"])),
-            "Ready to save."
+            L10n.string("Ready to save.")
         )
 
         let rule = AiPrivacyRuleRecord.aiPrivacyRulesIntegrationRule()
@@ -116,7 +119,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         XCTAssertFalse(edit.hasChanges)
         edit.description = "Updated reason"
         XCTAssertTrue(edit.hasChanges)
-        XCTAssertEqual(edit.validationMessage(registry: .unavailable), "Ready to save.")
+        XCTAssertEqual(edit.validationMessage(registry: .unavailable), L10n.string("Ready to save."))
     }
 
     @MainActor
@@ -135,7 +138,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         await model.load()
         let didSave = await model.setField(.noteSummary, allowRemote: false)
         XCTAssertFalse(didSave)
-        XCTAssertEqual(model.saveError?.message, "Privacy field settings could not be saved.")
+        XCTAssertEqual(model.saveError?.message, L10n.string("Privacy field settings could not be saved."))
         XCTAssertFalse(model.fields.first { $0.field == .noteSummary }?.allowRemote ?? true)
 
         model.revertPendingSave()

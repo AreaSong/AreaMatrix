@@ -46389,6 +46389,23 @@
         }
       }
     },
+    "settings.language.interface.description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the application interface language. Changes apply immediately."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择应用界面语言，更改会立即生效。"
+          }
+        }
+      }
+    },
     "settings.language.interface.title" : {
       "extractionState" : "manual",
       "localizations" : {

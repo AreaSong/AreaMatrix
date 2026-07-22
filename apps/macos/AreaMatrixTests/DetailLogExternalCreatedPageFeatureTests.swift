@@ -19,15 +19,16 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
 
     @MainActor
     func testDetailLogSyncExternalCreatedCoreProductionRelayCreatesCurrentMainWindowEvent() {
+        let repoPath = "/tmp/AreaMatrixRelayCreated-\(UUID().uuidString)"
         let fixture = makeShellMainListFixture(
-            opening: .detailMetaFixture(repoPath: "/tmp/repo", files: []),
+            opening: .detailMetaFixture(repoPath: repoPath, files: []),
             model: makeShellOnboardingModel()
         )
         let opening = fixture.opening
         let model = fixture.model
 
         AreaMatrixExternalCreatedFileRelay.publish(
-            repoPath: "/tmp/repo",
+            repoPath: repoPath,
             relativePath: "docs/external-created.pdf",
             fsEventID: 7100
         )

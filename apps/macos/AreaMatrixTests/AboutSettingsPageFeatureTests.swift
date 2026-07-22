@@ -50,9 +50,9 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        XCTAssertEqual(model.versionInfo.schemaVersion, "Unknown")
-        XCTAssertEqual(model.versionError?.message, "Schema version unavailable")
-        XCTAssertEqual(model.versionError?.recovery, "Collect diagnostics...")
+        XCTAssertEqual(model.versionInfo.schemaVersion, L10n.string("Unknown"))
+        XCTAssertEqual(model.versionError?.message, L10n.string("Schema version unavailable"))
+        XCTAssertEqual(model.versionError?.recovery, L10n.string("Collect diagnostics..."))
     }
 
     @MainActor
@@ -72,9 +72,9 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        XCTAssertEqual(model.versionInfo.schemaVersion, "Unknown")
-        XCTAssertEqual(model.versionError?.message, "Schema version unavailable")
-        XCTAssertEqual(model.versionError?.recovery, "Collect diagnostics...")
+        XCTAssertEqual(model.versionInfo.schemaVersion, L10n.string("Unknown"))
+        XCTAssertEqual(model.versionError?.message, L10n.string("Schema version unavailable"))
+        XCTAssertEqual(model.versionError?.recovery, L10n.string("Collect diagnostics..."))
     }
 
     @MainActor
@@ -148,22 +148,25 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
 
         model.openExternalLink(.github)
         XCTAssertEqual(model.actionFeedback, .failed(AboutSettingsError(
-            message: "GitHub link could not be opened",
-            recovery: "Copy the URL and open it in your browser.",
+            message: L10n.format("settings.about.linkOpenFailed", AboutExternalLink.github.title),
+            recovery: L10n.string("Copy the URL and open it in your browser."),
             copyableDetail: AboutExternalLink.github.urlString
         )))
         model.copyActionDetail(AboutSettingsError(
-            message: "GitHub link could not be opened",
-            recovery: "Copy the URL and open it in your browser.",
+            message: L10n.format("settings.about.linkOpenFailed", AboutExternalLink.github.title),
+            recovery: L10n.string("Copy the URL and open it in your browser."),
             copyableDetail: AboutExternalLink.github.urlString
         ))
 
         model.openLogs()
 
         copier.assertCopiedValues([AboutExternalLink.github.urlString])
-        announcer.assertAnnouncements(["GitHub link could not be opened", "Open logs failed"])
+        announcer.assertAnnouncements([
+            L10n.format("settings.about.linkOpenFailed", AboutExternalLink.github.title),
+            L10n.string("Open logs failed")
+        ])
         if case let .failed(error) = model.actionFeedback {
-            XCTAssertEqual(error.message, "Open logs failed")
+            XCTAssertEqual(error.message, L10n.string("Open logs failed"))
             XCTAssertEqual(error.copyableDetail, "/tmp/repo/.areamatrix/logs")
         } else {
             XCTFail("Expected a logs failure banner")

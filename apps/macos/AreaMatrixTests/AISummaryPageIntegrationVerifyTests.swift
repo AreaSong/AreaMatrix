@@ -125,7 +125,7 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         guard case let .blocked(notice) = model.gateState else {
             return XCTFail("Expected ai-summary-core unavailable draft to block the page action.")
         }
-        XCTAssertEqual(notice.title, "AI call log is unavailable")
+        XCTAssertEqual(notice.title, L10n.string("AI call log is unavailable"))
         XCTAssertEqual(notice.reason, .callLogUnavailable)
         XCTAssertEqual(model.draftText, "")
         await summary.assertEvents([.generate(regenerate: false, privacyPolicyRef: nil)])

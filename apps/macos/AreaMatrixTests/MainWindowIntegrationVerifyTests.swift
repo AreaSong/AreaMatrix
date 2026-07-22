@@ -44,7 +44,10 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
         writer.assertNoSavedRepoPaths()
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
         XCTAssertEqual(state.treeRows.map(\.id), ["docs", "docs/contracts"])
-        XCTAssertEqual(state.treeStatusText, "Directory loaded: 1 file")
+        XCTAssertEqual(
+            state.treeStatusText,
+            L10n.plural("onboarding.loading.treeFileCount", count: 1)
+        )
     }
 
     @MainActor
@@ -115,6 +118,25 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
 
         model.handleImportMenuCommand()
         XCTAssertEqual(model.pendingImportEntry?.urls, [importURL])
+    }
+
+    @MainActor
+    func testSettingsCommandShowsAppLanguageSettingsWithoutRepository() {
+        let model = OnboardingModel(
+            startupRecoverer: StaticStartupRecoverer(),
+            scanSessionReader: StaticScanSessionReader(),
+            helpOpener: NoopWelcomeHelpOpener()
+        )
+        model.route = .welcome
+
+        model.handleSettingsMenuCommand()
+
+        XCTAssertEqual(model.route, .welcome)
+        XCTAssertTrue(model.isAppLanguageSettingsPresented)
+        XCTAssertNil(model.toastMessage)
+
+        model.closeAppLanguageSettings()
+        XCTAssertFalse(model.isAppLanguageSettingsPresented)
     }
 
     @MainActor
