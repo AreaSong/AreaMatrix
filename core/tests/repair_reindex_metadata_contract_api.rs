@@ -127,7 +127,7 @@ fn repair_reindex_metadata_contract_documents_errors_and_side_effect_boundaries(
     }
 
     for fragment in [
-        "只允许写 `.areamatrix/` metadata。",
+        "修复只处理 `.areamatrix/` metadata",
         "不移动、不重命名、不删除、不覆盖、不 Trash 用户文件。",
         "不覆盖 `README.md`",
         "`preserve_diagnostics_snapshot = true`",

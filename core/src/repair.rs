@@ -261,8 +261,20 @@ fn read_repair_locale(index_db: &Path) -> CoreResult<Option<String>> {
 }
 
 fn open_repair_read_connection(index_db: &Path) -> CoreResult<Connection> {
-    let connection = Connection::open_with_flags(index_db, OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|error| CoreError::db(error.to_string()))?;
+    let wal_exists = metadata_file_exists(&sqlite_companion_path(index_db, "-wal")?)?;
+    let shm_exists = metadata_file_exists(&sqlite_companion_path(index_db, "-shm")?)?;
+    if wal_exists != shm_exists {
+        return Err(CoreError::db("database sidecar state is incomplete"));
+    }
+    let connection = if wal_exists {
+        Connection::open_with_flags(index_db, OpenFlags::SQLITE_OPEN_READ_ONLY)
+    } else {
+        Connection::open_with_flags(
+            sqlite_immutable_uri(index_db),
+            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
+        )
+    }
+    .map_err(|error| CoreError::db(error.to_string()))?;
     connection
         .execute_batch(
             "PRAGMA query_only = ON;
@@ -271,6 +283,29 @@ fn open_repair_read_connection(index_db: &Path) -> CoreResult<Connection> {
         )
         .map_err(|error| CoreError::db(error.to_string()))?;
     Ok(connection)
+}
+
+fn metadata_file_exists(path: &Path) -> CoreResult<bool> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => Err(
+            CoreError::repo_not_initialized("repository not initialized"),
+        ),
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(map_initialized_metadata_error(error)),
+    }
+}
+
+fn sqlite_immutable_uri(path: &Path) -> String {
+    let mut encoded = String::with_capacity(path.as_os_str().len() + 24);
+    for byte in path.to_string_lossy().bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'/' | b'-' | b'_' | b'.' | b'~') {
+            encoded.push(char::from(byte));
+        } else {
+            encoded.push_str(&format!("%{byte:02X}"));
+        }
+    }
+    format!("file:{encoded}?immutable=1")
 }
 
 fn repair_database_is_healthy(connection: &Connection) -> bool {
