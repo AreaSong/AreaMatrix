@@ -70,7 +70,7 @@ enum AdvancedSettingsDiagnosticsState: Equatable {
 }
 
 enum AdvancedSettingsActionFeedback: Equatable {
-    case success(String)
+    case success(LocalizedMessage)
     case failed(AdvancedSettingsError)
 }
 

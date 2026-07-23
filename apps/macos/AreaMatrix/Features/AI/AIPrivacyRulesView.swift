@@ -4,6 +4,7 @@ import SwiftUI
 
 // swiftlint:disable:next type_body_length
 struct AIPrivacyRulesView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @ObservedObject var model: AISettingsModel
     @StateObject var providerModel: AIPrivacyRemoteProviderStateModel
     @StateObject var privacyModel: AIPrivacyRulesModel
@@ -161,7 +162,7 @@ struct AIPrivacyRulesView: View {
                 Button("Revert changes", action: privacyModel.revertPendingSave)
             }
         } else if let feedback = privacyModel.feedback {
-            Label(feedback, systemImage: "checkmark.circle").foregroundStyle(.green)
+            Label(localizer.resolve(feedback), systemImage: "checkmark.circle").foregroundStyle(.green)
         }
     }
 

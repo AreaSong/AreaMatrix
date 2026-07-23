@@ -1,28 +1,28 @@
 import Foundation
 
 struct ClassifierSettingsLoadError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 struct ClassifierSettingsSaveError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 struct ClassifierSettingsPreviewError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 struct ClassifierSettingsFileActionError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 struct ClassifierSettingsValidationError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 struct ClassifierSettingsPendingSave: Equatable {

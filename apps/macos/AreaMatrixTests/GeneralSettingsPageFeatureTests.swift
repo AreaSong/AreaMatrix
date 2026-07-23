@@ -61,32 +61,32 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
     }
 
     func testCoreRepositoryTreeLocaleResolverNormalizesStoredLocales() {
-        XCTAssertEqual(CoreRepositoryTreeLocaleResolver.resolve("zh-CN", preferredLanguages: []), "zh-Hans")
-        XCTAssertEqual(CoreRepositoryTreeLocaleResolver.resolve("zh-Hans", preferredLanguages: []), "zh-Hans")
-        XCTAssertEqual(CoreRepositoryTreeLocaleResolver.resolve("en", preferredLanguages: []), "en")
+        XCTAssertEqual(CoreRepositoryTreeLocaleResolver.resolve("zh-CN", interfaceLocaleIdentifier: "en"), "zh-Hans")
+        XCTAssertEqual(CoreRepositoryTreeLocaleResolver.resolve("zh-Hans", interfaceLocaleIdentifier: "en"), "zh-Hans")
+        XCTAssertEqual(CoreRepositoryTreeLocaleResolver.resolve("en", interfaceLocaleIdentifier: "zh-Hans"), "en")
     }
 
-    func testCoreRepositoryTreeLocaleResolverUsesSupportedSystemLanguageOrEnglishFallback() {
+    func testCoreRepositoryTreeLocaleResolverFollowsResolvedInterfaceLocale() {
         XCTAssertEqual(
             CoreRepositoryTreeLocaleResolver.resolve(
                 "system",
-                preferredLanguages: ["fr-FR", "zh-Hans-CN", "en-US"]
+                interfaceLocaleIdentifier: "zh-Hans"
             ),
             "zh-Hans"
         )
         XCTAssertEqual(
             CoreRepositoryTreeLocaleResolver.resolve(
                 "system",
-                preferredLanguages: ["fr-FR", "en-US", "zh-Hans-CN"]
+                interfaceLocaleIdentifier: "en"
             ),
             "en"
         )
         XCTAssertEqual(
             CoreRepositoryTreeLocaleResolver.resolve(
                 "system",
-                preferredLanguages: ["zh-Hant-TW", "fr-FR"]
+                interfaceLocaleIdentifier: "zh-Hant"
             ),
-            "zh-Hans"
+            "en"
         )
     }
 

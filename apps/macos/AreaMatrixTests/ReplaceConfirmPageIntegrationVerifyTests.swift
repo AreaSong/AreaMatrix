@@ -234,13 +234,16 @@ private func assertReplaceConfirmationFailure(
 ) {
     XCTAssertFalse(acceptedStale)
     XCTAssertNil(blockedOutcome)
-    XCTAssertEqual(model.replaceConfirmationErrorMessage, "Replace confirmation context expired")
+    XCTAssertEqual(
+        model.replaceConfirmationErrorMessage,
+        L10n.message("Replace confirmation context expired")
+    )
     assertImportBlockedByUnresolvedConflicts(model.importDisabledReason)
 
     model.collectReplaceConfirmationDiagnostics()
     XCTAssertEqual(
         model.replaceConfirmationDiagnosticsMessage,
-        "Diagnostics collected for replace confirmation state. No user file contents included."
+        L10n.message("import.replace-confirmation.diagnostics-collected")
     )
     model.retryReplaceConfirmation()
     XCTAssertNil(model.replaceConfirmationErrorMessage)
@@ -249,8 +252,8 @@ private func assertReplaceConfirmationFailure(
 
 @MainActor
 private protocol ReplaceConfirmationRecoverableModel: AnyObject {
-    var replaceConfirmationErrorMessage: String? { get }
-    var replaceConfirmationDiagnosticsMessage: String? { get }
+    var replaceConfirmationErrorMessage: LocalizedMessage? { get }
+    var replaceConfirmationDiagnosticsMessage: LocalizedMessage? { get }
     var importDisabledReason: String? { get }
 
     func collectReplaceConfirmationDiagnostics()

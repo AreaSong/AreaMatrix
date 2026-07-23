@@ -10,6 +10,7 @@ func aiSummaryIntegrationModel(
         repoPath: "/tmp/repo",
         fileID: fileID,
         summaryStore: summary,
+        contentLocaleSnapshotter: StaticRepositoryContentLocaleSnapshotter(),
         privacyRules: privacy,
         errorMapper: RecordingCoreErrorMapper.aiSummaryIntegration(),
         summaryProviderScope: .remoteAllowed,

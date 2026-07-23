@@ -76,42 +76,6 @@ enum GeneralSettingsOverviewOutput: String, CaseIterable, Equatable, Identifiabl
     }
 }
 
-enum RepositoryContentLanguage: String, CaseIterable, Equatable, Identifiable {
-    case followInterface = "system"
-    case zhHans = "zh-Hans"
-    case en
-
-    var id: String {
-        rawValue
-    }
-
-    init(snapshotValue: String) {
-        switch snapshotValue.trimmingCharacters(in: .whitespacesAndNewlines) {
-        case "en":
-            self = .en
-        case "zh-CN", "zh-Hans":
-            self = .zhHans
-        default:
-            self = .followInterface
-        }
-    }
-
-    var snapshotValue: String {
-        rawValue
-    }
-
-    var labelKey: String {
-        switch self {
-        case .followInterface:
-            "settings.language.followInterface"
-        case .zhHans:
-            "settings.language.simplifiedChinese"
-        case .en:
-            "settings.language.english"
-        }
-    }
-}
-
 enum GeneralSettingsAppearance: String, CaseIterable, Equatable, Identifiable {
     case system
 
@@ -158,8 +122,8 @@ enum RootOverviewFileStatus: Equatable {
 }
 
 struct GeneralSettingsSaveError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 enum GeneralSettingsIgnoreRulesAlert: Equatable {
@@ -174,13 +138,11 @@ struct GeneralSettingsPendingSave: Equatable {
 struct GeneralSettingsDraft: Equatable {
     var defaultStorageMode: GeneralSettingsStorageMode
     var overviewOutput: GeneralSettingsOverviewOutput
-    var contentLanguage: RepositoryContentLanguage
     var appearance: GeneralSettingsAppearance
 
     init(config: RepoConfigSnapshot) {
         defaultStorageMode = GeneralSettingsStorageMode(snapshotValue: config.defaultMode)
         overviewOutput = GeneralSettingsOverviewOutput(snapshotValue: config.overviewOutput)
-        contentLanguage = RepositoryContentLanguage(snapshotValue: config.locale)
         appearance = .system
     }
 }

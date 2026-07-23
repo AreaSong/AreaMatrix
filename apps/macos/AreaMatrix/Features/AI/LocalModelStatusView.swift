@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct LocalModelStatusBanner: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let feedback: LocalModelStatusFeedback?
     let phase: LocalModelStatusPhase
 
@@ -8,7 +9,7 @@ struct LocalModelStatusBanner: View {
         switch (feedback, phase) {
         case let (.success(message), _):
             TintedStatusBanner(tint: .green, fillsWidth: false) {
-                Label(message, systemImage: "checkmark.circle")
+                Label(localizer.resolve(message), systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
             }
             .accessibilityElement(children: .combine)
@@ -21,7 +22,7 @@ struct LocalModelStatusBanner: View {
                 HStack(spacing: 10) {
                     ProgressView()
                         .controlSize(.small)
-                    Text(message)
+                    Text(localizer.resolve(message))
                 }
             }
         default:
@@ -32,12 +33,12 @@ struct LocalModelStatusBanner: View {
     private func failureBanner(_ error: LocalModelStatusError) -> some View {
         TintedStatusBanner(tint: .red, fillsWidth: false) {
             VStack(alignment: .leading, spacing: 6) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
+                Label(localizer.resolve(error.message), systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
                 Text(error.detail)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text(error.recovery)
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AboutSettingsPane: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: AboutSettingsModel
     private let onOpenRepositorySettings: () -> Void
     private let onClose: () -> Void
@@ -117,7 +118,7 @@ struct AboutSettingsPane: View {
         if let feedback = model.actionFeedback {
             switch feedback {
             case let .success(message):
-                SettingsStatusBanner(title: message, systemImage: "checkmark.circle", tint: .green)
+                SettingsStatusBanner(title: localizer.resolve(message), systemImage: "checkmark.circle", tint: .green)
             case let .failed(error):
                 AboutSettingsBanner(error: error, tint: .red) {
                     Button("Copy detail") {

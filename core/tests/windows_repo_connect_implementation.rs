@@ -18,6 +18,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -26,6 +28,8 @@ fn adopt_existing_options() -> RepoInitOptions {
         mode: RepoInitMode::AdoptExisting,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 

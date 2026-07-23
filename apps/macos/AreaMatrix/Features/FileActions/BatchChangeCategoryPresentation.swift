@@ -1,46 +1,46 @@
 import Foundation
 
 struct BatchCategoryPreviewReportPresentation: Equatable {
-    var moveSummaryText: String
-    var metadataSummaryText: String
-    var skippedSummaryText: String
-    var blockedSummaryText: String
+    var moveSummaryText: LocalizedMessage
+    var metadataSummaryText: LocalizedMessage
+    var skippedSummaryText: LocalizedMessage
+    var blockedSummaryText: LocalizedMessage
 
     init(report: BatchCategoryPreviewReportSnapshot) {
-        moveSummaryText = L10n.plural(
+        moveSummaryText = L10n.pluralMessage(
             "file-actions.change-category.preview.will-move",
-            count: Int(report.willMoveCount)
+            count: report.willMoveCount
         )
-        metadataSummaryText = L10n.plural(
+        metadataSummaryText = L10n.pluralMessage(
             "file-actions.change-category.preview.metadata-only",
-            count: Int(report.metadataOnlyCount)
+            count: report.metadataOnlyCount
         )
-        skippedSummaryText = L10n.plural(
+        skippedSummaryText = L10n.pluralMessage(
             "file-actions.change-category.preview.cannot-move",
-            count: Int(report.skippedCount)
+            count: report.skippedCount
         )
-        blockedSummaryText = L10n.plural(
+        blockedSummaryText = L10n.pluralMessage(
             "file-actions.change-category.preview.blocked",
-            count: Int(report.blockedCount)
+            count: report.blockedCount
         )
     }
 }
 
 struct BatchCategoryChangeReportPresentation: Equatable {
-    var changedSummaryText: String
-    var skippedSummaryText: String
-    var failedSummaryText: String
+    var changedSummaryText: LocalizedMessage
+    var skippedSummaryText: LocalizedMessage
+    var failedSummaryText: LocalizedMessage
 
     init(report: BatchCategoryChangeReportSnapshot) {
         let changed = report.movedCount + report.metadataOnlyCount
-        changedSummaryText = L10n.plural("file-actions.change-category.result.changed", count: Int(changed))
-        skippedSummaryText = L10n.plural(
+        changedSummaryText = L10n.pluralMessage("file-actions.change-category.result.changed", count: changed)
+        skippedSummaryText = L10n.pluralMessage(
             "file-actions.change-category.result.skipped-or-unchanged",
-            count: Int(report.skippedCount + report.unchangedCount)
+            count: report.skippedCount + report.unchangedCount
         )
-        failedSummaryText = L10n.plural(
+        failedSummaryText = L10n.pluralMessage(
             "file-actions.change-category.result.failed",
-            count: Int(report.failedCount)
+            count: report.failedCount
         )
     }
 }

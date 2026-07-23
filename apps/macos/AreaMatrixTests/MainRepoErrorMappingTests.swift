@@ -8,13 +8,13 @@ final class MainRepoErrorMappingTests: XCTestCase {
             rawContext: "/tmp/missing-repo"
         ))
 
-        XCTAssertEqual(presentation.title, "Folder is missing")
+        XCTAssertEqual(L10n.resolve(presentation.title), "Folder is missing")
         XCTAssertEqual(
-            presentation.message,
+            L10n.resolve(presentation.message),
             "AreaMatrix cannot find this folder. It may have been moved, renamed, or disconnected."
         )
         XCTAssertEqual(presentation.primaryAction, .reconnectFolder)
-        XCTAssertEqual(presentation.primaryActionTitle, "Reconnect folder")
+        XCTAssertEqual(L10n.resolve(presentation.primaryActionTitle), "Reconnect folder")
     }
 
     func testICloudPlaceholderUsesDownloadRetryCopy() {
@@ -23,9 +23,9 @@ final class MainRepoErrorMappingTests: XCTestCase {
             rawContext: "/Users/me/Library/Mobile Documents/repo.icloud"
         ))
 
-        XCTAssertEqual(presentation.title, "iCloud file is not downloaded")
+        XCTAssertEqual(L10n.resolve(presentation.title), "iCloud file is not downloaded")
         XCTAssertEqual(presentation.primaryAction, .downloadAndRetry)
-        XCTAssertEqual(presentation.primaryActionTitle, "Download and retry")
+        XCTAssertEqual(L10n.resolve(presentation.primaryActionTitle), "Download and retry")
     }
 
     func testDbAndConfigErrorsUseRepairCopyWithoutRetryAction() {
@@ -40,9 +40,9 @@ final class MainRepoErrorMappingTests: XCTestCase {
             rawContext: "schema mismatch"
         ))
 
-        XCTAssertEqual(databasePresentation.title, "Repository metadata needs repair")
+        XCTAssertEqual(L10n.resolve(databasePresentation.title), "Repository metadata needs repair")
         XCTAssertEqual(databasePresentation.primaryAction, .openRepair)
-        XCTAssertEqual(databasePresentation.primaryActionTitle, "Open repair")
+        XCTAssertEqual(L10n.resolve(databasePresentation.primaryActionTitle), "Open repair")
         XCTAssertEqual(config.primaryAction, .openRepair)
     }
 
@@ -54,9 +54,9 @@ final class MainRepoErrorMappingTests: XCTestCase {
             rawContext: "database is locked"
         ))
 
-        XCTAssertEqual(presentation.title, "Repository is temporarily unavailable")
+        XCTAssertEqual(L10n.resolve(presentation.title), "Repository is temporarily unavailable")
         XCTAssertEqual(presentation.primaryAction, .retry)
-        XCTAssertEqual(presentation.primaryActionTitle, "Retry")
+        XCTAssertEqual(L10n.resolve(presentation.primaryActionTitle), "Retry")
     }
 
     func testDefaultCoreBridgeMapsDbLockedAndCorruptedToDistinctRecoveryActions() async {

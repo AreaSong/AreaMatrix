@@ -1,8 +1,8 @@
 import Foundation
 
 struct LocalModelStatusError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
     var detail: String
 }
 

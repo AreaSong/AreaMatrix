@@ -17,6 +17,7 @@ func aiCallLogPrivacyRulesCheckedLabel(_ checked: Bool) -> String {
 }
 
 struct AICallLogView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: AICallLogModel
     @State private var confirmation: AICallLogConfirmation?
     @State private var diagnosticsMessage: String?
@@ -109,7 +110,7 @@ struct AICallLogView: View {
             Button("Last 30 days") { Task { await model.applyDatePreset(.last30Days) } }
             Button("This year") { Task { await model.applyDatePreset(.thisYear) } }
         }
-        .accessibilityLabel("Date range, \(model.dateRangeSummary)")
+        .accessibilityLabel(L10n.format("Date range, %@", model.dateRangeSummary))
     }
 
     @ViewBuilder
@@ -119,7 +120,7 @@ struct AICallLogView: View {
         } else if let diagnosticsMessage {
             Label(diagnosticsMessage, systemImage: "doc.text.magnifyingglass").foregroundStyle(.secondary)
         } else if let toast = model.toastMessage {
-            Label(toast, systemImage: "checkmark.circle").foregroundStyle(.green)
+            Label(localizer.resolve(toast), systemImage: "checkmark.circle").foregroundStyle(.green)
         }
     }
 

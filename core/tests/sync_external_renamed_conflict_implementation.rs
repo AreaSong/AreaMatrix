@@ -24,12 +24,14 @@ fn sync_external_renamed_implementation_only_replays_same_event_id() {
     sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/renamed.pdf", 2)],
+        "en".to_owned(),
     )
     .expect("sync first renamed event");
 
     let replayed = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/renamed.pdf", 2)],
+        "en".to_owned(),
     )
     .expect("replay the same renamed event");
 
@@ -39,6 +41,7 @@ fn sync_external_renamed_implementation_only_replays_same_event_id() {
     let conflicting = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/renamed.pdf", 3)],
+        "en".to_owned(),
     );
 
     assert!(matches!(conflicting, Err(CoreError::Conflict { .. })));
@@ -65,6 +68,7 @@ fn sync_external_renamed_implementation_rejects_unpaired_target_without_state() 
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/unpaired.pdf", 10)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Conflict { .. })));
@@ -91,6 +95,7 @@ fn sync_external_renamed_implementation_rejects_hash_match_while_source_still_ex
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/copied.pdf", 50)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Conflict { .. })));
@@ -118,6 +123,7 @@ fn sync_external_renamed_implementation_reports_conflict_for_staging_target_path
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/target.pdf", 55)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Conflict { .. })));
@@ -144,6 +150,7 @@ fn sync_external_renamed_implementation_reports_conflict_for_deleted_target_path
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/target.pdf", 56)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Conflict { .. })));
@@ -170,6 +177,7 @@ fn sync_external_renamed_implementation_rolls_back_db_and_cursor_on_log_failure(
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/renamed.pdf", 2)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));

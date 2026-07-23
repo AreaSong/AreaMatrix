@@ -45,12 +45,12 @@ struct IntegrationsICloudSnapshot: Equatable {
 }
 
 struct IntegrationsSettingsError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 enum IntegrationsSettingsActionFeedback: Equatable {
-    case success(String)
+    case success(LocalizedMessage)
     case failed(IntegrationsSettingsError)
 }
 
@@ -77,7 +77,7 @@ struct IntegrationsSettingsSummary: Equatable {
 }
 
 enum IntegrationConflictListPresentation {
-    static let reviewConflictsTitle = L10n.string("Review conflicts")
+    static var reviewConflictsTitle: String { L10n.string("Review conflicts") }
     static let reviewConflictsAccessibilityID = "icloud-conflicts-icloud-conflicts-core-review-conflicts"
 }
 
@@ -165,7 +165,7 @@ final class IntegrationsSettingsModel: ObservableObject {
         } catch {
             savedConfig = nil
             summary = nil
-            loadState = await .failed(settingsError(for: error, fallbackRecovery: L10n.string("Retry status")))
+            loadState = await .failed(settingsError(for: error, fallbackRecovery: L10n.message("Retry status")))
         }
     }
 
@@ -189,36 +189,36 @@ final class IntegrationsSettingsModel: ObservableObject {
         actionFeedback = nil
         do {
             try finderOpener.openRepositoryInFinder(repoPath: repoPath)
-            actionFeedback = .success(L10n.string("Repository folder revealed in Finder."))
+            actionFeedback = .success(L10n.message("Repository folder revealed in Finder."))
         } catch {
             actionFeedback = .failed(IntegrationsSettingsError(
-                message: L10n.string("Repository folder cannot be revealed."),
+                message: L10n.message("Repository folder cannot be revealed."),
                 recovery: L10n
-                    .string("Check that the repository folder still exists and Finder has permission to open it.")
+                    .message("Check that the repository folder still exists and Finder has permission to open it.")
             ))
         }
     }
 
     func recordConflictResolveEntry(_ conflict: ICloudConflictPairSnapshot) {
-        actionFeedback = .success(L10n.format(
+        actionFeedback = .success(L10n.message(
             "settings.integrations.openSingleItemResolver",
-            conflict.fileDisplayName
+            arguments: [.string(conflict.fileDisplayName)]
         ))
     }
 
     func recordConflictDiagnosticsEntry() {
-        actionFeedback = .success(L10n.string("Diagnostics can be collected from the conflict list error state."))
+        actionFeedback = .success(L10n.message("Diagnostics can be collected from the conflict list error state."))
     }
 
     func openICloudHelp() {
         actionFeedback = nil
         do {
             try helpOpener.openICloudHelp()
-            actionFeedback = .success(L10n.string("iCloud help opened."))
+            actionFeedback = .success(L10n.message("iCloud help opened."))
         } catch {
             actionFeedback = .failed(IntegrationsSettingsError(
-                message: L10n.string("iCloud help cannot be opened."),
-                recovery: L10n.string("Check the default browser or open Apple iCloud Drive help manually.")
+                message: L10n.message("iCloud help cannot be opened."),
+                recovery: L10n.message("Check the default browser or open Apple iCloud Drive help manually.")
             ))
         }
     }
@@ -236,23 +236,29 @@ final class IntegrationsSettingsModel: ObservableObject {
             if let savedConfig {
                 summary = summary?.withICloudWarningsEnabled(savedConfig.iCloudWarn)
             }
-            let mappedError = await settingsError(for: error, fallbackRecovery: L10n.string("Retry save"))
+            let mappedError = await settingsError(for: error, fallbackRecovery: L10n.message("Retry save"))
             saveError = mappedError
             pendingRetry = config
         }
         isSaving = false
     }
 
-    private func settingsError(for error: Error, fallbackRecovery: String) async -> IntegrationsSettingsError {
+    private func settingsError(
+        for error: Error,
+        fallbackRecovery: LocalizedMessage
+    ) async -> IntegrationsSettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return IntegrationsSettingsError(
-                message: mapping.userMessage,
-                recovery: mapping.recoveryText(fallback: fallbackRecovery)
+                message: mapping.userMessageDescriptor,
+                recovery: mapping.recoveryMessage(fallback: fallbackRecovery)
             )
         }
 
         return IntegrationsSettingsError(
-            message: error.localizedDescription,
+            message: L10n.message(
+                "Unable to load integrations",
+                technicalDetail: error.localizedDescription
+            ),
             recovery: fallbackRecovery
         )
     }

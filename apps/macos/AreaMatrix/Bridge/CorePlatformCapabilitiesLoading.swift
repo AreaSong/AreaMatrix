@@ -26,7 +26,12 @@ enum PlatformCapabilityStatusSnapshot: String, Equatable, Hashable {
     case unknown = "Unknown"
 
     var displayName: String {
-        L10n.string(rawValue)
+        switch self {
+        case .available: L10n.string("Available")
+        case .limited: L10n.string("Limited")
+        case .notAvailable: L10n.string("Not available")
+        case .unknown: L10n.string("Unknown")
+        }
     }
 }
 

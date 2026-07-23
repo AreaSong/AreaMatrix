@@ -29,7 +29,7 @@ extension OnboardingModel {
                     sourceOpening: opening,
                     interruptedSession: session
                 ))
-                self.toastMessage = L10n.string("import.interruptedSession.detected")
+                self.toastMessage = L10n.message("import.interruptedSession.detected")
             }
         }
     }
@@ -115,7 +115,7 @@ extension OnboardingModel {
             try finderOpener.openRepositoryInFinder(repoPath: repoPath)
             toastMessage = nil
         } catch {
-            toastMessage = L10n.string("Repository folder cannot be revealed.")
+            toastMessage = L10n.message("Repository folder cannot be revealed.")
         }
     }
 

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct GeneralSettingsView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: GeneralSettingsModel
     @Binding private var selectedTab: String?
     let onClose: () -> Void
@@ -166,8 +167,8 @@ extension GeneralSettingsView {
     private func loadingErrorContent(_ error: GeneralSettingsSaveError) -> some View {
         SettingsPageErrorContent(
             title: L10n.string("settings.error.unableToLoad"),
-            message: error.message,
-            recovery: error.recovery
+            message: localizer.resolve(error.message),
+            recovery: localizer.resolve(error.recovery)
         ) {
             Button(L10n.string("settings.action.retry")) {
                 Task {

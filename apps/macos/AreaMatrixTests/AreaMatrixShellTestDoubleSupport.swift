@@ -75,7 +75,7 @@ extension RecordingCoreErrorMapper {
     static func shell() -> RecordingCoreErrorMapper {
         RecordingCoreErrorMapper { error in
             let kind = CoreErrorKindTestMapper.kind(for: error)
-            return CoreErrorMappingSnapshot.testFixture(
+            return CoreErrorMappingSnapshot.localized(
                 kind: kind,
                 userMessage: shellUserMessage(for: kind),
                 severity: shellSeverity(for: kind),

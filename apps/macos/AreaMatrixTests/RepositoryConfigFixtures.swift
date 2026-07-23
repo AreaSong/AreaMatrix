@@ -4,7 +4,7 @@ struct RepoConfigTestFixtureOptions {
     var defaultMode = "Copied"
     var overviewOutput = "GeneratedOnly"
     var aiEnabled = false
-    var locale = "zh-Hans"
+    var locale = "system"
     var iCloudWarn = true
     var enableExtensionRules = true
     var enableKeywordRules = true

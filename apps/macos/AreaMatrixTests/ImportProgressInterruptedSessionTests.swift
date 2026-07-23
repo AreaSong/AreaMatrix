@@ -92,7 +92,7 @@ final class ImportProgressInterruptedSessionTests: XCTestCase {
         ])
         XCTAssertEqual(
             model.toastMessage,
-            "An unfinished batch import from the previous session was found."
+            L10n.message("import.interruptedSession.detected")
         )
     }
 

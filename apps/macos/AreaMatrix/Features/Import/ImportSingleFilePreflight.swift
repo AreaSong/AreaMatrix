@@ -24,19 +24,27 @@ struct ImportSingleFilePreflightResult: Equatable {
     var existingFile: FileEntrySnapshot?
 
     var statusMessage: String {
+        L10n.resolve(statusDisplayText)
+    }
+
+    var statusDisplayText: AppDisplayText {
         switch conflict {
         case .none:
-            L10n.string("hash 预检完成；未发现内容重复。")
+            L10n.display("hash 预检完成；未发现内容重复。")
         case let .invalidFilename(message):
             message
         case let .name(path):
-            L10n.format("import.preflight.name-conflict", path)
+            L10n.display("import.preflight.name-conflict", arguments: [.string(path)])
         case let .duplicate(path):
-            L10n.format("import.preflight.hash-duplicate", path)
+            L10n.display("import.preflight.hash-duplicate", arguments: [.string(path)])
         case .iCloudPlaceholder:
-            L10n.string("文件尚未从 iCloud 下载。需要下载后才能导入或计算 hash。")
+            L10n.display("文件尚未从 iCloud 下载。需要下载后才能导入或计算 hash。")
         case let .iCloudDownloadFailed(_, reason):
-            L10n.format("import.preflight.icloud-download-failed", reason)
+            L10n.display(
+                "import.preflight.icloud-download-failed",
+                arguments: [.string(reason)],
+                technicalDetail: reason
+            )
         case let .corePreviewUnavailable(message):
             message
         case let .sourceUnavailable(message), let .error(message):
@@ -45,18 +53,22 @@ struct ImportSingleFilePreflightResult: Equatable {
     }
 
     func importBlockingReason() -> String? {
+        importBlockingDisplayText().map(L10n.resolve)
+    }
+
+    func importBlockingDisplayText() -> AppDisplayText? {
         switch conflict {
         case .none:
             nil
         case let .invalidFilename(message):
             message
         case .name, .duplicate:
-            ImportSingleFileConflictPage(conflict: conflict)?.blockingReason ??
-                L10n.string("import.conflict.resolveFirst")
+            ImportSingleFileConflictPage(conflict: conflict)?.blockingDisplayText ??
+                L10n.display("import.conflict.resolveFirst")
         case .iCloudPlaceholder:
-            L10n.string("iCloud placeholder 需要下载后才能导入")
+            L10n.display("iCloud placeholder 需要下载后才能导入")
         case .iCloudDownloadFailed:
-            L10n.string("iCloud 下载失败后请重试下载或切换本地资料库")
+            L10n.display("iCloud 下载失败后请重试下载或切换本地资料库")
         case let .corePreviewUnavailable(message):
             message
         case let .sourceUnavailable(message), let .error(message):
@@ -67,7 +79,7 @@ struct ImportSingleFilePreflightResult: Equatable {
 
 enum ImportSingleFilePreflightStatus: Equatable {
     case idle
-    case checking(String)
+    case checking(LocalizedMessage)
     case ready(ImportSingleFilePreflightResult)
     case blocked(ImportSingleFilePreflightResult)
 
@@ -77,38 +89,46 @@ enum ImportSingleFilePreflightStatus: Equatable {
     }
 
     var message: String? {
+        displayText.map(L10n.resolve)
+    }
+
+    var displayText: AppDisplayText? {
         switch self {
         case .idle:
             nil
         case let .checking(message):
-            message
+            .localized(message)
         case let .ready(result), let .blocked(result):
-            result.statusMessage
+            result.statusDisplayText
         }
     }
 
     func importBlockingReason() -> String? {
+        importBlockingDisplayText().map(L10n.resolve)
+    }
+
+    func importBlockingDisplayText() -> AppDisplayText? {
         switch self {
         case .idle:
-            L10n.string("导入预检未开始")
+            L10n.display("导入预检未开始")
         case .checking:
-            L10n.string("Checking duplicate...")
+            L10n.display("Checking duplicate...")
         case let .ready(result), let .blocked(result):
-            result.importBlockingReason()
+            result.importBlockingDisplayText()
         }
     }
 }
 
 enum ImportSingleFileConflict: Equatable {
     case none
-    case invalidFilename(String)
+    case invalidFilename(AppDisplayText)
     case name(path: String)
     case duplicate(existingPath: String)
     case iCloudPlaceholder(path: String)
     case iCloudDownloadFailed(path: String, reason: String)
-    case corePreviewUnavailable(String)
-    case sourceUnavailable(String)
-    case error(String)
+    case corePreviewUnavailable(AppDisplayText)
+    case sourceUnavailable(AppDisplayText)
+    case error(AppDisplayText)
 }
 
 enum ImportSingleFileConflictPage: Equatable {
@@ -148,16 +168,18 @@ enum ImportSingleFileConflictPage: Equatable {
     var summary: String {
         switch self {
         case .duplicate:
-            L10n.string(
-                L10n.string("import.conflict.duplicateRequiresResolution")
-            )
+            L10n.string("import.conflict.duplicateRequiresResolution")
         case .name:
             L10n.string("目标目录中已经存在同名文件，但内容不同。")
         }
     }
 
     var blockingReason: String {
-        L10n.format("import.preflight.complete-route-first", routeLabel)
+        L10n.resolve(blockingDisplayText)
+    }
+
+    var blockingDisplayText: AppDisplayText {
+        L10n.display("import.preflight.complete-route-first", arguments: [.string(routeLabel)])
     }
 }
 
@@ -205,13 +227,17 @@ enum ImportSingleFileReplaceOptionVisibility: Equatable {
     }
 
     var blockingReason: String {
+        L10n.resolve(blockingDisplayText)
+    }
+
+    var blockingDisplayText: AppDisplayText {
         switch self {
         case .hidden:
-            L10n.string("Replace disabled by advanced settings")
+            L10n.display("Replace disabled by advanced settings")
         case .enabled:
-            L10n.string("Replace 必须先进入二次确认")
+            L10n.display("Replace 必须先进入二次确认")
         case .disabled:
-            L10n.string("Replace requires system Trash")
+            L10n.display("Replace requires system Trash")
         }
     }
 }
@@ -234,7 +260,7 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
         do {
             let source = try sourceInspector.inspect(sourceURL: request.sourceURL)
             if let validationMessage = ImportSingleFileFilenameValidator
-                .validationMessage(for: request.targetFilename) {
+                .validationDisplayText(for: request.targetFilename) {
                 return blockedResult(
                     request: request,
                     sourceSizeBytes: source.sizeBytes,
@@ -265,7 +291,11 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
                 sourceSizeBytes: nil,
                 hashSha256: nil,
                 conflict: .error(
-                    L10n.format("import.preflight.failed", Self.readableMessage(for: error))
+                    L10n.display(
+                        "import.preflight.failed",
+                        arguments: [.string(Self.readableMessage(for: error))],
+                        technicalDetail: Self.readableMessage(for: error)
+                    )
                 )
             )
         }

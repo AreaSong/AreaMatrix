@@ -12,12 +12,13 @@ struct SettingsRepositoryReturnView: View {
 }
 
 struct ChoosePathStepView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @Binding var pathText: String
 
     @FocusState private var isInputFocused: Bool
     @State private var isDropTargeted = false
 
-    let errorMessage: String?
+    let errorMessage: LocalizedMessage?
     let isValidating: Bool
     let canContinue: Bool
     let onBack: () -> Void
@@ -90,7 +91,7 @@ struct ChoosePathStepView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .areaMatrixGlassCard(cornerRadius: 10)
-                    .accessibilityLabel("Repository path")
+                    .accessibilityLabel(L10n.string("Repository path"))
                     .disabled(isValidating)
 
                 Button(action: onChoose) {
@@ -104,7 +105,7 @@ struct ChoosePathStepView: View {
             }
 
             if let errorMessage {
-                Label(errorMessage, systemImage: "exclamationmark.triangle")
+                Label(localizer.resolve(errorMessage), systemImage: "exclamationmark.triangle")
                     .font(.callout)
                     .foregroundStyle(.red)
             } else if pathText.trimmingCharacters(in: .whitespacesAndNewlines) != "~/AreaMatrix/",
@@ -181,6 +182,7 @@ struct LoadingConfigurationView: View {
 }
 
 struct ConfigurationErrorView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let failure: ConfigLoadFailure
     let onRetry: () -> Void
     let onStartSetup: () -> Void
@@ -190,10 +192,10 @@ struct ConfigurationErrorView: View {
             AreaMatrixStepHeader(
                 systemImage: "exclamationmark.triangle",
                 tint: AreaMatrixTheme.Colors.coral,
-                title: failure.title,
-                subtitle: failure.message
+                title: localizer.resolve(failure.title),
+                subtitle: localizer.resolve(failure.message)
             )
-            Text(failure.recoveryAction)
+            Text(localizer.resolve(failure.recoveryAction))
                 .foregroundStyle(.secondary)
             HStack {
                 Button("Start setup", action: onStartSetup)

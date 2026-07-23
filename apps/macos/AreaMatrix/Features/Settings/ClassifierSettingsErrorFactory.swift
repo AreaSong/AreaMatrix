@@ -7,14 +7,14 @@ enum ClassifierSettingsErrorFactory {
     ) async -> ClassifierSettingsLoadError {
         if let mapping = await mapper.mapCoreErrorIfPresent(error) {
             return ClassifierSettingsLoadError(
-                message: mapping.userMessage,
-                recovery: L10n.string("Retry status")
+                message: mapping.userMessageDescriptor,
+                recovery: L10n.message("Retry status")
             )
         }
 
         return ClassifierSettingsLoadError(
-            message: error.localizedDescription,
-            recovery: L10n.string("Retry status after the repository is available.")
+            message: L10n.message("settings.error.loadClassifier", technicalDetail: error.localizedDescription),
+            recovery: L10n.message("Retry status after the repository is available.")
         )
     }
 
@@ -24,14 +24,14 @@ enum ClassifierSettingsErrorFactory {
     ) async -> ClassifierSettingsSaveError {
         if let mapping = await mapper.mapCoreErrorIfPresent(error) {
             return ClassifierSettingsSaveError(
-                message: mapping.userMessage,
-                recovery: L10n.string("Retry save")
+                message: mapping.userMessageDescriptor,
+                recovery: L10n.message("Retry save")
             )
         }
 
         return ClassifierSettingsSaveError(
-            message: error.localizedDescription,
-            recovery: L10n.string("Retry save after the repository is available.")
+            message: L10n.message("Could not save classifier settings", technicalDetail: error.localizedDescription),
+            recovery: L10n.message("Retry save after the repository is available.")
         )
     }
 
@@ -41,14 +41,14 @@ enum ClassifierSettingsErrorFactory {
     ) async -> ClassifierSettingsPreviewError {
         if let mapping = await mapper.mapCoreErrorIfPresent(error) {
             return ClassifierSettingsPreviewError(
-                message: mapping.userMessage,
-                recovery: L10n.string("Retry preview")
+                message: mapping.userMessageDescriptor,
+                recovery: L10n.message("Retry preview")
             )
         }
 
         return ClassifierSettingsPreviewError(
-            message: error.localizedDescription,
-            recovery: L10n.string("Retry preview after the repository is available.")
+            message: L10n.message("Could not preview classifier settings", technicalDetail: error.localizedDescription),
+            recovery: L10n.message("Retry preview after the repository is available.")
         )
     }
 
@@ -59,20 +59,23 @@ enum ClassifierSettingsErrorFactory {
         if let context = await mapper.mapCoreErrorContextIfPresent(error) {
             if context.kind == .config {
                 return ClassifierSettingsValidationError(
-                    message: context.mapping.userMessage,
-                    recovery: L10n.string("Open classifier.yaml and fix the reported configuration error.")
+                    message: context.mapping.userMessageDescriptor,
+                    recovery: L10n.message("Open classifier.yaml and fix the reported configuration error.")
                 )
             }
 
             return ClassifierSettingsValidationError(
-                message: context.mapping.userMessage,
-                recovery: L10n.string("Review the reported error, then validate classifier.yaml again.")
+                message: context.mapping.userMessageDescriptor,
+                recovery: L10n.message("Review the reported error, then validate classifier.yaml again.")
             )
         }
 
         return ClassifierSettingsValidationError(
-            message: error.localizedDescription,
-            recovery: L10n.string("Open classifier.yaml and try again.")
+            message: L10n.message(
+                "settings.classifier.error.validationFailed",
+                technicalDetail: error.localizedDescription
+            ),
+            recovery: L10n.message("Open classifier.yaml and try again.")
         )
     }
 }

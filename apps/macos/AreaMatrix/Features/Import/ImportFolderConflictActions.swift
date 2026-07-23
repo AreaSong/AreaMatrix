@@ -11,7 +11,7 @@ protocol ImportFolderConflictPrechecking: Sendable {
 enum ImportFolderConflictPrecheckResult: Equatable {
     case duplicate(existingPath: String)
     case nameConflict(existingPath: String)
-    case blocked(String)
+    case blocked(AppDisplayText)
 }
 
 struct CoreImportFolderConflictPrechecker: ImportFolderConflictPrechecking {
@@ -36,7 +36,11 @@ struct CoreImportFolderConflictPrechecker: ImportFolderConflictPrechecking {
             }
         } catch {
             return candidates.reduce(into: [:]) { results, row in
-                results[row.id] = .blocked(L10n.format("import.conflict.precheck-failed", error.localizedDescription))
+                results[row.id] = .blocked(L10n.display(
+                    "import.conflict.precheck-failed",
+                    arguments: [.string(error.localizedDescription)],
+                    technicalDetail: error.localizedDescription
+                ))
             }
         }
     }
@@ -57,7 +61,11 @@ struct CoreImportFolderConflictPrechecker: ImportFolderConflictPrechecking {
             }
             return nil
         } catch {
-            return .blocked(L10n.format("import.conflict.precheck-failed", error.localizedDescription))
+            return .blocked(L10n.display(
+                "import.conflict.precheck-failed",
+                arguments: [.string(error.localizedDescription)],
+                technicalDetail: error.localizedDescription
+            ))
         }
     }
 }
@@ -141,11 +149,11 @@ extension ImportFolderPreviewModel {
         decision: SingleFileReplaceConfirmationDecision
     ) -> Bool {
         guard decision.understandsReplace else {
-            recordReplaceConfirmationFailure(L10n.string("import.replace.checkboxRequired"))
+            recordReplaceConfirmationFailure(L10n.message("import.replace.checkboxRequired"))
             return false
         }
         guard let expected = currentReplaceConfirmationContext(for: rowID), expected == decision.context else {
-            recordReplaceConfirmationFailure("Replace confirmation context expired")
+            recordReplaceConfirmationFailure(L10n.message("Replace confirmation context expired"))
             return false
         }
         guard let row = rows.first(where: { $0.id == rowID }) else { return false }
@@ -164,7 +172,7 @@ extension ImportFolderPreviewModel {
             ), for: rowID)
         case .loading, .ready, .duplicate, .nameConflict, .iCloudPlaceholder, .blocked, .importing,
              .skippedDuplicate, .skippedICloud, .imported, .error:
-            recordReplaceConfirmationFailure("Replace confirmation context expired")
+            recordReplaceConfirmationFailure(L10n.message("Replace confirmation context expired"))
             return false
         }
         clearReplaceConfirmationRecovery()

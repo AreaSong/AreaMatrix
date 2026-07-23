@@ -107,8 +107,8 @@ final class RemotePrivacyGateModel: ObservableObject {
         } catch {
             failure = await privacyError(
                 for: error,
-                message: L10n.string("Remote privacy rules could not be loaded."),
-                recovery: L10n.string("Retry loading privacy rules before enabling remote AI.")
+                message: L10n.message("Remote privacy rules could not be loaded."),
+                recovery: L10n.message("Retry loading privacy rules before enabling remote AI.")
             )
         }
     }
@@ -119,8 +119,8 @@ final class RemotePrivacyGateModel: ObservableObject {
             true,
             action: .enable,
             providerConfig: providerConfig,
-            message: L10n.string("Remote provider was configured, but privacy gate could not be enabled."),
-            recovery: L10n.string("Retry enable privacy gate, open privacy rules, or disable remote AI.")
+            message: L10n.message("Remote provider was configured, but privacy gate could not be enabled."),
+            recovery: L10n.message("Retry enable privacy gate, open privacy rules, or disable remote AI.")
         )
     }
 
@@ -130,8 +130,8 @@ final class RemotePrivacyGateModel: ObservableObject {
             false,
             action: .disable,
             providerConfig: providerConfig,
-            message: L10n.string("Remote AI was disabled, but privacy gate could not be disabled."),
-            recovery: L10n.string("Retry disable privacy gate. Remote provider remains disabled.")
+            message: L10n.message("Remote AI was disabled, but privacy gate could not be disabled."),
+            recovery: L10n.message("Retry disable privacy gate. Remote provider remains disabled.")
         )
     }
 
@@ -151,8 +151,8 @@ final class RemotePrivacyGateModel: ObservableObject {
         _ enabled: Bool,
         action: RemotePrivacyGateAction,
         providerConfig: RemoteProviderConfigState?,
-        message: String,
-        recovery: String
+        message: LocalizedMessage,
+        recovery: LocalizedMessage
     ) async -> Bool {
         guard let providerConfig else {
             failure = AISettingsError(
@@ -197,8 +197,8 @@ final class RemotePrivacyGateModel: ObservableObject {
         _ updated: AiPrivacyRulesSnapshot,
         expectedGate: Bool,
         action: RemotePrivacyGateAction,
-        message: String,
-        recovery: String
+        message: LocalizedMessage,
+        recovery: LocalizedMessage
     ) -> Bool {
         snapshot = updated
         guard updated.privacyGateEnabled == expectedGate else {
@@ -215,11 +215,15 @@ final class RemotePrivacyGateModel: ObservableObject {
         return true
     }
 
-    private func privacyError(for error: Error, message: String, recovery: String) async -> AISettingsError {
+    private func privacyError(
+        for error: Error,
+        message: LocalizedMessage,
+        recovery: LocalizedMessage
+    ) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
                 message: message,
-                recovery: mapping.recoveryText(fallback: recovery),
+                recovery: mapping.recoveryMessage(fallback: recovery),
                 detail: mapping.userMessage
             )
         }

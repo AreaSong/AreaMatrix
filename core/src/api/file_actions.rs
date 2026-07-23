@@ -297,8 +297,19 @@ pub fn remove_index_entry(repo_path: String, file_id: i64) -> CoreResult<()> {
 /// `CoreError::Io { message }` for filesystem or generated-overview write failures,
 /// `CoreError::Db { message }` for metadata persistence failures, and
 /// `CoreError::Config { reason }` for invalid generated-overview configuration.
-pub fn rename_file(repo_path: String, file_id: i64, new_name: String) -> CoreResult<FileEntry> {
-    storage::rename_file(repo_path, file_id, new_name)
+pub fn rename_file(
+    repo_path: String,
+    file_id: i64,
+    new_name: String,
+    content_locale: impl crate::ContentLocaleInput,
+) -> CoreResult<FileEntry> {
+    let content_locale = content_locale.into_content_locale()?;
+    storage::rename_file(
+        repo_path,
+        file_id,
+        new_name,
+        content_locale.as_str().to_owned(),
+    )
 }
 
 /// Previews the final destination for a category move.

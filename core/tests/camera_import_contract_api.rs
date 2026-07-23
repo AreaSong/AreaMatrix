@@ -37,6 +37,7 @@ fn camera_import_contract_exposes_mobile_copy_inputs_outputs_and_errors() {
         override_category: Some("docs".to_owned()),
         override_filename: Some("Photo 2026-04-29 1130.jpg".to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     assert_eq!(camera_options.mode, StorageMode::Copied);
     assert_eq!(camera_options.destination, ImportDestination::AutoClassify);

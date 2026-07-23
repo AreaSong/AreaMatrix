@@ -44,7 +44,7 @@ extension MainRepositoryContentView {
                 }
                 .font(.headline)
             }
-            .accessibilityLabel("Repository AreaMatrix")
+            .accessibilityLabel(L10n.string("Repository AreaMatrix"))
             Spacer()
             TextField("Search files", text: $filterText)
                 .textFieldStyle(.roundedBorder)
@@ -84,7 +84,7 @@ extension MainRepositoryContentView {
             }
             .buttonStyle(.borderless)
             .help("Undo History")
-            .accessibilityLabel("Undo History")
+            .accessibilityLabel(L10n.string("Undo History"))
             .accessibilityIdentifier("undo-history-undo-action-log-toolbar-open-history")
             Button("Import...", action: onImport)
                 .disabled(opening.isReadOnly)
@@ -92,7 +92,7 @@ extension MainRepositoryContentView {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel("Settings")
+            .accessibilityLabel(L10n.string("Settings"))
             Text(statusText)
                 .font(.callout)
                 .foregroundStyle(.secondary)

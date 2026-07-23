@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MainWindow: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: OnboardingModel
     @StateObject private var externalCreatedFileWatcher: MainExternalCreatedFileWatcher
     private let importProgressControlState: ImportProgressControlState
@@ -25,7 +26,7 @@ extension MainWindow {
             MainWindowRouteContent(model: model, windowCloser: windowCloser)
 
             if let toastMessage = model.toastMessage {
-                Text(toastMessage)
+                Text(localizer.resolve(toastMessage))
                     .font(.callout)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)

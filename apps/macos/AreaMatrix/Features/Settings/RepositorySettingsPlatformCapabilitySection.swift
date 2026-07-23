@@ -78,11 +78,16 @@ private struct RepositorySettingsCapabilityRowView: View {
 }
 
 private struct RepositorySettingsCapabilityErrorBanner: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let error: RepositorySettingsCapabilityError
 
     var body: some View {
-        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .orange) {
-            Text(error.recovery)
+        SettingsStatusBanner(
+            title: localizer.resolve(error.message),
+            systemImage: "exclamationmark.triangle",
+            tint: .orange
+        ) {
+            Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Text(error.detail)

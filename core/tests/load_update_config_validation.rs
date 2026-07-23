@@ -1,8 +1,8 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, load_config, update_config, CoreError, OverviewOutput, RepoConfig, RepoInitMode,
-    RepoInitOptions, StorageMode,
+    init_repo, load_repo_config, update_repo_config, CoreError, OverviewOutput, RepoConfigPatch,
+    RepoInitMode, RepoInitOptions, RepositoryLocalePolicy, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -16,6 +16,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -78,18 +80,18 @@ fn file_snapshot(paths: &[&Path]) -> Vec<(String, Vec<u8>)> {
         .collect()
 }
 
-fn updated_config(repo: &Path) -> RepoConfig {
-    RepoConfig {
-        repo_path: path_string(repo),
-        default_mode: StorageMode::Indexed,
-        overview_output: OverviewOutput::RootAreaMatrixFile,
-        ai_enabled: true,
-        locale: "en".to_owned(),
-        icloud_warn: false,
-        enable_extension_rules: false,
-        enable_keyword_rules: false,
-        fallback_to_inbox: false,
-        allow_replace_during_import: true,
+fn updated_patch(expected_revision: i64) -> RepoConfigPatch {
+    RepoConfigPatch {
+        expected_revision,
+        default_mode: Some(StorageMode::Indexed),
+        overview_output: Some(OverviewOutput::RootAreaMatrixFile),
+        ai_enabled: Some(true),
+        locale_policy: Some(RepositoryLocalePolicy::En),
+        icloud_warn: Some(false),
+        enable_extension_rules: Some(false),
+        enable_keyword_rules: Some(false),
+        fallback_to_inbox: Some(false),
+        allow_replace_during_import: Some(true),
     }
 }
 
@@ -97,13 +99,13 @@ fn updated_config(repo: &Path) -> RepoConfig {
 fn load_update_config_validation_defaults_without_metadata_do_not_create_side_effects() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
 
-    let config = load_config(path_string(repo.path())).expect("load default config");
+    let config = load_repo_config(path_string(repo.path())).expect("load default config");
 
     assert_eq!(config.repo_path, path_string(repo.path()));
     assert_eq!(config.default_mode, StorageMode::Copied);
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);
     assert!(!config.ai_enabled);
-    assert_eq!(config.locale, "zh-Hans");
+    assert_eq!(config.locale_policy.raw_value, "system");
     assert!(config.icloud_warn);
     assert!(config.enable_extension_rules);
     assert!(config.enable_keyword_rules);
@@ -124,10 +126,12 @@ fn load_update_config_validation_success_updates_db_only_and_preserves_files() {
     fs::write(&overview_path, "user overview\n").expect("write user overview");
     let file_before = file_snapshot(&[&readme_path, &overview_path, &classifier_path]);
 
-    let config = updated_config(repo.path());
-    update_config(path_string(repo.path()), config.clone()).expect("persist config update");
+    let before = load_repo_config(path_string(repo.path())).expect("load initial config");
+    let config = updated_patch(before.revision);
+    let updated = update_repo_config(path_string(repo.path()), config).expect("persist config update");
 
-    assert_eq!(load_config(path_string(repo.path())), Ok(config));
+    assert_eq!(updated.revision, before.revision + 1);
+    assert_eq!(updated.locale_policy.raw_value, "en");
     assert_eq!(
         file_snapshot(&[&readme_path, &overview_path, &classifier_path]),
         file_before
@@ -147,7 +151,7 @@ fn load_update_config_validation_rejects_corrupt_persisted_config_value() {
         )
         .expect("corrupt default_mode value");
 
-    let result = load_config(path_string(repo.path()));
+    let result = load_repo_config(path_string(repo.path()));
 
     assert!(matches!(result, Err(CoreError::Config { .. })));
 
@@ -157,7 +161,7 @@ fn load_update_config_validation_rejects_corrupt_persisted_config_value() {
 #[test]
 fn load_update_config_validation_failed_update_keeps_previous_rows_readable() {
     let repo = initialized_repo();
-    let before_config = load_config(path_string(repo.path())).expect("load initial config");
+    let before_config = load_repo_config(path_string(repo.path())).expect("load initial config");
     let before_rows = config_rows(repo.path());
     db_connection(repo.path())
         .execute_batch(
@@ -170,11 +174,14 @@ fn load_update_config_validation_failed_update_keeps_previous_rows_readable() {
         )
         .expect("install failing config trigger");
 
-    let result = update_config(path_string(repo.path()), updated_config(repo.path()));
+    let result = update_repo_config(
+        path_string(repo.path()),
+        updated_patch(before_config.revision),
+    );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
 
-    assert_eq!(load_config(path_string(repo.path())), Ok(before_config));
+    assert_eq!(load_repo_config(path_string(repo.path())), Ok(before_config));
     assert_eq!(config_rows(repo.path()), before_rows);
     assert_eq!(sqlite_integrity_check(repo.path()), "ok");
     assert!(foreign_key_violations(repo.path()).is_empty());

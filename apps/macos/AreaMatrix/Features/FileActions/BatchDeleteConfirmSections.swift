@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct BatchDeletePreviewSummary: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let preview: BatchDeletePreviewReportSnapshot
     let showsDetails: Bool
     let onToggleDetails: () -> Void
@@ -9,12 +10,12 @@ struct BatchDeletePreviewSummary: View {
         let presentation = BatchDeletePreviewReportPresentation(report: preview)
         NeutralSummaryPanel {
             VStack(alignment: .leading, spacing: 6) {
-                Text(presentation.trashSummaryText)
-                Text(presentation.indexOnlySummaryText)
+                Text(localizer.resolve(presentation.trashSummaryText))
+                Text(localizer.resolve(presentation.indexOnlySummaryText))
                 Text(L10n.plural("file-actions.delete.preview.missing-items", count: Int(preview.missingCount)))
-                Text(presentation.blockedSummaryText)
-                Text(presentation.undoSummaryText)
-                Text(presentation.safetySummaryText)
+                Text(localizer.resolve(presentation.blockedSummaryText))
+                Text(localizer.resolve(presentation.undoSummaryText))
+                Text(localizer.resolve(presentation.safetySummaryText))
                 availabilityWarnings
                 if let reason = preview.applyBlockedReason, !reason.isEmpty {
                     Text(reason).foregroundStyle(.secondary)
@@ -58,6 +59,7 @@ struct BatchDeletePreviewSummary: View {
 }
 
 struct BatchDeleteResultSummary: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let result: BatchDeleteReportSnapshot
     let showsDetails: Bool
     let onToggleDetails: () -> Void
@@ -66,10 +68,10 @@ struct BatchDeleteResultSummary: View {
         let presentation = BatchDeleteReportPresentation(report: result)
         NeutralSummaryPanel {
             VStack(alignment: .leading, spacing: 6) {
-                Text(presentation.successSummaryText)
-                Text(presentation.skippedSummaryText)
-                Text(presentation.failedSummaryText)
-                Text(presentation.undoSummaryText)
+                Text(localizer.resolve(presentation.successSummaryText))
+                Text(localizer.resolve(presentation.skippedSummaryText))
+                Text(localizer.resolve(presentation.failedSummaryText))
+                Text(localizer.resolve(presentation.undoSummaryText))
                 failedDetails
             }
         }

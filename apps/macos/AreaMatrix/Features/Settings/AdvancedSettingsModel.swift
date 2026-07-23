@@ -112,7 +112,7 @@ final class AdvancedSettingsModel: ObservableObject {
             savedConfig = nil
             draft = nil
             loadState = await .failed(
-                mappedError(for: error, fallbackMessage: L10n.string("Unable to load advanced settings"))
+                mappedError(for: error, fallbackMessage: L10n.message("Unable to load advanced settings"))
             )
         }
     }
@@ -144,7 +144,7 @@ final class AdvancedSettingsModel: ObservableObject {
             guard diagnosticsGeneration.isCurrent(generation) else { return }
             diagnosticsState = await .failed(mappedError(
                 for: error,
-                fallbackMessage: L10n.string("Diagnostics could not be exported")
+                fallbackMessage: L10n.message("Diagnostics could not be exported")
             ))
         }
     }
@@ -153,11 +153,11 @@ final class AdvancedSettingsModel: ObservableObject {
         actionFeedback = nil
         do {
             let openedPath = try logsOpener.openLogsFolder(repoPath: repoPath)
-            actionFeedback = .success(L10n.format("Logs folder opened: %@", openedPath))
+            actionFeedback = .success(L10n.message("Logs folder opened: %@", arguments: [.string(openedPath)]))
         } catch {
             actionFeedback = .failed(AdvancedSettingsError(
-                message: L10n.string("Open logs folder failed"),
-                recovery: L10n.string(
+                message: L10n.message("Open logs folder failed"),
+                recovery: L10n.message(
                     "Check that .areamatrix/logs exists, then retry after Core logging is initialized."
                 )
             ))
@@ -168,11 +168,11 @@ final class AdvancedSettingsModel: ObservableObject {
         actionFeedback = nil
         do {
             try summaryCopier.copyDiagnosticSummary(diagnosticSummary())
-            actionFeedback = .success(L10n.string("Diagnostic summary copied."))
+            actionFeedback = .success(L10n.message("Diagnostic summary copied."))
         } catch {
             actionFeedback = .failed(AdvancedSettingsError(
-                message: L10n.string("Diagnostic summary could not be copied"),
-                recovery: L10n.string(
+                message: L10n.message("Diagnostic summary could not be copied"),
+                recovery: L10n.message(
                     "Copy the version and repository rows manually after checking clipboard permission."
                 )
             ))
@@ -283,7 +283,7 @@ final class AdvancedSettingsModel: ObservableObject {
             info.coreVersion = try await coreVersionReader.coreVersion()
         } catch {
             await failures.append(
-                mappedError(for: error, fallbackMessage: L10n.string("Core version unavailable"))
+                mappedError(for: error, fallbackMessage: L10n.message("Core version unavailable"))
             )
         }
 
@@ -291,7 +291,7 @@ final class AdvancedSettingsModel: ObservableObject {
             info.repoSchemaVersion = try await metadataReader.metadata(repoPath: repoPath).schemaVersion
         } catch {
             await failures.append(
-                mappedError(for: error, fallbackMessage: L10n.string("Repo schema version unavailable"))
+                mappedError(for: error, fallbackMessage: L10n.message("Repo schema version unavailable"))
             )
         }
 
@@ -299,15 +299,21 @@ final class AdvancedSettingsModel: ObservableObject {
         versionError = Self.combinedVersionError(failures)
     }
 
-    private func mappedError(for error: Error, fallbackMessage: String) async -> AdvancedSettingsError {
+    private func mappedError(for error: Error, fallbackMessage: LocalizedMessage) async -> AdvancedSettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AdvancedSettingsError(
                 message: fallbackMessage,
-                recovery: mapping.recoveryText
+                recovery: mapping.recoveryMessage(fallback: fallbackMessage)
             )
         }
 
-        return AdvancedSettingsError(message: fallbackMessage, recovery: error.localizedDescription)
+        return AdvancedSettingsError(
+            message: fallbackMessage,
+            recovery: L10n.message(
+                "Retry after checking repository availability and permissions.",
+                technicalDetail: error.localizedDescription
+            )
+        )
     }
 
     private static func combinedVersionError(_ failures: [AdvancedSettingsError]) -> AdvancedSettingsError? {
@@ -315,8 +321,8 @@ final class AdvancedSettingsModel: ObservableObject {
         guard failures.count > 1 else { return first }
 
         return AdvancedSettingsError(
-            message: L10n.string("Some diagnostics values are unavailable"),
-            recovery: failures.map(\.message).joined(separator: "; ")
+            message: L10n.message("Some diagnostics values are unavailable"),
+            recovery: L10n.message("Check Core and repository metadata availability, then retry.")
         )
     }
 

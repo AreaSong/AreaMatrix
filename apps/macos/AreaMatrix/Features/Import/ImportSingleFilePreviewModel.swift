@@ -13,8 +13,8 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     @Published var nameConflictResolution: ImportSingleFileNameConflictResolution = .keepBoth
     @Published private(set) var isReplaceConfirmed = false
     @Published private(set) var pendingReplaceConfirmation: SingleFileReplaceConfirmationContext?
-    @Published private(set) var replaceConfirmationErrorMessage: String?
-    @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
+    @Published private(set) var replaceConfirmationErrorMessage: LocalizedMessage?
+    @Published private(set) var replaceConfirmationDiagnosticsMessage: LocalizedMessage?
     @Published var selectedCategory = "inbox" {
         didSet { schedulePreflightForCurrentEdits() }
     }
@@ -83,7 +83,7 @@ extension ImportSingleFilePreviewModel {
         } catch {
             guard generation == currentGeneration else { return }
             prediction = nil
-            status = .failed(Self.classifyMessage(for: error))
+            status = .failed(Self.classifyDisplayText(for: error))
         }
     }
 
@@ -121,14 +121,14 @@ extension ImportSingleFilePreviewModel {
         let currentGeneration = generation
         resetDuplicateResolutionForPreflight()
         resetNameConflictResolutionForPreflight()
-        preflightStatus = .checking("Checking duplicate...")
+        preflightStatus = .checking(L10n.message("Checking duplicate..."))
         Task { await runPreflightIfReady(generation: currentGeneration) }
     }
 
     @discardableResult
     func importSelectedFile() async -> FileEntrySnapshot? {
         guard let request, let sourceURL = request.urls.first else {
-            importStatus = .blocked(L10n.string("import.single.sourceUnavailable"))
+            importStatus = .blocked(L10n.display("import.single.sourceUnavailable"))
             return nil
         }
         if let existingPath = skippedDuplicateExistingPath {
@@ -136,10 +136,10 @@ extension ImportSingleFilePreviewModel {
             return nil
         }
         if isPendingReplaceConfirmation {
-            importStatus = .blocked(L10n.string("import.replace.confirmationRequired"))
+            importStatus = .blocked(L10n.display("import.replace.confirmationRequired"))
             return nil
         }
-        if let disabledReason = importDisabledReason {
+        if let disabledReason = importDisabledDisplayText {
             importStatus = .blocked(disabledReason)
             return nil
         }
@@ -165,7 +165,7 @@ extension ImportSingleFilePreviewModel {
 }
 
 private extension ImportSingleFilePreviewModel {
-    private func resetForUnsupportedRequest(_ message: String) {
+    private func resetForUnsupportedRequest(_ message: AppDisplayText) {
         source = nil
         prediction = nil
         preflightStatus = .idle
@@ -206,7 +206,7 @@ private extension ImportSingleFilePreviewModel {
             preflightStatus = .blocked(invalidFilenamePreflightResult)
             return
         }
-        preflightStatus = .checking("Checking duplicate...")
+        preflightStatus = .checking(L10n.message("Checking duplicate..."))
         let result = await preflight.preflightSingleFileImport(request: ImportSingleFilePreflightRequest(
             repoPath: request.repoPath,
             sourceURL: sourceURL,
@@ -218,7 +218,7 @@ private extension ImportSingleFilePreviewModel {
     }
 
     private var invalidFilenamePreflightResult: ImportSingleFilePreflightResult? {
-        guard let validationMessage = filenameValidationMessage else { return nil }
+        guard let validationMessage = filenameValidationDisplayText else { return nil }
         return ImportSingleFilePreflightResult(
             sourceSizeBytes: source?.sizeBytes,
             hashSha256: nil,
@@ -280,18 +280,26 @@ private extension ImportSingleFilePreviewModel {
         await errorMapper.mapError(error)
     }
 
-    private static func classifyMessage(for error: Error) -> String {
+    private static func classifyDisplayText(for error: Error) -> AppDisplayText {
         guard let context = CoreErrorRawContextSnapshot(error) else {
-            return L10n.string("import.preview.categoryUnavailable")
+            return L10n.display("import.preview.categoryUnavailable")
         }
 
         switch context.kind {
         case .config:
-            return L10n.format("import.preview.invalidRules", context.rawContext)
+            return L10n.display(
+                "import.preview.invalidRules",
+                arguments: [.string(context.rawContext)],
+                technicalDetail: context.rawContext
+            )
         case .classify:
-            return L10n.format("import.preview.category-unavailable", context.rawContext)
+            return L10n.display(
+                "import.preview.category-unavailable",
+                arguments: [.string(context.rawContext)],
+                technicalDetail: context.rawContext
+            )
         default:
-            return L10n.string("import.preview.categoryUnavailable")
+            return L10n.display("import.preview.categoryUnavailable", technicalDetail: context.rawContext)
         }
     }
 
@@ -315,7 +323,7 @@ private extension ImportSingleFilePreviewModel {
 
     private func singleFileSourceURL(from request: ImportEntryRequest) -> URL? {
         guard request.kind == .singleFile, request.urls.count == 1, let sourceURL = request.urls.first else {
-            resetForUnsupportedRequest(L10n.string("import.single.unsupportedRequest"))
+            resetForUnsupportedRequest(L10n.display("import.single.unsupportedRequest"))
             return nil
         }
         return sourceURL
@@ -369,7 +377,7 @@ private extension ImportSingleFilePreviewModel {
 }
 
 extension ImportSingleFilePreviewModel {
-    func blockImportForDuplicateResolution(_ message: String) {
+    func blockImportForDuplicateResolution(_ message: AppDisplayText) {
         importStatus = .blocked(message)
     }
 
@@ -377,13 +385,13 @@ extension ImportSingleFilePreviewModel {
         pendingReplaceConfirmation = context
     }
 
-    func setReplaceConfirmationFailure(_ message: String) {
+    func setReplaceConfirmationFailure(_ message: LocalizedMessage) {
         replaceConfirmationErrorMessage = message
         replaceConfirmationDiagnosticsMessage = nil
     }
 
     func collectReplaceConfirmationDiagnostics() {
-        replaceConfirmationDiagnosticsMessage = L10n.string("import.replace-confirmation.diagnostics-collected")
+        replaceConfirmationDiagnosticsMessage = L10n.message("import.replace-confirmation.diagnostics-collected")
     }
 
     func clearReplaceConfirmationRecovery() {

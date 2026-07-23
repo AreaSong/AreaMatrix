@@ -138,7 +138,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         await model.load()
         let didSave = await model.setField(.noteSummary, allowRemote: false)
         XCTAssertFalse(didSave)
-        XCTAssertEqual(model.saveError?.message, L10n.string("Privacy field settings could not be saved."))
+        XCTAssertEqual(model.saveError?.message, L10n.message("Privacy field settings could not be saved."))
         XCTAssertFalse(model.fields.first { $0.field == .noteSummary }?.allowRemote ?? true)
 
         model.revertPendingSave()

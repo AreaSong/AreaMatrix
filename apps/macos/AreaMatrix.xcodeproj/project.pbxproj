@@ -111,6 +111,7 @@
 		0A00000000000000000000F6 /* CoreDiagnosticsSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F7 /* CoreDiagnosticsSnapshots.swift */; };
 		0A00000000000000000000F8 /* CoreBridgeSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000F9 /* CoreBridgeSnapshots.swift */; };
 		0A0000000000000000000FF2 /* CoreErrorMappingSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FF3 /* CoreErrorMappingSnapshots.swift */; };
+		0A0000000000000000001B30 /* CoreErrorMappingConversions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001B31 /* CoreErrorMappingConversions.swift */; };
 		0A0000000000000000000FF4 /* CoreSavedSearches.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FF5 /* CoreSavedSearches.swift */; };
 		0A0000000000000000000FF6 /* CoreClassifierRuleEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FF7 /* CoreClassifierRuleEditing.swift */; };
 		0A0000000000000000000FF8 /* CoreUndoRedoActionLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FF9 /* CoreUndoRedoActionLogging.swift */; };
@@ -868,6 +869,7 @@
 		0A00000000000000000000F7 /* CoreDiagnosticsSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreDiagnosticsSnapshots.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000F9 /* CoreBridgeSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBridgeSnapshots.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FF3 /* CoreErrorMappingSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreErrorMappingSnapshots.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000001B31 /* CoreErrorMappingConversions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreErrorMappingConversions.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FF5 /* CoreSavedSearches.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreSavedSearches.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FF7 /* CoreClassifierRuleEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreClassifierRuleEditing.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FF9 /* CoreUndoRedoActionLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreUndoRedoActionLogging.swift; sourceTree = SOURCE_ROOT; };
@@ -2100,6 +2102,7 @@
 					0A0000000000000000000A25 /* CoreBridgeFoundation.swift */,
 					0A00000000000000000000F9 /* CoreBridgeSnapshots.swift */,
 					0A0000000000000000000FF3 /* CoreErrorMappingSnapshots.swift */,
+					0A0000000000000000001B31 /* CoreErrorMappingConversions.swift */,
 					0A00000000000000000000F7 /* CoreDiagnosticsSnapshots.swift */,
 						0A0000000000000000000A23 /* CoreSearchFacetSnapshots.swift */,
 						0A0000000000000000000FF5 /* CoreSavedSearches.swift */,
@@ -2637,6 +2640,7 @@
 					0A000000000000000000014E /* OnboardingRoute.swift in Sources */,
 					0A0000000000000000000007 /* CoreBridgeUnavailableState.swift in Sources */,
 					0A0000000000000000000FF2 /* CoreErrorMappingSnapshots.swift in Sources */,
+					0A0000000000000000001B30 /* CoreErrorMappingConversions.swift in Sources */,
 					0A0000000000000000000124 /* AppPlatformServices.swift in Sources */,
 					0A0000000000000000001988 /* AppPlatformServiceAdapters.swift in Sources */,
 					0A0000000000000000001A02 /* LocalFileURLPlatformAdapters.swift in Sources */,

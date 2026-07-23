@@ -57,7 +57,7 @@ protocol ImportResultDetailsExporting {
 
 protocol AccessibilityAnnouncing {
     @MainActor
-    func announce(_ message: String)
+    func announce(_ message: LocalizedMessage)
 }
 
 protocol WindowClosing {
@@ -311,12 +311,12 @@ struct NSSavePanelImportResultDetailsExporter: ImportResultDetailsExporting {
 
 struct VoiceOverAccessibilityAnnouncer: AccessibilityAnnouncing {
     @MainActor
-    func announce(_ message: String) {
+    func announce(_ message: LocalizedMessage) {
         NSAccessibility.post(
             element: NSApplication.shared,
             notification: .announcementRequested,
             userInfo: [
-                .announcement: message,
+                .announcement: L10n.resolve(message),
                 .priority: NSAccessibilityPriorityLevel.high.rawValue
             ]
         )

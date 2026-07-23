@@ -99,7 +99,7 @@ struct DetailNoteTabView: View {
             ))
             .font(.body)
             .frame(minHeight: 180)
-            .accessibilityLabel("Companion note")
+            .accessibilityLabel(L10n.string("Companion note"))
             .disabled(model.state.writeBlock != nil)
             .focused($isEditorFocused)
             if let error = model.state.saveStatus?.failedError {

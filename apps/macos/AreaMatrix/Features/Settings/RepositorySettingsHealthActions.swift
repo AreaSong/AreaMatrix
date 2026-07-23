@@ -89,15 +89,15 @@ extension RepositorySettingsModel {
             updatedSummary.databaseStatus = status
             healthError = RepositorySettingsHealthError(
                 databaseStatus: status,
-                message: mappingResult.userMessage,
-                recovery: mappingResult.suggestedAction
+                message: mappingResult.userMessageDescriptor,
+                recovery: mappingResult.suggestedActionDescriptor
             )
         } else {
             updatedSummary.databaseStatus = .needsRecovery
             healthError = RepositorySettingsHealthError(
                 databaseStatus: .needsRecovery,
-                message: error.localizedDescription,
-                recovery: L10n.string("Retry status after the repository is available.")
+                message: L10n.message("settings.error.loadRepository", technicalDetail: error.localizedDescription),
+                recovery: L10n.message("Retry status after the repository is available.")
             )
         }
         return updatedSummary

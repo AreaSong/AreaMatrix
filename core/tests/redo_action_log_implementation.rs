@@ -24,6 +24,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -279,7 +281,13 @@ fn redo_action_log_implementation_clears_stack_after_new_write() {
 fn redo_action_log_implementation_executes_rename_redo_with_original_safe_path() {
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned()).expect("rename file");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file");
     let token = latest_undo_action_id(repo.path(), "rename_files");
     undo_action(path_string(repo.path()), token.clone()).expect("undo rename");
 
@@ -371,7 +379,13 @@ fn redo_action_log_implementation_executes_trash_redo_after_delete_undo() {
 fn redo_action_log_implementation_rolls_back_rename_redo_when_db_write_fails() {
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned()).expect("rename file");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file");
     let token = latest_undo_action_id(repo.path(), "rename_files");
     undo_action(path_string(repo.path()), token.clone()).expect("undo rename");
     let before_actions = change_log_actions(repo.path());

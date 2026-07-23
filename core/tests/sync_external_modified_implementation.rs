@@ -21,6 +21,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -72,6 +74,7 @@ fn sync_external_modified_implementation_updates_hash_size_log_and_cursor() {
     sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Created, 1)],
+        "en".to_owned(),
     )
     .expect("sync initial created event");
     let before = list_files(path_string(repo.path()), file_filter())
@@ -82,6 +85,7 @@ fn sync_external_modified_implementation_updates_hash_size_log_and_cursor() {
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Modified, 2)],
+        "en".to_owned(),
     )
     .expect("sync external modified event");
 
@@ -119,6 +123,7 @@ fn sync_external_modified_implementation_indexes_untracked_existing_file() {
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Modified, 9)],
+        "en".to_owned(),
     )
     .expect("sync modified-only event");
 
@@ -144,6 +149,7 @@ fn sync_external_modified_implementation_skips_managed_note_sidecar_and_advances
     sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Created, 1)],
+        "en".to_owned(),
     )
     .expect("sync report file");
     let file_id =
@@ -154,6 +160,7 @@ fn sync_external_modified_implementation_skips_managed_note_sidecar_and_advances
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![event("docs/report.pdf.md", ExternalEventKind::Modified, 2)],
+        "en".to_owned(),
     )
     .expect("replay managed sidecar event");
 
@@ -191,6 +198,7 @@ fn sync_external_modified_implementation_indexes_markdown_without_managed_note_c
     sync_external_changes(
         path_string(repo.path()),
         vec![event("docs/report.pdf", ExternalEventKind::Created, 1)],
+        "en".to_owned(),
     )
     .expect("sync report file");
     fs::write(
@@ -202,6 +210,7 @@ fn sync_external_modified_implementation_indexes_markdown_without_managed_note_c
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![event("docs/report.pdf.md", ExternalEventKind::Modified, 2)],
+        "en".to_owned(),
     )
     .expect("sync independent markdown file");
 
@@ -221,6 +230,7 @@ fn sync_external_modified_implementation_db_failure_rolls_back_metadata_and_curs
     sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Created, 1)],
+        "en".to_owned(),
     )
     .expect("sync initial created event");
     let before = list_files(path_string(repo.path()), file_filter())
@@ -234,6 +244,7 @@ fn sync_external_modified_implementation_db_failure_rolls_back_metadata_and_curs
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Modified, 2)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
@@ -263,6 +274,7 @@ fn sync_external_modified_implementation_overview_failure_defers_cursor_and_repl
     sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Created, 1)],
+        "en".to_owned(),
     )
     .expect("sync initial created event");
 
@@ -275,6 +287,7 @@ fn sync_external_modified_implementation_overview_failure_defers_cursor_and_repl
     let failed = sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Modified, 2)],
+        "en".to_owned(),
     );
 
     assert!(matches!(failed, Err(CoreError::Io { .. })));
@@ -293,6 +306,7 @@ fn sync_external_modified_implementation_overview_failure_defers_cursor_and_repl
     let replayed = sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Modified, 2)],
+        "en".to_owned(),
     )
     .expect("replay modified event after generated output recovers");
 
@@ -307,6 +321,7 @@ fn sync_external_modified_implementation_overview_failure_defers_cursor_and_repl
     let removed = sync_external_changes(
         path_string(repo.path()),
         vec![event(relative_path, ExternalEventKind::Removed, 3)],
+        "en".to_owned(),
     )
     .expect("process the later removal after replay advances the cursor");
     assert_eq!(removed.detected_deletes, 1);
@@ -331,6 +346,7 @@ fn sync_external_modified_implementation_mixed_batch_db_failure_is_atomic() {
             event("docs/modified.txt", ExternalEventKind::Created, 1),
             event("docs/removed.txt", ExternalEventKind::Created, 2),
         ],
+        "en".to_owned(),
     )
     .expect("sync initial files");
     let before = list_files(path_string(repo.path()), file_filter()).expect("list initial files");
@@ -349,6 +365,7 @@ fn sync_external_modified_implementation_mixed_batch_db_failure_is_atomic() {
             event("docs/modified.txt", ExternalEventKind::Modified, 11),
             event("docs/removed.txt", ExternalEventKind::Removed, 12),
         ],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));

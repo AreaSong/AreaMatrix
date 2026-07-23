@@ -44,6 +44,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -65,6 +67,7 @@ fn copied_options(filename: &str, strategy: DuplicateStrategy) -> ImportOptions 
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: strategy,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -155,7 +158,7 @@ fn import_with_name(
 fn resolve_name_conflict_integration_verify_docs_control_map_udl_and_consumers_stay_aligned() {
     for fragment in [
         "FileEntry import_file(",
-        "FileEntry rename_file(string repo_path, i64 file_id, string new_name);",
+        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, string content_locale\n    );",
         "string? override_filename;",
         "DuplicateStrategy duplicate_strategy;",
         "string path;",
@@ -276,8 +279,13 @@ fn resolve_name_conflict_integration_verify_manual_rename_is_safe_numbered_resol
     let draft = import_with_name(repo.path(), &source_b, "draft.pdf", DuplicateStrategy::Skip)
         .expect("import file to rename");
 
-    let renamed = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned())
-        .expect("rename should auto-number instead of overwriting");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        draft.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename should auto-number instead of overwriting");
 
     assert_eq!(renamed.path, "finance/same_1.pdf");
     assert_eq!(renamed.current_name, "same_1.pdf");

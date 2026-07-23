@@ -126,7 +126,7 @@ extension ImportFolderPreviewModel {
         } catch {
             let mapping = await mapImportError(error)
             recordLastFailureMapping(mapping)
-            updateRowStatus(at: rowIndex, status: .error(mapping.userMessage))
+            updateRowStatus(at: rowIndex, status: .error(.localized(mapping.userMessageDescriptor)))
             return .failure(
                 completed: input.completed,
                 failed: input.failed + 1,
@@ -225,7 +225,7 @@ extension ImportFolderPreviewModel {
                 sourcePath: row.fileURL.path,
                 targetPath: targetRelativePath(for: row),
                 phase: progressPhase(for: row.status),
-                errorMessage: progressErrorMessage(for: row.status),
+                errorDisplayText: progressErrorDisplayText(for: row.status),
                 existingRelativePath: row.existingConflictPath
             )
         }
@@ -245,7 +245,7 @@ extension ImportFolderPreviewModel {
         }
     }
 
-    private func progressErrorMessage(for status: ImportFolderPreviewRowStatus) -> String? {
+    private func progressErrorDisplayText(for status: ImportFolderPreviewRowStatus) -> AppDisplayText? {
         guard case let .error(message) = status else { return nil }
         return message
     }

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::file::{FileEntry, StorageMode};
+use super::repository::ContentLocale;
 
 /// Destination selection for an import.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -41,6 +42,8 @@ pub struct ImportOptions {
     pub override_filename: Option<String>,
     /// Duplicate handling behavior.
     pub duplicate_strategy: DuplicateStrategy,
+    /// Resolved content locale frozen when the import starts.
+    pub content_locale: ContentLocale,
 }
 
 /// Final source-file outcome for a committed import.

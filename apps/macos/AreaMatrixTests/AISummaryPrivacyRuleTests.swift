@@ -41,7 +41,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
             return XCTFail("Expected save failure to stay visible.")
         }
         XCTAssertEqual(model.draftText, "Edited summary")
-        XCTAssertEqual(error.message, L10n.string("Summary could not be saved."))
+        XCTAssertEqual(error.message, L10n.message("Summary could not be saved."))
         XCTAssertEqual(error.detail, "Summary metadata is unavailable.")
         await mapper.assertMappedCoreErrors([CoreError.Db(message: "summary metadata locked")])
     }
@@ -141,6 +141,26 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
         }
     }
 
+    @MainActor
+    func testAISummaryFreezesContentLocaleBeforePrivacyGateForGeneratedAndLoggedSkipRequests() async {
+        let reports = [aiSummaryReport(nil), aiSummaryReport(.privacyRule)]
+
+        for (index, report) in reports.enumerated() {
+            let localeSnapshotter = StaticRepositoryContentLocaleSnapshotter(locale: "zh-Hans")
+            let (model, summary, _) = aiSummaryModel(
+                fileID: Int64(650 + index),
+                report: report,
+                scope: .remoteAllowed,
+                contentLocaleSnapshotter: localeSnapshotter
+            )
+
+            await model.generate(regenerate: false)
+
+            await localeSnapshotter.assertRequestedRepoPaths(["/tmp/repo"])
+            await summary.assertGeneratedContentLocales(["zh-Hans"])
+        }
+    }
+
     func testAITagSuggestionPrivacyRuleReferenceNormalizesCorePolicyPrefix() {
         XCTAssertEqual(normalizedAITagPrivacyRuleID(from: "rule:block:rule-confidential"), "rule-confidential")
         XCTAssertEqual(normalizedAITagPrivacyRuleID(from: "block:rule-confidential"), "rule-confidential")
@@ -155,7 +175,8 @@ private func aiSummaryModel(
     scope: AiSummaryProviderScope,
     privacyContext: AISummaryPrivacyContext = AISummaryPrivacyContext(),
     summary: AISummaryPrivacySummaryBridge = AISummaryPrivacySummaryBridge(),
-    mapper: (any CoreErrorMapping)? = nil
+    mapper: (any CoreErrorMapping)? = nil,
+    contentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting = StaticRepositoryContentLocaleSnapshotter()
     // swiftlint:disable:next large_tuple
 ) -> (AISummaryEditorModel, AISummaryPrivacySummaryBridge, AISummaryPrivacyRulesBridge) {
     let privacy = AISummaryPrivacyRulesBridge(report: report)
@@ -163,6 +184,7 @@ private func aiSummaryModel(
         repoPath: "/tmp/repo",
         fileID: fileID,
         summaryStore: summary,
+        contentLocaleSnapshotter: contentLocaleSnapshotter,
         privacyRules: privacy,
         errorMapper: mapper ?? CoreBridge(),
         summaryProviderScope: scope,
@@ -181,6 +203,7 @@ private enum AISummaryPrivacySummaryEvent: Equatable {
 private actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
     private let saveResult: Result<AiSummarySaveReport, Error>?
     private var recordedEvents: [AISummaryPrivacySummaryEvent] = []
+    private var generatedContentLocales: [String] = []
 
     init(saveResult: Result<AiSummarySaveReport, Error>? = nil) {
         self.saveResult = saveResult
@@ -191,6 +214,7 @@ private actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
     }
 
     func generateAISummary(repoPath _: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft {
+        generatedContentLocales.append(request.contentLocale)
         if let policyRef = request.privacyPolicyRef {
             recordedEvents.append(.generateSkipped(
                 fileID: request.fileId,
@@ -241,6 +265,15 @@ private actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
         line: UInt = #line
     ) {
         assertEvents([], file: file, line: line)
+    }
+
+
+    func assertGeneratedContentLocales(
+        _ expected: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(generatedContentLocales, expected, file: file, line: line)
     }
 }
 

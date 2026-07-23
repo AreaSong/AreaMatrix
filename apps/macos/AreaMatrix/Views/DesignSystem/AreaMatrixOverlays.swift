@@ -2,7 +2,8 @@ import SwiftUI
 
 struct AreaMatrixTerminalLine: Identifiable {
     let id = UUID()
-    var text: String
+    let message: LocalizedMessage
+    var visibleCharacterCount: Int?
     let colorToken: AreaMatrixColorToken
 }
 
@@ -20,9 +21,15 @@ extension [AreaMatrixTerminalLine] {
         }
     }
 
-    mutating func appendTerminalCharacter(_ character: Character, toLineWithID id: UUID) {
+    mutating func revealNextTerminalCharacter(toLineWithID id: UUID) {
         if let index = firstIndex(where: { $0.id == id }) {
-            self[index].text.append(character)
+            self[index].visibleCharacterCount = (self[index].visibleCharacterCount ?? 0) + 1
+        }
+    }
+
+    mutating func completeTerminalLine(withID id: UUID) {
+        if let index = firstIndex(where: { $0.id == id }) {
+            self[index].visibleCharacterCount = nil
         }
     }
 }
@@ -65,6 +72,7 @@ struct AreaMatrixScanOverlay: View {
     var scanColors = AreaMatrixTheme.Colors.sceneSpectrum
 
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var localizer: AppLocalizer
     @State private var cursorVisible = true
     @State private var logoPulsing = false
     @State private var rippleScale: CGFloat = 0.1
@@ -190,11 +198,18 @@ struct AreaMatrixScanOverlay: View {
 
     private func terminalLine(_ line: AreaMatrixTerminalLine) -> some View {
         let color = line.colorToken.resolve(colorScheme)
-        return Text(line.text)
+        let text = visibleText(for: line)
+        return Text(text)
             .font(.system(size: 13, weight: .medium, design: .monospaced))
             .foregroundColor(color)
-            .opacity(line.text.isEmpty ? 0 : 1)
+            .opacity(text.isEmpty ? 0 : 1)
             .shadow(color: color.opacity(0.4), radius: 4)
+    }
+
+    private func visibleText(for line: AreaMatrixTerminalLine) -> String {
+        let text = localizer.resolve(line.message)
+        guard let visibleCharacterCount = line.visibleCharacterCount else { return text }
+        return String(text.prefix(visibleCharacterCount))
     }
 
     private var progressBar: some View {
@@ -230,7 +245,8 @@ struct AreaMatrixScanOverlay: View {
 }
 
 struct AreaMatrixDropOverlay: View {
-    var message = L10n.string("import.drop.releaseToImport")
+    @EnvironmentObject private var localizer: AppLocalizer
+    var message = L10n.message("import.drop.releaseToImport")
     var iconName = "tray.and.arrow.down"
     var accent = AreaMatrixTheme.Colors.tealBright
 
@@ -246,7 +262,7 @@ struct AreaMatrixDropOverlay: View {
                     .interpolatingSpring(stiffness: 170, damping: 10).repeatForever(autoreverses: false),
                     value: isBouncing
                 )
-            Text(message)
+            Text(localizer.resolve(message))
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(.primary)
         }

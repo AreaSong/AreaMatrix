@@ -1,6 +1,28 @@
 @testable import AreaMatrix
 import XCTest
 
+actor StaticRepositoryContentLocaleSnapshotter: RepositoryContentLocaleSnapshotting {
+    private let locale: String
+    private var requestedRepoPaths: [String] = []
+
+    init(locale: String = "en") {
+        self.locale = locale
+    }
+
+    func repositoryContentLocaleSnapshot(repoPath: String) async throws -> String {
+        requestedRepoPaths.append(repoPath)
+        return locale
+    }
+
+    func assertRequestedRepoPaths(
+        _ expected: [String],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(requestedRepoPaths, expected, file: file, line: line)
+    }
+}
+
 enum AISummaryIntegrationSummaryEvent: Equatable {
     case load
     case generate(regenerate: Bool, privacyPolicyRef: String?)

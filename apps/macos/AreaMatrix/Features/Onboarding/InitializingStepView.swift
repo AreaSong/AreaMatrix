@@ -1,10 +1,11 @@
 import SwiftUI
 
 struct InitializingStepView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let draft: RepositoryInitializationDraft
     let scanSession: ScanSessionSnapshot?
     let recoveryReport: RecoveryReportSnapshot?
-    let progressWarning: String?
+    let progressWarning: LocalizedMessage?
     let isCancellationRequested: Bool
     let onCancel: () -> Void
 
@@ -106,7 +107,7 @@ struct InitializingStepView: View {
     @ViewBuilder
     private var warningSection: some View {
         if let progressWarning {
-            Label(progressWarning, systemImage: "exclamationmark.triangle")
+            Label(localizer.resolve(progressWarning), systemImage: "exclamationmark.triangle")
                 .font(.callout)
                 .foregroundStyle(.orange)
                 .frame(maxWidth: .infinity, alignment: .leading)

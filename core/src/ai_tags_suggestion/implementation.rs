@@ -81,7 +81,7 @@ pub(super) fn suggest_tags_with_ai(
     };
     ensure_tag_call_log_gate(&repo)?;
     let route_for_error = route.clone();
-    let draft = match execute_tags(route, &repo, &context) {
+    let draft = match execute_tags(route, &repo, &context, request.content_locale.as_str()) {
         Ok(draft) => draft,
         Err(error) => {
             return unavailable_after_runtime_error(&repo, &file, route_for_error, &context, error);
@@ -174,10 +174,11 @@ fn execute_tags(
     route: AiTagSuggestionRoute,
     repo: &Path,
     context: &AiTagSuggestionContext,
+    content_locale: &str,
 ) -> CoreResult<AiTagRuntimeDraft> {
     match route {
-        AiTagSuggestionRoute::Local => execute_local(context),
-        AiTagSuggestionRoute::Remote => execute_remote(repo, context),
+        AiTagSuggestionRoute::Local => execute_local(context, content_locale),
+        AiTagSuggestionRoute::Remote => execute_remote(repo, context, content_locale),
     }
 }
 

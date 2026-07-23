@@ -41,7 +41,7 @@ extension ImportBatchCopyImportModel {
                 sourcePath: row.sourcePath,
                 targetPath: targetRelativePath(for: row, destination: selectedDestination),
                 phase: Self.progressPhase(for: row.status),
-                errorMessage: Self.progressErrorMessage(for: row.status),
+                errorDisplayText: Self.progressErrorDisplayText(for: row.status),
                 existingRelativePath: row.existingConflictPath,
                 importConflictBatch: importConflictBatchMetadata(for: row)
             )
@@ -75,7 +75,7 @@ extension ImportBatchCopyImportModel {
         }
     }
 
-    private static func progressErrorMessage(for status: ImportBatchCopyImportRowStatus) -> String? {
+    private static func progressErrorDisplayText(for status: ImportBatchCopyImportRowStatus) -> AppDisplayText? {
         guard case let .error(message) = status else { return nil }
         return message
     }

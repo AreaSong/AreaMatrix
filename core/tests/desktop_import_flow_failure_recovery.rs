@@ -24,6 +24,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -45,6 +47,7 @@ fn desktop_options(mode: StorageMode, duplicate_strategy: DuplicateStrategy) -> 
         override_category: None,
         override_filename: None,
         duplicate_strategy,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 

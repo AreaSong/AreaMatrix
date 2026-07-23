@@ -91,12 +91,12 @@ struct CoreErrorContextSnapshot: Equatable {
 
 struct CoreErrorDisplaySnapshot: Equatable {
     var mapping: CoreErrorMappingSnapshot
-    var recovery: String
+    var recovery: LocalizedMessage
     var detail: String
 
     init(mapping: CoreErrorMappingSnapshot, fallbackDetail: String) {
         self.mapping = mapping
-        recovery = mapping.recoveryText
+        recovery = mapping.recoveryMessage(fallback: mapping.userMessageDescriptor)
         detail = mapping.rawContext.isEmpty ? fallbackDetail : mapping.rawContext
     }
 }
@@ -146,7 +146,12 @@ enum CoreErrorSeveritySnapshot: String, Equatable {
     case critical = "Critical"
 
     var displayName: String {
-        L10n.string(rawValue)
+        switch self {
+        case .low: L10n.string("Low")
+        case .medium: L10n.string("Medium")
+        case .high: L10n.string("High")
+        case .critical: L10n.string("Critical")
+        }
     }
 }
 
@@ -169,21 +174,48 @@ enum CoreErrorRecoverabilitySnapshot: String, Equatable {
 struct CoreErrorMappingSnapshot: Equatable {
     var kind: CoreErrorKindSnapshot
     private var fallbackUserMessage: String
-    private var userMessageKey: String?
+    private var usesKindLocalization: Bool
+    private var customUserMessage: LocalizedMessage?
     var severity: CoreErrorSeveritySnapshot
     private var fallbackSuggestedAction: String
-    private var suggestedActionKey: String?
+    private var customSuggestedAction: LocalizedMessage?
     var recoverability: CoreErrorRecoverabilitySnapshot
     var rawContext: String
 
     var userMessage: String {
-        guard let userMessageKey else { return fallbackUserMessage }
-        return L10n.string(userMessageKey, fallback: fallbackUserMessage)
+        L10n.resolve(userMessageDescriptor)
+    }
+
+    var userMessageDescriptor: LocalizedMessage {
+        if let customUserMessage {
+            return customUserMessage
+        }
+        guard usesKindLocalization else {
+            return L10n.message(
+                "error.unmapped.message",
+                fallback: fallbackUserMessage,
+                technicalDetail: fallbackUserMessage
+            )
+        }
+        return kind.messageDescriptor(fallback: fallbackUserMessage)
     }
 
     var suggestedAction: String {
-        guard let suggestedActionKey else { return fallbackSuggestedAction }
-        return L10n.string(suggestedActionKey, fallback: fallbackSuggestedAction)
+        L10n.resolve(suggestedActionDescriptor)
+    }
+
+    var suggestedActionDescriptor: LocalizedMessage {
+        if let customSuggestedAction {
+            return customSuggestedAction
+        }
+        guard usesKindLocalization else {
+            return L10n.message(
+                "error.unmapped.action",
+                fallback: fallbackSuggestedAction,
+                technicalDetail: fallbackSuggestedAction
+            )
+        }
+        return kind.actionDescriptor(fallback: fallbackSuggestedAction)
     }
 
     init(
@@ -196,16 +228,56 @@ struct CoreErrorMappingSnapshot: Equatable {
     ) {
         self.kind = kind
         fallbackUserMessage = userMessage
-        userMessageKey = nil
+        usesKindLocalization = false
+        customUserMessage = nil
         self.severity = severity
         fallbackSuggestedAction = suggestedAction
-        suggestedActionKey = nil
+        customSuggestedAction = nil
+        self.recoverability = recoverability
+        self.rawContext = rawContext
+    }
+
+    init(
+        kind: CoreErrorKindSnapshot,
+        userMessage: LocalizedMessage,
+        severity: CoreErrorSeveritySnapshot,
+        suggestedAction: LocalizedMessage,
+        recoverability: CoreErrorRecoverabilitySnapshot,
+        rawContext: String
+    ) {
+        self.kind = kind
+        fallbackUserMessage = ""
+        usesKindLocalization = false
+        customUserMessage = userMessage
+        self.severity = severity
+        fallbackSuggestedAction = ""
+        customSuggestedAction = suggestedAction
         self.recoverability = recoverability
         self.rawContext = rawContext
     }
 }
 
 extension CoreErrorMappingSnapshot {
+    static func localized(
+        kind: CoreErrorKindSnapshot,
+        userMessage: String,
+        severity: CoreErrorSeveritySnapshot,
+        suggestedAction: String,
+        recoverability: CoreErrorRecoverabilitySnapshot,
+        rawContext: String
+    ) -> CoreErrorMappingSnapshot {
+        var snapshot = CoreErrorMappingSnapshot(
+            kind: kind,
+            userMessage: userMessage,
+            severity: severity,
+            suggestedAction: suggestedAction,
+            recoverability: recoverability,
+            rawContext: rawContext
+        )
+        snapshot.usesKindLocalization = true
+        return snapshot
+    }
+
     init(coreMapping: ErrorMapping) {
         self.init(
             kind: CoreErrorKindSnapshot(coreKind: coreMapping.kind),
@@ -215,16 +287,15 @@ extension CoreErrorMappingSnapshot {
             recoverability: CoreErrorRecoverabilitySnapshot(coreRecoverability: coreMapping.recoverability),
             rawContext: coreMapping.rawContext
         )
-        userMessageKey = kind.messageKey
-        suggestedActionKey = kind.actionKey
+        usesKindLocalization = true
     }
 
     static func internalFailure(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .internal,
-            userMessage: L10n.string("error.internal.message"),
+            userMessage: L10n.message("error.internal.message"),
             severity: .critical,
-            suggestedAction: L10n.string("error.internal.action"),
+            suggestedAction: L10n.message("error.internal.action"),
             recoverability: .fatal,
             rawContext: rawContext
         )
@@ -264,15 +335,53 @@ extension CoreErrorMappingSnapshot {
     func recoveryText(fallback: String) -> String {
         suggestedAction.isEmpty ? fallback : suggestedAction
     }
+
+    func recoveryMessage(fallback: LocalizedMessage) -> LocalizedMessage {
+        !usesKindLocalization && fallbackSuggestedAction.isEmpty ? fallback : suggestedActionDescriptor
+    }
 }
 
 private extension CoreErrorKindSnapshot {
-    var messageKey: String {
-        "core.error.\(rawValue).message"
+    func messageDescriptor(fallback: String) -> LocalizedMessage {
+        switch self {
+        case .io: L10n.message("core.error.Io.message", fallback: fallback)
+        case .db: L10n.message("core.error.Db.message", fallback: fallback)
+        case .config: L10n.message("core.error.Config.message", fallback: fallback)
+        case .validation: L10n.message("core.error.Validation.message", fallback: fallback)
+        case .classify: L10n.message("core.error.Classify.message", fallback: fallback)
+        case .conflict: L10n.message("core.error.Conflict.message", fallback: fallback)
+        case .duplicateFile: L10n.message("core.error.DuplicateFile.message", fallback: fallback)
+        case .fileNotFound: L10n.message("core.error.FileNotFound.message", fallback: fallback)
+        case .expiredAction: L10n.message("core.error.ExpiredAction.message", fallback: fallback)
+        case .repoNotInitialized: L10n.message("core.error.RepoNotInitialized.message", fallback: fallback)
+        case .invalidPath: L10n.message("core.error.InvalidPath.message", fallback: fallback)
+        case .iCloudPlaceholder: L10n.message("core.error.ICloudPlaceholder.message", fallback: fallback)
+        case .stagingRecoveryRequired:
+            L10n.message("core.error.StagingRecoveryRequired.message", fallback: fallback)
+        case .permissionDenied: L10n.message("core.error.PermissionDenied.message", fallback: fallback)
+        case .internal: L10n.message("core.error.Internal.message", fallback: fallback)
+        }
     }
 
-    var actionKey: String {
-        "core.error.\(rawValue).action"
+    func actionDescriptor(fallback: String) -> LocalizedMessage {
+        switch self {
+        case .io: L10n.message("core.error.Io.action", fallback: fallback)
+        case .db: L10n.message("core.error.Db.action", fallback: fallback)
+        case .config: L10n.message("core.error.Config.action", fallback: fallback)
+        case .validation: L10n.message("core.error.Validation.action", fallback: fallback)
+        case .classify: L10n.message("core.error.Classify.action", fallback: fallback)
+        case .conflict: L10n.message("core.error.Conflict.action", fallback: fallback)
+        case .duplicateFile: L10n.message("core.error.DuplicateFile.action", fallback: fallback)
+        case .fileNotFound: L10n.message("core.error.FileNotFound.action", fallback: fallback)
+        case .expiredAction: L10n.message("core.error.ExpiredAction.action", fallback: fallback)
+        case .repoNotInitialized: L10n.message("core.error.RepoNotInitialized.action", fallback: fallback)
+        case .invalidPath: L10n.message("core.error.InvalidPath.action", fallback: fallback)
+        case .iCloudPlaceholder: L10n.message("core.error.ICloudPlaceholder.action", fallback: fallback)
+        case .stagingRecoveryRequired:
+            L10n.message("core.error.StagingRecoveryRequired.action", fallback: fallback)
+        case .permissionDenied: L10n.message("core.error.PermissionDenied.action", fallback: fallback)
+        case .internal: L10n.message("core.error.Internal.action", fallback: fallback)
+        }
     }
 }
 
@@ -291,152 +400,5 @@ extension AppSemanticError {
 
     static func internalFailure(rawContext: String) -> AppSemanticError {
         AppSemanticError(appErrorMapping: .internalFailure(rawContext: rawContext))
-    }
-}
-
-func mapCoreErrorFromCore(_ error: CoreError) -> ErrorMapping {
-    mapCoreError(input: ErrorMappingInput(coreError: error))
-}
-
-private extension CoreError {
-    var kindSnapshot: CoreErrorKindSnapshot {
-        switch self {
-        case .Io:
-            .io
-        case .Db:
-            .db
-        case .Config:
-            .config
-        case .Validation:
-            .validation
-        case .Classify:
-            .classify
-        case .Conflict:
-            .conflict
-        case .DuplicateFile:
-            .duplicateFile
-        case .FileNotFound:
-            .fileNotFound
-        case .ExpiredAction:
-            .expiredAction
-        case .RepoNotInitialized:
-            .repoNotInitialized
-        case .InvalidPath:
-            .invalidPath
-        case .ICloudPlaceholder:
-            .iCloudPlaceholder
-        case .StagingRecoveryRequired:
-            .stagingRecoveryRequired
-        case .PermissionDenied:
-            .permissionDenied
-        case .Internal:
-            .internal
-        }
-    }
-
-    var rawContextSnapshot: String {
-        switch self {
-        case let .Io(message),
-             let .Db(message),
-             let .Internal(message):
-            message
-        case let .Config(reason),
-             let .Validation(reason),
-             let .Classify(reason):
-            reason
-        case let .Conflict(path),
-             let .DuplicateFile(path),
-             let .FileNotFound(path),
-             let .ExpiredAction(path),
-             let .RepoNotInitialized(path),
-             let .InvalidPath(path),
-             let .ICloudPlaceholder(path),
-             let .StagingRecoveryRequired(path),
-             let .PermissionDenied(path):
-            path
-        }
-    }
-}
-
-private extension ErrorMappingInput {
-    // swiftlint:disable:next cyclomatic_complexity
-    init(coreError: CoreError) {
-        switch coreError {
-        case let .Io(message):
-            self.init(kind: .io, path: nil, reason: nil, message: message)
-        case let .Db(message):
-            self.init(kind: .db, path: nil, reason: nil, message: message)
-        case let .Config(reason):
-            self.init(kind: .config, path: nil, reason: reason, message: nil)
-        case let .Validation(reason):
-            self.init(kind: .validation, path: nil, reason: reason, message: nil)
-        case let .Classify(reason):
-            self.init(kind: .classify, path: nil, reason: reason, message: nil)
-        case let .Conflict(path):
-            self.init(kind: .conflict, path: path, reason: nil, message: nil)
-        case let .DuplicateFile(existingPath):
-            self.init(kind: .duplicateFile, path: existingPath, reason: nil, message: nil)
-        case let .FileNotFound(path):
-            self.init(kind: .fileNotFound, path: path, reason: nil, message: nil)
-        case let .ExpiredAction(actionId):
-            self.init(kind: .expiredAction, path: actionId, reason: nil, message: nil)
-        case let .RepoNotInitialized(path):
-            self.init(kind: .repoNotInitialized, path: path, reason: nil, message: nil)
-        case let .InvalidPath(path):
-            self.init(kind: .invalidPath, path: path, reason: nil, message: nil)
-        case let .ICloudPlaceholder(path):
-            self.init(kind: .iCloudPlaceholder, path: path, reason: nil, message: nil)
-        case let .StagingRecoveryRequired(path):
-            self.init(kind: .stagingRecoveryRequired, path: path, reason: nil, message: nil)
-        case let .PermissionDenied(path):
-            self.init(kind: .permissionDenied, path: path, reason: nil, message: nil)
-        case let .Internal(message):
-            self.init(kind: .internal, path: nil, reason: nil, message: message)
-        }
-    }
-}
-
-private extension CoreErrorKindSnapshot {
-    // swiftlint:disable:next cyclomatic_complexity
-    init(coreKind: ErrorKind) {
-        switch coreKind {
-        case .io: self = .io
-        case .db: self = .db
-        case .config: self = .config
-        case .validation: self = .validation
-        case .classify: self = .classify
-        case .conflict: self = .conflict
-        case .duplicateFile: self = .duplicateFile
-        case .fileNotFound: self = .fileNotFound
-        case .expiredAction: self = .expiredAction
-        case .repoNotInitialized: self = .repoNotInitialized
-        case .invalidPath: self = .invalidPath
-        case .iCloudPlaceholder: self = .iCloudPlaceholder
-        case .stagingRecoveryRequired: self = .stagingRecoveryRequired
-        case .permissionDenied: self = .permissionDenied
-        case .internal: self = .internal
-        }
-    }
-}
-
-private extension CoreErrorSeveritySnapshot {
-    init(coreSeverity: ErrorSeverity) {
-        switch coreSeverity {
-        case .low: self = .low
-        case .medium: self = .medium
-        case .high: self = .high
-        case .critical: self = .critical
-        }
-    }
-}
-
-private extension CoreErrorRecoverabilitySnapshot {
-    init(coreRecoverability: ErrorRecoverability) {
-        switch coreRecoverability {
-        case .retryable: self = .retryable
-        case .userActionRequired: self = .userActionRequired
-        case .refreshRequired: self = .refreshRequired
-        case .fatal: self = .fatal
-        }
     }
 }

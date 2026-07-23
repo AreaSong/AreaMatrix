@@ -25,6 +25,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -49,6 +51,7 @@ fn import_options(mode: StorageMode, filename: &str) -> ImportOptions {
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 

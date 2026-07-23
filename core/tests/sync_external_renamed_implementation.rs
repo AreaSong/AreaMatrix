@@ -24,6 +24,7 @@ fn sync_external_renamed_implementation_updates_file_log_and_cursor() {
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/renamed.pdf", 2)],
+        "en".to_owned(),
     )
     .expect("sync external renamed file");
 
@@ -84,6 +85,7 @@ fn sync_external_renamed_implementation_updates_cross_category_move() {
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("finance/original.pdf", 20)],
+        "en".to_owned(),
     )
     .expect("sync external cross-category move");
 
@@ -132,6 +134,7 @@ fn sync_external_renamed_implementation_pairs_missing_source_with_target_without
             removed("docs/original.pdf", 30),
             renamed("docs/renamed.pdf", 31),
         ],
+        "en".to_owned(),
     )
     .expect("sync paired rename events");
 
@@ -161,6 +164,7 @@ fn sync_external_renamed_implementation_coalesces_modified_flag_for_same_target(
             renamed("docs/renamed.pdf", 40),
             modified("docs/renamed.pdf", 41),
         ],
+        "en".to_owned(),
     )
     .expect("sync coalesced rename and modified flags");
 
@@ -203,6 +207,7 @@ fn sync_external_renamed_implementation_skips_managed_sidecar_renamed_with_base_
             renamed("docs/renamed.pdf", 60),
             renamed("docs/renamed.pdf.md", 61),
         ],
+        "en".to_owned(),
     )
     .expect("sync base and managed sidecar rename");
 
@@ -231,6 +236,7 @@ fn sync_external_renamed_implementation_uses_materialized_icloud_target_path() {
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed(".new.icloud/original.pdf", 70)],
+        "en".to_owned(),
     )
     .expect("sync materialized iCloud rename");
 

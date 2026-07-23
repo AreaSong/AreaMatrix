@@ -35,10 +35,6 @@ actor CoreBridge {
         "generated-bindings"
     }
 
-    nonisolated static func updateAppInterfaceLocale(_ locale: String) throws {
-        try setAppInterfaceLocale(locale: locale)
-    }
-
     func declaredBoundaries() -> [CoreBridgeBoundary] {
         CoreBridgeBoundary.allCases
     }
@@ -75,6 +71,15 @@ actor CoreBridge {
         try RepoConfigSnapshot(coreConfig: loadCoreConfig(repoPath: repoPath))
     }
 
+    func repositoryContentLocaleSnapshot(repoPath: String) async throws -> String {
+        let interfaceLocale = AppLanguageRuntime.shared.resolvedIdentifier()
+        let configuredLocale = try await Task.detached(priority: .userInitiated) {
+            try loadCoreConfig(repoPath: repoPath).locale
+        }.value
+        return try RepositoryContentLanguage(snapshotValue: configuredLocale)
+            .resolvedIdentifier(interfaceLocaleIdentifier: interfaceLocale)
+    }
+
     func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
         try updateCoreConfig(
             repoPath: repoPath,
@@ -94,18 +99,22 @@ actor CoreBridge {
     }
 
     func initializeEmptyRepository(repoPath: String) async throws {
+        let contentLocale = AppLanguageRuntime.shared.resolvedIdentifier()
         try initRepo(repoPath: repoPath, options: RepoInitOptions(
             mode: .createEmpty,
             createDefaultCategories: true,
-            overviewOutput: .generatedOnly
+            overviewOutput: .generatedOnly,
+            contentLocale: contentLocale
         ))
     }
 
     func adoptExistingRepository(repoPath: String) async throws {
+        let contentLocale = AppLanguageRuntime.shared.resolvedIdentifier()
         try initRepo(repoPath: repoPath, options: RepoInitOptions(
             mode: .adoptExisting,
             createDefaultCategories: false,
-            overviewOutput: .generatedOnly
+            overviewOutput: .generatedOnly,
+            contentLocale: contentLocale
         ))
     }
 

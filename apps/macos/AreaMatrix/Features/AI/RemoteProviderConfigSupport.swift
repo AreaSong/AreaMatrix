@@ -12,7 +12,7 @@ enum RemoteProviderLoadState: Equatable {
 }
 
 enum RemoteProviderOutcome: Equatable {
-    case success(String)
+    case success(LocalizedMessage)
     case failed(AISettingsError)
 }
 
@@ -20,29 +20,33 @@ enum RemoteProviderConfigErrorFactory {
     static func remoteError(
         for error: Error,
         errorMapper: any CoreErrorMapping,
-        message: String,
-        fallbackRecovery: String
+        message: LocalizedMessage,
+        fallbackRecovery: LocalizedMessage
     ) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
                 message: message,
-                recovery: mapping.recoveryText(fallback: fallbackRecovery),
+                recovery: mapping.recoveryMessage(fallback: fallbackRecovery),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(message: message, recovery: fallbackRecovery, detail: error.localizedDescription)
     }
 
-    static func credentialCleanupError(for error: Error, message: String, recovery: String) -> AISettingsError {
+    static func credentialCleanupError(
+        for error: Error,
+        message: LocalizedMessage,
+        recovery: LocalizedMessage
+    ) -> AISettingsError {
         AISettingsError(message: message, recovery: recovery, detail: error.localizedDescription)
     }
 
-    static func testFailureTitle(_ status: RemoteProviderTestStatusState) -> String {
+    static func testFailureTitle(_ status: RemoteProviderTestStatusState) -> LocalizedMessage {
         switch status {
-        case .providerRejected: L10n.string("The API key was rejected by the provider.")
-        case .connectionFailed: L10n.string("Connection failed. Check your network or endpoint URL.")
-        case .unsupportedProvider: L10n.string("This provider is not supported yet.")
-        case .succeeded: L10n.string("Remote provider could not be verified.")
+        case .providerRejected: L10n.message("The API key was rejected by the provider.")
+        case .connectionFailed: L10n.message("Connection failed. Check your network or endpoint URL.")
+        case .unsupportedProvider: L10n.message("This provider is not supported yet.")
+        case .succeeded: L10n.message("Remote provider could not be verified.")
         }
     }
 }

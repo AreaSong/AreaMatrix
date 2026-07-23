@@ -35,6 +35,7 @@ fn import_index_file_contract_exposes_documented_inputs() {
         override_category: Some("finance".to_owned()),
         override_filename: Some("invoice.pdf".to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     let indexed_selected_directory = ImportOptions {
         mode: StorageMode::Indexed,
@@ -43,6 +44,7 @@ fn import_index_file_contract_exposes_documented_inputs() {
         override_category: None,
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Ask,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     let indexed_category = ImportOptions {
         mode: StorageMode::Indexed,
@@ -51,6 +53,7 @@ fn import_index_file_contract_exposes_documented_inputs() {
         override_category: Some("docs".to_owned()),
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::KeepBoth,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
 
     assert_eq!(indexed_auto_classify.mode, StorageMode::Indexed);

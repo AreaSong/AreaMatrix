@@ -14,7 +14,7 @@ enum AISummaryEditorGateReason: Equatable {
 struct AISummaryEditorNotice: Equatable {
     var title: String
     var detail: String
-    var recovery: String
+    var recovery: LocalizedMessage
     var capability: String
     var opensAISettings: Bool
     var privacyRuleID: String?
@@ -39,7 +39,7 @@ extension AISummaryEditorNotice {
         AISummaryEditorNotice(
             title: L10n.string("AI summaries are off"),
             detail: L10n.string("AI is disabled for this repository."),
-            recovery: L10n.string("Open AI settings and turn on AI features."),
+            recovery: L10n.message("Open AI settings and turn on AI features."),
             capability: "ai-summary-core",
             opensAISettings: true,
             privacyRuleID: nil,
@@ -52,7 +52,7 @@ extension AISummaryEditorNotice {
         AISummaryEditorNotice(
             title: L10n.string("Auto summaries are off"),
             detail: detail ?? L10n.string("The Auto summaries feature is disabled."),
-            recovery: L10n.string("Open AI settings and enable Auto summaries."),
+            recovery: L10n.message("Open AI settings and enable Auto summaries."),
             capability: "ai-summary-core",
             opensAISettings: true,
             privacyRuleID: nil,
@@ -65,7 +65,7 @@ extension AISummaryEditorNotice {
         AISummaryEditorNotice(
             title: L10n.string("AI provider is unavailable"),
             detail: detail ?? L10n.string("No local or remote AI route is enabled for summaries."),
-            recovery: L10n.string("Open AI settings and enable a summary provider."),
+            recovery: L10n.message("Open AI settings and enable a summary provider."),
             capability: "ai-summary-core",
             opensAISettings: true,
             privacyRuleID: nil,
@@ -78,7 +78,7 @@ extension AISummaryEditorNotice {
         AISummaryEditorNotice(
             title: L10n.string("AI provider is unavailable"),
             detail: detail,
-            recovery: L10n.string("Open AI settings and configure remote summaries."),
+            recovery: L10n.message("Open AI settings and configure remote summaries."),
             capability: "ai-summary-core",
             opensAISettings: true,
             privacyRuleID: nil,

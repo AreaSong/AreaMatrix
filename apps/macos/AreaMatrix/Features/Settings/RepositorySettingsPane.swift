@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RepositorySettingsPane: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: RepositorySettingsModel
     @StateObject private var capabilityModel: RepoPlatformCapabilitiesModel
     @StateObject private var configModel: RepositorySettingsConfigModel
@@ -144,8 +145,8 @@ extension RepositorySettingsPane {
     private func loadErrorContent(_ error: RepositorySettingsLoadError) -> some View {
         SettingsPageErrorContent(
             title: L10n.string("settings.error.loadRepository"),
-            message: error.message,
-            recovery: error.recovery
+            message: localizer.resolve(error.message),
+            recovery: localizer.resolve(error.recovery)
         ) {
             Button("Try again") {
                 Task {
@@ -204,13 +205,17 @@ extension RepositorySettingsPane {
     @ViewBuilder
     private var repositoryActionBanner: some View {
         if let error = model.repositoryActionError {
-            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-                Text(error.recovery)
+            SettingsStatusBanner(
+                title: localizer.resolve(error.message),
+                systemImage: "exclamationmark.triangle",
+                tint: .red
+            ) {
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
         } else if let message = model.repositoryActionMessage {
-            SettingsStatusBanner(title: message, systemImage: "checkmark.circle", tint: .green)
+            SettingsStatusBanner(title: localizer.resolve(message), systemImage: "checkmark.circle", tint: .green)
         }
     }
 
@@ -233,8 +238,12 @@ extension RepositorySettingsPane {
                     .textSelection(.enabled)
             }
         case let .failed(error):
-            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-                Text(error.recovery)
+            SettingsStatusBanner(
+                title: localizer.resolve(error.message),
+                systemImage: "exclamationmark.triangle",
+                tint: .red
+            ) {
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -266,8 +275,12 @@ extension RepositorySettingsPane {
     @ViewBuilder
     private var syncErrorBanner: some View {
         if let error = model.syncError {
-            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-                Text(error.recovery)
+            SettingsStatusBanner(
+                title: localizer.resolve(error.message),
+                systemImage: "exclamationmark.triangle",
+                tint: .red
+            ) {
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Button("Retry path sync") {
@@ -284,8 +297,12 @@ extension RepositorySettingsPane {
     private var healthErrorBanner: some View {
         if let error = model.healthError {
             let tint: Color = error.databaseStatus == .locked ? .orange : .red
-            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: tint) {
-                Text(error.recovery)
+            SettingsStatusBanner(
+                title: localizer.resolve(error.message),
+                systemImage: "exclamationmark.triangle",
+                tint: tint
+            ) {
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

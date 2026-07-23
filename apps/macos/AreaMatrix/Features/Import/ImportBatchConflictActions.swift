@@ -294,11 +294,11 @@ extension ImportBatchCopyImportModel {
         decision: SingleFileReplaceConfirmationDecision
     ) -> Bool {
         guard decision.understandsReplace else {
-            recordReplaceConfirmationFailure(L10n.string("import.replace.checkboxRequired"))
+            recordReplaceConfirmationFailure(L10n.message("import.replace.checkboxRequired"))
             return false
         }
         guard let expected = currentReplaceConfirmationContext(for: rowID), expected == decision.context else {
-            recordReplaceConfirmationFailure("Replace confirmation context expired")
+            recordReplaceConfirmationFailure(L10n.message("Replace confirmation context expired"))
             return false
         }
         guard let row = rows.first(where: { $0.id == rowID }) else { return false }
@@ -317,7 +317,7 @@ extension ImportBatchCopyImportModel {
             ), for: rowID)
         case .loading, .ready, .duplicate, .nameConflict, .iCloudPlaceholder, .blocked, .importing,
              .skippedDuplicate, .skippedICloud, .imported, .error:
-            recordReplaceConfirmationFailure("Replace confirmation context expired")
+            recordReplaceConfirmationFailure(L10n.message("Replace confirmation context expired"))
             return false
         }
         clearReplaceConfirmationRecovery()
@@ -342,7 +342,8 @@ extension ImportBatchCopyImportModel {
         case .queuedForPerItem, .pending:
             fallback
         case .failed:
-            .error(result.error ?? L10n.string("Import conflict strategy failed."))
+            .error(result.error.map { L10n.verbatim($0, reason: .technicalDetail) }
+                ?? L10n.display("Import conflict strategy failed."))
         }
     }
 

@@ -79,7 +79,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
             importBatchReadyBatchRow(url: localURL),
             ImportBatchPreviewRow.iCloudPlaceholder(
                 url: cloudURL,
-                message: "iCloud placeholder 需要下载后才能导入"
+                message: L10n.verbatim("iCloud placeholder 需要下载后才能导入", reason: .technicalDetail)
             )
         ]
         let importer = ImportBatchRecordingBatchImporter()
@@ -135,7 +135,7 @@ final class ImportBatchICloudPageIntegrationTests: XCTestCase {
         let rows = cloudURLs.map { url in
             ImportBatchPreviewRow.iCloudPlaceholder(
                 url: url,
-                message: "iCloud placeholder 需要下载后才能导入"
+                message: L10n.verbatim("iCloud placeholder 需要下载后才能导入", reason: .technicalDetail)
             )
         }
         let model = ImportBatchCopyImportModel(

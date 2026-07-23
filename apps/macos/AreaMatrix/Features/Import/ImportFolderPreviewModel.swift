@@ -9,9 +9,9 @@ final class ImportFolderPreviewModel: ObservableObject {
     @Published private(set) var skippedRules: [ImportFolderSkippedRule] = []
     @Published private(set) var scanErrors: [ImportFolderScanError] = []
     @Published private(set) var isICloudDownloading = false
-    @Published private(set) var iCloudDownloadErrorMessage: String?
-    @Published private(set) var replaceConfirmationErrorMessage: String?
-    @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
+    @Published private(set) var iCloudDownloadErrorMessage: LocalizedMessage?
+    @Published private(set) var replaceConfirmationErrorMessage: LocalizedMessage?
+    @Published private(set) var replaceConfirmationDiagnosticsMessage: LocalizedMessage?
     @Published var includeHiddenFiles = false
     @Published var followSymlinks = false
     @Published var selectedDestination: ImportBatchDestinationOption = .autoClassify
@@ -111,7 +111,7 @@ extension ImportFolderPreviewModel {
     }
 
     func collectReplaceConfirmationDiagnostics() {
-        replaceConfirmationDiagnosticsMessage = L10n.string("import.replace-confirmation.diagnostics-collected")
+        replaceConfirmationDiagnosticsMessage = L10n.message("import.replace-confirmation.diagnostics-collected")
     }
 
     func clearReplaceConfirmationRecovery() {
@@ -119,7 +119,7 @@ extension ImportFolderPreviewModel {
         replaceConfirmationDiagnosticsMessage = nil
     }
 
-    func recordReplaceConfirmationFailure(_ message: String) {
+    func recordReplaceConfirmationFailure(_ message: LocalizedMessage) {
         replaceConfirmationErrorMessage = message
         replaceConfirmationDiagnosticsMessage = nil
     }
@@ -184,7 +184,7 @@ extension ImportFolderPreviewModel {
         }
 
         guard case .folder = request.kind, let rootURL = request.urls.first else {
-            reset(message: L10n.string("import.folder.unsupportedRequest"))
+            reset(message: L10n.display("import.folder.unsupportedRequest"))
             return
         }
 
@@ -212,7 +212,10 @@ extension ImportFolderPreviewModel {
         guard !rows.isEmpty else {
             status = result.errors.isEmpty
                 ? .empty
-                : .failed(result.errors.first?.message ?? L10n.string("import.folder.prescanFailed"))
+                : .failed(L10n.display(
+                    "import.folder.prescanFailed",
+                    technicalDetail: result.errors.first?.message
+                ))
             return
         }
 
@@ -249,10 +252,10 @@ extension ImportFolderPreviewModel {
         }
 
         guard failures.isEmpty else {
-            iCloudDownloadErrorMessage = L10n.format(
+            iCloudDownloadErrorMessage = L10n.message(
                 "import.icloud.downloadFailed",
-                failures.count,
-                failures[0]
+                arguments: [.integer(failures.count), .string(failures[0])],
+                technicalDetail: failures.joined(separator: "\n")
             )
             return false
         }
@@ -310,7 +313,7 @@ extension ImportFolderPreviewModel {
         }
     }
 
-    private func reset(message: String) {
+    private func reset(message: AppDisplayText) {
         rows = []
         folderCount = 0
         skippedRules = []
@@ -338,22 +341,38 @@ extension ImportFolderPreviewModel {
         rows[index].status = status
     }
 
-    private static func previewMessage(for error: Error) -> String {
+    private static func previewMessage(for error: Error) -> AppDisplayText {
         guard let context = CoreErrorRawContextSnapshot(error) else {
-            return L10n.string("import.preview.unavailable")
+            return L10n.display("import.preview.unavailable", technicalDetail: error.localizedDescription)
         }
 
         switch context.kind {
         case .config:
-            return L10n.format("import.preview.invalidRules", context.rawContext)
+            return L10n.display(
+                "import.preview.invalidRules",
+                arguments: [.string(context.rawContext)],
+                technicalDetail: context.rawContext
+            )
         case .classify:
-            return L10n.format("import.preview.category-unavailable", context.rawContext)
+            return L10n.display(
+                "import.preview.category-unavailable",
+                arguments: [.string(context.rawContext)],
+                technicalDetail: context.rawContext
+            )
         case .permissionDenied:
-            return L10n.format("import.preview.pathUnreadable", context.rawContext)
+            return L10n.display(
+                "import.preview.pathUnreadable",
+                arguments: [.string(context.rawContext)],
+                technicalDetail: context.rawContext
+            )
         case .io:
-            return L10n.format("import.preview.fileReadFailed", context.rawContext)
+            return L10n.display(
+                "import.preview.fileReadFailed",
+                arguments: [.string(context.rawContext)],
+                technicalDetail: context.rawContext
+            )
         default:
-            return L10n.string("import.preview.unavailable")
+            return L10n.display("import.preview.unavailable", technicalDetail: context.rawContext)
         }
     }
 

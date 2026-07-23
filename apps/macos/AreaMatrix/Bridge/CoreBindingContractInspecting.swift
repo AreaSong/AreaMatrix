@@ -23,7 +23,11 @@ enum BindingSupportStatusSnapshot: String, Equatable, Hashable {
     case missing = "Missing"
 
     var displayName: String {
-        L10n.string(rawValue)
+        switch self {
+        case .supported: L10n.string("Supported")
+        case .limited: L10n.string("Limited")
+        case .missing: L10n.string("Missing")
+        }
     }
 }
 

@@ -78,10 +78,10 @@ extension BatchChangeCategorySheet {
         let presentation = BatchCategoryPreviewReportPresentation(report: preview)
         return NeutralSummaryPanel {
             VStack(alignment: .leading, spacing: 6) {
-                Text(presentation.moveSummaryText)
-                Text(presentation.metadataSummaryText)
-                Text(presentation.skippedSummaryText)
-                Text(presentation.blockedSummaryText)
+                Text(localizer.resolve(presentation.moveSummaryText))
+                Text(localizer.resolve(presentation.metadataSummaryText))
+                Text(localizer.resolve(presentation.skippedSummaryText))
+                Text(localizer.resolve(presentation.blockedSummaryText))
                 if let reason = preview.applyBlockedReason, !reason.isEmpty {
                     Text(reason).foregroundStyle(.secondary)
                 }
@@ -102,9 +102,9 @@ extension BatchChangeCategorySheet {
             let presentation = BatchCategoryChangeReportPresentation(report: result)
             NeutralSummaryPanel {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(presentation.changedSummaryText)
-                    Text(presentation.skippedSummaryText)
-                    Text(presentation.failedSummaryText)
+                    Text(localizer.resolve(presentation.changedSummaryText))
+                    Text(localizer.resolve(presentation.skippedSummaryText))
+                    Text(localizer.resolve(presentation.failedSummaryText))
                     if result.failedCount > 0 {
                         failureResultDetails(for: result)
                     }

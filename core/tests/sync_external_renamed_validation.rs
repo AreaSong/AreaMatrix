@@ -20,6 +20,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -100,9 +102,12 @@ fn sync_created_file(
     fs_event_id: i64,
 ) -> area_matrix_core::FileEntry {
     write_repo_file(repo, relative_path, bytes);
-    let result =
-        sync_external_changes(path_string(repo), vec![created(relative_path, fs_event_id)])
-            .expect("sync external created file fixture");
+    let result = sync_external_changes(
+        path_string(repo),
+        vec![created(relative_path, fs_event_id)],
+        "en".to_owned(),
+    )
+    .expect("sync external created file fixture");
     assert_eq!(result.detected_creates, 1);
     listed_files(repo)
         .into_iter()
@@ -132,6 +137,7 @@ fn sync_external_renamed_validation_success_path_reaches_list_detail_log_tree_an
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/renamed.pdf", 501)],
+        "en".to_owned(),
     )
     .expect("sync external renamed event");
 
@@ -180,6 +186,7 @@ fn sync_external_renamed_validation_missing_target_leaves_db_cursor_and_file_int
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/missing.pdf", 511)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::FileNotFound { .. })));
@@ -207,6 +214,7 @@ fn sync_external_renamed_validation_ambiguous_hash_match_is_conflict_without_sta
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/first-renamed.pdf", 522)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Conflict { .. })));
@@ -246,6 +254,7 @@ fn sync_external_renamed_validation_coalesces_modified_signal_at_target() {
             renamed("docs/renamed.txt", 531),
             modified("docs/renamed.txt", 532),
         ],
+        "en".to_owned(),
     )
     .expect("sync coalesced rename and modified signals");
 

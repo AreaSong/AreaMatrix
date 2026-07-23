@@ -107,7 +107,7 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         helpOpener.assertOpenCount(1)
         finderOpener.assertRepoPaths(["/tmp/repo"])
         await updater.assertNoConfigurationUpdateRequests()
-        XCTAssertEqual(model.actionFeedback, .success("Repository folder revealed in Finder."))
+        XCTAssertEqual(model.actionFeedback, .success(L10n.message("Repository folder revealed in Finder.")))
     }
 
     func testLocalICloudStatusDetectorReportsLocalFolderWithoutReadingRealTokenState() async {

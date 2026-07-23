@@ -41,7 +41,11 @@ struct SearchEmptyRouteView: View {
         .foregroundStyle(.secondary)
         .frame(maxWidth: 360, alignment: .leading)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Search conditions. Query \(querySummary). Filters \(filterSummary).")
+        .accessibilityLabel(L10n.format(
+            "Search conditions. Query %@. Filters %@.",
+            querySummary,
+            filterSummary
+        ))
     }
 
     private var actionButtons: some View {

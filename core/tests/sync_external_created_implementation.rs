@@ -22,6 +22,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -101,6 +103,7 @@ fn sync_external_created_implementation_indexes_created_file_and_advances_cursor
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/external.pdf", 42)],
+        "en".to_owned(),
     )
     .expect("sync external created file");
 
@@ -166,6 +169,7 @@ fn sync_external_created_implementation_skips_internal_generated_output_but_inde
             created("AREAMATRIX.md", 11),
             created("README.md", 12),
         ],
+        "en".to_owned(),
     )
     .expect("sync mixed generated and user files");
 
@@ -196,6 +200,7 @@ fn sync_external_created_implementation_rolls_back_batch_and_cursor_on_failure()
             created("docs/good.pdf", 20),
             created("docs/missing.pdf", 21),
         ],
+        "en".to_owned(),
     );
 
     assert_eq!(result, Err(CoreError::file_not_found("docs/missing.pdf")));
@@ -214,6 +219,7 @@ fn sync_external_created_implementation_rejects_escaping_paths_without_writes() 
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![created("../outside.pdf", 30)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
@@ -232,6 +238,7 @@ fn sync_external_created_implementation_rejects_icloud_placeholder_marker() {
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/waiting.pdf.icloud", 40)],
+        "en".to_owned(),
     );
 
     assert_eq!(
@@ -249,11 +256,13 @@ fn sync_external_created_implementation_is_idempotent_for_duplicate_created_even
     sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/external.pdf", 50)],
+        "en".to_owned(),
     )
     .expect("sync external created file first time");
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/external.pdf", 51)],
+        "en".to_owned(),
     )
     .expect("sync duplicate external created event");
 
@@ -273,18 +282,30 @@ fn sync_external_created_implementation_reactivates_deleted_path() {
     let repo = initialized_repo();
     let relative_path = "docs/recreated.pdf";
     write_repo_file(repo.path(), relative_path, b"first content");
-    sync_external_changes(path_string(repo.path()), vec![created(relative_path, 60)])
-        .expect("sync original external file");
+    sync_external_changes(
+        path_string(repo.path()),
+        vec![created(relative_path, 60)],
+        "en".to_owned(),
+    )
+    .expect("sync original external file");
     let original = list_files(path_string(repo.path()), default_file_filter())
         .expect("list original file")
         .remove(0);
     fs::remove_file(repo.path().join(relative_path)).expect("remove external file");
-    sync_external_changes(path_string(repo.path()), vec![removed(relative_path, 61)])
-        .expect("sync external removal");
+    sync_external_changes(
+        path_string(repo.path()),
+        vec![removed(relative_path, 61)],
+        "en".to_owned(),
+    )
+    .expect("sync external removal");
 
     write_repo_file(repo.path(), relative_path, b"replacement content");
-    let result = sync_external_changes(path_string(repo.path()), vec![created(relative_path, 62)])
-        .expect("sync recreated external file");
+    let result = sync_external_changes(
+        path_string(repo.path()),
+        vec![created(relative_path, 62)],
+        "en".to_owned(),
+    )
+    .expect("sync recreated external file");
 
     assert_eq!(result.detected_creates, 1);
     assert_eq!(

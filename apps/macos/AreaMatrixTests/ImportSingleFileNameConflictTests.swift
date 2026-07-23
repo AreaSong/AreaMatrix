@@ -186,7 +186,7 @@ final class ImportSingleFileNameConflictTests: XCTestCase {
 
         XCTAssertNil(imported)
         await importer.assertNoImportedFiles()
-        XCTAssertEqual(model.importStatus, .blocked("Confirm Replace before continuing"))
+        XCTAssertEqual(model.importStatus, .blocked(L10n.display("import.replace.confirmationRequired")))
     }
 
     @MainActor

@@ -77,6 +77,9 @@ final class ImportProgressIndexPageFeatureTests: XCTestCase {
             )
         ])
         XCTAssertEqual(model.route, .mainEmpty(opening))
-        XCTAssertEqual(model.toastMessage, "Imported: indexed.pdf")
+        XCTAssertEqual(
+            model.toastMessage,
+            L10n.message("import.single.imported-file", arguments: [.string("indexed.pdf")])
+        )
     }
 }

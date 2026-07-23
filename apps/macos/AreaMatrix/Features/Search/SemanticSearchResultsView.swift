@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SemanticSearchResultsView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let page: SemanticSearchResultPageSnapshot
     let selectedFileIDs: Binding<Set<Int64>>
     let showFoldedDuplicates: Bool
@@ -70,6 +71,7 @@ struct SemanticSearchResultsView: View {
 }
 
 private struct SemanticSearchGroupView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let title: String
     let count: Int64
     let rows: [SemanticSearchRowPresentation]
@@ -117,7 +119,7 @@ private struct SemanticSearchGroupView: View {
             }
             TableColumn("Match source") { row in
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(row.matchSource)
+                    Text(localizer.resolve(row.matchSource))
                     if row.alsoMatchedNormalSearch {
                         Text("Also matched normal search")
                             .font(.caption)
@@ -136,7 +138,7 @@ private struct SemanticSearchGroupView: View {
             }
             TableColumn("Matched reason") { row in
                 DisclosureGroup("Why this matched") {
-                    Text(row.whyThisMatched)
+                    Text(row.whyThisMatched.resolve(using: localizer))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)

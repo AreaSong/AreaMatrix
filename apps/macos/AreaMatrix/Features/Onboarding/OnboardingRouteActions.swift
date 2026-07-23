@@ -203,7 +203,7 @@ extension OnboardingModel {
         if case .initializing = route {
             isSetupQuitConfirmationPresented = false
             isInitializationCancellationRequested = true
-            toastMessage = L10n.string("onboarding.quit.pausingInitialization")
+            toastMessage = L10n.message("onboarding.quit.pausingInitialization")
             return false
         }
 
@@ -238,7 +238,7 @@ extension OnboardingModel {
             let latestValidation = try await pathValidator.validateRepoPath(repoPath: repoPath)
             guard Self.validationStillMatchesConfirmMode(latestValidation, mode: mode) else {
                 repositoryPathValidation = latestValidation
-                repositoryPathError = L10n.string("onboarding.validate.pathChangedRevalidate")
+                repositoryPathError = L10n.message("onboarding.validate.pathChangedRevalidate")
                 route = .validatePath
                 return
             }
@@ -280,7 +280,7 @@ extension OnboardingModel {
         initializationDiagnostics = .idle
         isInitializationCancellationRequested = false
         route = .welcome
-        toastMessage = L10n.string("onboarding.quit.stoppedAtSafePoint")
+        toastMessage = L10n.message("onboarding.quit.stoppedAtSafePoint")
         return true
     }
 }

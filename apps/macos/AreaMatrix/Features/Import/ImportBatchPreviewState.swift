@@ -30,12 +30,12 @@ enum ImportBatchDestinationOption: Hashable {
 
 enum ImportBatchPreviewRowStatus: Equatable {
     case loading
-    case ready(reasonLabel: String)
-    case duplicate(existingPath: String, reasonLabel: String)
-    case nameConflict(existingPath: String, reasonLabel: String)
-    case iCloudPlaceholder(path: String, reasonLabel: String)
-    case blocked(String)
-    case error(String)
+    case ready(reasonLabel: AppDisplayText)
+    case duplicate(existingPath: String, reasonLabel: AppDisplayText)
+    case nameConflict(existingPath: String, reasonLabel: AppDisplayText)
+    case iCloudPlaceholder(path: String, reasonLabel: AppDisplayText)
+    case blocked(AppDisplayText)
+    case error(AppDisplayText)
 
     var tag: String {
         switch self {
@@ -56,13 +56,17 @@ enum ImportBatchPreviewRowStatus: Equatable {
         }
     }
 
+    var tagMessage: LocalizedMessage {
+        ImportStatusTagLocalization.message(for: tag)
+    }
+
     var detail: String? {
         switch self {
         case .loading:
             L10n.string("Preparing preview...")
         case let .ready(reasonLabel), let .duplicate(_, reasonLabel), let .nameConflict(_, reasonLabel),
              let .iCloudPlaceholder(_, reasonLabel), let .blocked(reasonLabel), let .error(reasonLabel):
-            reasonLabel
+            L10n.resolve(reasonLabel)
         }
     }
 
@@ -144,10 +148,12 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
             status: .ready(
-                reasonLabel: L10n.format(
+                reasonLabel: L10n.display(
                     "import.preview.classification-reason",
-                    prediction.reason.displayLabel,
-                    Int64(prediction.confidencePercent)
+                    arguments: [
+                        .string(prediction.reason.displayLabel),
+                        .integer64(Int64(prediction.confidencePercent))
+                    ]
                 )
             )
         )
@@ -166,7 +172,10 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
             status: .duplicate(
                 existingPath: existingPath,
-                reasonLabel: L10n.format("import.preview.duplicate-skip", existingPath)
+                reasonLabel: L10n.display(
+                    "import.preview.duplicate-skip",
+                    arguments: [.string(existingPath)]
+                )
             )
         )
     }
@@ -184,12 +193,15 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
             status: .nameConflict(
                 existingPath: existingPath,
-                reasonLabel: L10n.format("import.preview.keep-both-auto-number", existingPath)
+                reasonLabel: L10n.display(
+                    "import.preview.keep-both-auto-number",
+                    arguments: [.string(existingPath)]
+                )
             )
         )
     }
 
-    static func iCloudPlaceholder(url: URL, message: String) -> ImportBatchPreviewRow {
+    static func iCloudPlaceholder(url: URL, message: AppDisplayText) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
@@ -200,7 +212,7 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
         )
     }
 
-    static func failed(url: URL, message: String) -> ImportBatchPreviewRow {
+    static func failed(url: URL, message: AppDisplayText) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
@@ -216,7 +228,7 @@ enum ImportBatchPreviewStatus: Equatable {
     case idle
     case loading(completed: Int, total: Int)
     case loaded(successful: Int, total: Int, failed: Int)
-    case unsupported(String)
+    case unsupported(AppDisplayText)
 
     var isLoading: Bool {
         if case .loading = self { return true }
@@ -236,7 +248,7 @@ enum ImportBatchPreviewStatus: Equatable {
         case let .loaded(successful, total, failed):
             loadedMessage(successful: successful, total: total, failed: failed)
         case let .unsupported(message):
-            message
+            L10n.resolve(message)
         }
     }
 

@@ -2,20 +2,20 @@ import Foundation
 
 enum ImportBatchCopyImportRowStatus: Equatable {
     case loading
-    case ready(reasonLabel: String)
+    case ready(reasonLabel: AppDisplayText)
     case duplicate(
         existingPath: String,
         strategy: ImportBatchDuplicateResolutionStrategy,
         isReplaceConfirmed: Bool
     )
     case nameConflict(existingPath: String, resolution: ImportBatchNameConflictResolution)
-    case iCloudPlaceholder(path: String, message: String)
-    case blocked(String)
+    case iCloudPlaceholder(path: String, message: AppDisplayText)
+    case blocked(AppDisplayText)
     case importing(ImportSingleFileStorageMode)
     case skippedDuplicate(existingPath: String)
     case skippedICloud(path: String)
     case imported
-    case error(String)
+    case error(AppDisplayText)
 
     var tag: String {
         switch self {
@@ -44,12 +44,16 @@ enum ImportBatchCopyImportRowStatus: Equatable {
         }
     }
 
+    var tagMessage: LocalizedMessage {
+        ImportStatusTagLocalization.message(for: tag)
+    }
+
     var detail: String? {
         switch self {
         case .loading:
             return L10n.string("Preparing preview...")
         case let .ready(reasonLabel), let .error(reasonLabel):
-            return reasonLabel
+            return L10n.resolve(reasonLabel)
         case let .duplicate(existingPath, strategy, isReplaceConfirmed):
             if strategy == .replace, isReplaceConfirmed {
                 return L10n.format("import.conflict.replace-confirmed", existingPath)
@@ -58,9 +62,9 @@ enum ImportBatchCopyImportRowStatus: Equatable {
         case let .nameConflict(existingPath, resolution):
             return L10n.format("import.conflict.resolution-path", resolution.title, existingPath)
         case let .iCloudPlaceholder(_, message):
-            return message
+            return L10n.resolve(message)
         case let .blocked(message):
-            return message
+            return L10n.resolve(message)
         case let .importing(mode):
             return mode.importingMessage
         case let .skippedDuplicate(existingPath):
@@ -77,6 +81,25 @@ enum ImportBatchCopyImportRowStatus: Equatable {
             return true
         }
         return false
+    }
+}
+
+enum ImportStatusTagLocalization {
+    static func message(for tag: String) -> LocalizedMessage {
+        switch tag {
+        case "PREVIEW": L10n.message("PREVIEW")
+        case "OK": L10n.message("OK")
+        case "DUP": L10n.message("DUP")
+        case "NAME": L10n.message("NAME")
+        case "ICLOUD": L10n.message("ICLOUD")
+        case "BLOCKED": L10n.message("BLOCKED")
+        case "IMPORTING": L10n.message("IMPORTING")
+        case "SKIPPED": L10n.message("SKIPPED")
+        case "PENDING": L10n.message("PENDING")
+        case "IMPORTED": L10n.message("IMPORTED")
+        case "ERROR": L10n.message("ERROR")
+        default: L10n.message("ERROR")
+        }
     }
 }
 

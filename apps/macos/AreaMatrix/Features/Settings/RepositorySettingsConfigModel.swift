@@ -77,14 +77,14 @@ struct RepositorySettingsConfigDraft: Equatable {
 }
 
 struct RepositorySettingsConfigError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 enum RepositorySettingsConfigSaveState: Equatable {
     case idle
     case saving
-    case saved(String)
+    case saved(LocalizedMessage)
     case failed(RepositorySettingsConfigError)
 
     var isSaving: Bool {
@@ -125,31 +125,38 @@ final class RepositorySettingsConfigModel: ObservableObject {
         guard !saveState.isSaving else { return false }
         let newConfig = draft.applying(to: currentConfig)
         guard newConfig != currentConfig else {
-            saveState = .saved(L10n.string("Repository settings already match Core config."))
+            saveState = .saved(L10n.message("Repository settings already match Core config."))
             return true
         }
 
         saveState = .saving
         do {
             try await updater.updateConfig(repoPath: repoPath, newConfig: newConfig)
-            saveState = .saved(L10n.string("Repository settings saved."))
-            accessibilityAnnouncer.announce(L10n.string("Repository settings saved."))
+            let savedMessage = L10n.message("Repository settings saved.")
+            saveState = .saved(savedMessage)
+            accessibilityAnnouncer.announce(savedMessage)
             return true
         } catch {
             saveState = await .failed(configError(for: error))
-            accessibilityAnnouncer.announce(L10n.string("Repository settings could not be saved."))
+            accessibilityAnnouncer.announce(L10n.message("Repository settings could not be saved."))
             return false
         }
     }
 
     private func configError(for error: Error) async -> RepositorySettingsConfigError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
-            return RepositorySettingsConfigError(message: mapping.userMessage, recovery: mapping.suggestedAction)
+            return RepositorySettingsConfigError(
+                message: mapping.userMessageDescriptor,
+                recovery: mapping.recoveryMessage(fallback: mapping.userMessageDescriptor)
+            )
         }
 
         return RepositorySettingsConfigError(
-            message: L10n.string("Repository settings could not be saved."),
-            recovery: L10n.string("Retry after the repository is available and writable.")
+            message: L10n.message(
+                "Repository settings could not be saved.",
+                technicalDetail: error.localizedDescription
+            ),
+            recovery: L10n.message("Retry after the repository is available and writable.")
         )
     }
 }

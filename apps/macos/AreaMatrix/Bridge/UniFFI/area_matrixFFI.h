@@ -644,7 +644,7 @@ RustBuffer uniffi_area_matrix_core_fn_func_remove_tag(RustBuffer repo_path, int6
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_RENAME_FILE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_RENAME_FILE
-RustBuffer uniffi_area_matrix_core_fn_func_rename_file(RustBuffer repo_path, int64_t file_id, RustBuffer new_name, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_area_matrix_core_fn_func_rename_file(RustBuffer repo_path, int64_t file_id, RustBuffer new_name, RustBuffer content_locale, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_REPAIR_METADATA
@@ -692,11 +692,6 @@ RustBuffer uniffi_area_matrix_core_fn_func_search_files(RustBuffer repo_path, Ru
 RustBuffer uniffi_area_matrix_core_fn_func_semantic_search(RustBuffer repo_path, RustBuffer query, RustBuffer filter, RustBuffer pagination, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_SET_APP_INTERFACE_LOCALE
-#define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_SET_APP_INTERFACE_LOCALE
-void uniffi_area_matrix_core_fn_func_set_app_interface_locale(RustBuffer locale, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_SET_FS_EVENT_CURSOR
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_SET_FS_EVENT_CURSOR
 void uniffi_area_matrix_core_fn_func_set_fs_event_cursor(RustBuffer repo_path, int64_t last_event_id, RustCallStatus *_Nonnull out_status
@@ -719,7 +714,7 @@ RustBuffer uniffi_area_matrix_core_fn_func_suggest_tags_with_ai(RustBuffer repo_
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_SYNC_EXTERNAL_CHANGES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_SYNC_EXTERNAL_CHANGES
-RustBuffer uniffi_area_matrix_core_fn_func_sync_external_changes(RustBuffer repo_path, RustBuffer events, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_area_matrix_core_fn_func_sync_external_changes(RustBuffer repo_path, RustBuffer events, RustBuffer content_locale, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_UNDO_ACTION
@@ -1572,12 +1567,6 @@ uint16_t uniffi_area_matrix_core_checksum_func_search_files(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SEMANTIC_SEARCH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SEMANTIC_SEARCH
 uint16_t uniffi_area_matrix_core_checksum_func_semantic_search(void
-
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SET_APP_INTERFACE_LOCALE
-#define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SET_APP_INTERFACE_LOCALE
-uint16_t uniffi_area_matrix_core_checksum_func_set_app_interface_locale(void
 
 );
 #endif

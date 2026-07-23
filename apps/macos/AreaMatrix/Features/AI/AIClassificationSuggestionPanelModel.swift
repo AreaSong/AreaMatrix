@@ -116,14 +116,14 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
     private func suggestionError(for error: Error) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
-                message: L10n.string("AI category suggestion could not be loaded."),
-                recovery: mapping.recoveryText(fallback: L10n.string("Retry or classify manually.")),
+                message: L10n.message("AI category suggestion could not be loaded."),
+                recovery: mapping.recoveryMessage(fallback: L10n.message("Retry or classify manually.")),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(
-            message: L10n.string("AI category suggestion could not be loaded."),
-            recovery: L10n.string("Retry or classify manually."),
+            message: L10n.message("AI category suggestion could not be loaded."),
+            recovery: L10n.message("Retry or classify manually."),
             detail: error.localizedDescription
         )
     }

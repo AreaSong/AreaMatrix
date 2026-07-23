@@ -127,6 +127,8 @@ fn initialized_repo(create_default_categories: bool) -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize temporary repository");
@@ -141,6 +143,7 @@ fn copied_options(category: Option<&str>) -> ImportOptions {
         override_category: category.map(str::to_owned),
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 

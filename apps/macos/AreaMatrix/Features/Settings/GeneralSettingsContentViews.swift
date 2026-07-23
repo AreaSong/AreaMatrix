@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AppLanguageSettingsSheet: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @EnvironmentObject private var languageStore: AppLanguageStore
     let onClose: () -> Void
 
@@ -16,11 +17,10 @@ struct AppLanguageSettingsSheet: View {
 
             Picker(L10n.string("settings.language.interface.title"), selection: languageSelection) {
                 ForEach(AppLanguage.allCases) { language in
-                    Text(L10n.string(language.labelKey)).tag(language)
+                    Text(localizer.resolve(language.displayMessage)).tag(language)
                 }
             }
             .pickerStyle(.segmented)
-            .id(languageStore.selection)
             .accessibilityIdentifier("app-language-settings-interface-picker")
 
             Divider()
@@ -45,6 +45,7 @@ struct AppLanguageSettingsSheet: View {
 }
 
 struct GeneralSettingsLoadedContent: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @EnvironmentObject private var languageStore: AppLanguageStore
     @ObservedObject var model: GeneralSettingsModel
     let onClose: () -> Void
@@ -75,8 +76,12 @@ struct GeneralSettingsLoadedContent: View {
     @ViewBuilder
     private var saveErrorBanner: some View {
         if let error = model.saveError {
-            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-                Text(error.recovery)
+            SettingsStatusBanner(
+                title: localizer.resolve(error.message),
+                systemImage: "exclamationmark.triangle",
+                tint: .red
+            ) {
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Text(
@@ -106,7 +111,6 @@ struct GeneralSettingsLoadedContent: View {
                 }
             }
             .pickerStyle(.radioGroup)
-            .id(languageStore.selection)
             .disabled(writesDisabled)
             Text("导入时仍可在 ImportSheet 临时更改。")
                 .font(.callout)
@@ -121,7 +125,6 @@ struct GeneralSettingsLoadedContent: View {
                 Text("同时在根目录生成 AREAMATRIX.md").tag(GeneralSettingsOverviewOutput.rootAreaMatrixFile)
             }
             .pickerStyle(.radioGroup)
-            .id(languageStore.selection)
             .disabled(writesDisabled)
             Text("AreaMatrix 永远不会覆盖已有 README.md。")
                 .font(.callout)
@@ -143,24 +146,14 @@ struct GeneralSettingsLoadedContent: View {
         SettingsFormSection(title: L10n.string("settings.language.section")) {
             Picker(L10n.string("settings.language.interface.title"), selection: interfaceLanguageSelection) {
                 ForEach(AppLanguage.allCases) { language in
-                    Text(L10n.string(language.labelKey)).tag(language)
+                    Text(localizer.resolve(language.displayMessage)).tag(language)
                 }
             }
             .pickerStyle(.segmented)
-            .id(languageStore.selection)
             .frame(maxWidth: 360)
+            .accessibilityIdentifier("general-settings-interface-language-picker")
 
-            Picker(L10n.string("settings.language.content.title"), selection: contentLanguageSelection) {
-                ForEach(RepositoryContentLanguage.allCases) { language in
-                    Text(L10n.string(language.labelKey)).tag(language)
-                }
-            }
-            .pickerStyle(.segmented)
-            .id(languageStore.selection)
-            .disabled(writesDisabled)
-            .frame(maxWidth: 360)
-
-            Text(L10n.string("settings.language.content.description"))
+            Text(L10n.string("settings.language.interface.description"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -174,7 +167,6 @@ struct GeneralSettingsLoadedContent: View {
                 }
             }
             .pickerStyle(.segmented)
-            .id(languageStore.selection)
             .disabled(true)
             .frame(maxWidth: 180)
         }
@@ -233,16 +225,6 @@ struct GeneralSettingsLoadedContent: View {
         )
     }
 
-    private var contentLanguageSelection: Binding<RepositoryContentLanguage> {
-        Binding(
-            get: { model.draft?.contentLanguage ?? .followInterface },
-            set: { language in
-                Task {
-                    await model.updateContentLanguage(language)
-                }
-            }
-        )
-    }
 }
 
 struct GeneralSettingsLoadingContent: View {

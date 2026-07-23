@@ -17,7 +17,7 @@ enum ImportFolderPreviewStatus: Equatable {
     case checkingConflicts
     case loaded(ready: Int, total: Int, failed: Int)
     case empty
-    case failed(String)
+    case failed(AppDisplayText)
 
     var isScanning: Bool {
         if case .scanning = self { return true }
@@ -41,14 +41,14 @@ enum ImportFolderPreviewStatus: Equatable {
         case .empty:
             return L10n.string("import.folder.noImportableFiles")
         case let .failed(message):
-            return message
+            return L10n.resolve(message)
         }
     }
 }
 
 enum ImportFolderPreviewRowStatus: Equatable {
     case loading
-    case ready(reasonLabel: String)
+    case ready(reason: ClassifyReasonSnapshot, confidencePercent: Int)
     case duplicate(
         existingPath: String,
         strategy: ImportBatchDuplicateResolutionStrategy,
@@ -56,12 +56,12 @@ enum ImportFolderPreviewRowStatus: Equatable {
     )
     case nameConflict(existingPath: String, resolution: ImportBatchNameConflictResolution)
     case iCloudPlaceholder(path: String)
-    case blocked(String)
+    case blocked(AppDisplayText)
     case importing(ImportSingleFileStorageMode)
     case skippedDuplicate(existingPath: String)
     case skippedICloud(path: String)
     case imported(ImportSingleFileStorageMode)
-    case error(String)
+    case error(AppDisplayText)
 
     var tag: String {
         switch self {
@@ -90,12 +90,20 @@ enum ImportFolderPreviewRowStatus: Equatable {
         }
     }
 
+    var tagMessage: LocalizedMessage {
+        ImportStatusTagLocalization.message(for: tag)
+    }
+
     var detail: String? {
         switch self {
         case .loading:
             return L10n.string("Preparing preview...")
-        case let .ready(reasonLabel):
-            return reasonLabel
+        case let .ready(reason, confidencePercent):
+            return L10n.format(
+                "import.preview.classification-reason",
+                reason.displayLabel,
+                Int64(confidencePercent)
+            )
         case let .duplicate(existingPath, strategy, isReplaceConfirmed):
             if strategy == .replace, isReplaceConfirmed {
                 return L10n.format("import.conflict.replace-confirmed", existingPath)
@@ -106,7 +114,7 @@ enum ImportFolderPreviewRowStatus: Equatable {
         case let .iCloudPlaceholder(path):
             return L10n.format("import.conflict.icloud-download-required", path)
         case let .blocked(message):
-            return message
+            return L10n.resolve(message)
         case let .importing(mode):
             return mode.importingMessage
         case let .skippedDuplicate(existingPath):
@@ -116,7 +124,7 @@ enum ImportFolderPreviewRowStatus: Equatable {
         case let .imported(mode):
             return mode.folderImportedMessage
         case let .error(message):
-            return message
+            return L10n.resolve(message)
         }
     }
 
@@ -255,11 +263,8 @@ struct ImportFolderPreviewRow: Identifiable, Equatable {
         row.predictedCategory = prediction.category
         row.suggestedName = prediction.suggestedName.isEmpty ? originalName : prediction.suggestedName
         row.status = .ready(
-            reasonLabel: L10n.format(
-                "import.preview.classification-reason",
-                prediction.reason.displayLabel,
-                Int64(prediction.confidencePercent)
-            )
+            reason: prediction.reason,
+            confidencePercent: prediction.confidencePercent
         )
         return row
     }

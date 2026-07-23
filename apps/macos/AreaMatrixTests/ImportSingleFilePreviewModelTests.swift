@@ -81,7 +81,14 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         XCTAssertNil(model.prediction)
         XCTAssertEqual(model.selectedCategory, "inbox")
         XCTAssertEqual(model.suggestedName, "source.pdf")
-        XCTAssertEqual(model.status, .failed("Cannot preview category: classifier unavailable"))
+        XCTAssertEqual(
+            model.status,
+            .failed(L10n.display(
+                "import.preview.category-unavailable",
+                arguments: [.string("classifier unavailable")],
+                technicalDetail: "classifier unavailable"
+            ))
+        )
     }
 
     @MainActor
@@ -108,7 +115,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
 
         await predictor.assertCategoryPredictionRequests([])
         XCTAssertNil(model.prediction)
-        XCTAssertEqual(model.status, .unsupported("This sheet only handles single-file imports"))
+        XCTAssertEqual(model.status, .unsupported(L10n.display("import.single.unsupportedRequest")))
     }
 
     @MainActor
@@ -189,7 +196,7 @@ final class ImportSingleFilePreviewModelTests: XCTestCase {
         await model.importSelectedFile()
 
         await importer.assertNoImportedFiles()
-        XCTAssertEqual(model.importStatus, .blocked("No single-file source is available to import"))
+        XCTAssertEqual(model.importStatus, .blocked(L10n.display("import.single.sourceUnavailable")))
     }
 
     @MainActor

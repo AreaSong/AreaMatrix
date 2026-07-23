@@ -153,6 +153,10 @@ protocol CoreAIPrivacyEvaluating: Sendable {
     ) async throws -> AiPrivacyEvaluationReport
 }
 
+protocol RepositoryContentLocaleSnapshotting: Sendable {
+    func repositoryContentLocaleSnapshot(repoPath: String) async throws -> String
+}
+
 protocol CoreNoteReadingWriting: Sendable {
     func readNote(repoPath: String, fileID: Int64) async throws -> String?
     func writeNote(repoPath: String, fileID: Int64, contentMarkdown: String) async throws
@@ -164,6 +168,8 @@ protocol CoreAISummaryManaging: Sendable {
     func saveAISummary(repoPath: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport
     func clearAISummary(repoPath: String, request: AiSummaryClearRequest) async throws -> AiSummaryClearReport
 }
+
+extension CoreBridge: RepositoryContentLocaleSnapshotting {}
 
 extension CoreBridge: CoreNoteReadingWriting {
     func readNote(repoPath: String, fileID: Int64) async throws -> String? {

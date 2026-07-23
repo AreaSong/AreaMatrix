@@ -135,7 +135,13 @@ private struct UndoHistoryRow: View {
             }
             Spacer()
         }
-        .accessibilityLabel("\(action.summary), \(timeText), \(action.affectedCount) files, \(statusText)")
+        .accessibilityLabel(L10n.format(
+            "%@, %@, %lld files, %@",
+            action.summary,
+            timeText,
+            action.affectedCount,
+            statusText
+        ))
     }
 
     private var iconName: String {

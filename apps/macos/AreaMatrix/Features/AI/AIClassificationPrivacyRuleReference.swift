@@ -78,14 +78,14 @@ final class AIClassificationPrivacyRuleReferenceModel: ObservableObject {
     private func privacyRuleError(for error: Error) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
-                message: L10n.string("AI privacy rule could not be loaded."),
-                recovery: mapping.recoveryText(fallback: L10n.string("Retry")),
+                message: L10n.message("AI privacy rule could not be loaded."),
+                recovery: mapping.recoveryMessage(fallback: L10n.message("Retry")),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(
-            message: L10n.string("AI privacy rule could not be loaded."),
-            recovery: L10n.string("Retry"),
+            message: L10n.message("AI privacy rule could not be loaded."),
+            recovery: L10n.message("Retry"),
             detail: error.localizedDescription
         )
     }
@@ -93,6 +93,7 @@ final class AIClassificationPrivacyRuleReferenceModel: ObservableObject {
 
 // swiftlint:disable:next type_name
 struct AIClassificationPrivacyRuleReferenceSheet: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: AIClassificationPrivacyRuleReferenceModel
     let onClose: () -> Void
 
@@ -192,12 +193,12 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
 
     private func failureContent(_ error: AISettingsError) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(error.message, systemImage: "exclamationmark.triangle")
+            Label(localizer.resolve(error.message), systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.red)
             Text(error.detail)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Text(error.recovery)
+            Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button("Retry") { Task { await model.load() } }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ClassifierSettingsLoadedContent: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @ObservedObject var model: ClassifierSettingsModel
     @Binding var showingRevertConfirmation: Bool
 
@@ -107,6 +108,7 @@ private struct ClassifierSettingsRulesSection: View {
 }
 
 private struct ClassifierSettingsYAMLActionsSection: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @ObservedObject var model: ClassifierSettingsModel
     @Binding var showingRevertConfirmation: Bool
 
@@ -146,7 +148,7 @@ private struct ClassifierSettingsYAMLActionsSection: View {
                         }
                     }
                     .disabled(model.isSaving || model.isValidating)
-                    .accessibilityLabel("Validate classifier rules")
+                    .accessibilityLabel(L10n.string("Validate classifier rules"))
                     .accessibilityIdentifier("classifier-settings-validate-classifier-rules")
 
                     Button {
@@ -176,8 +178,12 @@ private struct ClassifierSettingsYAMLActionsSection: View {
     }
 
     private func fileActionErrorView(_ error: ClassifierSettingsFileActionError) -> some View {
-        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-            Text(error.recovery)
+        SettingsStatusBanner(
+            title: localizer.resolve(error.message),
+            systemImage: "exclamationmark.triangle",
+            tint: .red
+        ) {
+            Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
@@ -197,8 +203,12 @@ private struct ClassifierSettingsYAMLActionsSection: View {
     }
 
     private func validationErrorView(_ error: ClassifierSettingsValidationError) -> some View {
-        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-            Text(error.recovery)
+        SettingsStatusBanner(
+            title: localizer.resolve(error.message),
+            systemImage: "exclamationmark.triangle",
+            tint: .red
+        ) {
+            Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
@@ -222,6 +232,7 @@ private struct ClassifierSettingsYAMLActionsSection: View {
 }
 
 private struct ClassifierSettingsPreviewSection: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @ObservedObject var model: ClassifierSettingsModel
 
     var body: some View {
@@ -231,7 +242,7 @@ private struct ClassifierSettingsPreviewSection: View {
                     TextField("Invoice_2026Q1.pdf", text: previewFilenameBinding)
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: .infinity)
-                        .accessibilityLabel("Preview filename")
+                        .accessibilityLabel(L10n.string("Preview filename"))
                         .accessibilityIdentifier("classifier-settings-preview-filename")
                     Button {
                         Task {
@@ -246,7 +257,7 @@ private struct ClassifierSettingsPreviewSection: View {
                         }
                     }
                     .disabled(previewButtonDisabled)
-                    .accessibilityLabel("Preview classification")
+                    .accessibilityLabel(L10n.string("Preview classification"))
                     .accessibilityIdentifier("classifier-settings-preview-classify")
                 }
 
@@ -264,8 +275,12 @@ private struct ClassifierSettingsPreviewSection: View {
     }
 
     private func previewErrorView(_ error: ClassifierSettingsPreviewError) -> some View {
-        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-            Text(error.recovery)
+        SettingsStatusBanner(
+            title: localizer.resolve(error.message),
+            systemImage: "exclamationmark.triangle",
+            tint: .red
+        ) {
+            Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button {
@@ -320,12 +335,17 @@ private struct ClassifierSettingsPreviewSection: View {
 }
 
 private struct ClassifierSettingsSaveErrorBanner: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @ObservedObject var model: ClassifierSettingsModel
 
     var body: some View {
         if let error = model.saveError {
-            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-                Text(error.recovery)
+            SettingsStatusBanner(
+                title: localizer.resolve(error.message),
+                systemImage: "exclamationmark.triangle",
+                tint: .red
+            ) {
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Text("The UI has been restored to the last saved values.")

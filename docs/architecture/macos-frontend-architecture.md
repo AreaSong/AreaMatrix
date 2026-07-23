@@ -118,6 +118,38 @@ inventory。保留项必须落入下列专项之一，并在收口时补充对�
 | AI 隐私与远程 provider | `Features/AI/AIPrivacyRulesModel.swift`、`RemoteProviderConfigModel.swift`、`RemoteProviderConfigState.swift` | 隐私规则写入、provider 启停、credential lifecycle 和远程能力涉及用户数据离开本机的边界 | 只读状态读取可集中；隐私规则写入、provider 修改、credential 操作保持单独边界和同意路径 | `AIPrivacyRulesPageIntegrationVerifyTests`、`RemoteProviderConfigFeatureTests`、credential lifecycle tests |
 | Sync / iCloud conflict | `Features/SyncConflicts/SyncConflictReviewModel.swift` | conflict detect / preview / resolve / apply 可能影响外部变化回流、iCloud 副本和用户文件选择 | list / read-only 状态可集中；preview、resolve、apply 继续分离，并保留 replace / confirmation 防线 | SyncConflict / ICloudConflict page tests、replace confirmation tests、file-action integration tests |
 
+## 本地化与 operation snapshot
+
+`AppLocalizer` 是 application-owned 文案的响应式解析入口。Welcome 右上角只切换设备级
+`AppLanguage`；General 设置页只编辑同一界面语言。当前资料库的 `RepoConfig.locale` 只由 Repository
+设置页编辑，其他页面只展示只读摘要。两份设置不得通过共享 binding 或保存动作互相改写。
+
+- String Catalog 的资源 locale 只控制翻译、语法和复数；瞬时应用 UI 的日期、数字、文件大小和货币使用
+  `Locale.autoupdatingCurrent` 的 region 格式。持久化 generated content 使用内容 locale 对应的确定性格式，
+  不读取设备 region，也不新增 region 参数。
+- `AppLanguage.system` 只检查 preferred languages 第一项；第一项不支持时直接回退 `en`，不扫描后续项。
+- AreaMatrix 自己的按钮、标签、错误、状态和通知属于 app-owned，必须经 `AppLocalizer`。系统 panel、系统
+  菜单和 macOS 权限/服务 UI 属于 OS-owned，保留系统语言；应用不克隆系统文案来强制跟随应用语言。
+- `AppDisplayText`、`LocalizedMessage`、catalog key 和翻译结果只用于 presentation，不得持久化到 import
+  session、pending external window 或 recovery payload。可恢复状态只保存稳定 domain code、结构化参数和
+  必要 verbatim 原值，恢复后再用当前界面语言解析。
+- Accessibility label/value/hint/action/announcement 在赋值或发布时解析当前界面语言；
+  `accessibilityIdentifier` 使用稳定英文标识，不经过 catalog。
+- 用户输入、路径、文件名、provider 名称和其他 verbatim 值不翻译；需要进入 UI state 时携带明确的
+  verbatim reason，不伪装成可本地化 key。
+
+所有生成入口在 operation identity（操作身份）的线性化点捕获 concrete `zh-Hans` 或 `en`。同一次用户
+batch 共用一个值；continuation、resume、replay、同一 external sync window 和 automatic provider
+fallback 复用原值，new attempt 才重新捕获。设置保存与捕获通过 per-repository write coordinator 串行，
+因此一次操作不会看到半提交设置。external window 惰性持有 locale：首次到达队首、准备第一次 Core
+attempt 时冻结；filtered-only window 不冻结。AI 在进入 privacy/provider await 前冻结。
+
+Core/UniFFI 请求显式携带快照；macOS 不通过进程级 setter 把界面语言同步给 Core。session/recovery
+持久化稳定 operation code、结构化 payload、concrete locale 和必要原值，而不是 `AppDisplayText`。任何
+可以在重启后继续生成内容的 import/recovery/external-sync/AI session 都必须持有这组字段；缺失或非法
+locale 时 fail closed，不从当前设置补猜。已开始 operation 的 UI progress 可随界面语言刷新，但它产生的
+内容保持原快照。
+
 ## Platform Services 边界
 
 以下能力属于平台服务，不应藏入 SwiftUI View：

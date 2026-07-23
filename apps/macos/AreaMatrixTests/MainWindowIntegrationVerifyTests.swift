@@ -76,7 +76,6 @@ final class MainWindowIntegrationVerifyTests: XCTestCase {
 
     func testMainWindowIntegrationUsesRealCoreBridgeBoundariesForBoundCapabilities() {
         let requiredBoundaries: Set<CoreBridgeBoundary> = [
-            .setAppInterfaceLocale,
             .validateInitializedRepoPath,
             .recoverOnStartup,
             .getLatestScanSession,

@@ -5,7 +5,7 @@ use area_matrix_core::{
     ExternalEventKind, FileFilter, OverviewOutput, RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
@@ -19,6 +19,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -88,6 +90,18 @@ fn fs_cursor(repo: &Path) -> Option<i64> {
     get_fs_event_cursor(path_string(repo)).expect("read fs cursor")
 }
 
+fn receipt_locale(repo: &Path, event_id: i64) -> Option<String> {
+    open_db(repo)
+        .query_row(
+            "SELECT content_locale FROM external_sync_receipts WHERE event_id = ?1",
+            [event_id],
+            |row| row.get(0),
+        )
+        .optional()
+        .expect("read external sync receipt locale")
+        .flatten()
+}
+
 #[test]
 fn sync_external_created_failure_recovery_db_error_rolls_back_rows_and_cursor() {
     let repo = initialized_repo();
@@ -99,6 +113,7 @@ fn sync_external_created_failure_recovery_db_error_rolls_back_rows_and_cursor() 
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/external.pdf", 100)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
@@ -121,6 +136,7 @@ fn sync_external_created_failure_recovery_replays_after_missing_file_without_par
             created("docs/good.pdf", 110),
             created("docs/missing.pdf", 111),
         ],
+        "en".to_owned(),
     );
 
     assert_eq!(failed, Err(CoreError::file_not_found("docs/missing.pdf")));
@@ -135,6 +151,7 @@ fn sync_external_created_failure_recovery_replays_after_missing_file_without_par
             created("docs/good.pdf", 110),
             created("docs/missing.pdf", 111),
         ],
+        "en".to_owned(),
     )
     .expect("replay fixed created-event batch");
 
@@ -164,27 +181,30 @@ fn sync_external_created_failure_recovery_overview_failure_defers_cursor_and_rep
     let failed = sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/external.pdf", 115)],
+        "en".to_owned(),
     );
 
     assert!(matches!(failed, Err(CoreError::Io { .. })));
     assert_eq!(active_file_count(repo.path()), 1);
     assert_eq!(fs_cursor(repo.path()), None);
+    assert_eq!(receipt_locale(repo.path(), 115).as_deref(), Some("en"));
 
     fs::remove_file(&generated_nodes).expect("remove generated output blocker");
     fs::create_dir_all(&generated_nodes).expect("restore generated nodes directory");
     let replayed = sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/external.pdf", 115)],
+        "zh-Hans".to_owned(),
     )
     .expect("replay event after generated output recovers");
 
     assert_eq!(replayed.detected_creates, 0);
     assert_eq!(active_file_count(repo.path()), 1);
     assert_eq!(fs_cursor(repo.path()), Some(115));
-    assert!(repo
-        .path()
-        .join(".areamatrix/generated/nodes/docs.md")
-        .is_file());
+    let node = fs::read_to_string(repo.path().join(".areamatrix/generated/nodes/docs.md"))
+        .expect("read repaired generated node");
+    assert!(node.starts_with("# Docs (docs)"));
+    assert_eq!(receipt_locale(repo.path(), 115), None);
 }
 
 #[test]
@@ -202,12 +222,17 @@ fn sync_external_created_failure_recovery_cursor_failure_replays_without_duplica
         )
         .expect("install cursor write failure trigger");
 
-    let failed = sync_external_changes(path_string(repo.path()), vec![created(relative_path, 116)]);
+    let failed = sync_external_changes(
+        path_string(repo.path()),
+        vec![created(relative_path, 116)],
+        "en".to_owned(),
+    );
 
     assert!(matches!(failed, Err(CoreError::Db { .. })));
     assert_eq!(active_file_count(repo.path()), 1);
     assert_eq!(external_change_count(repo.path()), 1);
     assert_eq!(fs_cursor(repo.path()), None);
+    assert_eq!(receipt_locale(repo.path(), 116).as_deref(), Some("en"));
     let overview = fs::read_to_string(repo.path().join(".areamatrix/generated/nodes/docs.md"))
         .expect("read overview committed before cursor failure");
     assert!(overview.contains("external.pdf"));
@@ -217,14 +242,22 @@ fn sync_external_created_failure_recovery_cursor_failure_replays_without_duplica
         .expect("remove cursor write failure trigger");
     fs::write(repo.path().join(relative_path), b"changed after commit")
         .expect("simulate a later external modification before replay");
-    let replayed =
-        sync_external_changes(path_string(repo.path()), vec![created(relative_path, 116)])
-            .expect("replay batch after cursor persistence recovers");
+    let replayed = sync_external_changes(
+        path_string(repo.path()),
+        vec![created(relative_path, 116)],
+        "zh-Hans".to_owned(),
+    )
+    .expect("replay batch after cursor persistence recovers");
 
     assert_eq!(replayed.detected_creates, 0);
     assert_eq!(active_file_count(repo.path()), 1);
     assert_eq!(external_change_count(repo.path()), 1);
     assert_eq!(fs_cursor(repo.path()), Some(116));
+    let replayed_overview =
+        fs::read_to_string(repo.path().join(".areamatrix/generated/nodes/docs.md"))
+            .expect("read replayed overview");
+    assert!(replayed_overview.starts_with("# Docs (docs)"));
+    assert_eq!(receipt_locale(repo.path(), 116), None);
     assert_eq!(
         fs::read(repo.path().join(relative_path)).expect("user file remains readable"),
         b"changed after commit"
@@ -236,11 +269,19 @@ fn sync_external_created_failure_recovery_reactivation_log_failure_restores_dele
     let repo = initialized_repo();
     let relative_path = "docs/reappeared.pdf";
     write_repo_file(repo.path(), relative_path, b"before");
-    sync_external_changes(path_string(repo.path()), vec![created(relative_path, 1)])
-        .expect("sync initial external file");
+    sync_external_changes(
+        path_string(repo.path()),
+        vec![created(relative_path, 1)],
+        "en".to_owned(),
+    )
+    .expect("sync initial external file");
     fs::remove_file(repo.path().join(relative_path)).expect("simulate external deletion");
-    sync_external_changes(path_string(repo.path()), vec![removed(relative_path, 2)])
-        .expect("sync external deletion");
+    sync_external_changes(
+        path_string(repo.path()),
+        vec![removed(relative_path, 2)],
+        "en".to_owned(),
+    )
+    .expect("sync external deletion");
     let before = open_db(repo.path())
         .query_row(
             "SELECT id, status, hash_sha256, size_bytes, deleted_at FROM files WHERE path = ?1",
@@ -269,7 +310,11 @@ fn sync_external_created_failure_recovery_reactivation_log_failure_restores_dele
         )
         .expect("install reactivation log failure trigger");
 
-    let result = sync_external_changes(path_string(repo.path()), vec![created(relative_path, 3)]);
+    let result = sync_external_changes(
+        path_string(repo.path()),
+        vec![created(relative_path, 3)],
+        "en".to_owned(),
+    );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
     assert_eq!(fs_cursor(repo.path()), Some(2));
@@ -323,6 +368,7 @@ fn sync_external_created_failure_recovery_permission_denied_keeps_files_db_and_c
             created("docs/good.pdf", 120),
             created("docs/blocked.pdf", 121),
         ],
+        "en".to_owned(),
     );
 
     fs::set_permissions(&blocked_path, original_permissions)

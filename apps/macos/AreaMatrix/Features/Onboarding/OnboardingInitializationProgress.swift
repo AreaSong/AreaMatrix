@@ -21,7 +21,7 @@ extension OnboardingModel {
         openingCancellationToken = UUID()
         resetCancelledMainOpening(repoPath: state.repoPath)
         route = .validatePath
-        toastMessage = L10n.string("Opening was cancelled. Repository configuration and user files were not changed.")
+        toastMessage = L10n.message("Opening was cancelled. Repository configuration and user files were not changed.")
     }
 
     @MainActor
@@ -113,12 +113,15 @@ extension OnboardingModel {
             try finderOpener.openRepositoryInFinder(repoPath: result.repoPath)
             toastMessage = nil
         } catch {
-            let message = L10n.format(
+            toastMessage = L10n.message(
                 "onboarding.initialization.openInFinderFailed",
-                error.localizedDescription
+                arguments: [.string(error.localizedDescription)],
+                technicalDetail: error.localizedDescription
             )
-            toastMessage = message
-            accessibilityAnnouncer.announce(message)
+            accessibilityAnnouncer.announce(L10n.message(
+                "onboarding.initialization.openInFinderFailed",
+                arguments: [.string(error.localizedDescription)]
+            ))
         }
     }
 
@@ -197,7 +200,7 @@ extension OnboardingModel {
                     mapping: nil,
                     returnRoute: .validatePath
                 ))
-                toastMessage = L10n.string("onboarding.recovery.unfinishedScanRemains")
+                toastMessage = L10n.message("onboarding.recovery.unfinishedScanRemains")
                 return
             }
 
@@ -288,14 +291,15 @@ extension OnboardingModel {
 
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             guard isInitializingAdoptExisting(repoPath: repoPath) else { return }
-            initializationProgressWarning = L10n.format(
+            initializationProgressWarning = L10n.message(
                 "onboarding.initialization.progressUnavailable",
-                mapping.userMessage
+                arguments: [.string(mapping.userMessage)]
             )
         } else {
-            initializationProgressWarning = L10n.format(
+            initializationProgressWarning = L10n.message(
                 "onboarding.initialization.progressUnavailable",
-                error.localizedDescription
+                arguments: [.string(error.localizedDescription)],
+                technicalDetail: error.localizedDescription
             )
         }
     }

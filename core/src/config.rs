@@ -1,42 +1,14 @@
 //! Repository configuration defaults and conversion helpers.
 
-use std::sync::atomic::{AtomicU8, Ordering};
-
 use crate::{OverviewOutput, RepoConfig, StorageMode};
 
-const DEFAULT_LOCALE: &str = "zh-Hans";
-const INTERFACE_LOCALE_ZH_HANS: u8 = 0;
-const INTERFACE_LOCALE_EN: u8 = 1;
+const DEFAULT_LOCALE: &str = "system";
 
-static APP_INTERFACE_LOCALE: AtomicU8 = AtomicU8::new(INTERFACE_LOCALE_ZH_HANS);
-
-pub(crate) fn set_app_interface_locale(locale: &str) -> crate::CoreResult<()> {
-    let value = match locale.trim().replace('_', "-").to_ascii_lowercase() {
-        normalized if normalized == "zh" || normalized.starts_with("zh-") => {
-            INTERFACE_LOCALE_ZH_HANS
-        }
-        normalized if normalized == "en" => INTERFACE_LOCALE_EN,
-        _ => return Err(crate::CoreError::config("unsupported app interface locale")),
-    };
-    APP_INTERFACE_LOCALE.store(value, Ordering::Release);
-    Ok(())
-}
-
-pub(crate) fn resolve_content_locale(locale: &str) -> &'static str {
-    let normalized = locale.trim().replace('_', "-").to_ascii_lowercase();
-    if normalized == "system" {
-        return current_app_interface_locale();
-    }
-    if normalized == "zh" || normalized.starts_with("zh-") {
-        return "zh-Hans";
-    }
-    "en"
-}
-
-fn current_app_interface_locale() -> &'static str {
-    match APP_INTERFACE_LOCALE.load(Ordering::Acquire) {
-        INTERFACE_LOCALE_ZH_HANS => "zh-Hans",
-        _ => "en",
+pub(crate) fn validate_content_locale(locale: &str) -> crate::CoreResult<&'static str> {
+    match locale.trim() {
+        "zh-Hans" => Ok("zh-Hans"),
+        "en" => Ok("en"),
+        _ => Err(crate::CoreError::config("unsupported content locale")),
     }
 }
 
@@ -60,17 +32,20 @@ pub(crate) fn default_repo_config(
 
 #[cfg(test)]
 mod tests {
-    use super::{resolve_content_locale, set_app_interface_locale};
+    use super::{default_repo_config, validate_content_locale};
+    use crate::OverviewOutput;
 
     #[test]
-    fn content_locale_follows_interface_only_for_system_selection() {
-        set_app_interface_locale("en").expect("set English interface locale");
-        assert_eq!(resolve_content_locale("system"), "en");
-        assert_eq!(resolve_content_locale("zh-Hans"), "zh-Hans");
+    fn content_locale_accepts_only_resolved_contract_values() {
+        assert_eq!(validate_content_locale("zh-Hans").unwrap(), "zh-Hans");
+        assert_eq!(validate_content_locale("en").unwrap(), "en");
+        assert!(validate_content_locale("system").is_err());
+        assert!(validate_content_locale("zh-Hant").is_err());
+    }
 
-        set_app_interface_locale("zh-Hant").expect("normalize Chinese interface locale");
-        assert_eq!(resolve_content_locale("system"), "zh-Hans");
-        assert_eq!(resolve_content_locale("en"), "en");
-        assert!(set_app_interface_locale("fr").is_err());
+    #[test]
+    fn new_repository_defaults_to_follow_interface() {
+        let config = default_repo_config("/tmp/repo".to_owned(), OverviewOutput::GeneratedOnly);
+        assert_eq!(config.locale, "system");
     }
 }

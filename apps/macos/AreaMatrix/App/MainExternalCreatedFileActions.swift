@@ -85,12 +85,12 @@ extension OnboardingModel {
             let mapping = CoreErrorMappingSnapshot(
                 kind: request.kind == .rootChanged ? .fileNotFound : .internal,
                 userMessage: request.kind == .rootChanged
-                    ? L10n.string("Repository folder is unavailable.")
-                    : L10n.string("Filesystem monitoring could not start."),
+                    ? L10n.message("Repository folder is unavailable.")
+                    : L10n.message("Filesystem monitoring could not start."),
                 severity: .high,
                 suggestedAction: request.kind == .rootChanged
-                    ? L10n.string("Reconnect the repository folder before continuing.")
-                    : L10n.string("Retry opening the repository. If the problem persists, collect diagnostics."),
+                    ? L10n.message("Reconnect the repository folder before continuing.")
+                    : L10n.message("Retry opening the repository. If the problem persists, collect diagnostics."),
                 recoverability: .userActionRequired,
                 rawContext: request.reason
             )

@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import Observation
 
 enum AppLanguage: String, CaseIterable, Equatable, Identifiable {
     case system
@@ -20,6 +21,17 @@ enum AppLanguage: String, CaseIterable, Equatable, Identifiable {
             "settings.language.simplifiedChinese"
         case .en:
             "settings.language.english"
+        }
+    }
+
+    var displayMessage: LocalizedMessage {
+        switch self {
+        case .system:
+            L10n.message("settings.language.system")
+        case .zhHans:
+            L10n.message("settings.language.simplifiedChinese")
+        case .en:
+            L10n.message("settings.language.english")
         }
     }
 
@@ -48,12 +60,8 @@ enum AppLanguage: String, CaseIterable, Equatable, Identifiable {
     func resolvedIdentifier(preferredLanguages: [String]) -> String {
         switch self {
         case .system:
-            for language in preferredLanguages {
-                if let supported = Self.supportedIdentifier(for: language) {
-                    return supported
-                }
-            }
-            return "en"
+            guard let primaryLanguage = preferredLanguages.first else { return "en" }
+            return Self.supportedIdentifier(for: primaryLanguage) ?? "en"
         case .zhHans:
             return "zh-Hans"
         case .en:
@@ -67,7 +75,10 @@ enum AppLanguage: String, CaseIterable, Equatable, Identifiable {
             .replacingOccurrences(of: "_", with: "-")
             .lowercased()
 
-        if normalized == "zh" || normalized.hasPrefix("zh-") {
+        if normalized.hasPrefix("zh-hans") ||
+            normalized.hasPrefix("zh-cn") ||
+            normalized.hasPrefix("zh-sg")
+        {
             return "zh-Hans"
         }
         if normalized == "en" || normalized.hasPrefix("en-") {
@@ -77,6 +88,106 @@ enum AppLanguage: String, CaseIterable, Equatable, Identifiable {
     }
 }
 
+enum RepositoryContentLanguage: CaseIterable, Equatable, Hashable, Identifiable, Sendable {
+    case followInterface
+    case zhHans
+    case en
+    case unsupported(String)
+
+    static let allCases: [RepositoryContentLanguage] = [.followInterface, .zhHans, .en]
+
+    var id: String { snapshotValue }
+
+    init(snapshotValue: String) {
+        let trimmed = snapshotValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        switch trimmed {
+        case "", "system":
+            self = .followInterface
+        case "en":
+            self = .en
+        case "zh-CN", "zh-Hans", "zh-SG":
+            self = .zhHans
+        default:
+            let normalized = trimmed.replacingOccurrences(of: "_", with: "-").lowercased()
+            if normalized.hasPrefix("zh-hans-") {
+                self = .zhHans
+            } else if normalized.hasPrefix("en-") {
+                self = .en
+            } else {
+                self = .unsupported(trimmed)
+            }
+        }
+    }
+
+    var snapshotValue: String {
+        switch self {
+        case .followInterface:
+            "system"
+        case .zhHans:
+            "zh-Hans"
+        case .en:
+            "en"
+        case let .unsupported(identifier):
+            identifier
+        }
+    }
+
+    var labelKey: String {
+        switch self {
+        case .followInterface:
+            "settings.language.followInterface"
+        case .zhHans:
+            "settings.language.simplifiedChinese"
+        case .en:
+            "settings.language.english"
+        case .unsupported:
+            "settings.language.unsupported"
+        }
+    }
+
+    var unsupportedIdentifier: String? {
+        guard case let .unsupported(identifier) = self else { return nil }
+        return identifier
+    }
+
+    var displayMessage: LocalizedMessage {
+        if let unsupportedIdentifier {
+            return L10n.message(
+                "settings.language.unsupportedValue",
+                arguments: [.string(unsupportedIdentifier)]
+            )
+        }
+        switch self {
+        case .followInterface:
+            return L10n.message("settings.language.followInterface")
+        case .zhHans:
+            return L10n.message("settings.language.simplifiedChinese")
+        case .en:
+            return L10n.message("settings.language.english")
+        case .unsupported:
+            preconditionFailure("Unsupported identifiers return before static option resolution")
+        }
+    }
+
+    func resolvedIdentifier(interfaceLocaleIdentifier: String) throws -> String {
+        switch self {
+        case .followInterface:
+            interfaceLocaleIdentifier == "zh-Hans" ? "zh-Hans" : "en"
+        case .zhHans:
+            "zh-Hans"
+        case .en:
+            "en"
+        case let .unsupported(identifier):
+            throw RepositoryContentLanguageError.unsupported(identifier)
+        }
+    }
+}
+
+enum RepositoryContentLanguageError: Error, Equatable {
+    case unsupported(String)
+}
+
+@Observable
 final class AppLanguageRuntime: @unchecked Sendable {
     static let shared = AppLanguageRuntime()
 
@@ -111,54 +222,200 @@ final class AppLanguageRuntime: @unchecked Sendable {
         preferredLanguages: [String] = Locale.preferredLanguages
     ) -> String {
         let identifier = resolvedIdentifier(preferredLanguages: preferredLanguages)
+        if let localized = localizedString(for: key, identifier: identifier, table: table, bundle: bundle) {
+            return localized
+        }
+        if identifier != "en",
+           let english = localizedString(for: key, identifier: "en", table: table, bundle: bundle)
+        {
+            return english
+        }
+        return fallback ?? key
+    }
+
+    private func localizedString(
+        for key: String,
+        identifier: String,
+        table: String?,
+        bundle: Bundle
+    ) -> String? {
         guard let path = bundle.path(forResource: identifier, ofType: "lproj"),
               let localizedBundle = Bundle(path: path)
-        else {
-            return bundle.localizedString(forKey: key, value: fallback ?? key, table: table)
+        else { return nil }
+
+        let value = localizedBundle.localizedString(forKey: key, value: nil, table: table)
+        return value == key ? nil : value
+    }
+}
+
+enum VerbatimReason: String, Codable, Equatable {
+    case brand
+    case filesystemPath
+    case languageGlyph
+    case technicalDetail
+    case technicalIdentifier
+    case userContent
+}
+
+enum LocalizedArgument: Codable, Equatable {
+    case string(String)
+    case integer(Int)
+    case integer64(Int64)
+    case double(Double)
+
+    var value: CVarArg {
+        switch self {
+        case let .string(value): value
+        case let .integer(value): value
+        case let .integer64(value): value
+        case let .double(value): value
         }
-        return localizedBundle.localizedString(forKey: key, value: fallback ?? key, table: table)
+    }
+}
+
+struct LocalizedMessage: Codable, Equatable {
+    let key: String
+    let arguments: [LocalizedArgument]
+    let pluralCount: Int64?
+    let fallback: String?
+    let technicalDetail: String?
+
+    fileprivate init(
+        key: String,
+        arguments: [LocalizedArgument] = [],
+        pluralCount: Int64? = nil,
+        fallback: String? = nil,
+        technicalDetail: String? = nil
+    ) {
+        self.key = key
+        self.arguments = arguments
+        self.pluralCount = pluralCount
+        self.fallback = fallback
+        self.technicalDetail = technicalDetail
+    }
+}
+
+enum AppDisplayText: Codable, Equatable {
+    case localized(LocalizedMessage)
+    case verbatim(String, reason: VerbatimReason)
+}
+
+@MainActor
+final class AppLocalizer: ObservableObject {
+    @Published private(set) var resourceLocaleIdentifier: String
+
+    private let runtime: AppLanguageRuntime
+    private let formattingLocale: () -> Locale
+
+    init(
+        runtime: AppLanguageRuntime = .shared,
+        formattingLocale: @escaping () -> Locale = { .autoupdatingCurrent }
+    ) {
+        self.runtime = runtime
+        self.formattingLocale = formattingLocale
+        resourceLocaleIdentifier = runtime.resolvedIdentifier()
+    }
+
+    var regionalFormattingLocale: Locale {
+        formattingLocale()
+    }
+
+    func apply(_ language: AppLanguage, preferredLanguages: [String] = Locale.preferredLanguages) {
+        runtime.update(language)
+        let resolvedIdentifier = runtime.resolvedIdentifier(preferredLanguages: preferredLanguages)
+        if resolvedIdentifier != resourceLocaleIdentifier {
+            resourceLocaleIdentifier = resolvedIdentifier
+        }
+    }
+
+    func string(_ key: String, fallback: String? = nil) -> String {
+        runtime.localizedString(
+            key,
+            fallback: fallback,
+            preferredLanguages: [resourceLocaleIdentifier]
+        )
+    }
+
+    func format(_ key: String, arguments: [LocalizedArgument]) -> String {
+        String(format: string(key), locale: regionalFormattingLocale, arguments: arguments.map(\.value))
+    }
+
+    func plural(_ key: String, count: Int) -> String {
+        String.localizedStringWithFormat(string(key), count)
+    }
+
+    func resolve(_ message: LocalizedMessage) -> String {
+        let localized = string(message.key, fallback: message.fallback)
+        if let count = message.pluralCount {
+            return String.localizedStringWithFormat(localized, count)
+        }
+        guard !message.arguments.isEmpty else { return localized }
+        return String(
+            format: localized,
+            locale: regionalFormattingLocale,
+            arguments: message.arguments.map(\.value)
+        )
+    }
+
+    func resolve(_ text: AppDisplayText) -> String {
+        switch text {
+        case let .localized(message): resolve(message)
+        case let .verbatim(value, _): value
+        }
     }
 }
 
 @MainActor
 final class AppLanguageStore: ObservableObject {
     @Published private(set) var selection: AppLanguage
-    @Published private(set) var coreSyncError: Error?
 
     private let defaults: UserDefaults
     private let defaultsKey: String
-    private let runtime: AppLanguageRuntime
-    private let coreLocaleUpdater: (String) throws -> Void
+    private let localizer: AppLocalizer
+    private let preferredLanguages: () -> [String]
+    private var localeChangeObservation: AnyCancellable?
 
     init(
         defaults: UserDefaults = .standard,
         defaultsKey: String = AppLanguage.defaultsKey,
         runtime: AppLanguageRuntime = .shared,
-        coreLocaleUpdater: @escaping (String) throws -> Void = CoreBridge.updateAppInterfaceLocale
+        localizer: AppLocalizer? = nil,
+        initialLanguageOverride: AppLanguage? = nil,
+        preferredLanguages: @escaping () -> [String] = { Locale.preferredLanguages },
+        notificationCenter: NotificationCenter = .default
     ) {
         self.defaults = defaults
         self.defaultsKey = defaultsKey
-        self.runtime = runtime
-        self.coreLocaleUpdater = coreLocaleUpdater
-        let initialSelection = AppLanguage(persistedValue: defaults.string(forKey: defaultsKey))
+        self.localizer = localizer ?? AppLocalizer(runtime: runtime)
+        self.preferredLanguages = preferredLanguages
+        let initialSelection = initialLanguageOverride ?? AppLanguage(
+            persistedValue: defaults.string(forKey: defaultsKey)
+        )
         selection = initialSelection
-        if defaults.string(forKey: defaultsKey) != initialSelection.rawValue {
+        if initialLanguageOverride == nil,
+           defaults.string(forKey: defaultsKey) != initialSelection.rawValue
+        {
             defaults.set(initialSelection.rawValue, forKey: defaultsKey)
         }
-        runtime.update(initialSelection)
-        syncCoreLocale()
+        self.localizer.apply(initialSelection, preferredLanguages: preferredLanguages())
+        localeChangeObservation = notificationCenter
+            .publisher(for: NSLocale.currentLocaleDidChangeNotification)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.systemLocaleDidChange()
+                }
+            }
     }
 
-    var resolvedLocale: Locale {
-        Locale(identifier: runtime.resolvedIdentifier())
+    var resolvedResourceLocaleIdentifier: String {
+        localizer.resourceLocaleIdentifier
     }
 
     func select(_ language: AppLanguage) {
         guard language != selection else { return }
-        selection = language
         defaults.set(language.rawValue, forKey: defaultsKey)
-        runtime.update(language)
-        syncCoreLocale()
+        localizer.apply(language, preferredLanguages: preferredLanguages())
+        selection = language
     }
 
     func selectNext() {
@@ -166,27 +423,103 @@ final class AppLanguageStore: ObservableObject {
     }
 
     func localizedString(_ key: String) -> String {
-        runtime.localizedString(key)
+        localizer.string(key)
     }
 
-    private func syncCoreLocale() {
-        do {
-            try coreLocaleUpdater(runtime.resolvedIdentifier())
-            coreSyncError = nil
-        } catch {
-            coreSyncError = error
-        }
+    private func systemLocaleDidChange() {
+        guard selection == .system else { return }
+        localizer.apply(.system, preferredLanguages: preferredLanguages())
+        objectWillChange.send()
     }
 }
 
 enum L10n {
+    static func display(_ key: String, fallback: String? = nil, technicalDetail: String? = nil) -> AppDisplayText {
+        .localized(message(key, fallback: fallback, technicalDetail: technicalDetail))
+    }
+
+    static func display(
+        _ key: String,
+        arguments: [LocalizedArgument],
+        fallback: String? = nil,
+        technicalDetail: String? = nil
+    ) -> AppDisplayText {
+        .localized(message(
+            key,
+            arguments: arguments,
+            fallback: fallback,
+            technicalDetail: technicalDetail
+        ))
+    }
+
+    /// Materializes an application-owned default at draft creation time.
+    /// The returned value must not be refreshed after it becomes user-editable state.
+    static func editableDefault(_ key: String, fallback: String? = nil) -> String {
+        AppLanguageRuntime.shared.localizedString(key, fallback: fallback)
+    }
+
+    static func verbatim(_ value: String, reason: VerbatimReason) -> AppDisplayText {
+        .verbatim(value, reason: reason)
+    }
+
+    static func resolve(_ message: LocalizedMessage) -> String {
+        let localized = string(message.key, fallback: message.fallback)
+        if let count = message.pluralCount {
+            return String.localizedStringWithFormat(localized, count)
+        }
+        guard !message.arguments.isEmpty else { return localized }
+        return String(
+            format: localized,
+            locale: Locale.autoupdatingCurrent,
+            arguments: message.arguments.map(\.value)
+        )
+    }
+
+    static func resolve(_ text: AppDisplayText) -> String {
+        switch text {
+        case let .localized(message):
+            resolve(message)
+        case let .verbatim(value, _):
+            value
+        }
+    }
+
+    static func message(
+        _ key: String,
+        fallback: String? = nil,
+        technicalDetail: String? = nil
+    ) -> LocalizedMessage {
+        LocalizedMessage(key: key, fallback: fallback, technicalDetail: technicalDetail)
+    }
+
+    static func message(
+        _ key: String,
+        arguments: [LocalizedArgument],
+        fallback: String? = nil,
+        technicalDetail: String? = nil
+    ) -> LocalizedMessage {
+        LocalizedMessage(
+            key: key,
+            arguments: arguments,
+            fallback: fallback,
+            technicalDetail: technicalDetail
+        )
+    }
+
+    static func pluralMessage(_ key: String, count: Int) -> LocalizedMessage {
+        LocalizedMessage(key: key, pluralCount: Int64(count))
+    }
+
+    static func pluralMessage(_ key: String, count: Int64) -> LocalizedMessage {
+        LocalizedMessage(key: key, pluralCount: count)
+    }
+
     static func string(_ key: String, fallback: String? = nil) -> String {
         AppLanguageRuntime.shared.localizedString(key, fallback: fallback)
     }
 
     static func format(_ key: String, _ arguments: CVarArg...) -> String {
-        let locale = Locale(identifier: AppLanguageRuntime.shared.resolvedIdentifier())
-        return String(format: string(key), locale: locale, arguments: arguments)
+        String(format: string(key), locale: Locale.autoupdatingCurrent, arguments: arguments)
     }
 
     static func plural(_ key: String, count: Int) -> String {

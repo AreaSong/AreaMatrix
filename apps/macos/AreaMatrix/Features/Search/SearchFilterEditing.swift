@@ -2,7 +2,7 @@ import Foundation
 
 struct SearchDateRangeEditResult: Equatable {
     var updatedFilters: SearchFilterStateSnapshot?
-    var errorMessage: String?
+    var errorMessage: LocalizedMessage?
 }
 
 enum SearchFilterEditing {
@@ -73,7 +73,7 @@ enum SearchFilterEditing {
         guard start <= end else {
             return SearchDateRangeEditResult(
                 updatedFilters: nil,
-                errorMessage: L10n.string("End date must be after start date.")
+                errorMessage: L10n.message("End date must be after start date.")
             )
         }
         return SearchDateRangeEditResult(

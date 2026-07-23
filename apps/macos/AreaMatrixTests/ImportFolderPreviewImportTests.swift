@@ -10,7 +10,9 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         let scanner = ImportFolderStaticFolderScanner(result: importFolderFolderScanResult(rows: [
             importFolderLoadingRow(invoiceURL),
             importFolderLoadingRow(cloudURL).withStatus(.iCloudPlaceholder(path: cloudURL.path)),
-            importFolderLoadingRow(errorURL).withStatus(.error("无法读取文件属性"))
+            importFolderLoadingRow(errorURL).withStatus(
+                .error(L10n.verbatim("无法读取文件属性", reason: .technicalDetail))
+            )
         ]))
         let predictor = ImportFolderRecordingPredictor(results: [.success(.importFolderPrediction(
             category: "finance",

@@ -7,7 +7,7 @@ struct PlatformDifferencesView: View {
 
     @MainActor
     init(
-        repositoryText: String = L10n.string("Not connected"),
+        repositoryText: String? = nil,
         onOpenRepositorySettings: @escaping () -> Void = {},
         onClose: @escaping () -> Void = {}
     ) {

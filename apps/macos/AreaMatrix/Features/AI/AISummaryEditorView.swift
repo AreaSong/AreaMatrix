@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AISummaryEditor: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     private let repoPath: String
     private let fileID: Int64
     private let privacyContext: AISummaryPrivacyContext
@@ -116,9 +117,9 @@ struct AISummaryEditor: View {
             )
         case let .failed(error):
             VStack(alignment: .leading, spacing: 4) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
+                Label(localizer.resolve(error.message), systemImage: "exclamationmark.triangle")
                 Text(error.detail).font(.caption)
-                Text(error.recovery).font(.caption)
+                Text(localizer.resolve(error.recovery)).font(.caption)
             }
             .foregroundStyle(.orange)
             .accessibilityIdentifier("ai-summary-ai-summary-core-generate-gate-error")
@@ -197,7 +198,7 @@ struct AISummaryEditor: View {
             }
             .disabled(model.operation.isBusy)
             .focused($isEditorFocused)
-            .accessibilityLabel("AI summary draft")
+            .accessibilityLabel(L10n.string("AI summary draft"))
     }
 
     @ViewBuilder
@@ -214,9 +215,9 @@ struct AISummaryEditor: View {
     private var errorView: some View {
         if case let .failed(error) = model.operation {
             VStack(alignment: .leading, spacing: 8) {
-                Label(error.message, systemImage: "exclamationmark.triangle").foregroundStyle(.red)
+                Label(localizer.resolve(error.message), systemImage: "exclamationmark.triangle").foregroundStyle(.red)
                 Text(error.detail).font(.caption).foregroundStyle(.secondary)
-                Text(error.recovery).font(.caption).foregroundStyle(.secondary)
+                Text(localizer.resolve(error.recovery)).font(.caption).foregroundStyle(.secondary)
                 failedActionControls
             }
             .accessibilityIdentifier("ai-summary-ai-summary-core-error")
@@ -295,6 +296,7 @@ struct AISummaryEditor: View {
 }
 
 private struct AISummaryGateNoticeView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let notice: AISummaryEditorNotice
     let repoPath: String
     let accessibilityID: String
@@ -313,7 +315,7 @@ private struct AISummaryGateNoticeView: View {
                 Label(notice.title, systemImage: "exclamationmark.triangle")
                 Text(notice.detail).font(.caption).foregroundStyle(.secondary)
                 HStack(spacing: 10) {
-                    Text(notice.recovery).font(.caption).foregroundStyle(.secondary)
+                    Text(localizer.resolve(notice.recovery)).font(.caption).foregroundStyle(.secondary)
                     Spacer()
                     action
                 }

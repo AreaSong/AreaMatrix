@@ -1,8 +1,9 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    get_latest_scan_session, init_repo, list_files, reindex_from_filesystem, repair_metadata,
-    resume_scan_session, CoreError, FileFilter, FileOrigin, OverviewOutput, RepairOptions,
+    get_latest_scan_session, init_repo, list_files, preflight_repair_metadata,
+    reindex_from_filesystem, repair_metadata, resume_scan_session, CoreError, FileFilter,
+    FileOrigin, OverviewOutput, RepairMetadataLocaleState, RepairMetadataOutcome, RepairOptions,
     RepoInitMode, RepoInitOptions, ScanSession, ScanSessionKind, ScanSessionStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
@@ -16,6 +17,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -27,6 +30,23 @@ fn empty_filter() -> FileFilter {
         imported_before: None,
         limit: 100,
         offset: 0,
+    }
+}
+
+fn repair_options(repo: &Path, preserve_snapshot: bool) -> RepairOptions {
+    let preflight = preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
+    let repository_locale_policy = if preflight.locale_state == RepairMetadataLocaleState::Healthy {
+        preflight
+            .repository_locale_policy
+            .clone()
+            .expect("healthy repair preflight should return the exact locale")
+    } else {
+        "en".to_owned()
+    };
+    RepairOptions {
+        preserve_diagnostics_snapshot: preserve_snapshot,
+        preflight_token: preflight.preflight_token,
+        repository_locale_policy,
     }
 }
 
@@ -77,19 +97,17 @@ fn repair_reindex_metadata_failure_recovery_rebuilds_corrupted_db_after_snapshot
 
     let report = repair_metadata(
         path_string(repo.path()),
-        RepairOptions {
-            full_rescan: true,
-            preserve_diagnostics_snapshot: true,
-        },
+        repair_options(repo.path(), true),
     )
-    .expect("confirmed full rescan should rebuild corrupted metadata");
+    .expect("confirmed repair should rebuild corrupted metadata");
 
     assert_eq!(user_file_snapshot(&[&readme]), before);
-    assert!(report.scan_session_id.is_some());
-    assert_eq!(report.inserted, 1);
-    assert_eq!(report.updated, 0);
-    assert_eq!(report.errors, Vec::<String>::new());
-    assert_eq!(indexed_paths(repo.path()), vec!["README.md"]);
+    assert_eq!(report.outcome, RepairMetadataOutcome::Rebuilt);
+    assert_eq!(indexed_paths(repo.path()), Vec::<String>::new());
+    assert_eq!(
+        get_latest_scan_session(path_string(repo.path())).expect("read repair scan session"),
+        None
+    );
 
     let snapshots = diagnostics_snapshots(repo.path());
     assert_eq!(snapshots.len(), 1);
@@ -97,10 +115,13 @@ fn repair_reindex_metadata_failure_recovery_rebuilds_corrupted_db_after_snapshot
         fs::read(&snapshots[0]).expect("read preserved diagnostics snapshot"),
         b"not a sqlite database"
     );
+    let reindex = reindex_from_filesystem(path_string(repo.path())).expect("run explicit reindex");
+    assert_eq!(reindex.inserted, 1);
+    assert_eq!(indexed_paths(repo.path()), vec!["README.md"]);
     let session = get_latest_scan_session(path_string(repo.path()))
-        .expect("read repair scan session")
-        .expect("corrupted metadata repair should create scan session");
-    assert_eq!(Some(session.id), report.scan_session_id);
+        .expect("read explicit reindex session")
+        .expect("explicit reindex should create scan session");
+    assert_eq!(Some(session.id), reindex.scan_session_id);
     assert_eq!(session.kind, ScanSessionKind::Reindex);
     assert_eq!(session.status, ScanSessionStatus::Completed);
 }
@@ -118,18 +139,19 @@ fn repair_reindex_metadata_failure_recovery_recreates_missing_db_and_preserves_o
 
     let report = repair_metadata(
         path_string(repo.path()),
-        RepairOptions {
-            full_rescan: true,
-            preserve_diagnostics_snapshot: true,
-        },
+        repair_options(repo.path(), true),
     )
     .expect("recreate missing metadata database");
 
     assert!(metadata_dir.join("index.db").is_file());
     assert!(!orphaned_wal.exists());
     assert_eq!(report.diagnostics_snapshot_path, None);
-    assert_eq!(report.inserted, 1);
-    assert_eq!(indexed_paths(repo.path()), vec!["README.md"]);
+    assert_eq!(report.outcome, RepairMetadataOutcome::Initialized);
+    assert_eq!(indexed_paths(repo.path()), Vec::<String>::new());
+    assert_eq!(
+        get_latest_scan_session(path_string(repo.path())).expect("read repair scan session"),
+        None
+    );
     assert_eq!(user_file_snapshot(&[&readme]), before);
 
     let diagnostics = fs::read_dir(metadata_dir.join("diagnostics"))
@@ -141,6 +163,10 @@ fn repair_reindex_metadata_failure_recovery_recreates_missing_db_and_preserves_o
         fs::read(&diagnostics[0]).expect("read preserved orphaned WAL"),
         b"orphaned wal diagnostics"
     );
+
+    let reindex = reindex_from_filesystem(path_string(repo.path())).expect("run explicit reindex");
+    assert_eq!(reindex.inserted, 1);
+    assert_eq!(indexed_paths(repo.path()), vec!["README.md"]);
 }
 
 #[cfg(unix)]

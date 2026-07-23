@@ -79,11 +79,11 @@ struct DetailExternalCreateSyncStatusView: View {
 
 enum TagSuggestionEditRowStatus: Equatable {
     case ready
-    case duplicate(String)
-    case invalid(String)
-    case alreadyAdded(String)
-    case blocked(String)
-    case failed(String)
+    case duplicate(AppDisplayText)
+    case invalid(AppDisplayText)
+    case alreadyAdded(AppDisplayText)
+    case blocked(AppDisplayText)
+    case failed(AppDisplayText)
     case applied
 
     var label: String {
@@ -104,7 +104,7 @@ enum TagSuggestionEditRowStatus: Equatable {
             nil
         case let .duplicate(message), let .invalid(message), let .alreadyAdded(message), let .blocked(message),
              let .failed(message):
-            message
+            L10n.resolve(message)
         }
     }
 

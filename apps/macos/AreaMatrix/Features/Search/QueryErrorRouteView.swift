@@ -1,12 +1,13 @@
 import SwiftUI
 
 struct QueryErrorRouteView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let request: SearchQueryRequestSnapshot
     let diagnostic: SearchQueryDiagnosticSnapshot
     let onApplySuggestion: (String) -> Void
     let onClear: () -> Void
     @State private var isHelpPresented = false
-    @State private var applyFailure: String?
+    @State private var applyFailure: LocalizedMessage?
 
     init(
         request: SearchQueryRequestSnapshot,
@@ -60,7 +61,7 @@ struct QueryErrorRouteView: View {
                     metadataRow("Suggestion", suggestion)
                 }
                 if let applyFailure {
-                    Label(applyFailure, systemImage: "exclamationmark.circle")
+                    Label(localizer.resolve(applyFailure), systemImage: "exclamationmark.circle")
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
@@ -104,7 +105,7 @@ struct QueryErrorRouteView: View {
     private func applySuggestion(_ suggestion: String) {
         guard let nextQuery = QuerySuggestionApplier.applying(suggestion, diagnostic: diagnostic, query: request.query)
         else {
-            applyFailure = L10n.string("Could not apply suggestion")
+            applyFailure = L10n.message("Could not apply suggestion")
             return
         }
         applyFailure = nil

@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct SemanticSearchFallbackStatusRegion: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let page: SemanticSearchResultPageSnapshot
     let state: SemanticFallbackState
     let repoPath: String?
@@ -63,16 +64,16 @@ struct SemanticSearchFallbackStatusRegion: View {
 
     private func statusContent(_ status: SemanticSearchFallbackStatus) -> some View {
         ReasonStatusCard(
-            badge: status.badge,
+            badge: localizer.resolve(status.badge),
             badgeTint: status.badgeTint,
             accessibilityIdentifier: "ai-fallback-semantic-search-core-fallback-status",
             badgeAccessibilityIdentifier: "ai-fallback-semantic-search-core-reason-badge",
             spacing: 6
         ) {
-            Text(status.title)
+            Text(localizer.resolve(status.title))
                 .fontWeight(.semibold)
         } message: {
-            Text(status.message)
+            Text(localizer.resolve(status.message))
         } actions: {
             actionRow(status)
         }
@@ -83,7 +84,7 @@ struct SemanticSearchFallbackStatusRegion: View {
             if status.retryable {
                 fallbackActionButton(status.presentation(for: .retry), status: status)
             } else if let retryDisabledReason = status.retryDisabledReason {
-                Text(retryDisabledReason)
+                Text(localizer.resolve(retryDisabledReason))
                     .font(.caption)
             }
             ForEach(status.actionPresentations) { action in
@@ -98,7 +99,7 @@ struct SemanticSearchFallbackStatusRegion: View {
         status: SemanticSearchFallbackStatus
     ) -> some View {
         if status.isVisible(presentation.action) {
-            Button(presentation.title) {
+            Button(localizer.resolve(presentation.title)) {
                 performAction(presentation.action)
             }
             .disabled(isDisabled(presentation.action, status: status))

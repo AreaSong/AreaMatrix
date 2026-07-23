@@ -11,7 +11,12 @@ enum BatchRenameModeSnapshot: String, CaseIterable, Equatable, Identifiable {
     }
 
     var displayName: String {
-        L10n.string(rawValue)
+        switch self {
+        case .prefix: L10n.string("Prefix")
+        case .datePrefix: L10n.string("Date prefix")
+        case .keepBaseSequence: L10n.string("Keep base + sequence")
+        case .replaceText: L10n.string("Replace text")
+        }
     }
 }
 
@@ -25,7 +30,11 @@ enum BatchRenameDateSourceSnapshot: String, CaseIterable, Equatable, Identifiabl
     }
 
     var displayName: String {
-        L10n.string(rawValue)
+        switch self {
+        case .imported: L10n.string("Imported")
+        case .modified: L10n.string("Modified")
+        case .today: L10n.string("Today")
+        }
     }
 }
 
@@ -102,7 +111,13 @@ enum BatchRenameResultStatusSnapshot: String, Equatable {
     case failed = "Failed"
 
     var displayName: String {
-        L10n.string(rawValue)
+        switch self {
+        case .renamed: L10n.string("Renamed")
+        case .displayNameUpdated: L10n.string("Display name updated")
+        case .unchanged: L10n.string("Unchanged")
+        case .skipped: L10n.string("Skipped")
+        case .failed: L10n.string("Failed")
+        }
     }
 }
 

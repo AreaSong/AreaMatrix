@@ -70,6 +70,6 @@ final class ImportResultActionsTests: XCTestCase {
         )
         guard let result = requireImportResultRoute(model) else { return }
         XCTAssertEqual(result.exportState, .exported(importResultExportPath()))
-        XCTAssertEqual(model.toastMessage, "Import result details exported.")
+        XCTAssertEqual(model.toastMessage, L10n.message("Import result details exported."))
     }
 }

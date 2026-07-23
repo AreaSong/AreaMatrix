@@ -75,7 +75,7 @@ struct AIPrivacyRulesFooter: View {
             if isSaving {
                 ProgressView()
                     .controlSize(.small)
-                    .accessibilityLabel("Saving AI privacy rules")
+                    .accessibilityLabel(L10n.string("Saving AI privacy rules"))
             }
             Spacer()
             Button("Close", action: onClose)

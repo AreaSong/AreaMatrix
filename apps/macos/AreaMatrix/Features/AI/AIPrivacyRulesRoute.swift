@@ -144,8 +144,8 @@ struct AIPrivacyRulesRouteView: View {
         } catch {
             registry = .unavailable
             loadState = .failed(AISettingsError(
-                message: L10n.string("Tag and category registry could not be loaded."),
-                recovery: L10n.string("Retry registry before editing Tag or Category privacy rules."),
+                message: L10n.message("Tag and category registry could not be loaded."),
+                recovery: L10n.message("Retry registry before editing Tag or Category privacy rules."),
                 detail: error.localizedDescription
             ))
         }

@@ -20,6 +20,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -44,6 +46,7 @@ fn camera_options() -> ImportOptions {
         override_category: Some("photos".to_owned()),
         override_filename: Some("Photo 2026-04-29 1130.jpg".to_owned()),
         duplicate_strategy: DuplicateStrategy::KeepBoth,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 

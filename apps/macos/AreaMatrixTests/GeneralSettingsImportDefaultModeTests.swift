@@ -87,7 +87,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
 
         await clearer.assertFirstAICallLogClearRequest(scope: .all, entryIDs: [])
         XCTAssertEqual(model.records, [])
-        XCTAssertEqual(model.toastMessage, "AI call log cleared.")
+        XCTAssertEqual(model.toastMessage, L10n.message("AI call log cleared."))
     }
 
     @MainActor
@@ -110,7 +110,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
 
         await clearer.assertFirstAICallLogClearRequest(scope: .selectedEntries, entryIDs: [605])
         XCTAssertEqual(model.records.map(\.id), [604])
-        XCTAssertEqual(model.toastMessage, "AI log entries deleted.")
+        XCTAssertEqual(model.toastMessage, L10n.message("AI log entries deleted."))
     }
 
     @MainActor
@@ -154,7 +154,7 @@ final class GeneralSettingsImportDefaultModeTests: XCTestCase {
         guard case let .failed(error) = model.state else {
             return XCTFail("Expected failed AI call log state.")
         }
-        XCTAssertEqual(error.message, "AI call log could not be loaded.")
+        XCTAssertEqual(error.message, L10n.message("AI call log could not be loaded."))
         XCTAssertEqual(model.records, [])
         XCTAssertEqual(model.exportDisabledReason, "AI call log could not be loaded")
     }

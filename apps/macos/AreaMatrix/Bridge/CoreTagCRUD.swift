@@ -16,11 +16,20 @@ protocol CoreTagCRUD: Sendable {
 }
 
 protocol CoreAITagSuggestionManaging: Sendable {
-    func suggestTagsWithAI(repoPath: String, request: AiTagSuggestionRequest) async throws -> AiTagSuggestionReport
+    func suggestTagsWithAI(
+        repoPath: String,
+        request: AITagSuggestionRequestSnapshot
+    ) async throws -> AiTagSuggestionReport
     func applyAITagSuggestions(
         repoPath: String,
         request: ApplyAiTagSuggestionsRequest
     ) async throws -> AiTagSuggestionApplyReport
+}
+
+struct AITagSuggestionRequestSnapshot: Equatable, Sendable {
+    var fileID: Int64
+    var candidateTags: [String]
+    var privacyPolicyRef: String?
 }
 
 struct TagRecordSnapshot: Equatable, Identifiable {
@@ -101,7 +110,7 @@ extension CoreTagCRUD {
 
 extension CoreBridge: CoreTagCRUD {
     func listTags(repoPath: String, fileID: Int64) async throws -> TagSetSnapshot {
-        try await Task.detached(priority: .userInitiated) {
+        return try await Task.detached(priority: .userInitiated) {
             try TagSetSnapshot(coreTagSet: AreaMatrix.listTags(repoPath: repoPath, fileId: fileID))
         }.value
     }
@@ -154,9 +163,19 @@ extension CoreBridge: CoreTagCRUD {
 }
 
 extension CoreBridge: CoreAITagSuggestionManaging {
-    func suggestTagsWithAI(repoPath: String, request: AiTagSuggestionRequest) async throws -> AiTagSuggestionReport {
-        try await Task.detached(priority: .userInitiated) {
-            try AreaMatrix.suggestTagsWithAi(repoPath: repoPath, request: request)
+    func suggestTagsWithAI(
+        repoPath: String,
+        request: AITagSuggestionRequestSnapshot
+    ) async throws -> AiTagSuggestionReport {
+        let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
+        let coreRequest = AiTagSuggestionRequest(
+            fileId: request.fileID,
+            candidateTags: request.candidateTags,
+            privacyPolicyRef: request.privacyPolicyRef,
+            contentLocale: contentLocale
+        )
+        return try await Task.detached(priority: .userInitiated) {
+            try AreaMatrix.suggestTagsWithAi(repoPath: repoPath, request: coreRequest)
         }.value
     }
 

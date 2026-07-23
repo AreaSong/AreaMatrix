@@ -22,6 +22,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -43,6 +45,7 @@ fn import_options(mode: StorageMode, filename: &str) -> ImportOptions {
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -127,7 +130,12 @@ fn rename_file_failure_recovery_db_failure_rolls_back_and_retry_succeeds() {
     .expect("import file to rename");
     install_rename_change_log_failure(repo.path());
 
-    let failed = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned());
+    let failed = rename_file(
+        path_string(repo.path()),
+        draft.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     assert!(matches!(failed, Err(CoreError::Db { .. })));
     assert_eq!(
@@ -149,8 +157,13 @@ fn rename_file_failure_recovery_db_failure_rolls_back_and_retry_succeeds() {
     );
 
     drop_rename_change_log_failure(repo.path());
-    let retried = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned())
-        .expect("retry rename after rollback");
+    let retried = rename_file(
+        path_string(repo.path()),
+        draft.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("retry rename after rollback");
 
     assert_eq!(retried.path, "finance/same_1.pdf");
     assert_eq!(
@@ -181,7 +194,12 @@ fn rename_file_failure_recovery_indexed_db_failure_keeps_external_source() {
     .expect("index external file");
     install_rename_change_log_failure(repo.path());
 
-    let failed = rename_file(path_string(repo.path()), entry.id, "display.pdf".to_owned());
+    let failed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "display.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     assert!(matches!(failed, Err(CoreError::Db { .. })));
     assert_eq!(
@@ -209,7 +227,12 @@ fn rename_file_failure_recovery_rollback_failure_keeps_db_and_filesystem_consist
     block_generated_node_overview(repo.path());
     install_rename_rollback_failure(repo.path());
 
-    let failed = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned());
+    let failed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     assert!(matches!(failed, Err(CoreError::Db { .. })));
     assert!(!repo.path().join("finance/draft.pdf").exists());
@@ -228,8 +251,13 @@ fn rename_file_failure_recovery_rollback_failure_keeps_db_and_filesystem_consist
     );
     assert_eq!(change_count(repo.path(), "renamed"), 1);
 
-    let repeated = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned())
-        .expect("repeating committed rename is a no-op");
+    let repeated = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("repeating committed rename is a no-op");
     assert_eq!(repeated.path, "finance/final.pdf");
     assert_eq!(repeated.current_name, "final.pdf");
 }
@@ -262,7 +290,12 @@ fn rename_file_failure_recovery_permission_denied_keeps_original_and_existing_fi
     blocked_permissions.set_mode(0o500);
     fs::set_permissions(&finance_dir, blocked_permissions).expect("make target directory readonly");
 
-    let failed = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned());
+    let failed = rename_file(
+        path_string(repo.path()),
+        draft.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     fs::set_permissions(&finance_dir, original_permissions).expect("restore target permissions");
 

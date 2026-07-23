@@ -21,6 +21,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -118,9 +120,12 @@ fn sync_created_file(
     fs_event_id: i64,
 ) -> area_matrix_core::FileEntry {
     write_repo_file(repo, relative_path, bytes);
-    let result =
-        sync_external_changes(path_string(repo), vec![created(relative_path, fs_event_id)])
-            .expect("sync external created file");
+    let result = sync_external_changes(
+        path_string(repo),
+        vec![created(relative_path, fs_event_id)],
+        "en".to_owned(),
+    )
+    .expect("sync external created file");
     assert_eq!(result.detected_creates, 1);
     listed_files(repo, default_file_filter())
         .into_iter()
@@ -158,6 +163,7 @@ fn sync_external_removed_implementation_soft_deletes_file_log_and_cursor() {
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/remove.pdf", 11)],
+        "en".to_owned(),
     )
     .expect("sync external removed file");
 
@@ -206,12 +212,14 @@ fn sync_external_removed_implementation_is_idempotent_for_replayed_event() {
     sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/replay.pdf", 21)],
+        "en".to_owned(),
     )
     .expect("sync first removed event");
 
     let replayed = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/replay.pdf", 22)],
+        "en".to_owned(),
     )
     .expect("replay removed event");
 
@@ -229,6 +237,7 @@ fn sync_external_removed_implementation_rejects_existing_path_without_metadata_c
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/still-present.pdf", 31)],
+        "en".to_owned(),
     );
 
     assert_eq!(result, Err(CoreError::conflict("docs/still-present.pdf")));
@@ -257,6 +266,7 @@ fn sync_external_removed_implementation_rolls_back_db_and_cursor_on_log_failure(
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/rollback.pdf", 41)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
@@ -276,6 +286,7 @@ fn sync_external_removed_implementation_skips_internal_generated_paths_and_advan
             removed(".areamatrix/generated/internal.md", 50),
             removed("AREAMATRIX.md", 51),
         ],
+        "en".to_owned(),
     )
     .expect("sync skipped removed events");
 
@@ -297,6 +308,7 @@ fn sync_external_removed_implementation_rejects_escaping_or_placeholder_paths_wi
             kind: ExternalEventKind::Removed,
             fs_event_id: 60,
         }],
+        "en".to_owned(),
     );
     assert!(matches!(escaping, Err(CoreError::InvalidPath { .. })));
 
@@ -305,6 +317,7 @@ fn sync_external_removed_implementation_rejects_escaping_or_placeholder_paths_wi
     let placeholder = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/waiting.pdf.icloud", 61)],
+        "en".to_owned(),
     );
     assert_eq!(
         placeholder,

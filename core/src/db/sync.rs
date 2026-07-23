@@ -10,8 +10,10 @@ mod receipts;
 
 use receipts::{count_existing_receipts, insert_external_sync_receipt};
 pub(crate) use receipts::{
-    ensure_external_sync_receipts, find_external_sync_receipt, get_fs_event_cursor,
-    latest_external_rename_source_category, set_fs_event_cursor, ExternalSyncReceiptRow,
+    claim_external_sync_receipts, ensure_external_sync_receipts, external_sync_overview_locales,
+    get_fs_event_cursor, latest_external_rename_source_category, set_fs_event_cursor,
+    prepare_external_sync_locale_recovery, resolve_external_sync_locale_recovery,
+    ExternalSyncReceiptKey, ExternalSyncReceiptRow,
 };
 
 pub(crate) struct ExternalCreatedRow {

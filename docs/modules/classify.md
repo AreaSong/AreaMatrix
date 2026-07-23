@@ -87,6 +87,18 @@ default category 必须存在于 categories 中。
 
 这些 API 只修改未来分类规则或显式用户选择；不会因为保存规则自动重分类、移动或删除已有文件。
 
+category 的 `display_name` 和 `description` 是完整 locale map。规则列表 snapshot 返回全部 map、资料库的
+exact raw policy、canonical policy 和可选 `editing_locale`；UI 显示按 exact raw locale、canonical concrete
+locale、`en`、slug 回退。打开 create/update
+draft 时冻结 supported `editing_locale`，保存请求同时带回观察到的 raw policy，并且只 patch 该 locale
+的值。custom category 的 locale map 可以稀疏；缺失值按 exact raw、canonical concrete、`en`、slug
+回退，不自动生成翻译。
+Core 在写入前重验 policy；变化时返回 `Conflict`，不能覆盖其他语言条目。
+
+unknown repository policy 下仍可浏览 fallback 结果，但 create、update、delete、rule toggle 和任何其他
+classifier mutation 或生成式分类建议都保持 fail closed。只有 Repository 设置页能把 policy 明确保存为
+canonical `system`、`zh-Hans` 或 `en`。
+
 ## AI 分类建议
 
 AI 分类是独立 `suggest_category_with_ai` 合同，不是规则预测的自动 fallback：
@@ -94,6 +106,11 @@ AI 分类是独立 `suggest_category_with_ai` 合同，不是规则预测的自�
 - 必须经过 AI settings、privacy rules、provider/runtime 和 call-log 边界。
 - 只返回 suggestion，不自动移动文件或保存规则。
 - provider 未配置、隐私拒绝或网络失败不会改变规则分类结果。
+- 在进入 privacy/provider await 前冻结 content locale；automatic provider fallback 复用同一值，新 attempt
+  才重新捕获。可持久化 suggestion display name 与 reason 使用该值，用户原始名称保持 verbatim。
+- category slug、已有 candidate tag、用户自定义 tag 和用户输入始终 verbatim。AI/provider 不得把它们
+  隐式翻译后回写，也不得把跨语言近义词当作同一 tag/category 做未授权语义合并；建议只携带明确的生成
+  文本和稳定引用，最终接受继续走现有用户确认与冲突规则。
 
 ## 缓存与性能
 
@@ -108,6 +125,8 @@ AI 分类是独立 `suggest_category_with_ai` 合同，不是规则预测的自�
 - invalid YAML、unknown field、重复 slug/value 和非法 default 返回错误。
 - naming placeholders 与日期格式。
 - AI suggestion 不影响规则路径和用户文件。
+- locale map 更新不丢失未编辑语言，policy 竞态返回 Conflict。
+- unknown policy 下只有 list 可用，所有 classifier mutation 与 AI generation fail closed。
 
 ## Related
 

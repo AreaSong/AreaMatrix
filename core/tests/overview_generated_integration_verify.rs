@@ -29,6 +29,8 @@ fn create_empty_options(overview_output: OverviewOutput) -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -40,6 +42,7 @@ fn copied_options(category: &str) -> ImportOptions {
         override_category: Some(category.to_owned()),
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -72,19 +75,20 @@ fn assert_contains(haystack: &str, needle: &str) {
 #[test]
 fn overview_generated_integration_verify_api_udl_and_rust_wiring_are_real() {
     for fragment in [
-        "void set_app_interface_locale(string locale);",
         "void init_repo(string repo_path, RepoInitOptions options);",
         "FileEntry import_file(",
         "void update_config(string repo_path, RepoConfig new_config);",
         "OverviewOutput overview_output;",
+        "string content_locale;",
         "enum OverviewOutput { \"GeneratedOnly\", \"RootAreaMatrixFile\" };",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
     }
+    assert!(!CORE_API.contains("set_app_interface_locale"));
+    assert!(!UDL.contains("set_app_interface_locale"));
 
     for fragment in [
-        "pub fn set_app_interface_locale(locale: String) -> CoreResult<()>",
         "generated overview uses `RepoInitOptions::overview_output`",
         "later overview-regeneration triggers read the",
         "generated overview uses a successful import as a generated-overview trigger",

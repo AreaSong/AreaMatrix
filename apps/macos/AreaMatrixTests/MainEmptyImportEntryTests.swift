@@ -82,7 +82,7 @@ final class MainEmptyImportEntryTests: XCTestCase {
         model.startImportEntry(opening: opening, source: .dropZone, urls: [remoteURL])
 
         XCTAssertNil(model.pendingImportEntry)
-        XCTAssertEqual(model.toastMessage, "Cannot import these items")
+        XCTAssertEqual(model.toastMessage, L10n.message("Cannot import these items"))
         accessibilityAnnouncer.assertAnnouncements(["Cannot import these items"])
     }
 

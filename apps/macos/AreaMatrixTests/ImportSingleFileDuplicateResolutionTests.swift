@@ -114,13 +114,13 @@ final class ImportSingleFileDuplicateResolutionTests: XCTestCase {
 
         XCTAssertFalse(model.isReplaceConfirmed)
         XCTAssertEqual(model.pendingReplaceConfirmation, currentContext)
-        XCTAssertEqual(model.replaceConfirmationErrorMessage, "The Replace confirmation expired")
+        XCTAssertEqual(model.replaceConfirmationErrorMessage, L10n.message("import.replace.contextExpired"))
         XCTAssertEqual(model.duplicateReplaceConfirmationActionTitle, "Confirm Replace...")
 
         model.collectReplaceConfirmationDiagnostics()
         XCTAssertEqual(
             model.replaceConfirmationDiagnosticsMessage,
-            "Diagnostics collected for replace confirmation state. No user file contents included."
+            L10n.message("import.replace-confirmation.diagnostics-collected")
         )
 
         model.retryReplaceConfirmation()

@@ -35,10 +35,12 @@ extension RepairReportSnapshot {
 
 extension CoreBridge: CoreMetadataRepairing {
     func repairMetadata(repoPath: String, options: RepairOptionsSnapshot) async throws -> RepairReportSnapshot {
-        try await Task.detached(priority: .userInitiated) {
+        let contentLocale = AppLanguageRuntime.shared.resolvedIdentifier()
+        return try await Task.detached(priority: .userInitiated) {
             let coreOptions = RepairOptions(
                 fullRescan: options.fullRescan,
-                preserveDiagnosticsSnapshot: options.preserveDiagnosticsSnapshot
+                preserveDiagnosticsSnapshot: options.preserveDiagnosticsSnapshot,
+                contentLocale: contentLocale
             )
             return try RepairReportSnapshot(coreReport: repairCoreMetadata(repoPath: repoPath, options: coreOptions))
         }.value

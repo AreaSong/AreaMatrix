@@ -171,6 +171,10 @@ enum AppCoreServices {
         coreBridge()
     }
 
+    static var repositoryContentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting {
+        coreBridge()
+    }
+
     static var localModelStatusReader: any CoreLocalModelStatusReading {
         coreBridge()
     }

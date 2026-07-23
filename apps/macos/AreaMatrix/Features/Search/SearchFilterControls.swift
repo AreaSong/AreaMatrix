@@ -31,11 +31,12 @@ struct SearchFacetPicker: View {
 }
 
 struct SearchDateFilterSection: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     var title: String
     var field: SearchFilterDateField
     var bounds: SearchDateFacetBoundsSnapshot?
     @Binding var filters: SearchFilterStateSnapshot
-    @State private var validationError: String?
+    @State private var validationError: LocalizedMessage?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -59,13 +60,14 @@ struct SearchDateFilterSection: View {
                 customDatePickers
             }
             if let validationError {
-                Text(validationError)
+                let resolvedError = localizer.resolve(validationError)
+                Text(resolvedError)
                     .font(.caption)
                     .foregroundStyle(.red)
                     .accessibilityLabel(L10n.format(
                         "search.dateFilter.error.accessibilityLabel",
                         title,
-                        validationError
+                        resolvedError
                     ))
             }
         }
@@ -139,7 +141,7 @@ struct SearchStorageFacetPicker: View {
                 Text(option.displayTitle).tag(option.value.rawValue)
             }
         }
-        .accessibilityLabel("Storage filter")
+        .accessibilityLabel(L10n.string("Storage filter"))
     }
 
     private var storageOptions: [SearchStorageModeFacetCountSnapshot] {
@@ -302,7 +304,7 @@ private struct TagMatchModeControl: View {
                 Text("All").tag(SearchTagMatchModeSnapshot.all)
             }
             .pickerStyle(.segmented)
-            .accessibilityLabel("Tag match mode")
+            .accessibilityLabel(L10n.string("Tag match mode"))
             .accessibilityValue(filters.tagMatchMode.accessibilityText)
             if filters.tags.count == 1 {
                 Text("Any and All match the same single selected tag.")

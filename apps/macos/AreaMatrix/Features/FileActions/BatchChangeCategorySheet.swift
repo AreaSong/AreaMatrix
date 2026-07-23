@@ -47,6 +47,7 @@ struct BatchChangeCategoryTrigger: View {
 }
 
 struct BatchChangeCategorySheet: View {
+    @EnvironmentObject var localizer: AppLocalizer
     let repoPath: String
     let fileIDs: [Int64]
     let selectedFiles: [FileEntrySnapshot]

@@ -25,11 +25,14 @@ pub(super) struct AiSummaryRuntimeDraft {
     pub(super) used_context: Vec<AiSummaryInputField>,
 }
 
-pub(super) fn execute_local(context: &AiSummaryContext) -> CoreResult<AiSummaryRuntimeDraft> {
+pub(super) fn execute_local(
+    context: &AiSummaryContext,
+    content_locale: &str,
+) -> CoreResult<AiSummaryRuntimeDraft> {
     if let Some(runtime_path) = runtime_path(LOCAL_RUNTIME_ENV) {
         return execute_external_runtime(
             runtime_path,
-            RuntimePayload::local(context),
+            RuntimePayload::local(context, content_locale),
             AiSummaryRoute::Local,
             LOCAL_MODEL_ID.to_owned(),
             context.fields.clone(),
@@ -41,6 +44,7 @@ pub(super) fn execute_local(context: &AiSummaryContext) -> CoreResult<AiSummaryR
 pub(super) fn execute_remote(
     repo: &Path,
     context: &AiSummaryContext,
+    content_locale: &str,
 ) -> CoreResult<AiSummaryRuntimeDraft> {
     let config = crate::remote_provider_config::load_enabled_remote_provider_runtime(
         repo,
@@ -53,7 +57,7 @@ pub(super) fn execute_remote(
     };
     execute_external_runtime(
         runtime_path,
-        RuntimePayload::remote(context, &config),
+        RuntimePayload::remote(context, &config, content_locale),
         AiSummaryRoute::Remote,
         model,
         context.fields.clone(),
@@ -123,6 +127,7 @@ struct RuntimePayload<'a> {
     feature: &'static str,
     route: &'static str,
     model: &'a str,
+    content_locale: &'a str,
     filename: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     repo_relative_path: Option<&'a str>,
@@ -143,11 +148,12 @@ struct RuntimePayload<'a> {
 }
 
 impl<'a> RuntimePayload<'a> {
-    fn local(context: &'a AiSummaryContext) -> Self {
+    fn local(context: &'a AiSummaryContext, content_locale: &'a str) -> Self {
         Self {
             feature: "summary",
             route: "local",
             model: LOCAL_MODEL_ID,
+            content_locale,
             filename: &context.filename,
             repo_relative_path: context.repo_relative_path.as_deref(),
             extracted_text_excerpt: context.extracted_text_excerpt.as_deref(),
@@ -160,11 +166,16 @@ impl<'a> RuntimePayload<'a> {
         }
     }
 
-    fn remote(context: &'a AiSummaryContext, config: &'a StoredRemoteProviderConfig) -> Self {
+    fn remote(
+        context: &'a AiSummaryContext,
+        config: &'a StoredRemoteProviderConfig,
+        content_locale: &'a str,
+    ) -> Self {
         Self {
             feature: "summary",
             route: "remote",
             model: &config.model_id,
+            content_locale,
             filename: &context.filename,
             repo_relative_path: context.repo_relative_path.as_deref(),
             extracted_text_excerpt: context.extracted_text_excerpt.as_deref(),

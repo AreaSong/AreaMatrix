@@ -82,9 +82,13 @@ enum SemanticSearchRouteSnapshot: String, Equatable {
     case remote = "Remote"
 
     var displayName: String {
+        L10n.resolve(displayNameMessage)
+    }
+
+    var displayNameMessage: LocalizedMessage {
         switch self {
-        case .local: L10n.string("Local")
-        case .remote: L10n.string("Remote")
+        case .local: L10n.message("Local")
+        case .remote: L10n.message("Remote")
         }
     }
 }
@@ -98,13 +102,17 @@ enum SemanticSearchInputFieldSnapshot: String, Equatable {
     case extractedTextExcerpt = "Extracted text"
 
     var displayName: String {
+        L10n.resolve(displayNameMessage)
+    }
+
+    var displayNameMessage: LocalizedMessage {
         switch self {
-        case .fileName: L10n.string("File name")
-        case .repoRelativePath: L10n.string("Path")
-        case .category: L10n.string("Category")
-        case .noteSummary: L10n.string("Note summary")
-        case .aiSummary: L10n.string("AI summary")
-        case .extractedTextExcerpt: L10n.string("Extracted text")
+        case .fileName: L10n.message("File name")
+        case .repoRelativePath: L10n.message("Path")
+        case .category: L10n.message("Category")
+        case .noteSummary: L10n.message("Note summary")
+        case .aiSummary: L10n.message("AI summary")
+        case .extractedTextExcerpt: L10n.message("Extracted text")
         }
     }
 }

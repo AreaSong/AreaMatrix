@@ -25,9 +25,15 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
         let applyResult = await model.applyImportConflictBatch()
         let askResult = await model.askConflictBatchPerItem()
 
-        XCTAssertEqual(model.conflictBatchScopeSummary, "Select at least one conflict.")
-        XCTAssertEqual(model.conflictBatchApplyDisabledReason, "Select at least one conflict.")
-        XCTAssertEqual(model.conflictBatchAskPerItemDisabledReason, "Select at least one conflict.")
+        XCTAssertEqual(model.conflictBatchScopeSummary, L10n.message("Select at least one conflict."))
+        XCTAssertEqual(
+            model.conflictBatchApplyDisabledReason,
+            .localized(L10n.message("Select at least one conflict."))
+        )
+        XCTAssertEqual(
+            model.conflictBatchAskPerItemDisabledReason,
+            .localized(L10n.message("Select at least one conflict."))
+        )
         XCTAssertEqual(model.coreConflictBatchRows.map(\.status), [.pending, .pending])
         XCTAssertNil(applyResult)
         XCTAssertNil(askResult)
@@ -228,7 +234,7 @@ final class ImportBatchDuplicateResolutionTests: XCTestCase {
             repoPath: importBatchRepoPath(),
             relativePath: "finance/missing.pdf"
         )])
-        XCTAssertEqual(model.toastMessage, "Existing file cannot be shown in Finder.")
+        XCTAssertEqual(model.toastMessage, L10n.message("Existing file cannot be shown in Finder."))
     }
 
     @MainActor

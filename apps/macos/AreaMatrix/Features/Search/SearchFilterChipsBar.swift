@@ -47,7 +47,7 @@ struct SelectedTagChips: View {
                     }
                 }
             }
-            .accessibilityLabel("Selected tags \(filters.tags.joined(separator: ", "))")
+            .accessibilityLabel(L10n.format("Selected tags %@", filters.tags.joined(separator: ", ")))
         }
     }
 

@@ -40,6 +40,7 @@ fn import_options(filename: &str, strategy: DuplicateStrategy) -> ImportOptions 
         override_category: None,
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: strategy,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 

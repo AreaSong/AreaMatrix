@@ -90,7 +90,7 @@ pub(in crate::ai_summary) fn generate_ai_summary(
     };
     ensure_summary_call_log_gate(&repo)?;
     let route_for_error = route.clone();
-    let draft = match execute_summary(route, &repo, &context) {
+    let draft = match execute_summary(route, &repo, &context, request.content_locale.as_str()) {
         Ok(draft) => draft,
         Err(error) => {
             return unavailable_after_runtime_error(&repo, &file, route_for_error, &context, error);
@@ -123,9 +123,10 @@ fn execute_summary(
     route: AiSummaryRoute,
     repo: &Path,
     context: &AiSummaryContext,
+    content_locale: &str,
 ) -> CoreResult<AiSummaryRuntimeDraft> {
     match route {
-        AiSummaryRoute::Local => execute_local(context),
-        AiSummaryRoute::Remote => execute_remote(repo, context),
+        AiSummaryRoute::Local => execute_local(context, content_locale),
+        AiSummaryRoute::Remote => execute_remote(repo, context, content_locale),
     }
 }

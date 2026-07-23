@@ -7,11 +7,12 @@
 > 影响范围：core/classify / core/storage / apps/macos UI
 > 关联 ADR：—
 
-> 现状更正（2026-07-21）：三层分离原则（FS 英文 slug、用户文件名保留）仍有效，以下声明按当前实现更正：
+> 现状更正（2026-07-23）：三层分离原则（FS 英文 slug、用户文件名保留）仍有效，以下声明按当前合同更正：
 >
 > - 内置分类 slug 实际为 6 个：docs / code / design / media / finance / inbox（`core/resources/classifier.yaml`），正文原「10 个」处已就地更正。
-> - 本地化资源已统一为 `Localizations/Localizable.xcstrings`，正式只维护 `en` 与 `zh-Hans`；旧 `zh-Hant` 英文镜像已删除，所有 `zh-*` 系统语言当前统一回退到简体中文。
-> - 应用界面语言与资料库内容语言已拆分。`AppLanguage` 是 UserDefaults 中的应用级设置，控制全部 macOS UI；`RepositoryContentLanguage` 是每资料库配置，控制分类显示名、目录树和之后生成的概述。两者均支持跟随选项，但不共享持久化状态。
+> - 本地化资源已统一为 `Localizations/Localizable.xcstrings`，正式只维护 `en` 与 `zh-Hans`；资源 locale 只决定 String Catalog、语法和复数。应用 UI 的日期、数字、文件大小和货币使用 macOS `Locale.autoupdatingCurrent` 的 region 格式；持久化生成物使用由内容 locale 定义的确定性格式，不读取设备 region。
+> - 应用界面语言与资料库内容语言已拆分。`AppLanguage` 是 UserDefaults 中的设备级设置，控制全部 macOS UI；`RepositoryContentLanguage` 是每资料库配置，控制内置分类显示名和之后生成的内容。两者均支持跟随选项，但不共享持久化状态。
+> - 跟随系统只检查 `AppleLanguages` / preferred languages 的第一项，不扫描后续偏好：`zh-Hans` / `zh-CN` / `zh-SG` 解析为 `zh-Hans`，`en-*` 解析为 `en`，其他第一项直接回退 `en`；`zh-Hant`、`zh-HK`、`zh-TW` 和 bare `zh` 不隐含简体中文。
 > - 「DB 中 path 列做 NFC 归一 + case-insensitive 索引」未实现：`files.path` 为 `TEXT NOT NULL UNIQUE`，无 `COLLATE NOCASE`、无 NFC 归一（`core/src/db/schema.rs`）；unicode NFC 归一目前仅用于分类关键词匹配。
 
 ## 上下文
@@ -43,9 +44,30 @@ AreaMatrix 是面向中文用户为主的本地资料管理工具，但要兼顾
 apps/macos/AreaMatrix/Localizations/Localizable.xcstrings
 ```
 
-`classifier.yaml` 中 category 的 `display_name` 字段提供国际化别名（[ADR](../api/classifier-yaml.md)）。
-平台层通过 `set_app_interface_locale` 将当前稳定界面 locale 同步给 Core；该进程内状态只用于解析
-`RepoConfig.locale = system` 的后续生成，不修改资料库配置，也不重写已有概述。
+`classifier.yaml` 中 category 的 `display_name` 与 `description` map 提供内容语言别名
+（[classifier YAML](../api/classifier-yaml.md)）。显示回退顺序是资料库的 exact raw locale、`en`、slug。
+custom category 允许 sparse locale map（稀疏语言映射）；缺少 exact raw 和 `en` 时稳定回退 slug，不自动
+补译。未知非空 policy 仍允许浏览，但持续显示 unsupported 状态，并阻断所有 classifier mutation、generated
+content 或可持久化 AI 自然语言结果，直到用户在 Repository 设置中明确选择支持值。
+
+Core 不持有可变的进程级界面 locale。每个可能生成内容的 operation（操作）在自己的线性化点解析一次
+concrete `zh-Hans` 或 `en` 并显式传入 Core：设置提交要么完整发生在快照前，要么完整发生在快照后；一个
+用户 batch 只使用一个快照。new attempt 重新捕获；continuation、resume、replay、同一 external sync
+window 和 automatic provider fallback 复用原快照。按钮是否显示为 Retry 不决定 operation identity。
+
+application-owned（应用自有）显示值在使用时按当前界面语言解析。`AppDisplayText`、`LocalizedMessage`、
+catalog key 或翻译结果不得写入 session / recovery；只持久化稳定 domain code、结构化 payload 和必要原值，
+恢复后再映射。Accessibility label/value/hint/action/announcement 同样按当前界面语言解析；
+`accessibilityIdentifier` 是稳定英文自动化标识，不本地化。
+
+application-owned 文案包括 AreaMatrix 自己的菜单、按钮、标签、错误、确认、状态和通知；它们必须走
+String Catalog。OS-owned 文案包括系统 open/save panel、系统菜单和 macOS 自己提供的权限或服务 UI；
+它们继续由 macOS 决定语言，应用不复制、不覆盖，也不承诺与应用界面语言一致。
+
+修改语言设置本身不触发 overview、AI 结果或用户文件重写。之后正常发生的 init/import/rename/repair/
+external sync 等 operation 可以按新快照刷新其本来就会更新的 derived generated content；这不属于设置
+保存的隐式重写。持久化生成物中的日期、数值、大小和货币必须按内容 locale 的固定规则生成，不能因设备
+region、时区或重放机器而改变。
 
 ## 理由
 
@@ -120,7 +142,7 @@ apps/macos/AreaMatrix/Localizations/Localizable.xcstrings
 ### 负面 / 代价
 
 - **首次启动需要本地化决策**：UI 文案要为每个 locale 准备完整翻译
-  - 当前仅支持 `zh-Hans` 和 `en`，`zh-Hant` 后续加入
+  - 当前仅支持 `zh-Hans` 和 `en`；新增资源语言前必须同时定义系统语言解析与 fallback
 - **classifier.yaml 双名维护**：内部 `slug` + UI `display_name` × N 个 locale
   - 缓解：display_name 字段是 map，缺失 locale 自动 fallback 到 slug
 - **错误消息本地化**：core 层 [error-codes.md](../api/error-codes.md) 中的 `code` 用英文，UI 层翻译展示
@@ -129,7 +151,9 @@ apps/macos/AreaMatrix/Localizations/Localizable.xcstrings
 
 ### 风险
 
-- 用户改了 macOS locale 但应用没自动跟随 → `AppLanguage.system` 每次解析当前首个受支持系统语言
+- 用户改了 macOS preferred languages 但应用没自动跟随 → `AppLanguage.system` 每次只解析第一项，第一项不支持时直接回退 `en`
+- 界面语言错误影响日期、数字或文件大小格式 → 资源 lookup 与 `Locale.autoupdatingCurrent` region 分开测试
+- session / recovery 保存已翻译文案而产生陈旧语言 → 只持久化稳定 code 与结构化 payload，恢复后解析
 - 用户文件名包含 NTFS / FAT 不允许的字符（`:`, `?`, `*` 等）→ 在导入时验证 + 转义建议
 - 大小写敏感性：APFS 默认不敏感、ext4 敏感 → 跨平台同步时可能出冲突
   - 缓解：DB 中 path 列做 NFC 归一 + case-insensitive 索引（更正：未实现，见顶部现状说明）

@@ -80,7 +80,7 @@ extension OnboardingModel {
             try fileRevealer.revealFile(repoPath: state.sourceOpening.config.repoPath, relativePath: relativePath)
             toastMessage = nil
         } catch {
-            toastMessage = L10n.string("Existing file cannot be shown in Finder.")
+            toastMessage = L10n.message("Existing file cannot be shown in Finder.")
         }
     }
 
@@ -129,11 +129,11 @@ extension OnboardingModel {
                 suggestedFilename: "AreaMatrix-Import-Result.txt"
             )
             route = .importResult(state.replacing(exportState: .exported(exportedPath)))
-            toastMessage = L10n.string("Import result details exported.")
+            toastMessage = L10n.message("Import result details exported.")
         } catch ImportResultExportError.cancelled {
             route = .importResult(state.replacing(exportState: .idle))
         } catch {
-            route = .importResult(state.replacing(exportState: .failed(L10n.string("Export details failed."))))
+            route = .importResult(state.replacing(exportState: .failed(L10n.message("Export details failed."))))
         }
     }
 

@@ -17,9 +17,49 @@ struct ImportBatchProgressSnapshot: Equatable {
         var sourcePath: String
         var targetPath: String
         var phase: Phase
-        var errorMessage: String?
+        var errorDisplayText: AppDisplayText?
         var existingRelativePath: String?
         var importConflictBatch: ImportConflictBatchProgressMetadata?
+
+        init(
+            fileID: Int64? = nil,
+            sourcePath: String,
+            targetPath: String,
+            phase: Phase,
+            errorMessage: String? = nil,
+            existingRelativePath: String? = nil,
+            importConflictBatch: ImportConflictBatchProgressMetadata? = nil
+        ) {
+            self.fileID = fileID
+            self.sourcePath = sourcePath
+            self.targetPath = targetPath
+            self.phase = phase
+            errorDisplayText = errorMessage.map { L10n.verbatim($0, reason: .technicalDetail) }
+            self.existingRelativePath = existingRelativePath
+            self.importConflictBatch = importConflictBatch
+        }
+
+        init(
+            fileID: Int64? = nil,
+            sourcePath: String,
+            targetPath: String,
+            phase: Phase,
+            errorDisplayText: AppDisplayText?,
+            existingRelativePath: String? = nil,
+            importConflictBatch: ImportConflictBatchProgressMetadata? = nil
+        ) {
+            self.fileID = fileID
+            self.sourcePath = sourcePath
+            self.targetPath = targetPath
+            self.phase = phase
+            self.errorDisplayText = errorDisplayText
+            self.existingRelativePath = existingRelativePath
+            self.importConflictBatch = importConflictBatch
+        }
+
+        var errorMessage: String? {
+            errorDisplayText.map(L10n.resolve)
+        }
 
         var id: String {
             sourcePath

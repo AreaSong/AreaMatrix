@@ -6,10 +6,10 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     @Published private(set) var status: ImportBatchCopyImportStatus = .idle
     @Published var selectedStorageMode: ImportSingleFileStorageMode = .copy
     @Published var selectedNamingStrategy: ImportBatchNamingStrategy = .suggestedName
-    @Published var namingPrefix = L10n.string("import.batch-naming.default-prefix")
+    @Published private var namingPrefixOverride: String
     @Published var isICloudDownloading = false
-    @Published private(set) var replaceConfirmationErrorMessage: String?
-    @Published private(set) var replaceConfirmationDiagnosticsMessage: String?
+    @Published private(set) var replaceConfirmationErrorMessage: LocalizedMessage?
+    @Published private(set) var replaceConfirmationDiagnosticsMessage: LocalizedMessage?
     @Published var conflictBatchPreviewState: ImportConflictBatchPreviewState = .idle
     @Published var conflictBatchApplyResult: ImportConflictBatchApplyResult?
     @Published var conflictBatchUndoState: BatchTagUndoState = .idle
@@ -31,14 +31,21 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     var selectedDestination: ImportBatchDestinationOption = .autoClassify
     private(set) var lastFailureMapping: CoreErrorMappingSnapshot?
 
+    var namingPrefix: String {
+        get { namingPrefixOverride }
+        set { namingPrefixOverride = newValue }
+    }
+
     init(
         importer: any CoreBatchCopyImporting,
         errorMapper: any CoreErrorMapping,
         conflictBatcher: any CoreImportConflictBatching = CoreBridge(),
         undoActionStore: any CoreUndoActionLogging = AppCoreServices.undoActionStore,
         sessionStore: any ImportBatchSessionPersisting = AppPlatformServices.importBatchSessionStore,
-        placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
+        placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
+        initialNamingPrefix: String? = nil
     ) {
+        namingPrefixOverride = initialNamingPrefix ?? L10n.editableDefault("import.batch-naming.default-prefix")
         self.importer = importer
         self.conflictBatcher = conflictBatcher
         self.undoActionStore = undoActionStore
@@ -54,7 +61,7 @@ extension ImportBatchCopyImportModel {
     }
 
     func collectReplaceConfirmationDiagnostics() {
-        replaceConfirmationDiagnosticsMessage = L10n.string("import.replace-confirmation.diagnostics-collected")
+        replaceConfirmationDiagnosticsMessage = L10n.message("import.replace-confirmation.diagnostics-collected")
     }
 
     func clearReplaceConfirmationRecovery() {
@@ -62,7 +69,7 @@ extension ImportBatchCopyImportModel {
         replaceConfirmationDiagnosticsMessage = nil
     }
 
-    func recordReplaceConfirmationFailure(_ message: String) {
+    func recordReplaceConfirmationFailure(_ message: LocalizedMessage) {
         replaceConfirmationErrorMessage = message
         replaceConfirmationDiagnosticsMessage = nil
     }
@@ -288,7 +295,7 @@ extension ImportBatchCopyImportModel {
         }
         let mapping = await mapImportError(error)
         lastFailureMapping = mapping
-        rows[rowIndex].status = .error(mapping.userMessage)
+        rows[rowIndex].status = .error(.localized(mapping.userMessageDescriptor))
         let result = ImportBatchCopyCycleResult.failure(
             completed: input.completed,
             failed: input.failed + 1,

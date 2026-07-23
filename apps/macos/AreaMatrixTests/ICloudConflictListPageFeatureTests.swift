@@ -139,7 +139,10 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
             repoPath: "/tmp/iCloudConflictList-repo",
             relativePath: "docs/report (Alice's conflicted copy).pdf"
         )])
-        XCTAssertEqual(model.revealState, .revealed("Conflict copy revealed in Finder."))
+        XCTAssertEqual(
+            model.revealState,
+            .revealed(L10n.message("Conflict copy revealed in Finder."))
+        )
     }
 
     @MainActor

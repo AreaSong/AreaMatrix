@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct ImportFolderConflictSection: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let model: ImportFolderPreviewModel
     @Binding var isExpanded: Bool
     @Binding var pendingReplaceConfirmation: ImportFolderReplaceConfirmation?
@@ -75,7 +76,7 @@ struct ImportFolderConflictSection: View {
                 strategyView(for: row)
             }
             TableColumn("Status") { row in
-                Text(row.status.detail ?? L10n.string(row.status.tag))
+                Text(row.status.detail ?? localizer.resolve(row.status.tagMessage))
             }
             TableColumn("Action") { row in
                 actionView(for: row)

@@ -58,7 +58,13 @@ enum ScanSessionStatusSnapshot: String, Equatable {
     case interrupted = "Interrupted"
 
     var displayName: String {
-        L10n.string(rawValue)
+        switch self {
+        case .running: L10n.string("Running")
+        case .completed: L10n.string("Completed")
+        case .paused: L10n.string("Paused")
+        case .failed: L10n.string("Failed")
+        case .interrupted: L10n.string("Interrupted")
+        }
     }
 }
 

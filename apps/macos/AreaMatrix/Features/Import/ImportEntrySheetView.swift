@@ -221,7 +221,10 @@ extension ImportEntrySheetView {
                     get: { batchImportModel.selectedNamingStrategy },
                     set: { batchImportModel.updateNamingStrategy($0) }
                 ),
-                namingPrefix: $batchImportModel.namingPrefix,
+                namingPrefix: Binding(
+                    get: { batchImportModel.namingPrefix },
+                    set: { batchImportModel.namingPrefix = $0 }
+                ),
                 isImporting: batchImportModel.status.isImporting,
                 destinationHelperMessage: batchPreviewModel.destinationHelperMessage,
                 storageModeRiskMessage: batchImportModel.storageModeRiskMessage

@@ -224,9 +224,9 @@ private typealias BuildTreeRecordingRepositoryOpener = RecordingRepositoryOpener
 
 @MainActor
 private final class BuildTreeAnnouncer: AccessibilityAnnouncing {
-    private var announcements: [String] = []
+    private var announcements: [LocalizedMessage] = []
 
-    func announce(_ message: String) {
+    func announce(_ message: LocalizedMessage) {
         announcements.append(message)
     }
 
@@ -235,7 +235,7 @@ private final class BuildTreeAnnouncer: AccessibilityAnnouncing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(announcements, expectedAnnouncements, file: file, line: line)
+        XCTAssertEqual(announcements.map(L10n.resolve), expectedAnnouncements, file: file, line: line)
     }
 
     func assertNoAnnouncements(

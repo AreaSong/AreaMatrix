@@ -62,7 +62,7 @@ final class RemoteProviderConfigAIPrivacyModelTests: XCTestCase {
         XCTAssertEqual(model.pendingAction, .enable)
         XCTAssertEqual(
             model.failure?.message,
-            "Remote provider was configured, but privacy gate could not be enabled."
+            L10n.message("Remote provider was configured, but privacy gate could not be enabled.")
         )
         XCTAssertEqual(model.failure?.detail, "Remote provider save failed")
     }
@@ -142,7 +142,7 @@ final class RemoteProviderConfigAIPrivacyModelTests: XCTestCase {
         XCTAssertEqual(privacyModel.pendingAction, .enable)
         XCTAssertEqual(
             privacyModel.failure?.message,
-            "Remote provider was configured, but privacy gate could not be enabled."
+            L10n.message("Remote provider was configured, but privacy gate could not be enabled.")
         )
     }
 }

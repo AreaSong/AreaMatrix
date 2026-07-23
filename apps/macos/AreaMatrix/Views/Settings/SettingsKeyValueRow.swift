@@ -21,7 +21,7 @@ struct SettingsKeyValueRow: View {
             Text(value)
                 .textSelection(.enabled)
                 .modifier(SettingsKeyValueTextLayout(valueLayout: valueLayout))
-                .accessibilityLabel("\(label): \(value)")
+                .accessibilityLabel(L10n.format("settings.repository.valueAccessibility", label, value))
         }
         .font(.callout)
     }

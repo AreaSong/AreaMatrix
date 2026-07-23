@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct AISettingsPane: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject fileprivate var model: AISettingsModel
     @State fileprivate var isLocalModelStatusPresented = false
     @State fileprivate var isRemoteConfigPresented = false
@@ -103,7 +104,7 @@ private extension AISettingsPane {
         } else if let feedback = model.actionFeedback {
             switch feedback {
             case let .success(message):
-                Text(message)
+                Text(localizer.resolve(message))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             case let .failed(error):

@@ -4,32 +4,45 @@ import SwiftUI
 @main
 struct AreaMatrixApp: App {
     @NSApplicationDelegateAdaptor(AreaMatrixDockOpenAppDelegate.self) private var appDelegate
-    @StateObject private var languageStore = AppLanguageStore()
+    @StateObject private var localizer: AppLocalizer
+    @StateObject private var languageStore: AppLanguageStore
+
+    init() {
+        let runtime = AppLanguageRuntime.shared
+        let localizer = AppLocalizer(runtime: runtime)
+        _localizer = StateObject(wrappedValue: localizer)
+        let testLanguage: AppLanguage? = ProcessInfo.processInfo.environment["XCTestBundlePath"] == nil ? nil : .en
+        _languageStore = StateObject(wrappedValue: AppLanguageStore(
+            runtime: runtime,
+            localizer: localizer,
+            initialLanguageOverride: testLanguage
+        ))
+    }
 
     var body: some Scene {
         WindowGroup {
             MainWindow()
                 .environmentObject(languageStore)
-                .environment(\.locale, languageStore.resolvedLocale)
+                .environmentObject(localizer)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(after: .sidebar) {
-                Button(languageStore.localizedString("app.command.import")) {
+                Button(localizer.string("app.command.import")) {
                     AreaMatrixImportCommandRelay.publish()
                 }
                 .keyboardShortcut("i", modifiers: [.command])
-                Button(languageStore.localizedString("app.command.settings")) {
+                Button(localizer.string("app.command.settings")) {
                     AreaMatrixSettingsCommandRelay.publish()
                 }
                 .keyboardShortcut(",", modifiers: [.command])
                 Divider()
-                Button(languageStore.localizedString("app.command.commandPalette")) {
+                Button(localizer.string("app.command.commandPalette")) {
                     AreaMatrixCommandPaletteCommandRelay.publish()
                 }
                 .keyboardShortcut("k", modifiers: [.command])
-                Button(languageStore.localizedString("app.command.undoHistory")) {
+                Button(localizer.string("app.command.undoHistory")) {
                     AreaMatrixUndoHistoryCommandRelay.publish()
                 }
                 .keyboardShortcut("z", modifiers: [.command, .option])

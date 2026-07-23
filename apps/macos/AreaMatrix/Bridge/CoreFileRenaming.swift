@@ -21,8 +21,14 @@ protocol CoreBatchRenaming: Sendable {
 
 extension CoreBridge: CoreFileRenaming, CoreBatchRenaming {
     func renameFile(repoPath: String, fileID: Int64, newName: String) async throws -> FileEntrySnapshot {
+        let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
         let entry = try await Task.detached(priority: .userInitiated) {
-            try renameCoreFile(repoPath: repoPath, fileID: fileID, newName: newName)
+            try renameCoreFile(
+                repoPath: repoPath,
+                fileID: fileID,
+                newName: newName,
+                contentLocale: contentLocale
+            )
         }.value
         return await makeFileEntrySnapshot(from: entry, repoPath: repoPath)
     }
@@ -60,8 +66,18 @@ extension CoreBridge: CoreFileRenaming, CoreBatchRenaming {
     }
 }
 
-private func renameCoreFile(repoPath: String, fileID: Int64, newName: String) throws -> FileEntry {
-    try renameFile(repoPath: repoPath, fileId: fileID, newName: newName)
+private func renameCoreFile(
+    repoPath: String,
+    fileID: Int64,
+    newName: String,
+    contentLocale: String
+) throws -> FileEntry {
+    try renameFile(
+        repoPath: repoPath,
+        fileId: fileID,
+        newName: newName,
+        contentLocale: contentLocale
+    )
 }
 
 extension BatchRenamePreviewReportSnapshot {

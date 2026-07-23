@@ -246,9 +246,15 @@ extension MainFileListModel {
             case .applied:
                 updated.status = .applied
             case .alreadyAdded:
-                updated.status = .alreadyAdded(result.error ?? L10n.string("Already added"))
+                updated.status = .alreadyAdded(L10n.display(
+                    "Already added",
+                    technicalDetail: result.error
+                ))
             case .failed:
-                updated.status = .failed(result.error ?? L10n.string("A suggestion could not be applied."))
+                updated.status = .failed(L10n.display(
+                    "A suggestion could not be applied.",
+                    technicalDetail: result.error
+                ))
             }
             return updated
         }

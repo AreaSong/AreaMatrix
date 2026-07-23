@@ -2,9 +2,6 @@ namespace area_matrix {
     string get_version();
 
     [Throws=CoreError]
-    void set_app_interface_locale(string locale);
-
-    [Throws=CoreError]
     void init_logging(string level);
 
     [Throws=CoreError]
@@ -26,15 +23,13 @@ namespace area_matrix {
     [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
-    // repository settings reads this repository config snapshot together
-    // with PlatformCapabilities; loading is read-only and has no platform probe.
+    // repository settings reads a revisioned snapshot.
     [Throws=CoreError]
-    RepoConfig load_config(string repo_path);
+    RepoConfigSnapshot load_repo_config(string repo_path);
 
-    // repository settings persists only repo_config. Platform-unsupported
-    // settings must be disabled by the caller; this API does not move user files.
+    // repository settings submits dirty fields with compare-and-swap revision.
     [Throws=CoreError]
-    void update_config(string repo_path, RepoConfig new_config);
+    RepoConfigSnapshot update_repo_config(string repo_path, RepoConfigPatch patch);
 
     [Throws=CoreError]
     AiConfigSnapshot load_ai_config(string repo_path);
@@ -167,6 +162,9 @@ namespace area_matrix {
     DiagnosticsSnapshot create_diagnostics_snapshot(string repo_path);
 
     [Throws=CoreError]
+    RepairMetadataPreflight preflight_repair_metadata(string repo_path);
+
+    [Throws=CoreError]
     RepairReport repair_metadata(string repo_path, RepairOptions options);
 
     // manual rescan consumers read the latest scan session to render manual rescan
@@ -219,7 +217,9 @@ namespace area_matrix {
     void remove_index_entry(string repo_path, i64 file_id);
 
     [Throws=CoreError]
-    FileEntry rename_file(string repo_path, i64 file_id, string new_name);
+    FileEntry rename_file(
+        string repo_path, i64 file_id, string new_name, ContentLocale content_locale
+    );
 
     [Throws=CoreError]
     MoveToCategoryPreview preview_move_to_category(
@@ -416,7 +416,7 @@ namespace area_matrix {
 
     // desktop main query also uses this read-only tree JSON for desktop sidebar state.
     [Throws=CoreError]
-    string list_tree_json(string repo_path, string locale);
+    string list_tree_json(string repo_path, ContentLocale locale);
 
     [Throws=CoreError]
     sequence<SyncConflict> detect_sync_conflicts(string repo_path);
@@ -476,7 +476,17 @@ namespace area_matrix {
     void write_note(string repo_path, i64 file_id, string content_md);
 
     [Throws=CoreError]
-    SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);
+    SyncResult sync_external_changes(
+        string repo_path, sequence<ExternalEvent> events, ContentLocale content_locale
+    );
+
+    [Throws=CoreError]
+    ExternalSyncLocaleRecoveryPlan? prepare_external_sync_locale_recovery(string repo_path);
+
+    [Throws=CoreError]
+    ExternalSyncLocaleRecoveryReport resolve_external_sync_locale_recovery(
+        string repo_path, string recovery_token, ContentLocale content_locale
+    );
 
     [Throws=CoreError]
     i64? get_fs_event_cursor(string repo_path);
@@ -492,17 +502,36 @@ namespace area_matrix {
     ErrorMapping map_core_error(ErrorMappingInput input);
 };
 
-dictionary RepoConfig {
+dictionary RepositoryLocalePolicySnapshot {
+    RepositoryLocalePolicyState state;
+    string raw_value;
+};
+
+dictionary RepoConfigSnapshot {
     string repo_path;
+    i64 revision;
     StorageMode default_mode;
     OverviewOutput overview_output;
     boolean ai_enabled;
-    string locale;
+    RepositoryLocalePolicySnapshot locale_policy;
     boolean icloud_warn;
     boolean enable_extension_rules;
     boolean enable_keyword_rules;
     boolean fallback_to_inbox;
     boolean allow_replace_during_import;
+};
+
+dictionary RepoConfigPatch {
+    i64 expected_revision;
+    StorageMode? default_mode;
+    OverviewOutput? overview_output;
+    boolean? ai_enabled;
+    RepositoryLocalePolicy? locale_policy;
+    boolean? icloud_warn;
+    boolean? enable_extension_rules;
+    boolean? enable_keyword_rules;
+    boolean? fallback_to_inbox;
+    boolean? allow_replace_during_import;
 };
 
 dictionary BindingContractRequest {
@@ -714,6 +743,7 @@ dictionary AiCategorySuggestionRequest {
     i64 file_id;
     AiCategorySuggestionContextPolicy context_policy;
     string? privacy_policy_ref;
+    ContentLocale content_locale;
 };
 
 dictionary AiCategorySuggestion {
@@ -737,6 +767,7 @@ dictionary AiSummaryGenerationRequest {
     AiSummaryContextPolicy context_policy;
     string? privacy_policy_ref;
     boolean regenerate_existing;
+    ContentLocale content_locale;
 };
 
 dictionary AiSummaryDraft {
@@ -797,6 +828,7 @@ dictionary AiTagSuggestionRequest {
     i64 file_id;
     sequence<string> candidate_tags;
     string? privacy_policy_ref;
+    ContentLocale content_locale;
 };
 
 dictionary AiTagSuggestion {
@@ -1112,6 +1144,8 @@ dictionary RepoInitOptions {
     RepoInitMode mode;
     boolean create_default_categories;
     OverviewOutput overview_output;
+    RepositoryLocalePolicy locale_policy;
+    ContentLocale content_locale;
 };
 
 dictionary RepoPathValidation {
@@ -1143,6 +1177,7 @@ dictionary ImportOptions {
     // recoverability. Overwrite is the committed strategy token after that
     // confirmation, not the preview or platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
+    ContentLocale content_locale;
 };
 
 dictionary ImportResult {
@@ -2135,8 +2170,17 @@ dictionary ReindexReport {
 };
 
 dictionary RepairOptions {
-    boolean full_rescan;
     boolean preserve_diagnostics_snapshot;
+    string preflight_token;
+    string repository_locale_policy;
+};
+
+dictionary RepairMetadataPreflight {
+    RepairMetadataLocaleState locale_state;
+    string? repository_locale_policy;
+    string? unsupported_locale;
+    boolean requires_explicit_locale_selection;
+    string preflight_token;
 };
 
 dictionary DiagnosticsSnapshot {
@@ -2146,12 +2190,8 @@ dictionary DiagnosticsSnapshot {
 };
 
 dictionary RepairReport {
-    i64? scan_session_id;
     string? diagnostics_snapshot_path;
-    i64 inserted;
-    i64 updated;
-    i64 skipped;
-    sequence<string> errors;
+    RepairMetadataOutcome outcome;
 };
 
 dictionary ScanSession {
@@ -2176,6 +2216,23 @@ dictionary ExternalEvent {
     string path;
     ExternalEventKind kind;
     i64 fs_event_id;
+};
+
+dictionary ExternalSyncLocaleRecoveryReceipt {
+    i64 event_id;
+    ExternalEventKind kind;
+    string path;
+};
+
+dictionary ExternalSyncLocaleRecoveryPlan {
+    string recovery_token;
+    i64? cursor;
+    sequence<ExternalSyncLocaleRecoveryReceipt> receipts;
+};
+
+dictionary ExternalSyncLocaleRecoveryReport {
+    i64 recovered_receipts;
+    ContentLocale content_locale;
 };
 
 dictionary SyncResult {
@@ -2257,6 +2314,14 @@ enum RepoPathIssue {
 };
 enum PlatformPathKind { "Local", "ICloudDrive", "OneDrive", "NetworkShare", "Unknown" };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
+enum ContentLocale { "ZhHans", "En" };
+enum RepositoryLocalePolicy { "FollowInterface", "ZhHans", "En" };
+enum RepositoryLocalePolicyState { "FollowInterface", "ZhHans", "En", "Unsupported" };
+enum RepairMetadataLocaleState {
+    "Healthy", "MetadataAbsent", "DatabaseMissing", "DatabaseCorrupt",
+    "LocaleMissing", "LocaleUnsupported"
+};
+enum RepairMetadataOutcome { "Verified", "Initialized", "Rebuilt" };
 enum BindingTargetPlatform { "Swift", "Kotlin", "Python" };
 enum BindingSupportStatus { "Supported", "Limited", "Missing" };
 enum PlatformId { "Macos", "Ios", "Windows", "Linux", "Unknown" };

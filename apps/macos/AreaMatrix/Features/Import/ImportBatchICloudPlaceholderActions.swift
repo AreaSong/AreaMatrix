@@ -14,7 +14,11 @@ extension ImportBatchCopyImportModel {
         } catch {
             setStatus(.iCloudPlaceholder(
                 path: path,
-                message: L10n.format("import.preflight.icloud-download-failed", error.localizedDescription)
+                message: L10n.display(
+                    "import.preflight.icloud-download-failed",
+                    arguments: [.string(error.localizedDescription)],
+                    technicalDetail: error.localizedDescription
+                )
             ), for: rowID)
             return false
         }

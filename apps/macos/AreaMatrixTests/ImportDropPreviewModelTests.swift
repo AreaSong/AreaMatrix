@@ -58,7 +58,10 @@ final class ImportDropPreviewModelTests: XCTestCase {
 
         await model.preview(target: .autoClassify, urls: [sourceURL])
 
-        XCTAssertEqual(model.presentation?.warning, "Classifier settings are invalid: classifier.yaml line 7")
+        XCTAssertEqual(model.presentation?.warning, L10n.display(
+            "Cannot preview category",
+            technicalDetail: "classifier.yaml line 7"
+        ))
         XCTAssertNil(model.presentation?.prediction)
         XCTAssertFalse(model.presentation?.isPredicting ?? true)
     }
@@ -72,7 +75,7 @@ final class ImportDropPreviewModelTests: XCTestCase {
         await model.preview(target: .autoClassify, urls: [remoteURL])
 
         await predictor.assertCategoryPredictionRequests([])
-        XCTAssertEqual(model.presentation?.warning, "Cannot import this item")
+        XCTAssertEqual(model.presentation?.warning, L10n.display("Cannot import this item"))
         XCTAssertEqual(model.presentation?.destinationLabel, "Auto classify")
         XCTAssertFalse(model.presentation?.isPredicting ?? true)
     }

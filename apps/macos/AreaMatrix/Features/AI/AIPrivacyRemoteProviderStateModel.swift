@@ -85,14 +85,14 @@ final class AIPrivacyRemoteProviderStateModel: ObservableObject {
     private func providerError(for error: Error) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
-                message: L10n.string("Remote provider state could not be loaded."),
-                recovery: mapping.recoveryText(fallback: L10n.string("Retry or configure remote AI.")),
+                message: L10n.message("Remote provider state could not be loaded."),
+                recovery: mapping.recoveryMessage(fallback: L10n.message("Retry or configure remote AI.")),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(
-            message: L10n.string("Remote provider state could not be loaded."),
-            recovery: L10n.string("Retry or configure remote AI."),
+            message: L10n.message("Remote provider state could not be loaded."),
+            recovery: L10n.message("Retry or configure remote AI."),
             detail: error.localizedDescription
         )
     }

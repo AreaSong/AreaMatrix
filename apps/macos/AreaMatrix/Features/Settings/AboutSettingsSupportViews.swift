@@ -224,6 +224,7 @@ struct AboutSettingsKeyValueRow: View {
 }
 
 struct AboutSettingsBanner<Actions: View>: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let error: AboutSettingsError
     let tint: Color
     private let actions: Actions
@@ -235,8 +236,12 @@ struct AboutSettingsBanner<Actions: View>: View {
     }
 
     var body: some View {
-        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: tint) {
-            Text(error.recovery)
+        SettingsStatusBanner(
+            title: localizer.resolve(error.message),
+            systemImage: "exclamationmark.triangle",
+            tint: tint
+        ) {
+            Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Text(error.copyableDetail)

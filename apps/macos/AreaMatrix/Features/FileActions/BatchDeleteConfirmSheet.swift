@@ -142,7 +142,9 @@ struct BatchDeleteConfirmSheet: View {
                     )
                     Toggle("I understand undo will not be available for these items.", isOn: $undoConfirmationAccepted)
                         .accessibilityLabel(
-                            "Required confirmation. Undo will not be available for this deletion or index removal."
+                            L10n.string(
+                                "Required confirmation. Undo will not be available for this deletion or index removal."
+                            )
                         )
                 }
             }

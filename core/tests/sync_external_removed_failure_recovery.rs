@@ -20,6 +20,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -123,9 +125,12 @@ fn sync_created_file(
     fs_event_id: i64,
 ) -> FileEntry {
     write_repo_file(repo, relative_path, bytes);
-    let result =
-        sync_external_changes(path_string(repo), vec![created(relative_path, fs_event_id)])
-            .expect("sync external created file");
+    let result = sync_external_changes(
+        path_string(repo),
+        vec![created(relative_path, fs_event_id)],
+        "en".to_owned(),
+    )
+    .expect("sync external created file");
     assert_eq!(result.detected_creates, 1);
     list_files(path_string(repo), default_file_filter())
         .expect("list active files")
@@ -158,6 +163,7 @@ fn sync_external_removed_failure_recovery_replays_after_batch_path_state_is_fixe
     let failed = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/first.pdf", 3), removed("docs/second.pdf", 4)],
+        "en".to_owned(),
     );
 
     assert_eq!(failed, Err(CoreError::conflict("docs/second.pdf")));
@@ -171,6 +177,7 @@ fn sync_external_removed_failure_recovery_replays_after_batch_path_state_is_fixe
     let replayed = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/first.pdf", 3), removed("docs/second.pdf", 4)],
+        "en".to_owned(),
     )
     .expect("replay fixed removed-event batch");
 
@@ -203,6 +210,7 @@ fn sync_external_removed_failure_recovery_db_failure_rolls_back_status_log_and_c
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/rollback.pdf", 11)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
@@ -230,11 +238,13 @@ fn sync_external_removed_failure_recovery_replayed_event_is_noop_without_duplica
     let first = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/replay.pdf", 21)],
+        "en".to_owned(),
     )
     .expect("sync first removed event");
     let replayed = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/replay.pdf", 21)],
+        "en".to_owned(),
     )
     .expect("replay same removed event");
 
@@ -278,6 +288,7 @@ fn sync_external_removed_failure_recovery_permission_denied_keeps_metadata_and_c
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![removed("blocked/secret.pdf", 31)],
+        "en".to_owned(),
     );
 
     fs::set_permissions(&blocked_dir, original_permissions).expect("restore directory permissions");

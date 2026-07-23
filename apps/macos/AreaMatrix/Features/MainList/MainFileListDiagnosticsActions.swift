@@ -131,7 +131,7 @@ enum UndoHistoryActionLog {
         guard let latest = snapshot.undoActions.first else { return .loaded(snapshot) }
         guard latest.status == .pending, latest.canUndo else {
             return .undoFailed(
-                unavailableMapping(reason: disabledReason(for: latest)),
+                unavailableMapping(technicalReason: disabledReason(for: latest)),
                 previous: snapshot,
                 attempted: latest
             )
@@ -240,25 +240,31 @@ enum UndoHistoryActionLog {
         return UndoHistorySnapshot(undoActions: undoActions, redoActions: redoActions)
     }
 
-    private static func unavailableMapping(reason: String) -> CoreErrorMappingSnapshot {
+    private static func unavailableMapping(technicalReason: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .conflict,
-            userMessage: reason,
+            userMessage: L10n.message(
+                "Undo action is currently unavailable.",
+                technicalDetail: technicalReason
+            ),
             severity: .medium,
-            suggestedAction: L10n.string("Review details in Undo History."),
+            suggestedAction: L10n.message("Review details in Undo History."),
             recoverability: .refreshRequired,
-            rawContext: "undo-history undo-action-log undo-action-log"
+            rawContext: technicalReason
         )
     }
 
     private static func unavailableRedoMapping(for action: RedoActionRecordSnapshot) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: action.status == .expired ? .expiredAction : .conflict,
-            userMessage: RedoActionFeedback.disabledReason(for: action),
+            userMessage: L10n.message(
+                "Redo action is currently unavailable.",
+                technicalDetail: RedoActionFeedback.disabledReason(for: action)
+            ),
             severity: .medium,
-            suggestedAction: L10n.string("Review details in Undo History."),
+            suggestedAction: L10n.message("Review details in Undo History."),
             recoverability: .refreshRequired,
-            rawContext: "redo-action-log redo-action-log-core redo-action-log"
+            rawContext: RedoActionFeedback.disabledReason(for: action)
         )
     }
 }

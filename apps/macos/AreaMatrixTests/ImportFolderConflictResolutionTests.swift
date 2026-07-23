@@ -251,7 +251,10 @@ private struct ImportFolderFolderConflictFixture {
                 category: "docs",
                 suggestedName: "blocked.pdf"
             ))
-            results[blockedURL.path] = .blocked("Conflict precheck failed: permission denied")
+            results[blockedURL.path] = .blocked(L10n.verbatim(
+                "Conflict precheck failed: permission denied",
+                reason: .technicalDetail
+            ))
         }
 
         return ImportFolderFolderConflictFixture(

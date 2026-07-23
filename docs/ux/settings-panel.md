@@ -14,8 +14,8 @@
 
 | TabId | 名称 | 当前职责 |
 |---|---|---|
-| `general` | 通用 | 默认存储模式、概览输出、忽略规则、生成内容语言、外观状态 |
-| `repository` | 资料库 | 路径、健康状态、资料库配置、Finder、恢复入口 |
+| `general` | 通用 | 默认存储模式、概览输出、忽略规则、界面语言、外观状态 |
+| `repository` | 资料库 | 路径、健康状态、内容语言、资料库配置、Finder、恢复入口 |
 | `classifier` | 分类规则 | 可视化规则维护、规则引擎开关、YAML 操作、分类预览 |
 | `ai` | AI | AI 总开关、provider、功能开关、隐私规则、调用日志和暂停 |
 | `integrations` | 集成 | iCloud 状态与警告、Finder 和外部改动说明 |
@@ -47,15 +47,19 @@
 
 `Open ignore.yaml` 打开 `.areamatrix/ignore.yaml`。文件缺失时，应用可以在用户确认后创建默认文件；该动作不得修改资料库中的其他文件。
 
-### 语言与外观
+### 界面语言与外观
 
-通用页提供两套彼此独立的语言设置：
+通用页只编辑应用界面语言：
 
 - **界面语言**是应用级 `AppLanguage`，保存到 UserDefaults，选项为跟随系统、简体中文、English。它控制菜单、窗口、按钮、错误、确认与 Accessibility 文案；切换后立即刷新，不重置当前业务状态。
-- **资料库内容语言**是每资料库 `RepositoryContentLanguage`，保存到 `RepoConfig.locale`，选项为跟随界面、简体中文、English。它控制分类显示名、目录树和之后生成的概述；切换不会自动重写已有概述。
 
-正式 locale 只有 `zh-Hans` 与 `en`。读取旧 `zh-CN` 时兼容并规范写回 `zh-Hans`；跟随系统时，所有
-`zh-*`（包括繁体中文系统偏好）当前解析为 `zh-Hans`，其他不支持语言回退 `en`。用户文件名和正文永不翻译。
+跟随系统只检查 macOS preferred languages 第一项：`zh-Hans` / `zh-CN` / `zh-SG` 解析为 `zh-Hans`，
+`en-*` 解析为 `en`，其他第一项直接回退 `en`，不扫描后续项。繁体中文与 bare `zh` 不隐含简体中文。
+资源 locale 只控制 String Catalog、语法和复数；瞬时 UI 的日期、数字、文件大小和货币继续跟随 macOS
+当前 region。持久化生成物使用内容 locale 的确定性格式。用户文件名和正文永不翻译。
+
+AreaMatrix 自己的菜单、按钮、标签、错误和通知跟随界面语言；系统 open/save panel、系统菜单与 macOS
+权限或服务 UI 保持 OS-owned，由系统决定语言，不承诺与 AreaMatrix 选择一致。
 
 外观当前只显示并锁定为 `system`，应用跟随系统外观。
 
@@ -73,11 +77,19 @@
 - 导出 repository diagnostics snapshot；导出前必须确认，且不会自动上传。snapshot 会复制
   `index.db` 及存在的 WAL/SHM，可能包含路径、文件名、标签、笔记和其他 metadata，但不复制用户原文件正文；
   分享前必须审阅 snapshot 及其 companion files。
-- 更新资料库配置中的概览输出、locale、iCloud 警告和未匹配文件回落策略。
+- 更新资料库配置中的概览输出、内容语言、iCloud 警告和未匹配文件回落策略。
 
-资料库配置读取兼容 `system`、`zh-Hans`、`zh-CN`、`en`；保存统一写 `system`、`zh-Hans` 或 `en`。
-其中 `system` 的产品含义是“跟随界面”。应用通过独立的 `set_app_interface_locale` 调用把解析后的稳定
-界面 locale 同步给 Core，资料库配置仍保留 `system`；它不是应用 UI 语言开关。
+**资料库内容语言**只在 Repository 页可编辑；General、Welcome、classifier 和生成界面只显示只读摘要。
+选项为跟随界面、简体中文、English，持久化到 `RepoConfig.locale`。它控制内置分类显示名、目录树和以后
+生成的概览或 AI 自然语言结果；保存设置本身不会重写既有内容，也不会改变应用 UI。之后正常发生且本来
+需要刷新 overview 的 operation 可以使用新语言更新派生内容。
+
+配置读取保留 exact raw policy。`system`、`zh-Hans`、`zh-CN`、`zh-SG`、`en` 和 `en-*` 可兼容解析，
+但普通加载不得隐式写回；只有用户明确保存时才写 canonical `system`、`zh-Hans` 或 `en`。未知非空值
+显示 exact raw value 和持续 unsupported 提示，资料库仍可浏览；生成动作保持禁用，直到用户明确改值。
+
+保存与 operation snapshot 串行：一次用户 batch 只捕获一个 concrete locale。failed items 的新 retry batch
+重新捕获；continuation、recovery 或 replay 复用原 batch 值。控件标题是否叫 Retry 不改变该判断。
 
 更换资料库不会在设置页直接移动旧资料库内容，而是进入资料库选择和校验流程。
 
@@ -87,11 +99,17 @@
 
 - 列出规则并选择当前规则。
 - 创建、更新和删除非默认分类规则。
-- 编辑 slug、显示名、说明、命名模板、扩展名和关键词。
+- 编辑 slug、当前资料库内容语言对应的显示名与说明、命名模板、扩展名和关键词。
 - 保存前执行字段校验和影响预览。
 - 删除规则或移除 matcher 前要求确认。
 
 从该页面保存规则只影响后续分类；不会移动、删除、重命名或重新分类已有文件。
+规则 snapshot 返回每条规则完整 locale map 和 exact raw repository policy；编辑 draft 在打开时冻结一个
+supported `editing_locale`，保存只 patch 该 locale 的显示名/说明。资料库 policy 在编辑期间变化时返回
+`Conflict` 并重新加载，不能把另一个 locale 的文本覆盖进去。custom category 可以只保存当前
+`editing_locale`，其他缺失语言按 raw/en/slug 回退，不自动补译或语义合并。unknown policy 下只允许查看
+raw/en/slug fallback；create、update、delete、rule toggle 和其他 classifier mutation 全部禁用，直到
+Repository 页明确改值。
 
 规则引擎开关包括 extension rules、keyword rules 和 fallback to inbox。这些开关写入当前资料库配置。
 
@@ -168,6 +186,7 @@ About 文本诊断不包含用户原文件正文，路径和用户名按其合�
 - 保存期间禁用冲突操作。
 - 保存失败时 UI 恢复为上次持久化值，并提供重试或恢复动作。
 - 文件或 DB 错误通过结构化 `CoreError` 映射，不用字符串匹配决定主流程。
+- 可恢复状态保存稳定错误 code、结构化参数和必要原值，不保存已解析的 `AppDisplayText`、catalog key 或翻译结果。
 - 设置窗口不提供全量 settings Import/Export，也不提供 `Reset all settings`。
 
 ## 文件安全不变量

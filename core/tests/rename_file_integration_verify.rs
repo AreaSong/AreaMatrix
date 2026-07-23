@@ -40,6 +40,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -61,6 +63,7 @@ fn import_options(mode: StorageMode, filename: &str) -> ImportOptions {
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -168,7 +171,7 @@ fn install_rename_change_log_failure(repo: &Path) {
 #[test]
 fn rename_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     for fragment in [
-        "FileEntry rename_file(string repo_path, i64 file_id, string new_name);",
+        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, string content_locale\n    );",
         "dictionary FileEntry",
         "string path;",
         "string current_name;",
@@ -197,7 +200,7 @@ fn rename_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
 
     for fragment in [
         "pub fn rename_file(repo_path: String, file_id: i64, new_name: String)",
-        "storage::rename_file(repo_path, file_id, new_name)",
+        "storage::rename_file(repo_path, file_id, new_name, content_locale)",
         "file rename owns the user-visible rename contract",
         "Indexed rows are display-name only",
         "Repository-owned rename also triggers generated overview",
@@ -255,8 +258,13 @@ fn rename_file_integration_verify_repo_owned_flow_reaches_list_detail_log_and_ov
         fs::read_to_string(&generated_node).expect("read generated node before rename");
     assert_contains(&generated_before, "draft.pdf");
 
-    let renamed = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned())
-        .expect("rename copied file");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename copied file");
 
     assert_eq!(renamed.id, entry.id);
     assert_eq!(renamed.path, "finance/final.pdf");
@@ -327,8 +335,13 @@ fn rename_file_integration_verify_indexed_flow_updates_metadata_without_external
     )
     .expect("index external file");
 
-    let renamed = rename_file(path_string(repo.path()), entry.id, "display.pdf".to_owned())
-        .expect("rename indexed display name");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "display.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename indexed display name");
 
     assert_eq!(renamed.id, entry.id);
     assert_eq!(renamed.path, source_path);
@@ -371,7 +384,12 @@ fn rename_file_integration_verify_failure_keeps_consumers_on_original_state() {
     .expect("import copied file before forced failure");
     install_rename_change_log_failure(repo.path());
 
-    let failed = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned());
+    let failed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     assert!(matches!(failed, Err(CoreError::Db { .. })));
     assert_eq!(

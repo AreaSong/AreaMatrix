@@ -163,13 +163,13 @@ extension ClassifierSettingsModel {
                 repoPath: repoPath,
                 relativePath: ClassifierSettingsPaths.classifierRelativePath
             )
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.opened"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.announcement.opened"))
         } catch {
             fileActionError = ClassifierSettingsFileActionError(
-                message: L10n.string("settings.classifier.error.open"),
-                recovery: L10n.string("settings.classifier.recovery.open")
+                message: L10n.message("settings.classifier.error.open"),
+                recovery: L10n.message("settings.classifier.recovery.open")
             )
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.open"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.error.open"))
         }
     }
 
@@ -188,13 +188,13 @@ extension ClassifierSettingsModel {
             } else {
                 try finderOpener.openRepositoryInFinder(repoPath: repoPath)
             }
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.revealed"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.announcement.revealed"))
         } catch {
             fileActionError = ClassifierSettingsFileActionError(
-                message: L10n.string("settings.classifier.error.reveal"),
-                recovery: L10n.string("settings.classifier.recovery.reveal")
+                message: L10n.message("settings.classifier.error.reveal"),
+                recovery: L10n.message("settings.classifier.recovery.reveal")
             )
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.reveal"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.error.reveal"))
         }
     }
 
@@ -206,14 +206,14 @@ extension ClassifierSettingsModel {
         clearFileActionState()
         do {
             try classifierRulesManager.createDefaultClassifier(repoPath: repoPath)
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.defaultCreated"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.announcement.defaultCreated"))
             _ = await validateClassifierRules()
         } catch {
             fileActionError = ClassifierSettingsFileActionError(
-                message: L10n.string("settings.classifier.error.createDefault"),
-                recovery: L10n.string("settings.classifier.recovery.createDefault")
+                message: L10n.message("settings.classifier.error.createDefault"),
+                recovery: L10n.message("settings.classifier.recovery.createDefault")
             )
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.createDefault"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.error.createDefault"))
         }
     }
 
@@ -248,10 +248,10 @@ extension ClassifierSettingsModel {
 
         guard classifierFileExists else {
             validationState = .failed(ClassifierSettingsValidationError(
-                message: L10n.string("settings.classifier.error.missingFile"),
-                recovery: L10n.string("settings.classifier.recovery.missingFile")
+                message: L10n.message("settings.classifier.error.missingFile"),
+                recovery: L10n.message("settings.classifier.recovery.missingFile")
             ))
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.missingFile"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.error.missingFile"))
             return false
         }
 
@@ -275,12 +275,12 @@ extension ClassifierSettingsModel {
             refreshLastValidBackupAvailability()
             publishSavedCategoryIfNeeded()
             validationState = .passed
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.validated"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.announcement.validated"))
             return true
         } catch {
             validationState = .failed(ClassifierSettingsValidationError(
-                message: L10n.string("settings.classifier.error.backup"),
-                recovery: L10n.string("settings.classifier.recovery.backup")
+                message: L10n.message("settings.classifier.error.backup"),
+                recovery: L10n.message("settings.classifier.recovery.backup")
             ))
             accessibilityAnnouncer.announce(validationStateAnnouncement)
             return false
@@ -303,13 +303,13 @@ extension ClassifierSettingsModel {
         clearFileActionState()
         do {
             try classifierRulesManager.restoreLastValidBackup(repoPath: repoPath)
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.announcement.reverted"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.announcement.reverted"))
         } catch {
             validationState = .failed(ClassifierSettingsValidationError(
-                message: L10n.string("settings.classifier.error.revert"),
-                recovery: L10n.string("settings.classifier.recovery.revert")
+                message: L10n.message("settings.classifier.error.revert"),
+                recovery: L10n.message("settings.classifier.recovery.revert")
             ))
-            accessibilityAnnouncer.announce(L10n.string("settings.classifier.error.revert"))
+            accessibilityAnnouncer.announce(L10n.message("settings.classifier.error.revert"))
             return
         }
 
@@ -365,12 +365,12 @@ extension ClassifierSettingsModel {
         onSavedCategory?(savedCategory)
     }
 
-    private var validationStateAnnouncement: String {
+    private var validationStateAnnouncement: LocalizedMessage {
         if case let .failed(error) = validationState {
             return error.message
         }
 
-        return L10n.string("settings.classifier.error.validationFailed")
+        return L10n.message("settings.classifier.error.validationFailed")
     }
 
     private func clearFileActionState() {

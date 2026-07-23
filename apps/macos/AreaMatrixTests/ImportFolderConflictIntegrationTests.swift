@@ -150,7 +150,10 @@ private func makeImportFolderConflictReviewFixture() -> ImportFolderConflictRevi
     let prechecker = ImportFolderStaticConflictPrechecker(results: [
         duplicateURL.path: .duplicate(existingPath: "docs/existing-dup.pdf"),
         nameURL.path: .nameConflict(existingPath: "docs/name.pdf"),
-        blockedURL.path: .blocked("Conflict precheck failed: permission denied")
+        blockedURL.path: .blocked(L10n.verbatim(
+            "Conflict precheck failed: permission denied",
+            reason: .technicalDetail
+        ))
     ])
     let importer = ImportBatchRecordingBatchImporter()
     let model = ImportFolderPreviewModel(

@@ -88,7 +88,7 @@ final class ImportBatchPreviewModel: ObservableObject {
 
         guard case .multipleItems = request.kind, request.urls.count > 1 else {
             rows = []
-            status = .unsupported(L10n.string("import.batch.unsupportedRequest"))
+            status = .unsupported(L10n.display("import.batch.unsupportedRequest"))
             return
         }
 
@@ -137,7 +137,7 @@ final class ImportBatchPreviewModel: ObservableObject {
         selectedDestination = request.initialBatchDestination
         let rowStatus = ImportBatchPreviewRowStatus.nameConflict(
             existingPath: "Core import session \(route.importSessionID)",
-            reasonLabel: L10n.string("Waiting for Core conflict batch preview")
+            reasonLabel: L10n.display("Waiting for Core conflict batch preview")
         )
         rows = route.conflictIDs.map {
             ImportBatchPreviewRow(
@@ -190,7 +190,10 @@ final class ImportBatchPreviewModel: ObservableObject {
             case let .conflict(existingPath):
                 return row.withStatus(.nameConflict(
                     existingPath: existingPath,
-                    reasonLabel: L10n.format("import.preview.keep-both-auto-number", existingPath)
+                    reasonLabel: L10n.display(
+                        "import.preview.keep-both-auto-number",
+                        arguments: [.string(existingPath)]
+                    )
                 ))
             case let .failed(message):
                 return row.withStatus(.error(message))
@@ -209,7 +212,7 @@ final class ImportBatchPreviewModel: ObservableObject {
         case let .nameConflict(existingPath):
             .nameConflict(url: url, prediction: prediction, existingPath: existingPath)
         case .iCloudPlaceholder:
-            .iCloudPlaceholder(url: url, message: L10n.string("import.icloud.downloadRequired"))
+            .iCloudPlaceholder(url: url, message: L10n.display("import.icloud.downloadRequired"))
         case let .blocked(message):
             .failed(url: url, message: message)
         case let .failed(message):
@@ -221,24 +224,24 @@ final class ImportBatchPreviewModel: ObservableObject {
         completed == total || completed == 1 || completed.isMultiple(of: 10)
     }
 
-    private static func previewMessage(for error: Error) -> String {
+    private static func previewMessage(for error: Error) -> AppDisplayText {
         guard let context = CoreErrorRawContextSnapshot(error) else {
-            return L10n.string("import.preview.unavailable")
+            return L10n.display("import.preview.unavailable")
         }
 
         switch context.kind {
         case .config:
-            return L10n.format("import.preview.invalidRules", context.rawContext)
+            return L10n.display("import.preview.invalidRules", arguments: [.string(context.rawContext)])
         case .classify:
-            return L10n.format("import.preview.category-unavailable", context.rawContext)
+            return L10n.display("import.preview.category-unavailable", arguments: [.string(context.rawContext)])
         case .permissionDenied:
-            return L10n.format("import.preview.pathUnreadable", context.rawContext)
+            return L10n.display("import.preview.pathUnreadable", arguments: [.string(context.rawContext)])
         case .io:
-            return L10n.format("import.preview.fileReadFailed", context.rawContext)
+            return L10n.display("import.preview.fileReadFailed", arguments: [.string(context.rawContext)])
         case .db:
-            return L10n.format("import.preview.databaseReadFailed", context.rawContext)
+            return L10n.display("import.preview.databaseReadFailed", arguments: [.string(context.rawContext)])
         default:
-            return L10n.string("import.preview.unavailable")
+            return L10n.display("import.preview.unavailable")
         }
     }
 }

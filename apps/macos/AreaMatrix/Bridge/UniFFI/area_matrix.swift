@@ -1386,13 +1386,15 @@ public struct AiCategorySuggestionRequest {
     public var fileId: Int64
     public var contextPolicy: AiCategorySuggestionContextPolicy
     public var privacyPolicyRef: String?
+    public var contentLocale: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(fileId: Int64, contextPolicy: AiCategorySuggestionContextPolicy, privacyPolicyRef: String?) {
+    public init(fileId: Int64, contextPolicy: AiCategorySuggestionContextPolicy, privacyPolicyRef: String?, contentLocale: String) {
         self.fileId = fileId
         self.contextPolicy = contextPolicy
         self.privacyPolicyRef = privacyPolicyRef
+        self.contentLocale = contentLocale
     }
 }
 
@@ -1409,6 +1411,9 @@ extension AiCategorySuggestionRequest: Equatable, Hashable {
         if lhs.privacyPolicyRef != rhs.privacyPolicyRef {
             return false
         }
+        if lhs.contentLocale != rhs.contentLocale {
+            return false
+        }
         return true
     }
 
@@ -1416,6 +1421,7 @@ extension AiCategorySuggestionRequest: Equatable, Hashable {
         hasher.combine(fileId)
         hasher.combine(contextPolicy)
         hasher.combine(privacyPolicyRef)
+        hasher.combine(contentLocale)
     }
 }
 
@@ -1429,7 +1435,8 @@ public struct FfiConverterTypeAiCategorySuggestionRequest: FfiConverterRustBuffe
             try AiCategorySuggestionRequest(
                 fileId: FfiConverterInt64.read(from: &buf),
                 contextPolicy: FfiConverterTypeAiCategorySuggestionContextPolicy.read(from: &buf),
-                privacyPolicyRef: FfiConverterOptionString.read(from: &buf)
+                privacyPolicyRef: FfiConverterOptionString.read(from: &buf),
+                contentLocale: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -1437,6 +1444,7 @@ public struct FfiConverterTypeAiCategorySuggestionRequest: FfiConverterRustBuffe
         FfiConverterInt64.write(value.fileId, into: &buf)
         FfiConverterTypeAiCategorySuggestionContextPolicy.write(value.contextPolicy, into: &buf)
         FfiConverterOptionString.write(value.privacyPolicyRef, into: &buf)
+        FfiConverterString.write(value.contentLocale, into: &buf)
     }
 }
 
@@ -3396,15 +3404,17 @@ public struct AiSummaryGenerationRequest {
     public var contextPolicy: AiSummaryContextPolicy
     public var privacyPolicyRef: String?
     public var regenerateExisting: Bool
+    public var contentLocale: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(fileId: Int64, providerScope: AiSummaryProviderScope, contextPolicy: AiSummaryContextPolicy, privacyPolicyRef: String?, regenerateExisting: Bool) {
+    public init(fileId: Int64, providerScope: AiSummaryProviderScope, contextPolicy: AiSummaryContextPolicy, privacyPolicyRef: String?, regenerateExisting: Bool, contentLocale: String) {
         self.fileId = fileId
         self.providerScope = providerScope
         self.contextPolicy = contextPolicy
         self.privacyPolicyRef = privacyPolicyRef
         self.regenerateExisting = regenerateExisting
+        self.contentLocale = contentLocale
     }
 }
 
@@ -3427,6 +3437,9 @@ extension AiSummaryGenerationRequest: Equatable, Hashable {
         if lhs.regenerateExisting != rhs.regenerateExisting {
             return false
         }
+        if lhs.contentLocale != rhs.contentLocale {
+            return false
+        }
         return true
     }
 
@@ -3436,6 +3449,7 @@ extension AiSummaryGenerationRequest: Equatable, Hashable {
         hasher.combine(contextPolicy)
         hasher.combine(privacyPolicyRef)
         hasher.combine(regenerateExisting)
+        hasher.combine(contentLocale)
     }
 }
 
@@ -3451,7 +3465,8 @@ public struct FfiConverterTypeAiSummaryGenerationRequest: FfiConverterRustBuffer
                 providerScope: FfiConverterTypeAiSummaryProviderScope.read(from: &buf),
                 contextPolicy: FfiConverterTypeAiSummaryContextPolicy.read(from: &buf),
                 privacyPolicyRef: FfiConverterOptionString.read(from: &buf),
-                regenerateExisting: FfiConverterBool.read(from: &buf)
+                regenerateExisting: FfiConverterBool.read(from: &buf),
+                contentLocale: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -3461,6 +3476,7 @@ public struct FfiConverterTypeAiSummaryGenerationRequest: FfiConverterRustBuffer
         FfiConverterTypeAiSummaryContextPolicy.write(value.contextPolicy, into: &buf)
         FfiConverterOptionString.write(value.privacyPolicyRef, into: &buf)
         FfiConverterBool.write(value.regenerateExisting, into: &buf)
+        FfiConverterString.write(value.contentLocale, into: &buf)
     }
 }
 
@@ -4264,13 +4280,15 @@ public struct AiTagSuggestionRequest {
     public var fileId: Int64
     public var candidateTags: [String]
     public var privacyPolicyRef: String?
+    public var contentLocale: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(fileId: Int64, candidateTags: [String], privacyPolicyRef: String?) {
+    public init(fileId: Int64, candidateTags: [String], privacyPolicyRef: String?, contentLocale: String) {
         self.fileId = fileId
         self.candidateTags = candidateTags
         self.privacyPolicyRef = privacyPolicyRef
+        self.contentLocale = contentLocale
     }
 }
 
@@ -4287,6 +4305,9 @@ extension AiTagSuggestionRequest: Equatable, Hashable {
         if lhs.privacyPolicyRef != rhs.privacyPolicyRef {
             return false
         }
+        if lhs.contentLocale != rhs.contentLocale {
+            return false
+        }
         return true
     }
 
@@ -4294,6 +4315,7 @@ extension AiTagSuggestionRequest: Equatable, Hashable {
         hasher.combine(fileId)
         hasher.combine(candidateTags)
         hasher.combine(privacyPolicyRef)
+        hasher.combine(contentLocale)
     }
 }
 
@@ -4307,7 +4329,8 @@ public struct FfiConverterTypeAiTagSuggestionRequest: FfiConverterRustBuffer {
             try AiTagSuggestionRequest(
                 fileId: FfiConverterInt64.read(from: &buf),
                 candidateTags: FfiConverterSequenceString.read(from: &buf),
-                privacyPolicyRef: FfiConverterOptionString.read(from: &buf)
+                privacyPolicyRef: FfiConverterOptionString.read(from: &buf),
+                contentLocale: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -4315,6 +4338,7 @@ public struct FfiConverterTypeAiTagSuggestionRequest: FfiConverterRustBuffer {
         FfiConverterInt64.write(value.fileId, into: &buf)
         FfiConverterSequenceString.write(value.candidateTags, into: &buf)
         FfiConverterOptionString.write(value.privacyPolicyRef, into: &buf)
+        FfiConverterString.write(value.contentLocale, into: &buf)
     }
 }
 
@@ -10733,16 +10757,18 @@ public struct ImportOptions {
     public var overrideCategory: String?
     public var overrideFilename: String?
     public var duplicateStrategy: DuplicateStrategy
+    public var contentLocale: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(mode: StorageMode, destination: ImportDestination, targetDirectory: String?, overrideCategory: String?, overrideFilename: String?, duplicateStrategy: DuplicateStrategy) {
+    public init(mode: StorageMode, destination: ImportDestination, targetDirectory: String?, overrideCategory: String?, overrideFilename: String?, duplicateStrategy: DuplicateStrategy, contentLocale: String) {
         self.mode = mode
         self.destination = destination
         self.targetDirectory = targetDirectory
         self.overrideCategory = overrideCategory
         self.overrideFilename = overrideFilename
         self.duplicateStrategy = duplicateStrategy
+        self.contentLocale = contentLocale
     }
 }
 
@@ -10768,6 +10794,9 @@ extension ImportOptions: Equatable, Hashable {
         if lhs.duplicateStrategy != rhs.duplicateStrategy {
             return false
         }
+        if lhs.contentLocale != rhs.contentLocale {
+            return false
+        }
         return true
     }
 
@@ -10778,6 +10807,7 @@ extension ImportOptions: Equatable, Hashable {
         hasher.combine(overrideCategory)
         hasher.combine(overrideFilename)
         hasher.combine(duplicateStrategy)
+        hasher.combine(contentLocale)
     }
 }
 
@@ -10794,7 +10824,8 @@ public struct FfiConverterTypeImportOptions: FfiConverterRustBuffer {
                 targetDirectory: FfiConverterOptionString.read(from: &buf),
                 overrideCategory: FfiConverterOptionString.read(from: &buf),
                 overrideFilename: FfiConverterOptionString.read(from: &buf),
-                duplicateStrategy: FfiConverterTypeDuplicateStrategy.read(from: &buf)
+                duplicateStrategy: FfiConverterTypeDuplicateStrategy.read(from: &buf),
+                contentLocale: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -10805,6 +10836,7 @@ public struct FfiConverterTypeImportOptions: FfiConverterRustBuffer {
         FfiConverterOptionString.write(value.overrideCategory, into: &buf)
         FfiConverterOptionString.write(value.overrideFilename, into: &buf)
         FfiConverterTypeDuplicateStrategy.write(value.duplicateStrategy, into: &buf)
+        FfiConverterString.write(value.contentLocale, into: &buf)
     }
 }
 
@@ -14041,12 +14073,14 @@ public func FfiConverterTypeRemoteProviderTestResult_lower(_ value: RemoteProvid
 public struct RepairOptions {
     public var fullRescan: Bool
     public var preserveDiagnosticsSnapshot: Bool
+    public var contentLocale: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(fullRescan: Bool, preserveDiagnosticsSnapshot: Bool) {
+    public init(fullRescan: Bool, preserveDiagnosticsSnapshot: Bool, contentLocale: String) {
         self.fullRescan = fullRescan
         self.preserveDiagnosticsSnapshot = preserveDiagnosticsSnapshot
+        self.contentLocale = contentLocale
     }
 }
 
@@ -14060,12 +14094,16 @@ extension RepairOptions: Equatable, Hashable {
         if lhs.preserveDiagnosticsSnapshot != rhs.preserveDiagnosticsSnapshot {
             return false
         }
+        if lhs.contentLocale != rhs.contentLocale {
+            return false
+        }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(fullRescan)
         hasher.combine(preserveDiagnosticsSnapshot)
+        hasher.combine(contentLocale)
     }
 }
 
@@ -14078,13 +14116,15 @@ public struct FfiConverterTypeRepairOptions: FfiConverterRustBuffer {
         return
             try RepairOptions(
                 fullRescan: FfiConverterBool.read(from: &buf),
-                preserveDiagnosticsSnapshot: FfiConverterBool.read(from: &buf)
+                preserveDiagnosticsSnapshot: FfiConverterBool.read(from: &buf),
+                contentLocale: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: RepairOptions, into buf: inout [UInt8]) {
         FfiConverterBool.write(value.fullRescan, into: &buf)
         FfiConverterBool.write(value.preserveDiagnosticsSnapshot, into: &buf)
+        FfiConverterString.write(value.contentLocale, into: &buf)
     }
 }
 
@@ -14336,13 +14376,15 @@ public struct RepoInitOptions {
     public var mode: RepoInitMode
     public var createDefaultCategories: Bool
     public var overviewOutput: OverviewOutput
+    public var contentLocale: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(mode: RepoInitMode, createDefaultCategories: Bool, overviewOutput: OverviewOutput) {
+    public init(mode: RepoInitMode, createDefaultCategories: Bool, overviewOutput: OverviewOutput, contentLocale: String) {
         self.mode = mode
         self.createDefaultCategories = createDefaultCategories
         self.overviewOutput = overviewOutput
+        self.contentLocale = contentLocale
     }
 }
 
@@ -14359,6 +14401,9 @@ extension RepoInitOptions: Equatable, Hashable {
         if lhs.overviewOutput != rhs.overviewOutput {
             return false
         }
+        if lhs.contentLocale != rhs.contentLocale {
+            return false
+        }
         return true
     }
 
@@ -14366,6 +14411,7 @@ extension RepoInitOptions: Equatable, Hashable {
         hasher.combine(mode)
         hasher.combine(createDefaultCategories)
         hasher.combine(overviewOutput)
+        hasher.combine(contentLocale)
     }
 }
 
@@ -14379,7 +14425,8 @@ public struct FfiConverterTypeRepoInitOptions: FfiConverterRustBuffer {
             try RepoInitOptions(
                 mode: FfiConverterTypeRepoInitMode.read(from: &buf),
                 createDefaultCategories: FfiConverterBool.read(from: &buf),
-                overviewOutput: FfiConverterTypeOverviewOutput.read(from: &buf)
+                overviewOutput: FfiConverterTypeOverviewOutput.read(from: &buf),
+                contentLocale: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -14387,6 +14434,7 @@ public struct FfiConverterTypeRepoInitOptions: FfiConverterRustBuffer {
         FfiConverterTypeRepoInitMode.write(value.mode, into: &buf)
         FfiConverterBool.write(value.createDefaultCategories, into: &buf)
         FfiConverterTypeOverviewOutput.write(value.overviewOutput, into: &buf)
+        FfiConverterString.write(value.contentLocale, into: &buf)
     }
 }
 
@@ -32341,12 +32389,13 @@ public func removeTag(repoPath: String, fileId: Int64, tag: String)throws  -> Ta
     )
 })
 }
-public func renameFile(repoPath: String, fileId: Int64, newName: String)throws  -> FileEntry {
+public func renameFile(repoPath: String, fileId: Int64, newName: String, contentLocale: String)throws  -> FileEntry {
     return try  FfiConverterTypeFileEntry.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_rename_file(
         FfiConverterString.lower(repoPath),
         FfiConverterInt64.lower(fileId),
-        FfiConverterString.lower(newName),$0
+        FfiConverterString.lower(newName),
+        FfiConverterString.lower(contentLocale),$0
     )
 })
 }
@@ -32430,12 +32479,6 @@ public func semanticSearch(repoPath: String, query: String, filter: SearchFilter
     )
 })
 }
-public func setAppInterfaceLocale(locale: String)throws  {try rustCallWithError(FfiConverterTypeCoreError.lift) {
-    uniffi_area_matrix_core_fn_func_set_app_interface_locale(
-        FfiConverterString.lower(locale),$0
-    )
-}
-}
 public func setFsEventCursor(repoPath: String, lastEventId: Int64)throws  {try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_set_fs_event_cursor(
         FfiConverterString.lower(repoPath),
@@ -32467,11 +32510,12 @@ public func suggestTagsWithAi(repoPath: String, request: AiTagSuggestionRequest)
     )
 })
 }
-public func syncExternalChanges(repoPath: String, events: [ExternalEvent])throws  -> SyncResult {
+public func syncExternalChanges(repoPath: String, events: [ExternalEvent], contentLocale: String)throws  -> SyncResult {
     return try  FfiConverterTypeSyncResult.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_sync_external_changes(
         FfiConverterString.lower(repoPath),
-        FfiConverterSequenceTypeExternalEvent.lower(events),$0
+        FfiConverterSequenceTypeExternalEvent.lower(events),
+        FfiConverterString.lower(contentLocale),$0
     )
 })
 }
@@ -32794,7 +32838,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_area_matrix_core_checksum_func_remove_tag() != 24719) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_area_matrix_core_checksum_func_rename_file() != 28934) {
+    if (uniffi_area_matrix_core_checksum_func_rename_file() != 3348) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_repair_metadata() != 38988) {
@@ -32824,9 +32868,6 @@ private var initializationResult: InitializationResult = {
     if (uniffi_area_matrix_core_checksum_func_semantic_search() != 798) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_area_matrix_core_checksum_func_set_app_interface_locale() != 8380) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_area_matrix_core_checksum_func_set_fs_event_cursor() != 62271) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -32839,7 +32880,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_area_matrix_core_checksum_func_suggest_tags_with_ai() != 38498) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_area_matrix_core_checksum_func_sync_external_changes() != 54775) {
+    if (uniffi_area_matrix_core_checksum_func_sync_external_changes() != 24475) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_undo_action() != 60370) {

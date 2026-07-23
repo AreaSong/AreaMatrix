@@ -85,6 +85,7 @@ private struct ImportDropDelegate: DropDelegate {
 }
 
 struct DropZoneOverlay: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let presentation: ImportDropPreviewPresentation
 
     var body: some View {
@@ -117,7 +118,7 @@ struct DropZoneOverlay: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else if let warning = presentation.warning {
-            Label(warning, systemImage: "exclamationmark.triangle")
+            Label(localizer.resolve(warning), systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.orange)
         } else if let predictionLabel = presentation.predictionLabel {
@@ -133,7 +134,7 @@ struct DropZoneOverlay: View {
             L10n.format("import.drop.destination", presentation.destinationLabel)
         ]
         if let warning = presentation.warning {
-            parts.append(warning)
+            parts.append(localizer.resolve(warning))
         } else if let predictionLabel = presentation.predictionLabel {
             parts.append(predictionLabel)
         }

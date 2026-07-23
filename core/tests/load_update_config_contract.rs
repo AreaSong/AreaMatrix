@@ -1,8 +1,9 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, load_config, update_config, CoreError, CoreResult, OverviewOutput, RepoConfig,
-    RepoInitMode, RepoInitOptions, StorageMode,
+    init_repo, load_repo_config, update_repo_config, CoreError, CoreResult, OverviewOutput,
+    RepoConfigPatch, RepoConfigSnapshot, RepoInitMode, RepoInitOptions, RepositoryLocalePolicy,
+    RepositoryLocalePolicyState, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -20,6 +21,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -62,25 +65,43 @@ fn config_key_values(repo: &Path) -> Vec<(String, String)> {
         .collect()
 }
 
+fn settings_patch(expected_revision: i64) -> RepoConfigPatch {
+    RepoConfigPatch {
+        expected_revision,
+        default_mode: Some(StorageMode::Indexed),
+        overview_output: Some(OverviewOutput::RootAreaMatrixFile),
+        ai_enabled: Some(true),
+        locale_policy: Some(RepositoryLocalePolicy::En),
+        icloud_warn: Some(false),
+        enable_extension_rules: Some(false),
+        enable_keyword_rules: Some(false),
+        fallback_to_inbox: Some(false),
+        allow_replace_during_import: Some(true),
+    }
+}
+
 #[test]
 fn load_update_config_contract_exports_callable_signatures() {
-    fn assert_load(_: fn(String) -> CoreResult<RepoConfig>) {}
-    fn assert_update(_: fn(String, RepoConfig) -> CoreResult<()>) {}
+    fn assert_load(_: fn(String) -> CoreResult<RepoConfigSnapshot>) {}
+    fn assert_update(_: fn(String, RepoConfigPatch) -> CoreResult<RepoConfigSnapshot>) {}
 
-    assert_load(load_config);
-    assert_update(update_config);
+    assert_load(load_repo_config);
+    assert_update(update_repo_config);
 }
 
 #[test]
 fn load_update_config_contract_docs_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "RepoConfig load_config(string repo_path);",
-        "void update_config(string repo_path, RepoConfig new_config);",
-        "dictionary RepoConfig",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
+        "RepoConfigSnapshot update_repo_config(string repo_path, RepoConfigPatch patch);",
+        "dictionary RepoConfigSnapshot",
+        "dictionary RepoConfigPatch",
+        "i64 revision;",
+        "i64 expected_revision;",
         "StorageMode default_mode;",
         "OverviewOutput overview_output;",
         "boolean ai_enabled;",
-        "string locale;",
+        "RepositoryLocalePolicySnapshot locale_policy;",
         "boolean icloud_warn;",
         "boolean enable_extension_rules;",
         "boolean enable_keyword_rules;",
@@ -94,10 +115,10 @@ fn load_update_config_contract_docs_udl_and_control_map_stay_aligned() {
     }
 
     for core_api_fragment in [
-        "| `load_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |",
-        "| `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |",
-        "通过 SQLite 事务更新 `repo_config`",
-        "该调用不写 tmp 文件、不",
+        "| `load_repo_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |",
+        "| `update_repo_config(repo, patch)` | repo | √ | Config / Conflict / PermissionDenied / Io / Db |",
+        "通过 SQLite immediate transaction 比较 `expected_revision`",
+        "stale revision 返回 `Conflict`",
     ] {
         assert_contains(CORE_API, core_api_fragment);
     }
@@ -113,13 +134,18 @@ fn load_update_config_contract_docs_udl_and_control_map_stay_aligned() {
 fn load_update_config_loads_defaults_when_metadata_is_missing() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
 
-    let config = load_config(path_string(repo.path())).expect("load default config");
+    let config = load_repo_config(path_string(repo.path())).expect("load default config");
 
     assert_eq!(config.repo_path, path_string(repo.path()));
+    assert_eq!(config.revision, 0);
     assert_eq!(config.default_mode, StorageMode::Copied);
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);
     assert!(!config.ai_enabled);
-    assert_eq!(config.locale, "zh-Hans");
+    assert_eq!(config.locale_policy.raw_value, "system");
+    assert_eq!(
+        config.locale_policy.state,
+        RepositoryLocalePolicyState::FollowInterface
+    );
     assert!(config.icloud_warn);
     assert!(config.enable_extension_rules);
     assert!(config.enable_keyword_rules);
@@ -129,26 +155,13 @@ fn load_update_config_loads_defaults_when_metadata_is_missing() {
 
 #[test]
 fn load_update_config_rejects_empty_repo_path_as_config_error() {
-    let config = RepoConfig {
-        repo_path: String::new(),
-        default_mode: StorageMode::Copied,
-        overview_output: OverviewOutput::GeneratedOnly,
-        ai_enabled: false,
-        locale: "zh-Hans".to_owned(),
-        icloud_warn: true,
-        enable_extension_rules: true,
-        enable_keyword_rules: true,
-        fallback_to_inbox: true,
-        allow_replace_during_import: false,
-    };
-
     assert!(matches!(
-        load_config(String::new()),
+        load_repo_config(String::new()),
         Err(CoreError::Config { .. })
     ));
 
     assert!(matches!(
-        update_config(String::new(), config),
+        update_repo_config(String::new(), settings_patch(1)),
         Err(CoreError::Config { .. })
     ));
 }
@@ -156,21 +169,25 @@ fn load_update_config_rejects_empty_repo_path_as_config_error() {
 #[test]
 fn load_update_config_update_persists_all_repo_config_fields() {
     let repo = initialized_repo();
-    let mut config = load_config(path_string(repo.path())).expect("load initial config");
-    config.default_mode = StorageMode::Indexed;
-    config.overview_output = OverviewOutput::RootAreaMatrixFile;
-    config.ai_enabled = true;
-    config.locale = "en".to_owned();
-    config.icloud_warn = false;
-    config.enable_extension_rules = false;
-    config.enable_keyword_rules = false;
-    config.fallback_to_inbox = false;
-    config.allow_replace_during_import = true;
+    let initial = load_repo_config(path_string(repo.path())).expect("load initial config");
+    let updated = update_repo_config(
+        path_string(repo.path()),
+        settings_patch(initial.revision),
+    )
+    .expect("persist config update");
 
-    update_config(path_string(repo.path()), config.clone()).expect("persist config update");
-
-    let reloaded = load_config(path_string(repo.path())).expect("reload updated config");
-    assert_eq!(reloaded, config);
+    let reloaded = load_repo_config(path_string(repo.path())).expect("reload updated config");
+    assert_eq!(reloaded, updated);
+    assert_eq!(updated.revision, initial.revision + 1);
+    assert_eq!(updated.default_mode, StorageMode::Indexed);
+    assert_eq!(updated.overview_output, OverviewOutput::RootAreaMatrixFile);
+    assert!(updated.ai_enabled);
+    assert_eq!(updated.locale_policy.raw_value, "en");
+    assert!(!updated.icloud_warn);
+    assert!(!updated.enable_extension_rules);
+    assert!(!updated.enable_keyword_rules);
+    assert!(!updated.fallback_to_inbox);
+    assert!(updated.allow_replace_during_import);
     assert_eq!(config_rows(repo.path()).len(), 10);
     assert!(!repo.path().join("README.md").exists());
     assert!(!repo.path().join("AREAMATRIX.md").exists());
@@ -186,52 +203,63 @@ fn load_update_config_update_refreshes_repo_config_updated_at() {
         .expect("set stale updated_at values");
     drop(connection);
 
-    let mut config = load_config(path_string(repo.path())).expect("load initial config");
-    config.locale = "en".to_owned();
-
-    update_config(path_string(repo.path()), config).expect("persist config update");
+    let initial = load_repo_config(path_string(repo.path())).expect("load initial config");
+    update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: initial.revision,
+            locale_policy: Some(RepositoryLocalePolicy::En),
+            ..RepoConfigPatch::default()
+        },
+    )
+    .expect("persist config update");
 
     for (key, _, updated_at) in config_rows(repo.path()) {
-        assert!(updated_at > 1, "{key} should have a fresh updated_at");
+        if key == "locale" {
+            assert!(updated_at > 1, "locale should have a fresh updated_at");
+        } else {
+            assert_eq!(updated_at, 1, "{key} should remain untouched");
+        }
     }
 }
 
 #[test]
-fn load_update_config_update_rejects_mismatched_payload_without_changing_previous_config() {
+fn load_update_config_update_rejects_stale_revision_without_changing_previous_config() {
     let repo = initialized_repo();
-    let before = load_config(path_string(repo.path())).expect("load initial config");
-    let mut invalid = before.clone();
-    invalid.repo_path = "/tmp/other-repo".to_owned();
-    invalid.locale = "en".to_owned();
+    let before = load_repo_config(path_string(repo.path())).expect("load initial config");
 
-    let result = update_config(path_string(repo.path()), invalid);
+    let result = update_repo_config(path_string(repo.path()), settings_patch(before.revision + 1));
 
-    assert!(matches!(result, Err(CoreError::Config { .. })));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
 
-    let after = load_config(path_string(repo.path())).expect("reload config after failed update");
+    let after =
+        load_repo_config(path_string(repo.path())).expect("reload config after failed update");
     assert_eq!(after, before);
 }
 
 #[test]
-fn load_update_config_update_rejects_empty_locale_without_partial_write() {
+fn load_update_config_empty_patch_is_read_only() {
     let repo = initialized_repo();
-    let before = load_config(path_string(repo.path())).expect("load initial config");
-    let mut invalid = before.clone();
-    invalid.locale = "  ".to_owned();
-    invalid.ai_enabled = true;
+    let before = load_repo_config(path_string(repo.path())).expect("load initial config");
+    let rows_before = config_rows(repo.path());
 
-    let result = update_config(path_string(repo.path()), invalid);
+    let result = update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: before.revision,
+            ..RepoConfigPatch::default()
+        },
+    )
+    .expect("apply empty patch");
 
-    assert!(matches!(result, Err(CoreError::Config { .. })));
-
-    let after = load_config(path_string(repo.path())).expect("reload config after failed update");
-    assert_eq!(after, before);
+    assert_eq!(result, before);
+    assert_eq!(config_rows(repo.path()), rows_before);
 }
 
 #[test]
 fn load_update_config_update_rolls_back_when_late_repo_config_write_fails() {
     let repo = initialized_repo();
-    let before_config = load_config(path_string(repo.path())).expect("load initial config");
+    let before_config = load_repo_config(path_string(repo.path())).expect("load initial config");
     let before_rows = config_rows(repo.path());
     let connection =
         Connection::open(repo.path().join(".areamatrix/index.db")).expect("open database");
@@ -247,15 +275,15 @@ fn load_update_config_update_rolls_back_when_late_repo_config_write_fails() {
         .expect("install failing config trigger");
     drop(connection);
 
-    let mut config = before_config.clone();
-    config.default_mode = StorageMode::Indexed;
-    config.ai_enabled = true;
-    config.locale = "en".to_owned();
-    let result = update_config(path_string(repo.path()), config);
+    let result = update_repo_config(
+        path_string(repo.path()),
+        settings_patch(before_config.revision),
+    );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
 
-    let after_config = load_config(path_string(repo.path())).expect("reload config after rollback");
+    let after_config =
+        load_repo_config(path_string(repo.path())).expect("reload config after rollback");
     assert_eq!(after_config, before_config);
     assert_eq!(config_rows(repo.path()), before_rows);
 }
@@ -263,22 +291,18 @@ fn load_update_config_update_rolls_back_when_late_repo_config_write_fails() {
 #[test]
 fn load_update_config_update_is_repeatable_without_duplicate_rows() {
     let repo = initialized_repo();
-    let mut config = load_config(path_string(repo.path())).expect("load initial config");
-    config.default_mode = StorageMode::Indexed;
-    config.overview_output = OverviewOutput::RootAreaMatrixFile;
-    config.ai_enabled = true;
-    config.locale = "en".to_owned();
-    config.icloud_warn = false;
-    config.enable_extension_rules = false;
-    config.enable_keyword_rules = false;
-    config.fallback_to_inbox = false;
-    config.allow_replace_during_import = true;
-
-    update_config(path_string(repo.path()), config.clone()).expect("first update");
+    let initial = load_repo_config(path_string(repo.path())).expect("load initial config");
+    let first = update_repo_config(
+        path_string(repo.path()),
+        settings_patch(initial.revision),
+    )
+    .expect("first update");
     let first_key_values = config_key_values(repo.path());
-    update_config(path_string(repo.path()), config.clone()).expect("second update");
+    let second = update_repo_config(path_string(repo.path()), settings_patch(first.revision))
+        .expect("second update");
 
-    assert_eq!(load_config(path_string(repo.path())), Ok(config));
+    assert_eq!(load_repo_config(path_string(repo.path())), Ok(second.clone()));
+    assert_eq!(second.revision, first.revision + 1);
     assert_eq!(config_key_values(repo.path()), first_key_values);
     assert_eq!(config_rows(repo.path()).len(), 10);
 }
@@ -291,10 +315,17 @@ fn load_update_config_update_preserves_existing_user_visible_files() {
     fs::write(&readme_path, "user readme\n").expect("write user README");
     fs::write(&overview_path, "user overview\n").expect("write user overview");
 
-    let mut config = load_config(path_string(repo.path())).expect("load initial config");
-    config.overview_output = OverviewOutput::RootAreaMatrixFile;
-    config.locale = "en".to_owned();
-    update_config(path_string(repo.path()), config).expect("persist config update");
+    let initial = load_repo_config(path_string(repo.path())).expect("load initial config");
+    update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: initial.revision,
+            overview_output: Some(OverviewOutput::RootAreaMatrixFile),
+            locale_policy: Some(RepositoryLocalePolicy::En),
+            ..RepoConfigPatch::default()
+        },
+    )
+    .expect("persist config update");
 
     assert_eq!(
         fs::read_to_string(&readme_path).expect("read README"),
@@ -309,20 +340,7 @@ fn load_update_config_update_preserves_existing_user_visible_files() {
 #[test]
 fn load_update_config_update_requires_initialized_metadata_without_creating_it() {
     let repo = tempfile::tempdir().expect("create temporary repository directory");
-    let config = RepoConfig {
-        repo_path: path_string(repo.path()),
-        default_mode: StorageMode::Copied,
-        overview_output: OverviewOutput::GeneratedOnly,
-        ai_enabled: false,
-        locale: "zh-Hans".to_owned(),
-        icloud_warn: true,
-        enable_extension_rules: true,
-        enable_keyword_rules: true,
-        fallback_to_inbox: true,
-        allow_replace_during_import: false,
-    };
-
-    let result = update_config(path_string(repo.path()), config);
+    let result = update_repo_config(path_string(repo.path()), settings_patch(1));
 
     assert!(matches!(result, Err(CoreError::Config { .. })));
 
@@ -343,9 +361,15 @@ fn load_update_config_update_returns_permission_denied_for_unwritable_database()
     readonly_permissions.set_mode(0o444);
     fs::set_permissions(&db_path, readonly_permissions).expect("make database read-only");
 
-    let mut config = load_config(path_string(repo.path())).expect("load initial config");
-    config.locale = "en".to_owned();
-    let result = update_config(path_string(repo.path()), config);
+    let initial = load_repo_config(path_string(repo.path())).expect("load initial config");
+    let result = update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: initial.revision,
+            locale_policy: Some(RepositoryLocalePolicy::En),
+            ..RepoConfigPatch::default()
+        },
+    );
 
     fs::set_permissions(&db_path, original_permissions).expect("restore database permissions");
     assert_eq!(
@@ -360,7 +384,7 @@ fn load_update_config_update_returns_permission_denied_for_unwritable_metadata_d
     use std::os::unix::fs::PermissionsExt;
 
     let repo = initialized_repo();
-    let before = load_config(path_string(repo.path())).expect("load initial config");
+    let before = load_repo_config(path_string(repo.path())).expect("load initial config");
     let metadata_dir = repo.path().join(".areamatrix");
     let original_permissions = fs::metadata(&metadata_dir)
         .expect("read metadata permissions")
@@ -370,9 +394,14 @@ fn load_update_config_update_returns_permission_denied_for_unwritable_metadata_d
     fs::set_permissions(&metadata_dir, readonly_permissions)
         .expect("make metadata directory read-only");
 
-    let mut config = before.clone();
-    config.locale = "en".to_owned();
-    let result = update_config(path_string(repo.path()), config);
+    let result = update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: before.revision,
+            locale_policy: Some(RepositoryLocalePolicy::En),
+            ..RepoConfigPatch::default()
+        },
+    );
 
     fs::set_permissions(&metadata_dir, original_permissions).expect("restore metadata permissions");
     assert_eq!(
@@ -380,7 +409,7 @@ fn load_update_config_update_returns_permission_denied_for_unwritable_metadata_d
         Err(CoreError::permission_denied("permission denied"))
     );
     assert_eq!(
-        load_config(path_string(repo.path())),
+        load_repo_config(path_string(repo.path())),
         Ok(before),
         "permission failure must not change persisted config"
     );

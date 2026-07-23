@@ -4,21 +4,25 @@ enum ImportSingleFileFilenameValidator {
     private static let invalidScalars = CharacterSet(charactersIn: "/\\\\:*?\"<>|")
 
     static func validationMessage(for filename: String) -> String? {
+        validationDisplayText(for: filename).map(L10n.resolve)
+    }
+
+    static func validationDisplayText(for filename: String) -> AppDisplayText? {
         let trimmed = filename.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            return L10n.string("import.filename.empty")
+            return L10n.display("import.filename.empty")
         }
         if trimmed == "." || trimmed == ".." {
-            return L10n.string("import.filename.dotPath")
+            return L10n.display("import.filename.dotPath")
         }
         if trimmed.rangeOfCharacter(from: invalidScalars) != nil {
-            return L10n.string("import.filename.invalidCharacters")
+            return L10n.display("import.filename.invalidCharacters")
         }
         return nil
     }
 
     static func validate(_ filename: String) throws {
-        if validationMessage(for: filename) != nil {
+        if validationDisplayText(for: filename) != nil {
             throw AppSemanticError.invalidPath(rawContext: filename)
         }
     }

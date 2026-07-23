@@ -16,7 +16,7 @@ struct PlatformDifferencesCapabilityRow: View {
                 .foregroundStyle(.secondary)
             Text(L10n.format(
                 "settings.platformDifferences.uiEnabled",
-                L10n.string(row.support.uiEnabled ? "Yes" : "No")
+                row.support.uiEnabled ? L10n.string("Yes") : L10n.string("No")
             ))
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -116,11 +116,16 @@ struct PlatformDifferencesStatusRow: View, Identifiable {
 }
 
 struct PlatformDifferencesCapabilityErrorBanner: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let error: PlatformDifferencesCapabilityError
 
     var body: some View {
-        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .orange) {
-            Text(error.recovery)
+        SettingsStatusBanner(
+            title: localizer.resolve(error.message),
+            systemImage: "exclamationmark.triangle",
+            tint: .orange
+        ) {
+            Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Text(error.detail)
@@ -134,11 +139,16 @@ struct PlatformDifferencesCapabilityErrorBanner: View {
 }
 
 struct PlatformDifferencesErrorBanner: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let error: PlatformDifferencesContractError
 
     var body: some View {
-        SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-            Text(error.recovery)
+        SettingsStatusBanner(
+            title: localizer.resolve(error.message),
+            systemImage: "exclamationmark.triangle",
+            tint: .red
+        ) {
+            Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Text(error.detail)

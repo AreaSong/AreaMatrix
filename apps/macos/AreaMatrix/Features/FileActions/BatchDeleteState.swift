@@ -227,44 +227,44 @@ extension BatchDeleteReportSnapshot {
 }
 
 struct BatchDeletePreviewReportPresentation: Equatable {
-    var trashSummaryText: String
-    var indexOnlySummaryText: String
-    var blockedSummaryText: String
-    var undoSummaryText: String
-    var safetySummaryText: String
+    var trashSummaryText: LocalizedMessage
+    var indexOnlySummaryText: LocalizedMessage
+    var blockedSummaryText: LocalizedMessage
+    var undoSummaryText: LocalizedMessage
+    var safetySummaryText: LocalizedMessage
 
     init(report: BatchDeletePreviewReportSnapshot) {
-        trashSummaryText = L10n.plural("file-actions.delete.preview.move-to-trash", count: Int(report.willTrashCount))
-        indexOnlySummaryText = L10n.plural(
+        trashSummaryText = L10n.pluralMessage("file-actions.delete.preview.move-to-trash", count: report.willTrashCount)
+        indexOnlySummaryText = L10n.pluralMessage(
             "file-actions.delete.preview.remove-from-index",
-            count: Int(report.indexOnlyCount)
+            count: report.indexOnlyCount
         )
-        blockedSummaryText = L10n.plural(
+        blockedSummaryText = L10n.pluralMessage(
             "file-actions.delete.preview.blocked-and-excluded",
-            count: Int(report.blockedCount)
+            count: report.blockedCount
         )
         undoSummaryText = report.undoAvailable
-            ? L10n.string("Undo: available after completion")
-            : L10n.string("Undo: unavailable")
-        safetySummaryText = L10n.string("No files will be permanently deleted")
+            ? L10n.message("Undo: available after completion")
+            : L10n.message("Undo: unavailable")
+        safetySummaryText = L10n.message("No files will be permanently deleted")
     }
 }
 
 struct BatchDeleteReportPresentation: Equatable {
-    var successSummaryText: String
-    var skippedSummaryText: String
-    var failedSummaryText: String
-    var undoSummaryText: String
+    var successSummaryText: LocalizedMessage
+    var skippedSummaryText: LocalizedMessage
+    var failedSummaryText: LocalizedMessage
+    var undoSummaryText: LocalizedMessage
 
     init(report: BatchDeleteReportSnapshot) {
-        successSummaryText = L10n.plural(
+        successSummaryText = L10n.pluralMessage(
             "file-actions.delete.result.processed",
-            count: Int(report.successfulDeleteCount)
+            count: report.successfulDeleteCount
         )
-        skippedSummaryText = L10n.plural("file-actions.delete.result.skipped", count: Int(report.skippedCount))
-        failedSummaryText = L10n.plural("file-actions.delete.result.failed", count: Int(report.failedCount))
+        skippedSummaryText = L10n.pluralMessage("file-actions.delete.result.skipped", count: report.skippedCount)
+        failedSummaryText = L10n.pluralMessage("file-actions.delete.result.failed", count: report.failedCount)
         undoSummaryText = report.undoToken == nil
-            ? L10n.string("Undo action unavailable")
-            : L10n.string("Undo action recorded")
+            ? L10n.message("Undo action unavailable")
+            : L10n.message("Undo action recorded")
     }
 }

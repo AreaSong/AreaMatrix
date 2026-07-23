@@ -139,7 +139,7 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         )
 
         XCTAssertNil(invalid.updatedFilters)
-        XCTAssertEqual(invalid.errorMessage, "End date must be after start date.")
+        XCTAssertEqual(invalid.errorMessage, L10n.message("End date must be after start date."))
         XCTAssertEqual(filters.modifiedAfter, 1_700_000_000)
         XCTAssertNil(filters.modifiedBefore)
 

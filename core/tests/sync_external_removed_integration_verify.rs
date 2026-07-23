@@ -40,6 +40,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -137,9 +139,12 @@ fn sync_created_file(
     fs_event_id: i64,
 ) -> FileEntry {
     write_repo_file(repo, relative_path, bytes);
-    let result =
-        sync_external_changes(path_string(repo), vec![created(relative_path, fs_event_id)])
-            .expect("sync external created file fixture");
+    let result = sync_external_changes(
+        path_string(repo),
+        vec![created(relative_path, fs_event_id)],
+        "en".to_owned(),
+    )
+    .expect("sync external created file fixture");
     assert_eq!(result.detected_creates, 1);
     listed_files(repo, default_file_filter())
         .into_iter()
@@ -175,7 +180,7 @@ fn assert_c1_19_capability_spec() {}
 
 fn assert_core_api_and_udl_contract() {
     for fragment in [
-        "SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);",
+        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, string content_locale\n    );",
         "dictionary ExternalEvent",
         "string path;",
         "ExternalEventKind kind;",
@@ -190,7 +195,7 @@ fn assert_core_api_and_udl_contract() {
     }
 
     for fragment in [
-        "### `sync_external_changes(repoPath, events) throws -> SyncResult`",
+        "### `sync_external_changes(repoPath, events, contentLocale) throws -> SyncResult`",
         "去抖 + InFlight 过滤后传入",
         "deleted: \\(result.detectedDeletes), modified: \\(result.detectedModifies)",
         "`sync_external_changes`（批量事件）",
@@ -268,6 +273,7 @@ fn sync_external_removed_integration_verify_real_flow_reaches_list_detail_log_tr
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/remove.pdf", 902)],
+        "en".to_owned(),
     )
     .expect("sync external removed event");
 
@@ -324,6 +330,7 @@ fn sync_external_removed_integration_verify_boundaries_stay_transactional_and_sc
     let existing_path = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/present.pdf", 911)],
+        "en".to_owned(),
     );
 
     assert_eq!(existing_path, Err(CoreError::conflict("docs/present.pdf")));
@@ -351,6 +358,7 @@ fn sync_external_removed_integration_verify_boundaries_stay_transactional_and_sc
             removed("docs/present.pdf", 912),
             modified("docs/present.pdf", 913),
         ],
+        "en".to_owned(),
     )
     .expect("sync coalesced removed and modified signals");
 

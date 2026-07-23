@@ -24,7 +24,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             dedupedNormalCount: 1
         )
 
-        XCTAssertEqual(page.semanticRows().map(\.matchSource), ["Semantic"])
+        XCTAssertEqual(page.semanticRows().map(\.matchSource), [L10n.message("Semantic")])
         XCTAssertEqual(page.normalRows(showFoldedDuplicates: false).map(\.file.id), [normalOnlyFile.id])
         XCTAssertEqual(
             page.normalRows(showFoldedDuplicates: true).map(\.file.id),
@@ -32,8 +32,15 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
         )
         XCTAssertEqual(page.semanticRows().first?.relevance, "0.91")
         XCTAssertEqual(page.semanticRows().first?.matchedReason, "filename and summary match invoice")
-        XCTAssertEqual(page.semanticRows().first?.whyThisMatched.contains("File name"), true)
-        XCTAssertEqual(page.detailPresentation(for: semanticFile.id)?.title, "From semantic search")
+        let localizer = AppLocalizer(runtime: AppLanguageRuntime(selection: .en))
+        XCTAssertEqual(
+            page.semanticRows().first?.whyThisMatched.resolve(using: localizer).contains("File name"),
+            true
+        )
+        XCTAssertEqual(
+            page.detailPresentation(for: semanticFile.id)?.title,
+            L10n.message("From semantic search")
+        )
         XCTAssertEqual(page.detailPresentation(for: semanticFile.id)?.alsoMatchedNormalSearch, true)
     }
 
@@ -189,7 +196,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             onAction: { _ in }
         )
 
-        XCTAssertEqual(status.title, "Remote AI could not be reached")
+        XCTAssertEqual(status.title, L10n.message("Remote AI could not be reached"))
         XCTAssertTrue(status.retryable)
         XCTAssertEqual(status.actions, [.viewCallLog, .useNormalSearch])
         XCTAssertFalse(status.canBuildSemanticIndex)

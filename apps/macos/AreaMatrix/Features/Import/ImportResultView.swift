@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ImportResultView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let state: ImportResultRouteState
     let onDone: () -> Void
     let onRetryFailed: () -> Void
@@ -150,7 +151,7 @@ struct ImportResultView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case let .failed(message):
-            Label(message, systemImage: "exclamationmark.triangle")
+            Label(localizer.resolve(message), systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.red)
         }

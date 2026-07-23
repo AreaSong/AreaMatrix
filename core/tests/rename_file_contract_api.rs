@@ -33,6 +33,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -54,6 +56,7 @@ fn import_options(mode: StorageMode, filename: &str) -> ImportOptions {
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -146,12 +149,12 @@ fn assert_contains(haystack: &str, needle: &str) {
 
 #[test]
 fn rename_file_contract_exports_core_api_and_udl_signature() {
-    fn assert_rename(_: fn(String, i64, String) -> CoreResult<FileEntry>) {}
+    fn assert_rename(_: fn(String, i64, String, String) -> CoreResult<FileEntry>) {}
 
     assert_rename(rename_file);
 
     for fragment in [
-        "FileEntry rename_file(string repo_path, i64 file_id, string new_name);",
+        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, string content_locale\n    );",
         "dictionary FileEntry",
         "string path;",
         "string current_name;",
@@ -176,7 +179,7 @@ fn rename_file_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "| `rename_file(repo, file_id, new_name)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |",
+        "| `rename_file(repo, file_id, new_name, content_locale)` | storage | √ | Io / Db / Config / InvalidPath / Conflict / FileNotFound / PermissionDenied |",
         "`newName` 是文件名而不是路径",
         "`files.path`、`files.current_name`、`updated_at`",
         "Indexed 文件只更新 `files.current_name`",
@@ -222,8 +225,13 @@ fn rename_file_contract_repo_owned_rename_preserves_identity_metadata_and_logs()
     .expect("import copied file before rename");
     insert_note_and_tag(repo.path(), entry.id, &entry.path);
 
-    let renamed = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned())
-        .expect("rename copied file");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename copied file");
 
     assert_eq!(renamed.id, entry.id);
     assert_eq!(renamed.path, "finance/final.pdf");
@@ -284,8 +292,13 @@ fn rename_file_contract_updates_generated_overview_outputs_without_touching_read
         fs::read_to_string(&generated_node_path).expect("read generated node overview");
     assert_contains(&generated_node_before, "draft.pdf");
 
-    let renamed = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned())
-        .expect("rename copied file");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename copied file");
 
     assert_eq!(renamed.current_name, "final.pdf");
     let generated_root_after =
@@ -318,8 +331,13 @@ fn rename_file_contract_indexed_rename_only_changes_display_name() {
     )
     .expect("index external source");
 
-    let renamed = rename_file(path_string(repo.path()), entry.id, "display.pdf".to_owned())
-        .expect("rename indexed display name");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "display.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename indexed display name");
 
     assert_eq!(renamed.id, entry.id);
     assert_eq!(renamed.path, source_path);
@@ -373,8 +391,13 @@ fn rename_file_contract_same_name_conflict_uses_safe_numbering_without_overwrite
     )
     .expect("import draft target");
 
-    let renamed = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned())
-        .expect("rename with safe numbered target");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        draft.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename with safe numbered target");
 
     assert_eq!(renamed.path, "finance/same_1.pdf");
     assert_eq!(renamed.current_name, "same_1.pdf");
@@ -406,11 +429,21 @@ fn rename_file_contract_rejects_invalid_names_and_missing_ids_without_side_effec
     .expect("import file before rejected renames");
 
     for invalid in ["", "bad/name.pdf", "bad:name.pdf"] {
-        let result = rename_file(path_string(repo.path()), entry.id, invalid.to_owned());
+        let result = rename_file(
+            path_string(repo.path()),
+            entry.id,
+            invalid.to_owned(),
+            "en".to_owned(),
+        );
         assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
     }
 
-    let missing = rename_file(path_string(repo.path()), 999_999, "missing.pdf".to_owned());
+    let missing = rename_file(
+        path_string(repo.path()),
+        999_999,
+        "missing.pdf".to_owned(),
+        "en".to_owned(),
+    );
     assert!(matches!(missing, Err(CoreError::FileNotFound { .. })));
 
     assert_eq!(

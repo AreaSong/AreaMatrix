@@ -84,7 +84,10 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
             )
         ])
         XCTAssertEqual(model.route, .mainEmpty(opening))
-        XCTAssertEqual(model.toastMessage, "Imported: moved.pdf")
+        XCTAssertEqual(
+            model.toastMessage,
+            L10n.message("import.single.imported-file", arguments: [.string("moved.pdf")])
+        )
         announcer.assertAnnouncements(["Imported: moved.pdf"])
     }
 }

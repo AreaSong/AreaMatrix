@@ -37,13 +37,13 @@ struct LocalSourcePreflightInspector: SourcePreflightInspecting {
         }
         guard FileManager.default.fileExists(atPath: sourceURL.path) else {
             throw ImportSingleFilePreflightError(
-                .sourceUnavailable(L10n.string("import.source.disappeared")),
+                .sourceUnavailable(L10n.display("import.source.disappeared")),
                 sourceSizeBytes: nil
             )
         }
         guard FileManager.default.isReadableFile(atPath: sourceURL.path) else {
             throw ImportSingleFilePreflightError(
-                .sourceUnavailable(L10n.string("import.source.unreadable")),
+                .sourceUnavailable(L10n.display("import.source.unreadable")),
                 sourceSizeBytes: nil
             )
         }
@@ -54,7 +54,7 @@ struct LocalSourcePreflightInspector: SourcePreflightInspecting {
         ])
         guard values.isRegularFile == true else {
             throw ImportSingleFilePreflightError(
-                .sourceUnavailable(L10n.string("import.source.singleFileOnly")),
+                .sourceUnavailable(L10n.display("import.source.singleFileOnly")),
                 sourceSizeBytes: nil
             )
         }

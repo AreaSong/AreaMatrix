@@ -1,0 +1,95 @@
+id: v3-bilingual-architecture-middle-layer
+version: v3
+feature_id: v3-bilingual-architecture
+module: localization
+status: ready
+docs_refs:
+  - file: docs/adr/0008-naming-and-i18n.md
+    line_start: 1
+    line_end: 1
+    heading: ADR-0008
+    excerpt: "# ADR-0008: 命名与国际化策略"
+  - file: docs/api/core-api.md
+    line_start: 1
+    line_end: 1
+    heading: Core API（UDL 接口规范）
+    excerpt: "# Core API（UDL 接口规范）"
+  - file: docs/architecture/macos-frontend-architecture.md
+    line_start: 1
+    line_end: 1
+    heading: macOS 前端架构
+    excerpt: "# macOS 前端架构"
+insertions:
+  - target: Application presentation, repository content generation, and Core API locale flow
+    reason: Keep interface language, repository content language, and verbatim user data as separate domains.
+    before: Localization could be resolved early or through mutable process-global state, leaving stale or mixed application UI.
+    after: Presentation resolves typed descriptors reactively and every generation operation carries one frozen concrete locale.
+links:
+  - feature: v3-bilingual-architecture
+    relationship: preserves-file-safety
+    reason: Locale propagation must not change import, sync, repair, recovery, or generated-output write targets.
+code_impacts:
+  existing:
+    - apps/macos/AreaMatrix/**
+    - core/src/**
+    - core/area_matrix.udl
+    - scripts/dev_tools/**
+  expected:
+    - apps/macos/AreaMatrix/App/AppLanguage.swift
+    - apps/macos/AreaMatrix/Localizations/Localizable.xcstrings
+    - docs/**
+  tests:
+    - apps/macos/AreaMatrixTests/**
+    - core/tests/**
+    - scripts/dev_tools/test_build_tools.py
+    - scripts/dev_tools/test_macos_runner.py
+dependencies:
+  features: []
+  docs:
+    - docs/adr/0008-naming-and-i18n.md
+    - docs/api/core-api.md
+    - docs/architecture/macos-frontend-architecture.md
+  code:
+    - core/area_matrix.udl
+    - apps/macos/AreaMatrix/App/AppLanguage.swift
+  tasks: []
+slice_plan:
+  - id: product-contract
+    purpose: Align authoritative product, UX, architecture, API, and development contracts.
+    inputs:
+      - approved v3 discussion decisions
+    outputs:
+      - synchronized Exact Docs
+      - explicit Core API and UDL locale contract
+    acceptance:
+      - ./dev check docs
+      - ./dev check wording
+  - id: implementation
+    purpose: Complete responsive macOS presentation and explicit Core content-locale propagation.
+    inputs:
+      - synchronized product contract
+    outputs:
+      - typed localized and reasoned-verbatim presentation state
+      - frozen content-locale generation requests
+      - generated tracked bindings
+    acceptance:
+      - ./dev test macos
+      - cargo test --workspace
+      - ./dev bindings verify
+  - id: governance-and-evidence
+    purpose: Prevent localization regressions and prove all language combinations without touching real user files.
+    inputs:
+      - completed implementation
+    outputs:
+      - deterministic source checks
+      - catalog and compiler metadata validation
+      - fixture-only UI evidence
+    acceptance:
+      - ./dev check governance
+      - ./dev check quality
+      - ./dev workflow doctor
+risk_boundaries:
+  - Do not write workflow/versions/v3/execution or historical v1 execution artifacts.
+  - Do not move, rename, delete, overwrite, or translate user files or user-authored content.
+  - Keep generated output, transaction, rollback, replay, cursor, privacy, FSEvents, and iCloud behavior unchanged.
+  - Use only fixture or QA repositories for UI validation.

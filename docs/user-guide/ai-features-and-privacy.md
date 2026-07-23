@@ -35,6 +35,15 @@
 
 分类、摘要和标签建议都需要用户审阅。应用建议前查看目标文件、建议内容和影响；放弃建议不得改变文件、标签或摘要。
 
+每次新的 AI attempt 在进入 privacy/provider 等待前冻结当前资料库的 concrete content locale。local 到
+remote 的 automatic provider fallback 属于同一 attempt，继续使用原 locale；用户明确发起的新 attempt
+才重新读取设置。恢复中的 AI session 必须保存稳定 operation code、结构化 payload 和 concrete locale，
+不能保存翻译后的 UI 文案，也不能在恢复时用当前设置补猜缺失 locale。
+
+AI 生成的摘要以及建议中的自然语言 display/reason 使用该 content locale。文件名、路径、category slug、
+已有 candidate tag、用户自定义 tag 和用户输入保持原文。AreaMatrix 不把这些值隐式翻译后回写，也不因
+跨语言近义关系自动合并 tag/category；接受建议仍需用户审阅，并使用现有精确冲突与重复处理规则。
+
 ## 隐私规则
 
 隐私规则决定某类任务和数据是否可以离开本机。规则至少应区分文件名、路径、笔记、提取文本、标签、摘要和完整内容。未明确允许的数据不得发送。
@@ -44,6 +53,8 @@
 调用日志用于解释任务、Provider、结果和失败回退。`Privacy checked` 表示本次请求确实经过隐私规则评估，
 不等于命中了某条规则；命中的规则会单独显示。旧日志若缺少可证明的检查记录，会保守显示为未记录。
 日志不得包含凭据、Authorization header、完整敏感响应 header 或不必要的底层错误原文。
+调用日志记录稳定 operation/provider/result code 与本次 content locale；面向用户的说明在查看时按当前
+界面语言解析。日志不得把 catalog key、`AppDisplayText` 或已翻译消息当作恢复源事实。
 
 ## Related
 

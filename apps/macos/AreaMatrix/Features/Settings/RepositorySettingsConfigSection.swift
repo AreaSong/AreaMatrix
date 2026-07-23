@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RepositorySettingsConfigSection: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let config: RepoConfigSnapshot?
     @ObservedObject var model: RepositorySettingsConfigModel
     let capabilityState: RepositorySettingsCapabilityState
@@ -62,9 +63,21 @@ struct RepositorySettingsConfigSection: View {
                 }
             }
             Picker(L10n.string("settings.language.content.title"), selection: $draft.contentLanguage) {
-                ForEach(RepositoryContentLanguage.allCases) { language in
-                    Text(L10n.string(language.labelKey)).tag(language)
+                if draft.contentLanguage.unsupportedIdentifier != nil {
+                    Text(localizer.resolve(draft.contentLanguage.displayMessage)).tag(draft.contentLanguage)
                 }
+                ForEach(RepositoryContentLanguage.allCases) { language in
+                    Text(localizer.resolve(language.displayMessage)).tag(language)
+                }
+            }
+            .accessibilityIdentifier("repository-settings-content-language-picker")
+            Text(L10n.string("settings.language.content.description"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            if draft.contentLanguage.unsupportedIdentifier != nil {
+                Text(L10n.string("settings.language.unsupportedExplanation"))
+                    .font(.callout)
+                    .foregroundStyle(.orange)
             }
             Toggle("Show cloud location warnings", isOn: $draft.iCloudWarn)
             Toggle("Fallback uncategorized files to inbox", isOn: $draft.fallbackToInbox)
@@ -110,10 +123,14 @@ struct RepositorySettingsConfigSection: View {
             Label("Saving repository settings...", systemImage: "arrow.triangle.2.circlepath")
                 .foregroundStyle(.secondary)
         case let .saved(message):
-            SettingsStatusBanner(title: message, systemImage: "checkmark.circle", tint: .green)
+            SettingsStatusBanner(title: localizer.resolve(message), systemImage: "checkmark.circle", tint: .green)
         case let .failed(error):
-            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-                Text(error.recovery)
+            SettingsStatusBanner(
+                title: localizer.resolve(error.message),
+                systemImage: "exclamationmark.triangle",
+                tint: .red
+            ) {
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -145,7 +162,7 @@ struct RepositorySettingsConfigSection: View {
                 : capabilities.securityBookmark.reason
                 ?? L10n.string("Repository access is not available on this platform.")
         case let .failed(_, error):
-            error.recovery
+            localizer.resolve(error.recovery)
         }
     }
 }

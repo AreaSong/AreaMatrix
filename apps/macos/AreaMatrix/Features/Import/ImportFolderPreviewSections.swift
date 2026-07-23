@@ -253,9 +253,10 @@ struct ImportFolderErrorSummary: View {
 }
 
 struct ImportFolderICloudSummarySection: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let iCloudPlaceholderCount: Int
     let isDownloading: Bool
-    let downloadErrorMessage: String?
+    let downloadErrorMessage: LocalizedMessage?
     let onDownloadAndRetry: () -> Void
     let onSwitchToLocalRepo: () -> Void
 
@@ -267,7 +268,7 @@ struct ImportFolderICloudSummarySection: View {
                         .font(.headline)
                 }
                 if let downloadErrorMessage {
-                    Text(downloadErrorMessage)
+                    Text(localizer.resolve(downloadErrorMessage))
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
@@ -287,6 +288,7 @@ struct ImportFolderICloudSummarySection: View {
 }
 
 struct ImportFolderRowsSection: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let rows: [ImportFolderPreviewRow]
 
     var body: some View {
@@ -315,7 +317,7 @@ struct ImportFolderRowsSection: View {
 
     private func statusCell(for row: ImportFolderPreviewRow) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(L10n.string(row.status.tag))
+            Text(localizer.resolve(row.status.tagMessage))
                 .font(.caption.weight(.semibold))
             if let detail = row.status.detail {
                 Text(detail)

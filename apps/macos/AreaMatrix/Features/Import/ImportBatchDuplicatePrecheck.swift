@@ -59,9 +59,11 @@ struct CoreImportBatchNameConflictPrechecker: ImportBatchNameConflictPrechecking
             }
         } catch {
             return rows.reduce(into: [:]) { conflicts, row in
-                conflicts[row.id] = .failed(
-                    L10n.format("import.conflict.name-precheck-failed", error.localizedDescription)
-                )
+                conflicts[row.id] = .failed(L10n.display(
+                    "import.conflict.name-precheck-failed",
+                    arguments: [.string(error.localizedDescription)],
+                    technicalDetail: error.localizedDescription
+                ))
             }
         }
     }
@@ -83,13 +85,13 @@ enum ImportBatchDuplicatePrecheckResult: Equatable {
     case duplicate(existingPath: String)
     case nameConflict(existingPath: String)
     case iCloudPlaceholder(path: String)
-    case blocked(String)
-    case failed(String)
+    case blocked(AppDisplayText)
+    case failed(AppDisplayText)
 }
 
 enum ImportBatchNameConflictPrecheckResult: Equatable {
     case conflict(existingPath: String)
-    case failed(String)
+    case failed(AppDisplayText)
 }
 
 struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
@@ -124,9 +126,11 @@ struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
             }
         } catch {
             return readableURLs.reduce(into: placeholderResults) { results, sourceURL in
-                results[sourceURL.path] = .failed(
-                    L10n.format("import.conflict.duplicate-precheck-failed", error.localizedDescription)
-                )
+                results[sourceURL.path] = .failed(L10n.display(
+                    "import.conflict.duplicate-precheck-failed",
+                    arguments: [.string(error.localizedDescription)],
+                    technicalDetail: error.localizedDescription
+                ))
             }
         }
     }
@@ -142,7 +146,11 @@ struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
             }
             return .duplicate(existingPath: duplicate.path)
         } catch {
-            return .failed(L10n.format("import.conflict.duplicate-precheck-failed", error.localizedDescription))
+            return .failed(L10n.display(
+                "import.conflict.duplicate-precheck-failed",
+                arguments: [.string(error.localizedDescription)],
+                technicalDetail: error.localizedDescription
+            ))
         }
     }
 }

@@ -28,6 +28,8 @@ fn create_empty_options(overview_output: OverviewOutput) -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -61,6 +63,7 @@ fn overview_generated_contract_api_exposes_documented_signatures_inputs_and_erro
         override_category: Some("docs".to_owned()),
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     assert_eq!(import_options.destination, ImportDestination::AutoClassify);
 

@@ -172,7 +172,9 @@ extension MainRepositoryContentView {
     }
 
     private func sidebarAccessibilityLabel(_ row: RepositorySidebarRowSnapshot) -> String {
-        guard row.isSmartList else { return "\(row.displayName) \(row.totalFileCount)" }
+        guard row.isSmartList else {
+            return L10n.format("%@ · %lld files", row.displayName, row.totalFileCount)
+        }
         return L10n.format(
             "Smart List %@, %@",
             row.displayName,
@@ -189,7 +191,7 @@ extension MainRepositoryContentView {
                     .font(.caption)
                     .foregroundStyle(.orange)
                     .help(warningMessage)
-                    .accessibilityLabel("Warning: \(warningMessage)")
+                    .accessibilityLabel(L10n.format("Warning: %@", warningMessage))
             }
             Text(status.badgeText)
                 .font(.caption)

@@ -56,9 +56,9 @@ extension CoreErrorMappingSnapshot {
     static func batchTagFileSelectionMissing() -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: .fileNotFound,
-            userMessage: L10n.string("No files selected"),
+            userMessage: L10n.message("No files selected"),
             severity: .medium,
-            suggestedAction: L10n.string("Select files before adding tags."),
+            suggestedAction: L10n.message("Select files before adding tags."),
             recoverability: .userActionRequired,
             rawContext: "batch-add-tags batch-add-tags-core batch_add_tags"
         )

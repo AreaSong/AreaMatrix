@@ -106,7 +106,7 @@ struct SearchFiltersPopover: View {
                     set: { filters = SearchFilterEditing.settingIncludeDeleted($0, in: filters) }
                 )
             )
-            .accessibilityLabel("Include deleted files")
+            .accessibilityLabel(L10n.string("Include deleted files"))
         }
     }
 

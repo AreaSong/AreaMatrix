@@ -1,18 +1,18 @@
 import Foundation
 
 struct RepositorySettingsLoadError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 struct RepositorySettingsSyncError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 struct RepositorySettingsOverviewActionError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 protocol CoreVersionLoading: Sendable {
@@ -61,8 +61,8 @@ struct RepositorySettingsHealthSummary: Equatable {
 
 struct RepositorySettingsHealthError: Equatable {
     var databaseStatus: RepositorySettingsDatabaseStatus
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 struct RepositorySettingsSummary: Equatable {
@@ -70,18 +70,22 @@ struct RepositorySettingsSummary: Equatable {
 
     var repositoryName: String
     var location: String
-    var metadataStatus: String
-    var locationType: String
-    var coreVersion: String
-    var overviewMode: String
-    var generatedPath: String
-    var rootFile: String
-    var readmePolicy: String
+    private var metadataPresence: RepoMetadataPresence
+    private var coreVersionValue: String?
+    private var overviewOutput: String
+
+    var metadataStatus: String { metadataPresence.directoryStatusLabel }
+    var locationType: String { Self.locationType(for: location) }
+    var coreVersion: String { coreVersionValue ?? L10n.string("Unknown") }
+    var overviewMode: String { Self.overviewModeLabel(for: overviewOutput) }
+    var generatedPath: String { Self.generatedOverviewRelativePath }
+    var rootFile: String { overviewOutput == "RootAreaMatrixFile" ? "AREAMATRIX.md" : L10n.string("Off") }
+    var readmePolicy: String { L10n.string("User file, never managed by AreaMatrix") }
 
     init(
         config: RepoConfigSnapshot,
         fallbackRepoPath: String,
-        coreVersion: String,
+        coreVersion: String?,
         metadataPresence: RepoMetadataPresence
     ) {
         let resolvedPath = config.repoPath.isEmpty || config.repoPath != fallbackRepoPath
@@ -89,13 +93,9 @@ struct RepositorySettingsSummary: Equatable {
             : config.repoPath
         repositoryName = Self.repositoryName(for: resolvedPath)
         location = resolvedPath
-        metadataStatus = metadataPresence.directoryStatusLabel
-        locationType = Self.locationType(for: resolvedPath)
-        self.coreVersion = coreVersion
-        overviewMode = Self.overviewModeLabel(for: config.overviewOutput)
-        generatedPath = Self.generatedOverviewRelativePath
-        rootFile = config.overviewOutput == "RootAreaMatrixFile" ? "AREAMATRIX.md" : L10n.string("Off")
-        readmePolicy = L10n.string("User file, never managed by AreaMatrix")
+        self.metadataPresence = metadataPresence
+        coreVersionValue = coreVersion
+        overviewOutput = config.overviewOutput
     }
 
     private static func repositoryName(for path: String) -> String {

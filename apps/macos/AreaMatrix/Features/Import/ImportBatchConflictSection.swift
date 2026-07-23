@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct ImportBatchConflictSection: View {
+    @EnvironmentObject var localizer: AppLocalizer
     let batchImportModel: ImportBatchCopyImportModel
     @Binding var isExpanded: Bool
     @Binding var pendingReplaceConfirmation: ImportBatchReplaceConfirmation?
@@ -40,7 +41,7 @@ struct ImportBatchConflictSection: View {
                 batchImportModel.cancelConflictBatchReplace()
             }
         } message: {
-            Text(batchImportModel.conflictBatchReplaceConfirmationMessage)
+            Text(conflictBatchReplaceConfirmationMessage)
         }
     }
 
@@ -132,7 +133,7 @@ struct ImportBatchConflictSection: View {
             }
         } else if let preview = batchImportModel.conflictBatchPreviewReport {
             VStack(alignment: .leading, spacing: 4) {
-                Text(batchImportModel.conflictBatchScopeSummary)
+                Text(localizer.resolve(batchImportModel.conflictBatchScopeSummary))
                 Text("\(preview.includedCount) included · \(preview.pendingCount) pending · " +
                     "\(preview.blockedCount) blocked · \(preview.replaceCount) replace")
                     .font(.caption)
@@ -202,19 +203,19 @@ struct ImportBatchConflictSection: View {
                 Text((item.targetPath ?? item.incomingPath).lastPathComponentFallback)
             }
             TableColumn("Conflict") { item in
-                Text(item.conflictType.title)
+                Text(localizer.resolve(item.conflictType.titleMessage))
             }
             TableColumn("Existing") { item in
                 Text(item.existingPath ?? "-")
             }
             TableColumn("Selected action") { item in
-                Text(item.selectedStrategy.title)
+                Text(localizer.resolve(item.selectedStrategy.titleMessage))
             }
             TableColumn("Status") { item in
-                Text(item.status.title)
+                Text(localizer.resolve(item.status.titleMessage))
             }
             TableColumn("Reason") { item in
-                Text(item.reason ?? item.riskSummary)
+                Text(localizer.resolve(ImportConflictBatchDisplayText.fromCore(item.reason ?? item.riskSummary)))
             }
         }
         .frame(minHeight: 140)
@@ -224,7 +225,7 @@ struct ImportBatchConflictSection: View {
     private var coreConflictBatchPerItemQueue: some View {
         if let summary = batchImportModel.conflictBatchPerItemSummary {
             VStack(alignment: .leading, spacing: 4) {
-                Text(summary)
+                Text(localizer.resolve(summary))
                     .font(.callout)
                 Text(batchImportModel.conflictBatchPerItemRouteLabels.joined(separator: " · "))
                     .font(.caption)
@@ -240,8 +241,8 @@ struct ImportBatchConflictSection: View {
                 "\(report.pendingCount) pending · \(report.queuedForPerItemCount) queued for per-item")
                 .font(.callout)
                 .foregroundStyle(report.failedCount > 0 ? .orange : .secondary)
-            if let failureSummary = report.failureSummary {
-                Text(failureSummary)
+            if report.failedCount > 0 {
+                Text(L10n.plural("import.conflict.apply-failure-summary", count: report.failedCount))
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
@@ -255,7 +256,7 @@ struct ImportBatchConflictSection: View {
             }
             .disabled(batchImportModel.conflictBatchAskPerItemDisabledReason != nil)
             if let reason = batchImportModel.conflictBatchAskPerItemDisabledReason {
-                Text(reason)
+                Text(localizer.resolve(reason))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -271,7 +272,7 @@ struct ImportBatchConflictSection: View {
             .keyboardShortcut(.defaultAction)
             .disabled(batchImportModel.conflictBatchApplyDisabledReason != nil)
             if let reason = batchImportModel.conflictBatchApplyDisabledReason {
-                Text(reason)
+                Text(localizer.resolve(reason))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -296,7 +297,7 @@ struct ImportBatchConflictSection: View {
                 strategyView(for: row)
             }
             TableColumn("Status") { row in
-                Text(row.status.detail ?? L10n.string(row.status.tag))
+                Text(row.status.detail ?? localizer.resolve(row.status.tagMessage))
             }
             TableColumn("Action") { row in
                 actionView(for: row)
@@ -317,15 +318,17 @@ struct ImportBatchConflictSection: View {
 }
 
 private extension ImportBatchCopyImportModel {
+    var conflictBatchReplaceCount: Int64 { conflictBatchPreviewReport?.replaceCount ?? 0 }
+    var conflictBatchReplaceAppliesToAll: Bool { conflictBatchPreviewReport?.applyToAllSimilarConflicts == true }
+}
+
+private extension ImportBatchConflictSection {
     var conflictBatchReplaceConfirmationMessage: String {
-        let summary = conflictBatchPreviewReport?.replaceConfirmationSummary ?? conflictBatchScopeSummary
-        return [
-            L10n.string(
-                "Existing files in the selected scope will be moved to Trash before imported files take their place."
-            ),
-            L10n.string("AreaMatrix does not permanently delete files."),
-            L10n.format("import.conflict.scope", summary)
-        ].joined(separator: " ")
+        L10n.format(
+            "import.conflict.replace-confirmation-message",
+            batchImportModel.conflictBatchReplaceCount,
+            localizer.resolve(batchImportModel.conflictBatchScopeSummary)
+        )
     }
 }
 

@@ -29,6 +29,7 @@ fn request() -> AiCategorySuggestionRequest {
         file_id: 42,
         context_policy: AiCategorySuggestionContextPolicy::LimitedTextSummary,
         privacy_policy_ref: Some("default-remote-gate".to_owned()),
+        content_locale: area_matrix_core::ContentLocale::ZhHans,
     }
 }
 

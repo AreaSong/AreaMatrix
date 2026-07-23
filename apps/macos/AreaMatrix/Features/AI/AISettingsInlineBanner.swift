@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AISettingsInlineBanner<Actions: View>: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let error: AISettingsError
     let tint: Color
     private let actions: Actions
@@ -14,12 +15,12 @@ struct AISettingsInlineBanner<Actions: View>: View {
     var body: some View {
         TintedStatusBanner(tint: tint) {
             VStack(alignment: .leading, spacing: 8) {
-                Label(error.message, systemImage: "exclamationmark.triangle")
+                Label(localizer.resolve(error.message), systemImage: "exclamationmark.triangle")
                     .foregroundStyle(tint)
                 Text(error.detail)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text(error.recovery)
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 HStack(spacing: 8) {

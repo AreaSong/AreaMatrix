@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SemanticSearchFallbackActionPresentation: Identifiable, Equatable {
     var action: AiFallbackAction
-    var title: String
+    var title: LocalizedMessage
     var accessibilityID: String
 
     var id: AiFallbackAction {
@@ -11,12 +11,12 @@ struct SemanticSearchFallbackActionPresentation: Identifiable, Equatable {
 }
 
 struct SemanticSearchFallbackStatus {
-    var title: String
-    var message: String
-    var badge: String
+    var title: LocalizedMessage
+    var message: LocalizedMessage
+    var badge: LocalizedMessage
     var badgeTint: Color
     var retryable: Bool
-    var retryDisabledReason: String?
+    var retryDisabledReason: LocalizedMessage?
     var primaryAction: AiFallbackAction?
     var secondaryAction: AiFallbackAction?
     var nonAiFallbackAction: AiFallbackAction
@@ -40,12 +40,12 @@ struct SemanticSearchFallbackStatus {
 
     static func fromCoreStatus(_ status: AiFallbackStatus) -> SemanticSearchFallbackStatus {
         SemanticSearchFallbackStatus(
-            title: L10n.string(status.title),
-            message: L10n.string(status.message),
+            title: titleMessage(kind: status.kind),
+            message: bodyMessage(kind: status.kind),
             badge: badgeText(kind: status.kind),
             badgeTint: badgeTint(category: status.category),
             retryable: status.retryable,
-            retryDisabledReason: status.retryDisabledReason.map { L10n.string($0) },
+            retryDisabledReason: retryDisabledReasonMessage(kind: status.kind, retryable: status.retryable),
             primaryAction: status.primaryAction,
             secondaryAction: status.secondaryAction,
             nonAiFallbackAction: status.nonAiFallbackAction,
@@ -60,7 +60,7 @@ struct SemanticSearchFallbackStatus {
         let reason = page.fallbackReason ?? .providerUnavailable
         return SemanticSearchFallbackStatus(
             title: reason.title,
-            message: page.fallbackMessage ?? reason.message,
+            message: reason.message,
             badge: reason.badge,
             badgeTint: reason.badgeTint,
             retryable: reason.retryable,
@@ -84,18 +84,18 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    func title(for action: AiFallbackAction) -> String {
+    func title(for action: AiFallbackAction) -> LocalizedMessage {
         switch action {
-        case .retry: L10n.string("Retry")
-        case .retryLater: L10n.string("Retry later")
-        case .openAiSettings: L10n.string("Open AI settings")
-        case .openLocalModelStatus: L10n.string("Open local model status")
-        case .configureRemoteAi: L10n.string("Configure remote AI")
-        case .viewPrivacyRule: L10n.string("View privacy rule")
-        case .viewCallLog: L10n.string("View call log")
-        case .buildSemanticIndex: L10n.string("Build semantic index")
-        case .useNormalSearch: L10n.string("Use normal search")
-        case .classifyManually: L10n.string("Classify manually")
+        case .retry: L10n.message("Retry")
+        case .retryLater: L10n.message("Retry later")
+        case .openAiSettings: L10n.message("Open AI settings")
+        case .openLocalModelStatus: L10n.message("Open local model status")
+        case .configureRemoteAi: L10n.message("Configure remote AI")
+        case .viewPrivacyRule: L10n.message("View privacy rule")
+        case .viewCallLog: L10n.message("View call log")
+        case .buildSemanticIndex: L10n.message("Build semantic index")
+        case .useNormalSearch: L10n.message("Use normal search")
+        case .classifyManually: L10n.message("Classify manually")
         }
     }
 
@@ -123,22 +123,82 @@ struct SemanticSearchFallbackStatus {
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    private static func badgeText(kind: AiFallbackKind) -> String {
+    private static func badgeText(kind: AiFallbackKind) -> LocalizedMessage {
         switch kind {
-        case .aiDisabled: L10n.string("AI disabled")
-        case .featureDisabled: L10n.string("Feature disabled")
-        case .localModelNotReady: L10n.string("Local not ready")
-        case .remoteNotConfigured: L10n.string("Remote not configured")
-        case .remoteFailed: L10n.string("Remote failed")
-        case .providerUnavailable: L10n.string("Provider unavailable")
-        case .privacySkipped: L10n.string("Privacy skipped")
-        case .semanticIndexNotReady: L10n.string("Semantic index")
-        case .noEligibleInput: L10n.string("No eligible input")
-        case .callLogUnavailable: L10n.string("Call log unavailable")
-        case .normalSearchUnavailable: L10n.string("Normal search")
-        case .rateLimited: L10n.string("Rate limited")
-        case .timeout: L10n.string("Timeout")
-        case .internalFailure: L10n.string("Internal failure")
+        case .aiDisabled: L10n.message("AI disabled")
+        case .featureDisabled: L10n.message("Feature disabled")
+        case .localModelNotReady: L10n.message("Local not ready")
+        case .remoteNotConfigured: L10n.message("Remote not configured")
+        case .remoteFailed: L10n.message("Remote failed")
+        case .providerUnavailable: L10n.message("Provider unavailable")
+        case .privacySkipped: L10n.message("Privacy skipped")
+        case .semanticIndexNotReady: L10n.message("Semantic index")
+        case .noEligibleInput: L10n.message("No eligible input")
+        case .callLogUnavailable: L10n.message("Call log unavailable")
+        case .normalSearchUnavailable: L10n.message("Normal search")
+        case .rateLimited: L10n.message("Rate limited")
+        case .timeout: L10n.message("Timeout")
+        case .internalFailure: L10n.message("Internal failure")
+        }
+    }
+
+    private static func titleMessage(kind: AiFallbackKind) -> LocalizedMessage {
+        switch kind {
+        case .aiDisabled: L10n.message("AI is off")
+        case .featureDisabled: L10n.message("AI feature is off")
+        case .localModelNotReady: L10n.message("Local model is not ready")
+        case .remoteNotConfigured: L10n.message("Remote AI is not configured")
+        case .remoteFailed: L10n.message("Remote AI could not be reached")
+        case .providerUnavailable: L10n.message("AI provider is unavailable")
+        case .privacySkipped: L10n.message("Skipped by privacy rule")
+        case .semanticIndexNotReady: L10n.message("Semantic index is not ready")
+        case .noEligibleInput: L10n.message("No eligible AI input")
+        case .normalSearchUnavailable: L10n.message("Normal search is unavailable")
+        case .callLogUnavailable: L10n.message("AI call log is unavailable")
+        case .rateLimited: L10n.message("Provider rate limit reached")
+        case .timeout: L10n.message("AI request timed out")
+        case .internalFailure: L10n.message("AI fallback status is unavailable")
+        }
+    }
+
+    private static func bodyMessage(kind: AiFallbackKind) -> LocalizedMessage {
+        switch kind {
+        case .privacySkipped: L10n.message("This item matches a privacy rule, so no AI content was sent.")
+        case .semanticIndexNotReady: L10n.message("Semantic index is not ready yet.")
+        case .remoteFailed: L10n.message("Remote AI could not be reached. Your files were not changed.")
+        case .localModelNotReady: L10n.message("The local model is not installed or still loading.")
+        case .rateLimited: L10n.message("The provider asked AreaMatrix to retry later.")
+        case .timeout: L10n.message("The AI request timed out. Your files were not changed.")
+        case .aiDisabled: L10n.message("AI is disabled in repository settings.")
+        case .featureDisabled: L10n.message("This AI feature is disabled in repository settings.")
+        case .remoteNotConfigured: L10n.message("Remote AI must be configured before this route can run.")
+        case .providerUnavailable: L10n.message("No AI provider route is currently available.")
+        case .noEligibleInput: L10n.message("There is no eligible safe input for this AI operation.")
+        case .normalSearchUnavailable: L10n.message("Normal search fallback could not be loaded.")
+        case .callLogUnavailable: L10n.message("AI fallback could not be recorded in the call log.")
+        case .internalFailure: L10n.message("Fallback status could not be resolved from safe metadata.")
+        }
+    }
+
+    private static func retryDisabledReasonMessage(
+        kind: AiFallbackKind,
+        retryable: Bool
+    ) -> LocalizedMessage? {
+        guard !retryable else { return nil }
+        switch kind {
+        case .privacySkipped:
+            return L10n.message("Retry is disabled because privacy rules blocked the input")
+        case .rateLimited:
+            return L10n.message("Retry is disabled until the provider allows another attempt")
+        case .aiDisabled, .featureDisabled:
+            return L10n.message("Retry is disabled while AI is turned off")
+        case .remoteNotConfigured:
+            return L10n.message("Retry is disabled until remote AI is configured")
+        case .semanticIndexNotReady:
+            return L10n.message("Retry is disabled until the semantic index is ready")
+        case .localModelNotReady, .remoteFailed, .providerUnavailable, .noEligibleInput,
+             .normalSearchUnavailable, .callLogUnavailable, .timeout, .internalFailure:
+            return L10n.message("Retry is unavailable for this fallback state")
         }
     }
 
@@ -152,57 +212,57 @@ struct SemanticSearchFallbackStatus {
 }
 
 private extension SemanticSearchFallbackReasonSnapshot {
-    var title: String {
+    var title: LocalizedMessage {
         switch self {
-        case .aiDisabled, .featureDisabled: L10n.string("Semantic search is unavailable")
-        case .providerUnavailable: L10n.string("Remote AI could not be reached")
-        case .privacyRule: L10n.string("Skipped by privacy rule")
-        case .semanticIndexNotReady: L10n.string("Semantic index is not ready")
-        case .callLogUnavailable: L10n.string("AI call log is unavailable")
-        case .noEligibleInput: L10n.string("No eligible input for semantic search")
-        case .normalSearchUnavailable: L10n.string("Normal search is unavailable")
-        case .rateLimited: L10n.string("Provider rate limit reached")
-        case .timeout: L10n.string("AI request timed out")
+        case .aiDisabled, .featureDisabled: L10n.message("Semantic search is unavailable")
+        case .providerUnavailable: L10n.message("Remote AI could not be reached")
+        case .privacyRule: L10n.message("Skipped by privacy rule")
+        case .semanticIndexNotReady: L10n.message("Semantic index is not ready")
+        case .callLogUnavailable: L10n.message("AI call log is unavailable")
+        case .noEligibleInput: L10n.message("No eligible input for semantic search")
+        case .normalSearchUnavailable: L10n.message("Normal search is unavailable")
+        case .rateLimited: L10n.message("Provider rate limit reached")
+        case .timeout: L10n.message("AI request timed out")
         }
     }
 
-    var message: String {
+    var message: LocalizedMessage {
         switch self {
         case .aiDisabled:
-            L10n.string("AI is disabled for this repository. Your files were not changed.")
+            L10n.message("AI is disabled for this repository. Your files were not changed.")
         case .featureDisabled:
-            L10n.string("Semantic search is disabled. Your files were not changed.")
+            L10n.message("Semantic search is disabled. Your files were not changed.")
         case .providerUnavailable:
-            L10n.string("Remote AI could not be reached. Your files were not changed.")
+            L10n.message("Remote AI could not be reached. Your files were not changed.")
         case .privacyRule:
-            L10n.string("This query matches a privacy rule, so AI was skipped.")
+            L10n.message("This query matches a privacy rule, so AI was skipped.")
         case .semanticIndexNotReady:
-            L10n.string("Semantic index is not ready yet.")
+            L10n.message("Semantic index is not ready yet.")
         case .callLogUnavailable:
-            L10n.string("AreaMatrix could not record the AI call log. Use normal search while logs recover.")
+            L10n.message("AreaMatrix could not record the AI call log. Use normal search while logs recover.")
         case .noEligibleInput:
-            L10n.string("No files in this scope are eligible for semantic search.")
+            L10n.message("No files in this scope are eligible for semantic search.")
         case .normalSearchUnavailable:
-            L10n.string("Normal search fallback could not be loaded.")
+            L10n.message("Normal search fallback could not be loaded.")
         case .rateLimited:
-            L10n.string("Try again later or use normal search.")
+            L10n.message("Try again later or use normal search.")
         case .timeout:
-            L10n.string("The semantic search request timed out. Your files were not changed.")
+            L10n.message("The semantic search request timed out. Your files were not changed.")
         }
     }
 
-    var badge: String {
+    var badge: LocalizedMessage {
         switch self {
-        case .aiDisabled: L10n.string("AI disabled")
-        case .featureDisabled: L10n.string("Feature disabled")
-        case .providerUnavailable: L10n.string("Provider unavailable")
-        case .privacyRule: L10n.string("Privacy skipped")
-        case .semanticIndexNotReady: L10n.string("Semantic index")
-        case .callLogUnavailable: L10n.string("Call log unavailable")
-        case .noEligibleInput: L10n.string("No eligible input")
-        case .normalSearchUnavailable: L10n.string("Normal search")
-        case .rateLimited: L10n.string("Rate limited")
-        case .timeout: L10n.string("Timeout")
+        case .aiDisabled: L10n.message("AI disabled")
+        case .featureDisabled: L10n.message("Feature disabled")
+        case .providerUnavailable: L10n.message("Provider unavailable")
+        case .privacyRule: L10n.message("Privacy skipped")
+        case .semanticIndexNotReady: L10n.message("Semantic index")
+        case .callLogUnavailable: L10n.message("Call log unavailable")
+        case .noEligibleInput: L10n.message("No eligible input")
+        case .normalSearchUnavailable: L10n.message("Normal search")
+        case .rateLimited: L10n.message("Rate limited")
+        case .timeout: L10n.message("Timeout")
         }
     }
 
@@ -228,24 +288,24 @@ private extension SemanticSearchFallbackReasonSnapshot {
         }
     }
 
-    var retryDisabledReason: String? {
+    var retryDisabledReason: LocalizedMessage? {
         switch self {
         case .aiDisabled:
-            L10n.string("Open AI settings before retrying semantic search.")
+            L10n.message("Open AI settings before retrying semantic search.")
         case .featureDisabled:
-            L10n.string("Enable Semantic search before retrying.")
+            L10n.message("Enable Semantic search before retrying.")
         case .privacyRule:
-            L10n.string("Retry is disabled because this input was skipped by a privacy rule.")
+            L10n.message("Retry is disabled because this input was skipped by a privacy rule.")
         case .semanticIndexNotReady:
-            L10n.string("Build the semantic index or use normal search.")
+            L10n.message("Build the semantic index or use normal search.")
         case .callLogUnavailable:
-            L10n.string("Retry is disabled until call logging is available.")
+            L10n.message("Retry is disabled until call logging is available.")
         case .noEligibleInput:
-            L10n.string("Adjust the query or filters before retrying.")
+            L10n.message("Adjust the query or filters before retrying.")
         case .normalSearchUnavailable:
-            L10n.string("Normal search must recover before fallback results can be shown.")
+            L10n.message("Normal search must recover before fallback results can be shown.")
         case .rateLimited:
-            L10n.string("Try again later.")
+            L10n.message("Try again later.")
         case .providerUnavailable, .timeout:
             nil
         }

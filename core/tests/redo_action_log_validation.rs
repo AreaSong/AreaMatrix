@@ -221,8 +221,13 @@ fn redo_action_log_validation_success_paths_are_ui_ready() {
         .any(|kind| kind == "redo_batch_tag_added"));
 
     let renamed_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), renamed_id, "final.pdf".to_owned())
-        .expect("create rename action");
+    rename_file(
+        path_string(repo.path()),
+        renamed_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("create rename action");
     let rename_token = latest_undo_action_id(repo.path(), "rename_files");
     undo_action(path_string(repo.path()), rename_token.clone()).expect("undo rename");
     let rename_result =
@@ -283,6 +288,7 @@ fn redo_action_log_validation_cleared_and_blocked_paths_do_not_mutate_state() {
         path_string(repo.path()),
         blocked_id,
         "target.pdf".to_owned(),
+        "en".to_owned(),
     )
     .expect("create rename action");
     let blocked_token = latest_undo_action_id(repo.path(), "rename_files");

@@ -125,10 +125,19 @@ emoji 和其他非 unreserved bytes 使用大写十六进制 `%XX` 表示。
 
 ## locale
 
-locale 控制 generated overview 和树相关显示文本。`RepoConfig.locale = system` 表示跟随当前界面语言。
-平台层通过 `set_app_interface_locale` 同步当前已解析的 `zh-Hans` 或 `en`，Core 在之后正常生成概述时
-才解析 `system`；旧 `zh-CN` 兼容读取并规范为 `zh-Hans`。切换任一语言设置都不主动重写已有概述，
-只影响目录刷新和之后的正常生成。资料库内容语言不是 macOS UI 的运行时语言开关，也不得翻译用户文件名或正文。
+`RepoConfig.locale` 是资料库内容 policy。`system` 表示跟随当前已解析界面语言；`zh-CN` / `zh-SG` 和
+`en-*` 是只读兼容别名，普通读取不得隐式写回。未知非空值允许浏览，树和分类显示依次查 exact raw
+locale、`en`、slug，但新的概览生成返回 `Config`，直到用户在 Repository 设置中明确选择支持值。
+
+Core 不读取进程级界面语言。init、import、repo-owned rename、repair 和 external sync 调用都显式携带
+concrete `zh-Hans` 或 `en` 的 operation snapshot；同一事务、rollback、continuation 或 replay 必须复用。
+new attempt 才重新捕获。切换任一语言设置都不主动重写已有概览，只影响之后开始的 operation；运行中的
+应用自有进度文案可以响应界面语言变化，但概览内容保持冻结 locale。资料库内容语言不得翻译用户文件名、
+路径或正文。
+
+设置保存本身不调用 overview 入口。之后正常发生且本来就会刷新 overview 的 operation 可以按新快照替换
+派生输出。持久化 Markdown 不使用 macOS `autoupdatingCurrent` region；日期、数字、文件大小和货币使用
+内容 locale 对应的固定格式，保证同一 operation 的 replay 在不同设备上产生相同文本。
 
 ## 性能
 
@@ -148,6 +157,8 @@ locale 控制 generated overview 和树相关显示文本。`RepoConfig.locale =
 - 多目标写失败时所有目标恢复。
 - 外部跨分类移动刷新来源和目标概览。
 - overview 失败不推进 FSEvent cursor。
+- operation replay 使用原 content locale，不产生同批混合语言概览。
+- unknown repository locale 允许 exact raw/en/slug 浏览回退，但阻断生成。
 
 ## Related
 

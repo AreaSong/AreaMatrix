@@ -55,6 +55,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -69,6 +71,7 @@ fn import_options(category: &str) -> ImportOptions {
         override_category: Some(category.to_owned()),
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -91,6 +94,7 @@ fn request(file_id: i64) -> AiCategorySuggestionRequest {
         file_id,
         context_policy: AiCategorySuggestionContextPolicy::FileNameAndPath,
         privacy_policy_ref: None,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -330,6 +334,7 @@ fn ai_classification_suggestion_validation_covers_ui_ready_success_path() {
     assert_contains(&log.sent_fields_json, "repo_relative_path");
     assert_contains(&log.result_summary, "finance");
     assert_contains(&payload, "\"route\":\"local\"");
+    assert_contains(&payload, "\"content_locale\":\"en\"");
     assert_contains(&payload, "\"filename\":\"invoice-2026.pdf\"");
     assert_eq!(secret_log_rows(repo.path()), 0);
 }
@@ -352,6 +357,12 @@ fn ai_classification_suggestion_validation_covers_failure_and_privacy_boundaries
     assert_eq!(secret_error.kind(), ErrorKind::Config);
     assert!(matches!(secret_error, CoreError::Config { .. }));
     assert!(!secret_error.to_string().contains("sk-secret"));
+    assert_eq!(snapshot(repo.path(), file_id), before);
+
+    assert!(
+        area_matrix_core::ContentLocale::parse("system").is_none(),
+        "repository policy values must not enter a concrete operation request"
+    );
     assert_eq!(snapshot(repo.path(), file_id), before);
 
     let mut blocked_request = request(file_id);

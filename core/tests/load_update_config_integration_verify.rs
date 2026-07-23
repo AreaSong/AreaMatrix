@@ -1,8 +1,8 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, load_config, update_config, OverviewOutput, RepoConfig, RepoInitMode,
-    RepoInitOptions, StorageMode,
+    init_repo, load_repo_config, update_repo_config, OverviewOutput, RepoConfigPatch, RepoInitMode,
+    RepoInitOptions, RepositoryLocalePolicy, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -19,6 +19,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -60,26 +62,26 @@ fn file_snapshot(paths: &[&Path]) -> Vec<(String, Vec<u8>)> {
         .collect()
 }
 
-fn settings_page_config(repo: &Path) -> RepoConfig {
-    RepoConfig {
-        repo_path: path_string(repo),
-        default_mode: StorageMode::Indexed,
-        overview_output: OverviewOutput::RootAreaMatrixFile,
-        ai_enabled: true,
-        locale: "en".to_owned(),
-        icloud_warn: false,
-        enable_extension_rules: false,
-        enable_keyword_rules: false,
-        fallback_to_inbox: false,
-        allow_replace_during_import: true,
+fn settings_page_patch(expected_revision: i64) -> RepoConfigPatch {
+    RepoConfigPatch {
+        expected_revision,
+        default_mode: Some(StorageMode::Indexed),
+        overview_output: Some(OverviewOutput::RootAreaMatrixFile),
+        ai_enabled: Some(true),
+        locale_policy: Some(RepositoryLocalePolicy::En),
+        icloud_warn: Some(false),
+        enable_extension_rules: Some(false),
+        enable_keyword_rules: Some(false),
+        fallback_to_inbox: Some(false),
+        allow_replace_during_import: Some(true),
     }
 }
 
 #[test]
 fn load_update_config_integration_verify_docs_api_and_udl_stay_aligned() {
     for fragment in [
-        "RepoConfig load_config(string repo_path);",
-        "void update_config(string repo_path, RepoConfig new_config);",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
+        "RepoConfigSnapshot update_repo_config(string repo_path, RepoConfigPatch patch);",
         "boolean enable_extension_rules;",
         "boolean enable_keyword_rules;",
         "boolean fallback_to_inbox;",
@@ -102,21 +104,25 @@ fn load_update_config_integration_verify_docs_api_and_udl_stay_aligned() {
 #[test]
 fn load_update_config_integration_verify_real_core_supports_settings_state() {
     let repo = initialized_repo();
-    let initial = load_config(path_string(repo.path())).expect("load initial config");
+    let initial = load_repo_config(path_string(repo.path())).expect("load initial config");
     assert_eq!(initial.default_mode, StorageMode::Copied);
     assert_eq!(initial.overview_output, OverviewOutput::GeneratedOnly);
     assert!(!initial.ai_enabled);
-    assert_eq!(initial.locale, "zh-Hans");
+    assert_eq!(initial.locale_policy.raw_value, "system");
     assert!(initial.icloud_warn);
     assert!(initial.enable_extension_rules);
     assert!(initial.enable_keyword_rules);
     assert!(initial.fallback_to_inbox);
     assert!(!initial.allow_replace_during_import);
 
-    let expected = settings_page_config(repo.path());
-    update_config(path_string(repo.path()), expected.clone()).expect("persist settings config");
+    let expected = settings_page_patch(initial.revision);
+    let updated = update_repo_config(path_string(repo.path()), expected).expect("persist settings config");
 
-    assert_eq!(load_config(path_string(repo.path())), Ok(expected));
+    assert_eq!(updated.revision, initial.revision + 1);
+    assert_eq!(updated.default_mode, StorageMode::Indexed);
+    assert_eq!(updated.overview_output, OverviewOutput::RootAreaMatrixFile);
+    assert!(updated.ai_enabled);
+    assert_eq!(updated.locale_policy.raw_value, "en");
     assert_eq!(
         config_keys(repo.path()),
         vec![
@@ -145,18 +151,19 @@ fn load_update_config_integration_verify_failures_preserve_config_and_files() {
     fs::write(&readme_path, "user readme\n").expect("write user README");
     fs::write(&overview_path, "user overview\n").expect("write user overview");
     let file_before = file_snapshot(&[&readme_path, &overview_path, &classifier_path]);
-    let config_before = load_config(path_string(repo.path())).expect("load initial config");
-    let mut invalid = settings_page_config(repo.path());
-    invalid.repo_path = "/tmp/other-area-matrix".to_owned();
+    let config_before = load_repo_config(path_string(repo.path())).expect("load initial config");
 
-    let result = update_config(path_string(repo.path()), invalid);
+    let result = update_repo_config(
+        path_string(repo.path()),
+        settings_page_patch(config_before.revision + 1),
+    );
 
     assert!(matches!(
         result,
-        Err(area_matrix_core::CoreError::Config { .. })
+        Err(area_matrix_core::CoreError::Conflict { .. })
     ));
 
-    assert_eq!(load_config(path_string(repo.path())), Ok(config_before));
+    assert_eq!(load_repo_config(path_string(repo.path())), Ok(config_before));
     assert_eq!(
         file_snapshot(&[&readme_path, &overview_path, &classifier_path]),
         file_before

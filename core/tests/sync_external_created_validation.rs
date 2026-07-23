@@ -20,6 +20,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -97,6 +99,7 @@ fn sync_external_created_validation_success_path_reaches_list_tree_detail_log_an
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/external.md", 200)],
+        "en".to_owned(),
     )
     .expect("sync external created event");
 
@@ -152,6 +155,7 @@ fn sync_external_created_validation_skips_internal_paths_and_generated_overviews
             created(".areamatrix/generated/internal.md", 210),
             created("AREAMATRIX.md", 211),
         ],
+        "en".to_owned(),
     )
     .expect("sync skipped created events");
 
@@ -170,6 +174,7 @@ fn sync_external_created_validation_rejects_absolute_paths_outside_repo_without_
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![created(&path_string(outside.path()), 220)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
@@ -187,6 +192,7 @@ fn sync_external_created_validation_rejects_negative_created_event_id_without_st
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/bad-event.txt", -1)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::InvalidPath { .. })));
@@ -207,6 +213,7 @@ fn sync_external_created_validation_coalesces_created_and_modified_for_same_path
             created("docs/created.txt", 230),
             event("docs/created.txt", ExternalEventKind::Modified, 231),
         ],
+        "en".to_owned(),
     )
     .expect("sync created and modified signals for the same path");
 

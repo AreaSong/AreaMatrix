@@ -23,6 +23,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -44,6 +46,7 @@ fn import_options(mode: StorageMode, filename: &str) -> ImportOptions {
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -97,7 +100,12 @@ fn rename_file_implementation_rolls_back_repo_owned_rename_when_overview_fails()
     fs::remove_dir_all(&generated_nodes).expect("remove generated nodes directory");
     fs::write(&generated_nodes, b"not a directory").expect("block generated node output path");
 
-    let result = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned());
+    let result = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     assert!(
         matches!(
@@ -144,8 +152,13 @@ fn rename_file_implementation_records_module_schema_and_safe_numbered_name() {
     )
     .expect("import draft file");
 
-    let renamed = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned())
-        .expect("rename with conflict-free numbering");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        draft.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename with conflict-free numbering");
 
     assert_eq!(renamed.path, "finance/same_1.pdf");
     assert_eq!(renamed.current_name, "same_1.pdf");
@@ -182,8 +195,13 @@ fn rename_file_implementation_indexed_rename_never_moves_external_source() {
     )
     .expect("index external file");
 
-    let renamed = rename_file(path_string(repo.path()), entry.id, "display.pdf".to_owned())
-        .expect("rename indexed display name");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "display.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename indexed display name");
 
     assert_eq!(renamed.path, source_path);
     assert_eq!(renamed.source_path.as_deref(), Some(source_path.as_str()));

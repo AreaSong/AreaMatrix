@@ -37,6 +37,7 @@ fn share_extension_import_contract_exposes_staged_input_output_and_errors() {
         override_category: Some("inbox".to_owned()),
         override_filename: Some("Shared Article.pdf".to_owned()),
         duplicate_strategy: DuplicateStrategy::Ask,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     assert_eq!(queued_options.mode, StorageMode::Copied);
     assert_eq!(queued_options.destination, ImportDestination::AutoClassify);

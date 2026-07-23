@@ -39,6 +39,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -112,7 +114,7 @@ fn assert_c1_17_capability_spec() {}
 
 fn assert_core_api_and_udl_contract() {
     for fragment in [
-        "SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);",
+        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, string content_locale\n    );",
         "i64? get_fs_event_cursor(string repo_path);",
         "void set_fs_event_cursor(string repo_path, i64 last_event_id);",
         "dictionary ExternalEvent",
@@ -131,7 +133,7 @@ fn assert_core_api_and_udl_contract() {
     }
 
     for fragment in [
-        "### `sync_external_changes(repoPath, events) throws -> SyncResult`",
+        "### `sync_external_changes(repoPath, events, contentLocale) throws -> SyncResult`",
         "去抖 + InFlight 过滤后传入",
         "### `get_fs_event_cursor(repoPath) throws -> Int64?`",
         "### `set_fs_event_cursor(repoPath, lastEventId) throws`",
@@ -200,6 +202,7 @@ fn sync_external_created_integration_verify_real_flow_reaches_list_tree_detail_l
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![created("docs/external.md", 310)],
+        "en".to_owned(),
     )
     .expect("sync created event");
 
@@ -253,6 +256,7 @@ fn sync_external_created_integration_verify_coalesces_adjacent_modified_signal()
             created("docs/created.txt", 320),
             modified("docs/created.txt", 321),
         ],
+        "en".to_owned(),
     )
     .expect("sync coalesced created and modified signals");
 
@@ -280,6 +284,7 @@ fn sync_external_created_integration_verify_skip_and_failure_boundaries_are_tran
             created(".areamatrix/generated/internal.md", 330),
             created("AREAMATRIX.md", 331),
         ],
+        "en".to_owned(),
     )
     .expect("skip AreaMatrix-owned generated paths");
     assert_eq!(skipped.detected_creates, 0);
@@ -294,6 +299,7 @@ fn sync_external_created_integration_verify_skip_and_failure_boundaries_are_tran
             created("docs/good.txt", 332),
             created("docs/missing.txt", 333),
         ],
+        "en".to_owned(),
     );
     assert_eq!(failed, Err(CoreError::file_not_found("docs/missing.txt")));
 

@@ -1,0 +1,101 @@
+id: v3-bilingual-architecture-change
+title: Complete the final bilingual architecture
+version: v3
+status: ready
+features:
+  - id: v3-bilingual-architecture
+    module: localization
+    intent: Separate responsive application language from per-repository generated-content language and eliminate hardcoded or prematurely resolved application text.
+    depends_on: []
+    docs:
+      source:
+        - docs/adr/0008-naming-and-i18n.md
+        - docs/api/core-api.md
+        - docs/architecture/macos-frontend-architecture.md
+      update:
+        - docs/ux/settings-panel.md
+        - docs/user-guide/settings.md
+        - docs/modules/overview-gen.md
+        - docs/modules/classify.md
+        - docs/architecture/fs-watcher.md
+        - docs/user-guide/ai-features-and-privacy.md
+        - docs/development/coding-standards.md
+        - docs/development/testing.md
+        - docs/development/ci-governance.md
+      api:
+        - docs/api/core-api.md
+      udl:
+        - core/area_matrix.udl
+    doc_changes:
+      - file: docs/adr/0008-naming-and-i18n.md
+        operation: update
+        line_start: 1
+        line_end: 1
+        heading: ADR-0008
+        excerpt: "# ADR-0008: 命名与国际化策略"
+        summary: Define the two language domains, verbatim boundary, compatibility behavior, and persistence rules.
+        depends_on: []
+        tasks:
+          - product-contract
+      - file: docs/api/core-api.md
+        operation: update
+        line_start: 1
+        line_end: 1
+        heading: Core API（UDL 接口规范）
+        excerpt: "# Core API（UDL 接口规范）"
+        summary: Require concrete content-locale snapshots on generation-capable APIs and remove mutable process-global locale state.
+        depends_on:
+          - docs/adr/0008-naming-and-i18n.md
+        tasks:
+          - product-contract
+      - file: docs/architecture/macos-frontend-architecture.md
+        operation: update
+        line_start: 1
+        line_end: 1
+        heading: macOS 前端架构
+        excerpt: "# macOS 前端架构"
+        summary: Make application-owned presentation reactive and keep interface, repository content, and OS chrome domains separate.
+        depends_on:
+          - docs/adr/0008-naming-and-i18n.md
+        tasks:
+          - product-contract
+    code_impacts:
+      existing:
+        - apps/macos/AreaMatrix/**
+        - core/src/**
+        - core/area_matrix.udl
+        - scripts/dev_tools/**
+      expected:
+        - workflow/versions/v3/**
+        - docs/**
+      tests:
+        - apps/macos/AreaMatrixTests/**
+        - core/tests/**
+        - scripts/dev_tools/test_build_tools.py
+        - scripts/dev_tools/test_macos_runner.py
+    risk:
+      level: High
+      boundaries:
+        - Locale propagation does not alter user-file targets or file-operation semantics.
+        - Existing generated content is never rewritten merely because a language selection changes.
+        - Remote AI receives no additional user data because of the locale parameter.
+        - Unsupported repository locale values fail closed for generation and remain browsable.
+    task_split:
+      - id: product-contract
+        title: Align authoritative docs, Core API, and UDL.
+        validation:
+          - ./dev check docs
+          - ./dev check wording
+      - id: implementation
+        title: Complete macOS and Core bilingual behavior.
+        validation:
+          - ./dev test macos
+          - cargo test --workspace
+          - ./dev bindings verify
+      - id: governance-and-evidence
+        title: Enforce regression checks and collect fixture UI evidence.
+        validation:
+          - ./dev check governance
+          - ./dev check quality
+          - ./dev workflow discuss --version v3 doctor
+          - ./dev workflow doctor

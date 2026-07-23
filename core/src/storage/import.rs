@@ -67,7 +67,12 @@ pub(crate) fn import_file_with_result(
         .map(ReplacementDbRollback::from_plan);
     promote_import(&prepared, file_id, &destination)?;
     let entry = db::get_active_file_by_id(&prepared.repo, file_id)?;
-    let entry = finish_overview_regeneration(&prepared.repo, entry, replacement_rollback.as_ref())?;
+    let entry = finish_overview_regeneration(
+        &prepared.repo,
+        entry,
+        replacement_rollback.as_ref(),
+        prepared.options.content_locale.as_str(),
+    )?;
     ensure_replacement_is_recoverable_from_system_trash(
         &mut replacement_guard,
         &prepared.repo,
@@ -102,6 +107,7 @@ impl PreparedImport {
     fn new(repo_path: String, source_path: String, options: ImportOptions) -> CoreResult<Self> {
         let repo = validate_repo_path(&repo_path)?;
         db::ensure_initialized(&repo)?;
+        db::ensure_repository_locale_allows_normal_mutation(&repo)?;
         let source = PathBuf::from(source_path);
         validate::source_file(&source)?;
 
@@ -226,8 +232,12 @@ fn import_indexed_file(prepared: PreparedImport) -> CoreResult<ImportResult> {
     };
     let mut db_guard = DbStagingRowGuard::new(prepared.repo.clone(), commit.file_id);
     let entry = db::get_active_file_by_id(&prepared.repo, commit.file_id)?;
-    let entry =
-        finish_overview_regeneration(&prepared.repo, entry, commit.replacement_rollback.as_ref())?;
+    let entry = finish_overview_regeneration(
+        &prepared.repo,
+        entry,
+        commit.replacement_rollback.as_ref(),
+        prepared.options.content_locale.as_str(),
+    )?;
     ensure_replacement_is_recoverable_from_system_trash(
         &mut commit.replacement_guard,
         &prepared.repo,
@@ -250,8 +260,9 @@ fn finish_overview_regeneration(
     repo: &Path,
     entry: FileEntry,
     replacement_rollback: Option<&ReplacementDbRollback>,
+    content_locale: &str,
 ) -> CoreResult<FileEntry> {
-    match overview::regenerate_after_import(repo, &entry) {
+    match overview::regenerate_after_import(repo, &entry, content_locale) {
         Ok(()) => Ok(entry),
         Err(error) => {
             if let Some(rollback) = replacement_rollback {

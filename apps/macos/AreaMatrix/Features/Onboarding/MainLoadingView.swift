@@ -24,7 +24,9 @@ struct MainLoadingView: View {
             safetyText
             Button(L10n.string("onboarding.loading.cancelOpening"), action: onCancelOpening)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
-                .accessibilityHint("Cancel opening returns to folder validation and does not modify user files.")
+                .accessibilityHint(L10n.string(
+                    "Cancel opening returns to folder validation and does not modify user files."
+                ))
         }
         .padding(36)
         .frame(maxWidth: 680, alignment: .leading)

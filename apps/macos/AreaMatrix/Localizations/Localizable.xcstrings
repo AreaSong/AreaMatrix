@@ -38818,6 +38818,23 @@
         }
       }
     },
+    "repository.loadError.bridgeMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Core bridge could not load repository settings: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Core 桥接无法加载资料库设置：%@"
+          }
+        }
+      }
+    },
     "repository.loadError.bridgeRecovery" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -38882,6 +38899,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法打开资料库元数据"
+          }
+        }
+      }
+    },
+    "repository.loadError.defaultMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repository settings could not be loaded: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法加载资料库设置：%@"
           }
         }
       }
@@ -46361,13 +46395,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Controls category names and future generated overviews. Existing overviews are not rewritten automatically."
+            "value" : "Controls built-in repository labels and future generated content. Existing generated content is not rewritten automatically."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "控制分类名称和之后生成的概述；不会自动重写已有概述。"
+            "value" : "控制资料库内置标签和之后生成的内容；不会自动重写已有生成内容。"
           }
         }
       }
@@ -46504,6 +46538,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "跟随系统"
+          }
+        }
+      }
+    },
+    "settings.language.unsupportedExplanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a supported content language before generating new repository content. Opening and browsing remain available."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生成新的资料库内容前，请明确选择受支持的内容语言。资料库仍可正常打开和浏览。"
+          }
+        }
+      }
+    },
+    "settings.language.unsupportedValue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsupported (%@)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不受支持（%@）"
           }
         }
       }
@@ -55368,7 +55436,51 @@
           }
         }
       }
-    }
+    },
+    "Check Core and repository metadata availability, then retry." : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check Core and repository metadata availability, then retry." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "检查 Core 和资料库元数据是否可用，然后重试。" } } } },
+    "Completed" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Completed" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已完成" } } } },
+    "Conflict is already resolved" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Conflict is already resolved" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "冲突已经解决" } } } },
+    "Conflict is queued for per-item handling" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Conflict is queued for per-item handling" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "冲突已进入逐项处理队列" } } } },
+    "Conflict will stay staged for per-item handling" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Conflict will stay staged for per-item handling" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "冲突将保留在暂存区以供逐项处理" } } } },
+    "Connection verified." : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Connection verified." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接已验证。" } } } },
+    "Could not preview classifier settings" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not preview classifier settings" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法预览分类器设置" } } } },
+    "Could not save classifier settings" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not save classifier settings" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法保存分类器设置" } } } },
+    "Date prefix" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Date prefix" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "日期前缀" } } } },
+    "Display name updated" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Display name updated" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示名称已更新" } } } },
+    "Existing file will move to recoverable storage before incoming file takes its place" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Existing file will move to recoverable storage before incoming file takes its place" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "现有文件会先移到可恢复存储区，再由传入文件替代" } } } },
+    "Index-only staging cannot be batch imported" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Index-only staging cannot be batch imported" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅索引暂存项不能批量导入" } } } },
+    "Index-only staging cannot replace an existing file" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Index-only staging cannot replace an existing file" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅索引暂存项不能替换现有文件" } } } },
+    "Index-only target cannot be replaced" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Index-only target cannot be replaced" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不能替换仅索引目标" } } } },
+    "Initializing metadata database" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Initializing metadata database" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在初始化元数据库" } } } },
+    "Incoming duplicate stays in staging; existing file is unchanged" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Incoming duplicate stays in staging; existing file is unchanged" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "传入的重复文件保留在暂存区；现有文件不变" } } } },
+    "Incoming file will be imported with a conflict-free name" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Incoming file will be imported with a conflict-free name" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "传入文件将使用无冲突名称导入" } } } },
+    "Interrupted" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Interrupted" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已中断" } } } },
+    "Keep base + sequence" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep base + sequence" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保留原名并添加序号" } } } },
+    "Limited" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Limited" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "受限" } } } },
+    "No selected conflicts can be applied" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No selected conflicts can be applied" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有可应用的已选冲突" } } } },
+    "One or more import conflicts are blocked" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "One or more import conflicts are blocked" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "一个或多个导入冲突被阻止" } } } },
+    "Previous apply attempt failed" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Previous apply attempt failed" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "上一次应用尝试失败" } } } },
+    "Rebuilding index" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rebuilding index" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在重建索引" } } } },
+    "Reloading repository" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Reloading repository" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在重新加载资料库" } } } },
+    "Remote AI disabled." : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Remote AI disabled." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "远程 AI 已关闭。" } } } },
+    "Remote AI enabled." : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Remote AI enabled." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "远程 AI 已启用。" } } } },
+    "Replace confirmation context expired" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Replace confirmation context expired" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "替换确认上下文已过期" } } } },
+    "Replace requires an active target file" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Replace requires an active target file" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "替换操作需要有效的目标文件" } } } },
+    "Replace text" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Replace text" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "替换文本" } } } },
+    "Retry after checking repository availability and permissions." : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry after checking repository availability and permissions." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "检查资料库可用性和权限后重试。" } } } },
+    "Scanning files" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Scanning files" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在扫描文件" } } } },
+    "Supported" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Supported" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "支持" } } } },
+    "This row cannot be processed safely" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "This row cannot be processed safely" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "此项目无法安全处理" } } } },
+    "Today" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Today" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今天" } } } },
+    "Trash unavailable" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Trash unavailable" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "废纸篓不可用" } } } },
+    "Unable to load integrations" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to load integrations" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法加载集成设置" } } } },
+    "Unable to load settings" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to load settings" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法加载设置" } } } },
+    "Unable to save general settings" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to save general settings" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法保存通用设置" } } } },
+    "Unexpected error. Retry or collect diagnostics." : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unexpected error. Retry or collect diagnostics." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发生意外错误。请重试或收集诊断信息。" } } } },
+    "error.unmapped.action" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry or review the technical details." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请重试或查看技术详情。" } } } },
+    "error.unmapped.message" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "An unexpected error occurred." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发生了意外错误。" } } } },
+    "import.conflict.apply-failure-summary" : { "extractionState" : "manual", "localizations" : { "en" : { "variations" : { "plural" : { "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld conflict failed to apply." } }, "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld conflicts failed to apply." } } } } }, "zh-Hans" : { "variations" : { "plural" : { "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld 个冲突应用失败。" } } } } } } },
+    "import.conflict.replace-confirmation-message" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Replace %1$lld files in %2$@? Existing files will move to recoverable storage first." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "替换 %2$@ 范围内的 %1$lld 个文件？现有文件会先移到可恢复存储区。" } } } }
   },
   "version" : "1.0"
 }

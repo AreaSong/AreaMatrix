@@ -29,6 +29,7 @@ fn generation_request() -> AiSummaryGenerationRequest {
         context_policy: AiSummaryContextPolicy::MetadataAndExtractedText,
         privacy_policy_ref: Some("default-remote-gate".to_owned()),
         regenerate_existing: false,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 

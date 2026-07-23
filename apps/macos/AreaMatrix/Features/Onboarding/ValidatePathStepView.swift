@@ -5,7 +5,7 @@ struct ValidatePathStepView: View {
     let validation: RepoPathValidationSnapshot?
     let existingRepositoryMetadata: ExistingRepositoryMetadataSnapshot?
     let latestScanSession: ScanSessionSnapshot?
-    let errorMessage: String?
+    let errorMessage: LocalizedMessage?
     let errorMapping: CoreErrorMappingSnapshot?
     let isValidating: Bool
     let isICloudRiskAccepted: Bool

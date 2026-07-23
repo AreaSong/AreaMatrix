@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct ReplaceConfirmSheet: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let context: SingleFileReplaceConfirmationContext
-    var errorMessage: String?
-    var diagnosticsMessage: String?
+    var errorMessage: LocalizedMessage?
+    var diagnosticsMessage: LocalizedMessage?
     let onCancel: () -> Void
     let onRetry: () -> Void
     let onCollectDiagnostics: () -> Void
@@ -61,12 +62,12 @@ struct ReplaceConfirmSheet: View {
     private var recoveryActions: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let errorMessage {
-                Text(errorMessage)
+                Text(localizer.resolve(errorMessage))
                     .font(.callout)
                     .foregroundStyle(.red)
             }
             if let diagnosticsMessage {
-                Text(diagnosticsMessage)
+                Text(localizer.resolve(diagnosticsMessage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

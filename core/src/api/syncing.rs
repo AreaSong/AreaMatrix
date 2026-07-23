@@ -1,7 +1,8 @@
 //! Public FFI syncing entry points.
 
 use crate::{
-    platform_watcher_status, sync, CoreResult, ExternalEvent, PlatformWatcherHealthSignal,
+    platform_watcher_status, sync, ContentLocale, CoreResult, ExternalEvent,
+    ExternalSyncLocaleRecoveryPlan, ExternalSyncLocaleRecoveryReport, PlatformWatcherHealthSignal,
     PlatformWatcherSnapshot, SyncResult,
 };
 
@@ -61,8 +62,32 @@ use crate::{
 pub fn sync_external_changes(
     repo_path: String,
     events: Vec<ExternalEvent>,
+    content_locale: impl crate::ContentLocaleInput,
 ) -> CoreResult<SyncResult> {
-    sync::sync_external_changes(repo_path, events)
+    let content_locale = content_locale.into_content_locale()?;
+    sync::sync_external_changes(repo_path, events, content_locale.as_str().to_owned())
+}
+
+/// Returns an explicit recovery plan for legacy external-sync receipts that have no locale.
+///
+/// The plan is read-only and its opaque token binds the repository path, current filesystem
+/// cursor, and exact NULL-receipt set. `None` means no legacy receipt needs recovery.
+pub fn prepare_external_sync_locale_recovery(
+    repo_path: String,
+) -> CoreResult<Option<ExternalSyncLocaleRecoveryPlan>> {
+    sync::prepare_external_sync_locale_recovery(repo_path)
+}
+
+/// Applies a user-selected concrete locale to one unchanged legacy receipt set.
+///
+/// Core rechecks the token inside an immediate transaction. A stale token or changed receipt set
+/// returns `Conflict` and leaves receipts, cursor, overview, and user files untouched.
+pub fn resolve_external_sync_locale_recovery(
+    repo_path: String,
+    recovery_token: String,
+    content_locale: ContentLocale,
+) -> CoreResult<ExternalSyncLocaleRecoveryReport> {
+    sync::resolve_external_sync_locale_recovery(repo_path, recovery_token, content_locale)
 }
 
 /// Returns the latest processed filesystem event cursor from `.areamatrix/index.db`.

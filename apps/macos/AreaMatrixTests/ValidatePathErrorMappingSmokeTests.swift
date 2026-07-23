@@ -18,7 +18,7 @@ final class ValidatePathErrorMappingTests: XCTestCase {
         await model.continueFromChoosePath()
 
         await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
-        XCTAssertEqual(model.repositoryPathError, "无访问权限")
+        XCTAssertEqual(model.repositoryPathError, L10n.message("无访问权限", fallback: "无访问权限"))
         XCTAssertEqual(model.repositoryPathErrorMapping, mapping)
         XCTAssertFalse(model.canContinueFromValidatePath)
     }
@@ -92,7 +92,7 @@ final class ValidatePathIntegrationSmokeTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "Not enough available space. Free some space or choose another path.")
+        XCTAssertEqual(model.repositoryPathError, L10n.message("可用空间不足，请释放空间或选择其他路径"))
         XCTAssertFalse(model.canContinueFromValidatePath)
     }
 }

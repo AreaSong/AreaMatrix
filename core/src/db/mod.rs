@@ -111,9 +111,10 @@ pub(crate) use rename::{
     BatchRenameUndoItem,
 };
 pub(crate) use repo_config::{
-    ensure_config_storage_writable, initialize_repository_db, load_config_or_default,
-    load_repo_config_record, map_update_open_error, update_config, upsert_repo_config_record,
-    with_write_transaction,
+    ensure_config_storage_writable, ensure_repository_locale_allows_normal_mutation,
+    initialize_repository_db, load_config_or_default, load_repo_config_record,
+    load_repo_config_snapshot_or_default, map_update_open_error, update_config,
+    update_repo_config_patch, upsert_repo_config_record, with_write_transaction,
 };
 pub(crate) use saved_search::{
     create_saved_search_row, delete_saved_search_row, get_saved_search_row, list_saved_search_rows,

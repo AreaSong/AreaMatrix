@@ -8,8 +8,8 @@ enum RepositorySettingsCapabilityState: Equatable {
 }
 
 struct RepositorySettingsCapabilityError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
     var detail: String
 }
 
@@ -59,7 +59,7 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
         case let .loaded(capabilities):
             capabilities.settingsDiagnosticsReason
         case let .failed(_, error):
-            error.recovery
+            L10n.resolve(error.recovery)
         }
     }
 
@@ -89,7 +89,7 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
     private func capabilityError(for error: Error) async -> RepositorySettingsCapabilityError {
         if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return RepositorySettingsCapabilityError(
-                message: L10n.string("Platform capabilities unavailable"),
+                message: L10n.message("Platform capabilities unavailable"),
                 recovery: display.recovery,
                 detail: display.detail
             )
@@ -97,15 +97,15 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
 
         if let bridgeError = error as? CoreBridgeError {
             return RepositorySettingsCapabilityError(
-                message: L10n.string("Platform capabilities unavailable"),
-                recovery: L10n.string("Check the Core platform capability bridge, then retry."),
+                message: L10n.message("Platform capabilities unavailable"),
+                recovery: L10n.message("Check the Core platform capability bridge, then retry."),
                 detail: bridgeError.localizedDescription
             )
         }
 
         return RepositorySettingsCapabilityError(
-            message: L10n.string("Platform capabilities unavailable"),
-            recovery: L10n.string("Retry repository settings after the platform capability bridge is available."),
+            message: L10n.message("Platform capabilities unavailable"),
+            recovery: L10n.message("Retry repository settings after the platform capability bridge is available."),
             detail: error.localizedDescription
         )
     }

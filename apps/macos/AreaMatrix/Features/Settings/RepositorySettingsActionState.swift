@@ -2,13 +2,13 @@ import Combine
 import Foundation
 
 struct RepositorySettingsPathActionError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 struct RepositorySettingsDiagnosticsError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 enum RepositorySettingsDiagnosticsState: Equatable {
@@ -35,12 +35,12 @@ enum RepositorySettingsDiagnosticsState: Equatable {
 
 enum LocalModelStatusPhase: Equatable {
     case idle
-    case checking(String)
+    case checking(LocalizedMessage)
     case failed(LocalModelStatusError)
 }
 
 enum LocalModelStatusFeedback: Equatable {
-    case success(String)
+    case success(LocalizedMessage)
     case failed(LocalModelStatusError)
 }
 
@@ -155,8 +155,8 @@ final class LocalModelStatusModel: ObservableObject {
     func checkStatus() async {
         guard !isChecking else { return }
         phase = .checking(cachedStatus == nil
-            ? L10n.string("Checking local model status...")
-            : L10n.string("Retrying local model status..."))
+            ? L10n.message("Checking local model status...")
+            : L10n.message("Retrying local model status..."))
         feedback = nil
         do {
             let status = try await statusReader.getLocalModelStatus(repoPath: repoPath, request: statusRequest())
@@ -166,8 +166,8 @@ final class LocalModelStatusModel: ObservableObject {
         } catch {
             phase = await .failed(localModelError(
                 for: error,
-                message: L10n.string("Local model status could not be checked."),
-                fallbackRecovery: L10n.string("Retry status check")
+                message: L10n.message("Local model status could not be checked."),
+                fallbackRecovery: L10n.message("Retry status check")
             ))
         }
     }
@@ -176,11 +176,11 @@ final class LocalModelStatusModel: ObservableObject {
         feedback = nil
         do {
             try installHelpOpener.openLocalModelInstallHelp()
-            feedback = .success(L10n.string("Install help opened. Return here and run Retry status check."))
+            feedback = .success(L10n.message("Install help opened. Return here and run Retry status check."))
         } catch {
             feedback = .failed(LocalModelStatusError(
-                message: L10n.string("Install help could not be opened."),
-                recovery: L10n.string("Retry or use diagnostics."),
+                message: L10n.message("Install help could not be opened."),
+                recovery: L10n.message("Retry or use diagnostics."),
                 detail: error.localizedDescription
             ))
         }
@@ -193,19 +193,19 @@ final class LocalModelStatusModel: ObservableObject {
             let location = try await statusReader.locateLocalModelFolder(repoPath: repoPath, request: folderRequest())
             guard location.openable else {
                 feedback = .failed(LocalModelStatusError(
-                    message: L10n.string("Model location could not be opened."),
-                    recovery: L10n.string("Retry status check or open install help."),
+                    message: L10n.message("Model location could not be opened."),
+                    recovery: L10n.message("Retry status check or open install help."),
                     detail: location.unavailableReason ?? L10n.string("The folder is not available.")
                 ))
                 return
             }
             try folderOpener.openLocalModelFolder(location)
-            feedback = .success(L10n.string("Model location opened."))
+            feedback = .success(L10n.message("Model location opened."))
         } catch {
             feedback = await .failed(localModelError(
                 for: error,
-                message: L10n.string("Model location could not be opened."),
-                fallbackRecovery: L10n.string("Retry status check")
+                message: L10n.message("Model location could not be opened."),
+                fallbackRecovery: L10n.message("Retry status check")
             ))
         }
     }
@@ -222,11 +222,11 @@ final class LocalModelStatusModel: ObservableObject {
         let summary = snapshot?.diagnosticsSummary ?? L10n.string("Local model status has not been checked yet.")
         do {
             try diagnosticsCopier.copyLocalModelDiagnostics(summary)
-            feedback = .success(L10n.string("Diagnostics summary copied."))
+            feedback = .success(L10n.message("Diagnostics summary copied."))
         } catch {
             feedback = .failed(LocalModelStatusError(
-                message: L10n.string("Diagnostics summary could not be copied."),
-                recovery: L10n.string("Retry copy."),
+                message: L10n.message("Diagnostics summary could not be copied."),
+                recovery: L10n.message("Retry copy."),
                 detail: error.localizedDescription
             ))
         }
@@ -246,13 +246,13 @@ final class LocalModelStatusModel: ObservableObject {
 
     private func localModelError(
         for error: Error,
-        message: String,
-        fallbackRecovery: String
+        message: LocalizedMessage,
+        fallbackRecovery: LocalizedMessage
     ) async -> LocalModelStatusError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return LocalModelStatusError(
                 message: message,
-                recovery: mapping.recoveryText(fallback: fallbackRecovery),
+                recovery: mapping.recoveryMessage(fallback: fallbackRecovery),
                 detail: mapping.userMessage
             )
         }

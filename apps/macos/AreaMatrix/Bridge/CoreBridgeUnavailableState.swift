@@ -12,9 +12,9 @@ struct ExistingRepositoryMetadataSnapshot: Equatable {
 
 struct ConfigLoadFailure: Equatable {
     var repoPath: String
-    var title: String
-    var message: String
-    var recoveryAction: String
+    var title: LocalizedMessage
+    var message: LocalizedMessage
+    var recoveryAction: LocalizedMessage
 
     static func map(repoPath: String, error: Error) -> ConfigLoadFailure {
         if let coreError = error as? CoreError {
@@ -24,17 +24,25 @@ struct ConfigLoadFailure: Equatable {
         if let bridgeError = error as? CoreBridgeError {
             return ConfigLoadFailure(
                 repoPath: repoPath,
-                title: L10n.string("repository.loadError.title"),
-                message: bridgeError.localizedDescription,
-                recoveryAction: L10n.string("repository.loadError.bridgeRecovery")
+                title: L10n.message("repository.loadError.title"),
+                message: L10n.message(
+                    "repository.loadError.bridgeMessage",
+                    arguments: [.string(bridgeError.localizedDescription)],
+                    technicalDetail: bridgeError.localizedDescription
+                ),
+                recoveryAction: L10n.message("repository.loadError.bridgeRecovery")
             )
         }
 
         return ConfigLoadFailure(
             repoPath: repoPath,
-            title: L10n.string("repository.loadError.title"),
-            message: error.localizedDescription,
-            recoveryAction: L10n.string("repository.loadError.defaultRecovery")
+            title: L10n.message("repository.loadError.title"),
+            message: L10n.message(
+                "repository.loadError.defaultMessage",
+                arguments: [.string(error.localizedDescription)],
+                technicalDetail: error.localizedDescription
+            ),
+            recoveryAction: L10n.message("repository.loadError.defaultRecovery")
         )
     }
 
@@ -43,37 +51,57 @@ struct ConfigLoadFailure: Equatable {
         case let .Config(reason):
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: L10n.string("repository.loadError.invalidTitle"),
-                message: L10n.format("repository.loadError.invalidMessage", reason),
-                recoveryAction: L10n.string("repository.loadError.invalidRecovery")
+                title: L10n.message("repository.loadError.invalidTitle"),
+                message: L10n.message(
+                    "repository.loadError.invalidMessage",
+                    arguments: [.string(reason)],
+                    technicalDetail: reason
+                ),
+                recoveryAction: L10n.message("repository.loadError.invalidRecovery")
             )
         case let .PermissionDenied(path):
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: L10n.string("repository.loadError.permissionTitle"),
-                message: L10n.format("repository.loadError.permissionMessage", path),
-                recoveryAction: L10n.string("repository.loadError.permissionRecovery")
+                title: L10n.message("repository.loadError.permissionTitle"),
+                message: L10n.message(
+                    "repository.loadError.permissionMessage",
+                    arguments: [.string(path)],
+                    technicalDetail: path
+                ),
+                recoveryAction: L10n.message("repository.loadError.permissionRecovery")
             )
         case let .Io(message):
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: L10n.string("repository.loadError.ioTitle"),
-                message: L10n.format("repository.loadError.ioMessage", message),
-                recoveryAction: L10n.string("repository.loadError.ioRecovery")
+                title: L10n.message("repository.loadError.ioTitle"),
+                message: L10n.message(
+                    "repository.loadError.ioMessage",
+                    arguments: [.string(message)],
+                    technicalDetail: message
+                ),
+                recoveryAction: L10n.message("repository.loadError.ioRecovery")
             )
         case let .Db(message):
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: L10n.string("repository.loadError.databaseTitle"),
-                message: L10n.format("repository.loadError.databaseMessage", message),
-                recoveryAction: L10n.string("repository.loadError.databaseRecovery")
+                title: L10n.message("repository.loadError.databaseTitle"),
+                message: L10n.message(
+                    "repository.loadError.databaseMessage",
+                    arguments: [.string(message)],
+                    technicalDetail: message
+                ),
+                recoveryAction: L10n.message("repository.loadError.databaseRecovery")
             )
         default:
             ConfigLoadFailure(
                 repoPath: repoPath,
-                title: L10n.string("repository.loadError.title"),
-                message: coreError.localizedDescription,
-                recoveryAction: L10n.string("repository.loadError.defaultRecovery")
+                title: L10n.message("repository.loadError.title"),
+                message: L10n.message(
+                    "repository.loadError.defaultMessage",
+                    arguments: [.string(coreError.localizedDescription)],
+                    technicalDetail: coreError.localizedDescription
+                ),
+                recoveryAction: L10n.message("repository.loadError.defaultRecovery")
             )
         }
     }
@@ -81,7 +109,6 @@ struct ConfigLoadFailure: Equatable {
 
 enum CoreBridgeBoundary: String, CaseIterable, Equatable {
     case getVersion = "get_version"
-    case setAppInterfaceLocale = "set_app_interface_locale"
     case initLogging = "init_logging"
     case inspectBindingContract = "inspect_binding_contract"
     case getPlatformCapabilities = "get_platform_capabilities"
@@ -135,9 +162,9 @@ enum CoreBridgeBoundary: String, CaseIterable, Equatable {
 }
 
 struct CoreBridgeUnavailableState: Equatable {
-    let statusLabel: String
+    let statusLabel: LocalizedMessage
     let generatedBindingsPath: String
-    let coreLibraryStatus: String
+    let coreLibraryStatus: LocalizedMessage
     let declaredBoundaryCount: Int
 
     var isUnavailable: Bool {
@@ -146,9 +173,9 @@ struct CoreBridgeUnavailableState: Equatable {
 
     static var generatedBindingsUnavailable: CoreBridgeUnavailableState {
         CoreBridgeUnavailableState(
-            statusLabel: L10n.string("bridge.unavailable.status"),
+            statusLabel: L10n.message("bridge.unavailable.status"),
             generatedBindingsPath: "apps/macos/AreaMatrix/Bridge/Generated/area_matrix.swift",
-            coreLibraryStatus: L10n.string("bridge.unavailable.libraryStatus"),
+            coreLibraryStatus: L10n.message("bridge.unavailable.libraryStatus"),
             declaredBoundaryCount: CoreBridgeBoundary.allCases.count
         )
     }
@@ -163,7 +190,11 @@ enum CoreBridgeError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .generatedBindingsUnavailable(boundary, state):
-            L10n.format("bridge.unavailable.boundaryMessage", state.statusLabel, boundary.rawValue)
+            L10n.format(
+                "bridge.unavailable.boundaryMessage",
+                L10n.resolve(state.statusLabel),
+                boundary.rawValue
+            )
         }
     }
 }

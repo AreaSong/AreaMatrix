@@ -28,6 +28,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -52,6 +54,7 @@ fn import_options() -> ImportOptions {
         override_category: Some("docs".to_owned()),
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -99,6 +102,7 @@ fn request(file_id: i64) -> AiTagSuggestionRequest {
         file_id,
         candidate_tags: vec!["finance".to_owned(), "invoice".to_owned()],
         privacy_policy_ref: None,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -222,6 +226,7 @@ fn ai_tags_suggestion_generates_local_review_rows_without_writing_tags() {
     assert!(!report.contents_read);
     assert_eq!(tag_rows(repo.path(), target_id), before_tags);
     assert!(payload.contains("\"feature\":\"tags\""));
+    assert!(payload.contains("\"content_locale\":\"en\""));
     assert!(payload.contains("\"filename\":\"invoice-2026.txt\""));
     assert!(payload.contains("\"tag_registry\""));
 

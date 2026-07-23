@@ -6,7 +6,7 @@ extension OnboardingModel {
         do {
             try helpOpener.openWelcomeHelp()
         } catch {
-            toastMessage = L10n.string("Learn more is unavailable right now.")
+            toastMessage = L10n.message("Learn more is unavailable right now.")
         }
     }
 
@@ -16,7 +16,7 @@ extension OnboardingModel {
             try fileRevealer.revealFile(repoPath: opening.config.repoPath, relativePath: relativePath)
             toastMessage = nil
         } catch {
-            toastMessage = L10n.string("File cannot be shown in Finder.")
+            toastMessage = L10n.message("File cannot be shown in Finder.")
         }
     }
 
@@ -26,7 +26,7 @@ extension OnboardingModel {
             try fileOpener.openFile(repoPath: opening.config.repoPath, relativePath: relativePath)
             toastMessage = nil
         } catch {
-            toastMessage = L10n.string("File cannot be opened.")
+            toastMessage = L10n.message("File cannot be opened.")
         }
     }
 
@@ -34,11 +34,11 @@ extension OnboardingModel {
     func copyMainListPath(opening: RepositoryOpeningResult, relativePath: String) {
         do {
             try pathCopier.copyPath(repoPath: opening.config.repoPath, relativePath: relativePath)
-            toastMessage = L10n.string("Path copied.")
-            accessibilityAnnouncer.announce("Path copied.")
+            toastMessage = L10n.message("Path copied.")
+            accessibilityAnnouncer.announce(L10n.message("Path copied."))
         } catch {
-            toastMessage = L10n.string("Path cannot be copied.")
-            accessibilityAnnouncer.announce("Path cannot be copied.")
+            toastMessage = L10n.message("Path cannot be copied.")
+            accessibilityAnnouncer.announce(L10n.message("Path cannot be copied."))
         }
     }
 
@@ -46,12 +46,14 @@ extension OnboardingModel {
     func copyMainListPaths(opening: RepositoryOpeningResult, relativePaths: [String]) {
         do {
             try pathCopier.copyPaths(repoPath: opening.config.repoPath, relativePaths: relativePaths)
-            let message = L10n.plural("main-list.paths-copied", count: relativePaths.count)
-            toastMessage = message
-            accessibilityAnnouncer.announce(message)
+            toastMessage = L10n.pluralMessage("main-list.paths-copied", count: relativePaths.count)
+            accessibilityAnnouncer.announce(L10n.pluralMessage(
+                "main-list.paths-copied",
+                count: relativePaths.count
+            ))
         } catch {
-            toastMessage = L10n.string("Paths cannot be copied.")
-            accessibilityAnnouncer.announce("Paths cannot be copied.")
+            toastMessage = L10n.message("Paths cannot be copied.")
+            accessibilityAnnouncer.announce(L10n.message("Paths cannot be copied."))
         }
     }
 
@@ -59,10 +61,13 @@ extension OnboardingModel {
     func collectMainListDiagnostics(opening: RepositoryOpeningResult) async {
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: opening.config.repoPath)
-            toastMessage = L10n.format("mainList.diagnosticsCollected", snapshot.snapshotPath)
+            toastMessage = L10n.message(
+                "mainList.diagnosticsCollected",
+                arguments: [.string(snapshot.snapshotPath)]
+            )
         } catch {
             let mapping = await openingFailureMapping(for: error)
-            toastMessage = mapping.userMessage
+            toastMessage = mapping.userMessageDescriptor
         }
     }
 }

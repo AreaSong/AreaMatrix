@@ -125,6 +125,7 @@ struct ImportBatchDestinationSection: View {
 }
 
 struct ImportBatchRowsSection: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let itemCount: Int
     let rows: [ImportBatchCopyImportRow]
     let selectedDestination: ImportBatchDestinationOption
@@ -178,7 +179,7 @@ struct ImportBatchRowsSection: View {
 
     private func statusCell(for row: ImportBatchCopyImportRow) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(L10n.string(row.status.tag))
+            Text(localizer.resolve(row.status.tagMessage))
                 .font(.caption.weight(.semibold))
             if let detail = row.status.detail {
                 Text(detail)

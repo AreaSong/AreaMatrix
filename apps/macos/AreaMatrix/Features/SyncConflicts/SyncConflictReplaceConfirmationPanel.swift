@@ -21,7 +21,7 @@ struct SyncConflictReplaceConfirmationPanel: View {
             }
             Toggle("I understand this will replace the existing file.", isOn: $understandsReplace)
                 .disabled(disabledReason != nil || isConfirmed)
-                .accessibilityHint("Required before the replace plan can be confirmed.")
+                .accessibilityHint(L10n.string("Required before the replace plan can be confirmed."))
             confirmationStatus
             Button(SyncConflictReviewCopy.replaceConfirmAction, role: .destructive) {
                 onConfirm(understandsReplace)

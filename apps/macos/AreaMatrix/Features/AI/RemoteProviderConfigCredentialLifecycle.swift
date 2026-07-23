@@ -17,14 +17,14 @@ extension RemoteProviderConfigModel {
                 retainCredentialDraftAfterCleanupFailure(draft)
                 return credentialCleanupError(
                     for: error,
-                    message: L10n.string("API key draft could not be discarded after the connection test failed."),
-                    recovery: L10n.string("Retry Remove unused key or cancel after cleanup succeeds.")
+                    message: L10n.message("API key draft could not be discarded after the connection test failed."),
+                    recovery: L10n.message("Retry Remove unused key or cancel after cleanup succeeds.")
                 )
             }
             return await remoteError(
                 for: error,
-                message: L10n.string("Remote provider could not be tested."),
-                fallbackRecovery: L10n.string("Check the key, model, endpoint, and network.")
+                message: L10n.message("Remote provider could not be tested."),
+                fallbackRecovery: L10n.message("Check the key, model, endpoint, and network.")
             )
         }
     }
@@ -54,7 +54,7 @@ extension RemoteProviderConfigModel {
             verifiedCredentialDraft = draft
             lastFingerprint = currentDraft.fingerprint
             unusedCredentialReference = nil
-            outcome = .success("Connection verified.")
+            outcome = .success(L10n.message("Connection verified."))
             return
         }
 
@@ -64,8 +64,8 @@ extension RemoteProviderConfigModel {
             retainCredentialDraftAfterCleanupFailure(draft)
             outcome = .failed(credentialCleanupError(
                 for: error,
-                message: L10n.string("API key draft could not be discarded after the connection test failed."),
-                recovery: L10n.string("Retry Remove unused key or cancel after cleanup succeeds.")
+                message: L10n.message("API key draft could not be discarded after the connection test failed."),
+                recovery: L10n.message("Retry Remove unused key or cancel after cleanup succeeds.")
             ))
             return
         }
@@ -73,7 +73,7 @@ extension RemoteProviderConfigModel {
         verifiedCredentialDraft = nil
         outcome = .failed(AISettingsError(
             message: testFailureTitle(result.status),
-            recovery: L10n.string("Edit the provider details and test again."),
+            recovery: L10n.message("Edit the provider details and test again."),
             detail: result.sanitizedMessage
         ))
     }
@@ -132,8 +132,8 @@ extension RemoteProviderConfigModel {
             retainCredentialDraftAfterCleanupFailure(draft)
             outcome = .failed(credentialCleanupError(
                 for: error,
-                message: L10n.string("API key draft could not be discarded after provider details changed."),
-                recovery: L10n.string("Retry Cancel or remove the unused key.")
+                message: L10n.message("API key draft could not be discarded after provider details changed."),
+                recovery: L10n.message("Retry Cancel or remove the unused key.")
             ))
         }
     }
@@ -159,11 +159,15 @@ extension RemoteProviderConfigModel {
         clearVerifiedDraftState()
     }
 
-    func testFailureTitle(_ status: RemoteProviderTestStatusState) -> String {
+    func testFailureTitle(_ status: RemoteProviderTestStatusState) -> LocalizedMessage {
         RemoteProviderConfigErrorFactory.testFailureTitle(status)
     }
 
-    func remoteError(for error: Error, message: String, fallbackRecovery: String) async -> AISettingsError {
+    func remoteError(
+        for error: Error,
+        message: LocalizedMessage,
+        fallbackRecovery: LocalizedMessage
+    ) async -> AISettingsError {
         await RemoteProviderConfigErrorFactory.remoteError(
             for: error,
             errorMapper: errorMapper,
@@ -172,7 +176,11 @@ extension RemoteProviderConfigModel {
         )
     }
 
-    func credentialCleanupError(for error: Error, message: String, recovery: String) -> AISettingsError {
+    func credentialCleanupError(
+        for error: Error,
+        message: LocalizedMessage,
+        recovery: LocalizedMessage
+    ) -> AISettingsError {
         RemoteProviderConfigErrorFactory.credentialCleanupError(
             for: error,
             message: message,

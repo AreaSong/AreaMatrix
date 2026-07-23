@@ -40,7 +40,7 @@ final class AIPrivacyRulesRouteFocusTests: XCTestCase {
         let ruleNotice = AISummaryEditorNotice(
             title: "Skipped by privacy rule",
             detail: "A privacy rule blocked the summary input.",
-            recovery: "Review privacy rules before generating this summary.",
+            recovery: L10n.message("Review privacy rules before generating this summary."),
             capability: "ai-privacy-rules-core",
             opensAISettings: false,
             privacyRuleID: " rule-summary ",
@@ -50,7 +50,7 @@ final class AIPrivacyRulesRouteFocusTests: XCTestCase {
         let fieldNotice = AISummaryEditorNotice(
             title: "No eligible summary input",
             detail: "All remote summary fields are blocked.",
-            recovery: "Review privacy rules before generating this summary.",
+            recovery: L10n.message("Review privacy rules before generating this summary."),
             capability: "ai-privacy-rules-core",
             opensAISettings: false,
             privacyRuleID: nil,

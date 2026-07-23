@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AdvancedSettingsPane: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: AdvancedSettingsModel
     @State private var isDangerZoneExpanded = false
     private let onOpenRecoveryTools: () -> Void
@@ -135,8 +136,8 @@ extension AdvancedSettingsPane {
     private func loadErrorContent(_ error: AdvancedSettingsError) -> some View {
         SettingsPageErrorContent(
             title: L10n.string("settings.error.loadAdvanced"),
-            message: error.message,
-            recovery: error.recovery
+            message: localizer.resolve(error.message),
+            recovery: localizer.resolve(error.recovery)
         ) {
             Button("Retry status") {
                 Task {
@@ -205,7 +206,7 @@ extension AdvancedSettingsPane {
         if let feedback = model.actionFeedback {
             switch feedback {
             case let .success(message):
-                SettingsStatusBanner(title: message, systemImage: "checkmark.circle", tint: .green)
+                SettingsStatusBanner(title: localizer.resolve(message), systemImage: "checkmark.circle", tint: .green)
             case let .failed(error):
                 AdvancedSettingsInlineBanner(error: error, tint: .red)
             }
@@ -232,8 +233,12 @@ extension AdvancedSettingsPane {
     @ViewBuilder
     private var saveErrorBanner: some View {
         if let error = model.saveError {
-            SettingsStatusBanner(title: error.message, systemImage: "exclamationmark.triangle", tint: .red) {
-                Text(error.recovery)
+            SettingsStatusBanner(
+                title: localizer.resolve(error.message),
+                systemImage: "exclamationmark.triangle",
+                tint: .red
+            ) {
+                Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Text("The UI has been restored to the last saved advanced settings.")

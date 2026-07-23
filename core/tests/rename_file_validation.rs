@@ -24,6 +24,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -45,6 +47,7 @@ fn copied_options(filename: &str) -> ImportOptions {
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -153,8 +156,13 @@ fn rename_file_validation_success_updates_queries_db_filesystem_and_overview() {
         fs::read_to_string(&generated_node).expect("read generated node before rename");
     assert_contains(&generated_before, "draft.pdf");
 
-    let renamed = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned())
-        .expect("rename copied file during validation");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename copied file during validation");
 
     assert_eq!(renamed.id, entry.id);
     assert_eq!(renamed.path, "finance/final.pdf");
@@ -228,14 +236,24 @@ fn rename_file_validation_rejects_invalid_names_and_missing_ids_without_side_eff
         "bad:name.pdf",
         "bad\nname.pdf",
     ] {
-        let result = rename_file(path_string(repo.path()), entry.id, invalid.to_owned());
+        let result = rename_file(
+            path_string(repo.path()),
+            entry.id,
+            invalid.to_owned(),
+            "en".to_owned(),
+        );
         assert!(
             matches!(result, Err(CoreError::InvalidPath { .. })),
             "expected InvalidPath for `{invalid:?}`, got {result:?}"
         );
     }
 
-    let missing = rename_file(path_string(repo.path()), 999_999, "missing.pdf".to_owned());
+    let missing = rename_file(
+        path_string(repo.path()),
+        999_999,
+        "missing.pdf".to_owned(),
+        "en".to_owned(),
+    );
     assert!(matches!(missing, Err(CoreError::FileNotFound { .. })));
 
     assert_eq!(
@@ -269,8 +287,13 @@ fn rename_file_validation_same_name_call_is_noop_without_db_or_filesystem_writes
         fs::read_to_string(repo.path().join(".areamatrix/generated/nodes/finance.md"))
             .expect("read generated node before no-op rename");
 
-    let result = rename_file(path_string(repo.path()), entry.id, "draft.pdf".to_owned())
-        .expect("same-name rename should be a no-op");
+    let result = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "draft.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("same-name rename should be a no-op");
 
     assert_eq!(result, entry);
     assert_eq!(

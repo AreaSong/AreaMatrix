@@ -2,17 +2,19 @@
 
 use std::{
     fs::{self, OpenOptions},
-    io::{self, BufReader, BufWriter, Write},
+    io::{self, BufReader, BufWriter, Read, Write},
     path::{Path, PathBuf},
 };
 
 use chrono::Utc;
-use rusqlite::Connection;
+use rusqlite::{params, Connection, OpenFlags, OptionalExtension, TransactionBehavior};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::{
     config, db, repo_init, repo_scan, CoreError, CoreResult, DiagnosticsSnapshot, OverviewOutput,
-    ReindexReport, RepairOptions, RepairReport,
+    ReindexReport, RepairMetadataLocaleState, RepairMetadataOutcome, RepairMetadataPreflight,
+    RepairOptions, RepairReport, RepositoryLocalePolicySnapshot, RepositoryLocalePolicyState,
 };
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
@@ -22,6 +24,13 @@ const COPY_BUFFER_BYTES: usize = 64 * 1024;
 
 pub(crate) fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport> {
     repo_scan::reindex_from_filesystem(repo_path)
+}
+
+pub(crate) fn preflight_repair_metadata(
+    repo_path: String,
+) -> CoreResult<RepairMetadataPreflight> {
+    let repo = repair_repo_path(&repo_path)?;
+    observe_repair_metadata(&repo)
 }
 
 pub(crate) fn create_diagnostics_snapshot(repo_path: String) -> CoreResult<DiagnosticsSnapshot> {
@@ -56,92 +65,76 @@ pub(crate) fn repair_metadata(
     options: RepairOptions,
 ) -> CoreResult<RepairReport> {
     let repo = repair_repo_path(&repo_path)?;
+    let observed = observe_repair_metadata(&repo)?;
+    if options.preflight_token.is_empty() || options.preflight_token != observed.preflight_token {
+        return Err(CoreError::conflict(repo_path));
+    }
+    let policy = validate_repair_policy(&observed, &options.repository_locale_policy)?;
     let database_exists = metadata_database_exists(&repo)?;
-    let mut snapshot = if options.preserve_diagnostics_snapshot && database_exists {
+    let snapshot = if options.preserve_diagnostics_snapshot && database_exists {
         Some(create_diagnostics_snapshot(repo_path.clone())?)
     } else {
         None
     };
 
-    let reindex_report = if options.full_rescan {
-        if database_exists {
-            if let Some(repair_snapshot) =
-                prepare_full_rescan_metadata(&repo, &repo_path, snapshot.is_some())?
-            {
-                snapshot = Some(repair_snapshot);
-            }
-        } else {
-            initialize_missing_metadata(&repo, &repo_path)?;
+    let outcome = match observed.locale_state {
+        RepairMetadataLocaleState::Healthy => {
+            ensure_preflight_token(&repo, &observed.preflight_token)?;
+            RepairMetadataOutcome::Verified
         }
-        reindex_from_filesystem(repo_path)?
-    } else {
-        if !database_exists {
-            return Err(CoreError::repo_not_initialized(
-                "repository not initialized",
-            ));
+        RepairMetadataLocaleState::MetadataAbsent => {
+            ensure_preflight_token(&repo, &observed.preflight_token)?;
+            initialize_missing_metadata(&repo, &repo_path, &policy)?;
+            RepairMetadataOutcome::Initialized
         }
-        verify_metadata_health(&repo)?;
-        ReindexReport {
-            scan_session_id: None,
-            inserted: 0,
-            updated: 0,
-            missing: 0,
-            conflicts: 0,
-            unreadable: 0,
-            unknown: 0,
-            skipped: 0,
-            errors: Vec::new(),
+        RepairMetadataLocaleState::DatabaseMissing => {
+            rebuild_index_db(&repo, &repo_path, &policy, &observed.preflight_token)?;
+            RepairMetadataOutcome::Initialized
+        }
+        RepairMetadataLocaleState::DatabaseCorrupt => {
+            rebuild_index_db(&repo, &repo_path, &policy, &observed.preflight_token)?;
+            RepairMetadataOutcome::Rebuilt
+        }
+        RepairMetadataLocaleState::LocaleMissing
+        | RepairMetadataLocaleState::LocaleUnsupported => {
+            ensure_preflight_token(&repo, &observed.preflight_token)?;
+            repair_repository_locale(&repo, &observed, &policy)?;
+            RepairMetadataOutcome::Rebuilt
         }
     };
+    verify_repair_result(&repo, &policy)?;
 
     Ok(RepairReport {
-        scan_session_id: reindex_report.scan_session_id,
         diagnostics_snapshot_path: snapshot.map(|snapshot| snapshot.snapshot_path),
-        inserted: reindex_report.inserted,
-        updated: reindex_report.updated,
-        skipped: reindex_report.skipped,
-        errors: reindex_report.errors,
+        outcome,
     })
 }
 
-fn initialize_missing_metadata(repo: &Path, repo_path: &str) -> CoreResult<()> {
+fn initialize_missing_metadata(
+    repo: &Path,
+    repo_path: &str,
+    repository_locale_policy: &str,
+) -> CoreResult<()> {
     let area_matrix = repo.join(AREA_MATRIX_DIR);
     match fs::symlink_metadata(&area_matrix) {
-        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => Err(
-            CoreError::repo_not_initialized("repository not initialized"),
-        ),
-        Ok(_) => rebuild_index_db(repo, repo_path),
+        Ok(_) => Err(CoreError::conflict(repo_path.to_owned())),
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
-            repo_init::initialize_metadata_for_repair(repo_path)
+            repo_init::initialize_metadata_for_repair(repo_path, repository_locale_policy)
         }
         Err(error) => Err(map_io_error(error)),
     }
 }
 
-fn prepare_full_rescan_metadata(
+fn rebuild_index_db(
     repo: &Path,
     repo_path: &str,
-    has_snapshot: bool,
-) -> CoreResult<Option<DiagnosticsSnapshot>> {
-    match verify_metadata_health(repo) {
-        Ok(()) => Ok(None),
-        Err(CoreError::Db { .. } | CoreError::Internal { .. }) => {
-            let snapshot = if has_snapshot {
-                None
-            } else {
-                Some(create_diagnostics_snapshot(repo_path.to_owned())?)
-            };
-            rebuild_index_db(repo, repo_path)?;
-            Ok(snapshot)
-        }
-        Err(error) => Err(error),
-    }
-}
-
-fn rebuild_index_db(repo: &Path, repo_path: &str) -> CoreResult<()> {
+    repository_locale_policy: &str,
+    expected_preflight_token: &str,
+) -> CoreResult<()> {
     let area_matrix = repo.join(AREA_MATRIX_DIR);
     let temp_db = area_matrix.join(format!("{INDEX_DB_FILE}.repair-{}", Uuid::new_v4()));
-    let result = build_replacement_index_db(&temp_db, repo_path)
+    let result = build_replacement_index_db(&temp_db, repo_path, repository_locale_policy)
+        .and_then(|()| ensure_preflight_token(repo, expected_preflight_token))
         .and_then(|()| install_replacement_index_db(&area_matrix, &temp_db));
     if result.is_err() {
         cleanup_temp_sqlite_files(&temp_db);
@@ -149,9 +142,342 @@ fn rebuild_index_db(repo: &Path, repo_path: &str) -> CoreResult<()> {
     result
 }
 
-fn build_replacement_index_db(temp_db: &Path, repo_path: &str) -> CoreResult<()> {
-    let repo_config =
+fn observe_repair_metadata(repo: &Path) -> CoreResult<RepairMetadataPreflight> {
+    let area_matrix = repo.join(AREA_MATRIX_DIR);
+    let state = match fs::symlink_metadata(&area_matrix) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+            return Err(CoreError::repo_not_initialized(
+                "repository not initialized",
+            ));
+        }
+        Ok(_) => inspect_repair_database(&area_matrix.join(INDEX_DB_FILE))?,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            RepairObservation::without_locale(RepairMetadataLocaleState::MetadataAbsent)
+        }
+        Err(error) => return Err(map_initialized_metadata_error(error)),
+    };
+    state.into_preflight(repo)
+}
+
+#[derive(Debug)]
+struct RepairObservation {
+    locale_state: RepairMetadataLocaleState,
+    repository_locale_policy: Option<String>,
+    unsupported_locale: Option<String>,
+}
+
+impl RepairObservation {
+    fn without_locale(locale_state: RepairMetadataLocaleState) -> Self {
+        Self {
+            locale_state,
+            repository_locale_policy: None,
+            unsupported_locale: None,
+        }
+    }
+
+    fn into_preflight(self, repo: &Path) -> CoreResult<RepairMetadataPreflight> {
+        let preflight_token = repair_preflight_token(
+            repo,
+            &self.locale_state,
+            self.repository_locale_policy.as_deref(),
+            self.unsupported_locale.as_deref(),
+        )?;
+        let requires_explicit_locale_selection =
+            self.locale_state != RepairMetadataLocaleState::Healthy;
+        Ok(RepairMetadataPreflight {
+            locale_state: self.locale_state,
+            repository_locale_policy: self.repository_locale_policy,
+            unsupported_locale: self.unsupported_locale,
+            requires_explicit_locale_selection,
+            preflight_token,
+        })
+    }
+}
+
+fn inspect_repair_database(index_db: &Path) -> CoreResult<RepairObservation> {
+    match fs::symlink_metadata(index_db) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => {
+            return Err(CoreError::repo_not_initialized(
+                "repository not initialized",
+            ));
+        }
+        Ok(_) => {}
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            return Ok(RepairObservation::without_locale(
+                RepairMetadataLocaleState::DatabaseMissing,
+            ));
+        }
+        Err(error) => return Err(map_initialized_metadata_error(error)),
+    }
+
+    let raw_locale = match read_repair_locale(index_db) {
+        Ok(raw_locale) => raw_locale,
+        Err(CoreError::Db { .. }) => {
+            return Ok(RepairObservation::without_locale(
+                RepairMetadataLocaleState::DatabaseCorrupt,
+            ));
+        }
+        Err(error) => return Err(error),
+    };
+    let Some(raw_locale) = raw_locale else {
+        return Ok(RepairObservation::without_locale(
+            RepairMetadataLocaleState::LocaleMissing,
+        ));
+    };
+    if raw_locale.trim().is_empty() {
+        return Ok(RepairObservation::without_locale(
+            RepairMetadataLocaleState::LocaleMissing,
+        ));
+    }
+    let snapshot = RepositoryLocalePolicySnapshot::from_raw(raw_locale);
+    if snapshot.state == RepositoryLocalePolicyState::Unsupported {
+        return Ok(RepairObservation {
+            locale_state: RepairMetadataLocaleState::LocaleUnsupported,
+            repository_locale_policy: None,
+            unsupported_locale: Some(snapshot.raw_value),
+        });
+    }
+    Ok(RepairObservation {
+        locale_state: RepairMetadataLocaleState::Healthy,
+        repository_locale_policy: Some(snapshot.raw_value),
+        unsupported_locale: None,
+    })
+}
+
+fn read_repair_locale(index_db: &Path) -> CoreResult<Option<String>> {
+    fs::File::open(index_db).map_err(map_initialized_metadata_error)?;
+    let connection = open_repair_read_connection(index_db)?;
+    if !repair_database_is_healthy(&connection) {
+        return Err(CoreError::db("database repair is required"));
+    }
+    connection
+        .query_row(
+            "SELECT value FROM repo_config WHERE key = 'locale'",
+            [],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|_| CoreError::db("database repair is required"))
+}
+
+fn open_repair_read_connection(index_db: &Path) -> CoreResult<Connection> {
+    let connection = Connection::open_with_flags(index_db, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    connection
+        .execute_batch(
+            "PRAGMA query_only = ON;
+             PRAGMA foreign_keys = ON;
+             PRAGMA busy_timeout = 5000;",
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    Ok(connection)
+}
+
+fn repair_database_is_healthy(connection: &Connection) -> bool {
+    let integrity = connection.query_row("PRAGMA integrity_check", [], |row| {
+        row.get::<_, String>(0)
+    });
+    if !matches!(integrity, Ok(value) if value == "ok") {
+        return false;
+    }
+    let has_repo_config = connection.query_row(
+        "SELECT EXISTS(
+           SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'repo_config'
+         )",
+        [],
+        |row| row.get::<_, bool>(0),
+    );
+    if !matches!(has_repo_config, Ok(true)) {
+        return false;
+    }
+    let foreign_key_issue = connection.query_row(
+        "SELECT EXISTS(SELECT 1 FROM pragma_foreign_key_check)",
+        [],
+        |row| row.get::<_, bool>(0),
+    );
+    matches!(foreign_key_issue, Ok(false))
+}
+
+fn validate_repair_policy(
+    preflight: &RepairMetadataPreflight,
+    requested_policy: &str,
+) -> CoreResult<String> {
+    if preflight.locale_state == RepairMetadataLocaleState::Healthy {
+        return match preflight.repository_locale_policy.as_deref() {
+            Some(raw_policy) if raw_policy == requested_policy => Ok(raw_policy.to_owned()),
+            _ => Err(CoreError::config("configuration error")),
+        };
+    }
+    match requested_policy {
+        "system" | "zh-Hans" | "en" => Ok(requested_policy.to_owned()),
+        _ => Err(CoreError::config("configuration error")),
+    }
+}
+
+fn ensure_preflight_token(repo: &Path, expected_token: &str) -> CoreResult<()> {
+    let current = observe_repair_metadata(repo)?;
+    if current.preflight_token == expected_token {
+        Ok(())
+    } else {
+        Err(CoreError::conflict(repo.to_string_lossy().into_owned()))
+    }
+}
+
+fn repair_repository_locale(
+    repo: &Path,
+    preflight: &RepairMetadataPreflight,
+    policy: &str,
+) -> CoreResult<()> {
+    db::ensure_config_storage_writable(repo)?;
+    let index_db = repo.join(AREA_MATRIX_DIR).join(INDEX_DB_FILE);
+    let mut connection = Connection::open_with_flags(
+        index_db,
+        OpenFlags::SQLITE_OPEN_READ_WRITE,
+    )
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    connection
+        .execute_batch("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;")
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let tx = connection
+        .transaction_with_behavior(TransactionBehavior::Immediate)
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    ensure_locale_observation_matches(&tx, preflight, repo)?;
+    let updated_at = Utc::now().timestamp();
+    tx.execute(
+        "INSERT INTO repo_config (key, value, updated_at) VALUES ('locale', ?1, ?2)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+        params![policy, updated_at],
+    )
+    .map_err(|error| CoreError::db(error.to_string()))?;
+    let changed = tx
+        .execute(
+            "UPDATE repo_config_revision SET revision = revision + 1 WHERE id = 1",
+            [],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    if changed != 1 {
+        return Err(CoreError::db("repository configuration revision is missing"));
+    }
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn ensure_locale_observation_matches(
+    connection: &Connection,
+    preflight: &RepairMetadataPreflight,
+    repo: &Path,
+) -> CoreResult<()> {
+    let raw_locale: Option<String> = connection
+        .query_row(
+            "SELECT value FROM repo_config WHERE key = 'locale'",
+            [],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    let matches = match preflight.locale_state {
+        RepairMetadataLocaleState::LocaleMissing => {
+            raw_locale.as_deref().is_none_or(|value| value.trim().is_empty())
+        }
+        RepairMetadataLocaleState::LocaleUnsupported => {
+            raw_locale.as_deref() == preflight.unsupported_locale.as_deref()
+        }
+        _ => false,
+    };
+    if matches {
+        Ok(())
+    } else {
+        Err(CoreError::conflict(repo.to_string_lossy().into_owned()))
+    }
+}
+
+fn verify_repair_result(repo: &Path, expected_policy: &str) -> CoreResult<()> {
+    let preflight = observe_repair_metadata(repo)?;
+    if preflight.locale_state == RepairMetadataLocaleState::Healthy
+        && preflight.repository_locale_policy.as_deref() == Some(expected_policy)
+    {
+        Ok(())
+    } else {
+        Err(CoreError::internal("internal error"))
+    }
+}
+
+fn repair_preflight_token(
+    repo: &Path,
+    state: &RepairMetadataLocaleState,
+    policy: Option<&str>,
+    unsupported_locale: Option<&str>,
+) -> CoreResult<String> {
+    let mut hasher = Sha256::new();
+    hasher.update(b"AreaMatrix repair metadata preflight v1\0");
+    hash_token_field(&mut hasher, repo.to_string_lossy().as_bytes());
+    hash_token_field(&mut hasher, repair_state_name(state).as_bytes());
+    hash_token_field(&mut hasher, policy.unwrap_or_default().as_bytes());
+    hash_token_field(&mut hasher, unsupported_locale.unwrap_or_default().as_bytes());
+    let index_db = repo.join(AREA_MATRIX_DIR).join(INDEX_DB_FILE);
+    hash_optional_metadata_file(&mut hasher, b"index.db", &index_db)?;
+    hash_optional_metadata_file(&mut hasher, b"index.db-wal", &sqlite_companion_path(&index_db, "-wal")?)?;
+    hash_optional_metadata_file(&mut hasher, b"index.db-shm", &sqlite_companion_path(&index_db, "-shm")?)?;
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn hash_token_field(hasher: &mut Sha256, value: &[u8]) {
+    hasher.update(value.len().to_le_bytes());
+    hasher.update(value);
+}
+
+fn hash_optional_metadata_file(
+    hasher: &mut Sha256,
+    label: &[u8],
+    path: &Path,
+) -> CoreResult<()> {
+    hash_token_field(hasher, label);
+    let metadata = match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => {
+            return Err(CoreError::repo_not_initialized(
+                "repository not initialized",
+            ));
+        }
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            hash_token_field(hasher, b"missing");
+            return Ok(());
+        }
+        Err(error) => return Err(map_initialized_metadata_error(error)),
+    };
+    hash_token_field(hasher, b"present");
+    hash_token_field(hasher, &metadata.len().to_le_bytes());
+    let mut file = fs::File::open(path).map_err(map_initialized_metadata_error)?;
+    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    loop {
+        let read = file.read(&mut buffer).map_err(map_initialized_metadata_error)?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(())
+}
+
+fn repair_state_name(state: &RepairMetadataLocaleState) -> &'static str {
+    match state {
+        RepairMetadataLocaleState::Healthy => "healthy",
+        RepairMetadataLocaleState::MetadataAbsent => "metadata-absent",
+        RepairMetadataLocaleState::DatabaseMissing => "database-missing",
+        RepairMetadataLocaleState::DatabaseCorrupt => "database-corrupt",
+        RepairMetadataLocaleState::LocaleMissing => "locale-missing",
+        RepairMetadataLocaleState::LocaleUnsupported => "locale-unsupported",
+    }
+}
+
+fn build_replacement_index_db(
+    temp_db: &Path,
+    repo_path: &str,
+    repository_locale_policy: &str,
+) -> CoreResult<()> {
+    let mut repo_config =
         config::default_repo_config(repo_path.to_owned(), OverviewOutput::GeneratedOnly);
+    repo_config.locale = repository_locale_policy.to_owned();
     db::initialize_repository_db(temp_db, &repo_config)?;
     checkpoint_replacement_db(temp_db)?;
     remove_sqlite_companions(temp_db)
@@ -316,27 +642,6 @@ fn metadata_database_exists(repo: &Path) -> CoreResult<bool> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
         Err(error) => Err(map_initialized_metadata_error(error)),
     }
-}
-
-fn verify_metadata_health(repo: &Path) -> CoreResult<()> {
-    let connection = Connection::open(repo.join(AREA_MATRIX_DIR).join(INDEX_DB_FILE))
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    let integrity: String = connection
-        .query_row("PRAGMA integrity_check", [], |row| row.get(0))
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    if integrity != "ok" {
-        return Err(CoreError::db("database error"));
-    }
-
-    let foreign_key_issues: i64 = connection
-        .query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |row| {
-            row.get(0)
-        })
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    if foreign_key_issues != 0 {
-        return Err(CoreError::internal("internal error"));
-    }
-    Ok(())
 }
 
 fn copy_optional_companion(

@@ -22,6 +22,8 @@ pub(crate) fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -113,8 +115,12 @@ pub(crate) fn sync_created_file(
     bytes: &[u8],
 ) -> area_matrix_core::FileEntry {
     write_repo_file(repo, relative_path, bytes);
-    let result = sync_external_changes(path_string(repo), vec![created(relative_path, 1)])
-        .expect("sync external created file");
+    let result = sync_external_changes(
+        path_string(repo),
+        vec![created(relative_path, 1)],
+        "en".to_owned(),
+    )
+    .expect("sync external created file");
     assert_eq!(result.detected_creates, 1);
     listed_files(repo)
         .into_iter()

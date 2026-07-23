@@ -36,7 +36,10 @@ final class SingleFileImportIntegrationTests: XCTestCase {
 
         XCTAssertNil(model.pendingImportEntry)
         XCTAssertEqual(model.route, .mainEmpty(opening))
-        XCTAssertEqual(model.toastMessage, "Imported: source.pdf")
+        XCTAssertEqual(
+            model.toastMessage,
+            L10n.message("import.single.imported-file", arguments: [.string("source.pdf")])
+        )
         announcer.assertAnnouncements(["Imported: source.pdf"])
     }
 
@@ -374,7 +377,7 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
         XCTAssertEqual(model.importDisabledReason, "Filename cannot contain / \\ : * ? \" < > |")
         XCTAssertEqual(
             model.currentPreflightResult?.conflict,
-            .invalidFilename("Filename cannot contain / \\ : * ? \" < > |")
+            .invalidFilename(L10n.display("import.filename.invalidCharacters"))
         )
         XCTAssertFalse(model.showsConflictSection)
         XCTAssertFalse(model.showsRetryPreviewAction)

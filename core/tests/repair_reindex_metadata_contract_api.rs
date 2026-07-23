@@ -1,6 +1,7 @@
 use area_matrix_core::{
-    create_diagnostics_snapshot, reindex_from_filesystem, repair_metadata, CoreError, CoreResult,
-    DiagnosticsSnapshot, ReindexReport, RepairOptions, RepairReport,
+    create_diagnostics_snapshot, preflight_repair_metadata, reindex_from_filesystem,
+    repair_metadata, CoreError, CoreResult, DiagnosticsSnapshot, ReindexReport, RepairMetadataOutcome,
+    RepairMetadataPreflight, RepairOptions, RepairReport,
 };
 use pretty_assertions::assert_eq;
 
@@ -27,15 +28,18 @@ fn assert_contains(haystack: &str, needle: &str) {
 fn repair_reindex_metadata_contract_api_exposes_documented_signatures_and_outputs() {
     fn assert_reindex(_: fn(String) -> CoreResult<ReindexReport>) {}
     fn assert_snapshot(_: fn(String) -> CoreResult<DiagnosticsSnapshot>) {}
+    fn assert_preflight(_: fn(String) -> CoreResult<RepairMetadataPreflight>) {}
     fn assert_repair(_: fn(String, RepairOptions) -> CoreResult<RepairReport>) {}
 
     assert_reindex(reindex_from_filesystem);
     assert_snapshot(create_diagnostics_snapshot);
+    assert_preflight(preflight_repair_metadata);
     assert_repair(repair_metadata);
 
     let options = RepairOptions {
-        full_rescan: true,
         preserve_diagnostics_snapshot: true,
+        preflight_token: "token".to_owned(),
+        repository_locale_policy: "system".to_owned(),
     };
     let snapshot = DiagnosticsSnapshot {
         snapshot_path: ".areamatrix/diagnostics/db-20260503.sqlite".to_owned(),
@@ -43,18 +47,13 @@ fn repair_reindex_metadata_contract_api_exposes_documented_signatures_and_output
         warnings: vec!["partial metadata snapshot".to_owned()],
     };
     let report = RepairReport {
-        scan_session_id: Some(26),
         diagnostics_snapshot_path: Some(snapshot.snapshot_path.clone()),
-        inserted: 3,
-        updated: 2,
-        skipped: 1,
-        errors: Vec::new(),
+        outcome: RepairMetadataOutcome::Rebuilt,
     };
 
-    assert!(options.full_rescan);
     assert!(options.preserve_diagnostics_snapshot);
     assert!(snapshot.snapshot_path.starts_with(".areamatrix/"));
-    assert_eq!(report.scan_session_id, Some(26));
+    assert_eq!(report.outcome, RepairMetadataOutcome::Rebuilt);
     assert_eq!(
         report.diagnostics_snapshot_path.as_deref(),
         Some(".areamatrix/diagnostics/db-20260503.sqlite")
@@ -66,16 +65,21 @@ fn repair_reindex_metadata_contract_docs_api_udl_and_control_map_stay_aligned() 
     for fragment in [
         "ReindexReport reindex_from_filesystem(string repo_path);",
         "DiagnosticsSnapshot create_diagnostics_snapshot(string repo_path);",
+        "RepairMetadataPreflight preflight_repair_metadata(string repo_path);",
         "RepairReport repair_metadata(string repo_path, RepairOptions options);",
         "dictionary RepairOptions",
-        "boolean full_rescan;",
         "boolean preserve_diagnostics_snapshot;",
+        "string preflight_token;",
+        "string repository_locale_policy;",
+        "dictionary RepairMetadataPreflight",
+        "RepairMetadataLocaleState locale_state;",
+        "enum RepairMetadataOutcome",
         "dictionary DiagnosticsSnapshot",
         "string snapshot_path;",
         "i64 created_at;",
         "dictionary RepairReport",
         "string? diagnostics_snapshot_path;",
-        "sequence<string> errors;",
+        "RepairMetadataOutcome outcome;",
     ] {
         assert_contains(CORE_API, fragment);
         assert_contains(UDL, fragment);
@@ -100,7 +104,7 @@ fn repair_reindex_metadata_contract_documents_errors_and_side_effect_boundaries(
 
     for fragment in [
         "Reindexes repository metadata from the current filesystem state.",
-        "metadata repair exposes this full-rescan API",
+        "Reindexes repository metadata from the current filesystem state.",
         "Creates a diagnostics snapshot for metadata repair.",
         "Repairs AreaMatrix metadata without mutating user files.",
         "The only allowed side effects are writes under `.areamatrix/` metadata",
@@ -112,9 +116,10 @@ fn repair_reindex_metadata_contract_documents_errors_and_side_effect_boundaries(
 
     for fragment in [
         "Options for metadata repair.",
+        "Read-only repair observation",
         "Reference to an AreaMatrix-owned diagnostics snapshot.",
         "Metadata repair summary returned to Swift.",
-        "Whether repair should run a full filesystem rescan after diagnostics.",
+        "Opaque token returned by the read-only repair preflight.",
         "Repository-relative path under `.areamatrix/`",
         "Optional diagnostics snapshot path preserved before repair mutation.",
     ] {
@@ -122,7 +127,7 @@ fn repair_reindex_metadata_contract_documents_errors_and_side_effect_boundaries(
     }
 
     for fragment in [
-        "只允许写 `.areamatrix/index.db` 与 scan session metadata。",
+        "只允许写 `.areamatrix/` metadata。",
         "不移动、不重命名、不删除、不覆盖、不 Trash 用户文件。",
         "不覆盖 `README.md`",
         "`preserve_diagnostics_snapshot = true`",

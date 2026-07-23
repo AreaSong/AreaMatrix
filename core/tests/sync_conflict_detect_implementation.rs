@@ -21,6 +21,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -45,6 +47,7 @@ fn import_repo_file(repo: &Path, target_directory: &str, filename: &str, bytes: 
             override_category: None,
             override_filename: Some(filename.to_owned()),
             duplicate_strategy: area_matrix_core::DuplicateStrategy::Ask,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("import repository file");

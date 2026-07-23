@@ -92,6 +92,10 @@ extension ImportSingleFilePreviewModel {
     }
 
     var duplicateResolutionBlockingReason: String? {
+        duplicateResolutionBlockingDisplayText.map(L10n.resolve)
+    }
+
+    var duplicateResolutionBlockingDisplayText: AppDisplayText? {
         guard let result = currentPreflightResult else { return nil }
         guard case .duplicate = result.conflict else { return nil }
 
@@ -100,13 +104,13 @@ extension ImportSingleFilePreviewModel {
             return nil
         case .keepBoth:
             return result.keepBothTargetRelativePath == nil
-                ? L10n.string("import.conflict.filenameUnavailable")
+                ? L10n.display("import.conflict.filenameUnavailable")
                 : nil
         case .replace:
             if replaceOptionVisibility == .disabled {
-                return replaceOptionVisibility.blockingReason
+                return replaceOptionVisibility.blockingDisplayText
             }
-            return isReplaceConfirmed ? nil : L10n.string("import.replace.confirmationRequired")
+            return isReplaceConfirmed ? nil : L10n.display("import.replace.confirmationRequired")
         }
     }
 
@@ -165,7 +169,7 @@ extension ImportSingleFilePreviewModel {
         guard isPendingReplaceConfirmation else { return }
         guard let request = importRequest, let sourceURL = request.urls.first else { return }
         guard replaceOptionVisibility == .enabled else {
-            blockImportForDuplicateResolution(replaceOptionVisibility.blockingReason)
+            blockImportForDuplicateResolution(replaceOptionVisibility.blockingDisplayText)
             return
         }
         clearReplaceConfirmationRecovery()
@@ -179,12 +183,12 @@ extension ImportSingleFilePreviewModel {
 
     func applyReplaceConfirmation(_ decision: SingleFileReplaceConfirmationDecision) {
         guard pendingReplaceConfirmation == decision.context else {
-            setReplaceConfirmationFailure(L10n.string("import.replace.contextExpired"))
+            setReplaceConfirmationFailure(L10n.message("import.replace.contextExpired"))
             markReplaceConfirmed(false)
             return
         }
         guard decision.understandsReplace else {
-            setReplaceConfirmationFailure(L10n.string("import.replace.checkboxRequired"))
+            setReplaceConfirmationFailure(L10n.message("import.replace.checkboxRequired"))
             markReplaceConfirmed(false)
             return
         }
@@ -357,15 +361,19 @@ extension ImportSingleFilePreviewModel {
     }
 
     var nameConflictResolutionBlockingReason: String? {
+        nameConflictResolutionBlockingDisplayText.map(L10n.resolve)
+    }
+
+    var nameConflictResolutionBlockingDisplayText: AppDisplayText? {
         guard let result = currentPreflightResult, case .name = result.conflict else { return nil }
         switch nameConflictResolution {
         case .keepBoth:
             return result.keepBothTargetRelativePath == nil
-                ? L10n.string("import.conflict.filenameUnavailable")
+                ? L10n.display("import.conflict.filenameUnavailable")
                 : nil
         case let .renameIncoming(name):
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let validation = ImportSingleFileFilenameValidator.validationMessage(for: trimmed) {
+            if let validation = ImportSingleFileFilenameValidator.validationDisplayText(for: trimmed) {
                 return validation
             }
             let targetPath = ImportSingleFilePreflightTarget.relativePath(
@@ -373,13 +381,13 @@ extension ImportSingleFilePreviewModel {
                 filename: trimmed
             )
             return result.existingPaths.contains(targetPath)
-                ? L10n.string("import.nameConflict.stillConflicts")
+                ? L10n.display("import.nameConflict.stillConflicts")
                 : nil
         case .replace:
             if replaceOptionVisibility == .disabled {
-                return replaceOptionVisibility.blockingReason
+                return replaceOptionVisibility.blockingDisplayText
             }
-            return isReplaceConfirmed ? nil : L10n.string("import.replace.confirmationRequired")
+            return isReplaceConfirmed ? nil : L10n.display("import.replace.confirmationRequired")
         }
     }
 

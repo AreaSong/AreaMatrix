@@ -64,12 +64,12 @@ extension OnboardingModel {
     func routeValidationFailure(_ error: Error, repoPath: String) async {
         guard let mapping = await errorMapper.mapKnownErrorIfPresent(error) else {
             repositoryPathErrorMapping = nil
-            repositoryPathError = L10n.string("路径字符串无法解析")
+            repositoryPathError = L10n.message("路径字符串无法解析")
             return
         }
 
         repositoryPathErrorMapping = mapping
-        repositoryPathError = mapping.userMessage
+        repositoryPathError = mapping.userMessageDescriptor
 
         switch mapping.kind {
         case .db:
@@ -86,50 +86,50 @@ extension OnboardingModel {
         }
     }
 
-    func validatePathBlockingMessage(for validation: RepoPathValidationSnapshot) -> String? {
-        let checks: [(Bool, String)] = [
+    func validatePathBlockingMessage(for validation: RepoPathValidationSnapshot) -> LocalizedMessage? {
+        let checks: [(Bool, LocalizedMessage)] = [
             (
                 validation.isInsideAreaMatrix || validation.issues.contains(.insideAreaMatrix),
-                L10n.string("请选择资料库根目录，而不是 .areamatrix 内部目录")
+                L10n.message("请选择资料库根目录，而不是 .areamatrix 内部目录")
             ),
             (
                 !validation.exists || validation.issues.contains(.missingPath),
-                L10n.string("路径不存在，请选择已存在的文件夹")
+                L10n.message("路径不存在，请选择已存在的文件夹")
             ),
             (
                 !validation.isDirectory || validation.issues.contains(.notDirectory),
-                L10n.string("onboarding.validate.chooseFolderPath")
+                L10n.message("onboarding.validate.chooseFolderPath")
             ),
             (
                 !validation.isReadable || validation.issues.contains(.notReadable),
-                L10n.string("AreaMatrix 没有读取该位置的权限")
+                L10n.message("AreaMatrix 没有读取该位置的权限")
             ),
             (
                 !validation.isWritable || validation.issues.contains(.notWritable),
-                L10n.string("AreaMatrix 没有写入该位置的权限")
+                L10n.message("AreaMatrix 没有写入该位置的权限")
             ),
-            (validation.hasInsufficientAvailableCapacity, L10n.string("可用空间不足，请释放空间或选择其他路径")),
-            (validation.hasMissingEnvironmentChecks, L10n.string("路径环境检查缺失，请重试或选择其他路径")),
+            (validation.hasInsufficientAvailableCapacity, L10n.message("可用空间不足，请释放空间或选择其他路径")),
+            (validation.hasMissingEnvironmentChecks, L10n.message("路径环境检查缺失，请重试或选择其他路径")),
             (
                 validation.hasUnfinishedScanSession || validation.issues.contains(.unfinishedScanSession),
-                L10n.string("该资料库存在未完成的扫描记录，请先进入修复流程")
+                L10n.message("该资料库存在未完成的扫描记录，请先进入修复流程")
             ),
             (
                 validation.recommendedMode == nil && !validation.isInitialized,
-                L10n.string("该路径暂时不能作为资料库使用")
+                L10n.message("该路径暂时不能作为资料库使用")
             )
         ]
 
         return checks.first { $0.0 }?.1
     }
 
-    func localRepositoryPathError(for value: String) -> String? {
+    func localRepositoryPathError(for value: String) -> LocalizedMessage? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if trimmed.isEmpty { return L10n.string("请输入资料库路径") }
-        if trimmed.contains("\0") { return L10n.string("路径字符串无法解析") }
+        if trimmed.isEmpty { return L10n.message("请输入资料库路径") }
+        if trimmed.contains("\0") { return L10n.message("路径字符串无法解析") }
         if Self.pathContainsAreaMatrixComponent(trimmed) {
-            return L10n.string("请选择资料库根目录，而不是 .areamatrix 内部目录")
+            return L10n.message("请选择资料库根目录，而不是 .areamatrix 内部目录")
         }
         return nil
     }

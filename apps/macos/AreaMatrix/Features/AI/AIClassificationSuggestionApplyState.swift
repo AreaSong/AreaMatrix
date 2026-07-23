@@ -108,7 +108,7 @@ enum AICallLogPageState: Equatable {
 final class AICallLogModel: ObservableObject {
     @Published private(set) var state: AICallLogPageState = .idle
     @Published private(set) var actionError: AISettingsError?
-    @Published private(set) var toastMessage: String?
+    @Published private(set) var toastMessage: LocalizedMessage?
     @Published private(set) var isMutating = false
     @Published var featureFilter: AiCallLogFeature?
     @Published var routeFilter: AiCallLogRoute?
@@ -252,7 +252,7 @@ final class AICallLogModel: ObservableObject {
     func clearAll() async {
         await performClear(
             request: AiCallLogClearRequest(scope: .all, entryIds: [], olderThan: nil),
-            toast: L10n.string("AI call log cleared.")
+            toast: L10n.message("AI call log cleared.")
         )
     }
 
@@ -264,7 +264,7 @@ final class AICallLogModel: ObservableObject {
                 entryIds: selectedRecordIDs.sorted(),
                 olderThan: nil
             ),
-            toast: L10n.string("AI log entries deleted.")
+            toast: L10n.message("AI log entries deleted.")
         )
     }
 
@@ -305,7 +305,7 @@ final class AICallLogModel: ObservableObject {
         Int64(date.timeIntervalSince1970.rounded(.down))
     }
 
-    private func performClear(request: AiCallLogClearRequest, toast: String) async {
+    private func performClear(request: AiCallLogClearRequest, toast: LocalizedMessage) async {
         guard canMutate else { return }
         isMutating = true
         actionError = nil
@@ -323,14 +323,14 @@ final class AICallLogModel: ObservableObject {
     private func callLogError(for error: Error) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
-                message: L10n.string("AI call log could not be loaded."),
-                recovery: mapping.recoveryText(fallback: L10n.string("Retry")),
+                message: L10n.message("AI call log could not be loaded."),
+                recovery: mapping.recoveryMessage(fallback: L10n.message("Retry")),
                 detail: mapping.userMessage
             )
         }
         return AISettingsError(
-            message: L10n.string("AI call log could not be loaded."),
-            recovery: L10n.string("Retry"),
+            message: L10n.message("AI call log could not be loaded."),
+            recovery: L10n.message("Retry"),
             detail: error.localizedDescription
         )
     }

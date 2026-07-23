@@ -4,20 +4,20 @@ import Foundation
 final class OnboardingModel: ObservableObject {
     static let defaultRepositoryPathDisplay = "~/AreaMatrix/"
     @Published var route: Route = .loadingConfiguration
-    @Published var toastMessage: String?
+    @Published var toastMessage: LocalizedMessage?
     @Published var settingsGeneralSelectedTab: String? = "general"
     @Published var isAppLanguageSettingsPresented = false
     @Published var choosePathAction: ChoosePathAction?
     @Published var validatePathAction: ValidatePathAction?
     @Published var repositoryPathText = OnboardingModel.defaultRepositoryPathDisplay
-    @Published var repositoryPathError: String?
+    @Published var repositoryPathError: LocalizedMessage?
     @Published var repositoryPathErrorMapping: CoreErrorMappingSnapshot?
     @Published var repositoryPathValidation: RepoPathValidationSnapshot?
     @Published var existingRepositoryMetadata: ExistingRepositoryMetadataSnapshot?
     @Published var latestScanSession: ScanSessionSnapshot?
     @Published var initializationScanSession: ScanSessionSnapshot?
     @Published var initializationRecoveryReport: RecoveryReportSnapshot?
-    @Published var initializationProgressWarning: String?
+    @Published var initializationProgressWarning: LocalizedMessage?
     @Published var initializationOpenErrorMapping: CoreErrorMappingSnapshot?
     @Published var mainRepoRecoveryValidation: RepoPathValidationSnapshot?
     @Published var mainRepoRecoveryErrorMapping: CoreErrorMappingSnapshot?

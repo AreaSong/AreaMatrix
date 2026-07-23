@@ -14,14 +14,14 @@ enum PlatformDifferencesCapabilityState: Equatable {
 }
 
 struct PlatformDifferencesContractError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
     var detail: String
 }
 
 struct PlatformDifferencesCapabilityError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
     var detail: String
 }
 
@@ -35,7 +35,7 @@ final class PlatformDifferencesModel: ObservableObject {
 
     let hostPlatform: PlatformIdSnapshot
     let appVersion: String
-    let repositoryText: String
+    private let repositoryTextValue: String?
     let bindingVersion: Int64
     private let contractInspector: any CoreBindingContractInspecting
     private let capabilityLoader: any CorePlatformCapabilitiesLoading
@@ -45,7 +45,7 @@ final class PlatformDifferencesModel: ObservableObject {
         hostPlatform: PlatformIdSnapshot = .macos,
         appVersion: String? = nil,
         appVersionReader: any AppVersionReading = PlatformDifferencesPlatformServices.appVersionReader,
-        repositoryText: String = L10n.string("Not connected"),
+        repositoryText: String? = nil,
         selectedTargetPlatform: BindingTargetPlatformSnapshot = .swift,
         bindingVersion: Int64 = 1,
         contractInspector: any CoreBindingContractInspecting = AppCoreServices.bindingContractInspector,
@@ -54,12 +54,16 @@ final class PlatformDifferencesModel: ObservableObject {
     ) {
         self.hostPlatform = hostPlatform
         self.appVersion = appVersion ?? appVersionReader.appVersion()
-        self.repositoryText = repositoryText
+        repositoryTextValue = repositoryText
         self.selectedTargetPlatform = selectedTargetPlatform
         self.bindingVersion = bindingVersion
         self.contractInspector = contractInspector
         self.capabilityLoader = capabilityLoader
         self.errorMapper = errorMapper
+    }
+
+    var repositoryText: String {
+        repositoryTextValue ?? L10n.string("Not connected")
     }
 
     var contractActionTitle: String {
@@ -119,7 +123,7 @@ final class PlatformDifferencesModel: ObservableObject {
     private func contractError(for error: Error) async -> PlatformDifferencesContractError {
         if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return PlatformDifferencesContractError(
-                message: L10n.string("Binding contract unavailable"),
+                message: L10n.message("Binding contract unavailable"),
                 recovery: display.recovery,
                 detail: display.detail
             )
@@ -127,15 +131,15 @@ final class PlatformDifferencesModel: ObservableObject {
 
         if let bridgeError = error as? CoreBridgeError {
             return PlatformDifferencesContractError(
-                message: L10n.string("Binding contract unavailable"),
-                recovery: L10n.string("Check the Core bridge integration, then retry."),
+                message: L10n.message("Binding contract unavailable"),
+                recovery: L10n.message("Check the Core bridge integration, then retry."),
                 detail: bridgeError.localizedDescription
             )
         }
 
         return PlatformDifferencesContractError(
-            message: L10n.string("Binding contract unavailable"),
-            recovery: L10n.string("Retry the contract check."),
+            message: L10n.message("Binding contract unavailable"),
+            recovery: L10n.message("Retry the contract check."),
             detail: error.localizedDescription
         )
     }
@@ -143,7 +147,7 @@ final class PlatformDifferencesModel: ObservableObject {
     private func capabilityError(for error: Error) async -> PlatformDifferencesCapabilityError {
         if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return PlatformDifferencesCapabilityError(
-                message: L10n.string("Capability snapshot unavailable"),
+                message: L10n.message("Capability snapshot unavailable"),
                 recovery: display.recovery,
                 detail: display.detail
             )
@@ -151,15 +155,15 @@ final class PlatformDifferencesModel: ObservableObject {
 
         if let bridgeError = error as? CoreBridgeError {
             return PlatformDifferencesCapabilityError(
-                message: L10n.string("Capability snapshot unavailable"),
-                recovery: L10n.string("Check the Core platform capability bridge, then retry."),
+                message: L10n.message("Capability snapshot unavailable"),
+                recovery: L10n.message("Check the Core platform capability bridge, then retry."),
                 detail: bridgeError.localizedDescription
             )
         }
 
         return PlatformDifferencesCapabilityError(
-            message: L10n.string("Capability snapshot unavailable"),
-            recovery: L10n.string("Retry the platform capability check."),
+            message: L10n.message("Capability snapshot unavailable"),
+            recovery: L10n.message("Retry the platform capability check."),
             detail: error.localizedDescription
         )
     }

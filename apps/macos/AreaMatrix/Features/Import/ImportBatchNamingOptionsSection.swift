@@ -147,17 +147,18 @@ struct BatchRenamePreviewSection: View {
 }
 
 private struct BatchRenamePreviewSummary: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let preview: BatchRenamePreviewReportSnapshot
 
     var body: some View {
         let presentation = BatchRenamePreviewReportPresentation(report: preview)
         NeutralSummaryPanel {
             VStack(alignment: .leading, spacing: 6) {
-                Text(presentation.renameSummaryText)
-                Text(presentation.displayOnlySummaryText)
-                Text(presentation.unchangedSummaryText)
-                Text(presentation.blockedSummaryText)
-                Text(presentation.conflictSummaryText)
+                Text(localizer.resolve(presentation.renameSummaryText))
+                Text(localizer.resolve(presentation.displayOnlySummaryText))
+                Text(localizer.resolve(presentation.unchangedSummaryText))
+                Text(localizer.resolve(presentation.blockedSummaryText))
+                Text(localizer.resolve(presentation.conflictSummaryText))
                 if let reason = preview.applyBlockedReason, !reason.isEmpty {
                     Text(reason)
                 }
@@ -189,6 +190,7 @@ private struct BatchRenamePreviewTable: View {
 }
 
 struct BatchRenameResultSummary: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let result: BatchRenameReportSnapshot?
 
     var body: some View {
@@ -196,9 +198,9 @@ struct BatchRenameResultSummary: View {
             let presentation = BatchRenameReportPresentation(report: result)
             NeutralSummaryPanel {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(presentation.renamedSummaryText)
-                    Text(presentation.unchangedSummaryText)
-                    Text(presentation.failedSummaryText)
+                    Text(localizer.resolve(presentation.renamedSummaryText))
+                    Text(localizer.resolve(presentation.unchangedSummaryText))
+                    Text(localizer.resolve(presentation.failedSummaryText))
                     ForEach(result.itemResults.filter { $0.status == .failed }) { item in
                         Text(
                             L10n.format(
@@ -215,35 +217,35 @@ struct BatchRenameResultSummary: View {
 }
 
 struct BatchRenamePreviewReportPresentation: Equatable {
-    var renameSummaryText: String
-    var displayOnlySummaryText: String
-    var unchangedSummaryText: String
-    var blockedSummaryText: String
-    var conflictSummaryText: String
+    var renameSummaryText: LocalizedMessage
+    var displayOnlySummaryText: LocalizedMessage
+    var unchangedSummaryText: LocalizedMessage
+    var blockedSummaryText: LocalizedMessage
+    var conflictSummaryText: LocalizedMessage
 
     init(report: BatchRenamePreviewReportSnapshot) {
-        renameSummaryText = L10n.plural("import.batch-naming.preview.will-rename", count: Int(report.willRenameCount))
-        displayOnlySummaryText = L10n.plural(
+        renameSummaryText = L10n.pluralMessage("import.batch-naming.preview.will-rename", count: report.willRenameCount)
+        displayOnlySummaryText = L10n.pluralMessage(
             "import.batch-naming.preview.display-only",
-            count: Int(report.displayOnlyCount)
+            count: report.displayOnlyCount
         )
-        unchangedSummaryText = L10n.plural("import.batch-naming.preview.unchanged", count: Int(report.unchangedCount))
-        blockedSummaryText = L10n.plural("import.batch-naming.preview.blocked", count: Int(report.blockedCount))
-        conflictSummaryText = L10n.plural("import.batch-naming.preview.conflicts", count: Int(report.conflictCount))
+        unchangedSummaryText = L10n.pluralMessage("import.batch-naming.preview.unchanged", count: report.unchangedCount)
+        blockedSummaryText = L10n.pluralMessage("import.batch-naming.preview.blocked", count: report.blockedCount)
+        conflictSummaryText = L10n.pluralMessage("import.batch-naming.preview.conflicts", count: report.conflictCount)
     }
 }
 
 struct BatchRenameReportPresentation: Equatable {
-    var renamedSummaryText: String
-    var unchangedSummaryText: String
-    var failedSummaryText: String
+    var renamedSummaryText: LocalizedMessage
+    var unchangedSummaryText: LocalizedMessage
+    var failedSummaryText: LocalizedMessage
 
     init(report: BatchRenameReportSnapshot) {
-        renamedSummaryText = L10n.plural("import.batch-naming.result.renamed", count: Int(report.successfulRenameCount))
-        unchangedSummaryText = L10n.plural(
+        renamedSummaryText = L10n.pluralMessage("import.batch-naming.result.renamed", count: report.successfulRenameCount)
+        unchangedSummaryText = L10n.pluralMessage(
             "import.batch-naming.result.skipped-or-unchanged",
-            count: Int(report.unchangedCount + report.skippedCount)
+            count: report.unchangedCount + report.skippedCount
         )
-        failedSummaryText = L10n.plural("import.batch-naming.result.failed", count: Int(report.failedCount))
+        failedSummaryText = L10n.pluralMessage("import.batch-naming.result.failed", count: report.failedCount)
     }
 }

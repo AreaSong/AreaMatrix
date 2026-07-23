@@ -20,8 +20,8 @@ enum ICloudConflictListState: Equatable {
 
 enum ICloudConflictListRevealState: Equatable {
     case idle
-    case revealed(String)
-    case failed(String)
+    case revealed(LocalizedMessage)
+    case failed(LocalizedMessage)
 }
 
 struct ICloudConflictMinimalRouteContext: Equatable, Identifiable {
@@ -123,9 +123,9 @@ final class ICloudConflictListModel: ObservableObject {
         revealState = .idle
         do {
             try repositoryFinderOpener.openRepositoryInFinder(repoPath: repoPath)
-            revealState = .revealed("Repository folder revealed in Finder.")
+            revealState = .revealed(L10n.message("Repository folder revealed in Finder."))
         } catch {
-            revealState = .failed("Repository folder cannot be revealed.")
+            revealState = .failed(L10n.message("Repository folder cannot be revealed."))
         }
     }
 
@@ -133,9 +133,9 @@ final class ICloudConflictListModel: ObservableObject {
         revealState = .idle
         do {
             try fileRevealer.revealFile(repoPath: repoPath, relativePath: conflict.conflictedCopyPath)
-            revealState = .revealed("Conflict copy revealed in Finder.")
+            revealState = .revealed(L10n.message("Conflict copy revealed in Finder."))
         } catch {
-            revealState = .failed("Conflict copy cannot be revealed.")
+            revealState = .failed(L10n.message("Conflict copy cannot be revealed."))
         }
     }
 

@@ -38,6 +38,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -114,9 +116,12 @@ fn sync_created_file(
     fs_event_id: i64,
 ) -> area_matrix_core::FileEntry {
     write_repo_file(repo, relative_path, bytes);
-    let result =
-        sync_external_changes(path_string(repo), vec![created(relative_path, fs_event_id)])
-            .expect("sync external created file fixture");
+    let result = sync_external_changes(
+        path_string(repo),
+        vec![created(relative_path, fs_event_id)],
+        "en".to_owned(),
+    )
+    .expect("sync external created file fixture");
     assert_eq!(result.detected_creates, 1);
     list_files(path_string(repo), default_file_filter())
         .expect("list files after created fixture")
@@ -175,7 +180,7 @@ fn assert_c1_18_capability_spec() {}
 
 fn assert_core_api_and_udl_contract() {
     for fragment in [
-        "SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);",
+        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, string content_locale\n    );",
         "dictionary ExternalEvent",
         "string path;",
         "ExternalEventKind kind;",
@@ -189,7 +194,7 @@ fn assert_core_api_and_udl_contract() {
     }
 
     for fragment in [
-        "### `sync_external_changes(repoPath, events) throws -> SyncResult`",
+        "### `sync_external_changes(repoPath, events, contentLocale) throws -> SyncResult`",
         "去抖 + InFlight 过滤后传入",
         "created: \\(result.detectedCreates), renamed: \\(result.detectedRenames),",
         "sync_external_changes`（批量事件）",
@@ -262,6 +267,7 @@ fn sync_external_renamed_integration_verify_real_flow_reaches_list_detail_log_tr
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/renamed.pdf".to_owned(), 701)],
+        "en".to_owned(),
     )
     .expect("sync external renamed event");
 
@@ -282,8 +288,12 @@ fn sync_external_renamed_integration_verify_accepts_absolute_new_path() {
     rename_user_file(repo.path(), "docs/original.txt", "docs/renamed.txt");
     let absolute_path = path_string(&repo.path().join("docs/renamed.txt"));
 
-    let result = sync_external_changes(path_string(repo.path()), vec![renamed(absolute_path, 711)])
-        .expect("sync renamed event with absolute new path");
+    let result = sync_external_changes(
+        path_string(repo.path()),
+        vec![renamed(absolute_path, 711)],
+        "en".to_owned(),
+    )
+    .expect("sync renamed event with absolute new path");
 
     assert_eq!(result.detected_renames, 1);
     assert_eq!(fs_cursor(repo.path()), Some(711));
@@ -303,6 +313,7 @@ fn sync_external_renamed_integration_verify_boundaries_stay_transactional() {
     let missing = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/missing.txt".to_owned(), 721)],
+        "en".to_owned(),
     );
 
     assert!(matches!(missing, Err(CoreError::FileNotFound { .. })));
@@ -322,6 +333,7 @@ fn sync_external_renamed_integration_verify_boundaries_stay_transactional() {
             renamed("docs/renamed.txt".to_owned(), 722),
             modified("docs/renamed.txt", 723),
         ],
+        "en".to_owned(),
     )
     .expect("sync coalesced rename and modified signals");
 

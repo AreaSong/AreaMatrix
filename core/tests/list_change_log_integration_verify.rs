@@ -38,6 +38,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -59,6 +61,7 @@ fn copied_options() -> ImportOptions {
         override_category: None,
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -224,6 +227,7 @@ fn list_change_log_integration_verify_real_query_supports_detail_and_import_resu
         path_string(repo.path()),
         imported.id,
         "invoice-final.pdf".to_owned(),
+        "en".to_owned(),
     )
     .expect("rename file for change-log integration");
     let before_logs = count_change_logs(repo.path());

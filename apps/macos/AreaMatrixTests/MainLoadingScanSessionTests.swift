@@ -170,7 +170,7 @@ final class MainLoadingScanSessionTests: XCTestCase {
         XCTAssertEqual(model.repositoryPathText, mainLoadingRepoPath())
         XCTAssertEqual(
             model.toastMessage,
-            "Opening was cancelled. Repository configuration and user files were not changed."
+            L10n.message("Opening was cancelled. Repository configuration and user files were not changed.")
         )
     }
 }

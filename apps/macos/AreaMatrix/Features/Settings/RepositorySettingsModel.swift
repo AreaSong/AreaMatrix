@@ -14,7 +14,7 @@ final class RepositorySettingsModel: ObservableObject {
     @Published var healthSummary: RepositorySettingsHealthSummary?
     @Published var healthError: RepositorySettingsHealthError?
     @Published private(set) var syncError: RepositorySettingsSyncError?
-    @Published private(set) var repositoryActionMessage: String?
+    @Published private(set) var repositoryActionMessage: LocalizedMessage?
     @Published private(set) var repositoryActionError: RepositorySettingsPathActionError?
     @Published private(set) var overviewActionError: RepositorySettingsOverviewActionError?
     @Published private(set) var diagnosticsState: RepositorySettingsDiagnosticsState = .idle
@@ -98,8 +98,8 @@ extension RepositorySettingsModel {
         guard hasConnectedRepository else {
             loadedConfig = nil
             loadState = .failed(RepositorySettingsLoadError(
-                message: L10n.string("No repository connected."),
-                recovery: L10n.string("Connect Repository")
+                message: L10n.message("No repository connected."),
+                recovery: L10n.message("Connect Repository")
             ))
             return
         }
@@ -160,12 +160,12 @@ extension RepositorySettingsModel {
         clearRepositoryActionFeedback()
         do {
             try finderOpener.openRepositoryInFinder(repoPath: repoPath)
-            repositoryActionMessage = L10n.string("Repository folder revealed in Finder.")
+            repositoryActionMessage = L10n.message("Repository folder revealed in Finder.")
         } catch {
             repositoryActionError = RepositorySettingsPathActionError(
-                message: L10n.string("Repository folder cannot be revealed."),
+                message: L10n.message("Repository folder cannot be revealed."),
                 recovery: L10n
-                    .string("Check that the repository folder still exists and Finder has permission to open it.")
+                    .message("Check that the repository folder still exists and Finder has permission to open it.")
             )
         }
     }
@@ -174,14 +174,14 @@ extension RepositorySettingsModel {
         clearRepositoryActionFeedback()
         do {
             try pathCopier.copyPath(repoPath: repoPath, relativePath: "")
-            repositoryActionMessage = L10n.string("Repository path copied.")
-            accessibilityAnnouncer.announce(L10n.string("Repository path copied."))
+            repositoryActionMessage = L10n.message("Repository path copied.")
+            accessibilityAnnouncer.announce(L10n.message("Repository path copied."))
         } catch {
             repositoryActionError = RepositorySettingsPathActionError(
-                message: L10n.string("Repository path cannot be copied."),
-                recovery: L10n.string("Copy the Location row manually after checking clipboard permissions.")
+                message: L10n.message("Repository path cannot be copied."),
+                recovery: L10n.message("Copy the Location row manually after checking clipboard permissions.")
             )
-            accessibilityAnnouncer.announce(L10n.string("Repository path cannot be copied."))
+            accessibilityAnnouncer.announce(L10n.message("Repository path cannot be copied."))
         }
     }
 
@@ -221,7 +221,7 @@ extension RepositorySettingsModel {
                 relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
             )
             overviewActionError = nil
-            repositoryActionMessage = L10n.string("Generated overview revealed in Finder.")
+            repositoryActionMessage = L10n.message("Generated overview revealed in Finder.")
         } catch {
             overviewActionError = overviewError(for: error)
         }
@@ -234,33 +234,39 @@ extension RepositorySettingsModel {
         metadataPresence.hasMetadataDatabase && config.repoPath != repoPath
     }
 
-    private func currentCoreVersion() async -> String {
+    private func currentCoreVersion() async -> String? {
         do {
             return try await coreVersionLoader.coreVersion()
         } catch {
-            return L10n.string("Unknown")
+            return nil
         }
     }
 
     private func loadError(for error: Error) async -> RepositorySettingsLoadError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
-            return RepositorySettingsLoadError(message: mapping.userMessage, recovery: mapping.suggestedAction)
+            return RepositorySettingsLoadError(
+                message: mapping.userMessageDescriptor,
+                recovery: mapping.suggestedActionDescriptor
+            )
         }
 
         return RepositorySettingsLoadError(
-            message: error.localizedDescription,
-            recovery: L10n.string("Retry status after the repository is available.")
+            message: L10n.message("settings.error.loadRepository", technicalDetail: error.localizedDescription),
+            recovery: L10n.message("Retry status after the repository is available.")
         )
     }
 
     private func syncError(for error: Error) async -> RepositorySettingsSyncError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
-            return RepositorySettingsSyncError(message: mapping.userMessage, recovery: mapping.suggestedAction)
+            return RepositorySettingsSyncError(
+                message: mapping.userMessageDescriptor,
+                recovery: mapping.suggestedActionDescriptor
+            )
         }
 
         return RepositorySettingsSyncError(
-            message: error.localizedDescription,
-            recovery: L10n.string("Retry status after the repository can be written.")
+            message: L10n.message("Unable to load settings", technicalDetail: error.localizedDescription),
+            recovery: L10n.message("Retry status after the repository can be written.")
         )
     }
 
@@ -270,9 +276,9 @@ extension RepositorySettingsModel {
         }
 
         return RepositorySettingsOverviewActionError(
-            message: L10n.string("Generated overview cannot be shown in Finder."),
+            message: L10n.message("Generated overview cannot be shown in Finder."),
             recovery: L10n
-                .string("Open the repository folder and check .areamatrix/generated/ permissions before retrying.")
+                .message("Open the repository folder and check .areamatrix/generated/ permissions before retrying.")
         )
     }
 
@@ -280,19 +286,19 @@ extension RepositorySettingsModel {
         switch error {
         case .fileMissing:
             RepositorySettingsOverviewActionError(
-                message: L10n.string("Generated overview cannot be shown in Finder."),
-                recovery: L10n.string("Retry after AreaMatrix regenerates .areamatrix/generated/root.md.")
+                message: L10n.message("Generated overview cannot be shown in Finder."),
+                recovery: L10n.message("Retry after AreaMatrix regenerates .areamatrix/generated/root.md.")
             )
         case .unsafeRelativePath:
             RepositorySettingsOverviewActionError(
-                message: L10n.string("Generated overview path is not safe to open."),
-                recovery: L10n.string("Reload repository settings before retrying.")
+                message: L10n.message("Generated overview path is not safe to open."),
+                recovery: L10n.message("Reload repository settings before retrying.")
             )
         case .openRejected:
             RepositorySettingsOverviewActionError(
-                message: L10n.string("Finder rejected the generated overview request."),
+                message: L10n.message("Finder rejected the generated overview request."),
                 recovery: L10n
-                    .string("Open the repository folder and check .areamatrix/generated/ permissions before retrying.")
+                    .message("Open the repository folder and check .areamatrix/generated/ permissions before retrying.")
             )
         }
     }
@@ -306,14 +312,14 @@ extension RepositorySettingsModel {
     private func diagnosticsError(for error: Error) async -> RepositorySettingsDiagnosticsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return RepositorySettingsDiagnosticsError(
-                message: mapping.userMessage,
-                recovery: mapping.suggestedAction
+                message: mapping.userMessageDescriptor,
+                recovery: mapping.suggestedActionDescriptor
             )
         }
 
         return RepositorySettingsDiagnosticsError(
-            message: L10n.string("Diagnostics could not be exported."),
-            recovery: L10n.string("Retry after the repository is available.")
+            message: L10n.message("Diagnostics could not be exported."),
+            recovery: L10n.message("Retry after the repository is available.")
         )
     }
 }

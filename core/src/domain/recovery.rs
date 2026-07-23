@@ -42,10 +42,55 @@ pub struct ReindexReport {
 /// Options for metadata repair.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RepairOptions {
-    /// Whether repair should run a full filesystem rescan after diagnostics.
-    pub full_rescan: bool,
     /// Whether repair should preserve the damaged metadata state before mutation.
     pub preserve_diagnostics_snapshot: bool,
+    /// Opaque token returned by the read-only repair preflight.
+    pub preflight_token: String,
+    /// Exact healthy policy or explicit canonical recovery policy.
+    pub repository_locale_policy: String,
+}
+
+/// Metadata and locale state observed before repair confirmation.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum RepairMetadataLocaleState {
+    /// Metadata and the persisted locale are healthy.
+    Healthy,
+    /// The `.areamatrix` directory is absent.
+    MetadataAbsent,
+    /// The metadata directory exists but `index.db` is absent.
+    DatabaseMissing,
+    /// The database cannot pass read-only integrity and schema checks.
+    DatabaseCorrupt,
+    /// The locale row is missing or empty.
+    LocaleMissing,
+    /// The locale row contains an unsupported exact value.
+    LocaleUnsupported,
+}
+
+/// Read-only repair observation that must be returned with the mutation.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct RepairMetadataPreflight {
+    /// Observed metadata and locale state.
+    pub locale_state: RepairMetadataLocaleState,
+    /// Exact healthy policy that can be preserved without canonicalization.
+    pub repository_locale_policy: Option<String>,
+    /// Exact unsupported value shown only for explicit recovery.
+    pub unsupported_locale: Option<String>,
+    /// Whether the UI must require an explicit canonical policy selection.
+    pub requires_explicit_locale_selection: bool,
+    /// Opaque state and identity token used for compare-and-swap repair.
+    pub preflight_token: String,
+}
+
+/// Result of a metadata-only repair.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum RepairMetadataOutcome {
+    /// Existing metadata was verified without replacement.
+    Verified,
+    /// Missing metadata or database state was initialized.
+    Initialized,
+    /// Corrupt metadata was rebuilt or an invalid locale was repaired.
+    Rebuilt,
 }
 
 /// Reference to an AreaMatrix-owned diagnostics snapshot.
@@ -62,16 +107,8 @@ pub struct DiagnosticsSnapshot {
 /// Metadata repair summary returned to Swift.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RepairReport {
-    /// Optional scan session identifier used by a full repair rescan.
-    pub scan_session_id: Option<i64>,
     /// Optional diagnostics snapshot path preserved before repair mutation.
     pub diagnostics_snapshot_path: Option<String>,
-    /// Number of metadata rows inserted by the repair pass.
-    pub inserted: i64,
-    /// Number of metadata rows updated by the repair pass.
-    pub updated: i64,
-    /// Number of filesystem entries skipped by the repair pass.
-    pub skipped: i64,
-    /// Human-readable errors that did not delete user files or clear diagnostics.
-    pub errors: Vec<String>,
+    /// Metadata-only outcome; reindex counters belong to `ReindexReport`.
+    pub outcome: RepairMetadataOutcome,
 }

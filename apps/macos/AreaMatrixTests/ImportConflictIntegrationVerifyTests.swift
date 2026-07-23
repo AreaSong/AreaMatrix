@@ -116,7 +116,10 @@ private extension ImportConflictIntegrationVerifyTests {
 
         XCTAssertNil(blockedImport)
         await importer.assertNoImportedFiles()
-        XCTAssertEqual(duplicateModel.importStatus, .blocked("Confirm Replace before continuing"))
+        XCTAssertEqual(
+            duplicateModel.importStatus,
+            .blocked(L10n.display("import.replace.confirmationRequired"))
+        )
 
         duplicateModel.beginReplaceConfirmation()
         let duplicateContext = try XCTUnwrap(duplicateModel.pendingReplaceConfirmation)
@@ -306,7 +309,10 @@ private extension ImportConflictIntegrationVerifyTests {
         let blockedResult = await blockedModel.applyImportConflictBatch(replaceConfirmed: true)
 
         XCTAssertNil(blockedResult)
-        XCTAssertEqual(blockedModel.conflictBatchApplyDisabledReason, "Blocked: Trash unavailable")
+        XCTAssertEqual(
+            blockedModel.conflictBatchApplyDisabledReason,
+            L10n.verbatim("Blocked: Trash unavailable", reason: .technicalDetail)
+        )
         await blockedBatcher.assertNoImportConflictApplyRequests()
     }
 
@@ -337,7 +343,10 @@ private extension ImportConflictIntegrationVerifyTests {
         await model.refreshImportConflictBatchPreview()
 
         XCTAssertTrue(model.showsCoreConflictBatchReview)
-        XCTAssertEqual(model.conflictBatchScopeSummary, "Will apply to 1 selected conflict.")
+        XCTAssertEqual(
+            model.conflictBatchScopeSummary,
+            L10n.pluralMessage("import.conflict.selected-scope-summary", count: 1)
+        )
         XCTAssertNil(model.conflictBatchApplyDisabledReason)
         let unconfirmedApply = await model.applyImportConflictBatch(replaceConfirmed: false)
         XCTAssertNil(unconfirmedApply)

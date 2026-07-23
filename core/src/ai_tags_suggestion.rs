@@ -4,7 +4,7 @@ use std::path::{Component, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{tags::TagSet, CoreError, CoreResult};
+use crate::{tags::TagSet, ContentLocale, CoreError, CoreResult};
 
 mod call_log;
 mod context;
@@ -109,6 +109,8 @@ pub struct AiTagSuggestionRequest {
     pub candidate_tags: Vec<String>,
     /// Optional privacy policy reference used to evaluate AI input gates.
     pub privacy_policy_ref: Option<String>,
+    /// Concrete content locale snapshot captured when this generation attempt starts.
+    pub content_locale: ContentLocale,
 }
 
 /// One AI tag suggestion row consumed by AI tag suggestion surface.

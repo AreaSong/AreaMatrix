@@ -29,6 +29,7 @@ struct MainListErrorRecoveryActions {
 
 @MainActor
 struct MainExternalSyncErrorBanner: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let error: CoreErrorMappingSnapshot
     let fileListModel: MainFileListModel
     let recoveryActions: MainListErrorRecoveryActions
@@ -107,7 +108,7 @@ struct MainExternalSyncErrorBanner: View {
             Label("Requesting iCloud download...", systemImage: "icloud.and.arrow.down")
                 .foregroundStyle(.secondary)
         } else if let message = fileListModel.externalSyncRecoveryMessage {
-            Label(message, systemImage: "exclamationmark.triangle")
+            Label(localizer.resolve(message), systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.secondary)
         }
     }

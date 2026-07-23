@@ -29,6 +29,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -53,6 +55,7 @@ fn copied_options(filename: &str) -> ImportOptions {
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -133,7 +136,7 @@ fn install_rename_change_log_failure(repo: &Path) {
 #[test]
 fn resolve_name_conflict_contract_exports_callable_signatures() {
     fn assert_import(_: fn(String, String, ImportOptions) -> CoreResult<FileEntry>) {}
-    fn assert_rename(_: fn(String, i64, String) -> CoreResult<FileEntry>) {}
+    fn assert_rename(_: fn(String, i64, String, String) -> CoreResult<FileEntry>) {}
 
     assert_import(import_file);
     assert_rename(rename_file);
@@ -148,6 +151,7 @@ fn resolve_name_conflict_contract_exposes_documented_inputs() {
         override_category: Some("finance".to_owned()),
         override_filename: Some("report.pdf".to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     let manual_new_name = "report_1.pdf".to_owned();
 
@@ -252,8 +256,13 @@ fn resolve_name_conflict_rename_auto_numbers_and_logs_manual_resolution() {
     )
     .expect("import second file");
 
-    let renamed = rename_file(path_string(repo.path()), second.id, "same.pdf".to_owned())
-        .expect("rename to safe numbered file");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        second.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename to safe numbered file");
 
     assert_eq!(first.path, "finance/same.pdf");
     assert_eq!(renamed.path, "finance/same_1.pdf");
@@ -296,7 +305,12 @@ fn resolve_name_conflict_rename_db_failure_restores_filesystem_and_metadata() {
     .expect("import file before failed rename");
     install_rename_change_log_failure(repo.path());
 
-    let result = rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned());
+    let result = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
 
@@ -318,7 +332,7 @@ fn resolve_name_conflict_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
-        "FileEntry rename_file(string repo_path, i64 file_id, string new_name);",
+        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, string content_locale\n    );",
         "dictionary ImportOptions",
         "string? override_filename;",
         "DuplicateStrategy duplicate_strategy;",

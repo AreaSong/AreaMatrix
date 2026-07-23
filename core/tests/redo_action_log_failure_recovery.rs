@@ -185,7 +185,13 @@ fn redo_action_log_failure_recovery_db_write_error_rolls_back_tags_and_status() 
 fn redo_action_log_failure_recovery_external_directory_blocks_rename_without_mutation() {
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned()).expect("rename file");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file");
     let token = only_undo_token(repo.path());
     undo_action(path_string(repo.path()), token.clone()).expect("undo rename");
     fs::remove_file(repo.path().join("docs/draft.pdf")).expect("remove restored file");
@@ -294,7 +300,13 @@ fn redo_action_log_failure_recovery_real_io_error_does_not_leave_partial_redo() 
 fn redo_action_log_failure_recovery_db_failure_rolls_back_real_file_move() {
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned()).expect("rename file");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file");
     let token = only_undo_token(repo.path());
     undo_action(path_string(repo.path()), token.clone()).expect("undo rename");
     let before = snapshot(repo.path());
@@ -320,7 +332,13 @@ fn redo_action_log_failure_recovery_db_failure_rolls_back_real_file_move() {
 fn redo_action_log_failure_recovery_rollback_failure_is_observable_and_quarantined() {
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned()).expect("rename file");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file");
     let token = only_undo_token(repo.path());
     undo_action(path_string(repo.path()), token.clone()).expect("undo rename");
     install_redo_file_change_slow_failure(repo.path());
@@ -384,7 +402,13 @@ fn redo_action_log_failure_recovery_permission_denied_is_structured_without_muta
 
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned()).expect("rename file");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file");
     let token = only_undo_token(repo.path());
     undo_action(path_string(repo.path()), token.clone()).expect("undo rename");
     let before = snapshot(repo.path());

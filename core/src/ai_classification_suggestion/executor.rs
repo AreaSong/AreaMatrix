@@ -31,11 +31,14 @@ pub(super) struct AiSuggestionDraft {
     pub(super) used_context: Vec<AiCategorySuggestionContextField>,
 }
 
-pub(super) fn execute_local(context: &AiSuggestionContext) -> CoreResult<AiSuggestionDraft> {
+pub(super) fn execute_local(
+    context: &AiSuggestionContext,
+    content_locale: &str,
+) -> CoreResult<AiSuggestionDraft> {
     if let Some(runtime_path) = runtime_path(LOCAL_RUNTIME_ENV) {
         return execute_external_runtime(
             runtime_path,
-            RuntimePayload::local(context),
+            RuntimePayload::local(context, content_locale),
             AiCategorySuggestionRoute::Local,
             LOCAL_MODEL_ID.to_owned(),
             context.fields.clone(),
@@ -49,6 +52,7 @@ pub(super) fn execute_local(context: &AiSuggestionContext) -> CoreResult<AiSugge
 pub(super) fn execute_remote(
     repo: &Path,
     context: &AiSuggestionContext,
+    content_locale: &str,
 ) -> CoreResult<AiSuggestionDraft> {
     let config = crate::remote_provider_config::load_enabled_remote_provider_runtime(
         repo,
@@ -63,7 +67,7 @@ pub(super) fn execute_remote(
     };
     execute_external_runtime(
         runtime_path,
-        RuntimePayload::remote(context, &config),
+        RuntimePayload::remote(context, &config, content_locale),
         AiCategorySuggestionRoute::Remote,
         model,
         context.fields.clone(),
@@ -142,6 +146,7 @@ struct RuntimePayload<'a> {
     feature: &'static str,
     route: &'static str,
     model: &'a str,
+    content_locale: &'a str,
     filename: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     extension: Option<&'a str>,
@@ -158,11 +163,12 @@ struct RuntimePayload<'a> {
 }
 
 impl<'a> RuntimePayload<'a> {
-    fn local(context: &'a AiSuggestionContext) -> Self {
+    fn local(context: &'a AiSuggestionContext, content_locale: &'a str) -> Self {
         Self {
             feature: "classification",
             route: "local",
             model: LOCAL_MODEL_ID,
+            content_locale,
             filename: &context.filename,
             extension: context.extension.as_deref(),
             repo_relative_path: context.repo_relative_path.as_deref(),
@@ -173,11 +179,16 @@ impl<'a> RuntimePayload<'a> {
         }
     }
 
-    fn remote(context: &'a AiSuggestionContext, config: &'a StoredRemoteProviderConfig) -> Self {
+    fn remote(
+        context: &'a AiSuggestionContext,
+        config: &'a StoredRemoteProviderConfig,
+        content_locale: &'a str,
+    ) -> Self {
         Self {
             feature: "classification",
             route: "remote",
             model: &config.model_id,
+            content_locale,
             filename: &context.filename,
             extension: context.extension.as_deref(),
             repo_relative_path: context.repo_relative_path.as_deref(),

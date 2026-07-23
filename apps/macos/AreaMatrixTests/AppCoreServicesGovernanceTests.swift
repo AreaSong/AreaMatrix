@@ -44,6 +44,7 @@ private let expectedAppCoreServiceSurface = [
     "App/AppCoreServices.swift:static var platformCapabilityLoader",
     "App/AppCoreServices.swift:static var redoActionStore",
     "App/AppCoreServices.swift:static var remoteProviderConfigurer",
+    "App/AppCoreServices.swift:static var repositoryContentLocaleSnapshotter",
     "App/AppCoreServices.swift:static var repositoryPathValidator",
     "App/AppCoreServices.swift:static var savedSearchStore",
     "App/AppCoreServices.swift:static var scanSessionReader",

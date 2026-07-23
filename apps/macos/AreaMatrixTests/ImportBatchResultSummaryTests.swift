@@ -10,7 +10,10 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             importBatchReadyBatchRow(url: readyURL),
             ImportBatchPreviewRow.failed(
                 url: failedPreviewURL,
-                message: importBatchUnreadablePreviewMessage(url: failedPreviewURL)
+                message: L10n.verbatim(
+                    importBatchUnreadablePreviewMessage(url: failedPreviewURL),
+                    reason: .technicalDetail
+                )
             )
         ]
         let importer = ImportBatchRecordingBatchImporter()
@@ -55,7 +58,7 @@ final class ImportBatchResultSummaryTests: XCTestCase {
             importBatchDuplicateInvoiceRow(url: duplicateURL),
             ImportBatchPreviewRow.iCloudPlaceholder(
                 url: cloudURL,
-                message: "iCloud placeholder 需要下载后才能导入"
+                message: L10n.verbatim("iCloud placeholder 需要下载后才能导入", reason: .technicalDetail)
             )
         ]
         let model = importBatchCopyImportModel()

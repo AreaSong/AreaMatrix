@@ -15,19 +15,28 @@ pub(crate) fn rename_file(
     repo_path: String,
     file_id: i64,
     new_name: String,
+    content_locale: String,
 ) -> CoreResult<FileEntry> {
+    crate::config::validate_content_locale(&content_locale)?;
     let repo = validate_repo_path(&repo_path)?;
     db::ensure_initialized(&repo)?;
     validate::filename(&new_name)?;
 
     let entry = db::get_active_file_by_id(&repo, file_id)?;
     match entry.storage_mode {
-        StorageMode::Moved | StorageMode::Copied => rename_repo_owned_file(&repo, entry, &new_name),
+        StorageMode::Moved | StorageMode::Copied => {
+            rename_repo_owned_file(&repo, entry, &new_name, &content_locale)
+        }
         StorageMode::Indexed => rename_indexed_file(&repo, entry, &new_name),
     }
 }
 
-fn rename_repo_owned_file(repo: &Path, entry: FileEntry, new_name: &str) -> CoreResult<FileEntry> {
+fn rename_repo_owned_file(
+    repo: &Path,
+    entry: FileEntry,
+    new_name: &str,
+    content_locale: &str,
+) -> CoreResult<FileEntry> {
     if !dedup::is_repo_owned(&entry) {
         return Err(CoreError::invalid_path("invalid path"));
     }
@@ -56,7 +65,7 @@ fn rename_repo_owned_file(repo: &Path, entry: FileEntry, new_name: &str) -> Core
         return Err(error);
     }
     let updated = db::get_active_file_by_id(repo, entry.id)?;
-    if let Err(error) = overview::regenerate_for_node(repo, &updated.category) {
+    if let Err(error) = overview::regenerate_for_node(repo, &updated.category, content_locale) {
         rollback_repo_owned_rename(repo, &entry, &mut file_guard, note_guard.as_mut(), &detail)?;
         return Err(error);
     }

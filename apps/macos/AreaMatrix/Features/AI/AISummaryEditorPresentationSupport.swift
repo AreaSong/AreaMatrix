@@ -18,7 +18,7 @@ enum AISummaryEditorPresentationSupport {
         return notice(
             title: skip.reasonLabel,
             detail: skip.message,
-            recovery: L10n.string("Review privacy rules before generating this summary."),
+            recovery: L10n.message("Review privacy rules before generating this summary."),
             reason: reason,
             opensAISettings: false,
             capability: "ai-privacy-rules-core",
@@ -39,7 +39,7 @@ enum AISummaryEditorPresentationSupport {
             notice(
                 title: aiSummarySkipReasonLabel(reason),
                 detail: L10n.string("No content was sent because the summary was skipped by privacy rules."),
-                recovery: L10n.string("Review privacy rules before generating this summary."),
+                recovery: L10n.message("Review privacy rules before generating this summary."),
                 reason: .privacyBlocked(AISummaryPrivacySkip(summaryReason: reason)),
                 opensAISettings: false,
                 capability: "ai-privacy-rules-core"
@@ -48,7 +48,7 @@ enum AISummaryEditorPresentationSupport {
             notice(
                 title: aiSummarySkipReasonLabel(reason),
                 detail: L10n.string("This file has no eligible metadata or extracted text for AI summaries."),
-                recovery: L10n.string("Return to detail or choose a file with readable summary input."),
+                recovery: L10n.message("Return to detail or choose a file with readable summary input."),
                 reason: .noEligibleInput(AISummaryPrivacySkip(summaryReason: reason)),
                 opensAISettings: false,
                 capability: "ai-privacy-rules-core"
@@ -57,7 +57,7 @@ enum AISummaryEditorPresentationSupport {
             notice(
                 title: aiSummarySkipReasonLabel(reason),
                 detail: L10n.string("Summary generation cannot proceed because AI call logging is unavailable."),
-                recovery: L10n.string("Retry after repository metadata is writable."),
+                recovery: L10n.message("Retry after repository metadata is writable."),
                 reason: .callLogUnavailable,
                 opensAISettings: false
             )
@@ -66,19 +66,19 @@ enum AISummaryEditorPresentationSupport {
 
     static func error(
         for error: Error,
-        message: String,
+        message: LocalizedMessage,
         errorMapper: any CoreErrorMapping
     ) async -> AISettingsError {
         guard let mapping = await errorMapper.mapCoreErrorIfPresent(error) else {
             return AISettingsError(
                 message: message,
-                recovery: L10n.string("Retry or return to detail."),
+                recovery: L10n.message("Retry or return to detail."),
                 detail: error.localizedDescription
             )
         }
         return AISettingsError(
             message: message,
-            recovery: mapping.recoveryText(fallback: L10n.string("Retry or return to detail.")),
+            recovery: mapping.recoveryMessage(fallback: L10n.message("Retry or return to detail.")),
             detail: mapping.userMessage
         )
     }
@@ -86,7 +86,7 @@ enum AISummaryEditorPresentationSupport {
     private static func notice(
         title: String,
         detail: String,
-        recovery: String,
+        recovery: LocalizedMessage,
         reason: AISummaryEditorGateReason,
         opensAISettings: Bool,
         capability: String = "ai-summary-core",

@@ -5,8 +5,9 @@ use std::{
 
 use area_matrix_core::{
     create_diagnostics_snapshot, get_latest_scan_session, init_repo, list_files, list_tree_json,
-    reindex_from_filesystem, repair_metadata, CoreError, FileFilter, FileOrigin, OverviewOutput,
-    RepairOptions, RepoInitMode, RepoInitOptions, ScanSessionKind, ScanSessionStatus, StorageMode,
+    preflight_repair_metadata, reindex_from_filesystem, repair_metadata, CoreError, FileFilter,
+    FileOrigin, OverviewOutput, RepairMetadataLocaleState, RepairMetadataOutcome, RepairOptions,
+    RepoInitMode, RepoInitOptions, ScanSessionKind, ScanSessionStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -23,6 +24,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -47,6 +50,23 @@ fn empty_filter() -> FileFilter {
         imported_before: None,
         limit: 100,
         offset: 0,
+    }
+}
+
+fn repair_options(repo: &Path, preserve_snapshot: bool) -> RepairOptions {
+    let preflight = preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
+    let repository_locale_policy = if preflight.locale_state == RepairMetadataLocaleState::Healthy {
+        preflight
+            .repository_locale_policy
+            .clone()
+            .expect("healthy repair preflight should return the exact locale")
+    } else {
+        "en".to_owned()
+    };
+    RepairOptions {
+        preserve_diagnostics_snapshot: preserve_snapshot,
+        preflight_token: preflight.preflight_token,
+        repository_locale_policy,
     }
 }
 
@@ -101,7 +121,7 @@ fn user_file_snapshot(paths: &[&Path]) -> Vec<(String, Vec<u8>)> {
 }
 
 #[test]
-fn repair_reindex_metadata_validation_full_repair_preserves_user_files_and_reloads_list_tree() {
+fn repair_reindex_metadata_validation_repair_preserves_files_before_explicit_reindex() {
     let repo = initialized_repo();
     let readme = write_repo_file(repo.path(), "README.md", b"# User project\n");
     let spec = write_repo_file(repo.path(), "docs/spec.txt", b"spec content\n");
@@ -115,12 +135,9 @@ fn repair_reindex_metadata_validation_full_repair_preserves_user_files_and_reloa
 
     let report = repair_metadata(
         path_string(repo.path()),
-        RepairOptions {
-            full_rescan: true,
-            preserve_diagnostics_snapshot: true,
-        },
+        repair_options(repo.path(), true),
     )
-    .expect("run full metadata repair");
+    .expect("run metadata repair");
 
     let snapshot_path = report
         .diagnostics_snapshot_path
@@ -128,11 +145,7 @@ fn repair_reindex_metadata_validation_full_repair_preserves_user_files_and_reloa
         .expect("full repair should preserve diagnostics");
     assert!(snapshot_path.starts_with(".areamatrix/diagnostics/index-"));
     assert!(repo.path().join(snapshot_path).is_file());
-    assert!(report.scan_session_id.is_some());
-    assert_eq!(report.inserted, 2);
-    assert_eq!(report.updated, 0);
-    assert!(report.skipped >= 1);
-    assert_eq!(report.errors, Vec::<String>::new());
+    assert_eq!(report.outcome, RepairMetadataOutcome::Verified);
     assert_eq!(
         user_file_snapshot(&[&readme, &spec, &root_overview]),
         before
@@ -140,35 +153,36 @@ fn repair_reindex_metadata_validation_full_repair_preserves_user_files_and_reloa
 
     assert_eq!(
         sorted_list_paths(repo.path()),
-        vec!["README.md", "docs/spec.txt"]
+        Vec::<String>::new()
     );
+    assert_eq!(
+        get_latest_scan_session(path_string(repo.path())).expect("read repair scan session"),
+        None
+    );
+
+    let reindex = reindex_from_filesystem(path_string(repo.path())).expect("run explicit reindex");
+    assert_eq!(reindex.inserted, 2);
+    assert_eq!(sorted_list_paths(repo.path()), vec!["README.md", "docs/spec.txt"]);
     let tree = parse_tree(repo.path());
     assert_eq!(tree["file_count"], 2);
     assert_eq!(child_by_slug(&tree, "docs")["file_count"], 1);
-    assert_latest_reindex_completed(repo.path(), report.scan_session_id);
+    assert_latest_reindex_completed(repo.path(), reindex.scan_session_id);
 }
 
 #[test]
-fn repair_reindex_metadata_validation_non_full_repair_does_not_reindex_user_files() {
+fn repair_reindex_metadata_validation_metadata_repair_does_not_reindex_user_files() {
     let repo = initialized_repo();
     let unindexed = write_repo_file(repo.path(), "docs/unindexed.txt", b"pending content\n");
     let before = user_file_snapshot(&[&unindexed]);
 
     let report = repair_metadata(
         path_string(repo.path()),
-        RepairOptions {
-            full_rescan: false,
-            preserve_diagnostics_snapshot: false,
-        },
+        repair_options(repo.path(), false),
     )
     .expect("run metadata-only repair");
 
-    assert_eq!(report.scan_session_id, None);
     assert_eq!(report.diagnostics_snapshot_path, None);
-    assert_eq!(report.inserted, 0);
-    assert_eq!(report.updated, 0);
-    assert_eq!(report.skipped, 0);
-    assert_eq!(report.errors, Vec::<String>::new());
+    assert_eq!(report.outcome, RepairMetadataOutcome::Verified);
     assert_eq!(sorted_list_paths(repo.path()), Vec::<String>::new());
     assert_eq!(user_file_snapshot(&[&unindexed]), before);
     assert_eq!(
@@ -191,18 +205,23 @@ fn repair_reindex_metadata_validation_uninitialized_repo_requires_confirmed_repa
     );
     let report = repair_metadata(
         path_string(repo.path()),
-        RepairOptions {
-            full_rescan: true,
-            preserve_diagnostics_snapshot: true,
-        },
+        repair_options(repo.path(), true),
     )
     .expect("confirmed repair should initialize missing metadata");
 
     assert!(repo.path().join(".areamatrix/index.db").is_file());
     assert_eq!(report.diagnostics_snapshot_path, None);
-    assert_eq!(report.inserted, 1);
-    assert_eq!(sorted_list_paths(repo.path()), vec!["README.md"]);
+    assert_eq!(report.outcome, RepairMetadataOutcome::Initialized);
+    assert_eq!(sorted_list_paths(repo.path()), Vec::<String>::new());
+    assert_eq!(
+        get_latest_scan_session(path_string(repo.path())).expect("read repair scan session"),
+        None
+    );
     assert_eq!(user_file_snapshot(&[&readme]), before);
+
+    let reindex = reindex_from_filesystem(path_string(repo.path())).expect("run explicit reindex");
+    assert_eq!(reindex.inserted, 1);
+    assert_eq!(sorted_list_paths(repo.path()), vec!["README.md"]);
 }
 
 #[test]
@@ -221,13 +240,7 @@ fn repair_reindex_metadata_validation_rejects_metadata_internal_paths() {
         Err(CoreError::invalid_path("invalid path"))
     );
     assert_eq!(
-        repair_metadata(
-            path_string(&metadata_path),
-            RepairOptions {
-                full_rescan: true,
-                preserve_diagnostics_snapshot: true,
-            },
-        ),
+        preflight_repair_metadata(path_string(&metadata_path)),
         Err(CoreError::invalid_path("invalid path"))
     );
     assert_eq!(user_file_snapshot(&[&user_file]), before);

@@ -32,6 +32,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -352,7 +354,13 @@ fn undo_action_log_failure_recovery_db_write_error_rolls_back_tags_and_status() 
 fn undo_action_log_failure_recovery_io_conflict_does_not_mark_file_action_executed() {
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned()).expect("rename file");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file");
     let token = only_undo_token(repo.path());
     fs::remove_file(repo.path().join("docs/final.pdf")).expect("remove renamed file");
     fs::create_dir(repo.path().join("docs/final.pdf"))
@@ -410,7 +418,13 @@ fn undo_action_log_failure_recovery_permission_denied_is_structured_and_retryabl
 
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned()).expect("rename file");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file");
     let token = only_undo_token(repo.path());
     let original_permissions = fs::metadata(repo.path().join("docs"))
         .expect("read directory permissions")

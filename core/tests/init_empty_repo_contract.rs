@@ -23,6 +23,8 @@ fn init_empty_repo_contract_exposes_documented_inputs() {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: true,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
 
     assert_eq!(options.mode, RepoInitMode::CreateEmpty);
@@ -36,11 +38,15 @@ fn init_empty_repo_contract_keeps_create_empty_separate_from_adopt_existing() {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     let adopt_existing = RepoInitOptions {
         mode: RepoInitMode::AdoptExisting,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
 
     assert_ne!(create_empty.mode, adopt_existing.mode);
@@ -67,6 +73,8 @@ fn init_empty_repo_contract_exposes_documented_outputs() {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize empty repository");

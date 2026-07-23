@@ -24,6 +24,7 @@ struct WelcomeTitlebar: View {
 
 private struct WelcomeLanguageCycleButton: View {
     @EnvironmentObject private var languageStore: AppLanguageStore
+    @EnvironmentObject private var localizer: AppLocalizer
     @State private var isHovered = false
 
     var body: some View {
@@ -55,20 +56,20 @@ private struct WelcomeLanguageCycleButton: View {
             Image(systemName: "globe")
                 .font(.system(size: 12))
         case .zhHans:
-            Text(verbatim: "中")
+            Text(localizer.resolve(L10n.verbatim("中", reason: .languageGlyph)))
                 .font(.system(size: 12, weight: .semibold))
         case .en:
-            Text(verbatim: "EN")
+            Text(localizer.resolve(L10n.verbatim("EN", reason: .languageGlyph)))
                 .font(.system(size: 9, weight: .bold))
         }
     }
 
     private var currentLanguageName: String {
-        L10n.string(languageStore.selection.labelKey)
+        localizer.resolve(languageStore.selection.displayMessage)
     }
 
     private var nextLanguageName: String {
-        L10n.string(languageStore.selection.next.labelKey)
+        localizer.resolve(languageStore.selection.next.displayMessage)
     }
 
     private var helpText: String {

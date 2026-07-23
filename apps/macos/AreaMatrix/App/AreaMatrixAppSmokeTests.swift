@@ -208,7 +208,12 @@ final class AreaMatrixAdoptExistingTests: XCTestCase {
 
         XCTAssertEqual(model.repositoryPathValidation, validation)
         XCTAssertNil(model.latestScanSession)
-        XCTAssertEqual(model.repositoryPathError, "The repository database could not be accessed")
+        XCTAssertEqual(
+            model.repositoryPathError,
+            L10n.message(
+                "core.error.Db.message"
+            )
+        )
         guard case let .dbRepairConfirm(repairRoute) = model.route, repairRoute.repoPath == "/tmp/repo",
               repairRoute.scanSession == nil
         else {

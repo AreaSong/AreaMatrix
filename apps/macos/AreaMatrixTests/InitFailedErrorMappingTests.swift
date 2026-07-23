@@ -101,8 +101,8 @@ final class InitFailedErrorMappingTests: XCTestCase {
         await updater.assertNoAISettingsUpdateRequests()
         XCTAssertEqual(model.snapshot?.config.privacyGateEnabled, false)
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
-            message: "Remote AI requires provider consent.",
-            recovery: "Configure remote AI before allowing the privacy gate.",
+            message: L10n.message("Remote AI requires provider consent."),
+            recovery: L10n.message("Configure remote AI before allowing the privacy gate."),
             detail: "Remote AI configuration manages provider setup, API key storage, "
                 + "connection verification, and remote scope."
         )))
@@ -127,7 +127,7 @@ final class InitFailedErrorMappingTests: XCTestCase {
 
         XCTAssertEqual(result, .failed)
         XCTAssertEqual(model.snapshot?.config.privacyGateEnabled, true)
-        XCTAssertEqual(model.saveError?.message, "Remote AI privacy gate could not be updated.")
+        XCTAssertEqual(model.saveError?.message, L10n.message("Remote AI privacy gate could not be updated."))
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()

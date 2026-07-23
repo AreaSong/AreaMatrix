@@ -35,6 +35,7 @@ fn import_move_file_contract_exposes_documented_inputs() {
         override_category: Some("finance".to_owned()),
         override_filename: Some("invoice.pdf".to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     let moved_selected_directory = ImportOptions {
         mode: StorageMode::Moved,
@@ -43,6 +44,7 @@ fn import_move_file_contract_exposes_documented_inputs() {
         override_category: None,
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Ask,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
 
     assert_eq!(moved_auto_classify.mode, StorageMode::Moved);

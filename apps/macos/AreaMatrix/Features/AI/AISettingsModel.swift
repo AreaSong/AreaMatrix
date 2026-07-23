@@ -2,13 +2,13 @@ import Combine
 import Foundation
 
 struct AISettingsError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
     var detail: String
 }
 
 enum AISettingsActionFeedback: Equatable {
-    case success(String)
+    case success(LocalizedMessage)
     case failed(AISettingsError)
 }
 
@@ -44,7 +44,7 @@ final class AISettingsModel: ObservableObject {
     private let errorMapper: any CoreErrorMapping
     private var savedSnapshot: AISettingsSnapshot?
     private var pendingSave: AISettingsConfigSnapshot?
-    private var pendingSaveFailureMessage = L10n.string("AI settings could not be saved.")
+    private var pendingSaveFailureMessage = L10n.message("AI settings could not be saved.")
     private var pendingSavePreservesSnapshot = false
     private var pendingPause: AISettingsConfigSnapshot?
 
@@ -88,8 +88,8 @@ final class AISettingsModel: ObservableObject {
             savedSnapshot = nil
             loadState = await .failed(settingsError(
                 for: error,
-                message: L10n.string("AI settings could not be loaded."),
-                fallbackRecovery: L10n.string("Retry")
+                message: L10n.message("AI settings could not be loaded."),
+                fallbackRecovery: L10n.message("Retry")
             ))
         }
     }
@@ -97,21 +97,21 @@ final class AISettingsModel: ObservableObject {
     func setAIEnabled(_ enabled: Bool) async {
         guard var config = editableConfig(), config.aiEnabled != enabled else { return }
         config.aiEnabled = enabled
-        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
+        await persist(config, failureMessage: L10n.message("AI settings could not be saved."))
     }
 
     func setLocalAIEnabled(_ enabled: Bool) async {
         guard var config = editableConfig(), config.localAIEnabled != enabled else { return }
         config.localAIEnabled = enabled
-        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
+        await persist(config, failureMessage: L10n.message("AI settings could not be saved."))
     }
 
     func setProviderPreference(_ preference: AISettingsProviderPreference) async {
         guard var config = editableConfig(), config.providerPreference != preference else { return }
         if preference == .remoteFirst, !config.remoteAIAllowed {
             actionFeedback = .failed(AISettingsError(
-                message: L10n.string("Remote AI requires explicit setup."),
-                recovery: L10n.string("Use Configure remote AI before selecting Remote first."),
+                message: L10n.message("Remote AI requires explicit setup."),
+                recovery: L10n.message("Use Configure remote AI before selecting Remote first."),
                 detail: L10n.string(
                     "Remote AI configuration manages provider setup, API key storage, and connection verification."
                 )
@@ -119,13 +119,13 @@ final class AISettingsModel: ObservableObject {
             return
         }
         config.providerPreference = preference
-        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
+        await persist(config, failureMessage: L10n.message("AI settings could not be saved."))
     }
 
     func setFeature(_ feature: AISettingsFeatureKind, enabled: Bool) async {
         guard var config = editableConfig() else { return }
         config.setFeature(feature, enabled: enabled)
-        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
+        await persist(config, failureMessage: L10n.message("AI settings could not be saved."))
     }
 
     func disableRemoteAI() async {
@@ -134,13 +134,13 @@ final class AISettingsModel: ObservableObject {
         if config.providerPreference == .remoteFirst {
             config.providerPreference = .localFirst
         }
-        await persist(config, failureMessage: L10n.string("AI settings could not be saved."))
+        await persist(config, failureMessage: L10n.message("AI settings could not be saved."))
     }
 
     func pauseAllAI() async {
         guard var config = editableConfig(), config.aiEnabled else { return }
         config.aiEnabled = false
-        await persist(config, failureMessage: L10n.string("AI could not be paused."), restoreOnFailure: true)
+        await persist(config, failureMessage: L10n.message("AI could not be paused."), restoreOnFailure: true)
     }
 
     func retrySave() async {
@@ -154,13 +154,13 @@ final class AISettingsModel: ObservableObject {
 
     func retryPause() async {
         guard let pendingPause else { return }
-        await persist(pendingPause, failureMessage: L10n.string("AI could not be paused."), restoreOnFailure: true)
+        await persist(pendingPause, failureMessage: L10n.message("AI could not be paused."), restoreOnFailure: true)
     }
 
     func revertChanges() {
         snapshot = savedSnapshot
         pendingSave = nil
-        pendingSaveFailureMessage = L10n.string("AI settings could not be saved.")
+        pendingSaveFailureMessage = L10n.message("AI settings could not be saved.")
         pendingSavePreservesSnapshot = false
         pendingPause = nil
         saveError = nil
@@ -168,36 +168,36 @@ final class AISettingsModel: ObservableObject {
     }
 
     func openRemoteConfigurationEntry() {
-        actionFeedback = .success(L10n.string("Open Remote AI configuration to manage providers and API keys."))
+        actionFeedback = .success(L10n.message("Open Remote AI configuration to manage providers and API keys."))
     }
 
     func openLocalModelStatusEntry() {
-        actionFeedback = .success(L10n.string("Open Local model status to check installation and diagnostics."))
+        actionFeedback = .success(L10n.message("Open Local model status to check installation and diagnostics."))
     }
 
     func openPrivacyRulesEntry() {
-        actionFeedback = .success(L10n.string("Open Privacy rules to manage AI data boundaries."))
+        actionFeedback = .success(L10n.message("Open Privacy rules to manage AI data boundaries."))
     }
 
     func openCallLogEntry() {
-        actionFeedback = .success(L10n.string("Open AI call log to review recent AI activity."))
+        actionFeedback = .success(L10n.message("Open AI call log to review recent AI activity."))
     }
 
     func allowRemoteAIAfterProviderConsent() async -> AISettingsPrivacyGateUpdateResult {
         guard let config = editableConfig() else { return .failed }
         guard config.remoteAIAllowed else {
             actionFeedback = .failed(AISettingsError(
-                message: L10n.string("Remote AI requires provider consent."),
-                recovery: L10n.string("Configure remote AI before allowing the privacy gate."),
+                message: L10n.message("Remote AI requires provider consent."),
+                recovery: L10n.message("Configure remote AI before allowing the privacy gate."),
                 detail: L10n.string("ai.settings.remoteProviderConsentDetail")
             ))
             return .needsRemoteConfiguration
         }
-        return await setPrivacyGateEnabled(true, successMessage: L10n.string("Remote AI privacy gate is allowed."))
+        return await setPrivacyGateEnabled(true, successMessage: L10n.message("Remote AI privacy gate is allowed."))
     }
 
     func blockRemoteAIWithPrivacyGate() async -> AISettingsPrivacyGateUpdateResult {
-        await setPrivacyGateEnabled(false, successMessage: L10n.string("Remote AI is blocked by the privacy gate."))
+        await setPrivacyGateEnabled(false, successMessage: L10n.message("Remote AI is blocked by the privacy gate."))
     }
 
     func syncPrivacyGateFromPrivacyRules(_ enabled: Bool) async -> AISettingsError? {
@@ -213,8 +213,8 @@ final class AISettingsModel: ObservableObject {
             return nil
         case .needsRemoteConfiguration, .failed:
             return saveError ?? AISettingsError(
-                message: L10n.string("AI settings privacy summary could not be refreshed."),
-                recovery: L10n.string("Retry save before returning to AI settings."),
+                message: L10n.message("AI settings privacy summary could not be refreshed."),
+                recovery: L10n.message("Retry save before returning to AI settings."),
                 detail: L10n.string("ai.settings.privacySummarySyncDetail")
             )
         }
@@ -227,10 +227,10 @@ final class AISettingsModel: ObservableObject {
     @discardableResult
     private func persist(
         _ config: AISettingsConfigSnapshot,
-        failureMessage: String,
+        failureMessage: LocalizedMessage,
         restoreOnFailure: Bool = false,
         preserveSavedSnapshotOnFailure: Bool = false,
-        successMessage: String? = nil
+        successMessage: LocalizedMessage? = nil
     ) async -> Bool {
         guard !isSaving else { return false }
         isSaving = true
@@ -241,18 +241,18 @@ final class AISettingsModel: ObservableObject {
             snapshot = updated
             savedSnapshot = updated
             pendingSave = nil
-            pendingSaveFailureMessage = L10n.string("AI settings could not be saved.")
+            pendingSaveFailureMessage = L10n.message("AI settings could not be saved.")
             pendingSavePreservesSnapshot = false
             pendingPause = nil
             actionFeedback = successMessage.map(AISettingsActionFeedback.success) ??
-                (restoreOnFailure ? .success(L10n.string("AI paused.")) : nil)
+                (restoreOnFailure ? .success(L10n.message("AI paused.")) : nil)
             isSaving = false
             return true
         } catch {
             let mapped = await settingsError(
                 for: error,
                 message: failureMessage,
-                fallbackRecovery: L10n.string("Retry save")
+                fallbackRecovery: L10n.message("Retry save")
             )
             if restoreOnFailure {
                 snapshot = savedSnapshot
@@ -274,11 +274,15 @@ final class AISettingsModel: ObservableObject {
         return false
     }
 
-    private func settingsError(for error: Error, message: String, fallbackRecovery: String) async -> AISettingsError {
+    private func settingsError(
+        for error: Error,
+        message: LocalizedMessage,
+        fallbackRecovery: LocalizedMessage
+    ) async -> AISettingsError {
         if let mapping = await errorMapper.mapCoreErrorIfPresent(error) {
             return AISettingsError(
                 message: message,
-                recovery: mapping.recoveryText(fallback: fallbackRecovery),
+                recovery: mapping.recoveryMessage(fallback: fallbackRecovery),
                 detail: mapping.userMessage
             )
         }
@@ -287,24 +291,24 @@ final class AISettingsModel: ObservableObject {
 
     private func setPrivacyGateEnabled(
         _ enabled: Bool,
-        successMessage: String
+        successMessage: LocalizedMessage
     ) async -> AISettingsPrivacyGateUpdateResult {
         guard var config = editableConfig() else { return .failed }
         guard config.privacyGateEnabled != enabled else { return .unchanged }
         config.privacyGateEnabled = enabled
         let saved = await persist(
             config,
-            failureMessage: L10n.string("Remote AI privacy gate could not be updated."),
+            failureMessage: L10n.message("Remote AI privacy gate could not be updated."),
             preserveSavedSnapshotOnFailure: true,
             successMessage: successMessage
         )
         return saved ? .saved : .failed
     }
 
-    private func privacyGateSyncSuccess(_ enabled: Bool) -> String {
+    private func privacyGateSyncSuccess(_ enabled: Bool) -> LocalizedMessage {
         enabled
-            ? L10n.string("Remote AI privacy gate is allowed.")
-            : L10n.string("Remote AI is blocked by the privacy gate.")
+            ? L10n.message("Remote AI privacy gate is allowed.")
+            : L10n.message("Remote AI is blocked by the privacy gate.")
     }
 }
 

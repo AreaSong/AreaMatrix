@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use super::repository::ContentLocale;
+
 /// Filesystem event kind sent from the platform layer.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ExternalEventKind {
@@ -22,6 +24,37 @@ pub struct ExternalEvent {
     pub kind: ExternalEventKind,
     /// Platform filesystem event identifier.
     pub fs_event_id: i64,
+}
+
+/// One legacy external-sync receipt whose content locale must be recovered.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ExternalSyncLocaleRecoveryReceipt {
+    /// Filesystem event identifier captured by the original sync window.
+    pub event_id: i64,
+    /// Original event kind.
+    pub kind: ExternalEventKind,
+    /// Repository-relative event path, preserved verbatim.
+    pub path: String,
+}
+
+/// Read-only plan binding recovery to one repository cursor and exact receipt set.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ExternalSyncLocaleRecoveryPlan {
+    /// Opaque token required by the mutation call.
+    pub recovery_token: String,
+    /// Cursor observed while the plan was created.
+    pub cursor: Option<i64>,
+    /// Stable, sorted legacy receipt set covered by the token.
+    pub receipts: Vec<ExternalSyncLocaleRecoveryReceipt>,
+}
+
+/// Result of explicitly assigning a concrete locale to legacy receipts.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ExternalSyncLocaleRecoveryReport {
+    /// Number of receipts updated atomically.
+    pub recovered_receipts: i64,
+    /// Concrete locale selected by the user.
+    pub content_locale: ContentLocale,
 }
 
 /// Summary of external-change synchronization.

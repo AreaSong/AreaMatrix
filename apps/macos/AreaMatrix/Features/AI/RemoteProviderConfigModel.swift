@@ -79,8 +79,8 @@ final class RemoteProviderConfigModel: ObservableObject {
         } catch {
             loadState = await .failed(remoteError(
                 for: error,
-                message: L10n.string("Remote AI settings could not be loaded."),
-                fallbackRecovery: L10n.string("Retry")
+                message: L10n.message("Remote AI settings could not be loaded."),
+                fallbackRecovery: L10n.message("Retry")
             ))
         }
     }
@@ -95,8 +95,8 @@ final class RemoteProviderConfigModel: ObservableObject {
             loadState = .loaded
             outcome = .failed(credentialCleanupError(
                 for: error,
-                message: L10n.string("Previous API key draft could not be discarded before testing."),
-                recovery: L10n.string("Retry Test connection or cancel without saving.")
+                message: L10n.message("Previous API key draft could not be discarded before testing."),
+                recovery: L10n.message("Retry Test connection or cancel without saving.")
             ))
             return
         }
@@ -114,8 +114,8 @@ final class RemoteProviderConfigModel: ObservableObject {
         } catch {
             loadState = await .failed(remoteError(
                 for: error,
-                message: L10n.string("Remote provider could not be tested."),
-                fallbackRecovery: L10n.string("Check the key, model, endpoint, and network.")
+                message: L10n.message("Remote provider could not be tested."),
+                fallbackRecovery: L10n.message("Check the key, model, endpoint, and network.")
             ))
         }
     }
@@ -132,7 +132,7 @@ final class RemoteProviderConfigModel: ObservableObject {
             )
             credentialStore.commitCredentialDraft(draft)
             applySnapshot(enabled)
-            outcome = .success("Remote AI enabled.")
+            outcome = .success(L10n.message("Remote AI enabled."))
             loadState = .loaded
             return true
         } catch {
@@ -143,10 +143,10 @@ final class RemoteProviderConfigModel: ObservableObject {
                     loadState = .loaded
                     outcome = .failed(credentialCleanupError(
                         for: error,
-                        message: L10n.string(
+                        message: L10n.message(
                             "Remote AI settings could not be saved, and the API key draft could not be restored."
                         ),
-                        recovery: L10n.string("Retry save or cancel after restoring the stored key.")
+                        recovery: L10n.message("Retry save or cancel after restoring the stored key.")
                     ))
                     return false
                 }
@@ -155,8 +155,8 @@ final class RemoteProviderConfigModel: ObservableObject {
             }
             loadState = await .failed(remoteError(
                 for: error,
-                message: L10n.string("Remote AI settings could not be saved."),
-                fallbackRecovery: L10n.string("Retry save or remove the unused key.")
+                message: L10n.message("Remote AI settings could not be saved."),
+                fallbackRecovery: L10n.message("Retry save or remove the unused key.")
             ))
             return false
         }
@@ -180,22 +180,22 @@ final class RemoteProviderConfigModel: ObservableObject {
                     applySnapshot(disabled)
                     outcome = .failed(credentialCleanupError(
                         for: error,
-                        message: L10n.string("Remote AI was disabled, but the stored API key could not be removed."),
-                        recovery: L10n.string("Retry disable with key removal or remove the key from Keychain.")
+                        message: L10n.message("Remote AI was disabled, but the stored API key could not be removed."),
+                        recovery: L10n.message("Retry disable with key removal or remove the key from Keychain.")
                     ))
                     loadState = .loaded
                     return false
                 }
             }
             applySnapshot(disabled)
-            outcome = .success("Remote AI disabled.")
+            outcome = .success(L10n.message("Remote AI disabled."))
             loadState = .loaded
             return true
         } catch {
             loadState = await .failed(remoteError(
                 for: error,
-                message: L10n.string("Remote AI could not be disabled."),
-                fallbackRecovery: L10n.string("Retry disable.")
+                message: L10n.message("Remote AI could not be disabled."),
+                fallbackRecovery: L10n.message("Retry disable.")
             ))
             return false
         }
@@ -209,8 +209,8 @@ final class RemoteProviderConfigModel: ObservableObject {
         } catch {
             outcome = .failed(credentialCleanupError(
                 for: error,
-                message: L10n.string("API key draft could not be discarded."),
-                recovery: L10n.string("Retry Cancel or remove the stored key from Keychain.")
+                message: L10n.message("API key draft could not be discarded."),
+                recovery: L10n.message("Retry Cancel or remove the stored key from Keychain.")
             ))
             return false
         }
@@ -222,8 +222,8 @@ final class RemoteProviderConfigModel: ObservableObject {
         } catch {
             outcome = .failed(credentialCleanupError(
                 for: error,
-                message: L10n.string("Unused API key could not be removed."),
-                recovery: L10n.string("Retry Remove unused key before closing this sheet.")
+                message: L10n.message("Unused API key could not be removed."),
+                recovery: L10n.message("Retry Remove unused key before closing this sheet.")
             ))
         }
     }

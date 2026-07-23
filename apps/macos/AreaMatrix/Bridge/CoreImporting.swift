@@ -117,7 +117,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try await importFile(
+        let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
+        return try await importFile(
             repoPath: repoPath,
             sourceURL: sourceURL,
             options: ImportOptions(
@@ -126,13 +127,15 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 targetDirectory: nil,
                 overrideCategory: overrideCategory,
                 overrideFilename: overrideFilename,
-                duplicateStrategy: duplicateStrategy
+                duplicateStrategy: duplicateStrategy,
+                contentLocale: contentLocale
             )
         )
     }
 
     func importCopiedFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
-        try await importFile(
+        let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: request.repoPath)
+        return try await importFile(
             repoPath: request.repoPath,
             sourceURL: request.sourceURL,
             options: ImportOptions(
@@ -144,7 +147,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                     suggestedCategory: request.suggestedCategory
                 ),
                 overrideFilename: request.overrideFilename,
-                duplicateStrategy: request.duplicateStrategy
+                duplicateStrategy: request.duplicateStrategy,
+                contentLocale: contentLocale
             )
         )
     }
@@ -152,9 +156,10 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
     func importBatchFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
         switch request.storageMode {
         case .copy:
-            try await importCopiedFile(request: request)
+            return try await importCopiedFile(request: request)
         case .indexOnly:
-            try await importFile(
+            let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: request.repoPath)
+            return try await importFile(
                 repoPath: request.repoPath,
                 sourceURL: request.sourceURL,
                 options: ImportOptions(
@@ -166,11 +171,13 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                         suggestedCategory: request.suggestedCategory
                     ),
                     overrideFilename: request.overrideFilename,
-                    duplicateStrategy: request.duplicateStrategy
+                    duplicateStrategy: request.duplicateStrategy,
+                    contentLocale: contentLocale
                 )
             )
         case .move:
-            try await importFile(
+            let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: request.repoPath)
+            return try await importFile(
                 repoPath: request.repoPath,
                 sourceURL: request.sourceURL,
                 options: ImportOptions(
@@ -182,7 +189,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                         suggestedCategory: request.suggestedCategory
                     ),
                     overrideFilename: request.overrideFilename,
-                    duplicateStrategy: request.duplicateStrategy
+                    duplicateStrategy: request.duplicateStrategy,
+                    contentLocale: contentLocale
                 )
             )
         }
@@ -195,7 +203,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try await importFile(
+        let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
+        return try await importFile(
             repoPath: repoPath,
             sourceURL: sourceURL,
             options: ImportOptions(
@@ -204,7 +213,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 targetDirectory: nil,
                 overrideCategory: overrideCategory,
                 overrideFilename: overrideFilename,
-                duplicateStrategy: duplicateStrategy
+                duplicateStrategy: duplicateStrategy,
+                contentLocale: contentLocale
             )
         )
     }
@@ -216,7 +226,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
         overrideFilename: String,
         duplicateStrategy: DuplicateStrategy
     ) async throws -> FileEntrySnapshot {
-        try await importFile(
+        let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
+        return try await importFile(
             repoPath: repoPath,
             sourceURL: sourceURL,
             options: ImportOptions(
@@ -225,7 +236,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 targetDirectory: nil,
                 overrideCategory: overrideCategory,
                 overrideFilename: overrideFilename,
-                duplicateStrategy: duplicateStrategy
+                duplicateStrategy: duplicateStrategy,
+                contentLocale: contentLocale
             )
         )
     }

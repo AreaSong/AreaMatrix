@@ -54,6 +54,7 @@ fn generation_request(file_id: i64) -> AiSummaryGenerationRequest {
         context_policy: AiSummaryContextPolicy::MetadataTextAndNotes,
         privacy_policy_ref: None,
         regenerate_existing: false,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 

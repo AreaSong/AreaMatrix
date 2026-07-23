@@ -92,6 +92,11 @@ fn ai_tags_failure_invalid_inputs_map_to_documented_errors_without_writes() {
         ErrorKind::Config,
     );
 
+    assert!(
+        area_matrix_core::ContentLocale::parse("system").is_none(),
+        "repository policy values must not enter a concrete operation request"
+    );
+
     let mut unconfirmed = apply_request(file_id, "finance");
     unconfirmed.confirmed = false;
     assert_kind(

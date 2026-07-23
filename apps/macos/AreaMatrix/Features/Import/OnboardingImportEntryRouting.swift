@@ -7,7 +7,7 @@ extension OnboardingModel {
         case let .mainEmpty(opening), let .mainList(opening), let .settingsGeneral(opening):
             chooseImportSources(opening: opening)
         default:
-            toastMessage = L10n.string("Open a repository before importing files.")
+            toastMessage = L10n.message("Open a repository before importing files.")
         }
     }
 
@@ -26,8 +26,8 @@ extension OnboardingModel {
     ) {
         let fileURLs = Self.validImportFileURLs(from: urls)
         guard !fileURLs.isEmpty else {
-            toastMessage = L10n.string("Cannot import these items")
-            accessibilityAnnouncer.announce("Cannot import these items")
+            toastMessage = L10n.message("Cannot import these items")
+            accessibilityAnnouncer.announce(L10n.message("Cannot import these items"))
             return
         }
 
@@ -53,7 +53,7 @@ extension OnboardingModel {
         let conflictIDs = route.conflictIDs.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         guard !route.importSessionID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !conflictIDs.isEmpty else {
-            toastMessage = L10n.string("No active import conflicts to review.")
+            toastMessage = L10n.message("No active import conflicts to review.")
             return
         }
         let placeholderURLs = conflictIDs.map { URL(fileURLWithPath: "/.areamatrix/import-conflicts/\($0)") }
@@ -254,7 +254,7 @@ extension OnboardingModel {
             try fileRevealer.revealFile(repoPath: request.repoPath, relativePath: relativePath)
             toastMessage = nil
         } catch {
-            toastMessage = L10n.string("Existing file cannot be shown in Finder.")
+            toastMessage = L10n.message("Existing file cannot be shown in Finder.")
         }
     }
 
@@ -263,8 +263,11 @@ extension OnboardingModel {
         do {
             let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: repoPath)
             finishSuccessfulRepositoryOpen(opening)
-            toastMessage = L10n.format("import.single.imported-file", entry.currentName)
-            accessibilityAnnouncer.announce(L10n.format("import.single.imported-file", entry.currentName))
+            toastMessage = L10n.message("import.single.imported-file", arguments: [.string(entry.currentName)])
+            accessibilityAnnouncer.announce(L10n.message(
+                "import.single.imported-file",
+                arguments: [.string(entry.currentName)]
+            ))
         } catch {
             await routeMainOpeningFailure(error, repoPath: repoPath)
         }

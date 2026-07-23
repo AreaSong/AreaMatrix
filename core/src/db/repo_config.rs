@@ -5,7 +5,9 @@ use std::{
 
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
-use crate::{config, CoreError, CoreResult, OverviewOutput, RepoConfig};
+use crate::{
+    config, CoreError, CoreResult, OverviewOutput, RepoConfig, RepoConfigPatch, RepoConfigSnapshot,
+};
 
 use super::{
     bool_from_db, bool_to_db, configure_connection, db_path, open_repo_connection,
@@ -25,6 +27,12 @@ pub(crate) fn initialize_repository_db(db_path: &Path, config: &RepoConfig) -> C
         .transaction()
         .map_err(|error| CoreError::db(error.to_string()))?;
     upsert_config(&tx, config)?;
+    tx.execute(
+        "INSERT INTO repo_config_revision (id, revision) VALUES (1, 1)
+         ON CONFLICT(id) DO UPDATE SET revision = 1",
+        [],
+    )
+    .map_err(|error| CoreError::db(error.to_string()))?;
     tx.commit()
         .map_err(|error| CoreError::db(error.to_string()))
 }
@@ -63,6 +71,139 @@ pub(crate) fn update_config(repo_path: String, new_config: RepoConfig) -> CoreRe
     upsert_config(&tx, &new_config)?;
     tx.commit()
         .map_err(|error| CoreError::db(error.to_string()))
+}
+
+/// Reads a revisioned repository configuration snapshot without rewriting the
+/// exact persisted locale value.
+pub(crate) fn load_repo_config_snapshot_or_default(
+    repo_path: String,
+) -> CoreResult<RepoConfigSnapshot> {
+    if repo_path.is_empty() {
+        return Err(CoreError::config("configuration error"));
+    }
+
+    let repo = PathBuf::from(&repo_path);
+    let db_path = db_path(&repo);
+    if !path_exists(&db_path)? {
+        return Ok(RepoConfigSnapshot::from_config(
+            config::default_repo_config(repo_path, OverviewOutput::GeneratedOnly),
+            0,
+        ));
+    }
+
+    let connection = open_repo_read_connection(&repo)?;
+    let config = read_config(&connection, repo_path)?;
+    let revision = current_revision(&connection)?.unwrap_or(1);
+    Ok(RepoConfigSnapshot::from_config(config, revision))
+}
+
+pub(crate) fn ensure_repository_locale_allows_normal_mutation(
+    repo_path: &Path,
+) -> CoreResult<()> {
+    let connection = open_repo_read_connection(repo_path)?;
+    let raw_locale = config_value(&connection, "locale")?.unwrap_or_else(|| "system".to_owned());
+    let snapshot = crate::RepositoryLocalePolicySnapshot::from_raw(raw_locale);
+    if matches!(
+        snapshot.state,
+        crate::RepositoryLocalePolicyState::Unsupported
+    ) {
+        Err(CoreError::config(
+            "unsupported repository locale requires explicit canonical policy save",
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+/// Applies a field-level compare-and-swap patch and returns the new snapshot.
+pub(crate) fn update_repo_config_patch(
+    repo_path: String,
+    patch: RepoConfigPatch,
+) -> CoreResult<RepoConfigSnapshot> {
+    if repo_path.is_empty() {
+        return Err(CoreError::config("configuration error"));
+    }
+    if patch.expected_revision < 1 {
+        return Err(CoreError::config("configuration revision is invalid"));
+    }
+
+    let repo = PathBuf::from(&repo_path);
+    ensure_config_storage_writable(&repo)?;
+    let mut connection = open_repo_connection(&repo).map_err(map_update_open_error)?;
+    let tx = connection
+        .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+        .map_err(|error| CoreError::db(error.to_string()))?;
+
+    let current_revision = current_revision(&tx)?.ok_or_else(|| {
+        CoreError::db("repository configuration revision row is missing")
+    })?;
+    if current_revision != patch.expected_revision {
+        return Err(CoreError::conflict(repo_path));
+    }
+
+    let current_locale = config_value(&tx, "locale")?.unwrap_or_else(|| "system".to_owned());
+    let locale_snapshot = crate::RepositoryLocalePolicySnapshot::from_raw(current_locale);
+    let has_mutations = !patch.is_empty();
+    if matches!(
+        locale_snapshot.state,
+        crate::RepositoryLocalePolicyState::Unsupported
+    ) && !patch.is_locale_only()
+    {
+        return Err(CoreError::config(
+            "unsupported repository locale requires explicit canonical policy save",
+        ));
+    }
+
+    let timestamp = chrono::Utc::now().timestamp();
+    if let Some(value) = patch.default_mode {
+        upsert_config_value(&tx, "default_mode", storage_mode_to_db(&value), timestamp)?;
+    }
+    if let Some(value) = patch.overview_output {
+        upsert_config_value(
+            &tx,
+            "overview_output",
+            overview_output_to_db(&value),
+            timestamp,
+        )?;
+    }
+    if let Some(value) = patch.ai_enabled {
+        upsert_config_value(&tx, "ai_enabled", bool_to_db(value), timestamp)?;
+    }
+    if let Some(value) = patch.locale_policy {
+        upsert_config_value(&tx, "locale", value.as_str(), timestamp)?;
+    }
+    if let Some(value) = patch.icloud_warn {
+        upsert_config_value(&tx, "icloud_warn", bool_to_db(value), timestamp)?;
+    }
+    if let Some(value) = patch.enable_extension_rules {
+        upsert_config_value(&tx, "enable_extension_rules", bool_to_db(value), timestamp)?;
+    }
+    if let Some(value) = patch.enable_keyword_rules {
+        upsert_config_value(&tx, "enable_keyword_rules", bool_to_db(value), timestamp)?;
+    }
+    if let Some(value) = patch.fallback_to_inbox {
+        upsert_config_value(&tx, "fallback_to_inbox", bool_to_db(value), timestamp)?;
+    }
+    if let Some(value) = patch.allow_replace_during_import {
+        upsert_config_value(
+            &tx,
+            "allow_replace_during_import",
+            bool_to_db(value),
+            timestamp,
+        )?;
+    }
+
+    if has_mutations {
+        tx.execute(
+            "UPDATE repo_config_revision SET revision = ?1 WHERE id = 1",
+            params![current_revision + 1],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    }
+    tx.commit()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+
+    load_repo_config_snapshot_or_default(repo_path)
 }
 
 pub(crate) fn with_write_transaction<T>(
@@ -200,6 +341,35 @@ fn config_value(connection: &Connection, key: &str) -> CoreResult<Option<String>
         )
         .optional()
         .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn current_revision(connection: &Connection) -> CoreResult<Option<i64>> {
+    connection
+        .query_row(
+            "SELECT revision FROM repo_config_revision WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn upsert_config_value(
+    tx: &Transaction<'_>,
+    key: &str,
+    value: &str,
+    updated_at: i64,
+) -> CoreResult<()> {
+    tx.execute(
+        "INSERT INTO repo_config (key, value, updated_at)
+         VALUES (?1, ?2, ?3)
+         ON CONFLICT(key) DO UPDATE SET
+           value = excluded.value,
+           updated_at = excluded.updated_at",
+        params![key, value, updated_at],
+    )
+    .map(|_| ())
+    .map_err(|error| CoreError::db(error.to_string()))
 }
 
 fn validate_config_payload(repo_path: &str, config: &RepoConfig) -> CoreResult<()> {

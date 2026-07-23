@@ -31,6 +31,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -56,6 +58,7 @@ fn share_options(filename: &str, duplicate_strategy: DuplicateStrategy) -> Impor
         override_category: Some("inbox".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 

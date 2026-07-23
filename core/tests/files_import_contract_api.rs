@@ -61,6 +61,7 @@ fn files_import_contract_exposes_authorized_copy_inputs_outputs_and_errors() {
         override_category: Some("docs".to_owned()),
         override_filename: Some("Quarterly Report.pdf".to_owned()),
         duplicate_strategy: DuplicateStrategy::KeepBoth,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     assert_eq!(files_options.mode, StorageMode::Copied);
     assert_eq!(files_options.destination, ImportDestination::AutoClassify);

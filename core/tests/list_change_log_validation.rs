@@ -20,6 +20,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -44,6 +46,7 @@ fn copied_options() -> ImportOptions {
         override_category: None,
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -155,6 +158,7 @@ fn list_change_log_validation_reads_real_import_and_rename_without_side_effects(
         path_string(repo.path()),
         imported.id,
         "invoice-final.pdf".to_owned(),
+        "en".to_owned(),
     )
     .expect("rename imported file for change-log validation");
     let before_change_logs = count_change_logs(repo.path());

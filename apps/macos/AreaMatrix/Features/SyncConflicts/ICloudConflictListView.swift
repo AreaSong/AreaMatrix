@@ -135,6 +135,7 @@ enum ICloudConflictListPageContext: Equatable {
 }
 
 struct ICloudConflictListView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: ICloudConflictListModel
     let pageContext: ICloudConflictListPageContext
     let onClose: () -> Void
@@ -210,7 +211,7 @@ struct ICloudConflictListView: View {
             if model.isLoading {
                 ProgressView()
                     .controlSize(.small)
-                    .accessibilityLabel("Checking iCloud conflicts")
+                    .accessibilityLabel(L10n.string("Checking iCloud conflicts"))
             }
         }
         .padding(.horizontal, 24)
@@ -346,11 +347,11 @@ struct ICloudConflictListView: View {
         case .idle:
             EmptyView()
         case let .revealed(message):
-            Label(message, systemImage: "checkmark.circle")
+            Label(localizer.resolve(message), systemImage: "checkmark.circle")
                 .font(.caption)
                 .foregroundStyle(.green)
         case let .failed(message):
-            Label(message, systemImage: "exclamationmark.triangle")
+            Label(localizer.resolve(message), systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.red)
         }

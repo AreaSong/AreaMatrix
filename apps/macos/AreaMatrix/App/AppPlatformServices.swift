@@ -1,7 +1,11 @@
 import Foundation
 
 struct AppShellModel: Equatable {
-    var statusText = L10n.string("Onboarding configuration router")
+    private var statusMessage = L10n.message("Onboarding configuration router")
+
+    var statusText: String {
+        L10n.resolve(statusMessage)
+    }
 }
 
 protocol AppSettingsReading {

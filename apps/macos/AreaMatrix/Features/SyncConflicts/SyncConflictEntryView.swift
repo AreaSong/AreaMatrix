@@ -175,7 +175,11 @@ private extension SyncConflictEntryPanel {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(snapshot.count) sync conflicts need review. \(SyncConflictEntryCopy.reviewAction).")
+        .accessibilityLabel(L10n.format(
+            "%lld sync conflicts need review. %@.",
+            snapshot.count,
+            SyncConflictEntryCopy.reviewAction
+        ))
         .accessibilityIdentifier(SyncConflictEntryAccessibilityID.banner)
     }
 

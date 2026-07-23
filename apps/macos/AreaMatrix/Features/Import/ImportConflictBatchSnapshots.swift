@@ -4,10 +4,10 @@ enum ImportConflictBatchConflictTypeSnapshot: String, Equatable, Hashable {
     case duplicateHash = "DuplicateHash"
     case sameNameDifferentContent = "SameNameDifferentContent"
 
-    var title: String {
+    var titleMessage: LocalizedMessage {
         switch self {
-        case .duplicateHash: L10n.string("Duplicate content")
-        case .sameNameDifferentContent: L10n.string("Same name, different content")
+        case .duplicateHash: L10n.message("Duplicate content")
+        case .sameNameDifferentContent: L10n.message("Same name, different content")
         }
     }
 }
@@ -18,12 +18,12 @@ enum ImportConflictBatchStrategySnapshot: String, Equatable, Hashable {
     case replace = "Replace"
     case askPerItem = "AskPerItem"
 
-    var title: String {
+    var titleMessage: LocalizedMessage {
         switch self {
-        case .skip: L10n.string("Skip")
-        case .keepBoth: L10n.string("Keep both")
-        case .replace: L10n.string("Replace")
-        case .askPerItem: L10n.string("Ask per item")
+        case .skip: L10n.message("Skip")
+        case .keepBoth: L10n.message("Keep both")
+        case .replace: L10n.message("Replace")
+        case .askPerItem: L10n.message("Ask per item")
         }
     }
 }
@@ -35,8 +35,14 @@ enum ImportConflictBatchPreviewStatusSnapshot: String, Equatable, Hashable {
     case blocked = "Blocked"
     case failed = "Failed"
 
-    var title: String {
-        L10n.string(rawValue)
+    var titleMessage: LocalizedMessage {
+        switch self {
+        case .ready: L10n.message("Ready")
+        case .pending: L10n.message("Pending")
+        case .needsConfirmation: L10n.message("Needs confirmation")
+        case .blocked: L10n.message("Blocked")
+        case .failed: L10n.message("Failed")
+        }
     }
 }
 
@@ -48,8 +54,15 @@ enum ImportConflictBatchResultStatusSnapshot: String, Equatable, Hashable {
     case pending = "Pending"
     case failed = "Failed"
 
-    var title: String {
-        L10n.string(rawValue)
+    var titleMessage: LocalizedMessage {
+        switch self {
+        case .skipped: L10n.message("Skipped")
+        case .keptBoth: L10n.message("Kept both")
+        case .replaced: L10n.message("Replaced")
+        case .queuedForPerItem: L10n.message("Queued for per item")
+        case .pending: L10n.message("Pending")
+        case .failed: L10n.message("Failed")
+        }
     }
 }
 
@@ -107,7 +120,7 @@ struct ImportConflictBatchPreviewItemSnapshot: Equatable, Identifiable {
             willSkip: false,
             willAskPerItem: false,
             indexOnly: false,
-            riskSummary: L10n.string("Waiting for Core preview."),
+            riskSummary: "Waiting for Core preview.",
             reason: nil
         )
     }
@@ -278,7 +291,7 @@ extension ImportConflictBatchPreviewReportSnapshot {
             trashAvailable: false,
             undoAvailable: false,
             canApply: false,
-            applyBlockedReason: L10n.string("Select at least one conflict."),
+            applyBlockedReason: "Select at least one conflict.",
             replaceConfirmationRequired: false,
             replaceConfirmationSummary: nil,
             items: items.map(\.notSelected)
@@ -302,61 +315,65 @@ extension ImportConflictBatchPreviewItemSnapshot {
         copy.willKeepBoth = false
         copy.willSkip = false
         copy.willAskPerItem = false
-        copy.reason = L10n.string("Not selected")
+        copy.reason = "Not selected"
         return copy
     }
 }
 
 @MainActor
 extension ImportBatchCopyImportModel {
-    var conflictBatchPerItemSummary: String? {
-        conflictBatchPerItemQueue?.summary
+    var conflictBatchPerItemSummary: LocalizedMessage? {
+        conflictBatchPerItemQueue.map { L10n.pluralMessage("import.conflict.per-item-queue-summary", count: $0.routes.count) }
     }
 
     var conflictBatchPerItemRouteLabels: [String] {
         conflictBatchPerItemQueue?.routes.map(\.routeLabel) ?? []
     }
 
-    var conflictBatchScopeSummary: String {
-        if hasEmptyManualConflictBatchScope { return L10n.string("Select at least one conflict.") }
-        guard let preview = conflictBatchPreviewReport else { return L10n.string("Checking conflicts...") }
+    var conflictBatchScopeSummary: LocalizedMessage {
+        if hasEmptyManualConflictBatchScope { return L10n.message("Select at least one conflict.") }
+        guard let preview = conflictBatchPreviewReport else { return L10n.message("Checking conflicts...") }
         if preview.applyToAllSimilarConflicts {
-            return L10n.format(
+            return L10n.message(
                 "import.conflict.all-similar-scope-summary",
-                preview.duplicateConflictCount,
-                preview.sameNameConflictCount
+                arguments: [
+                    .integer64(preview.duplicateConflictCount),
+                    .integer64(preview.sameNameConflictCount)
+                ]
             )
         }
-        return L10n.plural("import.conflict.selected-scope-summary", count: Int(preview.includedCount))
+        return L10n.pluralMessage("import.conflict.selected-scope-summary", count: preview.includedCount)
     }
 
-    var conflictBatchApplyDisabledReason: String? {
-        if isConflictBatchApplying { return L10n.string("Applying...") }
-        if hasEmptyManualConflictBatchScope { return L10n.string("Select at least one conflict.") }
-        guard let preview = conflictBatchPreviewReport else { return L10n.string("Checking conflicts...") }
+    var conflictBatchApplyDisabledReason: AppDisplayText? {
+        if isConflictBatchApplying { return .localized(L10n.message("Applying...")) }
+        if hasEmptyManualConflictBatchScope { return .localized(L10n.message("Select at least one conflict.")) }
+        guard let preview = conflictBatchPreviewReport else { return .localized(L10n.message("Checking conflicts...")) }
         if !preview.canApply {
-            return preview.applyBlockedReason ?? L10n.string("Could not prepare conflict strategy.")
+            return preview.applyBlockedReason.map(ImportConflictBatchDisplayText.fromCore)
+                ?? .localized(L10n.message("Could not prepare conflict strategy."))
         }
         if ImportConflictBatchValidation.actionableIncludedCount(preview: preview) == 0 {
-            return L10n.string("All conflicts in this scope are blocked.")
+            return .localized(L10n.message("All conflicts in this scope are blocked."))
         }
         let replaceConfirmed = isConflictBatchReplaceConfirmed || preview.replaceConfirmationRequired
         guard let request = makeImportConflictBatchApplyRequest(replaceConfirmed: replaceConfirmed),
               ImportConflictBatchValidation.canApply(preview: preview, request: request, isApplying: false) else {
-            return L10n.string("Refresh conflict strategy preview.")
+            return .localized(L10n.message("Refresh conflict strategy preview."))
         }
         return nil
     }
 
-    var conflictBatchAskPerItemDisabledReason: String? {
-        if isConflictBatchApplying { return L10n.string("Applying...") }
-        if hasEmptyManualConflictBatchScope { return L10n.string("Select at least one conflict.") }
-        guard let preview = conflictBatchPreviewReport else { return L10n.string("Checking conflicts...") }
+    var conflictBatchAskPerItemDisabledReason: AppDisplayText? {
+        if isConflictBatchApplying { return .localized(L10n.message("Applying...")) }
+        if hasEmptyManualConflictBatchScope { return .localized(L10n.message("Select at least one conflict.")) }
+        guard let preview = conflictBatchPreviewReport else { return .localized(L10n.message("Checking conflicts...")) }
         if ImportConflictBatchValidation.canAskPerItem(preview: preview, isApplying: false) { return nil }
         if preview.includedCount > 0 {
-            return L10n.string("All conflicts in this scope are blocked.")
+            return .localized(L10n.message("All conflicts in this scope are blocked."))
         }
-        return preview.applyBlockedReason ?? L10n.string("Select at least one conflict.")
+        return preview.applyBlockedReason.map(ImportConflictBatchDisplayText.fromCore)
+            ?? .localized(L10n.message("Select at least one conflict."))
     }
 
     var hasEmptyManualConflictBatchScope: Bool {
@@ -372,5 +389,50 @@ extension ImportBatchCopyImportModel {
             sourceItems: conflictBatchPreviewState.report?.items ?? [],
             fallbackConflictIDs: request?.importConflictIDs ?? []
         )
+    }
+}
+
+enum ImportConflictBatchDisplayText {
+    static func fromCore(_ value: String) -> AppDisplayText {
+        switch value {
+        case "No selected conflicts can be applied":
+            .localized(L10n.message("No selected conflicts can be applied"))
+        case "One or more import conflicts are blocked":
+            .localized(L10n.message("One or more import conflicts are blocked"))
+        case "Conflict is queued for per-item handling":
+            .localized(L10n.message("Conflict is queued for per-item handling"))
+        case "Conflict is already resolved":
+            .localized(L10n.message("Conflict is already resolved"))
+        case "Previous apply attempt failed":
+            .localized(L10n.message("Previous apply attempt failed"))
+        case "Index-only staging cannot be batch imported":
+            .localized(L10n.message("Index-only staging cannot be batch imported"))
+        case "Index-only staging cannot replace an existing file":
+            .localized(L10n.message("Index-only staging cannot replace an existing file"))
+        case "Replace requires an active target file":
+            .localized(L10n.message("Replace requires an active target file"))
+        case "Index-only target cannot be replaced":
+            .localized(L10n.message("Index-only target cannot be replaced"))
+        case "Trash unavailable":
+            .localized(L10n.message("Trash unavailable"))
+        case "This row cannot be processed safely":
+            .localized(L10n.message("This row cannot be processed safely"))
+        case "Incoming duplicate stays in staging; existing file is unchanged":
+            .localized(L10n.message("Incoming duplicate stays in staging; existing file is unchanged"))
+        case "Incoming file will be imported with a conflict-free name":
+            .localized(L10n.message("Incoming file will be imported with a conflict-free name"))
+        case "Existing file will move to recoverable storage before incoming file takes its place":
+            .localized(L10n.message("Existing file will move to recoverable storage before incoming file takes its place"))
+        case "Conflict will stay staged for per-item handling":
+            .localized(L10n.message("Conflict will stay staged for per-item handling"))
+        case "Waiting for Core preview.":
+            .localized(L10n.message("Waiting for Core preview."))
+        case "Select at least one conflict.":
+            .localized(L10n.message("Select at least one conflict."))
+        case "Not selected":
+            .localized(L10n.message("Not selected"))
+        default:
+            L10n.verbatim(value, reason: .technicalDetail)
+        }
     }
 }

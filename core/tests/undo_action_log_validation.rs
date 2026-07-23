@@ -36,6 +36,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -57,6 +59,7 @@ fn import_options(mode: StorageMode, category: &str, filename: &str) -> ImportOp
         override_category: Some(category.to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -217,8 +220,13 @@ fn create_success_path_actions(repo: &Path) -> (i64, String) {
     )
     .expect("create batch tag undo action");
     let tag_token = tag_report.undo_token.expect("batch tags create undo");
-    rename_file(path_string(repo), first.id, "renamed.pdf".to_owned())
-        .expect("create rename undo action");
+    rename_file(
+        path_string(repo),
+        first.id,
+        "renamed.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("create rename undo action");
     move_to_category(path_string(repo), second.id, "finance".to_owned())
         .expect("create move undo action");
     (first.id, tag_token)
@@ -364,8 +372,13 @@ fn undo_action_log_validation_covers_external_change_blocking_without_mutation()
         import_options(StorageMode::Copied, "docs", "external.pdf"),
     )
     .expect("import file before rename");
-    rename_file(path_string(repo.path()), entry.id, "after.pdf".to_owned())
-        .expect("create rename undo");
+    rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "after.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("create rename undo");
     let token = only_undo_token(repo.path(), "rename_files");
     fs::remove_file(repo.path().join("docs/after.pdf")).expect("simulate external file removal");
     let before_files = file_rows(repo.path());

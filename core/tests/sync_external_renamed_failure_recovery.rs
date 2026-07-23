@@ -20,6 +20,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -60,9 +62,12 @@ fn removed(relative_path: &str, fs_event_id: i64) -> ExternalEvent {
 
 fn sync_created_file(repo: &Path, relative_path: &str, bytes: &[u8], fs_event_id: i64) -> i64 {
     write_repo_file(repo, relative_path, bytes);
-    let result =
-        sync_external_changes(path_string(repo), vec![created(relative_path, fs_event_id)])
-            .expect("sync external created file");
+    let result = sync_external_changes(
+        path_string(repo),
+        vec![created(relative_path, fs_event_id)],
+        "en".to_owned(),
+    )
+    .expect("sync external created file");
     assert_eq!(result.detected_creates, 1);
     file_id_for_path(repo, relative_path)
 }
@@ -184,6 +189,7 @@ fn sync_external_renamed_failure_recovery_replays_after_missing_target_without_p
             renamed("docs/first-renamed.pdf", 3),
             renamed("docs/second-renamed.pdf", 4),
         ],
+        "en".to_owned(),
     );
 
     assert!(matches!(failed, Err(CoreError::FileNotFound { .. })));
@@ -211,6 +217,7 @@ fn sync_external_renamed_failure_recovery_replays_after_missing_target_without_p
             renamed("docs/first-renamed.pdf", 3),
             renamed("docs/second-renamed.pdf", 4),
         ],
+        "en".to_owned(),
     )
     .expect("replay repaired rename batch");
 
@@ -250,6 +257,7 @@ fn sync_external_renamed_failure_recovery_db_update_failure_rolls_back_row_log_a
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/renamed.pdf", 11)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
@@ -284,6 +292,7 @@ fn sync_external_renamed_failure_recovery_replay_refreshes_source_category_overv
     let failed = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("aaa/original.pdf", 31)],
+        "en".to_owned(),
     );
 
     assert!(matches!(failed, Err(CoreError::Io { .. })));
@@ -301,6 +310,7 @@ fn sync_external_renamed_failure_recovery_replay_refreshes_source_category_overv
     let replayed = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("aaa/original.pdf", 31)],
+        "en".to_owned(),
     )
     .expect("replay rename after overview output recovers");
 
@@ -318,6 +328,7 @@ fn sync_external_renamed_failure_recovery_replay_refreshes_source_category_overv
     let removed = sync_external_changes(
         path_string(repo.path()),
         vec![removed("aaa/original.pdf", 32)],
+        "en".to_owned(),
     )
     .expect("process the later removal after replay advances the cursor");
     assert_eq!(removed.detected_deletes, 1);
@@ -339,6 +350,7 @@ fn sync_external_renamed_failure_recovery_replays_legacy_log_without_target_file
     let failed = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("aaa/legacy.pdf", 41)],
+        "en".to_owned(),
     );
     assert!(matches!(failed, Err(CoreError::Io { .. })));
     assert_eq!(fs_cursor(repo.path()), Some(40));
@@ -351,6 +363,7 @@ fn sync_external_renamed_failure_recovery_replays_legacy_log_without_target_file
     let replayed = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("aaa/legacy.pdf", 41)],
+        "en".to_owned(),
     )
     .expect("replay legacy rename after overview output recovers");
 
@@ -393,6 +406,7 @@ fn sync_external_renamed_failure_recovery_permission_denied_keeps_db_cursor_and_
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![renamed("docs/renamed.pdf", 21)],
+        "en".to_owned(),
     );
 
     fs::set_permissions(&renamed_path, original_permissions).expect("restore readable permissions");

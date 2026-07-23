@@ -23,6 +23,8 @@ fn create_empty_options() -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output: OverviewOutput::GeneratedOnly,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -51,6 +53,7 @@ fn copied_options_with_strategy(filename: &str, strategy: DuplicateStrategy) -> 
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: strategy,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -301,7 +304,12 @@ fn resolve_name_conflict_rename_exhaustion_returns_conflict_without_side_effects
     let conflict_dir = repo.path().join("finance");
     fill_numbered_conflicts(&conflict_dir, "same.pdf", "existing");
 
-    let result = rename_file(path_string(repo.path()), entry.id, "same.pdf".to_owned());
+    let result = rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     assert!(matches!(result, Err(CoreError::Conflict { .. })));
 

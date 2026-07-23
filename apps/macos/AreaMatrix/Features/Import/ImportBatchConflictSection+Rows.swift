@@ -62,7 +62,7 @@ extension ImportBatchConflictSection {
     ) -> some View {
         Picker(title, selection: selection) {
             ForEach(strategies, id: \.self) { strategy in
-                Text(strategy.title).tag(strategy)
+                Text(localizer.resolve(strategy.titleMessage)).tag(strategy)
             }
         }
         .frame(maxWidth: 240)

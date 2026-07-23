@@ -1,6 +1,7 @@
 //! Generated overview support for repository summaries.
 
 use std::{
+    collections::BTreeMap,
     fs::{self, OpenOptions},
     io::{self, Write},
     path::Path,
@@ -8,7 +9,6 @@ use std::{
 
 use self::atomic_write::{write_plans_with_rollback, WritePlan};
 use crate::{
-    config,
     db::{self, OverviewChangeRow, OverviewFileRow, OverviewNodeSummary},
     CoreError, CoreResult, FileEntry, OverviewOutput,
 };
@@ -40,35 +40,61 @@ pub(crate) fn write_root_areamatrix_file(repo_path: &Path, locale: &str) -> Core
     )
 }
 
-pub(crate) fn regenerate_after_import(repo: &Path, entry: &FileEntry) -> CoreResult<()> {
-    regenerate_for_node(repo, &entry.category)
+pub(crate) fn regenerate_after_import(
+    repo: &Path,
+    entry: &FileEntry,
+    content_locale: &str,
+) -> CoreResult<()> {
+    regenerate_for_node(repo, &entry.category, content_locale)
 }
 
-pub(crate) fn regenerate_for_node(repo: &Path, node_slug: &str) -> CoreResult<()> {
-    validate_node_slug(node_slug)?;
+pub(crate) fn regenerate_for_node(
+    repo: &Path,
+    node_slug: &str,
+    content_locale: &str,
+) -> CoreResult<()> {
+    let node_locales = BTreeMap::from([(node_slug.to_owned(), content_locale.to_owned())]);
+    regenerate_external_sync_overviews(repo, &node_locales, content_locale)
+}
+
+pub(crate) fn regenerate_external_sync_overviews(
+    repo: &Path,
+    node_locales: &BTreeMap<String, String>,
+    root_locale: &str,
+) -> CoreResult<()> {
+    if node_locales.is_empty() {
+        return Ok(());
+    }
     let config = load_config(repo)?;
-    let locale = config::resolve_content_locale(&config.locale);
-    let files = db::list_overview_node_files(repo, node_slug, NODE_OVERVIEW_LIMIT)?;
-    let recent =
-        db::list_overview_recent_changes(repo, Some(node_slug), NODE_RECENT_DAYS, RECENT_LIMIT)?;
-    let summaries = db::list_overview_node_summaries(repo)?;
-    let root_recent = db::list_overview_recent_changes(repo, None, ROOT_RECENT_DAYS, RECENT_LIMIT)?;
     let generated_dir = repo.join(GENERATED_DIR);
-    let managed = root_managed_block(locale, &summaries, &root_recent);
-    let mut plans = vec![
-        WritePlan::new(
+    let mut plans = Vec::with_capacity(node_locales.len() + 2);
+    for (node_slug, content_locale) in node_locales {
+        validate_node_slug(node_slug)?;
+        let locale = crate::config::validate_content_locale(content_locale)?;
+        let files = db::list_overview_node_files(repo, node_slug, NODE_OVERVIEW_LIMIT)?;
+        let recent = db::list_overview_recent_changes(
+            repo,
+            Some(node_slug),
+            NODE_RECENT_DAYS,
+            RECENT_LIMIT,
+        )?;
+        plans.push(WritePlan::new(
             generated_dir.join("nodes").join(format!("{node_slug}.md")),
             node_document(node_slug, locale, &files, &recent),
-        ),
-        WritePlan::new(
-            generated_dir.join("root.md"),
-            root_document(locale, &summaries, &root_recent),
-        ),
-    ];
+        ));
+    }
+    let root_locale = crate::config::validate_content_locale(root_locale)?;
+    let summaries = db::list_overview_node_summaries(repo)?;
+    let root_recent = db::list_overview_recent_changes(repo, None, ROOT_RECENT_DAYS, RECENT_LIMIT)?;
+    let managed = root_managed_block(root_locale, &summaries, &root_recent);
+    plans.push(WritePlan::new(
+        generated_dir.join("root.md"),
+        root_document(root_locale, &summaries, &root_recent),
+    ));
     if config.overview_output == OverviewOutput::RootAreaMatrixFile {
         plans.push(WritePlan::new(
             repo.join("AREAMATRIX.md"),
-            root_entry_content(repo, locale, &managed)?,
+            root_entry_content(repo, root_locale, &managed)?,
         ));
     }
     write_plans_with_rollback(&plans)

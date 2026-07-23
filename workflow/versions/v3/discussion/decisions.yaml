@@ -1,0 +1,114 @@
+version: v3
+status: ready
+allow_changes: true
+exact_docs:
+  - docs/adr/0008-naming-and-i18n.md
+  - docs/architecture/macos-frontend-architecture.md
+  - docs/architecture/data-model.md
+  - docs/architecture/migration.md
+  - docs/architecture/source-of-truth.md
+  - docs/architecture/transactional-import.md
+  - docs/architecture/fs-watcher.md
+  - docs/architecture/ffi-design.md
+  - docs/product/overview.md
+  - docs/product/product-surfaces.md
+  - docs/ux/first-launch.md
+  - docs/ux/settings-panel.md
+  - docs/ux/classifier-calibration.md
+  - docs/user-guide/settings.md
+  - docs/user-guide/ai-features-and-privacy.md
+  - docs/modules/repo-init.md
+  - docs/modules/classify.md
+  - docs/modules/tree-scan.md
+  - docs/modules/overview-gen.md
+  - docs/modules/repo-scan.md
+  - docs/modules/repair.md
+  - docs/api/classifier-yaml.md
+  - docs/api/core-api.md
+  - docs/development/coding-standards.md
+  - docs/development/testing.md
+  - docs/development/ci-governance.md
+decisions:
+  - id: language-domains
+    status: accepted
+    summary: Keep interface preference, repository policy, operation content locale, region formatting, and verbatim values as separate typed domains.
+  - id: interface-selection
+    status: accepted
+    summary: App language is device-local system, Simplified Chinese, or English; Welcome cycles without a menu and General commits immediately.
+  - id: system-resolution
+    status: accepted
+    summary: Resolve only preferred-language item one; zh-Hans/zh-CN/zh-SG map to zh-Hans, en-* maps to en, all other first items map to en.
+  - id: content-selection
+    status: accepted
+    summary: Repository policy is follow-interface, Simplified Chinese, or English; new repositories choose it before first generation and default to follow-interface.
+  - id: multi-window-state
+    status: accepted
+    summary: Multiple windows are supported; interface changes broadcast, repository drafts remain local, and stale saves fail with revision CAS conflict.
+  - id: settings-commit-gates
+    status: accepted
+    summary: Device interface preference is immediate; repository/classifier drafts use Save, Discard, and Cancel gates with field patches.
+  - id: immediate-ui-refresh
+    status: accepted
+    summary: Application-owned UI re-resolves immediately without resetting route, sheet, focus, scrolling, drafts, or business state; stable IDs drive tree reprojection.
+  - id: generated-content-boundary
+    status: accepted
+    summary: Content locale controls built-in labels and future generated content; user-authored values and technical identifiers remain verbatim.
+  - id: existing-output
+    status: accepted
+    summary: Language changes never rewrite existing output; explicit full overview regeneration is recoverable all-old-or-all-new and records provenance.
+  - id: managed-root-file
+    status: accepted
+    summary: New AREAMATRIX.md app-owned scaffold is inside the managed block; existing outside-block text is user-owned and immutable to regeneration.
+  - id: classifier-editor
+    status: accepted
+    summary: Classifier editor exposes Simplified Chinese and English segments, patches only dirty locale entries atomically, requires explicit alias canonicalization, and never auto-translates.
+  - id: invalid-classifier
+    status: accepted
+    summary: Missing, unreadable, or invalid classifier YAML yields slug-based degraded read-only browsing with persistent error; no silent embedded fallback; explicit validate/restore is the recovery path.
+  - id: unsupported-repository-locale
+    status: accepted
+    summary: Unknown non-empty policy remains visible and browsable but blocks normal mutation and generation; only explicit canonical policy save and dedicated recovery paths may write.
+  - id: core-locale-contract
+    status: accepted
+    summary: Core has no mutable process-global interface locale; every generation-capable API receives a concrete operation locale and binding contract v2 removes the old setter.
+  - id: operation-snapshot
+    status: accepted
+    summary: Durable operation context is persisted before first side effect/remote call; new attempts recapture, continuation/resume/replay/same sync window/existing automatic fallback reuse.
+  - id: ai-provenance
+    status: accepted
+    summary: Persistable AI natural language uses frozen content locale; generated/user ownership and operation/provider/model provenance are stored, and user-owned replacement needs confirmation.
+  - id: legacy-receipt-recovery
+    status: accepted
+    summary: Legacy NULL receipt locale requires a repo/cursor/exact-set recovery token and explicit concrete locale selection; no implicit claim or current-setting guess.
+  - id: schema-v3-safety
+    status: accepted
+    summary: Schema v3 uses immediate transactional migration, fresh numbered non-overwriting pre-v3 backups, locale CHECK/triggers, integrity checks, and v2-preserving rollback.
+  - id: repair-separation
+    status: accepted
+    summary: Metadata repair, filesystem reindex, and overview regeneration are separate APIs, confirmations, sessions, and rollback units.
+  - id: platform-boundary
+    status: accepted
+    summary: OS chrome follows macOS; app-injected panel copy resolves at open and freezes; raw provider/system diagnostics remain verbatim behind technical details.
+  - id: provider-scope
+    status: accepted
+    summary: v3 does not introduce automatic provider failover; if an existing flow falls back automatically, it reuses the same operation locale.
+  - id: validation-contract
+    status: accepted
+    summary: Catalog parity, source checks, Core/UDL alignment, migration/recovery tests, file-safety evidence, binding verification, and real fixture-only macOS UI smoke are required.
+open_questions: []
+blockers: []
+risk_boundaries:
+  - Do not write v3 execution or historical v1 execution artifacts.
+  - Do not move, rename, delete, overwrite, or translate user files or user-authored content.
+  - Generated output remains under .areamatrix/generated except an explicitly enabled AREAMATRIX.md managed block; README.md is never modified.
+  - Unknown policy and invalid classifier states fail closed for normal writes and generation.
+  - Remote AI receives no additional user data because of locale propagation.
+  - Update docs/api/core-api.md before UDL and regenerate bindings; never hand-edit generated bindings.
+next_layers:
+  middle-layer: ready
+  changes: ready
+  plans: ready
+  drafts: ready
+  queue: ready
+  promotion: blocked
+  execution: blocked

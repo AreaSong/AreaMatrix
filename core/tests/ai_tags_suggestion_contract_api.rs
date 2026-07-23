@@ -29,6 +29,7 @@ fn request() -> AiTagSuggestionRequest {
         file_id: 42,
         candidate_tags: vec!["finance".to_owned(), "invoice".to_owned()],
         privacy_policy_ref: Some("default-remote-gate".to_owned()),
+        content_locale: area_matrix_core::ContentLocale::ZhHans,
     }
 }
 

@@ -45,21 +45,42 @@ enum AboutExternalLink: String, CaseIterable, Equatable, Identifiable {
 }
 
 struct AboutSettingsError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
     var copyableDetail: String
 }
 
 struct AboutSettingsVersionInfo: Equatable {
-    var appVersion: String
-    var coreVersion: String
-    var schemaVersion: String
+    private var appVersionValue: String?
+    private var coreVersionValue: String?
+    private var schemaVersionValue: String?
+
+    var appVersion: String {
+        get { appVersionValue ?? L10n.string("Unknown") }
+        set { appVersionValue = newValue }
+    }
+
+    var coreVersion: String {
+        get { coreVersionValue ?? L10n.string("Unknown") }
+        set { coreVersionValue = newValue }
+    }
+
+    var schemaVersion: String {
+        get { schemaVersionValue ?? L10n.string("Unknown") }
+        set { schemaVersionValue = newValue }
+    }
+
+    init(appVersion: String?, coreVersion: String?, schemaVersion: String?) {
+        appVersionValue = appVersion
+        coreVersionValue = coreVersion
+        schemaVersionValue = schemaVersion
+    }
 
     static var unknown: AboutSettingsVersionInfo {
         AboutSettingsVersionInfo(
-            appVersion: L10n.string("Unknown"),
-            coreVersion: L10n.string("Unknown"),
-            schemaVersion: L10n.string("Unknown")
+            appVersion: nil,
+            coreVersion: nil,
+            schemaVersion: nil
         )
     }
 }
@@ -94,7 +115,7 @@ enum AboutSettingsDiagnosticsState: Equatable {
 }
 
 enum AboutSettingsActionFeedback: Equatable {
-    case success(String), failed(AboutSettingsError)
+    case success(LocalizedMessage), failed(AboutSettingsError)
 }
 
 protocol AboutExternalLinkOpening {
@@ -125,8 +146,8 @@ protocol AboutDiagnosticsExporting: Sendable {
 
 @MainActor
 final class AboutSettingsModel: ObservableObject {
-    private static var coreErrorRecoveryAction: String {
-        L10n.string("Collect diagnostics...")
+    private static var coreErrorRecoveryAction: LocalizedMessage {
+        L10n.message("Collect diagnostics...")
     }
 
     @Published private(set) var isLoadingVersionInfo = false
@@ -193,22 +214,22 @@ final class AboutSettingsModel: ObservableObject {
 
         var info = AboutSettingsVersionInfo(
             appVersion: appVersionReader.appVersion(),
-            coreVersion: L10n.string("Unknown"),
-            schemaVersion: L10n.string("Unknown")
+            coreVersion: nil,
+            schemaVersion: nil
         )
         var failures: [AboutSettingsError] = []
 
         do {
             info.coreVersion = try await coreVersionReader.coreVersion()
         } catch {
-            await failures.append(mappedError(for: error, fallbackMessage: L10n.string("Core version unavailable")))
+            await failures.append(mappedError(for: error, fallbackMessage: L10n.message("Core version unavailable")))
         }
 
         do {
             let metadata = try await metadataReader.metadata(repoPath: repoPath)
             info.schemaVersion = "v\(metadata.schemaVersion)"
         } catch {
-            await failures.append(mappedError(for: error, fallbackMessage: L10n.string("Schema version unavailable")))
+            await failures.append(mappedError(for: error, fallbackMessage: L10n.message("Schema version unavailable")))
         }
 
         versionInfo = info
@@ -229,12 +250,12 @@ final class AboutSettingsModel: ObservableObject {
     func openExternalLink(_ link: AboutExternalLink) {
         do {
             let openedURL = try externalLinkOpener.open(link: link)
-            actionFeedback = .success(L10n.format("settings.about.linkOpened", link.title))
+            actionFeedback = .success(L10n.message("settings.about.linkOpened", arguments: [.string(link.title)]))
             _ = openedURL
         } catch {
             setFailure(AboutSettingsError(
-                message: L10n.format("settings.about.linkOpenFailed", link.title),
-                recovery: L10n.string("Copy the URL and open it in your browser."),
+                message: L10n.message("settings.about.linkOpenFailed", arguments: [.string(link.title)]),
+                recovery: L10n.message("Copy the URL and open it in your browser."),
                 copyableDetail: link.urlString
             ))
         }
@@ -247,11 +268,11 @@ final class AboutSettingsModel: ObservableObject {
     func openLogs() {
         do {
             let openedPath = try logsOpener.openLogs(repoPath: repoPath)
-            actionFeedback = .success(L10n.format("Logs opened: %@", openedPath))
+            actionFeedback = .success(L10n.message("Logs opened: %@", arguments: [.string(openedPath)]))
         } catch {
             setFailure(AboutSettingsError(
-                message: L10n.string("Open logs failed"),
-                recovery: L10n.string("Copy the logs path and open it from Finder or Console."),
+                message: L10n.message("Open logs failed"),
+                recovery: L10n.message("Copy the logs path and open it from Finder or Console."),
                 copyableDetail: logsPath
             ))
         }
@@ -283,17 +304,17 @@ final class AboutSettingsModel: ObservableObject {
         do {
             let context = AboutDiagnosticsExportContext(
                 versionInfo: versionInfo,
-                versionIssue: versionError?.message
+                versionIssue: versionError.map { L10n.resolve($0.message) }
             )
             let snapshot = try await diagnosticsExporter.exportDiagnostics(context: context)
             guard diagnosticsGeneration.isCurrent(generation) else { return }
             diagnosticsState = .collected(snapshot)
-            actionFeedback = .success(L10n.string("Diagnostics collected."))
+            actionFeedback = .success(L10n.message("Diagnostics collected."))
         } catch {
             guard diagnosticsGeneration.isCurrent(generation) else { return }
             let mapped = await mappedError(
                 for: error,
-                fallbackMessage: L10n.string("Diagnostics could not be exported")
+                fallbackMessage: L10n.message("Diagnostics could not be exported")
             )
             diagnosticsState = .failed(mapped)
             accessibilityAnnouncer.announce(mapped.message)
@@ -303,11 +324,11 @@ final class AboutSettingsModel: ObservableObject {
     func revealDiagnostics(_ snapshot: AboutDiagnosticsExportSnapshot) {
         do {
             try diagnosticsRevealer.revealDiagnostics(at: snapshot.exportPath)
-            actionFeedback = .success(L10n.string("Diagnostics revealed in Finder."))
+            actionFeedback = .success(L10n.message("Diagnostics revealed in Finder."))
         } catch {
             setFailure(AboutSettingsError(
-                message: L10n.string("Diagnostics could not be revealed"),
-                recovery: L10n.string("Copy the diagnostics path and open it from Finder."),
+                message: L10n.message("Diagnostics could not be revealed"),
+                recovery: L10n.message("Copy the diagnostics path and open it from Finder."),
                 copyableDetail: snapshot.exportPath
             ))
         }
@@ -324,11 +345,11 @@ final class AboutSettingsModel: ObservableObject {
     private func copyText(_ value: String) {
         do {
             try stringCopier.copy(value)
-            actionFeedback = .success(L10n.string("Copied."))
+            actionFeedback = .success(L10n.message("Copied."))
         } catch {
             setFailure(AboutSettingsError(
-                message: L10n.string("Copy failed"),
-                recovery: L10n.string("Select the visible text and copy it manually."),
+                message: L10n.message("Copy failed"),
+                recovery: L10n.message("Select the visible text and copy it manually."),
                 copyableDetail: value
             ))
         }
@@ -339,7 +360,7 @@ final class AboutSettingsModel: ObservableObject {
         accessibilityAnnouncer.announce(error.message)
     }
 
-    private func mappedError(for error: Error, fallbackMessage: String) async -> AboutSettingsError {
+    private func mappedError(for error: Error, fallbackMessage: LocalizedMessage) async -> AboutSettingsError {
         if let display = await errorMapper.mapCoreErrorDisplayIfPresent(error) {
             return AboutSettingsError(
                 message: fallbackMessage,
@@ -350,7 +371,10 @@ final class AboutSettingsModel: ObservableObject {
 
         return AboutSettingsError(
             message: fallbackMessage,
-            recovery: error.localizedDescription,
+            recovery: L10n.message(
+                "Unexpected error. Retry or collect diagnostics.",
+                technicalDetail: error.localizedDescription
+            ),
             copyableDetail: error.localizedDescription
         )
     }
@@ -360,9 +384,11 @@ final class AboutSettingsModel: ObservableObject {
         guard failures.count > 1 else { return first }
 
         return AboutSettingsError(
-            message: L10n.string("Some version values are unavailable"),
-            recovery: L10n.string("Collect diagnostics if this persists."),
-            copyableDetail: failures.map { "\($0.message): \($0.copyableDetail)" }.joined(separator: "\n")
+            message: L10n.message("Some version values are unavailable"),
+            recovery: L10n.message("Collect diagnostics if this persists."),
+            copyableDetail: failures.map {
+                "\(L10n.resolve($0.message)): \($0.copyableDetail)"
+            }.joined(separator: "\n")
         )
     }
 }

@@ -44,7 +44,10 @@ pub(crate) fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResu
     }
 }
 
-pub(crate) fn initialize_metadata_for_repair(repo_path: &str) -> CoreResult<()> {
+pub(crate) fn initialize_metadata_for_repair(
+    repo_path: &str,
+    repository_locale_policy: &str,
+) -> CoreResult<()> {
     let repo = PathBuf::from(repo_path);
     let validation = repo_path::validate_repo_path(repo_path.to_owned())?;
     if !validation.exists || !validation.is_directory {
@@ -61,14 +64,9 @@ pub(crate) fn initialize_metadata_for_repair(repo_path: &str) -> CoreResult<()> 
         return Err(CoreError::config("configuration error"));
     }
 
-    let options = RepoInitOptions {
-        mode: RepoInitMode::AdoptExisting,
-        create_default_categories: false,
-        overview_output: OverviewOutput::GeneratedOnly,
-    };
     let init_dir = repo.join(format!("{INIT_DIR_PREFIX}{}", Uuid::new_v4()));
     let mut rollback = InitRollback::new(repo.clone(), init_dir.clone());
-    let result = create_metadata_staging(repo_path, &init_dir, &options)
+    let result = create_repair_metadata_staging(repo_path, &init_dir, repository_locale_policy)
         .and_then(|_| commit_metadata_staging(&repo, &init_dir, &mut rollback));
     if result.is_ok() {
         rollback.mark_complete();
@@ -76,6 +74,24 @@ pub(crate) fn initialize_metadata_for_repair(repo_path: &str) -> CoreResult<()> 
         rollback.rollback();
     }
     result
+}
+
+fn create_repair_metadata_staging(
+    repo_path: &str,
+    init_dir: &Path,
+    repository_locale_policy: &str,
+) -> CoreResult<()> {
+    fs::create_dir(init_dir).map_err(map_io_error)?;
+    fs::create_dir(init_dir.join("staging")).map_err(map_io_error)?;
+    fs::create_dir(init_dir.join("archives")).map_err(map_io_error)?;
+    fs::create_dir(init_dir.join("generated")).map_err(map_io_error)?;
+    write_new_file(&init_dir.join("classifier.yaml"), DEFAULT_CLASSIFIER_YAML)?;
+    write_new_file(&init_dir.join("ignore.yaml"), DEFAULT_IGNORE_YAML)?;
+
+    let mut config =
+        config::default_repo_config(repo_path.to_owned(), OverviewOutput::GeneratedOnly);
+    config.locale = repository_locale_policy.to_owned();
+    db::initialize_repository_db(&init_dir.join("index.db"), &config)
 }
 
 fn init_create_empty_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()> {
@@ -124,7 +140,7 @@ fn init_create_empty_inner(
         create_default_category_dirs(repo, rollback)?;
     }
     if config.overview_output == OverviewOutput::RootAreaMatrixFile {
-        overview::write_root_areamatrix_file(repo, config::resolve_content_locale(&config.locale))?;
+        overview::write_root_areamatrix_file(repo, options.content_locale.as_str())?;
         rollback.mark_root_entry_created();
     }
 
@@ -159,11 +175,12 @@ fn create_metadata_staging(
     write_new_file(&init_dir.join("classifier.yaml"), DEFAULT_CLASSIFIER_YAML)?;
     write_new_file(&init_dir.join("ignore.yaml"), DEFAULT_IGNORE_YAML)?;
 
-    let config = config::default_repo_config(repo_path.to_owned(), options.overview_output.clone());
+    let mut config = config::default_repo_config(repo_path.to_owned(), options.overview_output.clone());
+    config.locale = options.locale_policy.as_str().to_owned();
     db::initialize_repository_db(&init_dir.join("index.db"), &config)?;
     overview::write_generated_root(
         &init_dir.join("generated"),
-        config::resolve_content_locale(&config.locale),
+        options.content_locale.as_str(),
     )?;
     Ok(config)
 }

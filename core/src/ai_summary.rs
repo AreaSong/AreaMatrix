@@ -4,7 +4,7 @@ use std::path::{Component, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult};
+use crate::{ContentLocale, CoreError, CoreResult};
 
 mod call_log;
 mod context;
@@ -106,6 +106,8 @@ pub struct AiSummaryGenerationRequest {
     pub privacy_policy_ref: Option<String>,
     /// Whether this request may replace an existing draft after confirmation.
     pub regenerate_existing: bool,
+    /// Resolved content locale frozen when generation starts.
+    pub content_locale: ContentLocale,
 }
 
 /// AI summary draft returned before any durable summary write.

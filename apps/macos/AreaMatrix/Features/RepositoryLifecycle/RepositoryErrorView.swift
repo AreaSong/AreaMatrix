@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MainRepoErrorView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let repoPath: String
     let mapping: CoreErrorMappingSnapshot?
     let validation: RepoPathValidationSnapshot?
@@ -81,11 +82,11 @@ struct MainRepoErrorView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label(presentation.title, systemImage: "exclamationmark.triangle")
+            Label(localizer.resolve(presentation.title), systemImage: "exclamationmark.triangle")
                 .font(.title.weight(.semibold))
                 .foregroundStyle(AreaMatrixTheme.Colors.coral)
                 .accessibilityAddTraits(.isHeader)
-            Text(presentation.message)
+            Text(localizer.resolve(presentation.message))
                 .font(.body)
                 .foregroundStyle(.secondary)
             Text("This error does not mean your files were deleted.")
@@ -119,7 +120,7 @@ struct MainRepoErrorView: View {
             if let validation {
                 Text(L10n.format(
                     "repository.lastValidationInitialized",
-                    L10n.string(validation.isInitialized ? "yes" : "no")
+                    validation.isInitialized ? L10n.string("Yes") : L10n.string("No")
                 ))
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -186,7 +187,7 @@ struct MainRepoErrorView: View {
             if isRetrying {
                 ProgressView()
                     .controlSize(.small)
-                    .accessibilityLabel("Retrying repository validation")
+                    .accessibilityLabel(L10n.string("Retrying repository validation"))
             }
         }
     }
@@ -237,7 +238,7 @@ struct MainRepoErrorView: View {
     }
 
     private var primaryActionTitle: String {
-        isRetrying ? presentation.runningActionTitle : presentation.primaryActionTitle
+        localizer.resolve(isRetrying ? presentation.runningActionTitle : presentation.primaryActionTitle)
     }
 
     private var primaryAction: () -> Void {

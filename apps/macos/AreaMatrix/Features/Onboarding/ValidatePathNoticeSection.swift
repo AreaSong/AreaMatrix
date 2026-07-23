@@ -12,11 +12,12 @@ enum ValidatePathNoticeRules {
 }
 
 struct ValidatePathNotices: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     let displayedPath: String
     let validation: RepoPathValidationSnapshot?
     let existingRepositoryMetadata: ExistingRepositoryMetadataSnapshot?
     let latestScanSession: ScanSessionSnapshot?
-    let errorMessage: String?
+    let errorMessage: LocalizedMessage?
     let errorMapping: CoreErrorMappingSnapshot?
     let isValidating: Bool
     let isICloudRiskAccepted: Bool
@@ -34,7 +35,7 @@ struct ValidatePathNotices: View {
                     title: L10n.string("onboarding.validate.pathUnavailable"),
                     image: "exclamationmark.triangle",
                     tint: .red,
-                    lines: [errorMessage]
+                    lines: [localizer.resolve(errorMessage)]
                 )
             }
             if validation?.isInitialized == true {

@@ -35,6 +35,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository for watcher validation");
@@ -225,7 +227,7 @@ fn assert_core_api_udl_and_rust_alignment() {
 
 fn assert_core_api_and_udl_alignment() {
     for fragment in [
-        "SyncResult sync_external_changes(string repo_path, sequence<ExternalEvent> events);",
+        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, string content_locale\n    );",
         "i64? get_fs_event_cursor(string repo_path);",
         "void set_fs_event_cursor(string repo_path, i64 last_event_id);",
         "PlatformWatcherSnapshot record_watcher_health(",

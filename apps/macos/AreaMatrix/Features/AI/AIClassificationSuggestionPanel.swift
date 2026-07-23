@@ -141,6 +141,7 @@ private struct AIClassificationCallLogRoute: Identifiable, Equatable {
 }
 
 struct AIClassificationSuggestionPanel: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @ObservedObject var model: AIClassificationSuggestionPanelModel
     var fileName: String
     var currentPath: String
@@ -239,10 +240,10 @@ struct AIClassificationSuggestionPanel: View {
 
     private func failureContent(_ failure: AISettingsError) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(failure.message)
+            Text(localizer.resolve(failure.message))
             Text(failure.detail)
                 .foregroundStyle(.secondary)
-            Text(failure.recovery)
+            Text(localizer.resolve(failure.recovery))
                 .font(.caption)
         }
         .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-error")

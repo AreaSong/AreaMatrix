@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ClassifierSettingsPane: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: ClassifierSettingsModel
     @State private var showingRevertConfirmation = false
 }
@@ -82,8 +83,8 @@ extension ClassifierSettingsPane {
     private func loadErrorContent(_ error: ClassifierSettingsLoadError) -> some View {
         SettingsPageErrorContent(
             title: L10n.string("settings.error.loadClassifier"),
-            message: error.message,
-            recovery: error.recovery
+            message: localizer.resolve(error.message),
+            recovery: localizer.resolve(error.recovery)
         ) {
             Button("Retry status") {
                 Task {

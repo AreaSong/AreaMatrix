@@ -66,9 +66,14 @@ extension CoreBridge: CoreExternalChangesSyncing {
         repoPath: String,
         events: [MainExternalCreatedFileEvent]
     ) async throws -> SyncResultSnapshot {
+        let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
         let coreEvents = events.map(ExternalEvent.init(mainEvent:))
         let result = try await Task.detached(priority: .userInitiated) {
-            try syncCoreExternalChanges(repoPath: repoPath, events: coreEvents)
+            try syncCoreExternalChanges(
+                repoPath: repoPath,
+                events: coreEvents,
+                contentLocale: contentLocale
+            )
         }.value
         return SyncResultSnapshot(coreResult: result)
     }
@@ -108,8 +113,16 @@ extension SyncResultSnapshot {
     }
 }
 
-private func syncCoreExternalChanges(repoPath: String, events: [ExternalEvent]) throws -> SyncResult {
-    try syncExternalChanges(repoPath: repoPath, events: events)
+private func syncCoreExternalChanges(
+    repoPath: String,
+    events: [ExternalEvent],
+    contentLocale: String
+) throws -> SyncResult {
+    try syncExternalChanges(
+        repoPath: repoPath,
+        events: events,
+        contentLocale: contentLocale
+    )
 }
 
 private func getCoreFSEventCursor(repoPath: String) throws -> Int64? {

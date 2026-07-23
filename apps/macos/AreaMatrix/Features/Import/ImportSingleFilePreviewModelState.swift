@@ -16,8 +16,8 @@ enum ImportSingleFilePreviewStatus: Equatable {
     case idle
     case loading
     case ready
-    case failed(String)
-    case unsupported(String)
+    case failed(AppDisplayText)
+    case unsupported(AppDisplayText)
 
     var isLoading: Bool {
         if case .loading = self { return true }
@@ -25,13 +25,17 @@ enum ImportSingleFilePreviewStatus: Equatable {
     }
 
     var message: String? {
+        displayText.map(L10n.resolve)
+    }
+
+    var displayText: AppDisplayText? {
         switch self {
         case .idle:
             nil
         case .loading:
-            L10n.string("正在预览分类...")
+            L10n.display("正在预览分类...")
         case .ready:
-            L10n.string("分类预览完成")
+            L10n.display("分类预览完成")
         case let .failed(message), let .unsupported(message):
             message
         }
@@ -43,7 +47,7 @@ enum ImportSingleFileImportStatus: Equatable {
     case importing(ImportSingleFileStorageMode)
     case imported(FileEntrySnapshot)
     case failed(CoreErrorMappingSnapshot)
-    case blocked(String)
+    case blocked(AppDisplayText)
     case skippedDuplicate(String)
 
     var isImporting: Bool {
@@ -52,19 +56,23 @@ enum ImportSingleFileImportStatus: Equatable {
     }
 
     var message: String? {
+        displayText.map(L10n.resolve)
+    }
+
+    var displayText: AppDisplayText? {
         switch self {
         case .idle:
             nil
         case let .importing(mode):
-            mode.importingMessage
+            mode.importingDisplayText
         case let .imported(entry):
-            L10n.format("import.single.imported-file", entry.currentName)
+            L10n.display("import.single.imported-file", arguments: [.string(entry.currentName)])
         case let .failed(mapping):
-            mapping.userMessage
+            .localized(mapping.userMessageDescriptor)
         case let .blocked(message):
             message
         case let .skippedDuplicate(existingPath):
-            L10n.format("import.single.duplicate-skipped", existingPath)
+            L10n.display("import.single.duplicate-skipped", arguments: [.string(existingPath)])
         }
     }
 }
@@ -109,24 +117,32 @@ enum ImportSingleFileStorageMode: String, CaseIterable, Codable, Equatable, Iden
     }
 
     var importingMessage: String {
+        L10n.resolve(importingDisplayText)
+    }
+
+    var importingDisplayText: AppDisplayText {
         switch self {
         case .copy:
-            L10n.string("正在复制导入...")
+            L10n.display("正在复制导入...")
         case .move:
-            L10n.string("正在移动导入...")
+            L10n.display("正在移动导入...")
         case .indexOnly:
-            L10n.string("正在写入索引...")
+            L10n.display("正在写入索引...")
         }
     }
 
     var importingBlockingMessage: String {
+        L10n.resolve(importingBlockingDisplayText)
+    }
+
+    var importingBlockingDisplayText: AppDisplayText {
         switch self {
         case .copy:
-            L10n.string("正在复制导入")
+            L10n.display("正在复制导入")
         case .move:
-            L10n.string("正在移动导入")
+            L10n.display("正在移动导入")
         case .indexOnly:
-            L10n.string("正在写入索引")
+            L10n.display("正在写入索引")
         }
     }
 }

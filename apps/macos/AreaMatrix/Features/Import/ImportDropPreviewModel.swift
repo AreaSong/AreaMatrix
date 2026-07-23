@@ -53,7 +53,7 @@ struct ImportDropPreviewPresentation: Equatable {
     var kind: ImportEntryKind
     var itemCount: Int
     var prediction: ClassifyResultSnapshot?
-    var warning: String?
+    var warning: AppDisplayText?
     var isPredicting: Bool
 
     var headline: String {
@@ -99,7 +99,7 @@ final class ImportDropPreviewModel: ObservableObject {
             return
         }
 
-        let warning = validURLs.count == urls.count ? nil : L10n.string("Some items cannot be imported")
+        let warning = validURLs.count == urls.count ? nil : L10n.display("Some items cannot be imported")
         let kind = ImportEntryKind.resolved(for: validURLs)
         let shouldPredictCategory = target == .autoClassify
         presentation = ImportDropPreviewPresentation(
@@ -154,7 +154,7 @@ final class ImportDropPreviewModel: ObservableObject {
             kind: .singleFile,
             itemCount: 0,
             prediction: nil,
-            warning: L10n.string("Cannot import this item"),
+            warning: L10n.display("Cannot import this item"),
             isPredicting: false
         )
     }
@@ -164,7 +164,7 @@ final class ImportDropPreviewModel: ObservableObject {
         kind: ImportEntryKind,
         count: Int,
         prediction: ClassifyResultSnapshot,
-        warning: String?
+        warning: AppDisplayText?
     ) -> ImportDropPreviewPresentation {
         ImportDropPreviewPresentation(
             target: target,
@@ -192,18 +192,19 @@ final class ImportDropPreviewModel: ObservableObject {
         )
     }
 
-    private static func classifyWarning(for error: Error) -> String {
+    private static func classifyWarning(for error: Error) -> AppDisplayText {
         guard let context = CoreErrorRawContextSnapshot(error) else {
-            return L10n.string("Cannot preview category")
+            return L10n.display(
+                "Cannot preview category",
+                technicalDetail: error.localizedDescription
+            )
         }
 
         switch context.kind {
-        case .config:
-            return L10n.format("import.preview.classifier-settings-invalid", context.rawContext)
-        case .classify:
-            return L10n.format("import.preview.category-unavailable", context.rawContext)
+        case .config, .classify:
+            return L10n.display("Cannot preview category", technicalDetail: context.rawContext)
         default:
-            return L10n.string("Cannot preview category")
+            return L10n.display("Cannot preview category", technicalDetail: context.rawContext)
         }
     }
 }

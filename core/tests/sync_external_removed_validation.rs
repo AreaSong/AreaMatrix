@@ -21,6 +21,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -129,9 +131,12 @@ fn sync_created_file(
     fs_event_id: i64,
 ) -> FileEntry {
     write_repo_file(repo, relative_path, bytes);
-    let result =
-        sync_external_changes(path_string(repo), vec![created(relative_path, fs_event_id)])
-            .expect("sync external created file fixture");
+    let result = sync_external_changes(
+        path_string(repo),
+        vec![created(relative_path, fs_event_id)],
+        "en".to_owned(),
+    )
+    .expect("sync external created file fixture");
     assert_eq!(result.detected_creates, 1);
     listed_files(repo, default_file_filter())
         .into_iter()
@@ -162,6 +167,7 @@ fn sync_external_removed_validation_success_hides_detail_logs_and_preserves_file
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/remove.pdf", 701)],
+        "en".to_owned(),
     )
     .expect("sync external removed event");
 
@@ -204,6 +210,7 @@ fn sync_external_removed_validation_existing_path_is_error_without_state_change(
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/present.pdf", 711)],
+        "en".to_owned(),
     );
 
     assert_eq!(result, Err(CoreError::conflict("docs/present.pdf")));
@@ -236,6 +243,7 @@ fn sync_external_removed_validation_db_failure_rolls_back_status_log_and_cursor(
     let result = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/rollback.pdf", 721)],
+        "en".to_owned(),
     );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
@@ -266,6 +274,7 @@ fn sync_external_removed_validation_coalesces_modified_signal_for_missing_path()
             removed("docs/scope.txt", 731),
             modified("docs/scope.txt", 732),
         ],
+        "en".to_owned(),
     )
     .expect("sync coalesced removed and modified signals");
 
@@ -292,6 +301,7 @@ fn sync_external_removed_validation_rejects_bad_paths_without_state() {
             kind: ExternalEventKind::Removed,
             fs_event_id: 740,
         }],
+        "en".to_owned(),
     );
 
     assert!(matches!(escaping, Err(CoreError::InvalidPath { .. })));
@@ -301,6 +311,7 @@ fn sync_external_removed_validation_rejects_bad_paths_without_state() {
     let placeholder = sync_external_changes(
         path_string(repo.path()),
         vec![removed("docs/waiting.pdf.icloud", 741)],
+        "en".to_owned(),
     );
 
     assert_eq!(

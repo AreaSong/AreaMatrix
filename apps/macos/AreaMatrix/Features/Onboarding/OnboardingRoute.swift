@@ -71,7 +71,7 @@ struct ImportResultRouteState: Equatable {
         case idle
         case confirmingPrivacy
         case exported(String)
-        case failed(String)
+        case failed(LocalizedMessage)
     }
 
     enum ItemStatus: String, Equatable, Hashable {
@@ -81,7 +81,12 @@ struct ImportResultRouteState: Equatable {
         case pending = "Pending"
 
         var displayName: String {
-            L10n.string(rawValue)
+            switch self {
+            case .imported: L10n.string("Imported")
+            case .skipped: L10n.string("Skipped")
+            case .failed: L10n.string("Failed")
+            case .pending: L10n.string("Pending")
+            }
         }
     }
 

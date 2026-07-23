@@ -23,6 +23,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -44,6 +46,7 @@ fn copied_options(filename: &str) -> ImportOptions {
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -198,8 +201,13 @@ fn resolve_name_conflict_validation_rename_keeps_existing_target_and_logs_resolu
     )
     .expect("import draft file before rename");
 
-    let renamed = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned())
-        .expect("rename draft with safe numbered resolution");
+    let renamed = rename_file(
+        path_string(repo.path()),
+        draft.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename draft with safe numbered resolution");
 
     assert_eq!(renamed.path, "finance/same_1.pdf");
     assert_eq!(renamed.current_name, "same_1.pdf");
@@ -255,6 +263,7 @@ fn resolve_name_conflict_validation_invalid_filename_does_not_change_repo() {
         path_string(repo.path()),
         existing.id,
         "bad/name.pdf".to_owned(),
+        "en".to_owned(),
     );
 
     assert!(matches!(import_result, Err(CoreError::InvalidPath { .. })));

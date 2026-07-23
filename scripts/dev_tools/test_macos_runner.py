@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,6 +18,7 @@ from scripts.dev_tools.macos import (
     _run_sandbox_fallback,
     _run_macos_tests_inner,
     _test_base_args,
+    _validate_localization_compiler_keys,
     _xcodebuild_tests_passed_before_sandbox_teardown,
     _xcode_system_content_failure,
     _xcode_test_env,
@@ -35,6 +37,68 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
+
+    def write_localization_compiler_fixture(
+        self,
+        *,
+        catalog_keys: tuple[str, ...] = ("App key",),
+        app_entries: object = None,
+        test_entries: object = None,
+    ) -> tuple[Path, Path]:
+        root = self.tmp_path / "workspace"
+        catalog = root / "apps/macos/AreaMatrix/Localizations/Localizable.xcstrings"
+        catalog.parent.mkdir(parents=True)
+        catalog.write_text(
+            json.dumps({"strings": {key: {} for key in catalog_keys}}),
+            encoding="utf-8",
+        )
+        derived = self.tmp_path / "DerivedData"
+        build_root = derived / "Build/Intermediates.noindex/AreaMatrix.build"
+        app_metadata = build_root / "Debug/AreaMatrix.build/Objects-normal/arm64/App.stringsdata"
+        app_metadata.parent.mkdir(parents=True)
+        app_metadata.write_text(
+            json.dumps({
+                "tables": {"Localizable": app_entries if app_entries is not None else [{"key": "App key"}]}
+            }),
+            encoding="utf-8",
+        )
+        if test_entries is not None:
+            test_metadata = build_root / "Debug/AreaMatrixTests.build/Objects-normal/arm64/Tests.stringsdata"
+            test_metadata.parent.mkdir(parents=True)
+            test_metadata.write_text(
+                json.dumps({"tables": {"Localizable": test_entries}}),
+                encoding="utf-8",
+            )
+        return root, derived
+
+    def test_localization_compiler_validator_accepts_matching_app_keys_and_excludes_tests(self) -> None:
+        root, derived = self.write_localization_compiler_fixture(
+            test_entries=[{"key": "Test-only key"}],
+        )
+
+        _validate_localization_compiler_keys(root, derived)
+
+    def test_localization_compiler_validator_rejects_missing_catalog_key(self) -> None:
+        root, derived = self.write_localization_compiler_fixture(
+            catalog_keys=("Other key",),
+        )
+
+        with self.assertRaises(ToolError):
+            _validate_localization_compiler_keys(root, derived)
+
+    def test_localization_compiler_validator_rejects_invalid_metadata(self) -> None:
+        root, derived = self.write_localization_compiler_fixture()
+        metadata = next((derived / "Build").rglob("*.stringsdata"))
+        metadata.write_text("{invalid", encoding="utf-8")
+
+        with self.assertRaises(ToolError):
+            _validate_localization_compiler_keys(root, derived)
+
+    def test_localization_compiler_validator_rejects_empty_app_metadata(self) -> None:
+        root, derived = self.write_localization_compiler_fixture(app_entries=[])
+
+        with self.assertRaises(ToolError):
+            _validate_localization_compiler_keys(root, derived)
 
     def test_accepts_passed_selected_suite_with_sandbox_teardown_error(self) -> None:
         log_path = self.write_log(

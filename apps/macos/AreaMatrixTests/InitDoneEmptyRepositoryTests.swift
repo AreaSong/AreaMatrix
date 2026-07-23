@@ -97,7 +97,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let opening = try await bridge.openEmptyRepository(repoPath: repoURL.path)
 
         XCTAssertEqual(opening.config.repoPath, repoURL.path)
-        XCTAssertEqual(opening.config.locale, "zh-Hans")
+        XCTAssertEqual(opening.config.locale, "system")
         XCTAssertTrue(opening.isEmpty)
         XCTAssertEqual(opening.tree.totalFileCount, 0)
         XCTAssertEqual(listedFiles, [])
@@ -160,8 +160,9 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
     @MainActor
     func testOpenInitDoneRepositoryInFinderReportsNonBlockingFailure() async {
+        let finderError = RepositoryFinderOpenError.openRejected("/tmp/adopted-repo")
         let finderOpener = RecordingRepositoryFinderOpener(
-            result: .failure(RepositoryFinderOpenError.openRejected("/tmp/adopted-repo"))
+            result: .failure(finderError)
         )
         let accessibilityAnnouncer = RecordingAccessibilityAnnouncer()
         let result = RepositoryInitializationResult(
@@ -185,8 +186,15 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
 
         finderOpener.assertRepoPaths(["/tmp/adopted-repo"])
         XCTAssertEqual(model.route, .initializationDone(result))
-        XCTAssertTrue(message.contains("Could not open the repository in Finder"))
-        accessibilityAnnouncer.assertAnnouncements([message])
+        let expected = L10n.message(
+            "onboarding.initialization.openInFinderFailed",
+            arguments: [.string(finderError.localizedDescription)],
+            technicalDetail: finderError.localizedDescription
+        )
+        XCTAssertEqual(message, expected)
+        accessibilityAnnouncer.assertAnnouncements([
+            L10n.format("onboarding.initialization.openInFinderFailed", finderError.localizedDescription)
+        ])
     }
 
     func testDefaultCoreBridgeOpensRealAdoptedRepositoryThroughLoadConfigAndTree() async throws {
@@ -201,7 +209,7 @@ final class InitDoneEmptyRepositoryTests: XCTestCase {
         let opening = try await bridge.openAdoptedRepository(repoPath: repoURL.path)
 
         XCTAssertEqual(opening.config.repoPath, repoURL.path)
-        XCTAssertEqual(opening.config.locale, "zh-Hans")
+        XCTAssertEqual(opening.config.locale, "system")
         XCTAssertFalse(opening.isEmpty)
         XCTAssertGreaterThan(opening.tree.totalFileCount, 0)
         XCTAssertEqual(try String(contentsOf: readmeURL, encoding: .utf8), "# User project\n")

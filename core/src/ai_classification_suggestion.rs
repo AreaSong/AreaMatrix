@@ -12,7 +12,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult};
+use crate::{ContentLocale, CoreError, CoreResult};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INDEX_DB_FILE: &str = "index.db";
@@ -90,6 +90,8 @@ pub struct AiCategorySuggestionRequest {
     pub context_policy: AiCategorySuggestionContextPolicy,
     /// Optional privacy policy reference used to evaluate AI input gates.
     pub privacy_policy_ref: Option<String>,
+    /// Concrete content locale snapshot captured when this generation attempt starts.
+    pub content_locale: ContentLocale,
 }
 
 /// AI classification suggestion result shown before any category write.

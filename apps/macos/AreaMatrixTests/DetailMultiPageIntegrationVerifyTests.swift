@@ -219,7 +219,7 @@ final class DetailMultiPageIntegrationVerifyTests: XCTestCase {
             repoPath: "/tmp/repo",
             relativePaths: [available.path, stale.path]
         )])
-        XCTAssertEqual(shell.toastMessage, "2 paths copied.")
+        XCTAssertEqual(shell.toastMessage, L10n.pluralMessage("main-list.paths-copied", count: 2))
         announcer.assertAnnouncements(["2 paths copied."])
     }
 }

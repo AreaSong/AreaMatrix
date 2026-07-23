@@ -35,19 +35,19 @@ enum AdvancedSettingsSaveKind: Equatable {
     case overview
     case replace
 
-    var message: String {
+    var message: LocalizedMessage {
         switch self {
         case .overview:
-            L10n.string("Could not save overview setting")
+            L10n.message("Could not save overview setting")
         case .replace:
-            L10n.string("Could not save advanced setting")
+            L10n.message("Could not save advanced setting")
         }
     }
 }
 
 struct AdvancedSettingsError: Equatable {
-    var message: String
-    var recovery: String
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
 }
 
 enum AdvancedSettingsAccessibilityID {

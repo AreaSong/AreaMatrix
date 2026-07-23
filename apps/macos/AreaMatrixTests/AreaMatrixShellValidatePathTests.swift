@@ -8,7 +8,7 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
 
         model.openLearnMore()
 
-        XCTAssertEqual(model.toastMessage, "Learn more is unavailable right now.")
+        XCTAssertEqual(model.toastMessage, L10n.message("Learn more is unavailable right now."))
         XCTAssertEqual(model.route, .loadingConfiguration)
     }
 
@@ -38,7 +38,7 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         await model.continueFromChoosePath()
 
         XCTAssertEqual(model.route, .validatePath)
-        XCTAssertEqual(model.repositoryPathError, "无访问权限")
+        XCTAssertEqual(model.repositoryPathError, L10n.message("core.error.PermissionDenied.message", fallback: "无访问权限"))
         XCTAssertFalse(model.canContinueFromValidatePath)
         XCTAssertNil(model.repositoryPathValidation)
     }
@@ -78,7 +78,7 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "AreaMatrix does not have permission to write to this location")
+        XCTAssertEqual(model.repositoryPathError, L10n.message("AreaMatrix 没有写入该位置的权限"))
         XCTAssertFalse(model.canContinueFromValidatePath)
         XCTAssertNil(model.choosePathAction)
     }
@@ -183,7 +183,7 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
             repoPath: "/tmp/repo",
             relativePaths: ["docs/a.pdf", "docs/b.pdf"]
         )])
-        XCTAssertEqual(model.toastMessage, "2 paths copied.")
+        XCTAssertEqual(model.toastMessage, L10n.pluralMessage("main-list.paths-copied", count: 2))
         announcer.assertAnnouncements(["Path copied.", "2 paths copied."])
     }
 

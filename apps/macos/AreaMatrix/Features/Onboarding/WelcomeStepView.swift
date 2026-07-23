@@ -12,7 +12,7 @@ struct WelcomeStepView: View {
     let onLearnMore: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.locale) private var locale
+    @EnvironmentObject private var localizer: AppLocalizer
     @State private var activeScene: WelcomeScene = .default
     @State private var hoverScene: WelcomeScene?
     @State private var isScanning = false
@@ -27,7 +27,8 @@ struct WelcomeStepView: View {
     @State private var mouseParallax = AreaMatrixParallax.zero
     @State private var scanTerminalLines = [
         AreaMatrixTerminalLine(
-            text: L10n.string("onboarding.welcome.terminal.waiting"),
+            message: L10n.message("onboarding.welcome.terminal.waiting"),
+            visibleCharacterCount: nil,
             colorToken: AreaMatrixTheme.Colors.tealText
         )
     ]
@@ -88,7 +89,6 @@ struct WelcomeStepView: View {
                 .animation(.areaMatrixOverlayFade, value: isScanning)
 
             welcomeContent
-                .id(locale.identifier)
                 .areaMatrixScanningContent(isScanning: isScanning)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -302,10 +302,10 @@ private extension WelcomeStepView {
 
         scanTask = Task { @MainActor in
             let logs = [
-                (L10n.string("onboarding.welcome.terminal.preparePicker"), AreaMatrixTheme.Colors.tealText),
-                (L10n.string("onboarding.welcome.terminal.loadSafety"), AreaMatrixTheme.Colors.tealText),
-                (L10n.string("onboarding.welcome.terminal.noWriteBeforeSelection"), AreaMatrixTheme.Colors.tealText),
-                (L10n.string("onboarding.welcome.terminal.requestAccess"), AreaMatrixTheme.Colors.goldText)
+                (L10n.message("onboarding.welcome.terminal.preparePicker"), AreaMatrixTheme.Colors.tealText),
+                (L10n.message("onboarding.welcome.terminal.loadSafety"), AreaMatrixTheme.Colors.tealText),
+                (L10n.message("onboarding.welcome.terminal.noWriteBeforeSelection"), AreaMatrixTheme.Colors.tealText),
+                (L10n.message("onboarding.welcome.terminal.requestAccess"), AreaMatrixTheme.Colors.goldText)
             ]
             let scenes: [WelcomeScene] = [.feat1, .feat2, .feat3, .feat4]
 
@@ -321,7 +321,7 @@ private extension WelcomeStepView {
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
             guard await typeScanLog(
-                L10n.string("onboarding.welcome.terminal.openingPicker"),
+                L10n.message("onboarding.welcome.terminal.openingPicker"),
                 colorToken: AreaMatrixTheme.Colors.goldText
             ) else { return }
             withAnimation(.areaMatrixProgressStep) {
@@ -348,12 +348,18 @@ private extension WelcomeStepView {
         }
     }
 
-    private func typeScanLog(_ text: String, colorToken: AreaMatrixColorToken) async -> Bool {
-        let line = AreaMatrixTerminalLine(text: "", colorToken: colorToken)
+    private func typeScanLog(_ message: LocalizedMessage, colorToken: AreaMatrixColorToken) async -> Bool {
+        let line = AreaMatrixTerminalLine(message: message, visibleCharacterCount: 0, colorToken: colorToken)
         scanCursorColorToken = colorToken
         scanTerminalLines.appendTerminalLine(line)
-        return await AreaMatrixTerminalLogTypewriter.type(text) { character in
-            scanTerminalLines.appendTerminalCharacter(character, toLineWithID: line.id)
+        let completed = await AreaMatrixTerminalLogTypewriter.type(
+            localizer.resolve(message)
+        ) { _ in
+            scanTerminalLines.revealNextTerminalCharacter(toLineWithID: line.id)
         }
+        if completed {
+            scanTerminalLines.completeTerminalLine(withID: line.id)
+        }
+        return completed
     }
 }

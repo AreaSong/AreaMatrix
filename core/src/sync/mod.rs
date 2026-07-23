@@ -21,26 +21,40 @@ use plans::{
     revalidate_planned_filesystem_state, ModifiedEventPlan,
 };
 
-use crate::{db, overview, repo_path, CoreResult, ExternalEvent, ExternalEventKind, SyncResult};
+use crate::{
+    db, overview, repo_path, ContentLocale, CoreResult, ExternalEvent, ExternalEventKind,
+    ExternalSyncLocaleRecoveryPlan, ExternalSyncLocaleRecoveryReport, SyncResult,
+};
 
 pub(crate) fn sync_external_changes(
     repo_path: String,
     events: Vec<ExternalEvent>,
+    content_locale: String,
 ) -> CoreResult<SyncResult> {
+    crate::config::validate_content_locale(&content_locale)?;
     let repo = initialized_repo_path(&repo_path)?;
+    db::ensure_repository_locale_allows_normal_mutation(&repo)?;
     let (normalized_events, max_sync_event_id) = normalize_and_coalesce_events(&repo, events)?;
     db::ensure_external_sync_receipts(&repo)?;
     let persisted_cursor = db::get_fs_event_cursor(&repo)?;
+    let normalized_events = normalized_events
+        .into_iter()
+        .filter(|event| !persisted_cursor.is_some_and(|cursor| event.fs_event_id <= cursor))
+        .collect::<Vec<_>>();
+    let receipt_keys = normalized_events
+        .iter()
+        .map(|event| db::ExternalSyncReceiptKey {
+            event_id: event.fs_event_id,
+            kind: external_event_kind_name(&event.kind).to_owned(),
+            path: event.path.clone(),
+        })
+        .collect::<Vec<_>>();
+    let persisted_receipts =
+        db::claim_external_sync_receipts(&repo, &receipt_keys, &content_locale)?;
     let mut events = Vec::new();
     let mut replayed_receipts = Vec::new();
-    for event in normalized_events {
-        if persisted_cursor.is_some_and(|cursor| event.fs_event_id <= cursor) {
-            continue;
-        }
-        let kind = external_event_kind_name(&event.kind);
-        if let Some(receipt) =
-            db::find_external_sync_receipt(&repo, event.fs_event_id, kind, &event.path)?
-        {
+    for (event, receipt) in normalized_events.into_iter().zip(persisted_receipts) {
+        if let Some(receipt) = receipt {
             replayed_receipts.push(receipt);
         } else {
             events.push(event);
@@ -51,7 +65,6 @@ pub(crate) fn sync_external_changes(
     let mut removed_rows = Vec::new();
     let mut modified_rows = Vec::new();
     let mut filesystem_expectations = Vec::new();
-    let mut affected_nodes = BTreeSet::new();
     let mut receipt_by_path = events
         .iter()
         .map(|event| {
@@ -64,6 +77,7 @@ pub(crate) fn sync_external_changes(
                     file_id: None,
                     previous_category: None,
                     current_category: None,
+                    content_locale: content_locale.clone(),
                 },
             )
         })
@@ -82,16 +96,10 @@ pub(crate) fn sync_external_changes(
     let mut rename_plans_by_target = BTreeMap::new();
     let mut renamed_file_ids = BTreeSet::new();
     let mut replayed_renamed_file_ids = BTreeSet::new();
-    for receipt in replayed_receipts {
-        if let Some(category) = receipt.previous_category {
-            affected_nodes.insert(category);
-        }
-        if let Some(category) = receipt.current_category {
-            affected_nodes.insert(category);
-        }
+    for receipt in &replayed_receipts {
         if receipt.kind == "renamed" {
             if let Some(file_id) = receipt.file_id {
-                rename_plans_by_target.insert(receipt.path, file_id);
+                rename_plans_by_target.insert(receipt.path.clone(), file_id);
                 replayed_renamed_file_ids.insert(file_id);
             }
         }
@@ -105,8 +113,6 @@ pub(crate) fn sync_external_changes(
             continue;
         }
         if let Some(mut plan) = plan_renamed_event(&repo, event)? {
-            affected_nodes.insert(category_for_relative_path(&plan.target_path));
-            affected_nodes.insert(plan.previous_category.clone());
             if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
                 receipt.file_id = Some(plan.file_id);
                 receipt.previous_category = Some(plan.previous_category.clone());
@@ -129,7 +135,6 @@ pub(crate) fn sync_external_changes(
             continue;
         }
         if let Some(node) = affected_node_for_event(&repo, event)? {
-            affected_nodes.insert(node.clone());
             if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
                 receipt.current_category = Some(node);
             }
@@ -149,7 +154,6 @@ pub(crate) fn sync_external_changes(
                     continue;
                 }
                 if let Some(mut plan) = plan_renamed_event(&repo, event)? {
-                    affected_nodes.insert(plan.previous_category.clone());
                     if let Some(receipt) = receipt_by_path.get_mut(&event.path) {
                         receipt.file_id = Some(plan.file_id);
                         receipt.previous_category = Some(plan.previous_category.clone());
@@ -223,7 +227,15 @@ pub(crate) fn sync_external_changes(
         removed_rows,
         receipts,
     )?;
-    regenerate_affected_overviews(&repo, &affected_nodes)?;
+    let receipts = db::claim_external_sync_receipts(&repo, &receipt_keys, &content_locale)?
+        .into_iter()
+        .map(|receipt| {
+            receipt.ok_or_else(|| {
+                crate::CoreError::internal("external sync receipt locale provenance missing")
+            })
+        })
+        .collect::<CoreResult<Vec<_>>>()?;
+    regenerate_affected_overviews(&repo, &receipts)?;
     if let Some(cursor) = max_sync_event_id {
         db::set_fs_event_cursor(&repo, cursor)?;
     }
@@ -235,6 +247,22 @@ pub(crate) fn sync_external_changes(
         detected_modifies: applied.detected_modifies,
         errors: Vec::new(),
     })
+}
+
+pub(crate) fn prepare_external_sync_locale_recovery(
+    repo_path: String,
+) -> CoreResult<Option<ExternalSyncLocaleRecoveryPlan>> {
+    let repo = initialized_repo_path(&repo_path)?;
+    db::prepare_external_sync_locale_recovery(&repo)
+}
+
+pub(crate) fn resolve_external_sync_locale_recovery(
+    repo_path: String,
+    recovery_token: String,
+    content_locale: ContentLocale,
+) -> CoreResult<ExternalSyncLocaleRecoveryReport> {
+    let repo = initialized_repo_path(&repo_path)?;
+    db::resolve_external_sync_locale_recovery(&repo, &recovery_token, content_locale)
 }
 
 fn external_event_kind_name(kind: &ExternalEventKind) -> &'static str {
@@ -270,11 +298,16 @@ pub(crate) fn set_fs_event_cursor(repo_path: String, last_event_id: i64) -> Core
     db::set_fs_event_cursor(&repo, last_event_id)
 }
 
-fn regenerate_affected_overviews(repo: &Path, nodes: &BTreeSet<String>) -> CoreResult<()> {
-    for node in nodes {
-        overview::regenerate_for_node(repo, node)?;
+fn regenerate_affected_overviews(
+    repo: &Path,
+    receipts: &[db::ExternalSyncReceiptRow],
+) -> CoreResult<()> {
+    let locales = db::external_sync_overview_locales(receipts)?;
+    match locales.root_locale {
+        Some(root_locale) if !locales.node_locales.is_empty() => overview::
+            regenerate_external_sync_overviews(repo, &locales.node_locales, &root_locale),
+        _ => Ok(()),
     }
-    Ok(())
 }
 
 fn initialized_repo_path(repo_path: &str) -> CoreResult<PathBuf> {

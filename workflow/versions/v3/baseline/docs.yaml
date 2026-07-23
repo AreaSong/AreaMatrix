@@ -1,0 +1,24 @@
+version: v3
+status: ready
+docs:
+  - file: 'docs/adr/0008-naming-and-i18n.md'
+    line_start: 1
+    line_end: 1
+    heading: 'ADR-0008'
+    excerpt: '# ADR-0008: 命名与国际化策略'
+    sha256: 'efcd7aa194eda146ac1f90491b702508d26adc924ac0455c90c4ab26758fcc5d'
+    source: 'changes:v3-bilingual-architecture'
+  - file: 'docs/api/core-api.md'
+    line_start: 1
+    line_end: 1
+    heading: 'Core API（UDL 接口规范）'
+    excerpt: '# Core API（UDL 接口规范）'
+    sha256: '50d9b109b25ab564e274df472530465702e8a7d02bc2ed8d8d81e1fa5b8dd12a'
+    source: 'changes:v3-bilingual-architecture'
+  - file: 'docs/architecture/macos-frontend-architecture.md'
+    line_start: 1
+    line_end: 1
+    heading: 'macOS 前端架构'
+    excerpt: '# macOS 前端架构'
+    sha256: '79ffef3ea6b364a25e5e4af4d49bcb95d17b49bfb09562b71befb545e1df8ba1'
+    source: 'changes:v3-bilingual-architecture'

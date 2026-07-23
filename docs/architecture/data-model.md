@@ -22,9 +22,10 @@
 `archives/` 可被可恢复文件操作使用，但当前 change log 不归档为 JSONL。仓库没有“每次启动保留 5 份
 数据库备份”的行为。
 
-## Schema version 2 初始表
+## Schema version 3 初始表
 
-新资料库由 `core/src/db/schema.rs::INITIAL_SCHEMA` 创建以下 11 张表：
+新资料库由 `core/src/db/schema.rs::INITIAL_SCHEMA` 创建核心表，并以 schema version 3 标记；v2 资料库通过
+编号 migration 补齐同一合同。核心表包括：
 
 | 表 | 用途 |
 |---|---|
@@ -40,8 +41,8 @@
 | `repo_config` | 资料库级 key/value 配置 |
 | `saved_searches` | 保存的搜索条件和侧边栏状态 |
 
-`external_sync_receipts` 同时由 `core/src/db/sync/receipts.rs::ensure_external_sync_receipts`
-以 `CREATE TABLE IF NOT EXISTS` 兜底，保证在初始 schema 早于该表的既有资料库上按需补建。
+`external_sync_receipts`、operation context 和 AI provenance 不能只在普通业务调用中按需创建；v3 migration
+必须把其结构和约束纳入可审计的 schema transaction。
 
 ### files
 
@@ -106,8 +107,8 @@ conflicts、unreadable、unknown、skipped 和 errors。
 | `import_conflicts` | 逐项导入冲突状态 |
 | `semantic_index_entries` | 本地语义索引 metadata |
 
-部分扩展表还会自行补列。因此 `schema_version = 2` 表示核心 schema 版本，不表示所有惰性能力都已经创建或
-运行过。
+部分扩展表仍可按能力首次使用创建，但 v3 需要在第一次写入前完成其必要 provenance 列和约束。因此
+`schema_version = 3` 表示核心 schema 和本版本数据安全边界已经满足，不代表所有功能都已运行过。
 
 ### `ai_call_log`
 
@@ -161,8 +162,8 @@ PRAGMA busy_timeout = 5000;
 
 ## 迁移与恢复
 
-当前核心版本为 2，只为旧 `scan_sessions` 补齐四个计数列。迁移前执行 WAL checkpoint 并创建一次性
-`.areamatrix/index.db.pre-v2.bak`。完整规则见 [migration.md](migration.md)。
+当前核心版本为 3。v2→v3 迁移前执行 WAL checkpoint 并创建新的、不覆盖已有文件的编号备份；完整规则见
+[migration.md](migration.md)。迁移失败必须保持 v2 数据库原样可恢复。
 
 删除 `.areamatrix/` 不删除用户文件，但会丢失不能从文件系统重建的 tags、notes、history、saved searches
 和配置。

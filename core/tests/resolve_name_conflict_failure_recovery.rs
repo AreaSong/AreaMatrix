@@ -22,6 +22,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -43,6 +45,7 @@ fn import_options(mode: StorageMode, filename: &str) -> ImportOptions {
         override_category: Some("finance".to_owned()),
         override_filename: Some(filename.to_owned()),
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -232,7 +235,12 @@ fn resolve_name_conflict_failure_recovery_rename_db_failure_restores_original_na
     .expect("import file to rename");
     install_rename_change_log_failure(repo.path());
 
-    let result = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned());
+    let result = rename_file(
+        path_string(repo.path()),
+        draft.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
 
@@ -350,7 +358,12 @@ fn resolve_name_conflict_failure_recovery_rename_permission_denied_keeps_both_fi
     blocked_permissions.set_mode(0o500);
     fs::set_permissions(&finance_dir, blocked_permissions).expect("make target directory readonly");
 
-    let result = rename_file(path_string(repo.path()), draft.id, "same.pdf".to_owned());
+    let result = rename_file(
+        path_string(repo.path()),
+        draft.id,
+        "same.pdf".to_owned(),
+        "en".to_owned(),
+    );
 
     fs::set_permissions(&finance_dir, original_permissions).expect("restore target permissions");
 

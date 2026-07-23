@@ -2,7 +2,7 @@
 import XCTest
 
 extension RemoteProviderOutcome {
-    var errorMessage: String? {
+    var errorMessage: LocalizedMessage? {
         switch self {
         case let .failed(error): error.message
         case .success: nil

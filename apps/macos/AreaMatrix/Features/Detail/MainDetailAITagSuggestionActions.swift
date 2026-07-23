@@ -120,8 +120,8 @@ extension MainFileListModel {
         }
         return try await aiTagSuggestionStore.suggestTagsWithAI(
             repoPath: repoPath,
-            request: AiTagSuggestionRequest(
-                fileId: fileID,
+            request: AITagSuggestionRequestSnapshot(
+                fileID: fileID,
                 candidateTags: candidateTags,
                 privacyPolicyRef: privacyGate.privacyPolicyRef
             )

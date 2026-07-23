@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RemoteModelConfigSheet: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: RemoteProviderConfigModel
     @StateObject private var privacyModel: RemotePrivacyGateModel
     @State private var isDisableConfirmationPresented = false
@@ -90,7 +91,7 @@ struct RemoteModelConfigSheet: View {
         switch model.outcome {
         case let .success(message):
             TintedStatusBanner(tint: .green, fillsWidth: false) {
-                Label(message, systemImage: "checkmark.circle")
+                Label(localizer.resolve(message), systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
             }
         case let .failed(error):

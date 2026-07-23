@@ -8,7 +8,12 @@ enum DatabaseRepairProgressStep: String, CaseIterable, Equatable {
     case reloadingRepository = "Reloading repository"
 
     var displayName: String {
-        L10n.string(rawValue)
+        switch self {
+        case .initializingMetadata: L10n.string("Initializing metadata database")
+        case .scanningFiles: L10n.string("Scanning files")
+        case .rebuildingIndex: L10n.string("Rebuilding index")
+        case .reloadingRepository: L10n.string("Reloading repository")
+        }
     }
 }
 

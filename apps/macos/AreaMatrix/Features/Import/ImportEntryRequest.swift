@@ -155,9 +155,9 @@ enum CommandPaletteLinkedPageRoute: String, Equatable, Identifiable, CaseIterabl
         case .classifierImpactPreview:
             CoreErrorMappingSnapshot(
                 kind: .validation,
-                userMessage: L10n.string("Classifier impact preview is not available yet."),
+                userMessage: L10n.message("Classifier impact preview is not available yet."),
                 severity: .medium,
-                suggestedAction: L10n.string(
+                suggestedAction: L10n.message(
                     "Open classifier rules first, then preview how the rule affects existing files."
                 ),
                 recoverability: .userActionRequired,
@@ -166,27 +166,27 @@ enum CommandPaletteLinkedPageRoute: String, Equatable, Identifiable, CaseIterabl
         case .importConflictBatch:
             CoreErrorMappingSnapshot(
                 kind: .stagingRecoveryRequired,
-                userMessage: L10n.string("There is no active import conflict batch to review."),
+                userMessage: L10n.message("There is no active import conflict batch to review."),
                 severity: .medium,
-                suggestedAction: L10n.string("Start or resume a batch import with unresolved conflicts."),
+                suggestedAction: L10n.message("Start or resume a batch import with unresolved conflicts."),
                 recoverability: .userActionRequired,
                 rawContext: pageID
             )
         case .redo:
             CoreErrorMappingSnapshot(
                 kind: .conflict,
-                userMessage: L10n.string("Redo latest is handled in Undo History."),
+                userMessage: L10n.message("Redo latest is handled in Undo History."),
                 severity: .medium,
-                suggestedAction: L10n.string("Review Undo History until redo-action-log redo is available."),
+                suggestedAction: L10n.message("Review Undo History until redo-action-log redo is available."),
                 recoverability: .refreshRequired,
                 rawContext: pageID
             )
         case .tagSuggestions:
             CoreErrorMappingSnapshot(
                 kind: .validation,
-                userMessage: L10n.string("Select a file before reviewing tag suggestions."),
+                userMessage: L10n.message("Select a file before reviewing tag suggestions."),
                 severity: .medium,
-                suggestedAction: L10n.string("Open a file detail, then use Suggestions from the Tags section."),
+                suggestedAction: L10n.message("Open a file detail, then use Suggestions from the Tags section."),
                 recoverability: .userActionRequired,
                 rawContext: pageID
             )

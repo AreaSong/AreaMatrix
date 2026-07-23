@@ -46,7 +46,10 @@ final class ImportFolderPageIntegrationVerifyTests: XCTestCase {
         )
 
         XCTAssertEqual(model.route, .mainEmpty(opening))
-        XCTAssertEqual(model.toastMessage, "Imported: invoice.pdf")
+        XCTAssertEqual(
+            model.toastMessage,
+            L10n.message("import.single.imported-file", arguments: [.string("invoice.pdf")])
+        )
         announcer.assertAnnouncements(["Imported: invoice.pdf"])
     }
 

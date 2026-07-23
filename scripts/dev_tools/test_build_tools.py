@@ -615,6 +615,40 @@ documents:
         )
         self.assertFalse(checks._localization_placeholders_match("%@ %lld", "%lld %@", pattern))
 
+    def test_swift_l10n_calls_extracts_multiline_descriptor_keys(self) -> None:
+        source = '''
+        let first = L10n.message(
+            "settings.language.unsupportedValue",
+            arguments: [.string(identifier)]
+        )
+        let second = L10n.pluralMessage(
+            "common.fileCount",
+            count: total
+        )
+        let draft = L10n.editableDefault("import.batch-naming.default-prefix")
+        '''
+
+        self.assertEqual(
+            checks._swift_l10n_calls(source),
+            [
+                (2, "message", "settings.language.unsupportedValue"),
+                (6, "pluralMessage", "common.fileCount"),
+                (10, "editableDefault", "import.batch-naming.default-prefix"),
+            ],
+        )
+
+    def test_swift_l10n_calls_rejects_dynamic_and_interpolated_keys(self) -> None:
+        source = '''
+        L10n.string(rawValue)
+        L10n.message("status.\(kind)")
+        L10n.plural(dynamicKey, count: total)
+        '''
+
+        self.assertEqual(
+            checks._swift_l10n_calls(source),
+            [(2, "string", None), (3, "message", None), (4, "plural", None)],
+        )
+
     def test_raw_display_string_scan_finds_custom_argument_literals(self) -> None:
         source = '''
         StatusCard(

@@ -36,11 +36,14 @@ pub(super) struct AiTagRuntimeSuggestion {
     pub(super) merge_target_slug: Option<String>,
 }
 
-pub(super) fn execute_local(context: &AiTagSuggestionContext) -> CoreResult<AiTagRuntimeDraft> {
+pub(super) fn execute_local(
+    context: &AiTagSuggestionContext,
+    content_locale: &str,
+) -> CoreResult<AiTagRuntimeDraft> {
     if let Some(runtime_path) = runtime_path(LOCAL_RUNTIME_ENV) {
         return execute_external_runtime(
             runtime_path,
-            RuntimePayload::local(context),
+            RuntimePayload::local(context, content_locale),
             AiTagSuggestionRoute::Local,
             LOCAL_MODEL_ID.to_owned(),
             context.fields.clone(),
@@ -52,6 +55,7 @@ pub(super) fn execute_local(context: &AiTagSuggestionContext) -> CoreResult<AiTa
 pub(super) fn execute_remote(
     repo: &Path,
     context: &AiTagSuggestionContext,
+    content_locale: &str,
 ) -> CoreResult<AiTagRuntimeDraft> {
     let config = crate::remote_provider_config::load_enabled_remote_provider_runtime(
         repo,
@@ -64,7 +68,7 @@ pub(super) fn execute_remote(
     };
     execute_external_runtime(
         runtime_path,
-        RuntimePayload::remote(context, &config),
+        RuntimePayload::remote(context, &config, content_locale),
         AiTagSuggestionRoute::Remote,
         model,
         context.fields.clone(),
@@ -160,6 +164,7 @@ struct RuntimePayload<'a> {
     feature: &'static str,
     route: &'static str,
     model: &'a str,
+    content_locale: &'a str,
     filename: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     repo_relative_path: Option<&'a str>,
@@ -176,11 +181,12 @@ struct RuntimePayload<'a> {
 }
 
 impl<'a> RuntimePayload<'a> {
-    fn local(context: &'a AiTagSuggestionContext) -> Self {
+    fn local(context: &'a AiTagSuggestionContext, content_locale: &'a str) -> Self {
         Self {
             feature: "tags",
             route: "local",
             model: LOCAL_MODEL_ID,
+            content_locale,
             filename: &context.filename,
             repo_relative_path: context.repo_relative_path.as_deref(),
             ai_summary: context.ai_summary.as_deref(),
@@ -192,11 +198,16 @@ impl<'a> RuntimePayload<'a> {
         }
     }
 
-    fn remote(context: &'a AiTagSuggestionContext, config: &'a StoredRemoteProviderConfig) -> Self {
+    fn remote(
+        context: &'a AiTagSuggestionContext,
+        config: &'a StoredRemoteProviderConfig,
+        content_locale: &'a str,
+    ) -> Self {
         Self {
             feature: "tags",
             route: "remote",
             model: &config.model_id,
+            content_locale,
             filename: &context.filename,
             repo_relative_path: context.repo_relative_path.as_deref(),
             ai_summary: context.ai_summary.as_deref(),

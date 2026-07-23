@@ -98,8 +98,8 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         await updater.assertNoAISettingsUpdateRequests()
         XCTAssertEqual(model.snapshot?.config.providerPreference, .localFirst)
         XCTAssertEqual(model.actionFeedback, .failed(AISettingsError(
-            message: "Remote AI requires explicit setup.",
-            recovery: "Use Configure remote AI before selecting Remote first.",
+            message: L10n.message("Remote AI requires explicit setup."),
+            recovery: L10n.message("Use Configure remote AI before selecting Remote first."),
             detail: "Remote AI configuration manages provider setup, API key storage, and connection verification."
         )))
     }
@@ -122,7 +122,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
         XCTAssertEqual(model.snapshot?.config.aiEnabled, true)
         XCTAssertTrue(model.hasRetryablePause)
-        XCTAssertEqual(model.saveError?.message, "AI could not be paused.")
+        XCTAssertEqual(model.saveError?.message, L10n.message("AI could not be paused."))
 
         await model.retryPause()
 
@@ -224,7 +224,7 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
             )
         )])
         folderOpener.assertOpenedFolderPaths(["/tmp/localModelStatus-models"])
-        XCTAssertEqual(model.feedback, .success("Model location opened."))
+        XCTAssertEqual(model.feedback, .success(L10n.message("Model location opened.")))
     }
 
     @MainActor

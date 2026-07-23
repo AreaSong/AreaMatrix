@@ -45,6 +45,7 @@ fn replace_confirm_contract_exports_existing_core_entry_points() {
         override_category: None,
         override_filename: Some("report.pdf".to_owned()),
         duplicate_strategy: DuplicateStrategy::Overwrite,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     assert_eq!(
         overwrite_options.duplicate_strategy,

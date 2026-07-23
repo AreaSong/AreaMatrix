@@ -22,6 +22,8 @@ fn initialized_repo() -> tempfile::TempDir {
             mode: RepoInitMode::CreateEmpty,
             create_default_categories: false,
             overview_output: OverviewOutput::GeneratedOnly,
+            locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+            content_locale: area_matrix_core::ContentLocale::En,
         },
     )
     .expect("initialize repository");
@@ -326,7 +328,13 @@ fn undo_action_log_implementation_executes_rename_inverse() {
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
 
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned()).expect("rename file");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file");
 
     let token = undo_action_ids(repo.path(), "rename_files")
         .pop()
@@ -435,8 +443,13 @@ fn undo_action_log_implementation_executes_delete_inverse_from_trash() {
 fn undo_action_log_implementation_blocks_file_action_after_external_move() {
     let repo = initialized_repo();
     let file_id = insert_file(repo.path(), "docs/draft.pdf", "docs");
-    rename_file(path_string(repo.path()), file_id, "final.pdf".to_owned())
-        .expect("rename file before external change");
+    rename_file(
+        path_string(repo.path()),
+        file_id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file before external change");
     fs::remove_file(repo.path().join("docs/final.pdf")).expect("simulate external removal");
 
     let actions = list_undo_actions(path_string(repo.path())).expect("list undo actions");

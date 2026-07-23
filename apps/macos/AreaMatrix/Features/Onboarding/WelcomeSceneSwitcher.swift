@@ -4,8 +4,6 @@ struct WelcomeSceneSwitcher: View {
     let scene: WelcomeScene
     let parallax: AreaMatrixParallax
 
-    @Environment(\.locale) private var locale
-
     var body: some View {
         ZStack {
             ForEach(WelcomeScene.allCases, id: \.self) { candidateScene in
@@ -22,7 +20,6 @@ struct WelcomeSceneSwitcher: View {
                     .zIndex(candidateScene == scene ? 2 : 1)
             }
         }
-        .id(locale.identifier)
     }
 
     @ViewBuilder

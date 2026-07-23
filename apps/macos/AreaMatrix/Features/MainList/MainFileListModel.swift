@@ -42,7 +42,7 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var externalSyncAttemptRevision: UInt64 = 0
     @Published private(set) var externalSyncErrorMapping: CoreErrorMappingSnapshot?
     @Published private(set) var isExternalSyncPlaceholderDownloading = false
-    @Published private(set) var externalSyncRecoveryMessage: String?
+    @Published private(set) var externalSyncRecoveryMessage: LocalizedMessage?
     @Published private(set) var pendingExternalSelectionUpdate: MainExternalSelectionUpdate?
     @Published var detailTagEditorState = DetailTagEditorState.notLoaded
     @Published var detailTagSuggestionState = DetailTagSuggestionState.idle
@@ -244,9 +244,10 @@ extension MainFileListModel {
             retryExternalSync()
         } catch {
             isExternalSyncPlaceholderDownloading = false
-            externalSyncRecoveryMessage = L10n.format(
+            externalSyncRecoveryMessage = L10n.message(
                 "mainList.externalSync.iCloudDownloadStartError",
-                error.localizedDescription
+                arguments: [.string(error.localizedDescription)],
+                technicalDetail: error.localizedDescription
             )
         }
     }

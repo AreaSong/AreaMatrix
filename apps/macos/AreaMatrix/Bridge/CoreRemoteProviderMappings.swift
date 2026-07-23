@@ -45,11 +45,12 @@ extension RemoteProviderTestResultState {
 }
 
 extension AiCategorySuggestionRequest {
-    init(snapshot: AIClassificationSuggestionRequestState) {
+    init(snapshot: AIClassificationSuggestionRequestState, contentLocale: String) {
         self.init(
             fileId: snapshot.fileID,
             contextPolicy: AiCategorySuggestionContextPolicy(snapshotPolicy: snapshot.contextPolicy),
-            privacyPolicyRef: snapshot.privacyPolicyRef
+            privacyPolicyRef: snapshot.privacyPolicyRef,
+            contentLocale: contentLocale
         )
     }
 }

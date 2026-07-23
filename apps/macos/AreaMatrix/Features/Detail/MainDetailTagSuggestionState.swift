@@ -267,21 +267,26 @@ extension DetailTagSuggestionAction {
         report: TagSuggestionReportSnapshot,
         disabledReason: String?
     ) -> TagSuggestionEditRowStatus {
-        if disabledReason != nil { return .blocked(L10n.string("Tag store is read-only.")) }
+        if disabledReason != nil { return .blocked(L10n.display("Tag store is read-only.")) }
         guard let suggestion = report.suggestions.first(where: { $0.suggestionID == draft.suggestionID }) else {
-            return .blocked(L10n.string("tag-suggestion.no-longer-available"))
+            return .blocked(L10n.display("tag-suggestion.no-longer-available"))
         }
-        if suggestion.status == .alreadyAdded { return .alreadyAdded(L10n.string("Already added")) }
+        if suggestion.status == .alreadyAdded { return .alreadyAdded(L10n.display("Already added")) }
         if suggestion.status == .blocked || suggestion.disabledReason != nil {
-            return .blocked(suggestion.disabledReason ?? L10n.string("Suggestion is blocked."))
+            return .blocked(L10n.display(
+                "Suggestion is blocked.",
+                technicalDetail: suggestion.disabledReason
+            ))
         }
         guard let normalized = TagInputNormalization.normalizedValue(draft.slug) else {
-            return .invalid(TagInputNormalization.invalidMessage)
+            return .invalid(L10n.display("Tag name is invalid."))
         }
-        if seenSlugs.contains(normalized) { return .duplicate(L10n.string("tag-suggestion.duplicate-selected-slug")) }
+        if seenSlugs.contains(normalized) {
+            return .duplicate(L10n.display("tag-suggestion.duplicate-selected-slug"))
+        }
         seenSlugs.insert(normalized)
         if report.tagSet.containsFileTag(value: normalized) {
-            return .alreadyAdded(L10n.string("Already added"))
+            return .alreadyAdded(L10n.display("Already added"))
         }
         return .ready
     }

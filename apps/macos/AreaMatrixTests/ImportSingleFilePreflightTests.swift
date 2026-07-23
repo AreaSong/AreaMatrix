@@ -110,7 +110,7 @@ final class ImportSingleFilePreflightTests: XCTestCase {
         XCTAssertEqual(result.hashSha256, nil)
         XCTAssertEqual(
             result.conflict,
-            .invalidFilename("Filename cannot contain / \\ : * ? \" < > |")
+            .invalidFilename(L10n.display("import.filename.invalidCharacters"))
         )
         XCTAssertEqual(
             result.importBlockingReason(),

@@ -524,6 +524,60 @@ def _localization_placeholders_match(
     return source_placeholders == translated_placeholders
 
 
+MACOS_L10N_KEY_FUNCTIONS = (
+    "display",
+    "editableDefault",
+    "format",
+    "message",
+    "plural",
+    "pluralMessage",
+    "string",
+)
+
+
+def _swift_l10n_calls(source: str) -> list[tuple[int, str, str | None]]:
+    """Returns L10n calls with a decoded static first argument, or None for a dynamic key."""
+    function_names = "|".join(map(re.escape, MACOS_L10N_KEY_FUNCTIONS))
+    pattern = re.compile(rf"\bL10n\.(?P<function>{function_names})\s*\(")
+    calls: list[tuple[int, str, str | None]] = []
+    for match in pattern.finditer(source):
+        cursor = match.end()
+        while cursor < len(source) and source[cursor].isspace():
+            cursor += 1
+        line = source.count("\n", 0, match.start()) + 1
+        if cursor >= len(source) or source[cursor] != '"':
+            calls.append((line, match.group("function"), None))
+            continue
+
+        end = cursor + 1
+        escaped = False
+        while end < len(source):
+            character = source[end]
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                break
+            elif character in "\r\n":
+                break
+            end += 1
+        if end >= len(source) or source[end] != '"':
+            calls.append((line, match.group("function"), None))
+            continue
+
+        raw_literal = source[cursor:end + 1]
+        if "\\(" in raw_literal:
+            calls.append((line, match.group("function"), None))
+            continue
+        try:
+            key = json.loads(raw_literal)
+        except json.JSONDecodeError:
+            key = None
+        calls.append((line, match.group("function"), key if isinstance(key, str) else None))
+    return calls
+
+
 def _swift_raw_display_string_violations(source: str) -> list[tuple[int, str]]:
     argument_names = "|".join(map(re.escape, MACOS_DISPLAY_ARGUMENT_NAMES))
     pattern = re.compile(
@@ -573,7 +627,7 @@ def _swift_unlocalized_dynamic_display_violations(source: str) -> list[tuple[int
     violations: list[tuple[int, str]] = []
     lines = source.splitlines()
     for index, line in enumerate(lines, start=1):
-        if "Text(" in line and ".status.tag" in line and "L10n." not in line:
+        if "Text(" in line and re.search(r"\.status\.tag\b", line) and "L10n." not in line:
             violations.append((index, "status.tag"))
         if "L10n." in line or "\\(" not in line:
             continue
@@ -673,9 +727,6 @@ def _check_macos_localization_contract(root: Path, failures: FailureCollector) -
         if "UniFFI" not in path.parts and "Generated" not in path.parts
     )
     forbidden_api_pattern = re.compile(r"\b(?:String\s*\(\s*localized:|NSLocalizedString\s*\()")
-    explicit_l10n_key_pattern = re.compile(
-        r'\bL10n\.(?:string|format|plural)\(\s*"((?:\\.|[^"\\])*)"'
-    )
     cjk_literal_pattern = re.compile(r'"(?:\\.|[^"\\])*[\u3400-\u9fff](?:\\.|[^"\\])*"')
     auto_localized_call_pattern = re.compile(
         r"\b(?:Text|Button|Label|Toggle|Picker|Menu|Section|GroupBox|TextField|SecureField|Link|"
@@ -683,33 +734,49 @@ def _check_macos_localization_contract(root: Path, failures: FailureCollector) -
     )
     for path in swift_files:
         source = _read(path)
+        relative_path = path.relative_to(root)
+        is_localization_runtime = relative_path == Path("apps/macos/AreaMatrix/App/AppLanguage.swift")
         if forbidden_api_pattern.search(source):
-            failures.fail(f"macOS source bypasses AppLanguageRuntime: {path.relative_to(root)}")
+            failures.fail(f"macOS source bypasses AppLocalizer: {relative_path}")
+        if not is_localization_runtime:
+            bypass_patterns = (
+                (r"\bAppLanguageRuntime\.shared\.localizedString\s*\(", "AppLanguageRuntime lookup"),
+                (r"\.localizedString\s*\(\s*forKey\s*:", "Bundle localization lookup"),
+                (r"\bLocalizedMessage\s*\(", "direct LocalizedMessage construction"),
+                (r"\bText\s*\(\s*verbatim\s*:", "direct Text(verbatim:)"),
+                (r"(?<!L10n)\.verbatim\s*\(", "unreasoned verbatim construction"),
+            )
+            for pattern, label in bypass_patterns:
+                if re.search(pattern, source):
+                    failures.fail(f"macOS source bypasses the localization contract ({label}): {relative_path}")
+        if re.search(r"\.id\s*\([^\n)]*(?:locale|language|Language)", source):
+            failures.fail(f"macOS source rebuilds view identity for a language change: {relative_path}")
         for line, argument_name in _swift_raw_display_string_violations(source):
             failures.fail(
                 "macOS source passes a raw string to a custom display argument; use L10n: "
-                f"{path.relative_to(root)}:{line} ({argument_name})"
+                f"{relative_path}:{line} ({argument_name})"
             )
         for line in _swift_raw_localized_error_violations(source):
             failures.fail(
                 "macOS LocalizedError.errorDescription contains a raw display string; use L10n: "
-                f"{path.relative_to(root)}:{line}"
+                f"{relative_path}:{line}"
             )
         for line, display_name in _swift_unlocalized_dynamic_display_violations(source):
             failures.fail(
                 "macOS dynamic display state bypasses localization; use L10n at the display boundary: "
-                f"{path.relative_to(root)}:{line} ({display_name})"
+                f"{relative_path}:{line} ({display_name})"
             )
-        for raw_key in explicit_l10n_key_pattern.findall(source):
-            try:
-                key = json.loads(f'"{raw_key}"')
-            except json.JSONDecodeError:
-                failures.fail(f"macOS source contains an invalid L10n key: {path.relative_to(root)}")
+        for line, function_name, key in _swift_l10n_calls(source):
+            if key is None:
+                failures.fail(
+                    "macOS L10n key must be a static string literal: "
+                    f"{relative_path}:{line} (L10n.{function_name})"
+                )
                 continue
             if key not in strings:
                 failures.fail(
                     "macOS explicit L10n key is missing from Localizable.xcstrings: "
-                    f"{key!r} ({path.relative_to(root)})"
+                    f"{key!r} ({relative_path})"
                 )
         lines = source.splitlines()
         for index, line in enumerate(lines):
@@ -720,8 +787,21 @@ def _check_macos_localization_contract(root: Path, failures: FailureCollector) -
                 continue
             failures.fail(
                 "macOS source contains a CJK string outside L10n or a compiler-localized SwiftUI API: "
-                f"{path.relative_to(root)}:{index + 1}"
+                f"{relative_path}:{index + 1}"
             )
+
+    forbidden_core_locale_tokens = ("set_app_interface_locale", "setAppInterfaceLocale")
+    core_contract_paths = [root / "core/area_matrix.udl", *(root / "core/src").rglob("*.rs")]
+    for path in core_contract_paths:
+        if not path.is_file():
+            continue
+        source = _read(path)
+        for token in forbidden_core_locale_tokens:
+            if token in source:
+                failures.fail(
+                    "Core contains forbidden process-global interface locale state: "
+                    f"{path.relative_to(root)} ({token})"
+                )
 
     tool = shutil.which("xcrun")
     if tool is None:
@@ -731,6 +811,8 @@ def _check_macos_localization_contract(root: Path, failures: FailureCollector) -
         command = [
             tool, "xcstringstool", "extract", "--SwiftUI", "--modern-localizable-strings",
             "-s", "L10n.string", "-s", "L10n.format", "-s", "L10n.plural",
+            "-s", "L10n.message", "-s", "L10n.pluralMessage", "-s", "L10n.display",
+            "-s", "L10n.editableDefault",
             "--output-format", "xcstrings", "--output-directory", output_dir,
             *map(str, swift_files),
         ]

@@ -111,7 +111,7 @@ final class RemoteProviderCredentialLifecycleTests: XCTestCase {
         XCTAssertEqual(model.unusedCredentialReference, "keychain:openAi-managed")
         XCTAssertEqual(
             model.outcome?.errorMessage,
-            "API key draft could not be discarded after the connection test failed."
+            L10n.message("API key draft could not be discarded after the connection test failed.")
         )
         XCTAssertEqual(store.storedKeys(), ["keychain:openAi-managed": "new-api-key"])
 
@@ -134,7 +134,7 @@ final class RemoteProviderCredentialLifecycleTests: XCTestCase {
         let didCancel = model.cancelEditing()
 
         XCTAssertFalse(didCancel)
-        XCTAssertEqual(model.outcome?.errorMessage, "API key draft could not be discarded.")
+        XCTAssertEqual(model.outcome?.errorMessage, L10n.message("API key draft could not be discarded."))
         XCTAssertEqual(store.storedKeys(), [reference: "replacement-api-key"])
         XCTAssertTrue(model.canEnable)
     }
@@ -155,7 +155,7 @@ final class RemoteProviderCredentialLifecycleTests: XCTestCase {
 
         XCTAssertEqual(
             model.outcome?.errorMessage,
-            "Previous API key draft could not be discarded before testing."
+            L10n.message("Previous API key draft could not be discarded before testing.")
         )
         XCTAssertEqual(store.storedKeys(), [reference: "replacement-api-key"])
         XCTAssertFalse(model.canEnable)
@@ -178,7 +178,7 @@ final class RemoteProviderCredentialLifecycleTests: XCTestCase {
         model.removeUnusedCredential()
 
         XCTAssertEqual(model.unusedCredentialReference, "keychain:openAi-managed")
-        XCTAssertEqual(model.outcome?.errorMessage, "Unused API key could not be removed.")
+        XCTAssertEqual(model.outcome?.errorMessage, L10n.message("Unused API key could not be removed."))
         XCTAssertEqual(store.storedKeys(), ["keychain:openAi-managed": "new-api-key"])
     }
 
@@ -201,7 +201,7 @@ final class RemoteProviderCredentialLifecycleTests: XCTestCase {
         XCTAssertNil(model.unusedCredentialReference)
         XCTAssertEqual(
             model.outcome?.errorMessage,
-            "Remote AI settings could not be saved, and the API key draft could not be restored."
+            L10n.message("Remote AI settings could not be saved, and the API key draft could not be restored.")
         )
         XCTAssertEqual(store.storedKeys(), [reference: "replacement-api-key"])
         XCTAssertTrue(model.canEnable)
@@ -222,7 +222,7 @@ final class RemoteProviderCredentialLifecycleTests: XCTestCase {
         XCTAssertEqual(model.snapshot?.remoteProviderEnabled, false)
         XCTAssertEqual(
             model.outcome?.errorMessage,
-            "Remote AI was disabled, but the stored API key could not be removed."
+            L10n.message("Remote AI was disabled, but the stored API key could not be removed.")
         )
     }
 }

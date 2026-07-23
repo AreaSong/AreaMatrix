@@ -65,6 +65,7 @@ fn desktop_import_flow_contract_exposes_page_ready_inputs_outputs_and_errors() {
         override_category: None,
         override_filename: Some("Desktop Report.pdf".to_owned()),
         duplicate_strategy: DuplicateStrategy::KeepBoth,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     assert_eq!(copy_options.mode, StorageMode::Copied);
     assert_eq!(
@@ -88,6 +89,7 @@ fn desktop_import_flow_contract_exposes_page_ready_inputs_outputs_and_errors() {
         override_category: Some("finance".to_owned()),
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Ask,
+        content_locale: area_matrix_core::ContentLocale::En,
     };
     assert_eq!(moved_options.mode, StorageMode::Moved);
     assert_eq!(moved_options.duplicate_strategy, DuplicateStrategy::Ask);

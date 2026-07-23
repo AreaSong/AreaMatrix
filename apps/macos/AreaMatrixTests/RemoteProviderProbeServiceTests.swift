@@ -11,7 +11,8 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
         try initRepo(repoPath: repoURL.path, options: RepoInitOptions(
             mode: .createEmpty,
             createDefaultCategories: false,
-            overviewOutput: .generatedOnly
+            overviewOutput: .generatedOnly,
+            contentLocale: "en"
         ))
         let keyReference = "keychain:remote-ai-other-runtime-test"
         let endpointURL = "https://provider.example.test/probe"
@@ -61,7 +62,8 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
         try initRepo(repoPath: repoURL.path, options: RepoInitOptions(
             mode: .createEmpty,
             createDefaultCategories: false,
-            overviewOutput: .generatedOnly
+            overviewOutput: .generatedOnly,
+            contentLocale: "en"
         ))
         let performer = CancellationAwareProbePerformer()
         let bridge = CoreBridge(remoteProviderProbePerformer: performer)
@@ -385,8 +387,8 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
             XCTFail("Expected privacy rule load failure.")
             return
         }
-        XCTAssertEqual(error.message, "AI privacy rule could not be loaded.")
-        XCTAssertEqual(error.recovery, "Open privacy rules")
+        XCTAssertEqual(error.message, L10n.message("AI privacy rule could not be loaded."))
+        XCTAssertEqual(error.recovery, L10n.message("Open privacy rules", fallback: "Open privacy rules"))
         XCTAssertEqual(error.detail, "Mapped ai-privacy-rules-core core error")
     }
 
@@ -403,8 +405,8 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
         await model.askForSuggestion()
 
         XCTAssertEqual(model.statusText, "AI suggestion failed.")
-        XCTAssertEqual(model.failure?.message, "AI category suggestion could not be loaded.")
-        XCTAssertEqual(model.failure?.recovery, "Open AI settings")
+        XCTAssertEqual(model.failure?.message, L10n.message("AI category suggestion could not be loaded."))
+        XCTAssertEqual(model.failure?.recovery, L10n.message("Open AI settings", fallback: "Open AI settings"))
         XCTAssertEqual(model.failure?.detail, "Mapped ai-classification-suggestion core error")
         XCTAssertEqual(model.acceptDisabledReason, "No suggestion to accept.")
         XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)

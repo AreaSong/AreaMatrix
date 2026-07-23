@@ -54,19 +54,6 @@ pub fn get_version() -> String {
     env!("CARGO_PKG_VERSION").to_owned()
 }
 
-/// Updates the process-local interface locale used by repositories configured
-/// to follow the application language.
-///
-/// This function does not read or write repository configuration and does not
-/// generate overviews. Explicit repository content locales remain unaffected.
-///
-/// # Errors
-///
-/// Returns `CoreError::Config` when `locale` is not English or a Chinese locale.
-pub fn set_app_interface_locale(locale: String) -> CoreResult<()> {
-    crate::config::set_app_interface_locale(&locale)
-}
-
 /// Validates the requested logging level.
 ///
 /// Full subscriber wiring is left for a later observability task so this

@@ -20,6 +20,8 @@ fn create_empty_options(overview_output: OverviewOutput) -> RepoInitOptions {
         mode: RepoInitMode::CreateEmpty,
         create_default_categories: false,
         overview_output,
+        locale_policy: area_matrix_core::RepositoryLocalePolicy::FollowInterface,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -48,6 +50,7 @@ fn copied_options(category: &str) -> ImportOptions {
         override_category: Some(category.to_owned()),
         override_filename: None,
         duplicate_strategy: DuplicateStrategy::Skip,
+        content_locale: area_matrix_core::ContentLocale::En,
     }
 }
 
@@ -340,8 +343,13 @@ fn overview_generated_implementation_rename_updates_generated_node_and_root() {
     let repo = initialized_repo(OverviewOutput::GeneratedOnly);
     let entry = import_doc(repo.path(), "draft.pdf", b"draft bytes");
 
-    rename_file(path_string(repo.path()), entry.id, "final.pdf".to_owned())
-        .expect("rename file and regenerate overview");
+    rename_file(
+        path_string(repo.path()),
+        entry.id,
+        "final.pdf".to_owned(),
+        "en".to_owned(),
+    )
+    .expect("rename file and regenerate overview");
 
     let generated_root = read_file(&repo.path().join(".areamatrix/generated/root.md"));
     let generated_node = read_file(&repo.path().join(".areamatrix/generated/nodes/docs.md"));
@@ -363,6 +371,7 @@ fn overview_generated_implementation_sync_external_rename_updates_generated_over
     sync_external_changes(
         path_string(repo.path()),
         vec![renamed_event("docs/external-renamed.pdf", 7)],
+        "en".to_owned(),
     )
     .expect("sync external rename and regenerate overview");
 

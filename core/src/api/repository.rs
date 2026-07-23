@@ -2,8 +2,9 @@
 
 use crate::{
     db, recovery, repair, repo_init, repo_path, repo_scan, CoreResult, DiagnosticsSnapshot,
-    ManualRescanPreviewReport, RecoveryReport, ReindexReport, RepairOptions, RepairReport,
-    RepoConfig, RepoInitOptions, RepoPathValidation, ScanSession,
+    ManualRescanPreviewReport, RecoveryReport, ReindexReport, RepairMetadataPreflight,
+    RepairOptions, RepairReport, RepoConfig, RepoConfigPatch, RepoConfigSnapshot, RepoInitOptions,
+    RepoPathValidation, ScanSession,
 };
 
 /// Validates a candidate repository path without mutating the filesystem.
@@ -124,6 +125,11 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
     db::load_config_or_default(repo_path)
 }
 
+/// Loads a revisioned repository configuration snapshot.
+pub fn load_repo_config(repo_path: String) -> CoreResult<RepoConfigSnapshot> {
+    db::load_repo_config_snapshot_or_default(repo_path)
+}
+
 /// Updates repository configuration through the `repo_config` table.
 ///
 /// repository configuration update uses this API for settings panes that mutate repository defaults:
@@ -153,6 +159,14 @@ pub fn load_config(repo_path: String) -> CoreResult<RepoConfig> {
 /// SQLite persistence failures.
 pub fn update_config(repo_path: String, new_config: RepoConfig) -> CoreResult<()> {
     db::update_config(repo_path, new_config)
+}
+
+/// Applies a compare-and-swap repository configuration patch.
+pub fn update_repo_config(
+    repo_path: String,
+    patch: RepoConfigPatch,
+) -> CoreResult<RepoConfigSnapshot> {
+    db::update_repo_config_patch(repo_path, patch)
 }
 /// Recovers AreaMatrix-owned startup residue before the UI opens.
 ///
@@ -252,15 +266,19 @@ pub fn create_diagnostics_snapshot(repo_path: String) -> CoreResult<DiagnosticsS
     repair::create_diagnostics_snapshot(repo_path)
 }
 
+/// Inspects metadata and locale state without creating or modifying files.
+pub fn preflight_repair_metadata(repo_path: String) -> CoreResult<RepairMetadataPreflight> {
+    repair::preflight_repair_metadata(repo_path)
+}
+
 /// Repairs AreaMatrix metadata without mutating user files.
 ///
 /// metadata repair uses [`RepairOptions::preserve_diagnostics_snapshot`] to decide
-/// whether the damaged metadata state is preserved before repair. When
-/// [`RepairOptions::full_rescan`] is true, repair may run the same metadata
-/// rescan boundary as [`reindex_from_filesystem`] and report the scan session.
+/// whether the damaged metadata state is preserved before replacement. It does
+/// not start or resume filesystem reindex or overview regeneration operations.
 ///
 /// The only allowed side effects are writes under `.areamatrix/` metadata:
-/// diagnostics snapshots, scan-session rows, and repaired file metadata. The
+/// diagnostics snapshots and repaired metadata. The
 /// function must never move, rename, delete, overwrite, trash, or download user
 /// files, and failure must leave any diagnostics reference intact.
 ///

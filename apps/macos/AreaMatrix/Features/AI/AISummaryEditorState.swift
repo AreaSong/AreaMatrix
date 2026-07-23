@@ -12,6 +12,7 @@ final class AISummaryEditorModel: ObservableObject {
     let repoPath: String
     private(set) var fileID: Int64
     private let summaryStore: any CoreAISummaryManaging
+    private let contentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting
     private let privacyRules: any CoreAIPrivacyEvaluating
     private let errorMapper: any CoreErrorMapping
     private let summaryProviderScope: AiSummaryProviderScope
@@ -25,6 +26,7 @@ final class AISummaryEditorModel: ObservableObject {
         repoPath: String,
         fileID: Int64,
         summaryStore: any CoreAISummaryManaging = AppCoreServices.aiSummaryStore,
+        contentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting = AppCoreServices.repositoryContentLocaleSnapshotter,
         privacyRules: any CoreAIPrivacyEvaluating = AppCoreServices.aiPrivacyRules,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         summaryProviderScope: AiSummaryProviderScope = .localPreferred,
@@ -33,6 +35,7 @@ final class AISummaryEditorModel: ObservableObject {
         self.repoPath = repoPath
         self.fileID = fileID
         self.summaryStore = summaryStore
+        self.contentLocaleSnapshotter = contentLocaleSnapshotter
         self.privacyRules = privacyRules
         self.errorMapper = errorMapper
         self.summaryProviderScope = summaryProviderScope
@@ -101,7 +104,7 @@ final class AISummaryEditorModel: ObservableObject {
             guard token == entryLoadToken else { return }
             failedAction = .load
             operation = await .failed(
-                summaryError(for: error, message: L10n.string("Summary could not be loaded."))
+                summaryError(for: error, message: L10n.message("Summary could not be loaded."))
             )
             return
         }
@@ -136,9 +139,24 @@ final class AISummaryEditorModel: ObservableObject {
 
     func generate(regenerate: Bool) async {
         guard canEdit else { return }
+        let contentLocale: String
+        do {
+            contentLocale = try await contentLocaleSnapshotter.repositoryContentLocaleSnapshot(repoPath: repoPath)
+        } catch {
+            failedAction = .generate
+            operation = await .failed(
+                summaryError(for: error, message: L10n.message("Summary could not be generated."))
+            )
+            return
+        }
         let preGateSnapshot = snapshot()
         if let blocked = await refreshGenerationGate() {
-            await handleBlockedGenerate(blocked, snapshot: preGateSnapshot, regenerate: regenerate)
+            await handleBlockedGenerate(
+                blocked,
+                snapshot: preGateSnapshot,
+                regenerate: regenerate,
+                contentLocale: contentLocale
+            )
             return
         }
 
@@ -150,7 +168,7 @@ final class AISummaryEditorModel: ObservableObject {
         do {
             let draft = try await summaryStore.generateAISummary(
                 repoPath: repoPath,
-                request: generationRequest(regenerate)
+                request: generationRequest(regenerate, contentLocale: contentLocale)
             )
             guard token == generationToken else { return }
             operation = .idle
@@ -159,7 +177,7 @@ final class AISummaryEditorModel: ObservableObject {
             guard token == generationToken else { return }
             failedAction = .generate
             operation = await .failed(
-                summaryError(for: error, message: L10n.string("Summary could not be generated."))
+                summaryError(for: error, message: L10n.message("Summary could not be generated."))
             )
         }
     }
@@ -185,7 +203,7 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             failedAction = .save
             operation = await .failed(
-                summaryError(for: error, message: L10n.string("Summary could not be saved."))
+                summaryError(for: error, message: L10n.message("Summary could not be saved."))
             )
             return false
         }
@@ -214,7 +232,7 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             failedAction = .clear
             operation = await .failed(
-                summaryError(for: error, message: L10n.string("Summary could not be cleared."))
+                summaryError(for: error, message: L10n.message("Summary could not be cleared."))
             )
         }
     }
@@ -239,7 +257,7 @@ final class AISummaryEditorModel: ObservableObject {
         } catch {
             let mapping = await summaryError(
                 for: error,
-                message: L10n.string("AI privacy rules could not be checked.")
+                message: L10n.message("AI privacy rules could not be checked.")
             )
             gateState = .failed(mapping)
             return AISummaryEditorPresentationSupport.privacyUnavailableNotice(mapping)
@@ -260,35 +278,45 @@ final class AISummaryEditorModel: ObservableObject {
     private func handleBlockedGenerate(
         _ block: AISummaryEditorNotice,
         snapshot: AISummaryEditorSnapshot,
-        regenerate: Bool
+        regenerate: Bool,
+        contentLocale: String
     ) async {
         restore(snapshot)
         switch block.reason {
         case let .privacyBlocked(skip), let .noEligibleInput(skip):
-            await applyPrivacyBlockedGenerate(skip, regenerate: regenerate)
+            await applyPrivacyBlockedGenerate(skip, regenerate: regenerate, contentLocale: contentLocale)
         default:
             failedAction = nil
             operation = .idle
         }
     }
 
-    private func applyPrivacyBlockedGenerate(_ skip: AISummaryPrivacySkip, regenerate: Bool) async {
+    private func applyPrivacyBlockedGenerate(
+        _ skip: AISummaryPrivacySkip,
+        regenerate: Bool,
+        contentLocale: String
+    ) async {
         operation = .generating
         failedAction = nil
         do {
-            let draft = try await loggedPrivacySkipDraft(skip, regenerate: regenerate)
+            let draft = try await loggedPrivacySkipDraft(
+                skip,
+                regenerate: regenerate,
+                contentLocale: contentLocale
+            )
             apply(skip, draft: draft)
             operation = .idle
         } catch {
             failedAction = .generate
             operation = await .failed(
-                summaryError(for: error, message: L10n.string("Summary could not be generated."))
+                summaryError(for: error, message: L10n.message("Summary could not be generated."))
             )
         }
     }
 
     private func generationRequest(
         _ regenerate: Bool,
+        contentLocale: String,
         privacyPolicyRef: String? = nil
     ) -> AiSummaryGenerationRequest {
         AiSummaryGenerationRequest(
@@ -296,7 +324,8 @@ final class AISummaryEditorModel: ObservableObject {
             providerScope: summaryProviderScope,
             contextPolicy: .metadataAndExtractedText,
             privacyPolicyRef: privacyPolicyRef,
-            regenerateExisting: regenerate
+            regenerateExisting: regenerate,
+            contentLocale: contentLocale
         )
     }
 
@@ -321,14 +350,19 @@ final class AISummaryEditorModel: ObservableObject {
 
     private func loggedPrivacySkipDraft(
         _ skip: AISummaryPrivacySkip,
-        regenerate: Bool
+        regenerate: Bool,
+        contentLocale: String
     ) async throws -> AiSummaryDraft {
         guard let policyRef = skip.privacyPolicyRefForSummaryLog else {
             return skip.unloggedDraft(fileID: fileID)
         }
         return try await summaryStore.generateAISummary(
             repoPath: repoPath,
-            request: generationRequest(regenerate, privacyPolicyRef: policyRef)
+            request: generationRequest(
+                regenerate,
+                contentLocale: contentLocale,
+                privacyPolicyRef: policyRef
+            )
         )
     }
 
@@ -372,7 +406,7 @@ final class AISummaryEditorModel: ObservableObject {
         contentState.restore(snapshot)
     }
 
-    private func summaryError(for error: Error, message: String) async -> AISettingsError {
+    private func summaryError(for error: Error, message: LocalizedMessage) async -> AISettingsError {
         await AISummaryEditorPresentationSupport.error(
             for: error,
             message: message,

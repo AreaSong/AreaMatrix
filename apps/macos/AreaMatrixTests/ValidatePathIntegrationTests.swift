@@ -121,7 +121,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "Path environment checks are missing. Retry or choose another path.")
+        XCTAssertEqual(model.repositoryPathError, L10n.message("路径环境检查缺失，请重试或选择其他路径"))
         XCTAssertFalse(model.canContinueFromValidatePath)
         XCTAssertNil(model.validatePathAction)
     }
@@ -138,7 +138,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, "Path environment checks are missing. Retry or choose another path.")
+        XCTAssertEqual(model.repositoryPathError, L10n.message("路径环境检查缺失，请重试或选择其他路径"))
         XCTAssertFalse(model.canContinueFromValidatePath)
         XCTAssertNil(model.validatePathAction)
     }
@@ -286,7 +286,7 @@ final class ValidatePathRepairRegressionTests: XCTestCase {
         await initializer.assertAdoptedRepoPaths([])
         writer.assertNoSavedRepoPaths()
         XCTAssertEqual(model.repositoryPathValidation, changedValidation)
-        XCTAssertEqual(model.repositoryPathError, "The path state changed. Return and validate it again.")
+        XCTAssertEqual(model.repositoryPathError, L10n.message("onboarding.validate.pathChangedRevalidate"))
         XCTAssertEqual(model.route, .validatePath)
     }
 }

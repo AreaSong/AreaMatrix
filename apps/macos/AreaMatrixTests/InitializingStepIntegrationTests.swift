@@ -247,7 +247,7 @@ final class InitializingStepIntegrationTests: XCTestCase {
         await initializationTask.value
         writer.assertNoSavedRepoPaths()
         XCTAssertEqual(model.route, .welcome)
-        XCTAssertEqual(model.toastMessage, L10n.string("onboarding.quit.stoppedAtSafePoint"))
+        XCTAssertEqual(model.toastMessage, L10n.message("onboarding.quit.stoppedAtSafePoint"))
     }
 
     @MainActor
