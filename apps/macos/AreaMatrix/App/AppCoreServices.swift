@@ -2,6 +2,9 @@ import Foundation
 
 enum AppCoreServices {
     static let repositoryWriteCoordinator = RepositoryWriteCoordinator.shared
+    @MainActor static var overviewRegenerationCoordinator: OverviewRegenerationCoordinator {
+        .shared
+    }
 
     static var treeLister: any CoreRepositoryTreeListing {
         coreBridge()
@@ -172,6 +175,10 @@ enum AppCoreServices {
     }
 
     static var repositoryContentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting {
+        coreBridge()
+    }
+
+    static var overviewRegenerator: any CoreOverviewRegenerating {
         coreBridge()
     }
 

@@ -13,7 +13,17 @@ impl From<std::io::Error> for CoreError {
 
 impl From<rusqlite::Error> for CoreError {
     fn from(error: rusqlite::Error) -> Self {
-        Self::db(error.to_string())
+        let detail = error.to_string();
+        match &error {
+            rusqlite::Error::SqliteFailure(inner, _) => match inner.code {
+                rusqlite::ffi::ErrorCode::DatabaseBusy
+                | rusqlite::ffi::ErrorCode::DatabaseLocked => Self::db_locked(detail),
+                rusqlite::ffi::ErrorCode::DatabaseCorrupt
+                | rusqlite::ffi::ErrorCode::NotADatabase => Self::db_corrupted(detail),
+                _ => Self::db(detail),
+            },
+            _ => Self::db(detail),
+        }
     }
 }
 

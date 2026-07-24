@@ -159,8 +159,8 @@ pub fn assert_sanitized_error(error: CoreError, expected_kind: ErrorKind) {
     assert_eq!(mapping.kind, expected_kind);
     assert_no_api_key_material(&text);
     assert_no_api_key_material(&raw_context);
-    assert_no_api_key_material(&mapping.raw_context);
-    assert_no_api_key_material(&mapping.user_message);
+    assert_no_api_key_material(mapping.technical_details.as_deref().unwrap_or_default());
+    assert_no_api_key_material(&mapping.code);
 }
 
 pub fn assert_contains(haystack: &str, needle: &str) {

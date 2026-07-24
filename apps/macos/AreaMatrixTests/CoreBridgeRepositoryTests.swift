@@ -16,7 +16,9 @@ final class CoreBridgeRepositoryTests: XCTestCase {
 
         await model.bootstrapIfNeeded()
 
-        let expectedConfig = RepoConfigSnapshot.testFixture(repoPath: repoURL.path)
+        let expectedConfig = AppRepoConfigSnapshot.testFixture(repoPath: repoURL.path) {
+            $0.revision = 1
+        }
 
         guard let opening = requireMainEmptyRoute(model) else { return }
         XCTAssertEqual(opening.config, expectedConfig)

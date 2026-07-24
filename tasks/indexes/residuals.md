@@ -29,7 +29,7 @@
 | `v2-dep-003` | `deferred` | v2 execution authorization 未成立；`executable_task: false`，不授权 promotion apply 或 runner。 | [v2 residuals](../../workflow/versions/v2/residuals/) |
 | `v2-dep-004` | `deferred` | remote CI / branch protection 证据未成立；`executable_task: false`，本地检查不能替代。 | [v2 residuals](../../workflow/versions/v2/residuals/) |
 | `global-product-soft-delete-retention` | `closed` | 启动 recovery 已 purge 超过 30 天的 soft-deleted 元数据行；不是 active task。 | [ADR-0003](../../docs/adr/0003-source-of-truth-strategy.md) |
-| `global-product-ui-localization` | `closed` | 双语言系统、完整 en/zh-Hans String Catalog 与 CI 漂移门禁已落地；不是 active task。 | [ADR-0008](../../docs/adr/0008-naming-and-i18n.md) |
+| `global-product-ui-localization` | `open` | v3 双语言合同正在版本化 workflow 中实现；它不是 lightweight task，关闭需要 Core/UDL/macOS、四组合 UI 与治理证据。 | [ADR-0008](../../docs/adr/0008-naming-and-i18n.md) |
 | `global-docs-core-module-doc-coverage` | `closed` | 高风险模块文档已补写，覆盖策略已写入架构文档；不是 active task。 | [governance register](../../docs/governance/governance-register.yaml) |
 | `global-governance-ios-bindings-verify-gap` | `closed` | iOS subset bindings verify 已落地；不是 active task。 | [governance register](../../docs/governance/governance-register.yaml) |
 | `global-ai-classification-call-log-gate` | `closed` | classification 前置 call-log gate 已落地；不是 active task。 | [Core API](../../docs/api/core-api.md) |

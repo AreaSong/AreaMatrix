@@ -338,7 +338,10 @@ fn desktop_main_query_failure_db_corruption_is_explicit_and_leaves_no_half_produ
     for error in [list_error, search_error, tree_error] {
         let mapping = error.to_error_mapping();
         assert_eq!(mapping.kind, ErrorKind::Db);
-        assert_eq!(mapping.recoverability, ErrorRecoverability::Fatal);
+        assert_eq!(
+            mapping.recoverability,
+            ErrorRecoverability::UserActionRequired
+        );
     }
     assert_eq!(visible_paths(repo.path()), before_user_paths);
     assert_eq!(
@@ -378,28 +381,34 @@ fn desktop_main_query_failure_error_mapping_keeps_ui_actions_structured() {
                 path: Some("/repo".to_owned()),
                 reason: None,
                 message: None,
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorKind::RepoNotInitialized,
             ErrorRecoverability::UserActionRequired,
         ),
         (
             ErrorMappingInput {
-                kind: ErrorKind::Db,
+                kind: ErrorKind::DbLocked,
                 path: None,
                 reason: None,
                 message: Some("database is locked".to_owned()),
+                expected_revision: None,
+                current_revision: None,
             },
-            ErrorKind::Db,
+            ErrorKind::DbLocked,
             ErrorRecoverability::Retryable,
         ),
         (
             ErrorMappingInput {
-                kind: ErrorKind::Db,
+                kind: ErrorKind::DbCorrupted,
                 path: None,
                 reason: None,
                 message: Some("file is not a database".to_owned()),
+                expected_revision: None,
+                current_revision: None,
             },
-            ErrorKind::Db,
+            ErrorKind::DbCorrupted,
             ErrorRecoverability::Fatal,
         ),
         (
@@ -408,6 +417,8 @@ fn desktop_main_query_failure_error_mapping_keeps_ui_actions_structured() {
                 path: Some("/repo/.areamatrix/index.db".to_owned()),
                 reason: None,
                 message: None,
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorKind::PermissionDenied,
             ErrorRecoverability::UserActionRequired,
@@ -418,6 +429,8 @@ fn desktop_main_query_failure_error_mapping_keeps_ui_actions_structured() {
                 path: None,
                 reason: None,
                 message: Some("io edge".to_owned()),
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorKind::Io,
             ErrorRecoverability::Retryable,
@@ -428,6 +441,8 @@ fn desktop_main_query_failure_error_mapping_keeps_ui_actions_structured() {
                 path: None,
                 reason: Some("pagination".to_owned()),
                 message: None,
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorKind::Validation,
             ErrorRecoverability::UserActionRequired,
@@ -438,9 +453,13 @@ fn desktop_main_query_failure_error_mapping_keeps_ui_actions_structured() {
         let mapping = map_core_error(input);
         assert_eq!(mapping.kind, expected_kind);
         assert_eq!(mapping.recoverability, expected_recoverability);
-        assert!(!mapping.user_message.is_empty());
-        assert!(!mapping.suggested_action.is_empty());
-        assert!(!mapping.raw_context.is_empty());
+        assert!(!mapping.code.is_empty());
+        assert!(!mapping.recovery_action_ids.is_empty());
+        assert!(!mapping
+            .technical_details
+            .as_deref()
+            .unwrap_or_default()
+            .is_empty());
     }
 }
 

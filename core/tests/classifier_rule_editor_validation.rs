@@ -1,8 +1,8 @@
 use area_matrix_core::{
     create_classifier_rule, delete_classifier_rule, list_classifier_rules, predict_category,
-    update_classifier_rule, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest,
-    ClassifierRuleEditorSnapshot, ClassifierRuleRecord, ClassifierRuleUpdate, ClassifyReason,
-    CoreError, CoreResult,
+    update_classifier_rule, ClassifierLocaleValue, ClassifierRuleCreateRequest,
+    ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot, ClassifierRuleRecord,
+    ClassifierRuleUpdate, ClassifyReason, ContentLocale, CoreError, CoreResult,
 };
 use pretty_assertions::assert_eq;
 
@@ -26,9 +26,19 @@ const CLASSIFIER_RULE_EDITOR_CONFIG_RS: &str =
     include_str!("../src/classifier_rule_editor/config.rs");
 const LIB_RS: &str = include_str!("../src/lib.rs");
 
+fn locale_value<'a>(values: &'a [ClassifierLocaleValue], locale: &str) -> Option<&'a str> {
+    values
+        .iter()
+        .find(|entry| entry.locale == locale)
+        .map(|entry| entry.value.as_str())
+}
+
 #[test]
 fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
-    fn assert_list(_: fn(String) -> CoreResult<ClassifierRuleEditorSnapshot>) {}
+    fn assert_list(
+        _: fn(String, Option<ContentLocale>) -> CoreResult<ClassifierRuleEditorSnapshot>,
+    ) {
+    }
     fn assert_create(
         _: fn(String, ClassifierRuleCreateRequest) -> CoreResult<ClassifierRuleEditorSnapshot>,
     ) {
@@ -49,8 +59,14 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     let record = ClassifierRuleRecord {
         rule_id: "finance".to_owned(),
         slug: "finance".to_owned(),
-        display_name: "Finance".to_owned(),
-        description: "Finance documents".to_owned(),
+        display_names: vec![ClassifierLocaleValue {
+            locale: "en".to_owned(),
+            value: "Finance".to_owned(),
+        }],
+        descriptions: vec![ClassifierLocaleValue {
+            locale: "en".to_owned(),
+            value: "Finance documents".to_owned(),
+        }],
         extensions: vec!["pdf".to_owned()],
         keywords: vec!["invoice".to_owned()],
         priority: 10,
@@ -61,7 +77,7 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     assert_eq!(record.priority, 10);
 
     for fragment in [
-        "ClassifierRuleEditorSnapshot list_classifier_rules(string repo_path);",
+        "string repo_path, ContentLocale? editing_locale",
         "ClassifierRuleEditorSnapshot create_classifier_rule(",
         "ClassifierRuleCreateRequest request",
         "ClassifierRuleEditorSnapshot update_classifier_rule(",
@@ -71,8 +87,8 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
         "dictionary ClassifierRuleRecord",
         "string rule_id;",
         "string slug;",
-        "string display_name;",
-        "string description;",
+        "sequence<ClassifierLocaleValue> display_names;",
+        "sequence<ClassifierLocaleValue> descriptions;",
         "sequence<string> extensions;",
         "sequence<string> keywords;",
         "string? naming_template;",
@@ -95,7 +111,7 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
         "classifier rule editor 的分类规则编辑器入口",
         "`classifier rule editor surface classifier-rule-editor`",
         "### `create_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
-        "| `create_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |",
+        "| `create_classifier_rule(repo, request)` | classify | √ | Config / Conflict / PermissionDenied / Io |",
         "只允许原子更新 classifier 配置",
         "删除规则不自动移动、删除、重命名或重分类历史文件",
         "不实现 classifier rule save、classifier impact preview、复杂脚本规则、插件规则或 AI 规则",
@@ -117,8 +133,11 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
     }
 
     for fragment in [
-        "create_classifier_rule, delete_classifier_rule, list_classifier_rules, update_classifier_rule",
-        "ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot",
+        "create_classifier_rule, create_default_classifier, delete_classifier_rule",
+        "list_classifier_rules, restore_default_classifier, restore_last_valid_classifier",
+        "update_classifier_rule, ClassifierConfigHealth",
+        "ClassifierRecoveryAction, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest",
+        "ClassifierRuleEditorSnapshot, ClassifierRuleObservedState, ClassifierRuleRecord",
         "ClassifierRuleUpdate",
     ] {
         assert_contains(LIB_RS, fragment);
@@ -129,7 +148,7 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
         "Creates one classifier rule editor row for future classification.",
         "Updates one classifier rule editor row for future classification.",
         "Deletes one classifier rule editor row after explicit impact confirmation.",
-        "classifier_rule_editor::list_classifier_rules(repo_path)",
+        "classifier_rule_editor::list_classifier_rules(repo_path, editing_locale)",
         "classifier_rule_editor::create_classifier_rule(repo_path, request)",
         "classifier_rule_editor::update_classifier_rule(repo_path, request)",
         "classifier_rule_editor::delete_classifier_rule(repo_path, request)",
@@ -142,6 +161,7 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
         "pub struct ClassifierRuleRecord",
         "pub struct ClassifierRuleEditorSnapshot",
         "pub struct ClassifierRuleCreateRequest",
+        "pub struct ClassifierRuleObservedState",
         "pub struct ClassifierRuleUpdate",
         "pub struct ClassifierRuleDeleteRequest",
         "pub fn list_classifier_rules(",
@@ -160,6 +180,7 @@ fn classifier_rule_editor_validation_locks_api_udl_and_rust_contract() {
         "read_classifier_config",
         "snapshot_from_config",
         "apply_create",
+        "validate_observed_update",
         "apply_update",
         "apply_delete",
         "reject_unpreviewed_impactful_update",
@@ -185,8 +206,8 @@ fn classifier_rule_editor_validation_create_is_snapshot_ready_and_future_only() 
     assert!(saved.rules.iter().any(|rule| {
         rule.rule_id == "tax"
             && rule.slug == "tax"
-            && rule.display_name == "Tax"
-            && rule.description == "Tax documents"
+            && locale_value(&rule.display_names, "en") == Some("Tax")
+            && locale_value(&rule.descriptions, "en") == Some("Tax documents")
             && rule.extensions == vec!["pdf".to_owned()]
             && rule.keywords == vec!["tax".to_owned()]
             && rule.priority == 20
@@ -240,7 +261,8 @@ fn classifier_rule_editor_validation_list_and_update_are_snapshot_ready_and_futu
     let existing_file_id = insert_active_file(repo.path(), "finance/legacy-invoice.pdf", "finance");
     let before = snapshot(repo.path());
 
-    let listed = list_classifier_rules(path_string(repo.path())).expect("list classifier rules");
+    let listed = list_classifier_rules(path_string(repo.path()), Some(ContentLocale::En))
+        .expect("list classifier rules");
 
     assert_eq!(listed.default_rule_id, "inbox");
     assert_eq!(listed.updated_rule_id, None);
@@ -248,7 +270,7 @@ fn classifier_rule_editor_validation_list_and_update_are_snapshot_ready_and_futu
     assert!(listed.rules.iter().any(|rule| {
         rule.rule_id == "finance"
             && rule.slug == "finance"
-            && rule.display_name == "Finance"
+            && locale_value(&rule.display_names, "en") == Some("Finance")
             && rule.keywords.iter().any(|keyword| keyword == "invoice")
             && !rule.is_default
     }));
@@ -263,8 +285,8 @@ fn classifier_rule_editor_validation_list_and_update_are_snapshot_ready_and_futu
     assert!(saved.rules.iter().any(|rule| {
         rule.rule_id == "contracts"
             && rule.slug == "contracts"
-            && rule.display_name == "Contracts"
-            && rule.description == "Signed client contracts"
+            && locale_value(&rule.display_names, "en") == Some("Contracts")
+            && locale_value(&rule.descriptions, "en") == Some("Signed client contracts")
             && rule.extensions == vec!["pdf".to_owned(), "docx".to_owned()]
             && rule.keywords == vec!["agreement".to_owned(), "合同".to_owned()]
             && rule.priority == 30

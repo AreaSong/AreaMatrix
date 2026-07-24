@@ -50,8 +50,8 @@ fn snapshot_files(paths: &[PathBuf]) -> Vec<(PathBuf, Vec<u8>)> {
 fn assert_error_kind(error: CoreError, expected: ErrorKind) -> CoreError {
     let mapping = error.to_error_mapping();
     assert_eq!(mapping.kind, expected);
-    assert!(!mapping.user_message.is_empty());
-    assert!(!mapping.suggested_action.is_empty());
+    assert!(!mapping.code.is_empty());
+    assert!(!mapping.recovery_action_ids.is_empty());
     error
 }
 
@@ -130,7 +130,7 @@ fn linux_repo_connect_failure_corrupted_metadata_maps_db_without_repair_side_eff
     let load_error = load_config(path_string(repo.path())).expect_err("corrupted config DB fails");
 
     assert_error_kind(validate_error, ErrorKind::Db);
-    let load_error = assert_error_kind(load_error, ErrorKind::Db);
+    let load_error = assert_error_kind(load_error, ErrorKind::DbCorrupted);
     assert_eq!(
         load_error.to_error_mapping().recoverability,
         ErrorRecoverability::Fatal
@@ -168,8 +168,14 @@ fn linux_repo_connect_failure_permission_denied_does_not_suggest_permission_muta
         mapping.recoverability,
         ErrorRecoverability::UserActionRequired
     );
-    assert!(!mapping.suggested_action.contains("chmod"));
-    assert!(!mapping.suggested_action.contains("sudo"));
+    assert!(!mapping
+        .recovery_action_ids
+        .iter()
+        .any(|action| action == "chmod"));
+    assert!(!mapping
+        .recovery_action_ids
+        .iter()
+        .any(|action| action == "sudo"));
     assert_eq!(validation.recommended_mode, None);
     assert!(validation.issues.contains(&RepoPathIssue::NotWritable));
     assert_eq!(snapshot_files(std::slice::from_ref(&user_file)), before);

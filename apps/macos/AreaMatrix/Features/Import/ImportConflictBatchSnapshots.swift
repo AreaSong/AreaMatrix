@@ -323,7 +323,10 @@ extension ImportConflictBatchPreviewItemSnapshot {
 @MainActor
 extension ImportBatchCopyImportModel {
     var conflictBatchPerItemSummary: LocalizedMessage? {
-        conflictBatchPerItemQueue.map { L10n.pluralMessage("import.conflict.per-item-queue-summary", count: $0.routes.count) }
+        conflictBatchPerItemQueue.map { L10n.pluralMessage(
+            "import.conflict.per-item-queue-summary",
+            count: $0.routes.count
+        ) }
     }
 
     var conflictBatchPerItemRouteLabels: [String] {
@@ -394,45 +397,33 @@ extension ImportBatchCopyImportModel {
 
 enum ImportConflictBatchDisplayText {
     static func fromCore(_ value: String) -> AppDisplayText {
-        switch value {
-        case "No selected conflicts can be applied":
-            .localized(L10n.message("No selected conflicts can be applied"))
-        case "One or more import conflicts are blocked":
-            .localized(L10n.message("One or more import conflicts are blocked"))
-        case "Conflict is queued for per-item handling":
-            .localized(L10n.message("Conflict is queued for per-item handling"))
-        case "Conflict is already resolved":
-            .localized(L10n.message("Conflict is already resolved"))
-        case "Previous apply attempt failed":
-            .localized(L10n.message("Previous apply attempt failed"))
-        case "Index-only staging cannot be batch imported":
-            .localized(L10n.message("Index-only staging cannot be batch imported"))
-        case "Index-only staging cannot replace an existing file":
-            .localized(L10n.message("Index-only staging cannot replace an existing file"))
-        case "Replace requires an active target file":
-            .localized(L10n.message("Replace requires an active target file"))
-        case "Index-only target cannot be replaced":
-            .localized(L10n.message("Index-only target cannot be replaced"))
-        case "Trash unavailable":
-            .localized(L10n.message("Trash unavailable"))
-        case "This row cannot be processed safely":
-            .localized(L10n.message("This row cannot be processed safely"))
-        case "Incoming duplicate stays in staging; existing file is unchanged":
-            .localized(L10n.message("Incoming duplicate stays in staging; existing file is unchanged"))
-        case "Incoming file will be imported with a conflict-free name":
-            .localized(L10n.message("Incoming file will be imported with a conflict-free name"))
-        case "Existing file will move to recoverable storage before incoming file takes its place":
-            .localized(L10n.message("Existing file will move to recoverable storage before incoming file takes its place"))
-        case "Conflict will stay staged for per-item handling":
-            .localized(L10n.message("Conflict will stay staged for per-item handling"))
-        case "Waiting for Core preview.":
-            .localized(L10n.message("Waiting for Core preview."))
-        case "Select at least one conflict.":
-            .localized(L10n.message("Select at least one conflict."))
-        case "Not selected":
-            .localized(L10n.message("Not selected"))
-        default:
-            L10n.verbatim(value, reason: .technicalDetail)
-        }
+        knownMessages[value].map(AppDisplayText.localized)
+            ?? L10n.verbatim(value, reason: .technicalDetail)
     }
+
+    private static let knownMessages: [String: LocalizedMessage] = [
+        "No selected conflicts can be applied": L10n.message("No selected conflicts can be applied"),
+        "One or more import conflicts are blocked": L10n.message("One or more import conflicts are blocked"),
+        "Conflict is queued for per-item handling": L10n.message("Conflict is queued for per-item handling"),
+        "Conflict is already resolved": L10n.message("Conflict is already resolved"),
+        "Previous apply attempt failed": L10n.message("Previous apply attempt failed"),
+        "Index-only staging cannot be batch imported": L10n.message("Index-only staging cannot be batch imported"),
+        "Index-only staging cannot replace an existing file":
+            L10n.message("Index-only staging cannot replace an existing file"),
+        "Replace requires an active target file": L10n.message("Replace requires an active target file"),
+        "Index-only target cannot be replaced": L10n.message("Index-only target cannot be replaced"),
+        "Trash unavailable": L10n.message("Trash unavailable"),
+        "This row cannot be processed safely": L10n.message("This row cannot be processed safely"),
+        "Incoming duplicate stays in staging; existing file is unchanged":
+            L10n.message("Incoming duplicate stays in staging; existing file is unchanged"),
+        "Incoming file will be imported with a conflict-free name":
+            L10n.message("Incoming file will be imported with a conflict-free name"),
+        "Existing file will move to recoverable storage before incoming file takes its place":
+            L10n.message("Existing file will move to recoverable storage before incoming file takes its place"),
+        "Conflict will stay staged for per-item handling":
+            L10n.message("Conflict will stay staged for per-item handling"),
+        "Waiting for Core preview.": L10n.message("Waiting for Core preview."),
+        "Select at least one conflict.": L10n.message("Select at least one conflict."),
+        "Not selected": L10n.message("Not selected")
+    ]
 }

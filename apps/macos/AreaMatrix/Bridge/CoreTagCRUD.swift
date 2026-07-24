@@ -26,7 +26,7 @@ protocol CoreAITagSuggestionManaging: Sendable {
     ) async throws -> AiTagSuggestionApplyReport
 }
 
-struct AITagSuggestionRequestSnapshot: Equatable, Sendable {
+struct AITagSuggestionRequestSnapshot: Equatable {
     var fileID: Int64
     var candidateTags: [String]
     var privacyPolicyRef: String?
@@ -110,7 +110,7 @@ extension CoreTagCRUD {
 
 extension CoreBridge: CoreTagCRUD {
     func listTags(repoPath: String, fileID: Int64) async throws -> TagSetSnapshot {
-        return try await Task.detached(priority: .userInitiated) {
+        try await Task.detached(priority: .userInitiated) {
             try TagSetSnapshot(coreTagSet: AreaMatrix.listTags(repoPath: repoPath, fileId: fileID))
         }.value
     }
@@ -168,11 +168,11 @@ extension CoreBridge: CoreAITagSuggestionManaging {
         request: AITagSuggestionRequestSnapshot
     ) async throws -> AiTagSuggestionReport {
         let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
-        let coreRequest = AiTagSuggestionRequest(
+        let coreRequest = try AiTagSuggestionRequest(
             fileId: request.fileID,
             candidateTags: request.candidateTags,
             privacyPolicyRef: request.privacyPolicyRef,
-            contentLocale: contentLocale
+            contentLocale: ContentLocale(snapshotValue: contentLocale)
         )
         return try await Task.detached(priority: .userInitiated) {
             try AreaMatrix.suggestTagsWithAi(repoPath: repoPath, request: coreRequest)

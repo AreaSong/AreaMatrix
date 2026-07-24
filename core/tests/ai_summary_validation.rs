@@ -5,7 +5,7 @@ use std::{fs, path::Path};
 
 use area_matrix_core::{
     clear_ai_summary, generate_ai_summary, read_note, save_ai_summary, write_note,
-    AiSummaryClearRequest, AiSummaryContextPolicy, AiSummaryDraftStatus,
+    AiContentOwnership, AiSummaryClearRequest, AiSummaryContextPolicy, AiSummaryDraftStatus,
     AiSummaryGenerationRequest, AiSummaryInputField, AiSummaryProviderScope, AiSummaryRoute,
     AiSummarySaveRequest, AiSummarySkipReason, CoreError, CoreResult,
 };
@@ -49,6 +49,8 @@ struct SummaryLogRow {
 
 fn generation_request(file_id: i64) -> AiSummaryGenerationRequest {
     AiSummaryGenerationRequest {
+        operation_id: uuid::Uuid::new_v4().to_string(),
+        retry_of_operation_id: None,
         file_id,
         provider_scope: AiSummaryProviderScope::LocalPreferred,
         context_policy: AiSummaryContextPolicy::MetadataTextAndNotes,
@@ -63,9 +65,13 @@ fn save_request(
     summary_text: String,
     draft_id: Option<String>,
     call_log_id: Option<i64>,
+    operation_id: String,
+    expected_content_revision: i64,
 ) -> AiSummarySaveRequest {
     AiSummarySaveRequest {
         file_id,
+        expected_content_revision,
+        confirm_replace_user_owned: false,
         summary_text,
         draft_id,
         route: Some(AiSummaryRoute::Local),
@@ -80,7 +86,10 @@ fn save_request(
         ],
         privacy_rule_id: None,
         call_log_id,
-        edited_by_user: true,
+        ownership: AiContentOwnership::UserOwned,
+        operation_id,
+        content_locale: area_matrix_core::ContentLocale::En,
+        format_contract_version: 1,
     }
 }
 
@@ -221,6 +230,8 @@ fn ai_summary_validation_proves_draft_save_clear_path_is_ui_ready() {
             "Edited validation summary.".to_owned(),
             draft.draft_id,
             draft.call_log_id,
+            draft.operation_id,
+            0,
         ),
     )
     .expect("save summary");
@@ -245,6 +256,7 @@ fn ai_summary_validation_proves_draft_save_clear_path_is_ui_ready() {
         repo_path,
         AiSummaryClearRequest {
             file_id,
+            expected_content_revision: saved.content_revision,
             confirmed: true,
         },
     )

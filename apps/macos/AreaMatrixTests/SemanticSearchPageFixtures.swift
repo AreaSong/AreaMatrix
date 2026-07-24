@@ -44,9 +44,9 @@ extension RepositoryOpeningResult {
     }
 }
 
-extension RepoConfigSnapshot {
-    static func semanticSearchPageConfig() -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: "/tmp/repo") {
+extension AppRepoConfigSnapshot {
+    static func semanticSearchPageConfig() -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: "/tmp/repo") {
             $0.aiEnabled = true
         }
     }

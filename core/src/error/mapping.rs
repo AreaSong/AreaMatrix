@@ -14,10 +14,17 @@ impl ErrorMappingInput {
         match self.kind {
             ErrorKind::Io => CoreError::Io { message },
             ErrorKind::Db => CoreError::Db { message },
+            ErrorKind::DbLocked => CoreError::DbLocked { message },
+            ErrorKind::DbCorrupted => CoreError::DbCorrupted { message },
             ErrorKind::Config => CoreError::Config { reason },
             ErrorKind::Validation => CoreError::Validation { reason },
             ErrorKind::Classify => CoreError::Classify { reason },
             ErrorKind::Conflict => CoreError::Conflict { path },
+            ErrorKind::RevisionConflict => CoreError::RevisionConflict {
+                resource: path,
+                expected_revision: self.expected_revision.unwrap_or(-1),
+                current_revision: self.current_revision.unwrap_or(-1),
+            },
             ErrorKind::DuplicateFile => CoreError::DuplicateFile {
                 existing_path: path,
             },

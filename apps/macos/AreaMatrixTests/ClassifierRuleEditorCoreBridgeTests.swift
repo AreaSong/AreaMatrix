@@ -9,12 +9,14 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let initial = try await bridge.listClassifierRules(repoPath: repoURL.path)
+        let initial = try await bridge.listClassifierRules(repoPath: repoURL.path, editingLocale: .en)
         XCTAssertTrue(initial.rules.contains { $0.ruleID == "finance" })
 
         let created = try await bridge.createClassifierRule(
             repoPath: repoURL.path,
             request: ClassifierRuleCreateRequestSnapshot(
+                repositoryLocalePolicy: "system",
+                editingLocale: .en,
                 slug: "tax",
                 displayName: "Tax",
                 description: "Tax documents",
@@ -30,7 +32,19 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         let updated = try await bridge.updateClassifierRule(
             repoPath: repoURL.path,
             request: ClassifierRuleUpdateSnapshot(
+                repositoryLocalePolicy: "system",
+                editingLocale: .en,
                 ruleID: "tax",
+                observed: ClassifierRuleObservedStateSnapshot(
+                    ruleID: "tax",
+                    slug: "tax",
+                    displayName: "Tax",
+                    description: "Tax documents",
+                    extensions: ["pdf"],
+                    keywords: ["tax"],
+                    priority: 20,
+                    namingTemplate: "{stem}"
+                ),
                 slug: "tax",
                 displayName: "Tax Records",
                 description: "Tax documents",

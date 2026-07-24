@@ -2,31 +2,36 @@ import Combine
 import Foundation
 
 @MainActor
-// swiftlint:disable:next type_body_length
 final class AISummaryEditorModel: ObservableObject {
-    @Published private var contentState = AISummaryEditorContentState()
-    @Published private(set) var operation: AISummaryEditorOperation = .idle
-    @Published private(set) var failedAction: AISummaryEditorFailedAction?
+    @Published private(set) var contentState = AISummaryEditorContentState()
+    @Published var operation: AISummaryEditorOperation = .idle
+    @Published var failedAction: AISummaryEditorFailedAction?
     @Published private(set) var gateState: AISummaryEditorGateState = .unknown
+    @Published private(set) var replacementReview: AISummaryReplacementReview?
+    @Published private(set) var saveConflictReview: AISummarySaveConflictReview?
+    @Published var clearConflictNotice: AISummaryClearConflictNotice?
 
     let repoPath: String
     private(set) var fileID: Int64
-    private let summaryStore: any CoreAISummaryManaging
+    let summaryStore: any CoreAISummaryManaging
     private let contentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting
     private let privacyRules: any CoreAIPrivacyEvaluating
-    private let errorMapper: any CoreErrorMapping
+    let errorMapper: any CoreErrorMapping
     private let summaryProviderScope: AiSummaryProviderScope
     private var privacyContext: AISummaryPrivacyContext
     private var generationToken = UUID()
     private var entryLoadToken = UUID()
     private var generationSnapshot: AISummaryEditorSnapshot?
+    var failedGenerationAttempt: AISummaryGenerationAttempt?
+    var confirmedReplacement = false
     private(set) var privacySkip: AISummaryPrivacySkip?
 
     init(
         repoPath: String,
         fileID: Int64,
         summaryStore: any CoreAISummaryManaging = AppCoreServices.aiSummaryStore,
-        contentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting = AppCoreServices.repositoryContentLocaleSnapshotter,
+        contentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting = AppCoreServices
+            .repositoryContentLocaleSnapshotter,
         privacyRules: any CoreAIPrivacyEvaluating = AppCoreServices.aiPrivacyRules,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         summaryProviderScope: AiSummaryProviderScope = .localPreferred,
@@ -41,55 +46,9 @@ final class AISummaryEditorModel: ObservableObject {
         self.summaryProviderScope = summaryProviderScope
         self.privacyContext = privacyContext
     }
+}
 
-    var characterCountText: String {
-        contentState.characterCountText
-    }
-
-    var status: AISummaryEditorStatus {
-        contentState.status
-    }
-
-    var provenance: AISummaryProvenance? {
-        contentState.provenance
-    }
-
-    var draftText: String {
-        contentState.draftText
-    }
-
-    var canGenerate: Bool {
-        canEdit && gateState.allowsGeneration
-    }
-
-    var canCancelGeneration: Bool {
-        operation == .generating
-    }
-
-    var canRegenerate: Bool {
-        canGenerate && contentState.hasSummaryContent
-    }
-
-    var canDiscard: Bool {
-        canEdit && contentState.canDiscard
-    }
-
-    var canClear: Bool {
-        canEdit && privacySkip == nil && contentState.hasSummaryContent
-    }
-
-    var canSave: Bool {
-        canEdit && contentState.canSave
-    }
-
-    var needsExitConfirmation: Bool {
-        contentState.needsExitConfirmation
-    }
-
-    private var canEdit: Bool {
-        !operation.isBusy
-    }
-
+extension AISummaryEditorModel {
     func loadEntryState() async {
         guard !operation.isBusy else { return }
         let token = UUID()
@@ -97,7 +56,7 @@ final class AISummaryEditorModel: ObservableObject {
         operation = .loading
         failedAction = nil
         do {
-            let saved = try await summaryStore.loadSavedAISummary(repoPath: repoPath, fileID: fileID)
+            let saved = try await summaryStore.loadAISummaryState(repoPath: repoPath, fileID: fileID)
             guard token == entryLoadToken else { return }
             apply(saved)
         } catch {
@@ -117,6 +76,11 @@ final class AISummaryEditorModel: ObservableObject {
         guard self.fileID != fileID else { return }
         self.fileID = fileID
         contentState.reset()
+        replacementReview = nil
+        saveConflictReview = nil
+        clearConflictNotice = nil
+        confirmedReplacement = false
+        failedGenerationAttempt = nil
         privacySkip = nil
         gateState = .unknown
         failedAction = nil
@@ -137,25 +101,22 @@ final class AISummaryEditorModel: ObservableObject {
         privacySkip = nil
     }
 
-    func generate(regenerate: Bool) async {
+    func generate(regenerate: Bool, retryOfOperationID: String? = nil) async {
         guard canEdit else { return }
-        let contentLocale: String
-        do {
-            contentLocale = try await contentLocaleSnapshotter.repositoryContentLocaleSnapshot(repoPath: repoPath)
-        } catch {
-            failedAction = .generate
-            operation = await .failed(
-                summaryError(for: error, message: L10n.message("Summary could not be generated."))
-            )
-            return
-        }
+        guard let contentLocale = await generationContentLocale() else { return }
         let preGateSnapshot = snapshot()
+        let attempt = AISummaryGenerationAttempt(
+            operationID: UUID().uuidString.lowercased(),
+            retryOfOperationID: retryOfOperationID,
+            regenerate: regenerate
+        )
         if let blocked = await refreshGenerationGate() {
             await handleBlockedGenerate(
                 blocked,
                 snapshot: preGateSnapshot,
                 regenerate: regenerate,
-                contentLocale: contentLocale
+                contentLocale: contentLocale,
+                attempt: attempt
             )
             return
         }
@@ -168,17 +129,35 @@ final class AISummaryEditorModel: ObservableObject {
         do {
             let draft = try await summaryStore.generateAISummary(
                 repoPath: repoPath,
-                request: generationRequest(regenerate, contentLocale: contentLocale)
+                request: generationRequest(
+                    regenerate,
+                    contentLocale: contentLocale,
+                    attempt: attempt
+                )
             )
             guard token == generationToken else { return }
             operation = .idle
+            failedGenerationAttempt = nil
             apply(draft)
         } catch {
             guard token == generationToken else { return }
+            failedGenerationAttempt = attempt
             failedAction = .generate
             operation = await .failed(
                 summaryError(for: error, message: L10n.message("Summary could not be generated."))
             )
+        }
+    }
+
+    private func generationContentLocale() async -> String? {
+        do {
+            return try await contentLocaleSnapshotter.repositoryContentLocaleSnapshot(repoPath: repoPath)
+        } catch {
+            failedAction = .generate
+            operation = await .failed(
+                summaryError(for: error, message: L10n.message("Summary could not be generated."))
+            )
+            return nil
         }
     }
 
@@ -192,15 +171,25 @@ final class AISummaryEditorModel: ObservableObject {
 
     @discardableResult
     func save() async -> Bool {
-        guard canSave else { return false }
+        if !confirmedReplacement,
+           let review = contentState.currentDraftReplacementReview() {
+            replacementReview = review
+            return false
+        }
+        guard canSave, let request = saveRequest() else { return false }
         operation = .saving
         failedAction = nil
         do {
-            let report = try await summaryStore.saveAISummary(repoPath: repoPath, request: saveRequest())
+            let report = try await summaryStore.saveAISummary(repoPath: repoPath, request: request)
             contentState.acceptSaveReport(report)
+            replacementReview = nil
+            confirmedReplacement = false
             operation = .idle
             return true
         } catch {
+            if await applySaveConflictIfPresent(error, request: request) {
+                return false
+            }
             failedAction = .save
             operation = await .failed(
                 summaryError(for: error, message: L10n.message("Summary could not be saved."))
@@ -212,9 +201,40 @@ final class AISummaryEditorModel: ObservableObject {
     func discardChanges() {
         guard canDiscard else { return }
         contentState.discardChanges()
+        replacementReview = nil
+        confirmedReplacement = false
         privacySkip = nil
         failedAction = nil
         operation = .idle
+    }
+
+    @discardableResult
+    func replaceReviewedSummary() async -> Bool {
+        guard let review = replacementReview else { return false }
+        if review.source == .generatedCandidate {
+            contentState.applyReplacementCandidate(review)
+        }
+        replacementReview = nil
+        confirmedReplacement = true
+        return await save()
+    }
+
+    func keepExistingSummary() {
+        guard let review = replacementReview else { return }
+        if review.source == .currentDraft {
+            contentState.discardChanges()
+        }
+        replacementReview = nil
+        confirmedReplacement = false
+    }
+
+    func continueEditingReplacement() {
+        guard let review = replacementReview else { return }
+        if review.source == .generatedCandidate {
+            contentState.applyReplacementCandidate(review)
+        }
+        replacementReview = nil
+        confirmedReplacement = false
     }
 
     func clear() async {
@@ -222,25 +242,27 @@ final class AISummaryEditorModel: ObservableObject {
         operation = .clearing
         failedAction = nil
         do {
-            _ = try await summaryStore.clearAISummary(
+            let report = try await summaryStore.clearAISummary(
                 repoPath: repoPath,
-                request: AiSummaryClearRequest(fileId: fileID, confirmed: true)
+                request: AiSummaryClearRequest(
+                    fileId: fileID,
+                    expectedContentRevision: contentState.expectedContentRevision,
+                    confirmed: true
+                )
             )
-            contentState.clear()
+            contentState.clear(report)
+            clearConflictNotice = nil
             privacySkip = nil
             operation = .idle
         } catch {
+            if await applyClearConflictIfPresent(error) {
+                return
+            }
             failedAction = .clear
             operation = await .failed(
                 summaryError(for: error, message: L10n.message("Summary could not be cleared."))
             )
         }
-    }
-
-    func cancelFailedAction() {
-        guard failedAction != nil else { return }
-        failedAction = nil
-        operation = .idle
     }
 
     private func refreshGenerationGate() async -> AISummaryEditorNotice? {
@@ -279,12 +301,18 @@ final class AISummaryEditorModel: ObservableObject {
         _ block: AISummaryEditorNotice,
         snapshot: AISummaryEditorSnapshot,
         regenerate: Bool,
-        contentLocale: String
+        contentLocale: String,
+        attempt: AISummaryGenerationAttempt
     ) async {
         restore(snapshot)
         switch block.reason {
         case let .privacyBlocked(skip), let .noEligibleInput(skip):
-            await applyPrivacyBlockedGenerate(skip, regenerate: regenerate, contentLocale: contentLocale)
+            await applyPrivacyBlockedGenerate(
+                skip,
+                regenerate: regenerate,
+                contentLocale: contentLocale,
+                attempt: attempt
+            )
         default:
             failedAction = nil
             operation = .idle
@@ -294,19 +322,28 @@ final class AISummaryEditorModel: ObservableObject {
     private func applyPrivacyBlockedGenerate(
         _ skip: AISummaryPrivacySkip,
         regenerate: Bool,
-        contentLocale: String
+        contentLocale: String,
+        attempt: AISummaryGenerationAttempt
     ) async {
+        guard skip.privacyPolicyRefForSummaryLog != nil else {
+            apply(skip)
+            failedAction = nil
+            operation = .idle
+            return
+        }
         operation = .generating
         failedAction = nil
         do {
             let draft = try await loggedPrivacySkipDraft(
                 skip,
                 regenerate: regenerate,
-                contentLocale: contentLocale
+                contentLocale: contentLocale,
+                attempt: attempt
             )
             apply(skip, draft: draft)
             operation = .idle
         } catch {
+            failedGenerationAttempt = attempt
             failedAction = .generate
             operation = await .failed(
                 summaryError(for: error, message: L10n.message("Summary could not be generated."))
@@ -317,15 +354,18 @@ final class AISummaryEditorModel: ObservableObject {
     private func generationRequest(
         _ regenerate: Bool,
         contentLocale: String,
+        attempt: AISummaryGenerationAttempt,
         privacyPolicyRef: String? = nil
-    ) -> AiSummaryGenerationRequest {
-        AiSummaryGenerationRequest(
+    ) throws -> AiSummaryGenerationRequest {
+        try AiSummaryGenerationRequest(
+            operationId: attempt.operationID,
+            retryOfOperationId: attempt.retryOfOperationID,
             fileId: fileID,
             providerScope: summaryProviderScope,
             contextPolicy: .metadataAndExtractedText,
             privacyPolicyRef: privacyPolicyRef,
             regenerateExisting: regenerate,
-            contentLocale: contentLocale
+            contentLocale: ContentLocale(snapshotValue: contentLocale)
         )
     }
 
@@ -351,16 +391,18 @@ final class AISummaryEditorModel: ObservableObject {
     private func loggedPrivacySkipDraft(
         _ skip: AISummaryPrivacySkip,
         regenerate: Bool,
-        contentLocale: String
+        contentLocale: String,
+        attempt: AISummaryGenerationAttempt
     ) async throws -> AiSummaryDraft {
         guard let policyRef = skip.privacyPolicyRefForSummaryLog else {
-            return skip.unloggedDraft(fileID: fileID)
+            throw CoreError.Config(reason: "AI summary privacy skip is not loggable")
         }
         return try await summaryStore.generateAISummary(
             repoPath: repoPath,
             request: generationRequest(
                 regenerate,
                 contentLocale: contentLocale,
+                attempt: attempt,
                 privacyPolicyRef: policyRef
             )
         )
@@ -368,6 +410,10 @@ final class AISummaryEditorModel: ObservableObject {
 
     private func apply(_ draft: AiSummaryDraft) {
         privacySkip = nil
+        if let review = contentState.replacementReview(candidate: draft) {
+            replacementReview = review
+            return
+        }
         contentState.apply(draft)
         switch draft.status {
         case .draft:
@@ -384,9 +430,57 @@ final class AISummaryEditorModel: ObservableObject {
         contentState.apply(skip, draft: draft)
     }
 
-    private func apply(_ saved: AISummarySavedSnapshot?) {
-        contentState.apply(saved)
+    private func apply(_ skip: AISummaryPrivacySkip) {
+        privacySkip = skip
+        contentState.apply(skip)
+    }
+
+    func apply(_ state: AISummaryPersistedStateSnapshot) {
+        contentState.apply(state)
         privacySkip = nil
+    }
+
+    func reloadLatestAfterSaveConflict() {
+        guard let review = saveConflictReview else { return }
+        apply(review.latestState)
+        saveConflictReview = nil
+        confirmedReplacement = false
+        operation = .idle
+    }
+
+    func reviewLatestAfterSaveConflict() {
+        guard let review = saveConflictReview else { return }
+        contentState.rebaseSavedSummary(review.latestState)
+        saveConflictReview = nil
+        confirmedReplacement = false
+        operation = .idle
+    }
+
+    private func applySaveConflictIfPresent(
+        _ error: Error,
+        request: AiSummarySaveRequest
+    ) async -> Bool {
+        guard case let CoreError.RevisionConflict(resource, expected, current) = error,
+              resource == "ai_summary_content_revision"
+        else {
+            return false
+        }
+        do {
+            let latest = try await summaryStore.loadAISummaryState(repoPath: repoPath, fileID: fileID)
+            saveConflictReview = AISummarySaveConflictReview(
+                observedText: contentState.savedText,
+                latestState: latest,
+                localText: request.summaryText,
+                expectedRevision: expected,
+                currentRevision: current
+            )
+            confirmedReplacement = false
+            failedAction = nil
+            operation = .idle
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func updateGateState(for reason: AiSummarySkipReason?) {
@@ -394,23 +488,7 @@ final class AISummaryEditorModel: ObservableObject {
         gateState = .blocked(AISummaryEditorPresentationSupport.notice(for: reason))
     }
 
-    private func saveRequest() -> AiSummarySaveRequest {
-        contentState.saveRequest(fileID: fileID)
-    }
-
-    private func snapshot() -> AISummaryEditorSnapshot {
-        contentState.snapshot
-    }
-
     private func restore(_ snapshot: AISummaryEditorSnapshot) {
         contentState.restore(snapshot)
-    }
-
-    private func summaryError(for error: Error, message: LocalizedMessage) async -> AISettingsError {
-        await AISummaryEditorPresentationSupport.error(
-            for: error,
-            message: message,
-            errorMapper: errorMapper
-        )
     }
 }

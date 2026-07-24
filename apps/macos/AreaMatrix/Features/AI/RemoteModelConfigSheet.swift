@@ -171,12 +171,9 @@ struct RemoteModelConfigSheet: View {
         AdvancedSettingsSection(title: L10n.string("Privacy")) {
             privacyGateStatus
             privacyGateFailureBanner
-            Text(
-                "Remote AI may send selected file metadata or extracted text to the provider you choose. " +
-                    "Privacy rules are checked before every remote call."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
+            Text(L10n.string("ai.remote.dataFlowDetail"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
             Toggle(
                 "I understand remote AI sends allowed content to a third-party provider.",
                 isOn: $model.dataFlowConfirmed
@@ -314,11 +311,8 @@ private struct DisableRemoteAIConfirmationSheet: View {
             Text("Disable remote AI?")
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
-            Text(
-                "Remote AI calls will stop immediately. Local AI features and existing saved summaries, " +
-                    "tags, and call logs will not be deleted."
-            )
-            .fixedSize(horizontal: false, vertical: true)
+            Text(L10n.string("ai.remote.disableDetail"))
+                .fixedSize(horizontal: false, vertical: true)
             Toggle("Also remove stored API key", isOn: $removeStoredCredential)
                 .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-disable-remove-stored-key")
             HStack {

@@ -6,8 +6,9 @@ use std::{
 
 use area_matrix_core::{
     create_classifier_rule, delete_classifier_rule, init_repo, list_classifier_rules,
-    map_core_error, update_classifier_rule, ClassifierRuleCreateRequest,
-    ClassifierRuleDeleteRequest, ClassifierRuleUpdate, CoreError, ErrorKind, ErrorMappingInput,
+    load_repo_config, map_core_error, update_classifier_rule, ClassifierConfigHealth,
+    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleObservedState,
+    ClassifierRuleUpdate, ContentLocale, CoreError, ErrorKind, ErrorMappingInput,
     ErrorRecoverability, OverviewOutput, RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
@@ -37,6 +38,7 @@ fn initialized_repo() -> tempfile::TempDir {
         },
     )
     .expect("initialize repository");
+    load_repo_config(path_string(repo.path())).expect("prime repository config read state");
     repo
 }
 
@@ -50,7 +52,29 @@ fn db_path(repo: &Path) -> PathBuf {
 
 fn update_request() -> ClassifierRuleUpdate {
     ClassifierRuleUpdate {
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: ContentLocale::En,
         rule_id: "finance".to_owned(),
+        observed: ClassifierRuleObservedState {
+            rule_id: "finance".to_owned(),
+            slug: "finance".to_owned(),
+            display_name: "Finance".to_owned(),
+            description: String::new(),
+            extensions: Vec::new(),
+            keywords: vec![
+                "invoice".to_owned(),
+                "receipt".to_owned(),
+                "tax".to_owned(),
+                "contract".to_owned(),
+                "发票".to_owned(),
+                "收据".to_owned(),
+                "税务".to_owned(),
+                "合同".to_owned(),
+                "报销".to_owned(),
+            ],
+            priority: 10,
+            naming_template: None,
+        },
         slug: "contracts".to_owned(),
         display_name: "Contracts".to_owned(),
         description: "Signed client contracts".to_owned(),
@@ -64,6 +88,8 @@ fn update_request() -> ClassifierRuleUpdate {
 
 fn create_request() -> ClassifierRuleCreateRequest {
     ClassifierRuleCreateRequest {
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: ContentLocale::En,
         slug: "tax".to_owned(),
         display_name: "Tax".to_owned(),
         description: "Tax documents".to_owned(),
@@ -155,27 +181,44 @@ fn assert_error_kind<T: std::fmt::Debug>(result: Result<T, CoreError>, expected:
     assert_eq!(error.to_error_mapping().kind, expected);
     assert_eq!(map_core_error(mapping_input(&error)).kind, expected);
     assert!(
-        !error.to_error_mapping().raw_context.is_empty(),
+        !error
+            .to_error_mapping()
+            .technical_details
+            .as_deref()
+            .unwrap_or_default()
+            .is_empty(),
         "classifier rule editor errors must keep observable context"
     );
 }
 
 fn mapping_input(error: &CoreError) -> ErrorMappingInput {
-    let raw_context = error.to_error_mapping().raw_context;
+    let raw_context = error
+        .to_error_mapping()
+        .technical_details
+        .unwrap_or_default();
     match error.kind() {
-        ErrorKind::Io | ErrorKind::Db | ErrorKind::Internal => ErrorMappingInput {
+        ErrorKind::Io
+        | ErrorKind::Db
+        | ErrorKind::DbLocked
+        | ErrorKind::DbCorrupted
+        | ErrorKind::Internal => ErrorMappingInput {
             kind: error.kind(),
             path: None,
             reason: None,
             message: Some(raw_context),
+            expected_revision: None,
+            current_revision: None,
         },
         ErrorKind::Config | ErrorKind::Validation | ErrorKind::Classify => ErrorMappingInput {
             kind: error.kind(),
             path: None,
             reason: Some(raw_context),
             message: None,
+            expected_revision: None,
+            current_revision: None,
         },
         ErrorKind::Conflict
+        | ErrorKind::RevisionConflict
         | ErrorKind::DuplicateFile
         | ErrorKind::FileNotFound
         | ErrorKind::ExpiredAction
@@ -188,6 +231,8 @@ fn mapping_input(error: &CoreError) -> ErrorMappingInput {
             path: Some(raw_context),
             reason: None,
             message: None,
+            expected_revision: None,
+            current_revision: None,
         },
     }
 }
@@ -197,7 +242,8 @@ fn classifier_rule_editor_failure_edge_empty_repo_lists_without_side_effects() {
     let repo = initialized_repo();
     let before = snapshot(repo.path());
 
-    let state = list_classifier_rules(path_string(repo.path())).expect("list classifier rules");
+    let state = list_classifier_rules(path_string(repo.path()), Some(ContentLocale::En))
+        .expect("list classifier rules");
 
     assert_eq!(state.default_rule_id, "inbox");
     assert!(state.rules.iter().any(|rule| rule.rule_id == "inbox"));
@@ -213,9 +259,15 @@ fn classifier_rule_editor_failure_edge_invalid_inputs_are_config_without_writes(
     fs::write(repo.path().join("README.md"), b"user readme").expect("write user file");
     let before = snapshot(repo.path());
 
-    assert_error_kind(list_classifier_rules(String::new()), ErrorKind::Config);
     assert_error_kind(
-        list_classifier_rules(path_string(&repo.path().join(".areamatrix"))),
+        list_classifier_rules(String::new(), Some(ContentLocale::En)),
+        ErrorKind::Config,
+    );
+    assert_error_kind(
+        list_classifier_rules(
+            path_string(&repo.path().join(".areamatrix")),
+            Some(ContentLocale::En),
+        ),
         ErrorKind::Config,
     );
 
@@ -299,10 +351,11 @@ fn classifier_rule_editor_failure_edge_classifier_directory_is_io_without_half_p
     fs::create_dir(classifier_path(repo.path())).expect("replace classifier file with directory");
     let before = snapshot(repo.path());
 
-    assert_error_kind(
-        list_classifier_rules(path_string(repo.path())),
-        ErrorKind::Io,
-    );
+    let degraded = list_classifier_rules(path_string(repo.path()), Some(ContentLocale::En))
+        .expect("non-regular classifier should remain browsable as degraded state");
+    assert_eq!(degraded.health, ClassifierConfigHealth::Unreadable);
+    assert!(degraded.recovery_actions.is_empty());
+    assert_eq!(degraded.editing_locale, None);
     assert_error_kind(
         create_classifier_rule(path_string(repo.path()), create_request()),
         ErrorKind::Io,
@@ -328,6 +381,8 @@ fn classifier_rule_editor_failure_edge_error_mapping_is_structured() {
         path: None,
         reason: Some("classifier schema invalid".to_owned()),
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(config.kind, ErrorKind::Config);
     assert_eq!(
@@ -340,6 +395,8 @@ fn classifier_rule_editor_failure_edge_error_mapping_is_structured() {
         path: Some("/restricted/.areamatrix/classifier.yaml".to_owned()),
         reason: None,
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(permission.kind, ErrorKind::PermissionDenied);
     assert_eq!(
@@ -352,6 +409,8 @@ fn classifier_rule_editor_failure_edge_error_mapping_is_structured() {
         path: None,
         reason: None,
         message: Some("classifier config write failed".to_owned()),
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(io.kind, ErrorKind::Io);
     assert_eq!(io.recoverability, ErrorRecoverability::Retryable);
@@ -435,6 +494,15 @@ fn classifier_rule_editor_failure_edge_permission_denied_keeps_old_config() {
     fs::set_permissions(&metadata_dir, original_permissions).expect("restore metadata permissions");
 
     assert_error_kind(result, ErrorKind::PermissionDenied);
-    assert_eq!(snapshot(repo.path()), before);
+    let after = snapshot(repo.path());
+    assert_eq!(after.classifier_payload, before.classifier_payload);
+    assert_eq!(after.db_payload, before.db_payload);
+    assert_eq!(after.user_visible_files, before.user_visible_files);
+    let backups: Vec<_> = after
+        .metadata_entries
+        .iter()
+        .filter(|path| path.to_string_lossy().ends_with(".bak"))
+        .collect();
+    assert_eq!(backups.len(), 1, "a durable pre-write backup may remain");
     assert_no_classifier_temp_files(repo.path());
 }

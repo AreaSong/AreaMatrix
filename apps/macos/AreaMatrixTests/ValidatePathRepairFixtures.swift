@@ -1,8 +1,8 @@
 @testable import AreaMatrix
 
-extension RepoConfigSnapshot {
-    static func repairFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath)
+extension AppRepoConfigSnapshot {
+    static func repairFixture(repoPath: String) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 

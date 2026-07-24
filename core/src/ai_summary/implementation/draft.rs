@@ -2,7 +2,7 @@ use std::path::Path;
 
 use uuid::Uuid;
 
-use crate::{CoreError, CoreResult, FileEntry};
+use crate::{ContentLocale, CoreError, CoreResult, FileEntry};
 
 use super::{
     super::{
@@ -15,9 +15,20 @@ use super::{
     common::{character_count, current_timestamp},
 };
 
+pub(super) struct SummaryDraftContext<'a> {
+    pub(super) repo: &'a Path,
+    pub(super) file: &'a FileEntry,
+    pub(super) operation_id: &'a str,
+    pub(super) content_locale: &'a ContentLocale,
+    pub(super) format_contract_version: i64,
+}
+
 pub(super) fn draft_result(
     repo: &Path,
     file: &FileEntry,
+    operation_id: &str,
+    content_locale: &ContentLocale,
+    format_contract_version: i64,
     draft: AiSummaryRuntimeDraft,
 ) -> CoreResult<AiSummaryDraft> {
     let result_summary = format!(
@@ -38,28 +49,33 @@ pub(super) fn draft_result(
             model: Some(&draft.model),
         },
     )?;
-    Ok(base_draft(file, AiSummaryDraftStatus::Draft)
-        .with_draft_id(new_draft_id(file.id))
-        .with_summary_text(draft.summary_text)
-        .with_route(draft.route)
-        .with_model(draft.model)
-        .with_generated_at(current_timestamp())
-        .with_context(draft.used_context)
-        .with_call_log(call_log_id))
+    Ok(base_draft(
+        file,
+        operation_id,
+        content_locale,
+        format_contract_version,
+        AiSummaryDraftStatus::Draft,
+    )
+    .with_draft_id(new_draft_id(file.id))
+    .with_summary_text(draft.summary_text)
+    .with_route(draft.route)
+    .with_model(draft.model)
+    .with_generated_at(current_timestamp())
+    .with_context(draft.used_context)
+    .with_call_log(call_log_id))
 }
 
 pub(super) fn skipped(
-    repo: &Path,
-    file: &FileEntry,
+    draft_context: &SummaryDraftContext<'_>,
     reason: AiSummarySkipReason,
     message: &str,
     privacy_rules_checked: bool,
     privacy_rule_id: Option<String>,
 ) -> CoreResult<AiSummaryDraft> {
     let call_log_id = insert_summary_call_log(
-        repo,
+        draft_context.repo,
         SummaryCallLogDraft {
-            file_id: Some(file.id),
+            file_id: Some(draft_context.file.id),
             route: None,
             status: "skipped",
             sent_fields: &[],
@@ -70,13 +86,25 @@ pub(super) fn skipped(
             model: None,
         },
     )?;
-    Ok(base_draft(file, AiSummaryDraftStatus::Skipped)
-        .with_skipped_reason(reason)
-        .with_privacy_rule(privacy_rule_id)
-        .with_call_log(call_log_id))
+    Ok(base_draft(
+        draft_context.file,
+        draft_context.operation_id,
+        draft_context.content_locale,
+        draft_context.format_contract_version,
+        AiSummaryDraftStatus::Skipped,
+    )
+    .with_skipped_reason(reason)
+    .with_privacy_rule(privacy_rule_id)
+    .with_call_log(call_log_id))
 }
 
-pub(super) fn unavailable_provider(repo: &Path, file: &FileEntry) -> CoreResult<AiSummaryDraft> {
+pub(super) fn unavailable_provider(
+    repo: &Path,
+    file: &FileEntry,
+    operation_id: &str,
+    content_locale: &ContentLocale,
+    format_contract_version: i64,
+) -> CoreResult<AiSummaryDraft> {
     let call_log_id = insert_summary_call_log(
         repo,
         SummaryCallLogDraft {
@@ -91,14 +119,19 @@ pub(super) fn unavailable_provider(repo: &Path, file: &FileEntry) -> CoreResult<
             model: None,
         },
     )?;
-    Ok(base_draft(file, AiSummaryDraftStatus::Unavailable)
-        .with_skipped_reason(AiSummarySkipReason::ProviderUnavailable)
-        .with_call_log(call_log_id))
+    Ok(base_draft(
+        file,
+        operation_id,
+        content_locale,
+        format_contract_version,
+        AiSummaryDraftStatus::Unavailable,
+    )
+    .with_skipped_reason(AiSummarySkipReason::ProviderUnavailable)
+    .with_call_log(call_log_id))
 }
 
 pub(super) fn unavailable_after_runtime_error(
-    repo: &Path,
-    file: &FileEntry,
+    draft_context: &SummaryDraftContext<'_>,
     route: AiSummaryRoute,
     context: &AiSummaryContext,
     error: CoreError,
@@ -106,9 +139,9 @@ pub(super) fn unavailable_after_runtime_error(
     let error_code = runtime_error_code(&error);
     let message = runtime_error_message(route.clone());
     let call_log_id = insert_summary_call_log(
-        repo,
+        draft_context.repo,
         SummaryCallLogDraft {
-            file_id: Some(file.id),
+            file_id: Some(draft_context.file.id),
             route: Some(&route),
             status: "failed",
             sent_fields: &context.fields,
@@ -119,11 +152,17 @@ pub(super) fn unavailable_after_runtime_error(
             model: None,
         },
     )?;
-    Ok(base_draft(file, AiSummaryDraftStatus::Unavailable)
-        .with_route(route)
-        .with_context(context.fields.clone())
-        .with_skipped_reason(AiSummarySkipReason::ProviderUnavailable)
-        .with_call_log(call_log_id))
+    Ok(base_draft(
+        draft_context.file,
+        draft_context.operation_id,
+        draft_context.content_locale,
+        draft_context.format_contract_version,
+        AiSummaryDraftStatus::Unavailable,
+    )
+    .with_route(route)
+    .with_context(context.fields.clone())
+    .with_skipped_reason(AiSummarySkipReason::ProviderUnavailable)
+    .with_call_log(call_log_id))
 }
 
 fn runtime_error_code(error: &CoreError) -> &'static str {
@@ -142,8 +181,17 @@ fn runtime_error_message(route: AiSummaryRoute) -> String {
     .to_owned()
 }
 
-fn base_draft(file: &FileEntry, status: AiSummaryDraftStatus) -> AiSummaryDraft {
+fn base_draft(
+    file: &FileEntry,
+    operation_id: &str,
+    content_locale: &ContentLocale,
+    format_contract_version: i64,
+    status: AiSummaryDraftStatus,
+) -> AiSummaryDraft {
     AiSummaryDraft {
+        operation_id: operation_id.to_owned(),
+        content_locale: content_locale.clone(),
+        format_contract_version,
         file_id: file.id,
         draft_id: None,
         status,

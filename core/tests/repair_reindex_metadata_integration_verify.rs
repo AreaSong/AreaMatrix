@@ -54,7 +54,8 @@ fn empty_filter() -> FileFilter {
 }
 
 fn repair_options(repo: &Path, preserve_snapshot: bool) -> RepairOptions {
-    let preflight = preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
+    let preflight =
+        preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
     let repository_locale_policy = if preflight.locale_state == RepairMetadataLocaleState::Healthy {
         preflight
             .repository_locale_policy
@@ -152,11 +153,8 @@ fn repair_reindex_metadata_integration_verify_repair_and_reindex_are_separate() 
         before
     );
 
-    let report = repair_metadata(
-        path_string(repo.path()),
-        repair_options(repo.path(), true),
-    )
-    .expect("run user-confirmed metadata repair");
+    let report = repair_metadata(path_string(repo.path()), repair_options(repo.path(), true))
+        .expect("run user-confirmed metadata repair");
 
     let snapshot_path = report
         .diagnostics_snapshot_path
@@ -170,10 +168,7 @@ fn repair_reindex_metadata_integration_verify_repair_and_reindex_are_separate() 
         before
     );
 
-    assert_eq!(
-        sorted_list_paths(repo.path()),
-        Vec::<String>::new()
-    );
+    assert_eq!(sorted_list_paths(repo.path()), Vec::<String>::new());
     assert_eq!(
         get_latest_scan_session(path_string(repo.path())).expect("read repair scan session"),
         None
@@ -181,7 +176,10 @@ fn repair_reindex_metadata_integration_verify_repair_and_reindex_are_separate() 
 
     let reindex = reindex_from_filesystem(path_string(repo.path())).expect("run explicit reindex");
     assert_eq!(reindex.inserted, 2);
-    assert_eq!(sorted_list_paths(repo.path()), vec!["README.md", "docs/spec.txt"]);
+    assert_eq!(
+        sorted_list_paths(repo.path()),
+        vec!["README.md", "docs/spec.txt"]
+    );
     let tree = parse_tree(repo.path());
     assert_eq!(tree["file_count"], 2);
     let docs_node = tree["children"]
@@ -208,11 +206,8 @@ fn repair_reindex_metadata_integration_verify_corrupted_db_repair_leaves_empty_i
     let db_path = repo.path().join(".areamatrix/index.db");
     fs::write(&db_path, b"not a sqlite database").expect("corrupt AreaMatrix metadata fixture");
 
-    let report = repair_metadata(
-        path_string(repo.path()),
-        repair_options(repo.path(), true),
-    )
-    .expect("confirmed repair should rebuild corrupted metadata");
+    let report = repair_metadata(path_string(repo.path()), repair_options(repo.path(), true))
+        .expect("confirmed repair should rebuild corrupted metadata");
 
     let snapshot_path = report
         .diagnostics_snapshot_path

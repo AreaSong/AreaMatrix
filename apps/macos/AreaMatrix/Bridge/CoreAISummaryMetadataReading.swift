@@ -2,12 +2,19 @@ import Foundation
 
 struct SQLiteAISummaryMetadataReader {
     func savedSummary(repoPath: String, fileID: Int64) async throws -> AISummarySavedSnapshot? {
+        try await persistedState(repoPath: repoPath, fileID: fileID).summary
+    }
+
+    func persistedState(repoPath: String, fileID: Int64) async throws -> AISummaryPersistedStateSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            try Self.readSavedSummary(repoPath: repoPath, fileID: fileID)
+            try Self.readPersistedState(repoPath: repoPath, fileID: fileID)
         }.value
     }
 
-    private static func readSavedSummary(repoPath: String, fileID: Int64) throws -> AISummarySavedSnapshot? {
+    private static func readPersistedState(
+        repoPath: String,
+        fileID: Int64
+    ) throws -> AISummaryPersistedStateSnapshot {
         let dbURL = URL(fileURLWithPath: repoPath)
             .appendingPathComponent(".areamatrix", isDirectory: true)
             .appendingPathComponent("index.db")
@@ -26,13 +33,16 @@ struct SQLiteAISummaryMetadataReader {
         }
         defer { sqlite3_close(openedDatabase) }
 
-        guard try tableExists(database: openedDatabase) else { return nil }
-        return try readSummary(database: openedDatabase, fileID: fileID)
+        let summary = try tableExists(database: openedDatabase, name: "ai_summaries") ?
+            readSummary(database: openedDatabase, fileID: fileID) : nil
+        let revision = try readRevision(database: openedDatabase, fileID: fileID) ??
+            summary?.contentRevision ?? 0
+        return AISummaryPersistedStateSnapshot(summary: summary, contentRevision: revision)
     }
 
-    private static func tableExists(database: OpaquePointer) throws -> Bool {
+    private static func tableExists(database: OpaquePointer, name: String) throws -> Bool {
         var statement: OpaquePointer?
-        let sql = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'ai_summaries'"
+        let sql = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1"
         let prepareResult = sqlite3_prepare_v2(database, sql, -1, &statement, nil)
         guard prepareResult == SQLITE_OK, let preparedStatement = statement else {
             let message = sqliteMessage(database)
@@ -43,14 +53,34 @@ struct SQLiteAISummaryMetadataReader {
         }
         defer { sqlite3_finalize(preparedStatement) }
 
-        return sqlite3_step(preparedStatement) == SQLITE_ROW
+        return name.withCString { value in
+            sqlite3_bind_text(preparedStatement, 1, value, -1, nil)
+            return sqlite3_step(preparedStatement) == SQLITE_ROW
+        }
+    }
+
+    private static func readRevision(database: OpaquePointer, fileID: Int64) throws -> Int64? {
+        guard try tableExists(database: database, name: "ai_summary_revisions") else { return nil }
+        var statement: OpaquePointer?
+        let sql = "SELECT content_revision FROM ai_summary_revisions WHERE file_id = ?1"
+        let prepareResult = sqlite3_prepare_v2(database, sql, -1, &statement, nil)
+        guard prepareResult == SQLITE_OK, let preparedStatement = statement else {
+            let message = sqliteMessage(database)
+            if let statement { sqlite3_finalize(statement) }
+            throw CoreError.Db(message: message)
+        }
+        defer { sqlite3_finalize(preparedStatement) }
+        sqlite3_bind_int64(preparedStatement, 1, fileID)
+        guard sqlite3_step(preparedStatement) == SQLITE_ROW else { return nil }
+        return sqlite3_column_int64(preparedStatement, 0)
     }
 
     private static func readSummary(database: OpaquePointer, fileID: Int64) throws -> AISummarySavedSnapshot? {
         var statement: OpaquePointer?
         let sql = """
         SELECT summary_text, saved_at, draft_id, route, model_name, generated_at, used_context_json,
-               privacy_rule_id, call_log_id, edited_by_user
+               privacy_rule_id, call_log_id, edited_by_user, content_revision, ownership,
+               operation_id, content_locale, format_contract_version
         FROM ai_summaries
         WHERE file_id = ?1
         LIMIT 1
@@ -83,6 +113,11 @@ struct SQLiteAISummaryMetadataReader {
             privacyRuleID: optionalString(preparedStatement, index: 7),
             callLogID: optionalInt64(preparedStatement, index: 8),
             editedByUser: sqlite3_column_int64(preparedStatement, 9) != 0,
+            contentRevision: sqlite3_column_int64(preparedStatement, 10),
+            ownership: decodeOwnership(requiredString(preparedStatement, index: 11, column: "ownership")),
+            operationID: optionalString(preparedStatement, index: 12),
+            contentLocale: decodeContentLocale(optionalString(preparedStatement, index: 13)),
+            formatContractVersion: optionalInt64(preparedStatement, index: 14),
             characterCount: Int64(summaryText.count)
         )
     }
@@ -121,6 +156,23 @@ struct SQLiteAISummaryMetadataReader {
             return .remote
         default:
             throw CoreError.Db(message: "unknown AI summary route: \(value)")
+        }
+    }
+
+    private static func decodeOwnership(_ value: String) throws -> AiContentOwnership {
+        switch value {
+        case "generated": .generated
+        case "user_owned": .userOwned
+        default: throw CoreError.Db(message: "unknown AI summary ownership: \(value)")
+        }
+    }
+
+    private static func decodeContentLocale(_ value: String?) throws -> ContentLocale? {
+        guard let value else { return nil }
+        switch value {
+        case "zh-Hans": return ContentLocale.zhHans
+        case "en": return ContentLocale.en
+        default: throw CoreError.Db(message: "unknown AI summary content locale: \(value)")
         }
     }
 

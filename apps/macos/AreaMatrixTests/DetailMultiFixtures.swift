@@ -19,9 +19,9 @@ extension RepositoryOpeningResult {
     }
 }
 
-extension RepoConfigSnapshot {
-    static func detailMultiSelectFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath)
+extension AppRepoConfigSnapshot {
+    static func detailMultiSelectFixture(repoPath: String) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 

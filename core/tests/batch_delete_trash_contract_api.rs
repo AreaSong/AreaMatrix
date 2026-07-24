@@ -157,6 +157,9 @@ fn batch_delete_contract_exposes_signatures_inputs_outputs_and_errors() {
 
 #[test]
 fn batch_delete_contract_validates_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         preview_batch_delete(String::new(), vec![1], BatchDeleteMode::MoveToTrash),
         Err(CoreError::PermissionDenied { .. })
@@ -179,7 +182,7 @@ fn batch_delete_contract_validates_inputs_without_fake_success() {
     ));
     assert!(matches!(
         batch_delete_to_trash(
-            "/tmp/repo".to_owned(),
+            uninitialized_repo_path,
             vec![1, 1],
             BatchDeleteMode::RemoveFromIndex,
             "preview:batch-delete:42".to_owned()

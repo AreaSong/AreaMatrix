@@ -330,13 +330,13 @@ fn mobile_detail_failure_edge_maps_errors_to_recovery_metadata() {
         ErrorRecoverability::RefreshRequired
     );
 
-    let db_locked = CoreError::db("database is locked").to_error_mapping();
-    assert_eq!(db_locked.kind, ErrorKind::Db);
+    let db_locked = CoreError::db_locked("database is locked").to_error_mapping();
+    assert_eq!(db_locked.kind, ErrorKind::DbLocked);
     assert_eq!(db_locked.severity, ErrorSeverity::Medium);
     assert_eq!(db_locked.recoverability, ErrorRecoverability::Retryable);
 
-    let db_corrupt = CoreError::db("file is not a database").to_error_mapping();
-    assert_eq!(db_corrupt.kind, ErrorKind::Db);
+    let db_corrupt = CoreError::db_corrupted("file is not a database").to_error_mapping();
+    assert_eq!(db_corrupt.kind, ErrorKind::DbCorrupted);
     assert_eq!(db_corrupt.severity, ErrorSeverity::Critical);
     assert_eq!(db_corrupt.recoverability, ErrorRecoverability::Fatal);
 

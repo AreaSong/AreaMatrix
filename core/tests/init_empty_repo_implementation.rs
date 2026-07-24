@@ -59,7 +59,7 @@ fn init_empty_repo_creates_metadata_db_config_rules_and_generated_overview() {
     assert_eq!(config.default_mode, StorageMode::Copied);
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);
     assert!(!config.ai_enabled);
-    assert_eq!(config.locale, "zh-Hans");
+    assert_eq!(config.locale, "system");
     assert!(config.icloud_warn);
     assert!(config.enable_extension_rules);
     assert!(config.enable_keyword_rules);
@@ -89,7 +89,7 @@ fn init_empty_repo_creates_metadata_db_config_rules_and_generated_overview() {
     let config_rows: i64 = connection
         .query_row("SELECT COUNT(*) FROM repo_config", [], |row| row.get(0))
         .expect("count repo_config rows");
-    assert_eq!(version, 2);
+    assert_eq!(version, 3);
     assert_eq!(config_rows, 10);
 }
 

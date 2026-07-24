@@ -204,6 +204,9 @@ fn batch_rename_contract_exposes_signatures_inputs_outputs_and_errors() {
 
 #[test]
 fn batch_rename_contract_validates_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     let prefix_rule = BatchRenameRule {
         mode: BatchRenameMode::Prefix,
         prefix: Some("ProjectA_".to_owned()),
@@ -269,7 +272,7 @@ fn batch_rename_contract_validates_inputs_without_fake_success() {
     ));
     assert!(matches!(
         batch_rename(
-            "/tmp/repo".to_owned(),
+            uninitialized_repo_path,
             vec![1, 1],
             sequence_rule,
             "preview:batch-rename:42".to_owned()

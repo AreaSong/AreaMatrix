@@ -55,8 +55,11 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         await model.requestFallbackToInbox(false)
 
         XCTAssertEqual(model.draft?.fallbackToInbox, true)
-        XCTAssertEqual(model.saveError?.message, "数据库错误")
-        XCTAssertEqual(model.saveError?.recovery, "Retry save")
+        XCTAssertEqual(
+            model.saveError?.message,
+            L10n.message("error.unmapped.message", fallback: "数据库错误", technicalDetail: "数据库错误")
+        )
+        XCTAssertEqual(model.saveError?.recovery, L10n.message("Retry save"))
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
@@ -118,8 +121,15 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             ClassifierSettingsSequencePredictor.Request(repoPath: "/tmp/repo", filename: "Bad.pdf")
         ])
         XCTAssertNil(model.previewResult)
-        XCTAssertEqual(model.previewError?.message, "无法预览分类：classifier unavailable")
-        XCTAssertEqual(model.previewError?.recovery, "Retry preview")
+        XCTAssertEqual(
+            model.previewError?.message,
+            L10n.message(
+                "error.unmapped.message",
+                fallback: "无法预览分类：classifier unavailable",
+                technicalDetail: "无法预览分类：classifier unavailable"
+            )
+        )
+        XCTAssertEqual(model.previewError?.recovery, L10n.message("Retry preview"))
         XCTAssertFalse(model.isPreviewing)
     }
 
@@ -157,21 +167,26 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testValidateClassifierRulesRequiresPhysicalClassifierYamlBeforeCorePreviewFallback() async throws {
+    func testValidateClassifierRulesUsesMissingCoreSnapshotWithoutPredictorFallback() async throws {
         let repoURL = try temporaryClassifierSettingsRepo()
         defer { removeTestTemporaryItems(repoURL) }
         let predictor = ClassifierSettingsSequencePredictor()
+        let editor = ClassifierSettingsRecordingRuleEditor(listResult: .success(.classifierDegradedFixture(
+            health: .missing,
+            recoveryActions: [.createDefault]
+        )))
         let model = await loadedModel(
             updater: RecordingConfigurationUpdater(result: .success(())),
             predictor: predictor,
-            config: .classifierSettingsFixture(repoPath: repoURL.path)
+            config: .classifierSettingsFixture(repoPath: repoURL.path),
+            ruleEditor: editor
         )
 
         let passed = await model.validateClassifierRules()
 
         XCTAssertFalse(passed)
-        XCTAssertEqual(model.validationStatusLabel, "Failed")
-        XCTAssertEqual(model.validationError?.message, L10n.string("settings.classifier.error.missingFile"))
+        XCTAssertEqual(model.validationStatusLabel, L10n.string("settings.classifier.validation.failed"))
+        XCTAssertEqual(model.validationError?.message, L10n.message("settings.classifier.error.validationFailed"))
         await predictor.assertNoCategoryPredictionRequests()
     }
 
@@ -275,7 +290,8 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
     private func loadedModel(
         updater: RecordingConfigurationUpdater,
         predictor: any CoreCategoryPredicting = CoreBridge(),
-        config: RepoConfigSnapshot = .classifierSettingsFixture(repoPath: "/tmp/repo"),
+        config: AppRepoConfigSnapshot = .classifierSettingsFixture(repoPath: "/tmp/repo"),
+        ruleEditor: any CoreClassifierRuleEditing = CoreBridge(),
         fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
         accessibilityAnnouncer: any AccessibilityAnnouncing = NoopAccessibilityAnnouncer()
     ) async -> ClassifierSettingsModel {
@@ -284,6 +300,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             loader: RecordingConfigurationLoader(result: .success(config)),
             updater: updater,
             predictor: predictor,
+            ruleEditor: ruleEditor,
             errorMapper: RecordingCoreErrorMapper.classifierSettings(),
             fileOpener: fileOpener,
             accessibilityAnnouncer: accessibilityAnnouncer

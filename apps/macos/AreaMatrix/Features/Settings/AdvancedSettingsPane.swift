@@ -61,11 +61,7 @@ extension AdvancedSettingsPane {
                 }
             }
         } message: {
-            Text(
-                "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
-                    "notes, and other sensitive metadata. Original file contents are not copied, and " +
-                    "diagnostics are not uploaded automatically. Review the snapshot before sharing."
-            )
+            Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
         }
         .sheet(isPresented: rootOverviewBinding) {
             AdvancedRootOverviewConfirmationSheet(
@@ -89,10 +85,7 @@ extension AdvancedSettingsPane {
                 }
             }
         } message: {
-            Text(
-                "Replace can move an existing repository file to system Trash before importing the new file. " +
-                    "It is hidden by default and still requires confirmation for every replace."
-            )
+            Text(L10n.string("settings.advanced.replaceConfirmationDetail"))
         }
     }
 
@@ -259,13 +252,10 @@ extension AdvancedSettingsPane {
     private var dangerZoneSection: some View {
         DisclosureGroup("Danger zone", isExpanded: $isDangerZoneExpanded) {
             VStack(alignment: .leading, spacing: 18) {
-                Text(
-                    "These actions can affect AreaMatrix metadata. " +
-                        "They do not delete your original files unless explicitly stated."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(L10n.string("settings.advanced.dangerZoneDetail"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 overviewOutputSection
                 allowReplaceSection

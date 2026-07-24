@@ -55,7 +55,6 @@ private let expectedFeaturePlatformServiceSurface = [
     "PlatformServices/AdvancedSettingsPlatformServices.swift:static var metadataReader",
     "PlatformServices/AdvancedSettingsPlatformServices.swift:static var rootOverviewInspector",
     "PlatformServices/ClassifierRulesPlatformServices.swift:static var accessibilityAnnouncer",
-    "PlatformServices/ClassifierRulesPlatformServices.swift:static var classifierRulesManager",
     "PlatformServices/ClassifierRulesPlatformServices.swift:static var fileOpener",
     "PlatformServices/ClassifierRulesPlatformServices.swift:static var fileRevealer",
     "PlatformServices/ClassifierRulesPlatformServices.swift:static var finderOpener",

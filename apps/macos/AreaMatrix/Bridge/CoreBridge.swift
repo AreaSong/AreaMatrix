@@ -67,35 +67,26 @@ actor CoreBridge {
         try latestCoreScanSession(repoPath: repoPath).map(ScanSessionSnapshot.init(coreSession:))
     }
 
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
-        try RepoConfigSnapshot(coreConfig: loadCoreConfig(repoPath: repoPath))
+    func loadConfig(repoPath: String) async throws -> AppRepoConfigSnapshot {
+        try AppRepoConfigSnapshot(coreConfig: loadCoreConfig(repoPath: repoPath))
     }
 
     func repositoryContentLocaleSnapshot(repoPath: String) async throws -> String {
         let interfaceLocale = AppLanguageRuntime.shared.resolvedIdentifier()
         let configuredLocale = try await Task.detached(priority: .userInitiated) {
-            try loadCoreConfig(repoPath: repoPath).locale
+            try loadCoreConfig(repoPath: repoPath).localePolicy.rawValue
         }.value
         return try RepositoryContentLanguage(snapshotValue: configuredLocale)
             .resolvedIdentifier(interfaceLocaleIdentifier: interfaceLocale)
     }
 
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
-        try updateCoreConfig(
-            repoPath: repoPath,
-            newConfig: RepoConfig(
-                repoPath: newConfig.repoPath,
-                defaultMode: StorageMode(snapshotValue: newConfig.defaultMode),
-                overviewOutput: OverviewOutput(snapshotValue: newConfig.overviewOutput),
-                aiEnabled: newConfig.aiEnabled,
-                locale: newConfig.locale,
-                icloudWarn: newConfig.iCloudWarn,
-                enableExtensionRules: newConfig.enableExtensionRules,
-                enableKeywordRules: newConfig.enableKeywordRules,
-                fallbackToInbox: newConfig.fallbackToInbox,
-                allowReplaceDuringImport: newConfig.allowReplaceDuringImport
-            )
-        )
+    func updateConfig(
+        repoPath: String,
+        from currentConfig: AppRepoConfigSnapshot,
+        to updatedConfig: AppRepoConfigSnapshot
+    ) async throws -> AppRepoConfigSnapshot {
+        let patch = try repoConfigPatch(from: currentConfig, to: updatedConfig)
+        return try AppRepoConfigSnapshot(coreConfig: updateCoreConfig(repoPath: repoPath, patch: patch))
     }
 
     func initializeEmptyRepository(repoPath: String) async throws {
@@ -104,7 +95,8 @@ actor CoreBridge {
             mode: .createEmpty,
             createDefaultCategories: true,
             overviewOutput: .generatedOnly,
-            contentLocale: contentLocale
+            localePolicy: .followInterface,
+            contentLocale: ContentLocale(snapshotValue: contentLocale)
         ))
     }
 
@@ -114,7 +106,8 @@ actor CoreBridge {
             mode: .adoptExisting,
             createDefaultCategories: false,
             overviewOutput: .generatedOnly,
-            contentLocale: contentLocale
+            localePolicy: .followInterface,
+            contentLocale: ContentLocale(snapshotValue: contentLocale)
         ))
     }
 
@@ -226,12 +219,37 @@ extension CoreBridge:
     CoreRepositoryPathValidating,
     CoreScanSessionReading {}
 
-private func loadCoreConfig(repoPath: String) throws -> RepoConfig {
-    try loadConfig(repoPath: repoPath)
+private func loadCoreConfig(repoPath: String) throws -> RepoConfigSnapshot {
+    try loadRepoConfig(repoPath: repoPath)
 }
 
-private func updateCoreConfig(repoPath: String, newConfig: RepoConfig) throws {
-    try updateConfig(repoPath: repoPath, newConfig: newConfig)
+private func updateCoreConfig(repoPath: String, patch: RepoConfigPatch) throws -> RepoConfigSnapshot {
+    try updateRepoConfig(repoPath: repoPath, patch: patch)
+}
+
+private func repoConfigPatch(
+    from current: AppRepoConfigSnapshot,
+    to updated: AppRepoConfigSnapshot
+) throws -> RepoConfigPatch {
+    try RepoConfigPatch(
+        expectedRevision: current.revision,
+        defaultMode: current.defaultMode == updated.defaultMode
+            ? nil : StorageMode(snapshotValue: updated.defaultMode),
+        overviewOutput: current.overviewOutput == updated.overviewOutput
+            ? nil : OverviewOutput(snapshotValue: updated.overviewOutput),
+        aiEnabled: current.aiEnabled == updated.aiEnabled ? nil : updated.aiEnabled,
+        localePolicy: current.locale == updated.locale
+            ? nil : RepositoryLocalePolicy(snapshotValue: updated.locale),
+        icloudWarn: current.iCloudWarn == updated.iCloudWarn ? nil : updated.iCloudWarn,
+        enableExtensionRules: current.enableExtensionRules == updated.enableExtensionRules
+            ? nil : updated.enableExtensionRules,
+        enableKeywordRules: current.enableKeywordRules == updated.enableKeywordRules
+            ? nil : updated.enableKeywordRules,
+        fallbackToInbox: current.fallbackToInbox == updated.fallbackToInbox
+            ? nil : updated.fallbackToInbox,
+        allowReplaceDuringImport: current.allowReplaceDuringImport == updated.allowReplaceDuringImport
+            ? nil : updated.allowReplaceDuringImport
+    )
 }
 
 private func validateCoreRepoPath(repoPath: String) throws -> RepoPathValidation {

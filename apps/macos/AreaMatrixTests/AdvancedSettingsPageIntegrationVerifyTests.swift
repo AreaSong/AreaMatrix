@@ -65,8 +65,8 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         guard case let .failed(error) = model.loadState else {
             return XCTFail("Expected advanced-settings advanced settings load to fail through the error state")
         }
-        XCTAssertEqual(error.message, L10n.string("Unable to load advanced settings"))
-        XCTAssertFalse(error.recovery.isEmpty)
+        XCTAssertEqual(error.message, L10n.message("Unable to load advanced settings"))
+        XCTAssertFalse(error.recovery.key.isEmpty)
         XCTAssertNil(model.draft)
         XCTAssertNil(model.savedConfig)
         XCTAssertFalse(model.hasRetryableSave)
@@ -84,8 +84,8 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
 
         XCTAssertEqual(model.loadState, .loaded)
         XCTAssertEqual(model.actionFeedback, .failed(AdvancedSettingsError(
-            message: L10n.string("Open logs folder failed"),
-            recovery: L10n.string(
+            message: L10n.message("Open logs folder failed"),
+            recovery: L10n.message(
                 "Check that .areamatrix/logs exists, then retry after Core logging is initialized."
             )
         )))
@@ -106,8 +106,8 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         guard case let .failed(error) = model.diagnosticsState else {
             return XCTFail("Expected diagnostics failure state")
         }
-        XCTAssertEqual(error.message, L10n.string("Diagnostics could not be exported"))
-        XCTAssertFalse(error.recovery.isEmpty)
+        XCTAssertEqual(error.message, L10n.message("Diagnostics could not be exported"))
+        XCTAssertFalse(error.recovery.key.isEmpty)
     }
 
     @MainActor

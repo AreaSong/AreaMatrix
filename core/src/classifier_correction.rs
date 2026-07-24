@@ -341,8 +341,11 @@ fn normalize_contract_error(error: CoreError) -> CoreError {
     match error {
         CoreError::Classify { .. }
         | CoreError::Conflict { .. }
+        | CoreError::RevisionConflict { .. }
         | CoreError::Io { .. }
         | CoreError::Db { .. }
+        | CoreError::DbLocked { .. }
+        | CoreError::DbCorrupted { .. }
         | CoreError::Validation { .. }
         | CoreError::StagingRecoveryRequired { .. } => error,
         CoreError::Config { .. } => CoreError::classify("classification error"),

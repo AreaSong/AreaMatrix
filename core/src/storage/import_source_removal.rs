@@ -37,6 +37,8 @@ fn source_removal_failure_reason(error: CoreError) -> String {
         | CoreError::Conflict { path } => path,
         CoreError::Io { message }
         | CoreError::Db { message }
+        | CoreError::DbLocked { message }
+        | CoreError::DbCorrupted { message }
         | CoreError::Internal { message }
         | CoreError::RepoNotInitialized { path: message } => message,
         CoreError::StagingRecoveryRequired { path } => path,
@@ -45,5 +47,12 @@ fn source_removal_failure_reason(error: CoreError) -> String {
         | CoreError::Classify { reason } => reason,
         CoreError::DuplicateFile { existing_path } => existing_path,
         CoreError::ExpiredAction { action_id } => action_id,
+        CoreError::RevisionConflict {
+            resource,
+            expected_revision,
+            current_revision,
+        } => format!(
+            "{resource}: expected revision {expected_revision}, current revision {current_revision}"
+        ),
     }
 }

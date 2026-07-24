@@ -5,6 +5,7 @@ struct RepositorySettingsPane: View {
     @StateObject private var model: RepositorySettingsModel
     @StateObject private var capabilityModel: RepoPlatformCapabilitiesModel
     @StateObject private var configModel: RepositorySettingsConfigModel
+    @StateObject private var overviewRegenerationModel: RepositoryOverviewRegenerationModel
     let onChangeRepository: () -> Void
     let onOpenPlatformCapabilities: () -> Void
     let onOpenRecoveryTools: () -> Void
@@ -28,6 +29,8 @@ extension RepositorySettingsPane {
         appVersion: String? = nil,
         appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        overviewRegenerator: any CoreOverviewRegenerating = AppCoreServices.overviewRegenerator,
+        overviewRegenerationCoordinator: OverviewRegenerationCoordinator? = nil,
         accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer,
         onChangeRepository: @escaping () -> Void = {},
         onOpenPlatformCapabilities: @escaping () -> Void = {},
@@ -36,7 +39,6 @@ extension RepositorySettingsPane {
         _model = StateObject(wrappedValue: RepositorySettingsModel(
             repoPath: repoPath,
             loader: loader,
-            updater: updater,
             repositoryOpener: repositoryOpener,
             fileLister: fileLister,
             scanSessionReader: scanSessionReader,
@@ -56,9 +58,16 @@ extension RepositorySettingsPane {
         ))
         _configModel = StateObject(wrappedValue: RepositorySettingsConfigModel(
             repoPath: repoPath,
+            loader: loader,
             updater: updater,
             errorMapper: errorMapper,
             accessibilityAnnouncer: accessibilityAnnouncer
+        ))
+        _overviewRegenerationModel = StateObject(wrappedValue: RepositoryOverviewRegenerationModel(
+            repoPath: repoPath,
+            bridge: overviewRegenerator,
+            coordinator: overviewRegenerationCoordinator,
+            errorMapper: errorMapper
         ))
         self.onChangeRepository = onChangeRepository
         self.onOpenPlatformCapabilities = onOpenPlatformCapabilities
@@ -159,7 +168,6 @@ extension RepositorySettingsPane {
 
     private func loadedContent(_ summary: RepositorySettingsSummary) -> some View {
         SettingsPageScrollContent {
-            syncErrorBanner
             healthErrorBanner
             repositoryActionBanner
             diagnosticsStatusBanner
@@ -173,6 +181,7 @@ extension RepositorySettingsPane {
             RepositorySettingsHealthSection(summary: model.healthSummary)
             platformCapabilitySection
             repositoryConfigSection
+            RepositoryOverviewRegenerationSection(model: overviewRegenerationModel)
             RepositorySettingsSafeActionsSection(
                 diagnosticsButtonTitle: diagnosticsButtonTitle,
                 isDiagnosticsDisabled: model.diagnosticsState.isCollecting || !capabilityModel.allowsDiagnosticsExport,
@@ -270,27 +279,15 @@ extension RepositorySettingsPane {
     private func reload() async {
         await model.load()
         await capabilityModel.load()
+        if let concreteLocale = resolvedContentLocale {
+            await overviewRegenerationModel.load(contentLocale: concreteLocale)
+        }
     }
 
-    @ViewBuilder
-    private var syncErrorBanner: some View {
-        if let error = model.syncError {
-            SettingsStatusBanner(
-                title: localizer.resolve(error.message),
-                systemImage: "exclamationmark.triangle",
-                tint: .red
-            ) {
-                Text(localizer.resolve(error.recovery))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Button("Retry path sync") {
-                    Task {
-                        await model.retryRepositoryPathSync()
-                    }
-                }
-                .accessibilityIdentifier("repository-settings-retry-path-sync")
-            }
-        }
+    private var resolvedContentLocale: String? {
+        guard let config = model.loadedConfig else { return nil }
+        return try? RepositoryContentLanguage(snapshotValue: config.locale)
+            .resolvedIdentifier(interfaceLocaleIdentifier: AppLanguageRuntime.shared.resolvedIdentifier())
     }
 
     @ViewBuilder

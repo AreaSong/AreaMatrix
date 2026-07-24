@@ -67,15 +67,18 @@ struct ImportBatchSessionFailureDescriptor: Codable, Equatable {
     }
 
     init(displayText: AppDisplayText) {
-        switch displayText {
-        case let .verbatim(value, _):
+        if let value = displayText.verbatimValue {
             self.init(code: .technicalDetail, technicalDetail: value)
-        case let .localized(message):
-            self.init(
-                code: Self.code(for: message.key),
-                technicalDetail: message.technicalDetail
-            )
+            return
         }
+        guard case let .localized(message) = displayText else {
+            self.init(code: .technicalDetail)
+            return
+        }
+        self.init(
+            code: Self.code(for: message.key),
+            technicalDetail: message.technicalDetail
+        )
     }
 
     var displayText: AppDisplayText {
@@ -98,30 +101,31 @@ struct ImportBatchSessionFailureDescriptor: Codable, Equatable {
         case .internalFailure: .localized(L10n.message("core.error.Internal.message"))
         case .importFailed: .localized(L10n.message("Import failed"))
         case .technicalDetail:
-            .verbatim(payload.technicalDetail ?? L10n.string("Import failed"), reason: .technicalDetail)
+            L10n.verbatim(payload.technicalDetail ?? L10n.string("Import failed"), reason: .technicalDetail)
         }
     }
 
     private static func code(for key: String) -> Code {
-        switch key {
-        case "core.error.Io.message": .io
-        case "core.error.Db.message": .database
-        case "core.error.Config.message": .configuration
-        case "core.error.Validation.message": .validation
-        case "core.error.Classify.message": .classification
-        case "core.error.Conflict.message": .conflict
-        case "core.error.DuplicateFile.message": .duplicateFile
-        case "core.error.FileNotFound.message": .fileNotFound
-        case "core.error.ExpiredAction.message": .expiredAction
-        case "core.error.RepoNotInitialized.message": .repositoryNotInitialized
-        case "core.error.InvalidPath.message": .invalidPath
-        case "core.error.ICloudPlaceholder.message": .iCloudPlaceholder
-        case "core.error.StagingRecoveryRequired.message": .stagingRecoveryRequired
-        case "core.error.PermissionDenied.message": .permissionDenied
-        case "core.error.Internal.message": .internalFailure
-        default: .importFailed
-        }
+        messageCodes[key] ?? .importFailed
     }
+
+    private static let messageCodes: [String: Code] = [
+        "core.error.Io.message": .io,
+        "core.error.Db.message": .database,
+        "core.error.Config.message": .configuration,
+        "core.error.Validation.message": .validation,
+        "core.error.Classify.message": .classification,
+        "core.error.Conflict.message": .conflict,
+        "core.error.DuplicateFile.message": .duplicateFile,
+        "core.error.FileNotFound.message": .fileNotFound,
+        "core.error.ExpiredAction.message": .expiredAction,
+        "core.error.RepoNotInitialized.message": .repositoryNotInitialized,
+        "core.error.InvalidPath.message": .invalidPath,
+        "core.error.ICloudPlaceholder.message": .iCloudPlaceholder,
+        "core.error.StagingRecoveryRequired.message": .stagingRecoveryRequired,
+        "core.error.PermissionDenied.message": .permissionDenied,
+        "core.error.Internal.message": .internalFailure
+    ]
 }
 
 extension ImportBatchSessionSnapshot {

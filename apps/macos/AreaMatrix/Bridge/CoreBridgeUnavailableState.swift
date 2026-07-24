@@ -49,49 +49,13 @@ struct ConfigLoadFailure: Equatable {
     private static func map(repoPath: String, coreError: CoreError) -> ConfigLoadFailure {
         switch coreError {
         case let .Config(reason):
-            ConfigLoadFailure(
-                repoPath: repoPath,
-                title: L10n.message("repository.loadError.invalidTitle"),
-                message: L10n.message(
-                    "repository.loadError.invalidMessage",
-                    arguments: [.string(reason)],
-                    technicalDetail: reason
-                ),
-                recoveryAction: L10n.message("repository.loadError.invalidRecovery")
-            )
+            configFailure(repoPath: repoPath, detail: reason)
         case let .PermissionDenied(path):
-            ConfigLoadFailure(
-                repoPath: repoPath,
-                title: L10n.message("repository.loadError.permissionTitle"),
-                message: L10n.message(
-                    "repository.loadError.permissionMessage",
-                    arguments: [.string(path)],
-                    technicalDetail: path
-                ),
-                recoveryAction: L10n.message("repository.loadError.permissionRecovery")
-            )
+            permissionFailure(repoPath: repoPath, detail: path)
         case let .Io(message):
-            ConfigLoadFailure(
-                repoPath: repoPath,
-                title: L10n.message("repository.loadError.ioTitle"),
-                message: L10n.message(
-                    "repository.loadError.ioMessage",
-                    arguments: [.string(message)],
-                    technicalDetail: message
-                ),
-                recoveryAction: L10n.message("repository.loadError.ioRecovery")
-            )
+            ioFailure(repoPath: repoPath, detail: message)
         case let .Db(message):
-            ConfigLoadFailure(
-                repoPath: repoPath,
-                title: L10n.message("repository.loadError.databaseTitle"),
-                message: L10n.message(
-                    "repository.loadError.databaseMessage",
-                    arguments: [.string(message)],
-                    technicalDetail: message
-                ),
-                recoveryAction: L10n.message("repository.loadError.databaseRecovery")
-            )
+            databaseFailure(repoPath: repoPath, detail: message)
         default:
             ConfigLoadFailure(
                 repoPath: repoPath,
@@ -104,6 +68,72 @@ struct ConfigLoadFailure: Equatable {
                 recoveryAction: L10n.message("repository.loadError.defaultRecovery")
             )
         }
+    }
+
+    private static func configFailure(repoPath: String, detail: String) -> ConfigLoadFailure {
+        mappedFailure(
+            repoPath,
+            L10n.message("repository.loadError.invalidTitle"),
+            L10n.message(
+                "repository.loadError.invalidMessage",
+                arguments: [.string(detail)],
+                technicalDetail: detail
+            ),
+            L10n.message("repository.loadError.invalidRecovery")
+        )
+    }
+
+    private static func permissionFailure(repoPath: String, detail: String) -> ConfigLoadFailure {
+        mappedFailure(
+            repoPath,
+            L10n.message("repository.loadError.permissionTitle"),
+            L10n.message(
+                "repository.loadError.permissionMessage",
+                arguments: [.string(detail)],
+                technicalDetail: detail
+            ),
+            L10n.message("repository.loadError.permissionRecovery")
+        )
+    }
+
+    private static func ioFailure(repoPath: String, detail: String) -> ConfigLoadFailure {
+        mappedFailure(
+            repoPath,
+            L10n.message("repository.loadError.ioTitle"),
+            L10n.message(
+                "repository.loadError.ioMessage",
+                arguments: [.string(detail)],
+                technicalDetail: detail
+            ),
+            L10n.message("repository.loadError.ioRecovery")
+        )
+    }
+
+    private static func databaseFailure(repoPath: String, detail: String) -> ConfigLoadFailure {
+        mappedFailure(
+            repoPath,
+            L10n.message("repository.loadError.databaseTitle"),
+            L10n.message(
+                "repository.loadError.databaseMessage",
+                arguments: [.string(detail)],
+                technicalDetail: detail
+            ),
+            L10n.message("repository.loadError.databaseRecovery")
+        )
+    }
+
+    private static func mappedFailure(
+        _ repoPath: String,
+        _ title: LocalizedMessage,
+        _ message: LocalizedMessage,
+        _ recovery: LocalizedMessage
+    ) -> ConfigLoadFailure {
+        ConfigLoadFailure(
+            repoPath: repoPath,
+            title: title,
+            message: message,
+            recoveryAction: recovery
+        )
     }
 }
 
@@ -200,7 +230,7 @@ enum CoreBridgeError: Error, Equatable, LocalizedError {
 }
 
 struct SQLiteExistingRepositoryMetadataReader: ExistingRepositoryMetadataReading {
-    private static let supportedSchemaVersion: Int64 = 2
+    private static let supportedSchemaVersion: Int64 = 3
 
     func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot {
         let dbURL = URL(fileURLWithPath: repoPath)

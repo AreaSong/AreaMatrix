@@ -17,8 +17,10 @@ mod missing_file_recovery;
 mod move_to_category;
 mod note;
 mod overview;
+mod overview_regeneration;
 mod platform_watcher_status;
 mod read_models;
+mod recoverable_operation;
 mod redo;
 mod remote_provider_config;
 mod rename;
@@ -53,7 +55,8 @@ pub(crate) use command_index::{
 };
 pub(crate) use connection::{
     configure_connection, db_path, ensure_initialized, ensure_initialized_readable,
-    open_repo_connection, open_repo_read_connection, path_exists, AREA_MATRIX_DIR,
+    open_repo_connection, open_repo_read_connection, open_repo_snapshot_read_connection,
+    path_exists, AREA_MATRIX_DIR,
 };
 pub(crate) use delete::{
     insert_batch_delete_undo_action, purge_expired_soft_deleted_files,
@@ -96,8 +99,19 @@ pub(crate) use overview::{
     list_overview_node_files, list_overview_node_summaries, list_overview_recent_changes,
     OverviewChangeRow, OverviewFileRow, OverviewNodeSummary,
 };
+pub(crate) use overview_regeneration::{
+    create_overview_regeneration, has_unsettled_overview_regeneration, load_overview_provenance,
+    load_overview_regeneration, load_unsettled_overview_regeneration_id,
+    record_completed_overview_generation, replace_overview_provenance, restore_overview_provenance,
+    update_overview_item_state, update_overview_operation_status, OverviewJournalItem,
+    OverviewProvenanceRecord,
+};
 pub(crate) use platform_watcher_status::upsert_platform_watcher_health;
 pub(crate) use read_models::{list_files, with_availability_status};
+pub(crate) use recoverable_operation::{
+    insert_recoverable_operation, insert_recoverable_operation_in_tx, load_recoverable_operation,
+    update_recoverable_operation_status, RecoverableOperationRecord,
+};
 pub(crate) use redo::clear_redo_stack_in_tx;
 pub(crate) use remote_provider_config::{
     delete_remote_provider_test_record, load_remote_provider_config_record,
@@ -111,10 +125,11 @@ pub(crate) use rename::{
     BatchRenameUndoItem,
 };
 pub(crate) use repo_config::{
-    ensure_config_storage_writable, ensure_repository_locale_allows_normal_mutation,
-    initialize_repository_db, load_config_or_default, load_repo_config_record,
-    load_repo_config_snapshot_or_default, map_update_open_error, update_config,
-    update_repo_config_patch, upsert_repo_config_record, with_write_transaction,
+    ensure_config_storage_writable, ensure_repository_locale_allows_generation_preview,
+    ensure_repository_locale_allows_normal_mutation, initialize_repository_db,
+    load_config_or_default, load_repo_config_record, load_repo_config_snapshot_or_default,
+    map_update_open_error, update_config, update_repo_config_patch, upsert_repo_config_record,
+    with_write_transaction,
 };
 pub(crate) use saved_search::{
     create_saved_search_row, delete_saved_search_row, get_saved_search_row, list_saved_search_rows,

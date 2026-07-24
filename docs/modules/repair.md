@@ -67,7 +67,9 @@ repair 按 metadata 状态分流：
 
 - `.areamatrix/` 缺失：先在同级临时目录创建 metadata skeleton，再原子安装；不写 generated overview。
 - `.areamatrix/` 存在但 `index.db` 缺失：保留孤立 WAL/SHM 诊断材料，原子安装新 DB。
-- `index.db` 损坏、locale 缺失或 unsupported：先（按需）snapshot，再构建 replacement DB 并原子替换。
+- `index.db` 损坏：先（按需）snapshot，再构建 replacement DB 并原子替换。
+- locale 缺失或 unsupported：在 `BEGIN IMMEDIATE` 事务中只修复 `repo_config.locale`，同步递增
+  `repo_config_revision`；不得重建数据库或丢失 tags、notes、history、saved searches 等 DB-only metadata。
 - `index.db` 健康：只验证 metadata；可按用户选择保留诊断快照，不启动其他 operation。
 
 缺失 DB 时没有可复制的旧数据库，因此 `diagnostics_snapshot_path` 可以为空。初始化或重建后的索引为空；

@@ -35,15 +35,15 @@ extension ClassifierSettingsPane {
         .task {
             await model.load()
         }
-        .alert("Revert to last valid classifier.yaml?", isPresented: $showingRevertConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Revert", role: .destructive) {
+        .alert(L10n.string("Revert to last valid classifier.yaml?"), isPresented: $showingRevertConfirmation) {
+            Button(L10n.string("Cancel"), role: .cancel) {}
+            Button(L10n.string("Revert"), role: .destructive) {
                 Task {
                     await model.revertToLastValid()
                 }
             }
         } message: {
-            Text("This replaces the current classifier.yaml with the last validated backup.")
+            Text(L10n.string("This replaces the current classifier.yaml with the last validated backup."))
         }
     }
 
@@ -54,7 +54,7 @@ extension ClassifierSettingsPane {
             } else if model.isSaving {
                 SettingsHeaderProgressIndicator(label: L10n.string("Saving classifier settings"))
             } else {
-                Button("Retry status") {
+                Button(L10n.string("Retry status")) {
                     Task {
                         await model.load()
                     }
@@ -86,7 +86,7 @@ extension ClassifierSettingsPane {
             message: localizer.resolve(error.message),
             recovery: localizer.resolve(error.recovery)
         ) {
-            Button("Retry status") {
+            Button(L10n.string("Retry status")) {
                 Task {
                     await model.load()
                 }

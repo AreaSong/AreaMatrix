@@ -13,7 +13,7 @@ docs:
     line_end: 1714
     heading: 'AM-GOV-REGISTER-001'
     excerpt: 'id: AM-GOV-REGISTER-001'
-    sha256: '3da09ced4cebe965deab042ce9d3651babb82a68f46c4a926f638a6f815b3c31'
+    sha256: '16a58aacdc9f02815b252708b18a210ca08c5ae84d2888c039dbee0e4a36b73e'
     source: 'changes:v2-asw-governance-adoption'
   - file: 'docs/governance/project-charter.md'
     line_start: 1
@@ -36,3 +36,24 @@ docs:
     excerpt: '本文定义 AreaMatrix 桌面产品的信任边界、威胁主体、数据分类和控制映射，是安全事实的权威来源。'
     sha256: '52e6dc428412bb432b477f62d9088d7a55ff49e0676759b5f4c1e58a39977252'
     source: 'changes:v2-asw-governance-adoption'
+  - file: 'CODE_REVIEW.md'
+    line_start: 1
+    line_end: 96
+    heading: ''
+    excerpt: '# Code Review Policy'
+    sha256: 'eed0e8f7eaf58658daab0b6b8c7d7f3d859f0f5f56a29ee701e682e92f5f2eca'
+    source: 'discussion:exact_docs'
+  - file: 'docs/development/ci-governance.md'
+    line_start: 1
+    line_end: 160
+    heading: ''
+    excerpt: '# CI Governance'
+    sha256: 'd85fb297f61fbfa4df875d37d445dc0ac6642763f49f15a6480d186b6641923d'
+    source: 'discussion:exact_docs'
+  - file: 'workflow/README.md'
+    line_start: 1
+    line_end: 112
+    heading: ''
+    excerpt: '# AreaMatrix Workflow'
+    sha256: 'befb63f5da253e8c9250ed9ce2312357d58ef24cfabdd64a631c0980f1338d64'
+    source: 'discussion:exact_docs'

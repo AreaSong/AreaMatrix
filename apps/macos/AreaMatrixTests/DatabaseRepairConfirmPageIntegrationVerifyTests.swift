@@ -4,14 +4,14 @@ import XCTest
 
 final class DatabaseRepairIntegrationTests: XCTestCase {
     @MainActor
-    func testDatabaseRepairPageIntegrationConnectsDbRepairEntryConfirmedFullRescanAndMainListExit() async throws {
+    func testDatabaseRepairPageIntegrationSeparatesMetadataRepairRescanAndMainListExit() async throws {
         let context = try await DatabaseRepairIntegrationSuccessContext.make()
         defer { context.cleanup() }
 
         let repairRoute = try context.openRepairRoute()
         let repairModel = context.makeRepairModel(repairRoute)
 
-        try await context.verifyStartupDiagnosticsAndFullRescan(repairModel)
+        try await context.verifyStartupDiagnosticsRepairAndRescan(repairModel)
         try await context.verifyMainLoadingAndMainListExit(repairRoute)
     }
 
@@ -26,6 +26,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         let repairer = DatabaseRepairRecordingMetadataRepairer(
             result: .failure(CoreError.PermissionDenied(path: "/tmp/repo/.areamatrix/index.db"))
         )
+        let reindexer = RepairRecordingReindexer()
         let finder = RecordingRepositoryFinderOpener()
         let shell = OnboardingModel(
             settingsReader: ShellStaticSettingsReader(repoPath: nil),
@@ -39,30 +40,26 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
             message: "Expected database-repair repair route"
         ) else { return }
 
-        let repairModel = DatabaseRepairConfirmModel(
-            repoPath: repairRoute.repoPath,
-            scanSession: repairRoute.scanSession,
-            mapping: repairRoute.mapping,
-            lastOpenedAt: nil,
-            metadataRepairer: repairer,
-            startupRecoverer: StaticStartupRecoverer(),
-            diagnosticsCollector: ShellRecordingDiagnosticsCollector(
-                result: .success(.databaseRepairIntegrationDiagnostics)
-            ),
-            errorMapper: StaticCoreErrorMapper(mapping: mapping)
+        let repairModel = makeFailureRepairModel(
+            route: repairRoute,
+            repairer: repairer,
+            reindexer: reindexer,
+            mapping: mapping
         )
 
+        await repairModel.loadRepairPreflightIfNeeded()
         repairModel.isMetadataSafetyConfirmed = true
-        await repairModel.runFullRescan()
+        await repairModel.runMetadataRepair()
 
         await repairer.assertMetadataRepairRequests([
             DatabaseRepairMetadataRepairRequest(
                 repoPath: "/tmp/repo",
-                options: .databaseRepairFullRescanFixture()
+                options: .databaseRepairMetadataFixture()
             )
         ])
+        await reindexer.assertRequests([])
         XCTAssertEqual(repairModel.repairState, .failed(mapping))
-        XCTAssertEqual(repairModel.primaryButtonTitle, "Retry Full Rescan")
+        XCTAssertEqual(repairModel.primaryButtonTitle, "Retry Metadata Repair")
         XCTAssertEqual(shell.route, .dbRepairConfirm(repairRoute))
 
         shell.revealMainRepositoryFolder(repoPath: repairRoute.repoPath)
@@ -71,6 +68,28 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
         shell.returnFromDatabaseRepair(repairRoute)
         XCTAssertEqual(shell.route, .mainRepoError("/tmp/repo", mapping))
     }
+}
+
+@MainActor
+private func makeFailureRepairModel(
+    route: DatabaseRepairRouteState,
+    repairer: DatabaseRepairRecordingMetadataRepairer,
+    reindexer: RepairRecordingReindexer,
+    mapping: CoreErrorMappingSnapshot
+) -> DatabaseRepairConfirmModel {
+    DatabaseRepairConfirmModel(
+        repoPath: route.repoPath,
+        scanSession: route.scanSession,
+        mapping: route.mapping,
+        lastOpenedAt: nil,
+        metadataRepairer: repairer,
+        repositoryReindexer: reindexer,
+        startupRecoverer: StaticStartupRecoverer(),
+        diagnosticsCollector: ShellRecordingDiagnosticsCollector(
+            result: .success(.databaseRepairIntegrationDiagnostics)
+        ),
+        errorMapper: StaticCoreErrorMapper(mapping: mapping)
+    )
 }
 
 private struct DatabaseRepairIntegrationSuccessContext {
@@ -159,13 +178,15 @@ private struct DatabaseRepairIntegrationSuccessContext {
     }
 
     @MainActor
-    func verifyStartupDiagnosticsAndFullRescan(_ repairModel: DatabaseRepairConfirmModel) async throws {
+    func verifyStartupDiagnosticsRepairAndRescan(_ repairModel: DatabaseRepairConfirmModel) async throws {
         await repairModel.runStartupRecoveryCheckIfNeeded()
+        await repairModel.loadRepairPreflightIfNeeded()
         XCTAssertEqual(repairModel.startupRecoveryState, .completed(nil))
-        XCTAssertFalse(repairModel.canRunFullRescan)
+        XCTAssertFalse(repairModel.canRunMetadataRepair)
 
         try await verifyDiagnosticsExport(repairModel)
-        try await verifyConfirmedFullRescan(repairModel)
+        try await verifyConfirmedMetadataRepair(repairModel)
+        try await verifyConfirmedRescan(repairModel)
         try await verifyIndexedFilesAndDeclaredBoundaries()
     }
 
@@ -207,22 +228,41 @@ private struct DatabaseRepairIntegrationSuccessContext {
     }
 
     @MainActor
-    private func verifyConfirmedFullRescan(_ repairModel: DatabaseRepairConfirmModel) async throws {
+    private func verifyConfirmedMetadataRepair(_ repairModel: DatabaseRepairConfirmModel) async throws {
         repairModel.isMetadataSafetyConfirmed = true
-        XCTAssertTrue(repairModel.canRunFullRescan)
-        await repairModel.runFullRescan()
+        XCTAssertTrue(repairModel.canRunMetadataRepair)
+        await repairModel.runMetadataRepair()
         guard case let .succeeded(report) = repairModel.repairState else {
             throw DatabaseRepairIntegrationFailure
                 .unexpectedRoute("Expected repair success, got \(repairModel.repairState)")
         }
 
-        XCTAssertNotNil(report.scanSessionId)
         XCTAssertTrue(report.diagnosticsSnapshotPath?.hasPrefix(".areamatrix/diagnostics/index-") == true)
+        XCTAssertEqual(report.outcome, "Verified")
+        let filesBeforeRescan = try await bridge.listFiles(
+            repoPath: repoURL.path,
+            filter: .databaseRepairIntegrationAllFiles
+        )
+        XCTAssertEqual(filesBeforeRescan, [])
+        XCTAssertEqual(try databaseRepairIntegrationUserFileSnapshot([readmeURL, specURL]), beforeRepair)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
+    }
+
+    @MainActor
+    private func verifyConfirmedRescan(_ repairModel: DatabaseRepairConfirmModel) async throws {
+        XCTAssertFalse(repairModel.canRunRescan)
+        repairModel.isRescanConfirmed = true
+        XCTAssertTrue(repairModel.canRunRescan)
+        await repairModel.runRescan()
+        guard case let .succeeded(report) = repairModel.rescanState else {
+            throw DatabaseRepairIntegrationFailure
+                .unexpectedRoute("Expected rescan success, got \(repairModel.rescanState)")
+        }
+        XCTAssertNotNil(report.scanSessionId)
         XCTAssertEqual(report.inserted, 2)
         XCTAssertEqual(report.updated, 0)
         XCTAssertEqual(report.errors, [])
         XCTAssertEqual(try databaseRepairIntegrationUserFileSnapshot([readmeURL, specURL]), beforeRepair)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("AREAMATRIX.md").path))
     }
 
     private func verifyIndexedFilesAndDeclaredBoundaries() async throws {

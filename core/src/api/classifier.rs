@@ -4,7 +4,7 @@ use crate::{
     classifier_correction, classifier_impact, classifier_rule_editor, classifier_rules,
     ClassifierCorrectionResult, ClassifierImpactPreviewRequest, ClassifierRule,
     ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
-    ClassifierRuleUpdate, CoreResult, RuleImpactReport,
+    ClassifierRuleUpdate, ContentLocale, CoreResult, RuleImpactReport,
 };
 
 /// Applies one classifier correction for classifier correction surface.
@@ -96,8 +96,56 @@ pub fn preview_classifier_rule_impact(
 /// malformed classifier configuration, `CoreError::PermissionDenied { path }`
 /// for blocked classifier metadata reads, and `CoreError::Io { message }` for
 /// classifier config read failures.
-pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEditorSnapshot> {
-    classifier_rule_editor::list_classifier_rules(repo_path)
+pub fn list_classifier_rules(
+    repo_path: String,
+    editing_locale: Option<ContentLocale>,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::list_classifier_rules(repo_path, editing_locale)
+}
+
+/// Creates the default classifier only when the managed file is missing.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config` when confirmation is absent or the current
+/// health does not authorize creation. File permission and durable-write
+/// failures are returned without touching user files or database records.
+pub fn create_default_classifier(
+    repo_path: String,
+    confirmed: bool,
+    editing_locale: Option<ContentLocale>,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::create_default_classifier(repo_path, confirmed, editing_locale)
+}
+
+/// Restores the default classifier over readable invalid managed bytes.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config` when confirmation is absent or the current
+/// health does not authorize restore. The original bytes are archived before
+/// replacement; permission, backup, and durable-write failures are propagated.
+pub fn restore_default_classifier(
+    repo_path: String,
+    confirmed: bool,
+    editing_locale: Option<ContentLocale>,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::restore_default_classifier(repo_path, confirmed, editing_locale)
+}
+
+/// Restores the newest verified valid classifier backup.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config` when confirmation is absent, current health is
+/// not invalid, or no verified backup exists. Permission, backup, and durable
+/// write failures are propagated without touching user files.
+pub fn restore_last_valid_classifier(
+    repo_path: String,
+    confirmed: bool,
+    editing_locale: Option<ContentLocale>,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    classifier_rule_editor::restore_last_valid_classifier(repo_path, confirmed, editing_locale)
 }
 
 /// Creates one classifier rule editor row for future classification.

@@ -77,7 +77,7 @@ items:
       - ADR-0003/0006 and core-api.md updated for purge-on-startup metadata-only retention
     notes: Closed 2026-07-21. recover_on_startup purges files.status=deleted rows with deleted_at older than 30 days; user source files and Trash are not hard-deleted.
   - id: global-product-ui-localization
-    status: closed
+    status: open
     type: product-contract-gap
     title: UI string localization pipeline from ADR-0008 is not implemented
     source: docs/adr/0008-naming-and-i18n.md
@@ -86,16 +86,19 @@ items:
       - apps/macos/AreaMatrix/App/AppLanguage.swift
       - scripts/dev_tools/checks.py
     owner: macos-frontend
-    current_impact: none
+    current_impact: v3-bilingual-closeout-not-cleared
     executable_task: false
     promotion_required: true
-    close_condition: Ship independent app-interface and per-repository content languages with complete en/zh-Hans catalog coverage and a CI drift gate.
+    close_condition: Complete the v3 bilingual contract across Core, UDL, generated bindings and macOS; prove responsive app-owned UI, repository locale CAS, classifier locale maps, operation provenance, structured errors and all four interface/content combinations with fixture-only UI evidence.
     validation:
       - xcodebuild AreaMatrix succeeds with Localizable.xcstrings in app bundle
       - AppLanguage tests cover persistence, runtime switching, zh-* fallback, and legacy zh-CN canonicalization
       - Core tests cover system content locale following the interface while explicit repository locales remain stable
       - governance check enforces extracted UI key coverage, locale parity, and placeholder parity
-    notes: Closed evidence expanded 2026-07-22. App UI and repository content language are independent; en/zh-Hans are complete catalog locales, system content locale resolves through the current interface locale only at generation time, and obsolete zh-Hant mirror resources are removed.
+      - ./dev bindings verify
+      - ./dev test macos
+      - fixture-only Debug UI smoke covers en/en, en/zh-Hans, zh-Hans/en and zh-Hans/zh-Hans
+    notes: Reopened 2026-07-24 after v3 audit found the prior closure premature. Catalog resources and the basic language store exist, but classifier locale maps, repository conflict UX, operation provenance, standalone overview regeneration and complete responsive presentation evidence remain incomplete.
   - id: global-docs-core-module-doc-coverage
     status: closed
     type: product-doc-marker

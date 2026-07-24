@@ -121,7 +121,6 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: movedURL.path,
             loader: bridge,
-            updater: bridge,
             errorMapper: bridge
         )
 
@@ -134,7 +133,6 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
         XCTAssertEqual(model.healthSummary?.filesIndexed, 0)
-        XCTAssertNil(model.syncError)
         XCTAssertFalse(FileManager.default.fileExists(atPath: movedURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: movedURL.appendingPathComponent("AREAMATRIX.md").path
@@ -166,7 +164,6 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: bridge,
-            updater: bridge,
             repositoryOpener: bridge,
             scanSessionReader: bridge,
             existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
@@ -188,7 +185,6 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let loader = RecordingConfigurationLoader(results: [
             .success(.shellFixture(repoPath: "/tmp/repo"))
         ])
-        let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(.testFixture(
                 schemaVersion: 1,
@@ -202,7 +198,6 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: updater,
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
@@ -215,8 +210,8 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         XCTAssertEqual(model.healthSummary?.schemaVersion, 1)
         XCTAssertEqual(model.healthSummary?.databaseStatus, .locked)
         XCTAssertEqual(model.healthError?.databaseStatus, .locked)
-        XCTAssertEqual(model.healthError?.message, "数据库错误")
-        XCTAssertEqual(model.healthError?.recovery, "Retry status")
+        XCTAssertEqual(model.healthError?.message, L10n.message("数据库错误"))
+        XCTAssertEqual(model.healthError?.recovery, L10n.message("Retry status"))
     }
 
     @MainActor

@@ -14,6 +14,8 @@ fn input(
         path: path.map(str::to_owned),
         reason: reason.map(str::to_owned),
         message: message.map(str::to_owned),
+        expected_revision: None,
+        current_revision: None,
     }
 }
 
@@ -25,23 +27,23 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::Io,
             ErrorSeverity::Medium,
             ErrorRecoverability::Retryable,
-            "文件操作失败",
+            "io_error",
             "disk full",
         ),
         (
-            CoreError::db("database is locked"),
-            ErrorKind::Db,
+            CoreError::db_locked("database is locked"),
+            ErrorKind::DbLocked,
             ErrorSeverity::Medium,
             ErrorRecoverability::Retryable,
-            "数据库暂时被占用",
+            "database_locked",
             "database is locked",
         ),
         (
-            CoreError::db("database disk image is malformed"),
-            ErrorKind::Db,
+            CoreError::db_corrupted("database disk image is malformed"),
+            ErrorKind::DbCorrupted,
             ErrorSeverity::Critical,
             ErrorRecoverability::Fatal,
-            "资料库索引损坏",
+            "database_corrupted",
             "database disk image is malformed",
         ),
         (
@@ -49,7 +51,7 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::Config,
             ErrorSeverity::Medium,
             ErrorRecoverability::UserActionRequired,
-            "配置错误",
+            "config_error",
             "classifier.yaml missing default",
         ),
         (
@@ -57,7 +59,7 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::Classify,
             ErrorSeverity::Low,
             ErrorRecoverability::RefreshRequired,
-            "分类失败",
+            "classification_error",
             "rule engine unavailable",
         ),
         (
@@ -65,7 +67,7 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::Conflict,
             ErrorSeverity::Medium,
             ErrorRecoverability::UserActionRequired,
-            "路径冲突",
+            "conflict",
             "docs/report.pdf",
         ),
         (
@@ -75,7 +77,7 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::DuplicateFile,
             ErrorSeverity::Low,
             ErrorRecoverability::UserActionRequired,
-            "文件已存在",
+            "duplicate_file",
             "finance/report.pdf",
         ),
         (
@@ -83,7 +85,7 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::FileNotFound,
             ErrorSeverity::Low,
             ErrorRecoverability::RefreshRequired,
-            "文件不存在",
+            "file_not_found",
             "docs/missing.pdf",
         ),
         (
@@ -91,7 +93,7 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::RepoNotInitialized,
             ErrorSeverity::High,
             ErrorRecoverability::UserActionRequired,
-            "资料库未初始化",
+            "repository_not_initialized",
             "/repo",
         ),
         (
@@ -99,7 +101,7 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::InvalidPath,
             ErrorSeverity::Low,
             ErrorRecoverability::UserActionRequired,
-            "路径不合法",
+            "invalid_path",
             "../escape.pdf",
         ),
         (
@@ -107,7 +109,7 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::ICloudPlaceholder,
             ErrorSeverity::Medium,
             ErrorRecoverability::Retryable,
-            "iCloud 文件未下载",
+            "icloud_placeholder_not_downloaded",
             "iCloud/report.pdf",
         ),
         (
@@ -115,7 +117,7 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::PermissionDenied,
             ErrorSeverity::High,
             ErrorRecoverability::UserActionRequired,
-            "无访问权限",
+            "permission_denied",
             "/restricted/repo",
         ),
         (
@@ -123,21 +125,24 @@ fn error_mapping_validation_maps_every_core_error_to_ui_metadata() {
             ErrorKind::Internal,
             ErrorSeverity::Critical,
             ErrorRecoverability::Fatal,
-            "应用内部错误",
+            "internal_error",
             "unexpected invariant",
         ),
     ];
 
-    for (error, kind, severity, recoverability, user_message, raw_context) in cases {
+    for (error, kind, severity, recoverability, code, raw_context) in cases {
         let mapping = error.to_error_mapping();
 
         assert_eq!(mapping.kind, kind);
         assert_eq!(mapping.severity, severity);
         assert_eq!(mapping.recoverability, recoverability);
-        assert_eq!(mapping.user_message, user_message);
-        assert_eq!(mapping.raw_context, raw_context);
+        assert_eq!(mapping.code, code);
+        assert_eq!(
+            mapping.technical_details.as_deref().unwrap_or_default(),
+            raw_context
+        );
         assert!(
-            !mapping.suggested_action.is_empty(),
+            !mapping.recovery_action_ids.is_empty(),
             "mapped errors need a user-actionable next step"
         );
     }
@@ -246,13 +251,16 @@ fn error_mapping_validation_uses_kind_not_misleading_payload_text() {
         Some("duplicate file already exists"),
     ));
     assert_eq!(permission.kind, ErrorKind::PermissionDenied);
-    assert_eq!(permission.user_message, "无访问权限");
+    assert_eq!(permission.code, "permission_denied");
     assert_eq!(permission.severity, ErrorSeverity::High);
     assert_eq!(
         permission.recoverability,
         ErrorRecoverability::UserActionRequired
     );
-    assert_eq!(permission.raw_context, "/restricted/repo");
+    assert_eq!(
+        permission.technical_details.as_deref().unwrap_or_default(),
+        "/restricted/repo"
+    );
 
     let icloud = map_core_error(input(
         ErrorKind::ICloudPlaceholder,
@@ -261,10 +269,13 @@ fn error_mapping_validation_uses_kind_not_misleading_payload_text() {
         Some("database is locked"),
     ));
     assert_eq!(icloud.kind, ErrorKind::ICloudPlaceholder);
-    assert_eq!(icloud.user_message, "iCloud 文件未下载");
+    assert_eq!(icloud.code, "icloud_placeholder_not_downloaded");
     assert_eq!(icloud.severity, ErrorSeverity::Medium);
     assert_eq!(icloud.recoverability, ErrorRecoverability::Retryable);
-    assert_eq!(icloud.raw_context, "iCloud/report.pdf");
+    assert_eq!(
+        icloud.technical_details.as_deref().unwrap_or_default(),
+        "iCloud/report.pdf"
+    );
 }
 
 #[test]
@@ -305,41 +316,66 @@ fn error_mapping_validation_high_severity_errors_are_not_swallowed() {
             mapping.recoverability,
             ErrorRecoverability::UserActionRequired | ErrorRecoverability::Fatal
         ));
-        assert!(!mapping.user_message.is_empty());
-        assert!(!mapping.suggested_action.is_empty());
-        assert!(!mapping.raw_context.is_empty());
+        assert!(!mapping.code.is_empty());
+        assert!(!mapping.recovery_action_ids.is_empty());
+        assert!(!mapping
+            .technical_details
+            .as_deref()
+            .unwrap_or_default()
+            .is_empty());
     }
 }
 
 #[test]
 fn error_mapping_validation_db_locked_and_corrupted_have_distinct_recovery_paths() {
-    let locked = map_core_error(input(
-        ErrorKind::Db,
-        None,
-        None,
-        Some("SQLITE_BUSY: database is locked"),
-    ));
-    assert_eq!(locked.kind, ErrorKind::Db);
-    assert_eq!(locked.user_message, "数据库暂时被占用");
+    let locked = CoreError::db_locked("SQLITE_BUSY: database is locked").to_error_mapping();
+    assert_eq!(locked.kind, ErrorKind::DbLocked);
+    assert_eq!(locked.code, "database_locked");
     assert_eq!(locked.severity, ErrorSeverity::Medium);
     assert_eq!(locked.recoverability, ErrorRecoverability::Retryable);
-    assert!(locked.suggested_action.contains("重试"));
+    assert_eq!(
+        locked.recovery_action_ids,
+        vec!["retry", "collect_diagnostics"]
+    );
 
-    let corrupted = map_core_error(input(
-        ErrorKind::Db,
-        None,
-        None,
-        Some("database disk image is malformed"),
-    ));
-    assert_eq!(corrupted.kind, ErrorKind::Db);
-    assert_eq!(corrupted.user_message, "资料库索引损坏");
+    let corrupted = CoreError::db_corrupted("database disk image is malformed").to_error_mapping();
+    assert_eq!(corrupted.kind, ErrorKind::DbCorrupted);
+    assert_eq!(corrupted.code, "database_corrupted");
     assert_eq!(corrupted.severity, ErrorSeverity::Critical);
     assert_eq!(corrupted.recoverability, ErrorRecoverability::Fatal);
-    assert!(corrupted.suggested_action.contains("重建索引"));
+    assert_eq!(
+        corrupted.recovery_action_ids,
+        vec!["open_recovery", "collect_diagnostics"]
+    );
 }
 
 #[test]
-fn error_mapping_validation_db_corruption_wins_over_busy_marker() {
+fn error_mapping_validation_descriptor_preserves_typed_payloads() {
+    let locked = map_core_error(ErrorMappingInput {
+        kind: ErrorKind::DbLocked,
+        path: None,
+        reason: None,
+        message: Some("SQLITE_BUSY".to_owned()),
+        expected_revision: None,
+        current_revision: None,
+    });
+    assert_eq!(locked.code, "database_locked");
+
+    let revision = map_core_error(ErrorMappingInput {
+        kind: ErrorKind::RevisionConflict,
+        path: Some("repo_config".to_owned()),
+        reason: None,
+        message: None,
+        expected_revision: Some(7),
+        current_revision: Some(9),
+    });
+    assert_eq!(revision.code, "repo_config_revision_conflict");
+    assert_eq!(revision.arguments[1].value, "7");
+    assert_eq!(revision.arguments[2].value, "9");
+}
+
+#[test]
+fn error_mapping_validation_generic_db_message_is_never_reclassified() {
     let mapping = map_core_error(input(
         ErrorKind::Db,
         None,
@@ -348,7 +384,10 @@ fn error_mapping_validation_db_corruption_wins_over_busy_marker() {
     ));
 
     assert_eq!(mapping.kind, ErrorKind::Db);
-    assert_eq!(mapping.severity, ErrorSeverity::Critical);
-    assert_eq!(mapping.recoverability, ErrorRecoverability::Fatal);
-    assert_eq!(mapping.user_message, "资料库索引损坏");
+    assert_eq!(mapping.severity, ErrorSeverity::High);
+    assert_eq!(
+        mapping.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
+    assert_eq!(mapping.code, "database_error");
 }

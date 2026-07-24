@@ -11,7 +11,6 @@ use unicode_normalization::UnicodeNormalization;
 
 use crate::{ClassifyReason, ClassifyResult, CoreError, CoreResult};
 
-const DEFAULT_CLASSIFIER_YAML: &str = include_str!("../../resources/classifier.yaml");
 const KEYWORD_CONFIDENCE: f32 = 0.9;
 const EXTENSION_CONFIDENCE: f32 = 0.7;
 const DEFAULT_CONFIDENCE: f32 = 0.0;
@@ -71,6 +70,7 @@ struct ExtensionHit<'a> {
 
 pub(crate) fn predict_category(repo_path: String, filename: String) -> CoreResult<ClassifyResult> {
     let repo = normalize_repo_path(&repo_path)?;
+    crate::db::ensure_repository_locale_allows_generation_preview(&repo)?;
     let original_name = validate_filename(&filename)?;
     let config = load_classifier_config(&repo)?;
     let normalized = normalize_name(original_name);
@@ -135,13 +135,8 @@ fn validate_filename(filename: &str) -> CoreResult<&str> {
 }
 
 fn load_classifier_config(repo: &Path) -> CoreResult<ClassifierConfig> {
-    let yaml = match fs::read_to_string(repo.join(".areamatrix/classifier.yaml")) {
-        Ok(content) => content,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            DEFAULT_CLASSIFIER_YAML.to_owned()
-        }
-        Err(_) => return Err(CoreError::classify("classification error")),
-    };
+    let yaml = fs::read_to_string(repo.join(".areamatrix/classifier.yaml"))
+        .map_err(|_| CoreError::classify("classification error"))?;
 
     let config: ClassifierConfig =
         serde_yaml::from_str(&yaml).map_err(|error| CoreError::config(error.to_string()))?;

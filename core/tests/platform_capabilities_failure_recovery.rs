@@ -35,7 +35,7 @@ fn assert_config_error(error: CoreError, expected_reason: &str) {
         ErrorRecoverability::UserActionRequired
     );
     assert_eq!(error.raw_context(), expected_reason);
-    assert_eq!(mapping.raw_context, expected_reason);
+    assert_eq!(mapping.technical_details.as_deref(), Some(expected_reason));
 }
 
 fn assert_no_disabled_row_is_exposed_as_enabled(matrix: &PlatformCapabilities) {

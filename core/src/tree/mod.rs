@@ -9,7 +9,9 @@ use std::{
 use serde::{Deserialize, Serialize};
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{db, CoreError, CoreResult};
+use crate::{
+    db, CoreError, CoreResult, RepositoryLocalePolicySnapshot, RepositoryLocalePolicyState,
+};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const CLASSIFIER_FILE: &str = "classifier.yaml";
@@ -83,6 +85,12 @@ struct CategoryDisplay {
     names_by_slug: BTreeMap<String, BTreeMap<String, String>>,
 }
 
+#[derive(Debug)]
+struct TreeLocaleFallback {
+    keys: Vec<String>,
+    built_in_locale: &'static str,
+}
+
 #[derive(Debug, Deserialize)]
 struct IgnoreConfig {
     ignore: Option<Vec<String>>,
@@ -95,15 +103,16 @@ struct IgnoreMatcher {
 
 pub(crate) fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
     let repo = PathBuf::from(repo_path);
+    let locale = TreeLocaleFallback::from_presentation_token(&locale);
     build_tree_json(&repo, &locale).map_err(normalize_contract_error)
 }
 
-fn build_tree_json(repo: &Path, locale: &str) -> CoreResult<String> {
+fn build_tree_json(repo: &Path, locale: &TreeLocaleFallback) -> CoreResult<String> {
     let tree = build_tree(repo, locale)?;
     serde_json::to_string(&tree).map_err(|error| CoreError::io(error.to_string()))
 }
 
-fn build_tree(repo: &Path, locale: &str) -> CoreResult<TreeNode> {
+fn build_tree(repo: &Path, locale: &TreeLocaleFallback) -> CoreResult<TreeNode> {
     db::ensure_initialized_readable(repo)?;
 
     let categories = load_categories(repo)?;
@@ -217,7 +226,7 @@ fn insert_file(root: &mut RawNode, relative_path: &str, size_bytes: i64) {
 fn build_children(
     raw: &RawNode,
     categories: &CategoryDisplay,
-    locale: &str,
+    locale: &TreeLocaleFallback,
     depth: i32,
 ) -> Vec<TreeNode> {
     raw.children
@@ -250,27 +259,53 @@ impl RawNode {
 }
 
 impl CategoryDisplay {
-    fn display_name(&self, slug: &str, locale: &str) -> String {
+    fn display_name(&self, slug: &str, locale: &TreeLocaleFallback) -> String {
         let Some(names) = self.names_by_slug.get(slug) else {
             return slug.to_owned();
         };
-        if let Some(name) = names.get(locale) {
-            return name.clone();
-        }
-        if locale == "en" {
-            return names.get("en").cloned().unwrap_or_else(|| slug.to_owned());
-        }
-        if locale == "zh-Hans" {
-            return names
-                .get("zh-Hans")
-                .cloned()
-                .unwrap_or_else(|| slug.to_owned());
+        for key in &locale.keys {
+            if let Some(name) = names.get(key) {
+                return name.clone();
+            }
         }
         slug.to_owned()
     }
 
     fn contains(&self, slug: &str) -> bool {
         self.names_by_slug.contains_key(slug)
+    }
+}
+
+impl TreeLocaleFallback {
+    fn from_presentation_token(locale: &str) -> Self {
+        let snapshot = RepositoryLocalePolicySnapshot::from_raw(locale.to_owned());
+        let mut keys = Vec::new();
+        let exact = snapshot.raw_value.trim();
+        if !exact.is_empty() && exact != "system" {
+            keys.push(exact.to_owned());
+        }
+
+        let built_in_locale = match snapshot.state {
+            RepositoryLocalePolicyState::ZhHans => {
+                push_unique(&mut keys, "zh-Hans");
+                "zh-Hans"
+            }
+            RepositoryLocalePolicyState::En => "en",
+            RepositoryLocalePolicyState::FollowInterface
+            | RepositoryLocalePolicyState::Unknown
+            | RepositoryLocalePolicyState::Unsupported => "en",
+        };
+        push_unique(&mut keys, "en");
+        Self {
+            keys,
+            built_in_locale,
+        }
+    }
+}
+
+fn push_unique(keys: &mut Vec<String>, value: &str) {
+    if !keys.iter().any(|key| key == value) {
+        keys.push(value.to_owned());
     }
 }
 
@@ -337,7 +372,7 @@ fn node_kind(categories: &CategoryDisplay, slug: &str, depth: i32) -> NodeKind {
 fn display_name_for(
     categories: &CategoryDisplay,
     slug: &str,
-    locale: &str,
+    locale: &TreeLocaleFallback,
     kind: NodeKind,
 ) -> String {
     if kind == NodeKind::SystemCategory {
@@ -377,8 +412,8 @@ fn file_name_from_relative(relative_path: &str) -> Option<&str> {
         .filter(|name| !name.is_empty())
 }
 
-fn root_display_name(locale: &str) -> String {
-    if locale == "en" {
+fn root_display_name(locale: &TreeLocaleFallback) -> String {
+    if locale.built_in_locale == "en" {
         ROOT_DISPLAY_EN.to_owned()
     } else {
         ROOT_DISPLAY_ZH_HANS.to_owned()

@@ -11,7 +11,7 @@ final class AdvancedSettingsModel: ObservableObject {
 
     @Published private(set) var loadState: LoadState = .loading
     @Published private(set) var draft: AdvancedSettingsDraft?
-    @Published private(set) var savedConfig: RepoConfigSnapshot?
+    @Published private(set) var savedConfig: AppRepoConfigSnapshot?
     @Published private(set) var saveError: AdvancedSettingsError?
     @Published private(set) var pendingRootOverviewStatus: RootOverviewFileStatus?
     @Published private(set) var isReplaceConfirmationPending = false
@@ -249,13 +249,14 @@ final class AdvancedSettingsModel: ObservableObject {
         await persist(updating: pendingRetry.config, kind: pendingRetry.kind)
     }
 
-    private func persist(updating config: RepoConfigSnapshot, kind: AdvancedSettingsSaveKind) async {
+    private func persist(updating config: AppRepoConfigSnapshot, kind: AdvancedSettingsSaveKind) async {
+        guard let savedConfig else { return }
         isSaving = true
         saveError = nil
         do {
-            try await updater.updateConfig(repoPath: repoPath, newConfig: config)
-            savedConfig = config
-            draft = AdvancedSettingsDraft(config: config)
+            let updated = try await updater.updateConfig(repoPath: repoPath, from: savedConfig, to: config)
+            self.savedConfig = updated
+            draft = AdvancedSettingsDraft(config: updated)
             pendingRetry = nil
         } catch {
             restoreDraftFromSavedConfig()

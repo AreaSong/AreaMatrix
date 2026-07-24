@@ -398,18 +398,24 @@ fn icloud_conflict_visual_failure_edge_error_mapping_keeps_retry_and_user_action
         path: Some("docs/report (Alice's conflicted copy).pdf.icloud".to_owned()),
         reason: Some("permission denied".to_owned()),
         message: Some("database is locked".to_owned()),
+        expected_revision: None,
+        current_revision: None,
     });
     let permission = map_core_error(ErrorMappingInput {
         kind: ErrorKind::PermissionDenied,
         path: Some("/restricted/repo/docs/report.pdf".to_owned()),
         reason: Some("icloud placeholder can retry".to_owned()),
         message: Some("database is locked".to_owned()),
+        expected_revision: None,
+        current_revision: None,
     });
     let db = map_core_error(ErrorMappingInput {
         kind: ErrorKind::Db,
         path: Some("/ignored".to_owned()),
         reason: Some("ignored".to_owned()),
         message: Some("forced icloud resolution log failure".to_owned()),
+        expected_revision: None,
+        current_revision: None,
     });
 
     assert_eq!(icloud.kind, ErrorKind::ICloudPlaceholder);

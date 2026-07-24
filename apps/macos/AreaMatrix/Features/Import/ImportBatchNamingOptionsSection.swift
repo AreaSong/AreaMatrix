@@ -241,7 +241,10 @@ struct BatchRenameReportPresentation: Equatable {
     var failedSummaryText: LocalizedMessage
 
     init(report: BatchRenameReportSnapshot) {
-        renamedSummaryText = L10n.pluralMessage("import.batch-naming.result.renamed", count: report.successfulRenameCount)
+        renamedSummaryText = L10n.pluralMessage(
+            "import.batch-naming.result.renamed",
+            count: report.successfulRenameCount
+        )
         unchangedSummaryText = L10n.pluralMessage(
             "import.batch-naming.result.skipped-or-unchanged",
             count: report.unchangedCount + report.skippedCount

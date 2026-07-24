@@ -39,7 +39,7 @@ let snapshotConstructorInventories = [
     snapshotCtorInventory("AiPrivacyRulesSnapshot", [("RemotePrivacyRulesFixtures.swift", 1)]),
     snapshotCtorInventory("AiPrivacyFieldState", [("RemotePrivacyRulesFixtures.swift", 1)]),
     snapshotCtorInventory("AIPrivacyRuleRegistrySnapshot", [("RemotePrivacyRulesFixtures.swift", 1)]),
-    snapshotCtorInventory("RepoConfigSnapshot", [("RepositoryConfigFixtures.swift", 1)]),
+    snapshotCtorInventory("AppRepoConfigSnapshot", [("RepositoryConfigFixtures.swift", 1)]),
     snapshotCtorInventory("IntegrationsICloudSnapshot", [("ConfigurationFixtures.swift", 1)]),
     snapshotCtorInventory("ICloudConflictVersionSnapshot", [("ICloudConflictMinimalFixtures.swift", 1)]),
     snapshotCtorInventory("SyncConflictResolutionRequestSnapshot", [("SyncConflictReviewResolutionFixtures.swift", 1)]),

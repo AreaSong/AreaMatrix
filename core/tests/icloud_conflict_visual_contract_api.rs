@@ -120,16 +120,19 @@ fn icloud_conflict_visual_contract_exposes_signatures_inputs_outputs_and_errors(
 
 #[test]
 fn icloud_conflict_visual_contract_has_no_fake_success_before_implementation() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         preview_conflict_versions(
-            "/tmp/repo".to_owned(),
+            uninitialized_repo_path.clone(),
             "docs/report.pdf::conflicted-copy".to_owned()
         ),
         Err(CoreError::Db { .. })
     ));
     assert!(matches!(
         resolve_icloud_conflict(
-            "/tmp/repo".to_owned(),
+            uninitialized_repo_path,
             "docs/report.pdf::conflicted-copy".to_owned(),
             ICloudConflictResolution::KeepBoth
         ),

@@ -650,6 +650,22 @@ def _swift_unlocalized_dynamic_display_violations(source: str) -> list[tuple[int
     return violations
 
 
+def _swift_concatenated_localized_call_violations(source: str) -> list[tuple[int, str]]:
+    api_names = (
+        "Text|Button|Label|Toggle|Picker|Menu|Section|GroupBox|TextField|SecureField|Link|"
+        "SettingsLink|TableColumn|LabeledContent|DisclosureGroup|ProgressView"
+    )
+    pattern = re.compile(
+        rf"\b(?P<api>{api_names})\s*\(\s*"
+        r'"(?:\\.|[^"\\])*"\s*\+',
+        re.MULTILINE,
+    )
+    return [
+        (source.count("\n", 0, match.start()) + 1, match.group("api"))
+        for match in pattern.finditer(source)
+    ]
+
+
 def _check_macos_localization_contract(root: Path, failures: FailureCollector) -> None:
     catalog_path = root / "apps/macos/AreaMatrix/Localizations/Localizable.xcstrings"
     project_path = root / "apps/macos/AreaMatrix.xcodeproj/project.pbxproj"
@@ -735,7 +751,10 @@ def _check_macos_localization_contract(root: Path, failures: FailureCollector) -
     for path in swift_files:
         source = _read(path)
         relative_path = path.relative_to(root)
-        is_localization_runtime = relative_path == Path("apps/macos/AreaMatrix/App/AppLanguage.swift")
+        is_localization_runtime = relative_path in {
+            Path("apps/macos/AreaMatrix/App/AppLanguage.swift"),
+            Path("apps/macos/AreaMatrix/App/AppLocalizationText.swift"),
+        }
         if forbidden_api_pattern.search(source):
             failures.fail(f"macOS source bypasses AppLocalizer: {relative_path}")
         if not is_localization_runtime:
@@ -765,6 +784,11 @@ def _check_macos_localization_contract(root: Path, failures: FailureCollector) -
             failures.fail(
                 "macOS dynamic display state bypasses localization; use L10n at the display boundary: "
                 f"{relative_path}:{line} ({display_name})"
+            )
+        for line, api_name in _swift_concatenated_localized_call_violations(source):
+            failures.fail(
+                "macOS compiler-localized SwiftUI text must not concatenate string literals; use a static L10n key: "
+                f"{relative_path}:{line} ({api_name})"
             )
         for line, function_name, key in _swift_l10n_calls(source):
             if key is None:

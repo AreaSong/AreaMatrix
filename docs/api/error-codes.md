@@ -14,11 +14,17 @@
 Core 通过 `to_error_mapping` / `map_core_error` 返回：
 
 - `kind`：稳定错误分类。
-- `user_message`：短用户文案。
+- `code`：稳定英文错误码，例如 `repo_config_revision_conflict`。
+- `field`：可选稳定字段名，不是翻译后的 label。
+- `arguments`：由稳定 name/value 组成的结构化参数；值按 verbatim 处理。
+- `recovery_action_ids`：可执行恢复动作标识，例如 `reload_latest`、`review_changes`。
 - `severity`：呈现严重度。
-- `suggested_action`：建议恢复动作。
 - `recoverability`：恢复姿态。
-- `raw_context`：原始路径、原因或消息，仅用于受控详情和诊断。
+- `technical_details`：可选原始技术详情，只用于受控详情和诊断。
+
+Core 不返回 `user_message`、`suggested_action` 或任何中文/英文展示句子。Swift 使用当前界面语言按
+`code + arguments` 从 String Catalog 生成标题、说明、按钮和 VoiceOver 文案；未知 code 使用本地化通用
+错误，同时原样保留 technical details。日志和 recovery state 也只保存稳定 code/payload。
 
 错误映射是无副作用纯函数：不得读取文件系统、打开 DB、写日志或修改资料库。
 
@@ -28,6 +34,8 @@ Core 通过 `to_error_mapping` / `map_core_error` 返回：
 |---|---|---|---|---|
 | `Io { message }` | 文件或底层 IO 失败 | medium | Retryable | 重试；持续失败时检查磁盘和文件状态 |
 | `Db { message }` | SQLite 或 metadata 失败 | high | UserActionRequired | 按 DB 子语义处理 |
+| `DbLocked { message }` | SQLite typed busy/locked | medium | Retryable | 重试；不进入 repair |
+| `DbCorrupted { message }` | SQLite typed corrupt/not-a-database | critical | Fatal | 进入阻断恢复或 repair |
 | `Config { reason }` | 配置无效或保存失败 | medium | UserActionRequired | 打开设置并修正或恢复有效配置 |
 | `Validation { reason }` | API 输入或编辑草稿无效 | low | UserActionRequired | 修正当前输入 |
 | `Classify { reason }` | 分类规则执行失败 | low | RefreshRequired | 保留文件并回落 inbox，再检查规则 |
@@ -41,22 +49,24 @@ Core 通过 `to_error_mapping` / `map_core_error` 返回：
 | `StagingRecoveryRequired { path }` | staging 状态必须先恢复 | high | UserActionRequired | 进入导入恢复上下文 |
 | `PermissionDenied { path }` | 文件或资料库权限不足 | high | UserActionRequired | 修复权限或选择其他位置 |
 | `Internal { message }` | 未预期内部失败或不变量破坏 | critical | Fatal | 保留上下文并进入当前页面的阻断恢复 |
+| `RevisionConflict { resource, expected_revision, current_revision }` | revision CAS 已过期 | medium | UserActionRequired | 保留草稿，reload latest 或 review 后显式重存 |
 
 实际 Rust 定义位于 `core/src/error/core_error.rs`，FFI 定义位于 `core/area_matrix.udl`。
 
-`Config { reason }` 必须始终提供经过控制、可向用户解释的 reason。Swift 只展示 Core/error mapping
-给出的 reason 和恢复元数据，不解析 reason 字符串来推断错误类型、字段、规则、行列或按钮。只有 Core
-明确提供 parse location 时 UI 才显示行号/列号；可视化 editor 的语义错误使用 field/rule + reason，
-不要求也不伪造源码位置。`Revert` 仅在 last-valid backup 确实存在时可用。
+`Config { reason }` 的 reason 是 technical details，不是 UI 文案。字段、规则、行列和恢复动作必须由稳定
+code/field/arguments 明确提供；Swift 不解析 reason。只有 Core 明确提供 parse location 时 UI 才显示
+行号/列号。`Revert` 仅在 recovery action IDs 包含且 last-valid backup 确实存在时可用。
 
 ## DB 子语义
 
-`Db` 保持同一个公开 variant，但映射会识别稳定 SQLite / integrity marker：
+`Db` 保持通用公开 variant；`DbLocked` 与 `DbCorrupted` 承载 SQLite typed error code。Core 不再按 SQLite
+message 子串猜测 locked/corrupt。已知来源必须在产生错误的边界返回 typed variant 和稳定 code，未知 DB
+文本只作为 technical details：
 
 | 子语义 | Severity | Recoverability | UI |
 |---|---|---|---|
-| locked / busy | medium | Retryable | inline 或 banner Retry |
-| corrupted / malformed / integrity failure | critical | Fatal | blocking repair |
+| 明确的 db busy code | medium | Retryable | inline 或 banner Retry |
+| 明确的 db integrity code | critical | Fatal | blocking repair |
 | 其他 DB 错误 | high | UserActionRequired | 保留上下文，进入诊断或恢复 |
 
 不得把未知 `Db` 默认当成可重试，也不得用任意字符串让 UI 自动执行 repair。
@@ -87,11 +97,16 @@ blocking route；这不改变 Core error contract。
 ## Swift 侧映射
 
 Swift 使用 `CoreErrorMappingSnapshot` 和 `CoreErrorKindSnapshot`，并通过 Core 的
-`map_core_error(ErrorMappingInput)` 获取稳定元数据。应用语义错误使用 `AppSemanticError` 携带同一
-snapshot；不存在另一套字符串型 `AppError` 合同。
+`map_core_error(ErrorMappingInput)` 获取稳定 code/payload。应用语义错误使用 `AppSemanticError` 携带同一
+snapshot；不存在另一套字符串型 `AppError` 合同，也不缓存翻译后的 String。
 
 ```swift
 let mapping = await errorMapper.mapCoreError(error)
+let display = localizer.errorDisplay(
+    code: mapping.code,
+    arguments: mapping.arguments,
+    recoveryActionIDs: mapping.recoveryActionIds
+)
 switch mapping.recoverability {
 case .retryable:
     showRetry(mapping)
@@ -104,7 +119,7 @@ case .fatal:
 }
 ```
 
-Swift 可以显示经过控制的 `rawContext`，但不得把包含用户名或绝对路径的
+Swift 可以在 Technical Details 中显示经过控制的 `technicalDetails`，但不得把包含用户名或绝对路径的
 `error.localizedDescription` 直接显示给用户，也不得把原始上下文自动上传。
 
 ## 恢复与隐私约束

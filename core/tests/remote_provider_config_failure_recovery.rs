@@ -47,8 +47,8 @@ fn assert_sanitized_error(error: CoreError, expected_kind: ErrorKind) {
     assert_eq!(mapping.kind, expected_kind);
     assert_no_secret_material(&text);
     assert_no_secret_material(&raw_context);
-    assert_no_secret_material(&mapping.raw_context);
-    assert_no_secret_material(&mapping.user_message);
+    assert_no_secret_material(mapping.technical_details.as_deref().unwrap_or_default());
+    assert_no_secret_material(&mapping.code);
 }
 
 fn assert_no_secret_material(value: &str) {
@@ -358,6 +358,8 @@ fn remote_provider_config_failure_error_mapping_is_structured_and_side_effect_fr
         path: None,
         reason: Some("remote provider feature scope is required".to_owned()),
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(config_mapping.severity, ErrorSeverity::Medium);
     assert_eq!(
@@ -370,6 +372,8 @@ fn remote_provider_config_failure_error_mapping_is_structured_and_side_effect_fr
         path: Some("remote provider credential".to_owned()),
         reason: None,
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(permission_mapping.severity, ErrorSeverity::High);
     assert_eq!(
@@ -382,6 +386,8 @@ fn remote_provider_config_failure_error_mapping_is_structured_and_side_effect_fr
         path: None,
         reason: None,
         message: Some("remote provider metadata persistence failed".to_owned()),
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(internal_mapping.severity, ErrorSeverity::Critical);
     assert_eq!(internal_mapping.recoverability, ErrorRecoverability::Fatal);

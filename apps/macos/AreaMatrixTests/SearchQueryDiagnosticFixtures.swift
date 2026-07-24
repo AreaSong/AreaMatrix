@@ -10,9 +10,9 @@ extension RepositoryOpeningResult {
     }
 }
 
-extension RepoConfigSnapshot {
-    static func queryErrorConfig(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath)
+extension AppRepoConfigSnapshot {
+    static func queryErrorConfig(repoPath: String) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 

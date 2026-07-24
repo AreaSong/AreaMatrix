@@ -151,7 +151,7 @@ fn ai_tags_failure_missing_file_and_db_corruption_are_explicit_and_non_mutating(
 
     assert_eq!(
         error.to_error_mapping().recoverability,
-        ErrorRecoverability::Fatal
+        ErrorRecoverability::UserActionRequired
     );
     assert_eq!(user_visible_paths(repo.path()), before_paths);
 }
@@ -359,10 +359,12 @@ fn ai_tags_failure_error_mapping_matches_documented_failure_codes() {
             path: Some("metadata".to_owned()),
             reason: Some("AI tag suggestion failure edge".to_owned()),
             message: Some("AI tag suggestion metadata failure".to_owned()),
+            expected_revision: None,
+            current_revision: None,
         });
         assert_eq!(mapping.kind, kind);
         assert_eq!(mapping.severity, severity);
         assert_eq!(mapping.recoverability, recoverability);
-        assert_no_secret_material(&mapping.raw_context);
+        assert_no_secret_material(mapping.technical_details.as_deref().unwrap_or_default());
     }
 }

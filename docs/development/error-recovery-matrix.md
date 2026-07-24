@@ -29,7 +29,7 @@
 |---|---|---|---|---|---|
 | repo path | `InvalidPath`、`RepoNotInitialized`、`FileNotFound` | `路径不合法`、`资料库未初始化`、`Folder is missing`、首次启动向导或 main repo error | 重新选择资料库、重新初始化、Reconnect folder、刷新列表 | `ValidatePathErrorMappingSmokeTests.swift`、`MainRepoErrorMappingTests.swift`、troubleshooting 运行时章节 | P1 watch：`RepoNotInitialized` 在 Core mapping 是 High，但 UX blocking 语义是 critical；消费页必须继续覆盖。 |
 | permission | `PermissionDenied` | `无访问权限`、repo blocking 或单文件 toast | 选择其他文件夹、打开系统设置、重试前先修复权限 | `docs/development/troubleshooting.md#权限被拒`、diagnostics export | 已有 Core/Swift 证据：`error_mapping_failure_recovery_permission_denied_never_becomes_retryable`、`testConfiguredRepoOpenFailureRoutesMappedErrorMappingCoreErrorToMainRepoError`。 |
-| DB | `Db` | DB locked：inline/banner + Retry；DB corrupted：blocking repair | locked 只能 Retry；corrupt 进入 Repair index / Open repo in Finder / Collect diagnostics | `docs/development/troubleshooting.md#sqlite-busy-或损坏`、`PRAGMA integrity_check`、diagnostics export | **P1-ER-001 已关闭**：真实 Core mapping 通过 `Db.message` 区分 locked retryable 与 corrupt fatal；证据见 `error_mapping_validation_db_locked_and_corrupted_have_distinct_recovery_paths`、`error_recovery_matrix_error_mapping_records_db_subsemantic_closure`、`testDefaultCoreBridgeMapsDbLockedAndCorruptedToDistinctRecoveryActions`。 |
+| DB | `Db`、`DbLocked`、`DbCorrupted` | DB locked：inline/banner + Retry；DB corrupted：blocking repair | locked 只能 Retry；corrupt 进入 Repair index / Open repo in Finder / Collect diagnostics | `docs/development/troubleshooting.md#sqlite-busy-或损坏`、`PRAGMA integrity_check`、diagnostics export | SQLite typed error code 映射为 `DbLocked` / `DbCorrupted`；未知 `Db` 保持 high + UserActionRequired，不解析 message。证据见 `error_mapping_validation_db_locked_and_corrupted_have_distinct_recovery_paths`、`error_recovery_matrix_error_mapping_records_db_subsemantic_closure`、`testDefaultCoreBridgeMapsDbLockedAndCorruptedToDistinctRecoveryActions`。 |
 | validation | `Validation` | 输入无效、草稿字段提示 | 修正输入后重新提交 | 页面 validation state、error mapping contract | Low；不得把无效输入提交给文件或 DB 写路径。 |
 | IO | `Io`、`FileNotFound` | `文件操作失败`、`文件不存在` | Retry、刷新列表、Remove from index、Locate | 页面 error state、repository/About diagnostics、troubleshooting | 已有证据：`error_mapping_contract_api_maps_each_error_to_stable_ui_metadata`、`MainFileListDetailSupport` 映射路径。 |
 | expired action | `ExpiredAction` | `操作已过期` | 刷新 Undo History | action log / undo history state | Low；不得猜测性 Undo/Redo 或直接重放 UI 点击。 |
@@ -46,7 +46,7 @@ Core `CoreError` variant 覆盖状态：
 | Variant | UX 文案 | 恢复动作 | 诊断入口 | 状态 |
 |---|---|---|---|---|
 | `Io` | `文件操作失败` | Retry | Collect diagnostics | 已覆盖 |
-| `Db` | DB locked：`数据库暂时被占用`；DB corrupted：`资料库索引损坏` | Retry / Repair | `PRAGMA integrity_check`、diagnostics | 已覆盖：locked 为 `Retryable` + medium；corrupt 为 `Fatal` + critical。 |
+| `Db` / `DbLocked` / `DbCorrupted` | 通用 DB 错误 / DB locked / DB corrupted | Diagnostics / Retry / Repair | `PRAGMA integrity_check`、diagnostics | typed locked 为 `Retryable` + medium；typed corrupt 为 `Fatal` + critical；通用 DB 不按文本重分类。 |
 | `Config` | `配置错误` + 受控 reason；语义错误显示 field/rule + reason；仅 Core 提供时显示 parse location | Open rules / Revert（仅 last-valid backup 存在时） | settings diagnostics | 已覆盖；Swift 不解析 reason 推断位置或动作。 |
 | `Validation` | `输入无效` | Fix input | 页面 validation state | 已覆盖 |
 | `Classify` | `分类失败` | Use inbox / Report | logs | 已覆盖 |
@@ -64,9 +64,9 @@ Core `CoreError` variant 覆盖状态：
 无主项检查：
 
 - 未发现没有 Core 来源的用户错误页面；DB locked/corrupted、磁盘满、EBUSY 属于 `Db`/`Io` 的子语义。
-- 未发现没有 UX 文案的 Core variant；15 个 variant 均在 `docs/api/error-codes.md` 和
+- 未发现没有 UX 文案的 Core variant；18 个 variant 均在 `docs/api/error-codes.md` 和
   `docs/ux/error-messages.md` 有文案与恢复方向。
-- `Db` 子语义已在真实 Core mapping 中区分：locked 可重试、corrupt 阻断并进入 repair。
+- `DbLocked` / `DbCorrupted` 已由 typed SQLite code 区分；通用 `Db` 不解析 message。
 
 ## 4. 事务式导入失败路径
 
@@ -89,9 +89,8 @@ Core `CoreError` variant 覆盖状态：
 ### P1-ER-001 已关闭: DB 子语义缺失
 
 - 证据：`docs/ux/error-messages.md` 要求 DB locked 使用 Retry，DB corrupted 使用 blocking repair。
-- 修复：`core/src/error.rs` 保留 `ErrorKind::Db` 和现有 UDL shape，通过 `Db.message`
-  的稳定 SQLite / integrity marker 选择 `DB_LOCKED_MAPPING` 或
-  `DB_CORRUPTED_MAPPING`。
+- 合同：`CoreError::DbLocked` 与 `CoreError::DbCorrupted` 由 typed SQLite error code 产生并选择
+  `DB_LOCKED_MAPPING` / `DB_CORRUPTED_MAPPING`；`CoreError::Db` 文本不参与分类。
 - 真实 Core 结果：`database is locked` -> medium + `Retryable`；`database disk image is
   malformed` -> critical + `Fatal`。locked retryable 与 corrupt fatal 已可区分。
 - 验证：`error_mapping_validation_db_locked_and_corrupted_have_distinct_recovery_paths`、

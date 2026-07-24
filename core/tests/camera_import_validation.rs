@@ -352,7 +352,7 @@ fn assert_core_api_behavior_docs() {
     for fragment in [
         "### `predict_category(repoPath: String, filename: String) throws -> ClassifyResult`",
         "### `import_file(repoPath, sourcePath, options) throws -> FileEntry`",
-        "无写入副作用：只读取 `.areamatrix/classifier.yaml`",
+        "无写入副作用：只读取 Repository 语言策略和 `.areamatrix/classifier.yaml`",
         "可能抛：`Io` / `Db` / `DuplicateFile` / `Conflict` / `InvalidPath` / `ICloudPlaceholder` / `PermissionDenied` / `Internal`。",
     ] {
         assert_contains(CORE_API, fragment);

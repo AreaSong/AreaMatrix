@@ -230,7 +230,7 @@ fn tag_suggestions_failure_recovery_missing_metadata_tables_return_db_without_pa
     let suggest_error = assert_db_error(suggest(repo.path(), request(file_id)));
     assert_eq!(
         suggest_error.to_error_mapping().recoverability,
-        ErrorRecoverability::Fatal
+        ErrorRecoverability::UserActionRequired
     );
     assert_eq!(user_visible_paths(repo.path()), before_paths);
 
@@ -245,7 +245,7 @@ fn tag_suggestions_failure_recovery_missing_metadata_tables_return_db_without_pa
 
     assert_eq!(
         apply_error.to_error_mapping().recoverability,
-        ErrorRecoverability::Fatal
+        ErrorRecoverability::UserActionRequired
     );
     assert_eq!(tag_rows(repo.path()), Vec::<(i64, String)>::new());
     assert_eq!(
@@ -358,10 +358,12 @@ fn tag_suggestions_failure_recovery_error_mapping_covers_documented_kinds() {
             path: Some("file:42".to_owned()),
             reason: Some("invalid tag suggestion".to_owned()),
             message: Some("tag suggestion metadata failed".to_owned()),
+            expected_revision: None,
+            current_revision: None,
         });
         assert_eq!(mapping.kind, kind);
         assert_eq!(mapping.recoverability, recoverability);
-        assert!(!mapping.user_message.is_empty());
-        assert!(!mapping.suggested_action.is_empty());
+        assert!(!mapping.code.is_empty());
+        assert!(!mapping.recovery_action_ids.is_empty());
     }
 }

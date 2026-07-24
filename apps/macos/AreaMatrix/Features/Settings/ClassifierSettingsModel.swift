@@ -5,13 +5,12 @@ import Foundation
 final class ClassifierSettingsModel: ObservableObject {
     @Published private(set) var loadState: ClassifierSettingsLoadState = .loading
     @Published private(set) var draft: ClassifierSettingsDraft?
-    @Published private(set) var savedConfig: RepoConfigSnapshot?
+    @Published private(set) var savedConfig: AppRepoConfigSnapshot?
     @Published private(set) var saveError: ClassifierSettingsSaveError?
     @Published private(set) var fileActionError: ClassifierSettingsFileActionError?
     @Published var previewState = ClassifierSettingsPreviewState()
     @Published private(set) var isSaving = false
     @Published private(set) var validationState: ClassifierSettingsValidationState = .idle
-    @Published private(set) var hasLastValidBackup = false
     @Published var classifierRuleEditor = ClassifierRuleEditorModelState()
 
     let repoPath: String
@@ -21,7 +20,6 @@ final class ClassifierSettingsModel: ObservableObject {
     private let updater: any CoreConfigurationUpdating
     let predictor: any CoreCategoryPredicting
     let errorMapper: any CoreErrorMapping
-    private let classifierRulesManager: any ClassifierRulesManaging
     private let fileOpener: any RepositoryFileOpening
     private let fileRevealer: any RepositoryFileRevealing
     private let finderOpener: any RepositoryFinderOpening
@@ -37,8 +35,6 @@ final class ClassifierSettingsModel: ObservableObject {
         predictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
         ruleEditor: any CoreClassifierRuleEditing = AppCoreServices.classifierRuleEditor,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
-        classifierRulesManager: any ClassifierRulesManaging =
-            ClassifierSettingsPlatformServices.classifierRulesManager,
         fileOpener: any RepositoryFileOpening = ClassifierSettingsPlatformServices.fileOpener,
         fileRevealer: any RepositoryFileRevealing = ClassifierSettingsPlatformServices.fileRevealer,
         finderOpener: any RepositoryFinderOpening = ClassifierSettingsPlatformServices.finderOpener,
@@ -52,7 +48,6 @@ final class ClassifierSettingsModel: ObservableObject {
         self.predictor = predictor
         self.ruleEditor = ruleEditor
         self.errorMapper = errorMapper
-        self.classifierRulesManager = classifierRulesManager
         self.fileOpener = fileOpener
         self.fileRevealer = fileRevealer
         self.finderOpener = finderOpener
@@ -75,7 +70,8 @@ extension ClassifierSettingsModel {
     }
 
     var canRevertToLastValid: Bool {
-        hasLastValidBackup && !isSaving && validationState != .validating
+        classifierRuleEditor.recoveryActions.contains(.restoreLastValid) &&
+            !isSaving && validationState != .validating
     }
 
     var classifierConfigPath: String {
@@ -137,12 +133,10 @@ extension ClassifierSettingsModel {
             draft = ClassifierSettingsDraft(config: effectiveConfig)
             loadState = .loaded
             await loadClassifierRuleEditor()
-            loadedClassifierSlugs = currentClassifierSlugs()
-            refreshLastValidBackupAvailability()
+            refreshLoadedClassifierSlugs()
         } catch {
             savedConfig = nil
             draft = nil
-            hasLastValidBackup = false
             classifierRuleEditor = ClassifierRuleEditorModelState()
             loadedClassifierSlugs = []
             loadState = await .failed(ClassifierSettingsErrorFactory.loadError(
@@ -180,7 +174,7 @@ extension ClassifierSettingsModel {
 
         clearFileActionState()
         do {
-            if classifierFileExists {
+            if classifierRuleEditor.health != .missing {
                 try fileRevealer.revealFile(
                     repoPath: repoPath,
                     relativePath: ClassifierSettingsPaths.classifierRelativePath
@@ -199,22 +193,8 @@ extension ClassifierSettingsModel {
     }
 
     func createDefaultClassifierYaml() async {
-        guard isLoaded, !isSaving, !isValidating else {
-            return
-        }
-
-        clearFileActionState()
-        do {
-            try classifierRulesManager.createDefaultClassifier(repoPath: repoPath)
-            accessibilityAnnouncer.announce(L10n.message("settings.classifier.announcement.defaultCreated"))
-            _ = await validateClassifierRules()
-        } catch {
-            fileActionError = ClassifierSettingsFileActionError(
-                message: L10n.message("settings.classifier.error.createDefault"),
-                recovery: L10n.message("settings.classifier.recovery.createDefault")
-            )
-            accessibilityAnnouncer.announce(L10n.message("settings.classifier.error.createDefault"))
-        }
+        guard isLoaded, !isSaving, !isValidating else { return }
+        requestClassifierRecovery(.createDefault)
     }
 
     func requestEnableExtensionRules(_ isEnabled: Bool) async {
@@ -246,21 +226,21 @@ extension ClassifierSettingsModel {
             return false
         }
 
-        guard classifierFileExists else {
-            validationState = .failed(ClassifierSettingsValidationError(
-                message: L10n.message("settings.classifier.error.missingFile"),
-                recovery: L10n.message("settings.classifier.recovery.missingFile")
-            ))
-            accessibilityAnnouncer.announce(L10n.message("settings.classifier.error.missingFile"))
-            return false
-        }
-
         validationState = .validating
         do {
-            _ = try await predictor.predictCategory(
+            let snapshot = try await ruleEditor.listClassifierRules(
                 repoPath: repoPath,
-                filename: ClassifierSettingsPaths.validationProbeFilename
+                editingLocale: classifierRuleEditor.editingLocale ?? preferredClassifierEditingLocale
             )
+            classifierRuleEditor.replaceSnapshot(snapshot)
+            guard snapshot.health == .valid else {
+                validationState = .failed(ClassifierSettingsValidationError(
+                    message: L10n.message("settings.classifier.error.validationFailed"),
+                    recovery: L10n.message("settings.classifier.recovery.open")
+                ))
+                accessibilityAnnouncer.announce(validationStateAnnouncement)
+                return false
+            }
         } catch {
             validationState = await .failed(ClassifierSettingsErrorFactory.validationError(
                 for: error,
@@ -270,21 +250,10 @@ extension ClassifierSettingsModel {
             return false
         }
 
-        do {
-            try classifierRulesManager.storeLastValidBackup(repoPath: repoPath)
-            refreshLastValidBackupAvailability()
-            publishSavedCategoryIfNeeded()
-            validationState = .passed
-            accessibilityAnnouncer.announce(L10n.message("settings.classifier.announcement.validated"))
-            return true
-        } catch {
-            validationState = .failed(ClassifierSettingsValidationError(
-                message: L10n.message("settings.classifier.error.backup"),
-                recovery: L10n.message("settings.classifier.recovery.backup")
-            ))
-            accessibilityAnnouncer.announce(validationStateAnnouncement)
-            return false
-        }
+        publishSavedCategoryIfNeeded()
+        validationState = .passed
+        accessibilityAnnouncer.announce(L10n.message("settings.classifier.announcement.validated"))
+        return true
     }
 
     func retrySave() async {
@@ -296,39 +265,23 @@ extension ClassifierSettingsModel {
     }
 
     func revertToLastValid() async {
-        guard canRevertToLastValid else {
-            return
-        }
-
-        clearFileActionState()
-        do {
-            try classifierRulesManager.restoreLastValidBackup(repoPath: repoPath)
-            accessibilityAnnouncer.announce(L10n.message("settings.classifier.announcement.reverted"))
-        } catch {
-            validationState = .failed(ClassifierSettingsValidationError(
-                message: L10n.message("settings.classifier.error.revert"),
-                recovery: L10n.message("settings.classifier.recovery.revert")
-            ))
-            accessibilityAnnouncer.announce(L10n.message("settings.classifier.error.revert"))
-            return
-        }
-
-        _ = await validateClassifierRules()
+        guard canRevertToLastValid else { return }
+        requestClassifierRecovery(.restoreLastValid)
+        await confirmClassifierRecovery()
     }
 
-    private func persist(updating config: RepoConfigSnapshot) async {
+    private func persist(updating config: AppRepoConfigSnapshot) async {
+        guard let savedConfig else { return }
         isSaving = true
         saveError = nil
         do {
-            try await updater.updateConfig(repoPath: repoPath, newConfig: config)
-            savedConfig = config
-            draft = ClassifierSettingsDraft(config: config)
+            let updated = try await updater.updateConfig(repoPath: repoPath, from: savedConfig, to: config)
+            self.savedConfig = updated
+            draft = ClassifierSettingsDraft(config: updated)
             pendingRetry = nil
             clearPreviewState()
         } catch {
-            if let savedConfig {
-                draft = ClassifierSettingsDraft(config: savedConfig)
-            }
+            draft = ClassifierSettingsDraft(config: savedConfig)
             let mappedError = await ClassifierSettingsErrorFactory.saveError(
                 for: error,
                 mapper: errorMapper
@@ -343,16 +296,12 @@ extension ClassifierSettingsModel {
         ClassifierSettingsPaths.classifierConfigURL(repoPath: repoPath)
     }
 
-    private var classifierFileExists: Bool {
-        classifierRulesManager.classifierFileExists(repoPath: repoPath)
-    }
-
-    private func refreshLastValidBackupAvailability() {
-        hasLastValidBackup = classifierRulesManager.lastValidBackupExists(repoPath: repoPath)
-    }
-
     private func currentClassifierSlugs() -> Set<String> {
-        (try? classifierRulesManager.classifierCategorySlugs(repoPath: repoPath)).map(Set.init) ?? []
+        Set(classifierRuleEditor.rules.map(\.slug))
+    }
+
+    func refreshLoadedClassifierSlugs() {
+        loadedClassifierSlugs = currentClassifierSlugs()
     }
 
     func publishSavedCategoryIfNeeded() {

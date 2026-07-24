@@ -153,11 +153,20 @@ def build_entries_from_discussion(root: Path, version: str) -> tuple[list[str], 
 
 
 def build_baseline_entries(root: Path, version: str) -> tuple[list[str], list[BaselineEntry]]:
-    errors, entries = build_entries_from_changes(root, version)
-    if entries or not any(error.startswith(f"no {version} change files") for error in errors):
-        return errors, entries
+    change_errors, change_entries = build_entries_from_changes(root, version)
+    no_change_files = any(error.startswith(f"no {version} change files") for error in change_errors)
+    if no_change_files:
+        return build_entries_from_discussion(root, version)
+    if change_errors:
+        return change_errors, change_entries
+
     discussion_errors, discussion_entries = build_entries_from_discussion(root, version)
-    return discussion_errors, discussion_entries
+    if discussion_errors:
+        return discussion_errors, change_entries
+
+    changed_files = {entry.file for entry in change_entries}
+    missing_exact_docs = [entry for entry in discussion_entries if entry.file not in changed_files]
+    return [], [*change_entries, *missing_exact_docs]
 
 
 def baseline_content(version: str, entries: Sequence[BaselineEntry]) -> str:

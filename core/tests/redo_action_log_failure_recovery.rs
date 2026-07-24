@@ -130,11 +130,19 @@ fn redo_action_log_failure_recovery_db_metadata_errors_do_not_mutate() {
 
     let list_error = list_redo_actions(path_string(repo.path()))
         .expect_err("missing redo metadata table fails list");
-    assert_error_mapping(&list_error, ErrorKind::Db, ErrorRecoverability::Fatal);
+    assert_error_mapping(
+        &list_error,
+        ErrorKind::Db,
+        ErrorRecoverability::UserActionRequired,
+    );
 
     let redo_error = redo_action(path_string(repo.path()), token)
         .expect_err("missing redo metadata table fails execute");
-    assert_error_mapping(&redo_error, ErrorKind::Db, ErrorRecoverability::Fatal);
+    assert_error_mapping(
+        &redo_error,
+        ErrorKind::Db,
+        ErrorRecoverability::UserActionRequired,
+    );
 
     assert_eq!(file_rows(repo.path()), before_files);
     assert_eq!(change_rows(repo.path()), before_changes);

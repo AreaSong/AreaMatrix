@@ -12,16 +12,31 @@ struct ClassifierRuleEditorModelState: Equatable {
         case idle
         case saving
         case saved(String)
+        case conflict(ClassifierRuleConflictReview)
         case failed(CoreErrorMappingSnapshot)
+    }
+
+    enum RecoveryState: Equatable {
+        case idle
+        case recovering(ClassifierRecoveryActionState)
+        case succeeded(ClassifierRecoveryActionState)
+        case failed(ClassifierRecoveryActionState, CoreErrorMappingSnapshot)
     }
 
     var loadState = LoadState.idle
     var saveState = SaveState.idle
+    var recoveryState = RecoveryState.idle
     var rules: [ClassifierRuleRecordSnapshot] = []
+    var repositoryLocalePolicy = ""
+    var editingLocale: ClassifierEditingLocale?
+    var pendingEditingLocale: ClassifierEditingLocale?
     var selectedRuleID: String?
     var draft: ClassifierRuleEditorDraft?
     var lastValidDraft: ClassifierRuleEditorDraft?
     var defaultRuleID = ""
+    var health = ClassifierConfigHealthState.valid
+    var recoveryActions: [ClassifierRecoveryActionState] = []
+    var pendingRecoveryAction: ClassifierRecoveryActionState?
     var warning: String?
     var hasValidatedDraft = false
     var pendingExtension = ""
@@ -30,12 +45,26 @@ struct ClassifierRuleEditorModelState: Equatable {
     var pendingMatcherRemoval: ClassifierRuleMatcherRemoval?
     var pendingDeleteConfirmation: ClassifierRuleDeleteConfirmation?
 
+    var isReadOnly: Bool {
+        health != .valid || editingLocale == nil
+    }
+
+    var canCreateRule: Bool {
+        !isBusy && !isReadOnly
+    }
+
     var selectedRule: ClassifierRuleRecordSnapshot? {
         rules.first { $0.ruleID == selectedRuleID }
     }
 
     var isBusy: Bool {
-        loadState == .loading || saveState == .saving
+        if loadState == .loading || saveState == .saving {
+            return true
+        }
+        if case .recovering = recoveryState {
+            return true
+        }
+        return false
     }
 
     var hasDirtyDraft: Bool {
@@ -45,7 +74,8 @@ struct ClassifierRuleEditorModelState: Equatable {
 
     var canSave: Bool {
         guard let draft else { return false }
-        return hasDirtyDraft && hasValidatedDraft && draft.previewConfirmed && draft.validationErrors.isEmpty && !isBusy
+        return hasDirtyDraft && hasValidatedDraft && draft.previewConfirmed && draft.validationErrors.isEmpty &&
+            !isBusy && !isReadOnly
     }
 
     var canRevert: Bool {
@@ -54,7 +84,12 @@ struct ClassifierRuleEditorModelState: Equatable {
 
     var canDeleteSelectedRule: Bool {
         guard let selectedRule else { return false }
-        return !selectedRule.isDefault && rules.count > 1 && !isBusy
+        return !selectedRule.isDefault && rules.count > 1 && !isBusy && !isReadOnly
+    }
+
+    var conflictReview: ClassifierRuleConflictReview? {
+        guard case let .conflict(review) = saveState else { return nil }
+        return review
     }
 }
 
@@ -69,7 +104,7 @@ struct ClassifierRuleEditorDraft: Equatable {
     var namingTemplate: String
     var isDefault: Bool
     var previewConfirmed: Bool
-    var validationErrors: [String] = []
+    var validationErrors: [ClassifierRuleValidationIssue] = []
 
     static var empty: ClassifierRuleEditorDraft {
         ClassifierRuleEditorDraft(
@@ -124,9 +159,50 @@ extension ClassifierRuleEditorModelState {
         saveState = .failed(mapping)
     }
 
+    mutating func markSaveConflict(_ review: ClassifierRuleConflictReview) {
+        loadState = .loaded
+        saveState = .conflict(review)
+    }
+
+    mutating func requestRecovery(_ action: ClassifierRecoveryActionState) {
+        guard recoveryActions.contains(action), !isBusy else { return }
+        pendingRecoveryAction = action
+        recoveryState = .idle
+    }
+
+    mutating func cancelRecovery() {
+        pendingRecoveryAction = nil
+        if case .failed = recoveryState {
+            recoveryState = .idle
+        }
+    }
+
+    mutating func markRecovering(_ action: ClassifierRecoveryActionState) {
+        pendingRecoveryAction = nil
+        recoveryState = .recovering(action)
+    }
+
+    mutating func markRecoverySucceeded(_ action: ClassifierRecoveryActionState) {
+        recoveryState = .succeeded(action)
+    }
+
+    mutating func markRecoveryFailed(
+        _ action: ClassifierRecoveryActionState,
+        mapping: CoreErrorMappingSnapshot
+    ) {
+        recoveryState = .failed(action, mapping)
+    }
+
     mutating func replaceSnapshot(_ snapshot: ClassifierRuleEditorSnapshotState) {
         rules = snapshot.rules
         defaultRuleID = snapshot.defaultRuleID
+        repositoryLocalePolicy = snapshot.repositoryLocalePolicy
+        editingLocale = snapshot.editingLocale
+        health = snapshot.health
+        recoveryActions = snapshot.recoveryActions
+        pendingEditingLocale = nil
+        pendingRecoveryAction = nil
+        recoveryState = .idle
         warning = snapshot.warning
         loadState = .loaded
         let selected = snapshot.updatedRuleID ?? selectedRuleID ?? rules.first?.ruleID
@@ -138,6 +214,7 @@ extension ClassifierRuleEditorModelState {
     }
 
     mutating func createDraft() {
+        guard !isReadOnly else { return }
         selectedRuleID = nil
         draft = .empty
         lastValidDraft = nil
@@ -223,7 +300,7 @@ extension ClassifierRuleEditorModelState {
         guard let selectedRule, canDeleteSelectedRule else { return }
         pendingDeleteConfirmation = ClassifierRuleDeleteConfirmation(
             ruleID: selectedRule.ruleID,
-            categoryName: selectedRule.displayName.isEmpty ? selectedRule.slug : selectedRule.displayName,
+            categoryName: displayName(for: selectedRule),
             replacementCategory: defaultRuleID.isEmpty ? nil : defaultRuleID
         )
         isShowingImpactSummary = false
@@ -262,12 +339,54 @@ extension ClassifierRuleEditorModelState {
         clearRiskConfirmations()
         saveState = .idle
     }
+
+    mutating func switchEditingLocale(to locale: ClassifierEditingLocale) {
+        guard locale != editingLocale else { return }
+        editingLocale = locale
+        pendingEditingLocale = nil
+        setDraftFromSelectedRule()
+        hasValidatedDraft = false
+        clearRiskConfirmations()
+        saveState = .idle
+    }
+
+    func displayName(for rule: ClassifierRuleRecordSnapshot) -> String {
+        let exact = rule.displayNames[repositoryLocalePolicy]
+        if let exact, !exact.isEmpty { return exact }
+        if let locale = concretePresentationLocale,
+           let localized = rule.displayNames[locale.rawValue], !localized.isEmpty {
+            return localized
+        }
+        return rule.displayNames[ClassifierEditingLocale.en.rawValue] ?? rule.slug
+    }
+
+    func fallbackDisplayName(for draft: ClassifierRuleEditorDraft) -> String? {
+        guard draft.displayName.isEmpty,
+              let ruleID = draft.ruleID,
+              let rule = rules.first(where: { $0.ruleID == ruleID })
+        else { return nil }
+        let fallback = displayName(for: rule)
+        return fallback == rule.slug ? rule.slug : fallback
+    }
+
+    private var concretePresentationLocale: ClassifierEditingLocale? {
+        let language = RepositoryContentLanguage(snapshotValue: repositoryLocalePolicy)
+        switch language {
+        case .zhHans: return .zhHans
+        case .en: return .en
+        case .followInterface:
+            return AppLanguageRuntime.shared.resolvedIdentifier() == "zh-Hans" ? .zhHans : .en
+        case .unsupported: return nil
+        }
+    }
 }
 
 extension ClassifierRuleEditorModelState {
     var createRequest: ClassifierRuleCreateRequestSnapshot? {
-        guard let draft, draft.ruleID == nil, draft.validationErrors.isEmpty else { return nil }
+        guard let draft, let editingLocale, draft.ruleID == nil, draft.validationErrors.isEmpty else { return nil }
         return ClassifierRuleCreateRequestSnapshot(
+            repositoryLocalePolicy: repositoryLocalePolicy,
+            editingLocale: editingLocale,
             slug: draft.slug,
             displayName: draft.displayName,
             description: draft.description,
@@ -279,9 +398,15 @@ extension ClassifierRuleEditorModelState {
     }
 
     var updateRequest: ClassifierRuleUpdateSnapshot? {
-        guard let draft, let ruleID = draft.ruleID, draft.validationErrors.isEmpty else { return nil }
+        guard let draft, let baseline = lastValidDraft, let editingLocale,
+              let ruleID = draft.ruleID, baseline.ruleID == ruleID,
+              draft.validationErrors.isEmpty
+        else { return nil }
         return ClassifierRuleUpdateSnapshot(
+            repositoryLocalePolicy: repositoryLocalePolicy,
+            editingLocale: editingLocale,
             ruleID: ruleID,
+            observed: ClassifierRuleObservedStateSnapshot(draft: baseline),
             slug: draft.slug,
             displayName: draft.displayName,
             description: draft.description,
@@ -309,18 +434,23 @@ extension ClassifierRuleEditorModelState {
             lastValidDraft = nil
             return
         }
-        let selectedDraft = ClassifierRuleEditorDraft(record: selectedRule)
+        guard let editingLocale, health == .valid else {
+            draft = nil
+            lastValidDraft = nil
+            return
+        }
+        let selectedDraft = ClassifierRuleEditorDraft(record: selectedRule, editingLocale: editingLocale)
         draft = selectedDraft
         lastValidDraft = selectedDraft
     }
 }
 
 extension ClassifierRuleEditorDraft {
-    init(record: ClassifierRuleRecordSnapshot) {
+    init(record: ClassifierRuleRecordSnapshot, editingLocale: ClassifierEditingLocale) {
         ruleID = record.ruleID
         slug = record.slug
-        displayName = record.displayName
-        description = record.description
+        displayName = record.displayName(for: editingLocale)
+        description = record.description(for: editingLocale)
         extensions = record.extensions
         keywords = record.keywords
         priority = record.priority
@@ -343,5 +473,18 @@ extension ClassifierRuleEditorDraft {
         copy.extensions = copy.extensions.map(ClassifierRuleEditorValidation.normalizedExtension)
         copy.keywords = copy.keywords.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         return copy
+    }
+}
+
+extension ClassifierRuleObservedStateSnapshot {
+    init(draft: ClassifierRuleEditorDraft) {
+        ruleID = draft.ruleID ?? ""
+        slug = draft.slug
+        displayName = draft.displayName
+        description = draft.description
+        extensions = draft.extensions
+        keywords = draft.keywords
+        priority = draft.priority
+        namingTemplate = draft.namingTemplateValue
     }
 }

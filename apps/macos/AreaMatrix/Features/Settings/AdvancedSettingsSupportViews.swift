@@ -13,13 +13,10 @@ struct AdvancedSettingsRecoveryToolsSection: View {
                 Label("Open recovery tools...", systemImage: "arrow.clockwise.circle")
             }
             .accessibilityIdentifier("advanced-settings-startup-recovery-core-open-recovery-tools")
-            Text(
-                "Startup cleanup and staging recovery stay in the dedicated recovery flow " +
-                    "with confirmation before metadata actions."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            Text(L10n.string("settings.advanced.startupRecoveryDetail"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -48,14 +45,10 @@ struct AdvancedSettingsDiagnosticsSection: View {
             .disabled(isCollecting)
             .accessibilityIdentifier("advanced-settings-export-diagnostics")
 
-            Text(
-                "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
-                    "notes, and other sensitive metadata. Original file contents are not copied, and " +
-                    "diagnostics are not uploaded automatically. Review the snapshot before sharing."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
@@ -130,13 +123,10 @@ struct AdvancedSettingsAllowReplaceSection: View {
                 .disabled(writesDisabled)
                 .accessibilityIdentifier("advanced-settings-repository-config-allow-replace")
 
-            Text(
-                "When enabled, ImportSheet may show Replace for duplicate or name conflicts. " +
-                    "Replace still requires Trash and a second confirmation."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            Text(L10n.string("settings.advanced.allowReplaceDetail"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
@@ -175,12 +165,8 @@ struct AdvancedRootOverviewConfirmationSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Enable root AREAMATRIX.md?")
                 .font(.title2.weight(.semibold))
-            Text(
-                "AreaMatrix may create or update AREAMATRIX.md at the repository root " +
-                    "on the next overview regeneration. " +
-                    "Existing content outside the managed marker block is preserved. README.md is never modified."
-            )
-            .fixedSize(horizontal: false, vertical: true)
+            Text(L10n.string("settings.advanced.rootOverviewEnableDetail"))
+                .fixedSize(horizontal: false, vertical: true)
             Text(status.confirmationDetail)
                 .foregroundStyle(status.canEnableRootOverview ? Color.secondary : Color.red)
                 .fixedSize(horizontal: false, vertical: true)

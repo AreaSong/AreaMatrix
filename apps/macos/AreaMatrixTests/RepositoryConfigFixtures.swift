@@ -1,6 +1,7 @@
 @testable import AreaMatrix
 
 struct RepoConfigTestFixtureOptions {
+    var revision: Int64 = 0
     var defaultMode = "Copied"
     var overviewOutput = "GeneratedOnly"
     var aiEnabled = false
@@ -12,16 +13,17 @@ struct RepoConfigTestFixtureOptions {
     var allowReplaceDuringImport = false
 }
 
-extension RepoConfigSnapshot {
+extension AppRepoConfigSnapshot {
     static func testFixture(
         repoPath: String,
         options configure: (inout RepoConfigTestFixtureOptions) -> Void = { _ in }
-    ) -> RepoConfigSnapshot {
+    ) -> AppRepoConfigSnapshot {
         var options = RepoConfigTestFixtureOptions()
         configure(&options)
 
-        return RepoConfigSnapshot(
+        return AppRepoConfigSnapshot(
             repoPath: repoPath,
+            revision: options.revision,
             defaultMode: options.defaultMode,
             overviewOutput: options.overviewOutput,
             aiEnabled: options.aiEnabled,
@@ -39,8 +41,8 @@ extension RepoConfigSnapshot {
         defaultMode: String = "Copied",
         overviewOutput: String = "GeneratedOnly",
         locale: String = "system"
-    ) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+    ) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath) {
             $0.defaultMode = defaultMode
             $0.overviewOutput = overviewOutput
             $0.locale = locale
@@ -51,16 +53,16 @@ extension RepoConfigSnapshot {
         repoPath: String,
         overviewOutput: String = "GeneratedOnly",
         allowReplaceDuringImport: Bool = false
-    ) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+    ) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath) {
             $0.overviewOutput = overviewOutput
             $0.locale = "system"
             $0.allowReplaceDuringImport = allowReplaceDuringImport
         }
     }
 
-    static func integrationsFixture(repoPath: String, iCloudWarn: Bool = true) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+    static func integrationsFixture(repoPath: String, iCloudWarn: Bool = true) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath) {
             $0.locale = "system"
             $0.iCloudWarn = iCloudWarn
         }

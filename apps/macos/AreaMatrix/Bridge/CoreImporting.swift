@@ -128,7 +128,7 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 overrideCategory: overrideCategory,
                 overrideFilename: overrideFilename,
                 duplicateStrategy: duplicateStrategy,
-                contentLocale: contentLocale
+                contentLocale: ContentLocale(snapshotValue: contentLocale)
             )
         )
     }
@@ -148,7 +148,7 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 ),
                 overrideFilename: request.overrideFilename,
                 duplicateStrategy: request.duplicateStrategy,
-                contentLocale: contentLocale
+                contentLocale: ContentLocale(snapshotValue: contentLocale)
             )
         )
     }
@@ -172,7 +172,7 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                     ),
                     overrideFilename: request.overrideFilename,
                     duplicateStrategy: request.duplicateStrategy,
-                    contentLocale: contentLocale
+                    contentLocale: ContentLocale(snapshotValue: contentLocale)
                 )
             )
         case .move:
@@ -190,7 +190,7 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                     ),
                     overrideFilename: request.overrideFilename,
                     duplicateStrategy: request.duplicateStrategy,
-                    contentLocale: contentLocale
+                    contentLocale: ContentLocale(snapshotValue: contentLocale)
                 )
             )
         }
@@ -214,7 +214,7 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 overrideCategory: overrideCategory,
                 overrideFilename: overrideFilename,
                 duplicateStrategy: duplicateStrategy,
-                contentLocale: contentLocale
+                contentLocale: ContentLocale(snapshotValue: contentLocale)
             )
         )
     }
@@ -237,7 +237,7 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 overrideCategory: overrideCategory,
                 overrideFilename: overrideFilename,
                 duplicateStrategy: duplicateStrategy,
-                contentLocale: contentLocale
+                contentLocale: ContentLocale(snapshotValue: contentLocale)
             )
         )
     }

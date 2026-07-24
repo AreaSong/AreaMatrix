@@ -341,7 +341,7 @@ fn assert_core_api_behavior_alignment() {
         "`ImportOptions.destination` 语义：",
         "catch CoreError.ICloudPlaceholder(let p)",
         "catch CoreError.PermissionDenied(let p)",
-        "无写入副作用：只读取 `.areamatrix/classifier.yaml`，不创建、不移动、",
+        "无写入副作用：只读取 Repository 语言策略和 `.areamatrix/classifier.yaml`，不创建、不移动、",
     ] {
         assert_contains(CORE_API, fragment);
     }

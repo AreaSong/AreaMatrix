@@ -9,4 +9,6 @@ mod types;
 pub use core_error::CoreError;
 pub type CoreResult<T> = Result<T, CoreError>;
 pub use mapping::map_core_error;
-pub use types::{ErrorKind, ErrorMapping, ErrorMappingInput, ErrorRecoverability, ErrorSeverity};
+pub use types::{
+    ErrorArgument, ErrorKind, ErrorMapping, ErrorMappingInput, ErrorRecoverability, ErrorSeverity,
+};

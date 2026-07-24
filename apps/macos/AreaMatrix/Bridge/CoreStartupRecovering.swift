@@ -1,7 +1,11 @@
 extension CoreBridge: CoreStartupRecovering {
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
         let report = try await Task.detached(priority: .userInitiated) { [repoPath] in
-            try recoverCoreOnStartup(repoPath: repoPath)
+            let overviewSession = try AreaMatrix.recoverOverviewRegenerationOnStartup(repoPath: repoPath)
+            if overviewSession?.status == .rollbackRequired {
+                throw CoreError.StagingRecoveryRequired(path: repoPath)
+            }
+            return try recoverCoreOnStartup(repoPath: repoPath)
         }.value
         return RecoveryReportSnapshot(coreReport: report)
     }

@@ -245,9 +245,13 @@ fn search_query_files_failure_recovery_error_mapping_is_structured_for_ui_retry(
     let mapping = error.to_error_mapping();
 
     assert_eq!(mapping.kind, ErrorKind::Db);
-    assert!(!mapping.user_message.is_empty());
-    assert!(!mapping.suggested_action.is_empty());
-    assert!(!mapping.raw_context.is_empty());
+    assert!(!mapping.code.is_empty());
+    assert!(!mapping.recovery_action_ids.is_empty());
+    assert!(!mapping
+        .technical_details
+        .as_deref()
+        .unwrap_or_default()
+        .is_empty());
 }
 
 #[test]

@@ -124,10 +124,16 @@ inventory。保留项必须落入下列专项之一，并在收口时补充对�
 `AppLanguage`；General 设置页只编辑同一界面语言。当前资料库的 `RepoConfig.locale` 只由 Repository
 设置页编辑，其他页面只展示只读摘要。两份设置不得通过共享 binding 或保存动作互相改写。
 
+Welcome 控件显示保存的 preference，并按 `system -> zh-Hans -> en -> system` 单击循环；system 模式的
+tooltip/accessibility value 同时展示当前 concrete resolution。Repository 的 follow-interface 摘要同样同时
+展示 policy 与当前 resolution，不能把跟随状态伪装成固定 locale。
+
 - String Catalog 的资源 locale 只控制翻译、语法和复数；瞬时应用 UI 的日期、数字、文件大小和货币使用
   `Locale.autoupdatingCurrent` 的 region 格式。持久化 generated content 使用内容 locale 对应的确定性格式，
   不读取设备 region，也不新增 region 参数。
 - `AppLanguage.system` 只检查 preferred languages 第一项；第一项不支持时直接回退 `en`，不扫描后续项。
+- `AppLanguage.system` 在 launch、application activation 与 locale-change notification 时重新解析并广播到
+  所有窗口；显式语言不响应系统变化。未知持久化值按 `system` 运行但不隐式写回。
 - AreaMatrix 自己的按钮、标签、错误、状态和通知属于 app-owned，必须经 `AppLocalizer`。系统 panel、系统
   菜单和 macOS 权限/服务 UI 属于 OS-owned，保留系统语言；应用不克隆系统文案来强制跟随应用语言。
 - `AppDisplayText`、`LocalizedMessage`、catalog key 和翻译结果只用于 presentation，不得持久化到 import
@@ -135,14 +141,24 @@ inventory。保留项必须落入下列专项之一，并在收口时补充对�
   必要 verbatim 原值，恢复后再用当前界面语言解析。
 - Accessibility label/value/hint/action/announcement 在赋值或发布时解析当前界面语言；
   `accessibilityIdentifier` 使用稳定英文标识，不经过 catalog。
+- 仍由应用持有的 toast、banner、sheet 和 progress 使用 descriptor 并可重新解析；传给系统 panel、
+  notification 或 service 的应用文案在交付时解析并冻结。
 - 用户输入、路径、文件名、provider 名称和其他 verbatim 值不翻译；需要进入 UI state 时携带明确的
   verbatim reason，不伪装成可本地化 key。
+- `system` repository policy 只保存跟随关系；current concrete locale 在每台设备独立解析。解析结果改变时
+  clean content presentation 立即重投影但不增加 repository revision，dirty classifier draft 和已开始 operation
+  继续使用冻结 locale。稳定 category order、file sort mode、selection、expanded state、scroll、focus、route、
+  sheet 和 draft identity 不随界面或内容语言改变。
 
 所有生成入口在 operation identity（操作身份）的线性化点捕获 concrete `zh-Hans` 或 `en`。同一次用户
 batch 共用一个值；continuation、resume、replay、同一 external sync window 和 automatic provider
 fallback 复用原值，new attempt 才重新捕获。设置保存与捕获通过 per-repository write coordinator 串行，
 因此一次操作不会看到半提交设置。external window 惰性持有 locale：首次到达队首、准备第一次 Core
-attempt 时冻结；filtered-only window 不冻结。AI 在进入 privacy/provider await 前冻结。
+  attempt 时冻结；filtered-only window 不冻结。AI 在进入 privacy/provider await 前冻结。
+
+终态失败后的用户显式 retry 是新 attempt；crash recovery、continuation、replay、rollback、同一 external
+sync window 与同一 attempt 内的 provider fallback 复用原 context。Undo/Redo 恢复原字节和 provenance，
+不按当前设置重新生成。持久化生成格式使用冻结 content locale、UTC 和 format contract version。
 
 Core/UniFFI 请求显式携带快照；macOS 不通过进程级 setter 把界面语言同步给 Core。session/recovery
 持久化稳定 operation code、结构化 payload、concrete locale 和必要原值，而不是 `AppDisplayText`。任何

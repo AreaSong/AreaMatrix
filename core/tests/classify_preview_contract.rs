@@ -91,15 +91,22 @@ fn classify_preview_contract_docs_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "| `predict_category(repo, name)` | classify | √ | Config / Classify |",
-        "无写入副作用：只读取 `.areamatrix/classifier.yaml`",
+        "| `predict_category(repo, name)` | classify | √ | RepoNotInitialized / Db / DbLocked / DbCorrupted / Config / Classify |",
+        "无写入副作用：只读取 Repository 语言策略和 `.areamatrix/classifier.yaml`",
         "`Config`：`repoPath` / `filename` 为空",
         "`Classify`：classifier 规则源无法作为文件读取",
         "UI 在拖入时调用以填充 ImportSheet",
     ] {
         assert_contains(CORE_API, fragment);
     }
-    for error_name in ["Config", "Classify"] {
+    for error_name in [
+        "RepoNotInitialized",
+        "Db",
+        "DbLocked",
+        "DbCorrupted",
+        "Config",
+        "Classify",
+    ] {
         assert_contains(CORE_API, error_name);
         assert_contains(ERROR_CODES, error_name);
         assert_contains(UDL, error_name);
@@ -275,5 +282,50 @@ fn classify_preview_contract_has_no_filesystem_or_db_write_side_effects() {
         .expect("predict category without side effects");
 
     assert_eq!(result.category, "finance");
+    assert_eq!(before, snapshot_files(repo.path()));
+}
+
+#[test]
+fn classify_preview_contract_snapshot_read_handles_uri_reserved_repo_path() {
+    let root = tempfile::tempdir().expect("create temporary parent directory");
+    let repo = root.path().join("repo ?# 中文");
+    fs::create_dir(&repo).expect("create repository with URI-reserved path");
+    init_repo(path_string(&repo), create_empty_options()).expect("initialize encoded-path repo");
+    let before = snapshot_files(&repo);
+
+    let result = predict_category(path_string(&repo), "contract.pdf".to_owned())
+        .expect("predict through immutable encoded URI");
+
+    assert_eq!(result.category, "finance");
+    assert_eq!(before, snapshot_files(&repo));
+}
+
+#[test]
+fn classify_preview_contract_incomplete_sqlite_sidecars_fail_closed_without_changes() {
+    let repo = initialized_repo();
+    let connection = rusqlite::Connection::open(repo.path().join(".areamatrix/index.db"))
+        .expect("open fixture database for checkpoint");
+    connection
+        .execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+        .expect("checkpoint fixture database");
+    drop(connection);
+    for suffix in ["index.db-wal", "index.db-shm"] {
+        let sidecar = repo.path().join(".areamatrix").join(suffix);
+        match fs::remove_file(sidecar) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => panic!("remove sidecar fixture: {error}"),
+        }
+    }
+    let wal = repo.path().join(".areamatrix/index.db-wal");
+    fs::write(&wal, b"orphaned wal fixture").expect("write incomplete WAL fixture");
+    let before = snapshot_files(repo.path());
+
+    let result = predict_category(path_string(repo.path()), "contract.pdf".to_owned());
+
+    assert!(
+        matches!(result, Err(CoreError::Db { .. })),
+        "unexpected incomplete-sidecar result: {result:?}"
+    );
     assert_eq!(before, snapshot_files(repo.path()));
 }

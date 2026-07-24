@@ -75,14 +75,14 @@ extension RecordingCoreErrorMapper {
     static func shell() -> RecordingCoreErrorMapper {
         RecordingCoreErrorMapper { error in
             let kind = CoreErrorKindTestMapper.kind(for: error)
-            return CoreErrorMappingSnapshot.localized(
+            return CoreErrorMappingSnapshot.localized(CoreErrorLocalizedSnapshotInput(
                 kind: kind,
                 userMessage: shellUserMessage(for: kind),
                 severity: shellSeverity(for: kind),
                 suggestedAction: shellSuggestedAction(for: kind),
                 recoverability: shellRecoverability(for: kind),
                 rawContext: shellRawContext(for: error)
-            )
+            ))
         }
     }
 
@@ -119,6 +119,8 @@ extension RecordingCoreErrorMapper {
         switch error {
         case let .Io(message),
              let .Db(message),
+             let .DbLocked(message),
+             let .DbCorrupted(message),
              let .Internal(message):
             message
         case let .Config(reason),
@@ -135,6 +137,8 @@ extension RecordingCoreErrorMapper {
              let .StagingRecoveryRequired(path),
              let .PermissionDenied(path):
             path
+        case let .RevisionConflict(resource, expectedRevision, currentRevision):
+            "\(resource): expected \(expectedRevision), current \(currentRevision)"
         }
     }
 }

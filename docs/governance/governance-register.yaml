@@ -1303,6 +1303,7 @@ core_modules:
       - docs/api/classifier-yaml.md
     test_families:
       - classifier_rule_editor
+      - classifier_recovery
   - module: classifier_rules
     owner: "@AreaSong"
     authority_docs:
@@ -1414,6 +1415,7 @@ core_modules:
       - docs/modules/overview-gen.md
     test_families:
       - overview_generated
+      - overview_regeneration
   - module: platform_capabilities
     owner: "@AreaSong"
     authority_docs:
@@ -1433,6 +1435,12 @@ core_modules:
     test_families:
       - recover_on_startup
       - recovery_scenarios
+  - module: recoverable_operation
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/api/core-api.md
+      - docs/architecture/data-model.md
+    coverage_note: durable operation context exercised by overview regeneration, AI, and sync recovery families
   - module: redo
     owner: "@AreaSong"
     authority_docs:
@@ -1527,6 +1535,7 @@ core_modules:
       - sync_external_modified
       - sync_external_removed
       - sync_external_renamed
+      - sync_external_locale_provenance
   - module: sync_conflict_detect
     owner: "@AreaSong"
     authority_docs:

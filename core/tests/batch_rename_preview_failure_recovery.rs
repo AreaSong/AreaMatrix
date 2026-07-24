@@ -105,8 +105,10 @@ fn batch_rename_failure_edge_empty_invalid_and_mapping_do_not_mutate() {
             path: None,
             reason: None,
             message: None,
+            expected_revision: None,
+            current_revision: None,
         });
-        assert_eq!(mapped.raw_context, expected);
+        assert_eq!(mapped.technical_details.as_deref(), Some(expected));
     }
 
     assert_eq!(snapshot(repo.path()), before);

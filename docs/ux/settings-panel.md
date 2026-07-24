@@ -55,11 +55,17 @@
 
 跟随系统只检查 macOS preferred languages 第一项：`zh-Hans` / `zh-CN` / `zh-SG` 解析为 `zh-Hans`，
 `en-*` 解析为 `en`，其他第一项直接回退 `en`，不扫描后续项。繁体中文与 bare `zh` 不隐含简体中文。
+应用启动、重新进入前台或收到系统 locale 变化通知时，`system` 会重新解析并同步刷新全部窗口；显式中文
+或 English 不跟随系统变化。未知历史偏好按 `system` 运行但不自动改写 UserDefaults。
 资源 locale 只控制 String Catalog、语法和复数；瞬时 UI 的日期、数字、文件大小和货币继续跟随 macOS
 当前 region。持久化生成物使用内容 locale 的确定性格式。用户文件名和正文永不翻译。
 
 AreaMatrix 自己的菜单、按钮、标签、错误和通知跟随界面语言；系统 open/save panel、系统菜单与 macOS
 权限或服务 UI 保持 OS-owned，由系统决定语言，不承诺与 AreaMatrix 选择一致。
+Welcome 右上角单击按“跟随系统 → 简体中文 → English → 跟随系统”循环，不弹出菜单；tooltip 与
+Accessibility 必须明确读出保存的当前模式；跟随系统时额外读出当前解析结果。控件不能只显示解析后的
+语言，否则用户无法区分跟随系统与固定语言。紧凑视觉分别为带自动标识的地球、“中”和“EN”。该控件
+只修改界面语言，不修改任何资料库内容语言。
 
 外观当前只显示并锁定为 `system`，应用跟随系统外观。
 
@@ -84,12 +90,37 @@ AreaMatrix 自己的菜单、按钮、标签、错误和通知跟随界面语言
 生成的概览或 AI 自然语言结果；保存设置本身不会重写既有内容，也不会改变应用 UI。之后正常发生且本来
 需要刷新 overview 的 operation 可以使用新语言更新派生内容。
 
+保存成功后，内置分类显示、目录树投影和内容语言摘要立即刷新到同一资料库的 clean window；有未保存
+草稿的窗口保留草稿并标记 stale。正常操作可以让不同 overview 文件暂时保留不同历史语言；设置页不得
+为消除这种差异而隐式生成。显式“重新生成全部概览”只原子替换 `.areamatrix/generated/**` 和已启用的
+合法 `AREAMATRIX.md` managed block，不处理 AI 结果、`README.md` 或用户内容。
+保存反馈必须同时显示规范 policy 与当前 concrete 结果，并明确“现有内容未被重写”；只有 provenance
+不是已同步时才提供显式重新生成入口，不使用保存后的自动弹窗强迫用户生成。
+Repository 页必须依据 provenance 显示“概览尚未生成”“概览已同步”“概览需要重新生成”“概览语言/格式混合”
+或“概览来源未知”。需要重新生成时按结构化原因显示语言不同、格式过期、缺少目标和失效目标数量；混合表示
+多个已知 locale/format；未知表示任一现有输出缺少可信 provenance，或当前 bytes 与 provenance hash 不符。
+除已同步外均可提供显式“重新生成全部概览”，不扫描文本猜语言，也不在保存设置时自动执行。未知状态下
+普通增量 overview 写入 fail closed，避免静默覆盖异常 bytes。
+
+重新生成 preflight 显示目标语言、新建/替换/删除数量和根 managed block 是否参与，并明确排除 AI、
+`README.md` 与用户正文。commit 前允许取消；commit 后禁用取消。重开时优先继续可验证的 staged plan，
+否则从可验证 backup 回滚；无法验证任一路径时保持恢复阻断。所有窗口可观察状态，只有发起窗口操作。
+
 配置读取保留 exact raw policy。`system`、`zh-Hans`、`zh-CN`、`zh-SG`、`en` 和 `en-*` 可兼容解析，
 但普通加载不得隐式写回；只有用户明确保存时才写 canonical `system`、`zh-Hans` 或 `en`。未知非空值
 显示 exact raw value 和持续 unsupported 提示，资料库仍可浏览；生成动作保持禁用，直到用户明确改值。
 
 保存与 operation snapshot 串行：一次用户 batch 只捕获一个 concrete locale。failed items 的新 retry batch
 重新捕获；continuation、recovery 或 replay 复用原 batch 值。控件标题是否叫 Retry 不改变该判断。
+
+revision CAS 冲突时保留 dirty draft，禁止自动重试或静默合并。用户可以放弃草稿并重新载入，也可以在最新
+revision 上审阅 dirty fields 后再次显式保存。无草稿的同资料库窗口直接刷新；有草稿的窗口不得被覆盖。
+审阅界面按 dirty field 显示原保存值、最新持久化值和本地草稿；Review 只更新可见基线，不写入 Core，
+用户必须再次点击 Save。即使字段不重叠也不自动 rebase，不提供 force overwrite。
+
+完全没有可证明语言策略的旧资料库仍可浏览并持续显示非阻断提示，但生成与 classifier mutation 禁用。
+Repository 的三项语言选择器初始不选中任何值；follow-interface 同时显示当前 concrete 结果。明确 Save 后
+解除阻断，但不自动重新生成既有内容。
 
 更换资料库不会在设置页直接移动旧资料库内容，而是进入资料库选择和校验流程。
 
@@ -107,9 +138,18 @@ AreaMatrix 自己的菜单、按钮、标签、错误和通知跟随界面语言
 规则 snapshot 返回每条规则完整 locale map 和 exact raw repository policy；编辑 draft 在打开时冻结一个
 supported `editing_locale`，保存只 patch 该 locale 的显示名/说明。资料库 policy 在编辑期间变化时返回
 `Conflict` 并重新加载，不能把另一个 locale 的文本覆盖进去。custom category 可以只保存当前
-`editing_locale`，其他缺失语言按 raw/en/slug 回退，不自动补译或语义合并。unknown policy 下只允许查看
-raw/en/slug fallback；create、update、delete、rule toggle 和其他 classifier mutation 全部禁用，直到
+`editing_locale`。已知显式/alias policy 按 exact raw/concrete/en/slug 回退，follow-interface 按当前
+concrete/en/slug 回退；unknown policy 下只允许查看 exact raw/en/slug fallback，不自动补译或语义合并；
+create、update、delete、rule toggle 和其他 classifier mutation 全部禁用，直到
 Repository 页明确改值。
+
+编辑语言使用“简体中文 / English”分段控件。有 dirty draft 时切换必须选择保存并切换、放弃并切换或取消；
+不能把两个 locale 合并为一次可能部分成功的保存。删除可选 locale 值后立即预览 `current → en → slug`
+回退；某个 locale 没有显式值时，对应编辑框保持空白，并在独立的只读区域显示回退预览。回退文字不得
+自动进入编辑框，也不得因普通保存变成显式翻译。内置 English fallback 不可删除，自定义分类至少保留
+合法 slug。
+Classifier 冲突保留完整草稿和冻结的编辑语言，仅比较该语言和受影响规则字段；另一语言 map 只读展示。
+Reload 会放弃草稿，Review 只更新基线，之后仍需再次明确 Save，不进行跨语言或非重叠字段静默合并。
 
 规则引擎开关包括 extension rules、keyword rules 和 fallback to inbox。这些开关写入当前资料库配置。
 
@@ -119,7 +159,11 @@ YAML 辅助操作包括：
 - 在 Finder 中显示该文件。
 - 校验当前规则。
 - 恢复到上次有效版本。
-- 文件缺失或不可读时创建默认配置。
+- 文件缺失时显式创建默认配置。
+
+恢复 last-valid 或默认内容前必须确认并先创建当前 `classifier.yaml` 的编号、非覆盖 backup。没有 last-valid
+时不显示对应恢复动作，也不以默认配置静默覆盖当前文件；缺失文件的默认创建仍是独立、显式动作。现有文件
+因权限不可读时不提供覆盖动作，先引导用户修复权限。
 
 设置页不提供 classifier YAML 的通用 Import/Export，也不提供模板库。YAML 是高级恢复和直接编辑入口，不替代可视化规则维护。
 

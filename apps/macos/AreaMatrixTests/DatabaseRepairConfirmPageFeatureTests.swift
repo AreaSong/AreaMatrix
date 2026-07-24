@@ -65,20 +65,17 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testDatabaseRepairRepairReindexMetadataCoreRepairRequiresConfirmationAndUsesCoreMetadataRepair() async {
-        let report = RepairReportSnapshot.testFixture(
-            scanSessionId: 9,
-            inserted: 3,
-            updated: 2,
-            skipped: 1
-        )
+    func testDatabaseRepairRepairReindexMetadataCoreSeparatesRepairAndRescanConfirmations() async {
+        let report = RepairReportSnapshot.testFixture(outcome: "Verified")
         let repairer = DatabaseRepairRecordingMetadataRepairer(result: .success(report))
+        let reindexer = RepairRecordingReindexer()
         let model = DatabaseRepairConfirmModel(
             repoPath: "/tmp/repo",
             scanSession: nil,
             mapping: nil,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
+            repositoryReindexer: reindexer,
             startupRecoverer: StaticStartupRecoverer(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
@@ -86,20 +83,30 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
         )
 
-        await model.runFullRescan()
+        await model.runMetadataRepair()
         await repairer.assertNoMetadataRepairRequests()
         XCTAssertEqual(model.repairState, .idle)
 
+        await model.loadRepairPreflightIfNeeded()
         model.isMetadataSafetyConfirmed = true
-        await model.runFullRescan()
+        await model.runMetadataRepair()
 
+        await repairer.assertPreflightRequests(["/tmp/repo"])
         await repairer.assertMetadataRepairRequests([
             DatabaseRepairMetadataRepairRequest(
                 repoPath: "/tmp/repo",
-                options: .databaseRepairFullRescanFixture()
+                options: .databaseRepairMetadataFixture()
             )
         ])
         XCTAssertEqual(model.repairState, .succeeded(report))
+        await reindexer.assertRequests([])
+
+        await model.runRescan()
+        await reindexer.assertRequests([])
+        model.isRescanConfirmed = true
+        await model.runRescan()
+        await reindexer.assertRequests(["/tmp/repo"])
+        XCTAssertTrue(model.rescanState.isSucceeded)
     }
 
     @MainActor
@@ -108,9 +115,13 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             kind: .permissionDenied,
             rawContext: "/tmp/repo/.areamatrix/index.db"
         )
-        let repairer = DatabaseRepairRecordingMetadataRepairer(result: .failure(CoreError.PermissionDenied(
-            path: "/tmp/repo/.areamatrix/index.db"
-        )))
+        let repairer = DatabaseRepairRecordingMetadataRepairer(
+            preflightResults: [
+                .success(.databaseRepairHealthyPreflightFixture()),
+                .success(.databaseRepairHealthyPreflightFixture())
+            ],
+            result: .failure(CoreError.PermissionDenied(path: "/tmp/repo/.areamatrix/index.db"))
+        )
         let model = DatabaseRepairConfirmModel(
             repoPath: "/tmp/repo",
             scanSession: nil,
@@ -124,24 +135,32 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
+        await model.loadRepairPreflightIfNeeded()
         model.isMetadataSafetyConfirmed = true
-        await model.runFullRescan()
+        await model.runMetadataRepair()
 
         XCTAssertEqual(model.repairState, .failed(mapping))
-        XCTAssertEqual(model.primaryButtonTitle, "Retry Full Rescan")
-        XCTAssertTrue(model.canRunFullRescan)
+        XCTAssertEqual(model.primaryButtonTitle, "Retry Metadata Repair")
+        XCTAssertTrue(model.canRunMetadataRepair)
+        await repairer.assertPreflightRequests(["/tmp/repo", "/tmp/repo"])
     }
 
     @MainActor
-    func testDatabaseRepairRepoNotInitializedUsesInitializationRescanCopy() {
+    func testDatabaseRepairMetadataAbsentStillUsesMetadataOnlyRepairCopy() async {
+        let repairer = DatabaseRepairRecordingMetadataRepairer(
+            preflightResults: [.success(.testFixture(
+                localeState: .metadataAbsent,
+                repositoryLocalePolicy: nil,
+                requiresExplicitLocaleSelection: true
+            ))],
+            result: .success(.testFixture(outcome: "Initialized"))
+        )
         let model = DatabaseRepairConfirmModel(
             repoPath: "/tmp/repo",
             scanSession: nil,
             mapping: .databaseRepairRepairMapping(kind: .repoNotInitialized),
             lastOpenedAt: nil,
-            metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
-                result: .success(.databaseRepairRepairReportFixture())
-            ),
+            metadataRepairer: repairer,
             startupRecoverer: StaticStartupRecoverer(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
@@ -149,10 +168,24 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
         )
 
-        XCTAssertEqual(model.primaryButtonTitle, "Initialize & Full Rescan")
-        XCTAssertEqual(DatabaseRepairProgressStep.allCases.first, .initializingMetadata)
-    }
+        await model.loadRepairPreflightIfNeeded()
+        XCTAssertEqual(model.primaryButtonTitle, "Repair Metadata")
+        XCTAssertFalse(model.canRunMetadataRepair)
+        model.selectedRecoveryLanguage = .zhHans
+        model.isMetadataSafetyConfirmed = true
+        await model.runMetadataRepair()
 
+        await repairer.assertMetadataRepairRequests([
+            DatabaseRepairMetadataRepairRequest(
+                repoPath: "/tmp/repo",
+                options: .databaseRepairMetadataFixture(repositoryLocalePolicy: "zh-Hans")
+            )
+        ])
+        XCTAssertTrue(model.repairState.isSucceeded)
+    }
+}
+
+extension DatabaseRepairConfirmPageFeatureTests {
     @MainActor
     func testDatabaseRepairRepairReindexMetadataCoreDiagnosticsRequirePrivacyConfirmationAndCanDisableRepair() async {
         let diagnosticsCollector = ShellRecordingDiagnosticsCollector(
@@ -171,10 +204,11 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .permissionDenied))
         )
 
+        await model.loadRepairPreflightIfNeeded()
         model.isMetadataSafetyConfirmed = true
         await model.collectDiagnostics()
         await diagnosticsCollector.assertNoRepoPathRequests()
-        XCTAssertTrue(model.canRunFullRescan)
+        XCTAssertTrue(model.canRunMetadataRepair)
 
         model.requestDiagnosticsExport()
         await model.collectDiagnostics()
@@ -184,7 +218,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             return XCTFail("expected diagnostics failure")
         }
         XCTAssertEqual(mapping.kind, .permissionDenied)
-        XCTAssertFalse(model.canRunFullRescan)
+        XCTAssertFalse(model.canRunMetadataRepair)
     }
 
     @MainActor
@@ -233,10 +267,10 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
         assertTestMirrorDescription(of: view.body, contains: [
             "Repair Repository Metadata?",
             "AreaMatrix cannot read the repository metadata database",
-            "Run Full Rescan",
+            "Repair Metadata",
             "Export diagnostics...",
-            "database-repair-metadata-repair-run-full-rescan",
-            "database-repair-metadata-repair-confirm-metadata-only"
+            "database-repair-run-metadata-repair",
+            "database-repair-confirm-metadata-only"
         ], doesNotContain: [
             "Resume",
             "Clean up and retry",
@@ -297,7 +331,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             onOpenRepositoryInFinder: {}
         )
         assertTestMirrorDescription(of: view.body, contains: [
-            "Run Full Rescan",
+            "Repair Metadata",
             "Export diagnostics..."
         ], doesNotContain: [
             "Resume",

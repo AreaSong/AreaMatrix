@@ -93,6 +93,9 @@ fn missing_file_recovery_contract_exports_signatures_inputs_outputs_and_errors()
 
 #[test]
 fn missing_file_recovery_contract_rejects_invalid_or_unconfirmed_requests() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         get_missing_file_state("/tmp/repo".to_owned(), 0),
         Err(CoreError::FileNotFound { .. })
@@ -130,7 +133,7 @@ fn missing_file_recovery_contract_rejects_invalid_or_unconfirmed_requests() {
         Err(CoreError::PermissionDenied { .. })
     ));
     assert!(matches!(
-        get_missing_file_state("/tmp/repo".to_owned(), 42),
+        get_missing_file_state(uninitialized_repo_path, 42),
         Err(CoreError::Db { .. })
     ));
 }

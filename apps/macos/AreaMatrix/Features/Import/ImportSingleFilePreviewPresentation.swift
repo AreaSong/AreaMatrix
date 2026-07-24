@@ -118,8 +118,8 @@ extension ImportSingleFilePreviewModel {
         if nameConflictResolution == .replace, !isReplaceConfirmed, replaceOptionVisibility == .enabled {
             return nil
         }
-        if let nameConflictResolutionBlockingDisplayText {
-            return nameConflictResolutionBlockingDisplayText
+        if let nameConflictBlockingText {
+            return nameConflictBlockingText
         }
         if isDuplicateConflictResolvedForImport {
             return nil

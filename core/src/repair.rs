@@ -26,9 +26,7 @@ pub(crate) fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexRe
     repo_scan::reindex_from_filesystem(repo_path)
 }
 
-pub(crate) fn preflight_repair_metadata(
-    repo_path: String,
-) -> CoreResult<RepairMetadataPreflight> {
+pub(crate) fn preflight_repair_metadata(repo_path: String) -> CoreResult<RepairMetadataPreflight> {
     let repo = repair_repo_path(&repo_path)?;
     observe_repair_metadata(&repo)
 }
@@ -95,8 +93,7 @@ pub(crate) fn repair_metadata(
             rebuild_index_db(&repo, &repo_path, &policy, &observed.preflight_token)?;
             RepairMetadataOutcome::Rebuilt
         }
-        RepairMetadataLocaleState::LocaleMissing
-        | RepairMetadataLocaleState::LocaleUnsupported => {
+        RepairMetadataLocaleState::LocaleMissing | RepairMetadataLocaleState::LocaleUnsupported => {
             ensure_preflight_token(&repo, &observed.preflight_token)?;
             repair_repository_locale(&repo, &observed, &policy)?;
             RepairMetadataOutcome::Rebuilt
@@ -309,9 +306,8 @@ fn sqlite_immutable_uri(path: &Path) -> String {
 }
 
 fn repair_database_is_healthy(connection: &Connection) -> bool {
-    let integrity = connection.query_row("PRAGMA integrity_check", [], |row| {
-        row.get::<_, String>(0)
-    });
+    let integrity =
+        connection.query_row("PRAGMA integrity_check", [], |row| row.get::<_, String>(0));
     if !matches!(integrity, Ok(value) if value == "ok") {
         return false;
     }
@@ -365,11 +361,8 @@ fn repair_repository_locale(
 ) -> CoreResult<()> {
     db::ensure_config_storage_writable(repo)?;
     let index_db = repo.join(AREA_MATRIX_DIR).join(INDEX_DB_FILE);
-    let mut connection = Connection::open_with_flags(
-        index_db,
-        OpenFlags::SQLITE_OPEN_READ_WRITE,
-    )
-    .map_err(|error| CoreError::db(error.to_string()))?;
+    let mut connection = Connection::open_with_flags(index_db, OpenFlags::SQLITE_OPEN_READ_WRITE)
+        .map_err(|error| CoreError::db(error.to_string()))?;
     connection
         .execute_batch("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;")
         .map_err(|error| CoreError::db(error.to_string()))?;
@@ -391,7 +384,9 @@ fn repair_repository_locale(
         )
         .map_err(|error| CoreError::db(error.to_string()))?;
     if changed != 1 {
-        return Err(CoreError::db("repository configuration revision is missing"));
+        return Err(CoreError::db(
+            "repository configuration revision is missing",
+        ));
     }
     tx.commit()
         .map_err(|error| CoreError::db(error.to_string()))
@@ -411,9 +406,9 @@ fn ensure_locale_observation_matches(
         .optional()
         .map_err(|error| CoreError::db(error.to_string()))?;
     let matches = match preflight.locale_state {
-        RepairMetadataLocaleState::LocaleMissing => {
-            raw_locale.as_deref().is_none_or(|value| value.trim().is_empty())
-        }
+        RepairMetadataLocaleState::LocaleMissing => raw_locale
+            .as_deref()
+            .map_or(true, |value| value.trim().is_empty()),
         RepairMetadataLocaleState::LocaleUnsupported => {
             raw_locale.as_deref() == preflight.unsupported_locale.as_deref()
         }
@@ -448,11 +443,22 @@ fn repair_preflight_token(
     hash_token_field(&mut hasher, repo.to_string_lossy().as_bytes());
     hash_token_field(&mut hasher, repair_state_name(state).as_bytes());
     hash_token_field(&mut hasher, policy.unwrap_or_default().as_bytes());
-    hash_token_field(&mut hasher, unsupported_locale.unwrap_or_default().as_bytes());
+    hash_token_field(
+        &mut hasher,
+        unsupported_locale.unwrap_or_default().as_bytes(),
+    );
     let index_db = repo.join(AREA_MATRIX_DIR).join(INDEX_DB_FILE);
     hash_optional_metadata_file(&mut hasher, b"index.db", &index_db)?;
-    hash_optional_metadata_file(&mut hasher, b"index.db-wal", &sqlite_companion_path(&index_db, "-wal")?)?;
-    hash_optional_metadata_file(&mut hasher, b"index.db-shm", &sqlite_companion_path(&index_db, "-shm")?)?;
+    hash_optional_metadata_file(
+        &mut hasher,
+        b"index.db-wal",
+        &sqlite_companion_path(&index_db, "-wal")?,
+    )?;
+    hash_optional_metadata_file(
+        &mut hasher,
+        b"index.db-shm",
+        &sqlite_companion_path(&index_db, "-shm")?,
+    )?;
     Ok(format!("{:x}", hasher.finalize()))
 }
 
@@ -461,11 +467,7 @@ fn hash_token_field(hasher: &mut Sha256, value: &[u8]) {
     hasher.update(value);
 }
 
-fn hash_optional_metadata_file(
-    hasher: &mut Sha256,
-    label: &[u8],
-    path: &Path,
-) -> CoreResult<()> {
+fn hash_optional_metadata_file(hasher: &mut Sha256, label: &[u8], path: &Path) -> CoreResult<()> {
     hash_token_field(hasher, label);
     let metadata = match fs::symlink_metadata(path) {
         Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => {
@@ -485,7 +487,9 @@ fn hash_optional_metadata_file(
     let mut file = fs::File::open(path).map_err(map_initialized_metadata_error)?;
     let mut buffer = [0_u8; COPY_BUFFER_BYTES];
     loop {
-        let read = file.read(&mut buffer).map_err(map_initialized_metadata_error)?;
+        let read = file
+            .read(&mut buffer)
+            .map_err(map_initialized_metadata_error)?;
         if read == 0 {
             break;
         }
@@ -537,19 +541,72 @@ fn install_replacement_for_existing_db(
     temp_db: &Path,
     index_db: &Path,
 ) -> CoreResult<()> {
-    let retired_db = area_matrix.join(format!("{INDEX_DB_FILE}.replaced-{}", Uuid::new_v4()));
-    remove_sqlite_companions(index_db)?;
-    fs::rename(index_db, &retired_db).map_err(map_io_error)?;
+    let retired_files = retire_sqlite_files(area_matrix, index_db)?;
 
     match fs::rename(temp_db, index_db) {
         Ok(()) => {
-            cleanup_temp_file(&retired_db);
+            cleanup_retired_sqlite_files(&retired_files);
             Ok(())
         }
         Err(error) => {
-            restore_retired_index_db(&retired_db, index_db)?;
+            restore_retired_sqlite_files(&retired_files)?;
             Err(map_io_error(error))
         }
+    }
+}
+
+fn retire_sqlite_files(area_matrix: &Path, index_db: &Path) -> CoreResult<Vec<(PathBuf, PathBuf)>> {
+    let retirement_id = Uuid::new_v4();
+    let mut retired = Vec::new();
+    for suffix in ["", "-wal", "-shm"] {
+        let source = if suffix.is_empty() {
+            index_db.to_owned()
+        } else {
+            sqlite_companion_path(index_db, suffix)?
+        };
+        let metadata = match fs::symlink_metadata(&source) {
+            Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => {
+                restore_retired_sqlite_files(&retired)?;
+                return Err(CoreError::repo_not_initialized(
+                    "repository not initialized",
+                ));
+            }
+            Ok(metadata) => metadata,
+            Err(error) if error.kind() == io::ErrorKind::NotFound && !suffix.is_empty() => continue,
+            Err(error) => {
+                restore_retired_sqlite_files(&retired)?;
+                return Err(map_io_error(error));
+            }
+        };
+        if !metadata.is_file() {
+            restore_retired_sqlite_files(&retired)?;
+            return Err(CoreError::repo_not_initialized(
+                "repository not initialized",
+            ));
+        }
+        let destination = area_matrix.join(format!(
+            "{}{suffix}.replaced-{retirement_id}",
+            INDEX_DB_FILE
+        ));
+        if let Err(error) = fs::rename(&source, &destination) {
+            restore_retired_sqlite_files(&retired)?;
+            return Err(map_io_error(error));
+        }
+        retired.push((source, destination));
+    }
+    Ok(retired)
+}
+
+fn restore_retired_sqlite_files(retired: &[(PathBuf, PathBuf)]) -> CoreResult<()> {
+    for (source, destination) in retired.iter().rev() {
+        fs::rename(destination, source).map_err(map_io_error)?;
+    }
+    Ok(())
+}
+
+fn cleanup_retired_sqlite_files(retired: &[(PathBuf, PathBuf)]) {
+    for (_, destination) in retired {
+        cleanup_temp_file(destination);
     }
 }
 
@@ -577,10 +634,6 @@ fn preserve_orphaned_sqlite_companions(area_matrix: &Path, index_db: &Path) -> C
         fs::rename(source, destination).map_err(map_io_error)?;
     }
     Ok(())
-}
-
-fn restore_retired_index_db(retired_db: &Path, index_db: &Path) -> CoreResult<()> {
-    fs::rename(retired_db, index_db).map_err(map_io_error)
 }
 
 fn checkpoint_replacement_db(db_path: &Path) -> CoreResult<()> {

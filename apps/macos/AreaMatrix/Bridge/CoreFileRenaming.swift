@@ -76,7 +76,7 @@ private func renameCoreFile(
         repoPath: repoPath,
         fileId: fileID,
         newName: newName,
-        contentLocale: contentLocale
+        contentLocale: ContentLocale(snapshotValue: contentLocale)
     )
 }
 

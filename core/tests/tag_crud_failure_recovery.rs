@@ -394,8 +394,9 @@ fn tag_crud_failure_recovery_corrupted_db_is_fatal_and_preserves_user_files() {
     fs::write(metadata_dir.join("index.db"), b"not a sqlite database")
         .expect("write corrupted database fixture");
 
-    let error = assert_db_error(list_tags(path_string(repo.path()), 1));
+    let error = list_tags(path_string(repo.path()), 1).expect_err("corrupted database must fail");
 
+    assert_eq!(error.kind(), ErrorKind::DbCorrupted);
     assert_eq!(
         error.to_error_mapping().recoverability,
         ErrorRecoverability::Fatal

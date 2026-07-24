@@ -223,6 +223,8 @@ fn camera_import_failure_recovery_permission_denied_maps_and_leaves_no_half_prod
         path: Some(path_string(&source)),
         reason: None,
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(mapping.severity, ErrorSeverity::High);
     assert_eq!(

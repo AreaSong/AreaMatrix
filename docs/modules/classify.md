@@ -20,8 +20,10 @@ predict_category(repo_path, filename) -> CoreResult<ClassifyResult>
 ## 配置来源
 
 1. 优先读取 `<repo>/.areamatrix/classifier.yaml`。
-2. 文件不存在时使用内嵌 `core/resources/classifier.yaml`。
-3. 文件存在但无法读取、YAML 无效或字段校验失败时返回错误，不静默改用旧规则或 inbox。
+2. 文件不存在时进入 degraded read-only，浏览只显示稳定 slug；不得静默使用内嵌规则。
+3. 文件存在但无法读取、YAML 无效或字段校验失败时进入同一 degraded read-only，不静默改用旧规则或 inbox。
+4. 缺失文件只能通过显式 Create Default 创建；可读取但无效的文件只能在编号、非覆盖 backup 后显式恢复；
+   因权限不可读的文件必须先恢复可读权限，不得直接覆盖。
 
 解析使用 `deny_unknown_fields`，当前字段见 [classifier.yaml 规范](../api/classifier-yaml.md)。
 
@@ -88,12 +90,14 @@ default category 必须存在于 categories 中。
 这些 API 只修改未来分类规则或显式用户选择；不会因为保存规则自动重分类、移动或删除已有文件。
 
 category 的 `display_name` 和 `description` 是完整 locale map。规则列表 snapshot 返回全部 map、资料库的
-exact raw policy、canonical policy 和可选 `editing_locale`；UI 显示按 exact raw locale、canonical concrete
-locale、`en`、slug 回退。打开 create/update
+exact raw policy、canonical policy 和可选 `editing_locale`。已知显式/alias policy 按 exact raw locale、
+canonical concrete locale、`en`、slug 回退；`system` 按调用方传入的 current concrete locale、`en`、slug
+回退；unknown policy 的只读浏览按 exact raw locale、`en`、slug 回退。打开 create/update
 draft 时冻结 supported `editing_locale`，保存请求同时带回观察到的 raw policy，并且只 patch 该 locale
-的值。custom category 的 locale map 可以稀疏；缺失值按 exact raw、canonical concrete、`en`、slug
-回退，不自动生成翻译。
+的值。custom category 的 locale map 可以稀疏，不自动生成翻译。
 Core 在写入前重验 policy；变化时返回 `Conflict`，不能覆盖其他语言条目。
+编辑 surface 必须区分“显式 locale 值”和“展示 fallback”：缺失值返回为空，fallback 另行作为只读预览，
+不得把 fallback 注入可编辑字段或随未相关的保存写回 locale map。
 
 unknown repository policy 下仍可浏览 fallback 结果，但 create、update、delete、rule toggle 和任何其他
 classifier mutation 或生成式分类建议都保持 fail closed。只有 Repository 设置页能把 policy 明确保存为

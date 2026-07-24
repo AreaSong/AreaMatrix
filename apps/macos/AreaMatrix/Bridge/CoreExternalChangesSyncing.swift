@@ -121,7 +121,7 @@ private func syncCoreExternalChanges(
     try syncExternalChanges(
         repoPath: repoPath,
         events: events,
-        contentLocale: contentLocale
+        contentLocale: ContentLocale(snapshotValue: contentLocale)
     )
 }
 

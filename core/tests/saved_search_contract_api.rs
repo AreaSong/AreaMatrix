@@ -102,7 +102,9 @@ fn saved_search_contract_exposes_signatures_inputs_outputs_and_errors() {
 
 #[test]
 fn saved_search_contract_validates_without_fake_success() {
-    let valid = create_saved_search("/tmp/repo".to_owned(), create_request());
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+    let valid = create_saved_search(uninitialized_repo_path, create_request());
     assert!(matches!(valid, Err(CoreError::Db { .. })));
 
     let mut empty_name = create_request();

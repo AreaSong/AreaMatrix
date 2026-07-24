@@ -419,16 +419,18 @@ fn replace_confirm_failure_edge_error_mapping_is_actionable_for_replace_failures
             path: Some("docs/report.pdf".to_owned()),
             reason: None,
             message: Some("replace failed".to_owned()),
+            expected_revision: None,
+            current_revision: None,
         });
 
         assert_eq!(mapping.kind, kind);
         assert_eq!(mapping.recoverability, recoverability);
         assert!(
-            !mapping.user_message.trim().is_empty(),
+            !mapping.code.trim().is_empty(),
             "replace failures must not map to silent or empty UI messages"
         );
         assert!(
-            !mapping.suggested_action.trim().is_empty(),
+            !mapping.recovery_action_ids.is_empty(),
             "replace failures must expose an actionable recovery hint"
         );
     }

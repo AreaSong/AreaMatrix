@@ -46,12 +46,11 @@ namespace area_matrix {
     [Throws=CoreError]
     void init_repo(string repo_path, RepoInitOptions options);
 
-    // repository settings reads a revisioned repository configuration snapshot.
+    // repository settings reads a revisioned snapshot.
     [Throws=CoreError]
     RepoConfigSnapshot load_repo_config(string repo_path);
 
-    // Repository settings submits only dirty fields and the revision observed by
-    // the editing window. A stale revision returns Conflict.
+    // repository settings submits dirty fields with compare-and-swap revision.
     [Throws=CoreError]
     RepoConfigSnapshot update_repo_config(string repo_path, RepoConfigPatch patch);
 
@@ -202,6 +201,51 @@ namespace area_matrix {
     [Throws=CoreError]
     ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
 
+    [Throws=CoreError]
+    OverviewRegenerationPlan prepare_overview_regeneration(
+        string repo_path, ContentLocale content_locale
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession start_overview_regeneration(
+        string repo_path, OverviewRegenerationStartRequest request
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession commit_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession get_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession? recover_overview_regeneration_on_startup(
+        string repo_path
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession resume_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession cancel_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession rollback_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewLanguageStatus get_overview_language_status(
+        string repo_path, ContentLocale content_locale
+    );
+
     // desktop import flow reuses predict_category for read-only
     // Windows/Linux import preview state after the platform picker, drop
     // adapter, or optional shell entry has produced safe display names. Core
@@ -242,7 +286,7 @@ namespace area_matrix {
 
     [Throws=CoreError]
     FileEntry rename_file(
-        string repo_path, i64 file_id, string new_name, string content_locale
+        string repo_path, i64 file_id, string new_name, ContentLocale content_locale
     );
 
     [Throws=CoreError]
@@ -320,7 +364,22 @@ namespace area_matrix {
 
     [Throws=CoreError]
     ClassifierRuleEditorSnapshot list_classifier_rules(
-        string repo_path, string? editing_locale
+        string repo_path, ContentLocale? editing_locale
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot create_default_classifier(
+        string repo_path, boolean confirmed, ContentLocale? editing_locale
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot restore_default_classifier(
+        string repo_path, boolean confirmed, ContentLocale? editing_locale
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot restore_last_valid_classifier(
+        string repo_path, boolean confirmed, ContentLocale? editing_locale
     );
 
     [Throws=CoreError]
@@ -503,7 +562,15 @@ namespace area_matrix {
 
     [Throws=CoreError]
     SyncResult sync_external_changes(
-        string repo_path, sequence<ExternalEvent> events, string content_locale
+        string repo_path, sequence<ExternalEvent> events, ContentLocale content_locale
+    );
+
+    [Throws=CoreError]
+    ExternalSyncLocaleRecoveryPlan? prepare_external_sync_locale_recovery(string repo_path);
+
+    [Throws=CoreError]
+    ExternalSyncLocaleRecoveryReport resolve_external_sync_locale_recovery(
+        string repo_path, string recovery_token, ContentLocale content_locale
     );
 
     [Throws=CoreError]
@@ -761,8 +828,7 @@ dictionary AiCategorySuggestionRequest {
     i64 file_id;
     AiCategorySuggestionContextPolicy context_policy;
     string? privacy_policy_ref;
-    // Concrete zh-Hans/en snapshot captured when this generation attempt starts.
-    string content_locale;
+    ContentLocale content_locale;
 };
 
 dictionary AiCategorySuggestion {
@@ -781,15 +847,20 @@ dictionary AiCategorySuggestion {
 };
 
 dictionary AiSummaryGenerationRequest {
+    string operation_id;
+    string? retry_of_operation_id;
     i64 file_id;
     AiSummaryProviderScope provider_scope;
     AiSummaryContextPolicy context_policy;
     string? privacy_policy_ref;
     boolean regenerate_existing;
-    string content_locale;
+    ContentLocale content_locale;
 };
 
 dictionary AiSummaryDraft {
+    string operation_id;
+    ContentLocale content_locale;
+    i64 format_contract_version;
     i64 file_id;
     string? draft_id;
     AiSummaryDraftStatus status;
@@ -807,6 +878,8 @@ dictionary AiSummaryDraft {
 
 dictionary AiSummarySaveRequest {
     i64 file_id;
+    i64 expected_content_revision;
+    boolean confirm_replace_user_owned;
     string summary_text;
     string? draft_id;
     AiSummaryRoute? route;
@@ -815,11 +888,16 @@ dictionary AiSummarySaveRequest {
     sequence<AiSummaryInputField> used_context;
     string? privacy_rule_id;
     i64? call_log_id;
-    boolean edited_by_user;
+    AiContentOwnership ownership;
+    string operation_id;
+    ContentLocale content_locale;
+    i64 format_contract_version;
 };
 
 dictionary AiSummarySaveReport {
     i64 file_id;
+    i64 content_revision;
+    AiContentOwnership ownership;
     string saved_summary;
     i64 saved_at;
     AiSummaryRoute? route;
@@ -828,18 +906,22 @@ dictionary AiSummarySaveReport {
     sequence<AiSummaryInputField> used_context;
     string? privacy_rule_id;
     i64? call_log_id;
-    boolean edited_by_user;
+    string operation_id;
+    ContentLocale content_locale;
+    i64 format_contract_version;
     i64 character_count;
 };
 
 dictionary AiSummaryClearRequest {
     i64 file_id;
+    i64 expected_content_revision;
     boolean confirmed;
 };
 
 dictionary AiSummaryClearReport {
     i64 file_id;
     boolean cleared;
+    i64 content_revision;
     i64 cleared_at;
 };
 
@@ -847,8 +929,7 @@ dictionary AiTagSuggestionRequest {
     i64 file_id;
     sequence<string> candidate_tags;
     string? privacy_policy_ref;
-    // Concrete zh-Hans/en snapshot captured when this generation attempt starts.
-    string content_locale;
+    ContentLocale content_locale;
 };
 
 dictionary AiTagSuggestion {
@@ -1164,7 +1245,8 @@ dictionary RepoInitOptions {
     RepoInitMode mode;
     boolean create_default_categories;
     OverviewOutput overview_output;
-    string content_locale;
+    RepositoryLocalePolicy locale_policy;
+    ContentLocale content_locale;
 };
 
 dictionary RepoPathValidation {
@@ -1196,7 +1278,7 @@ dictionary ImportOptions {
     // recoverability. Overwrite is the committed strategy token after that
     // confirmation, not the preview or platform Trash capability contract.
     DuplicateStrategy duplicate_strategy;
-    string content_locale;
+    ContentLocale content_locale;
 };
 
 dictionary ImportResult {
@@ -1679,6 +1761,10 @@ dictionary ClassifierRule {
     boolean preview_confirmed;
 };
 
+enum ClassifierConfigHealth { "Valid", "Missing", "Unreadable", "Invalid" };
+
+enum ClassifierRecoveryAction { "CreateDefault", "RestoreDefault", "RestoreLastValid" };
+
 dictionary ClassifierRuleRecord {
     string rule_id;
     string slug;
@@ -1701,13 +1787,15 @@ dictionary ClassifierRuleEditorSnapshot {
     string default_rule_id;
     string? updated_rule_id;
     string repository_locale_policy;
-    string? editing_locale;
+    ContentLocale? editing_locale;
+    ClassifierConfigHealth health;
+    sequence<ClassifierRecoveryAction> recovery_actions;
     string? warning;
 };
 
 dictionary ClassifierRuleCreateRequest {
     string repository_locale_policy;
-    string editing_locale;
+    ContentLocale editing_locale;
     string slug;
     string display_name;
     string description;
@@ -1719,8 +1807,9 @@ dictionary ClassifierRuleCreateRequest {
 
 dictionary ClassifierRuleUpdate {
     string repository_locale_policy;
-    string editing_locale;
+    ContentLocale editing_locale;
     string rule_id;
+    ClassifierRuleObservedState observed;
     string slug;
     string display_name;
     string description;
@@ -1729,6 +1818,17 @@ dictionary ClassifierRuleUpdate {
     i64 priority;
     string? naming_template;
     boolean preview_confirmed;
+};
+
+dictionary ClassifierRuleObservedState {
+    string rule_id;
+    string slug;
+    string display_name;
+    string description;
+    sequence<string> extensions;
+    sequence<string> keywords;
+    i64 priority;
+    string? naming_template;
 };
 
 dictionary ClassifierRuleDeleteRequest {
@@ -2240,13 +2340,66 @@ dictionary ScanSession {
     i64 updated_at;
     i64? finished_at;
     sequence<string> errors;
-    RecoverableGenerationContext? generation_context;
 };
 
-dictionary RecoverableGenerationContext {
+dictionary RecoverableOperationContext {
+    string operation_id;
+    string? retry_of_operation_id;
     string operation_code;
     string operation_payload_json;
-    string content_locale;
+    ContentLocale? content_locale;
+    i64 repository_revision;
+    i64 format_contract_version;
+    string? target_set_hash;
+    i64 run_sequence;
+};
+
+dictionary OverviewRegenerationPlan {
+    string operation_id;
+    string plan_token;
+    i64 repository_revision;
+    ContentLocale content_locale;
+    i64 format_contract_version;
+    string target_set_hash;
+    i64 target_count;
+    i64 create_count;
+    i64 replace_count;
+    i64 delete_count;
+    boolean includes_root_areamatrix_file;
+    sequence<string> warnings;
+};
+
+dictionary OverviewRegenerationStartRequest {
+    string operation_id;
+    string plan_token;
+    i64 expected_repository_revision;
+    boolean confirmed;
+};
+
+dictionary OverviewRegenerationSession {
+    RecoverableOperationContext context;
+    OverviewRegenerationStatus status;
+    i64 target_count;
+    i64 staged_count;
+    i64 applied_count;
+    i64 restored_count;
+    boolean cancellation_allowed;
+    string? error_code;
+    i64 created_at;
+    i64 updated_at;
+    i64? finished_at;
+};
+
+dictionary OverviewLanguageStatus {
+    OverviewLanguageState state;
+    ContentLocale content_locale;
+    i64 target_count;
+    i64 known_target_count;
+    i64 missing_target_count;
+    i64 obsolete_target_count;
+    sequence<ContentLocale> known_locales;
+    sequence<i64> known_format_versions;
+    sequence<OverviewRegenerationReason> reasons;
 };
 
 dictionary ExternalEvent {
@@ -2327,15 +2480,24 @@ dictionary ErrorMappingInput {
     string? path;
     string? reason;
     string? message;
+    i64? expected_revision;
+    i64? current_revision;
+};
+
+dictionary ErrorArgument {
+    string name;
+    string value;
 };
 
 dictionary ErrorMapping {
     ErrorKind kind;
-    string user_message;
+    string code;
+    string? field;
+    sequence<ErrorArgument> arguments;
+    sequence<string> recovery_action_ids;
     ErrorSeverity severity;
-    string suggested_action;
     ErrorRecoverability recoverability;
-    string raw_context;
+    string? technical_details;
 };
 
 enum StorageMode { "Moved", "Copied", "Indexed" };
@@ -2351,6 +2513,9 @@ enum RepoPathIssue {
 };
 enum PlatformPathKind { "Local", "ICloudDrive", "OneDrive", "NetworkShare", "Unknown" };
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
+enum ContentLocale { "ZhHans", "En" };
+enum RepositoryLocalePolicy { "FollowInterface", "ZhHans", "En" };
+enum RepositoryLocalePolicyState { "Unknown", "FollowInterface", "ZhHans", "En", "Unsupported" };
 enum RepairMetadataLocaleState {
     "Healthy", "MetadataAbsent", "DatabaseMissing", "DatabaseCorrupt",
     "LocaleMissing", "LocaleUnsupported"
@@ -2396,6 +2561,7 @@ enum AiSummaryInputField {
     "ExistingAiSummary", "NoteSummary", "TagCategoryContext"
 };
 enum AiSummaryRoute { "Local", "Remote" };
+enum AiContentOwnership { "Generated", "UserOwned" };
 enum AiSummaryDraftStatus { "Draft", "Skipped", "Unavailable" };
 enum AiSummarySkipReason {
     "AiDisabled", "FeatureDisabled", "ProviderUnavailable",
@@ -2496,6 +2662,16 @@ enum LocalModelRecommendedAction {
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
+enum OverviewRegenerationStatus {
+    "Running", "Staging", "ReadyToCommit", "Committing", "Completed",
+    "RollbackRequired", "RolledBack", "Failed", "Canceled"
+};
+enum OverviewLanguageState {
+    "NotGenerated", "Synchronized", "NeedsRegeneration", "Mixed", "Unknown"
+};
+enum OverviewRegenerationReason {
+    "LocaleMismatch", "FormatMismatch", "MissingTargets", "ObsoleteTargets"
+};
 enum ManualRescanPreviewItemKind {
     "Added", "Updated", "Missing", "RenamedCandidate",
     "Conflict", "Unreadable", "Unknown", "Skipped"
@@ -2597,7 +2773,7 @@ enum RuleImpactConflictKind { "NameConflict", "MissingFile", "UnsupportedStorage
 enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum RedoActionStatus { "Available", "Cleared", "Blocked", "Expired", "Executed" };
 enum ErrorKind {
-    "Io", "Db", "Config", "Validation", "Classify", "Conflict", "DuplicateFile",
+    "Io", "Db", "DbLocked", "DbCorrupted", "Config", "Validation", "Classify", "Conflict", "RevisionConflict", "DuplicateFile",
     "FileNotFound", "ExpiredAction", "RepoNotInitialized", "InvalidPath",
     "ICloudPlaceholder", "StagingRecoveryRequired", "PermissionDenied", "Internal"
 };
@@ -2612,10 +2788,13 @@ enum ErrorRecoverability {
 interface CoreError {
     Io(string message);
     Db(string message);
+    DbLocked(string message);
+    DbCorrupted(string message);
     Config(string reason);
     Validation(string reason);
     Classify(string reason);
     Conflict(string path);
+    RevisionConflict(string resource, i64 expected_revision, i64 current_revision);
     DuplicateFile(string existing_path);
     FileNotFound(string path);
     ExpiredAction(string action_id);
@@ -2631,15 +2810,17 @@ interface CoreError {
 `RepoConfigSnapshot.locale_policy` 是资料库内容语言 policy，不控制 macOS 应用界面。规范持久化值为
 `system`、`zh-Hans`、`en`；`system` 表示在每个新 operation 开始时跟随当前已解析的界面语言。平台层
 兼容读取 `zh-CN` / `zh-SG`、`en-*` 等已知别名，但普通读取不得隐式写回。未知非空值必须保持 exact raw
-value（精确原值）可见；树和分类显示按 exact raw locale -> canonical concrete locale -> `en` -> slug
-回退，任何普通 mutation、新生成或内容写入都返回 `CoreError.Config`，直到用户明确提交支持的 policy。
+value（精确原值）可见；已知显式/alias policy 的树和分类显示按 exact raw locale -> canonical concrete locale
+-> `en` -> slug 回退，`system` 从平台传入的 current concrete locale 开始，unknown policy 只读浏览按 exact raw
+locale -> `en` -> slug 回退。任何普通 mutation、新生成或内容写入都返回 `CoreError.Config`，直到用户明确提交支持的 policy。
 locale canonicalization 是单独的显式 patch，不能夹带其他字段。custom classifier locale map 可以稀疏；
 Core 不自动翻译缺失项，也不把跨语言近义 tag/category 做语义合并。
 
 `RepoConfigSnapshot.revision` 是资料库配置的单调版本。Repository 设置只提交
 `RepoConfigPatch.expected_revision` 加 dirty fields；Core 使用 SQLite immediate transaction 做 CAS。版本不
-匹配时返回 `Conflict`，不写入任何字段；成功 patch 只递增一次 revision。多个窗口的 draft 不共享，旧窗口
-必须重新载入 snapshot 后由用户决定是否合并。
+匹配时返回稳定 `repo_config_revision_conflict` code 和 expected/current revision，不写入任何字段；成功 patch
+只递增一次 revision。最新 snapshot 通过显式 `load_repo_config` 获取，不嵌入 exception。多个窗口的 draft
+不共享，旧窗口保留 dirty fields，并由用户选择 Reload latest 或 review 后基于新 revision 显式保存。
 
 `AppLanguage.system` 的平台解析只检查 preferred languages 第一项：Simplified Chinese aliases 解析为
 `zh-Hans`，`en-*` 解析为 `en`，其他第一项直接回退 `en`，不得扫描后续项。Core 不接收 macOS region。
@@ -2658,12 +2839,16 @@ Core 不保存或读取进程级界面语言，也不在操作执行过程中重
 冻结值；更新任一语言设置本身不重写已有概览或 AI 摘要，之后正常发生且本来需要更新派生内容的
 operation 可以使用新快照。
 
-任何可在进程重启后继续生成内容的 Core 或平台 session 都必须持久化稳定 `operation_code`、结构化
-payload 和 concrete `content_locale`。不得持久化 `AppDisplayText`、`LocalizedMessage`、catalog key 或
-翻译结果。`RecoverableGenerationContext.operation_payload_json` 是由对应 operation schema 解析的规范 JSON，
-不是用户显示文案；unknown field、unknown code、缺失/非法 locale 均 fail closed。legacy session 缺少该
-context 时不得从当前设置补猜，只能要求用户开始新的 attempt。`ScanSession.generation_context` 仅在 session
-可能继续生成 overview 时必填；纯只读或不生成内容的历史 session 可以为 `nil`。
+任何可在进程重启后继续的 Core 或平台 session 都必须在首次副作用/远程调用前持久化
+`RecoverableOperationContext`。每次用户触发的 attempt 只有一个 `operation_id`；终态 Retry 创建新 ID 并以
+`retry_of_operation_id` 关联，resume/replay/rollback 复用旧 ID，内部重入只递增 `run_sequence`，远程调用
+另用 `call_id`。不暴露语义重叠的 `attempt_id`。
+
+context 保存稳定 operation code、规范 payload、concrete locale、Repository revision、format version 和
+target-set hash。payload 只包含恢复必需的 options、稳定标识或 hash，不保存 API key、完整 prompt，或仅为
+恢复而复制可安全重建的用户正文。不得持久化 `AppDisplayText`、`LocalizedMessage`、catalog key 或翻译结果。
+unknown field/code、非法 locale 或缺失必需字段均 fail closed。legacy session 不从当前设置补猜；需要该字段
+才能继续时要求新 operation。`ScanSession.operation_context` 对不生成内容的历史 session 可以为 `nil`。
 
 详细错误体系：[error-codes.md](error-codes.md)。
 
@@ -2755,7 +2940,16 @@ context 时不得从当前设置补猜，只能要求用户开始新的 attempt�
 | `repair_metadata(repo, options)` | repo | √ | InvalidPath / RepoNotInitialized / Conflict / Db / PermissionDenied / Io / Internal |
 | `get_latest_scan_session(repo)` | repo | √ | Db |
 | `resume_scan_session(repo, id)` | repo | √ | Io / Db |
-| `predict_category(repo, name)` | classify | √ | Config / Classify |
+| `get_overview_language_status(repo, locale)` | overview | √ | Config / Conflict / PermissionDenied / Io / Db |
+| `prepare_overview_regeneration(repo, locale)` | overview | √ | Config / Conflict / PermissionDenied / Io / Db |
+| `start_overview_regeneration(repo, request)` | overview | √ | Config / Conflict / PermissionDenied / Io / Db / Internal |
+| `commit_overview_regeneration(repo, operation_id)` | overview | √ | Config / Conflict / PermissionDenied / Io / Db / Internal |
+| `get_overview_regeneration(repo, operation_id)` | overview | √ | Config / FileNotFound / Db |
+| `recover_overview_regeneration_on_startup(repo)` | overview recovery | √ | Config / Conflict / PermissionDenied / Io / Db / Internal |
+| `resume_overview_regeneration(repo, operation_id)` | overview | √ | Config / Conflict / PermissionDenied / Io / Db / Internal |
+| `cancel_overview_regeneration(repo, operation_id)` | overview | √ | Config / Conflict / Io / Db |
+| `rollback_overview_regeneration(repo, operation_id)` | overview | √ | Config / Conflict / PermissionDenied / Io / Db / Internal |
+| `predict_category(repo, name)` | classify | √ | RepoNotInitialized / Db / DbLocked / DbCorrupted / Config / Classify |
 | `import_file(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / Conflict / InvalidPath / ICloudPlaceholder / PermissionDenied |
 | `import_file_with_result(repo, src, options)` | storage | √ | Io / Db / DuplicateFile / Conflict / InvalidPath / ICloudPlaceholder / PermissionDenied |
 | `delete_file(repo, file_id)` | storage | √ | Io / Db / FileNotFound / PermissionDenied / Internal |
@@ -2788,6 +2982,9 @@ context 时不得从当前设置补猜，只能要求用户开始新的 attempt�
 | `save_classifier_rule(repo, rule)` | classify | √ | Config / PermissionDenied / Io |
 | `preview_classifier_rule_impact(repo, request)` | classify | √ | Config / Db |
 | `list_classifier_rules(repo, editing_locale)` | classify | √ | Config / PermissionDenied / Io |
+| `create_default_classifier(repo, confirmed, editing_locale)` | classify | √ | Config / PermissionDenied / Io |
+| `restore_default_classifier(repo, confirmed, editing_locale)` | classify | √ | Config / PermissionDenied / Io |
+| `restore_last_valid_classifier(repo, confirmed, editing_locale)` | classify | √ | Config / PermissionDenied / Io |
 | `create_classifier_rule(repo, request)` | classify | √ | Config / Conflict / PermissionDenied / Io |
 | `update_classifier_rule(repo, request)` | classify | √ | Config / Conflict / PermissionDenied / Io |
 | `delete_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |
@@ -2814,6 +3011,8 @@ context 时不得从当前设置补猜，只能要求用户开始新的 attempt�
 | `read_note(repo, file_id)` | note | √ | InvalidPath / FileNotFound / PermissionDenied / Io / Db |
 | `write_note(repo, file_id, content)` | note | √ | InvalidPath / FileNotFound / PermissionDenied / Io / Db |
 | `sync_external_changes(repo, events, content_locale)` | sync | √ | InvalidPath / RepoNotInitialized / FileNotFound / ICloudPlaceholder / Conflict / PermissionDenied / Io / Db / Internal |
+| `prepare_external_sync_locale_recovery(repo)` | sync recovery | √ | InvalidPath / RepoNotInitialized / Conflict / PermissionDenied / Io / Db / Internal |
+| `resolve_external_sync_locale_recovery(repo, token, content_locale)` | sync recovery | √ | InvalidPath / RepoNotInitialized / Conflict / PermissionDenied / Io / Db / Internal |
 | `get_fs_event_cursor(repo)` | sync | √ | InvalidPath / RepoNotInitialized / ICloudPlaceholder / PermissionDenied / Io / Db |
 | `set_fs_event_cursor(repo, id)` | sync | √ | InvalidPath / RepoNotInitialized / ICloudPlaceholder / PermissionDenied / Io / Db |
 | `record_watcher_health(repo, signal)` | sync/watcher | √ | Db / Io |
@@ -2830,7 +3029,7 @@ macOS 应用可以在平台层组合稳定 API：
 - 文件详情当前先用 `get_file` + `list_changes` + `read_note` 组合；当前合同不提供详情聚合 DTO。
 - 导入进度 / 队列语义由 Swift 侧编排多次导入调用，覆盖 copied-file import, moved-file import, indexed-file import；Core 不提供流式导入队列合同。
 - `validate_initialized_repo_path` 负责 Core 的资料库基础校验。macOS 平台层如读取现有 metadata，只能以只读方式打开已存在的 `.areamatrix/index.db`；缺失、锁定、损坏或不兼容数据库必须返回错误，不得创建、迁移或修改数据库。
-- 错误映射元数据由 `map_core_error` 提供稳定结构；每个错误返回 severity、suggested_action、recoverability，避免 UI 解析字符串。Swift 错误包装层（`AppSemanticError` 与 `AppErrorMappingProviding`）只负责本地化与展示编排。
+- 错误映射元数据由 `map_core_error` 提供稳定结构；每个错误返回 code、field、arguments、recovery action IDs、severity、recoverability 和可选 technical details，避免 UI 解析字符串。Swift 错误包装层（`AppSemanticError` 与 `AppErrorMappingProviding`）只负责本地化与展示编排。
 
 Search、标签、批量操作、Undo/Redo、命令索引、分类规则、AI、隐私、语义搜索、冲突处理和平台能力矩阵均已进入 UDL。Search 包括 search query `search_files`、search facets `list_filter_facets` 和 saved search CRUD；调用方必须按各章节的副作用与错误合同使用。
 
@@ -3786,6 +3985,8 @@ AI call log 的 AI 调用日志清理入口，服务 AI call log surface 的 `Cl
 let draft = try AreaMatrix.generateAiSummary(
     repoPath: repoPath,
     request: AiSummaryGenerationRequest(
+        operationId: UUID().uuidString.lowercased(),
+        retryOfOperationId: nil,
         fileId: file.id,
         providerScope: .localPreferred,
         contextPolicy: .metadataAndExtractedText,
@@ -3801,6 +4002,8 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 `AiSummaryGenerationRequest`：
 
 - `file_id`：一个 active file row。实现必须拒绝缺失、删除态或不可访问的 file id。
+- `operation_id`：本次用户触发 attempt 的唯一 UUID；必须在 privacy/provider await 前持久化冻结 context。
+- `retry_of_operation_id`：仅在终态失败后用户显式 Retry 时指向前一次；resume/fallback 必须继续使用旧 ID。
 - `provider_scope`：`LocalOnly`、`LocalPreferred` 或 `RemoteAllowed`，只表达本次生成允许的
   provider 路线；远程仍必须经过 AI settings、remote provider configuration 和 AI privacy rules gate。
 - `context_policy`：`MetadataOnly`、`MetadataAndExtractedText` 或
@@ -3812,6 +4015,7 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 
 返回 `AiSummaryDraft`：
 
+- `operation_id`：逐字回传本次 attempt identity，后续 Save 必须使用同一个值。
 - `status`：`Draft`、`Skipped` 或 `Unavailable`。
 - `summary_text`：生成的摘要草稿。只有 `Draft` 状态可包含文本，用户点击 Save 前不得持久化。
 - `draft_id`：不透明草稿 id，供 save 时关联同一生成结果；不得包含 prompt、文件内容或 provider
@@ -3853,6 +4057,8 @@ AI summary 的 AI 摘要草稿生成入口，服务 `AI summary editor surface a
 
 页面消费状态：
 
+- `operation_id`、`content_locale` 与 `format_contract_version` 是生成开始时冻结的完整 provenance；保存时必须
+  原样带回，Swift 不复制 Core 的 format 常量，也不从当前设置重新解析 locale。
 - AI summary editor surface 可以从合同得到 Draft、Generated locally/remotely、model、generated time、used fields、
   skipped by privacy rule、call log id、privacy rule id、character count 和“必须 Save 才能持久化”的状态。
 - AI fallback surface 可以从 `status`、`skipped_reason`、`route` 和 `call_log_id` 渲染摘要生成的 AI off、
@@ -3867,6 +4073,8 @@ let report = try AreaMatrix.saveAiSummary(
     repoPath: repoPath,
     request: AiSummarySaveRequest(
         fileId: file.id,
+        expectedContentRevision: savedState.contentRevision,
+        confirmReplaceUserOwned: replacementConfirmationAccepted,
         summaryText: draftText,
         draftId: draft.draftId,
         route: draft.route,
@@ -3875,7 +4083,10 @@ let report = try AreaMatrix.saveAiSummary(
         usedContext: draft.usedContext,
         privacyRuleId: draft.privacyRuleId,
         callLogId: draft.callLogId,
-        editedByUser: true
+        ownership: didEditDraft ? .userOwned : .generated,
+        operationId: draft.operationId,
+        contentLocale: frozenContentLocale,
+        formatContractVersion: currentAiSummaryFormatVersion
     )
 )
 ```
@@ -3883,19 +4094,26 @@ let report = try AreaMatrix.saveAiSummary(
 AI summary 的 AI 摘要保存入口，服务 AI summary editor surface 的 `Save`、`Retry save` 和保存后来源信息刷新。输入：
 
 - `file_id`：一个 active file row。
+- `expected_content_revision`：调用方观察到的 content revision；没有历史摘要时为 0。Core 在 immediate
+  transaction 中比较，不匹配返回结构化 conflict 并零写入。
+- `confirm_replace_user_owned`：当前已保存 ownership 为 `user_owned` 时必须为 true；该位不能绕过 revision CAS。
 - `summary_text`：要保存的摘要文本，可来自 AI 草稿或用户编辑后的草稿；不能为空，也不得超出实现
   定义的长度上限。
 - `draft_id`：生成入口返回的不透明草稿 id；没有 AI 生成来源时可为空。
 - `route` / `model_name` / `generated_at` / `used_context`：保存后的来源信息，只存脱敏 provenance。
 - `privacy_rule_id` / `call_log_id`：用于跳转隐私规则和 AI 调用日志。
-- `edited_by_user`：用户是否编辑过 AI 草稿，用于 `Edited by you` 状态。
+- `ownership`：未编辑 AI 草稿为 `Generated`；用户编辑后的摘要为 `UserOwned`。不能把已有 user-owned
+  内容降级为 generated。
+- `operation_id` / `content_locale` / `format_contract_version`：不可伪造为显示文案的稳定 provenance；
+  operation 必须存在并与生成 draft/context 相符。
 
 返回 `AiSummarySaveReport`：
 
 - `saved_summary`：持久化后的摘要文本，供编辑区刷新和失败恢复基线使用。
+- `content_revision` / `ownership`：保存后的新 revision 和所有权状态。
 - `saved_at`：保存完成时间。
 - `route`、`model_name`、`generated_at`、`used_context`、`privacy_rule_id`、`call_log_id`、
-  `edited_by_user`：保存后的来源和追溯字段。
+  `operation_id`、`content_locale`、`format_contract_version`：保存后的来源和追溯字段。
 - `character_count`：保存摘要长度，供 AI summary editor surface 计数器、状态文案和 VoiceOver 使用。
 
 副作用边界：
@@ -3905,11 +4123,16 @@ AI summary 的 AI 摘要保存入口，服务 AI summary editor surface 的 `Sav
 - 不删除 extracted text、tags、AI call log、AI settings、provider metadata、Keychain/API key、
   privacy rules、classifier rules、change log、undo/redo 或 generated overview。
 - 保存失败必须保留草稿内容和上一次已保存摘要；不得写入半成品导致 UI 无法恢复。
+- 任何保存都禁止静默覆盖；generated 结果也必须由用户显式 Save。user-owned replacement 还必须经过
+  old/new preview confirmation。stale revision、缺少确认或 provenance 不匹配全部零写入失败。
 - 本 API 不生成摘要、不发起 AI 调用、不启用远程 provider、不编辑隐私规则、不实现多文档摘要。
 
 错误：
 
-- `Config`：`repoPath`、`file_id`、`summary_text`、`draft_id` 或 provenance 字段无效。
+- `Config`：`repoPath`、`file_id`、`summary_text`、`draft_id`、ownership 或 provenance 字段无效。
+- `RevisionConflict(resource = ai_summary_content_revision)`：content revision stale，并携带调用方观察到的
+  `expected_revision` 与事务内最新 `current_revision`；Swift 必须显式加载最新摘要并保留本地草稿。
+- `Conflict`：user-owned replacement 未确认或 operation provenance 不匹配。
 - `FileNotFound`：目标 file id 不存在、已删除或实现无法找到对应 active file metadata。
 - `PermissionDenied`：summary metadata 不可写。
 - `Db`：summary metadata 或相关 repository metadata 持久化失败。
@@ -3925,18 +4148,24 @@ AI summary 的 AI 摘要保存入口，服务 AI summary editor surface 的 `Sav
 ```swift
 let report = try AreaMatrix.clearAiSummary(
     repoPath: repoPath,
-    request: AiSummaryClearRequest(fileId: file.id, confirmed: true)
+    request: AiSummaryClearRequest(
+        fileId: file.id,
+        expectedContentRevision: savedState.contentRevision,
+        confirmed: true
+    )
 )
 ```
 
 AI summary 的 AI 摘要清除入口，服务 AI summary editor surface 的 `Clear summary...` 确认 sheet。输入：
 
 - `file_id`：一个 active file row。
+- `expected_content_revision`：清除也必须 CAS，不能让旧窗口删除较新的用户编辑。
 - `confirmed`：调用方已经展示并确认 `Clear AI summary?`；为 false 必须返回结构化 `Config` 错误。
 
 返回：
 
 - `cleared`：是否确实清除了已保存摘要。
+- `content_revision`：清除后仍单调递增的 revision；revision tombstone 防止旧 expected=0 草稿重新覆盖。
 - `cleared_at`：清除完成时间。
 
 副作用边界：
@@ -3946,6 +4175,9 @@ AI summary 的 AI 摘要清除入口，服务 AI summary editor surface 的 `Cle
 - 不删除用户 Note、extracted text、tags、AI call log、AI settings、provider metadata、Keychain/API key、
   privacy rules、classifier rules、change log、undo/redo 或 generated overview。
 - 清除失败必须保留原已保存摘要和来源信息；不得静默吞错。
+- content revision stale 返回
+  `RevisionConflict(resource = ai_summary_content_revision, expected_revision, current_revision)`；Swift 重新加载
+  最新摘要后，用户必须再次检查并确认 Clear，不能使用旧 revision 静默重试。
 
 错误：
 
@@ -4591,6 +4823,10 @@ raw 值；非健康状态必须是用户明确选择的 canonical `system` / `zh
 preflight：健康状态要求 raw policy 和 token 仍一致；非健康状态要求仍处于对应可修复状态。任何竞态、
 缺失选择或不支持的 policy 都返回 `Conflict` / `Config` 并保持原状态。
 
+locale row 缺失或包含 unsupported exact raw value 时，repair 只能在 `BEGIN IMMEDIATE` 事务中更新该
+locale row 并递增 `repo_config_revision`；不得以 locale 恢复为由重建数据库或丢失 tags、notes、history、
+saved searches 等 DB-only metadata。只有 metadata / database 缺失或数据库损坏才创建 replacement DB。
+
 输入：
 
 - `repoPath`：资料库根目录；允许 metadata 或 DB 尚未初始化。
@@ -4625,6 +4861,76 @@ preflight：健康状态要求 raw policy 和 token 仍一致；非健康状态�
 
 继续 `Paused` / `Interrupted` / `Failed` 的扫描。Core 需要按 `last_path` 与幂等 upsert 规则续扫；若 session 已 `Completed`，返回空 report。
 
+### 全库 overview regeneration
+
+### `get_overview_language_status(repoPath, contentLocale) throws -> OverviewLanguageStatus`
+
+`get_overview_language_status(repoPath, contentLocale)` 只读计算五种状态：`NotGenerated`、`Synchronized`、
+`NeedsRegeneration`、`Mixed`、`Unknown`。`NeedsRegeneration` 通过 typed reasons 精确说明
+`LocaleMismatch`、`FormatMismatch`、`MissingTargets` 或 `ObsoleteTargets`；`Unknown` 表示现有输出缺少可信
+provenance 或当前 bytes 与记录 hash 不符。状态计算不得检查自然语言正文。Unknown 状态下普通增量 overview
+写入 fail closed；只有下面的显式全库流程可以在确认与恢复保护下替换异常 generated bytes。
+
+### `prepare_overview_regeneration(repoPath, contentLocale) throws -> OverviewRegenerationPreflight`
+
+`prepare_overview_regeneration(repoPath, contentLocale)` 是严格只读 preflight。它创建新的候选
+`operation_id`，冻结 Repository revision、完整目标集合、concrete locale、format contract version 和
+target-set hash，并返回签名 `plan_token`；它不创建 session、staging、journal 或输出文件。
+
+### `start_overview_regeneration(repoPath, request) throws -> OverviewRegenerationSession`
+
+`start_overview_regeneration(repoPath, request)` 要求逐字回传 operation ID、plan token、expected revision 和
+显式确认。Core 在首次 staging 写入前持久化 `RecoverableOperationContext` 与全部 journal items，生成完整
+staging 与 backup 后停在 `ReadyToCommit`。
+
+### `commit_overview_regeneration(repoPath, operationId) throws -> OverviewRegenerationSession`
+
+`commit_overview_regeneration` 再次比较 Repository revision，并在
+全量验证当前目标、staging 与 backup 后进入不可取消的短 commit；发生变化、任何目标不安全或 token 失效时
+零提交并保持全旧。
+
+### `get_overview_regeneration(repoPath, operationId) throws -> OverviewRegenerationSession`
+
+`get_overview_regeneration` 只读返回 durable 状态。Repository 启动或重新打开时调用
+并且不改变 session、journal、staging、backup 或 active output。
+
+### `recover_overview_regeneration_on_startup(repoPath) throws -> OverviewRegenerationSession?`
+
+`recover_overview_regeneration_on_startup` 在数据库内查找唯一非终态 overview operation，无未完成操作时
+返回空值，发现多个未完成操作时返回 `Db` 并保持普通 mutation 阻断。找到唯一操作后，Core 使用其 durable
+operation ID、locale、payload、revision、target hash 和 format version 自动执行既有恢复流程，调用方不提供
+operation ID，也不选择 roll-forward 或 rollback 方向。该入口可重复调用；settled 后再次调用返回空值。
+
+### `resume_overview_regeneration(repoPath, operationId) throws -> OverviewRegenerationSession`
+
+`resume_overview_regeneration` 是已知 operation ID 的显式恢复和诊断入口，复用原 operation ID、locale、
+payload 和 format version，不能从当前设置补猜。
+
+### `cancel_overview_regeneration(repoPath, operationId) throws -> OverviewRegenerationSession`
+
+`cancel_overview_regeneration` 只在 commit 前成立，并收敛为 Canceled/全旧；Committing 后返回 conflict。
+崩溃恢复先验证每个目标是否仍为 journal 中的 old/new hash：
+staged plan 可验证时 roll-forward，否则仅在全部 backup 和目标状态可验证时 rollback；两侧证据都不可验证时
+保持 `RollbackRequired` 并阻断普通写入。
+
+### `rollback_overview_regeneration(repoPath, operationId) throws -> OverviewRegenerationSession`
+
+`rollback_overview_regeneration` 只处理 Failed 或
+RollbackRequired，恢复旧字节和旧 provenance，绝不覆盖第三方 hash drift。
+
+目标白名单只有 `.areamatrix/generated/root.md`、`.areamatrix/generated/nodes/*.md` 和已启用且 marker 合法
+的根 `AREAMATRIX.md` managed block。API 永远不处理 AI summary、classifier、note、tag、`README.md`、
+managed block 外文本或其他用户文件。崩溃后 Repository 打开流程必须先收敛未完成 journal；收敛前所有
+普通 mutation fail closed。稳定结果只能是全旧或全新，不承诺多个文件的瞬时文件系统原子交换。
+
+错误：
+
+- `Config`：locale、operation ID、token、target path 或 format contract 非法。
+- `Conflict`：revision/token 已过期、已有 regeneration、commit 已不可取消或状态不允许该动作。
+- `PermissionDenied` / `Io`：AreaMatrix-owned staging、generated 输出或合法 managed block 无法安全读写。
+- `Db`：operation journal/provenance 无法事务持久化。
+- `Internal`：hash、journal、rollback 或 settled-state 不变量无法满足。
+
 ---
 
 ## classify API
@@ -4644,14 +4950,16 @@ importSheet.suggestedCategory = result.category
 importSheet.confidence = result.confidence
 ```
 
-无写入副作用：只读取 `.areamatrix/classifier.yaml`，不创建、不移动、
-不删除文件，也不写 DB。UI 在拖入时调用以填充 ImportSheet。
+无写入副作用：只读取 Repository 语言策略和 `.areamatrix/classifier.yaml`，不创建、不移动、
+不删除文件，也不写 DB 或 SQLite sidecar。缺失、不可读或无效 classifier 不使用内置规则静默回退；
+unknown Repository 策略阻断该生成式分类建议。UI 在拖入时调用以填充 ImportSheet。
 
 错误：
 
 - `Config`：`repoPath` / `filename` 为空，或 `classifier.yaml` 的 YAML 语法、
-  schema、default category、slug、extension、keyword 无效。
+  schema、default category、slug、extension、keyword 无效，或 Repository 语言策略尚未规范化。
 - `Classify`：classifier 规则源无法作为文件读取，分类引擎无法产生可用预览。
+- `RepoNotInitialized` / `Db` / `DbLocked` / `DbCorrupted`：无法以只读方式确认 Repository 语言策略。
 
 ---
 
@@ -6101,8 +6409,15 @@ YAML reload 后刷新、保存成功后刷新和 Revert。`editingLocale` 是 UI
 - `updated_rule_id`：最近一次 update/delete 后可重新选中的行；纯列表加载时为 `nil`。
 - `repository_locale_policy`：DB 中 exact raw policy，包括兼容 alias 或 unknown value；读取不规范化写回。
 - `editing_locale`：回显调用方冻结的 concrete locale；unknown policy 或只读模式为 `nil`。
+- `health`：`Valid`、`Missing`、`Unreadable` 或 `Invalid`。后三种状态返回 degraded read-only
+  snapshot，不把 embedded defaults 伪装成当前配置；`editing_locale` 必须为 `nil`。
+- `recovery_actions`：Core 根据当前文件证据返回的安全动作。`Missing` 只返回 `CreateDefault`；
+  readable `Invalid` 返回 `RestoreDefault`，并且仅在存在可验证的 last-valid backup 时追加
+  `RestoreLastValid`；`Unreadable` 不返回写动作，用户必须先恢复读取权限。
 - `warning`：读取成功但需要用户注意的 classifier 状态，例如外部 YAML reload 后仍需
-  Validate，或 repository policy unsupported。显示值按 exact raw locale、`en`、slug 回退。
+  Validate，或 repository policy unsupported。已知显式/alias policy 显示值按 exact raw locale、调用方 concrete
+  locale、`en`、slug 回退；follow-interface 从 concrete locale 开始；unknown policy 按 exact raw、`en`、slug
+  回退。
 
 副作用边界：
 
@@ -6115,10 +6430,10 @@ YAML reload 后刷新、保存成功后刷新和 Revert。`editingLocale` 是 UI
 
 错误：
 
-- `Config`：`repoPath` 为空、位于 `.areamatrix/` 内部，或 classifier schema、
-  default category、slug、extension、keyword、priority、naming template 无效。
-- `PermissionDenied`：classifier metadata 或 `.areamatrix/classifier.yaml` 读取被权限阻断。
-- `Io`：读取 classifier 配置失败。
+- `Config`：`repoPath` 为空、位于 `.areamatrix/` 内部或资料库未初始化。classifier 内容缺失、
+  不可读或无效通过 degraded snapshot 表达，不作为页面级 throw。
+- `PermissionDenied` / `Io`：仅用于无法安全检查资料库元数据边界、路径类型或 recovery evidence
+  的失败；普通 classifier 文件不可读通过 `Unreadable` health 表达。
 
 页面消费状态：
 
@@ -6127,6 +6442,57 @@ YAML reload 后刷新、保存成功后刷新和 Revert。`editingLocale` 是 UI
 - classifier rule editor surface 不能从本合同得到历史影响量、批量应用结果、Open YAML 的平台动作或 AI 规则建议；
   这些分别属于 classifier impact preview、独立 apply 行为、平台层和 AI 规则能力。本合同不新增 control map
   之外的页面能力。
+
+### classifier recovery
+
+```swift
+let created = try AreaMatrix.createDefaultClassifier(
+    repoPath: repoPath,
+    confirmed: true,
+    editingLocale: frozenEditingLocale
+)
+let restored = try AreaMatrix.restoreDefaultClassifier(
+    repoPath: repoPath,
+    confirmed: true,
+    editingLocale: frozenEditingLocale
+)
+let lastValid = try AreaMatrix.restoreLastValidClassifier(
+    repoPath: repoPath,
+    confirmed: true,
+    editingLocale: frozenEditingLocale
+)
+```
+
+### `create_default_classifier(repoPath, confirmed, editingLocale) throws -> ClassifierRuleEditorSnapshot`
+
+仅在 classifier 文件缺失且用户明确确认时创建默认配置。
+
+### `restore_default_classifier(repoPath, confirmed, editingLocale) throws -> ClassifierRuleEditorSnapshot`
+
+仅在当前 classifier 可读但无效且用户明确确认时，从默认配置执行受保护恢复。
+
+### `restore_last_valid_classifier(repoPath, confirmed, editingLocale) throws -> ClassifierRuleEditorSnapshot`
+
+仅在存在可验证的 last-valid backup 且用户明确确认时恢复该备份。
+
+三个入口只恢复 `.areamatrix/classifier.yaml`，并返回新的 `ClassifierRuleEditorSnapshot`：
+
+- `create_default_classifier` 仅在文件确实 `Missing` 且用户已确认时创建内置默认配置；如果文件在
+  preflight 后出现，必须 fail closed，不能覆盖。
+- `restore_default_classifier` 仅在当前文件可读但 `Invalid` 且用户已确认时执行。替换前必须把当前原始
+  bytes 写入 `.areamatrix/archives/classifier/` 的编号、非覆盖 backup。
+- `restore_last_valid_classifier` 仅在当前文件可读但 `Invalid`、用户已确认且存在可完整解析并通过校验的
+  last-valid backup 时执行。当前 invalid bytes 同样先备份；候选 backup 在 commit 前必须再次验证。
+- `Unreadable` 不允许任何恢复写入；Core 不通过覆盖文件来绕过权限、非 regular file 或 symlink 问题。
+- 正常 create/update/delete 在替换有效 classifier 前也保存编号、非覆盖 last-valid backup。backup 创建、
+  temp 写入、文件 fsync、atomic rename 与 parent-directory fsync 任一步失败时，旧活动文件保持不变；已安全
+  写成的 backup 可以保留，不自动删除。
+- 所有入口拒绝 symlink 和 non-regular classifier/backup 路径，不移动、删除、重命名或重新分类用户文件，
+  不写 DB、概述、AI 内容或 `README.md`。
+
+`confirmed = false`、health/action 不匹配、backup 不存在或 backup 无效返回 `Config`；权限失败返回
+`PermissionDenied`，安全写入或同步失败返回 `Io`。这些入口不接受 force overwrite，也不把 embedded
+defaults 当作浏览或分类时的静默 fallback。
 
 ### `create_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`
 
@@ -6221,6 +6587,11 @@ classifier 的分类 slug；扩展名必须是不带点的小写值；`priority`
 `-1000..=1000`；`naming_template` 只允许当前 `classifier.yaml` 支持的模板字段。
 `preview_confirmed` 表示删除/大范围变更前 UI 已经完成影响预览或等价摘要确认。
 
+`observed` 是打开该 draft 时冻结的目标规则基线，包含稳定 `rule_id`、slug、当前 `editing_locale` 对应的
+display name/description，以及 matcher、priority 和 naming template。Core 在读取最新 YAML 后只比较这些
+受影响字段；任一字段变化都返回 `Conflict(classifier_rule_observed_state)` 且零写入。其他 locale map 不参与
+比较，也不被本次保存覆盖。
+
 `repository_locale_policy` 和 `editing_locale` 构成 locale compare-and-swap（比较并交换）观察值。保存只
 patch `editing_locale` 对应的 `display_name` / `description` entry，保留其他 locale 原值；空值按字段规则
 删除该 entry，不自动翻译或语义合并。policy 变化返回 `Conflict`；unknown policy 返回 `Config`。
@@ -6244,7 +6615,10 @@ patch `editing_locale` 对应的 `display_name` / `description` entry，保留�
 - `Config`：`repoPath`、`rule_id`、slug、display name、description、extensions、
   keywords、priority、naming template、default category、重复 slug、重复 matcher、
   preview confirmation、unknown repository policy 或 classifier schema 无效。
-- `Conflict`：读取 snapshot 后 repository policy 已改变。
+- `Conflict(repository_locale_policy)`：读取 snapshot 后 repository policy 已改变。
+- `Conflict(classifier_rule_observed_state)`：目标规则的当前编辑语言或受影响规则字段已在其他窗口或外部编辑中
+  改变。Swift 必须显式加载最新 snapshot，保留完整本地 draft 和冻结的 `editing_locale`，由用户 Reload 或
+  Review；Review 只更新基线，仍需再次明确 Save。
 - `PermissionDenied`：classifier metadata 或 `.areamatrix/classifier.yaml` 写入被权限阻断。
 - `Io`：读取、备份、原子写入或恢复 classifier 配置失败。
 
@@ -7455,9 +7829,9 @@ let mapping = AreaMatrix.mapCoreError(
 ```
 
 error mapping 的错误映射入口。输入用稳定的 `ErrorKind` 加可选 `path`、`reason`、`message`
-描述 Core 错误 payload；输出固定返回 `kind`、`user_message`、`severity`、
-`suggested_action`、`recoverability` 和 `raw_context`，供 Swift 错误包装层
-（`AppSemanticError`）做本地化与展示编排。
+描述 Core 错误 payload；输出固定返回 `kind`、`code`、`field`、`arguments`、
+`recovery_action_ids`、`severity`、`recoverability` 和可选 `technical_details`。Swift 错误包装层
+（`AppSemanticError`）按当前界面语言解析 code/action IDs，不保存 Core 生成的展示句子。
 
 副作用边界：
 
@@ -7550,48 +7924,19 @@ public actor CoreBridge {
 
 Core 对 error mapping 暴露 `map_core_error(input: ErrorMappingInput) -> ErrorMapping`。
 输入用 `ErrorKind` 加原始 `path` / `reason` / `message` 表示同一个
-`CoreError` payload；输出固定包含 `kind`、`user_message`、`severity`、
-`suggested_action`、`recoverability` 和 `raw_context`。该函数无文件系统、
+`CoreError` payload；输出固定包含 `kind`、`code`、`field`、`arguments`、
+`recovery_action_ids`、`severity`、`recoverability` 和可选 `technical_details`。该函数无文件系统、
 数据库、日志或状态副作用，Swift 错误包装层只能基于这些结构化字段编排
-本地化和展示，不得用字符串 contains 做主分支判断。
+本地化和展示，不得用字符串 contains 做主分支判断，也不得持久化解析后的展示句子。
 
 ```swift
-extension CoreError {
-    var userMessage: String {
-        switch self {
-        case .Io(let msg):
-            return "文件操作失败：\(msg)"
-        case .Db:
-            return "数据库错误，请尝试重启应用"
-        case .Validation(let reason):
-            return "输入无效：\(reason)"
-        case .DuplicateFile(let path):
-            return "文件已存在：\(path)"
-        case .ExpiredAction(let actionId):
-            return "操作已过期：\(actionId)"
-        case .InvalidPath(let path):
-            return "无效路径：\(path)"
-        case .ICloudPlaceholder(let path):
-            return "iCloud 文件未下载：\(path)"
-        case .StagingRecoveryRequired(let path):
-            return "需要先恢复未完成的导入：\(path)"
-        case .PermissionDenied(let path):
-            return "权限不足：\(path)"
-        case .FileNotFound(let path):
-            return "文件不存在：\(path)"
-        case .RepoNotInitialized:
-            return "请先初始化资料库"
-        case .Conflict(let path):
-            return "路径冲突：\(path)"
-        case .Classify(let reason):
-            return "分类失败：\(reason)"
-        case .Config(let reason):
-            return "配置错误：\(reason)"
-        case .Internal(let msg):
-            return "内部错误：\(msg)"
-        }
-    }
-}
+let mapping = await errorMapper.mapCoreError(error)
+let presentation = localizer.errorPresentation(
+    code: mapping.code,
+    arguments: mapping.arguments,
+    recoveryActionIDs: mapping.recoveryActionIDs
+)
+show(presentation, severity: mapping.severity)
 ```
 
 详见 [error-codes.md](error-codes.md)。

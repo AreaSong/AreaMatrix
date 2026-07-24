@@ -72,27 +72,17 @@ fn operation_content_locale_is_explicit_and_does_not_read_mutable_global_state()
     );
 
     let system_chinese_repo = initialize_repo();
-    let chinese = regenerate_overview(
-        system_chinese_repo.path(),
-        "system",
-        ContentLocale::ZhHans,
-    );
+    let chinese = regenerate_overview(system_chinese_repo.path(), "system", ContentLocale::ZhHans);
     assert!(chinese.starts_with("# AreaMatrix 资料库"));
 
     let explicit_chinese_repo = initialize_repo();
-    let explicit_chinese = regenerate_overview(
-        explicit_chinese_repo.path(),
-        "zh-Hans",
-        ContentLocale::En,
-    );
+    let explicit_chinese =
+        regenerate_overview(explicit_chinese_repo.path(), "zh-Hans", ContentLocale::En);
     assert!(explicit_chinese.starts_with("# AreaMatrix Repository"));
 
     let explicit_english_repo = initialize_repo();
-    let explicit_english = regenerate_overview(
-        explicit_english_repo.path(),
-        "en",
-        ContentLocale::ZhHans,
-    );
+    let explicit_english =
+        regenerate_overview(explicit_english_repo.path(), "en", ContentLocale::ZhHans);
     assert!(explicit_english.starts_with("# AreaMatrix 资料库"));
 }
 

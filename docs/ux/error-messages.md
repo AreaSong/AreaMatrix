@@ -47,6 +47,10 @@
 3. **主操作只有一个**：避免“按钮太多不敢点”。
 4. **永远提供退路**：至少一个“更换路径/返回/取消”。
 5. **不展示敏感数据**：绝对路径脱敏为 `~`，hash 只显示前 8 位。
+6. **平台本地化**：Core 只提供稳定 code、field、arguments、recovery action IDs 和技术详情；Swift 在每次
+   渲染时按当前界面语言解析，不把翻译后的句子存进 model、session、日志或 recovery state。
+7. **未知错误可恢复展示**：未知 code 显示本地化通用标题与说明，原始 technical details 只放在展开区域，
+   不能把技术文本直接提升为标题或据此选择按钮。
 
 ---
 
@@ -62,6 +66,7 @@
 | Validation | low | 输入或编辑草稿无效 | inline/toast | Fix input | — |
 | Classify | low | 分类失败 | toast/banner | Use inbox | Report |
 | Conflict | medium | 目标路径冲突 | sheet | Auto-rename | Rename… |
+| RevisionConflict | medium | Repository/AI content revision 已过期 | sheet/banner | Review changes | Reload latest |
 | DuplicateFile | low | 内容重复 | sheet | Skip | Keep both |
 | FileNotFound | low | 外部删除 | inline error/toast | Retry / Locate… | Remove from index |
 | ExpiredAction | low | Undo/Redo token 已不可用 | toast | Refresh history | — |
@@ -202,6 +207,14 @@ UI 形态：sheet（用户需要选择“下载/换路径”）。
 
 若仍发生：
 - 用 sheet 展示“本次导入已跳过 N 个冲突项”，并提供“查看详情”。
+
+Repository config 的 `repo_config_revision_conflict` 不使用路径冲突文案。UI 保留本地 dirty fields，展示
+expected/current revision 的受控摘要，并提供 Reload latest 或 Review changes；只有用户 review 后显式再次
+Save 才能基于新 revision 写入。AI summary 的 content revision conflict 同样保留草稿，禁止自动 retry、
+字符串匹配或静默 merge。
+Repository 的 Review 视图按 dirty field 显示原保存值、最新持久化值和本地草稿；Review 只更新可见基线，
+不立即写入，也不提供 force overwrite。Classifier 使用同一原则，但冻结 editing locale，只比较该语言和
+受影响规则字段，另一语言 map 保持只读。
 
 ---
 

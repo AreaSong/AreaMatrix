@@ -195,7 +195,6 @@ private func makeRepositorySettingsModel(
     RepositorySettingsModel(
         repoPath: urls.repoURL.path,
         loader: bridge,
-        updater: bridge,
         repositoryOpener: bridge,
         fileLister: bridge,
         scanSessionReader: bridge,

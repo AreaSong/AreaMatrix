@@ -83,7 +83,7 @@ fn assert_core_api_fragments() {
         "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |",
         "### `list_tree_json(repoPath, locale) throws -> String`",
         "`repoPath`：已初始化的资料库根目录。",
-        "`locale`：已解析的资料库内容 locale",
+        "`locale`：资料库的 exact raw content policy/view locale",
         "输出为 Swift 可解码的 `TreeNode` JSON 字符串",
         "\"slug\": \"__root__\"",
         "`relative_path` 是稳定 path key",

@@ -79,12 +79,7 @@ pub(super) fn suggest_category_with_ai(
     };
     ensure_classification_call_log_gate(&repo)?;
     let route_for_error = route.clone();
-    let draft = match execute_suggestion(
-        route,
-        &repo,
-        &context,
-        request.content_locale.as_str(),
-    ) {
+    let draft = match execute_suggestion(route, &repo, &context, request.content_locale.as_str()) {
         Ok(draft) => draft,
         Err(error) => {
             return unavailable_after_runtime_error(&repo, &file, route_for_error, &context, error);

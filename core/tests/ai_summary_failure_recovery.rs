@@ -2,9 +2,10 @@
 mod common;
 
 use area_matrix_core::{
-    clear_ai_summary, generate_ai_summary, save_ai_summary, AiSummaryClearRequest,
-    AiSummaryContextPolicy, AiSummaryDraftStatus, AiSummaryGenerationRequest, AiSummaryInputField,
-    AiSummaryProviderScope, AiSummaryRoute, AiSummarySaveRequest, CoreError,
+    clear_ai_summary, generate_ai_summary, save_ai_summary, AiContentOwnership,
+    AiSummaryClearRequest, AiSummaryContextPolicy, AiSummaryDraftStatus,
+    AiSummaryGenerationRequest, AiSummaryInputField, AiSummaryProviderScope, AiSummaryRoute,
+    AiSummarySaveRequest, CoreError,
 };
 use common::{
     ai_call_log_count, ai_summary_row, change_log_kinds, enable_local_summaries,
@@ -15,6 +16,8 @@ use rusqlite::{params, Connection};
 
 fn generation_request(file_id: i64) -> AiSummaryGenerationRequest {
     AiSummaryGenerationRequest {
+        operation_id: uuid::Uuid::new_v4().to_string(),
+        retry_of_operation_id: None,
         file_id,
         provider_scope: AiSummaryProviderScope::LocalPreferred,
         context_policy: AiSummaryContextPolicy::MetadataAndExtractedText,
@@ -24,16 +27,24 @@ fn generation_request(file_id: i64) -> AiSummaryGenerationRequest {
     }
 }
 
-fn clear_request(file_id: i64) -> AiSummaryClearRequest {
+fn clear_request(file_id: i64, expected_content_revision: i64) -> AiSummaryClearRequest {
     AiSummaryClearRequest {
         file_id,
+        expected_content_revision,
         confirmed: true,
     }
 }
 
-fn save_request(file_id: i64, summary_text: String) -> AiSummarySaveRequest {
+fn save_request(
+    file_id: i64,
+    summary_text: String,
+    operation_id: String,
+    expected_content_revision: i64,
+) -> AiSummarySaveRequest {
     AiSummarySaveRequest {
         file_id,
+        expected_content_revision,
+        confirm_replace_user_owned: false,
         summary_text,
         draft_id: None,
         route: Some(AiSummaryRoute::Local),
@@ -45,7 +56,10 @@ fn save_request(file_id: i64, summary_text: String) -> AiSummarySaveRequest {
         ],
         privacy_rule_id: None,
         call_log_id: None,
-        edited_by_user: true,
+        ownership: AiContentOwnership::UserOwned,
+        operation_id,
+        content_locale: area_matrix_core::ContentLocale::En,
+        format_contract_version: 1,
     }
 }
 
@@ -72,7 +86,7 @@ fn missing_file_id_maps_to_file_not_found_without_summary_side_effects() {
     enable_local_summaries(repo.path());
 
     let generate = generate_ai_summary(repo_path.clone(), generation_request(9_999));
-    let clear = clear_ai_summary(repo_path, clear_request(9_999));
+    let clear = clear_ai_summary(repo_path, clear_request(9_999, 0));
 
     assert!(matches!(generate, Err(CoreError::FileNotFound { .. })));
     assert!(matches!(clear, Err(CoreError::FileNotFound { .. })));
@@ -104,11 +118,20 @@ fn permission_denied_on_summary_metadata_does_not_write_partial_rows() {
         "Readonly metadata input.",
     );
     let db_path = repo.path().join(".areamatrix/index.db");
+    enable_local_summaries(repo.path());
+    let _runtime = AiSummaryRuntime::local("Readonly generated summary.");
+    let draft = generate_ai_summary(repo_path.clone(), generation_request(file_id))
+        .expect("generate readonly draft");
     let _guard = ReadOnlyGuard::new(&db_path);
 
     let result = save_ai_summary(
         repo_path,
-        save_request(file_id, "Should not persist.".to_owned()),
+        save_request(
+            file_id,
+            "Should not persist.".to_owned(),
+            draft.operation_id,
+            0,
+        ),
     );
 
     assert!(matches!(result, Err(CoreError::PermissionDenied { .. })));
@@ -123,9 +146,18 @@ fn failed_clear_rolls_back_existing_summary_and_change_log() {
     let repo = initialized_repo();
     let repo_path = path_string(repo.path());
     let file_id = import_fixture(repo.path(), "clear-failure.txt", "Clear rollback input.");
-    save_ai_summary(
+    enable_local_summaries(repo.path());
+    let _runtime = AiSummaryRuntime::local("Existing generated summary.");
+    let draft = generate_ai_summary(repo_path.clone(), generation_request(file_id))
+        .expect("generate seed draft");
+    let saved = save_ai_summary(
         repo_path.clone(),
-        save_request(file_id, "Existing summary.".to_owned()),
+        save_request(
+            file_id,
+            "Existing summary.".to_owned(),
+            draft.operation_id,
+            0,
+        ),
     )
     .expect("seed summary");
     install_abort_trigger(
@@ -134,7 +166,7 @@ fn failed_clear_rolls_back_existing_summary_and_change_log() {
         "BEFORE DELETE ON ai_summaries",
     );
 
-    let result = clear_ai_summary(repo_path, clear_request(file_id));
+    let result = clear_ai_summary(repo_path, clear_request(file_id, saved.content_revision));
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
     assert_eq!(

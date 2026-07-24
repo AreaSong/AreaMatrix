@@ -1,10 +1,12 @@
 //! Public FFI repository entry points.
 
 use crate::{
-    db, recovery, repair, repo_init, repo_path, repo_scan, CoreResult, DiagnosticsSnapshot,
-    ManualRescanPreviewReport, RecoveryReport, ReindexReport, RepairMetadataPreflight,
-    RepairOptions, RepairReport, RepoConfig, RepoConfigPatch, RepoConfigSnapshot, RepoInitOptions,
-    RepoPathValidation, ScanSession,
+    db, overview, recovery, repair, repo_init, repo_path, repo_scan, ContentLocale, CoreResult,
+    DiagnosticsSnapshot, ManualRescanPreviewReport, OverviewLanguageStatus,
+    OverviewRegenerationPlan, OverviewRegenerationSession, OverviewRegenerationStartRequest,
+    RecoveryReport, ReindexReport, RepairMetadataPreflight, RepairOptions, RepairReport,
+    RepoConfig, RepoConfigPatch, RepoConfigSnapshot, RepoInitOptions, RepoPathValidation,
+    ScanSession,
 };
 
 /// Validates a candidate repository path without mutating the filesystem.
@@ -244,6 +246,68 @@ pub fn preview_manual_rescan(repo_path: String) -> CoreResult<ManualRescanPrevie
 /// invariant failures that should be surfaced through error mapping.
 pub fn reindex_from_filesystem(repo_path: String) -> CoreResult<ReindexReport> {
     repair::reindex_from_filesystem(repo_path)
+}
+
+pub fn prepare_overview_regeneration(
+    repo_path: String,
+    content_locale: ContentLocale,
+) -> CoreResult<OverviewRegenerationPlan> {
+    overview::regeneration::prepare(repo_path, content_locale)
+}
+
+pub fn start_overview_regeneration(
+    repo_path: String,
+    request: OverviewRegenerationStartRequest,
+) -> CoreResult<OverviewRegenerationSession> {
+    overview::regeneration::start(repo_path, request)
+}
+
+pub fn commit_overview_regeneration(
+    repo_path: String,
+    operation_id: String,
+) -> CoreResult<OverviewRegenerationSession> {
+    overview::regeneration::commit(repo_path, operation_id)
+}
+
+pub fn get_overview_regeneration(
+    repo_path: String,
+    operation_id: String,
+) -> CoreResult<OverviewRegenerationSession> {
+    overview::regeneration::get(repo_path, operation_id)
+}
+
+pub fn recover_overview_regeneration_on_startup(
+    repo_path: String,
+) -> CoreResult<Option<OverviewRegenerationSession>> {
+    overview::regeneration::recover_on_startup(repo_path)
+}
+
+pub fn resume_overview_regeneration(
+    repo_path: String,
+    operation_id: String,
+) -> CoreResult<OverviewRegenerationSession> {
+    overview::regeneration::resume(repo_path, operation_id)
+}
+
+pub fn cancel_overview_regeneration(
+    repo_path: String,
+    operation_id: String,
+) -> CoreResult<OverviewRegenerationSession> {
+    overview::regeneration::cancel(repo_path, operation_id)
+}
+
+pub fn rollback_overview_regeneration(
+    repo_path: String,
+    operation_id: String,
+) -> CoreResult<OverviewRegenerationSession> {
+    overview::regeneration::rollback(repo_path, operation_id)
+}
+
+pub fn get_overview_language_status(
+    repo_path: String,
+    content_locale: ContentLocale,
+) -> CoreResult<OverviewLanguageStatus> {
+    overview::regeneration::language_status(repo_path, content_locale)
 }
 
 /// Creates a diagnostics snapshot for metadata repair.

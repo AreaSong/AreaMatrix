@@ -131,7 +131,7 @@ enum GeneralSettingsIgnoreRulesAlert: Equatable {
 }
 
 struct GeneralSettingsPendingSave: Equatable {
-    var config: RepoConfigSnapshot
+    var config: AppRepoConfigSnapshot
     var error: GeneralSettingsSaveError
 }
 
@@ -140,7 +140,7 @@ struct GeneralSettingsDraft: Equatable {
     var overviewOutput: GeneralSettingsOverviewOutput
     var appearance: GeneralSettingsAppearance
 
-    init(config: RepoConfigSnapshot) {
+    init(config: AppRepoConfigSnapshot) {
         defaultStorageMode = GeneralSettingsStorageMode(snapshotValue: config.defaultMode)
         overviewOutput = GeneralSettingsOverviewOutput(snapshotValue: config.overviewOutput)
         appearance = .system

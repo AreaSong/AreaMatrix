@@ -1,26 +1,12 @@
 import SwiftUI
 
 struct DBRepairConfirmView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: DatabaseRepairConfirmModel
 
     private let onCancel: () -> Void
     private let onRepairSucceeded: () async -> Void
     private let onOpenRepositoryInFinder: () -> Void
-
-    private let willDoItems = [
-        "Back up or preserve the current .areamatrix/ metadata state for diagnostics.",
-        "Rescan the repository folder.",
-        "Rebuild the local metadata index.",
-        "Reload Tree / List / Detail after repair succeeds."
-    ]
-
-    private let willNotDoItems = [
-        "Move user files.",
-        "Rename user files.",
-        "Delete user files.",
-        "Overwrite an existing README.md.",
-        "Upload diagnostics automatically."
-    ]
 
     init(
         repoPath: String,
@@ -28,6 +14,7 @@ struct DBRepairConfirmView: View {
         mapping: CoreErrorMappingSnapshot?,
         lastOpenedAt: Int64? = nil,
         metadataRepairer: any CoreMetadataRepairing = CoreBridge(),
+        repositoryReindexer: any CoreRepositoryReindexing = CoreBridge(),
         startupRecoverer: any CoreStartupRecovering = CoreBridge(),
         repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
         diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
@@ -42,6 +29,7 @@ struct DBRepairConfirmView: View {
             mapping: mapping,
             lastOpenedAt: lastOpenedAt,
             metadataRepairer: metadataRepairer,
+            repositoryReindexer: repositoryReindexer,
             startupRecoverer: startupRecoverer,
             repositoryWriteCoordinator: repositoryWriteCoordinator,
             diagnosticsCollector: diagnosticsCollector,
@@ -59,9 +47,11 @@ struct DBRepairConfirmView: View {
                     header
                     repositoryContext
                     startupRecoveryStatus
-                    repairPlan
+                    preflightStatus
+                    metadataRepairPlan
                     diagnosticsStatus
                     repairStatus
+                    rescanPlan
                 }
                 .frame(maxWidth: 720, alignment: .leading)
             }
@@ -73,25 +63,23 @@ struct DBRepairConfirmView: View {
         .confirmationDialog("Export diagnostics?", isPresented: diagnosticsConfirmationBinding) {
             Button("Cancel", role: .cancel, action: model.cancelDiagnosticsExport)
             Button("Export diagnostics") {
-                Task {
-                    await model.collectDiagnostics()
-                }
+                Task { await model.collectDiagnostics() }
             }
         } message: {
-            Text(
-                "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
-                    "notes, and other sensitive metadata. Original file contents are not copied, and " +
-                    "diagnostics are not uploaded automatically. Review the snapshot before sharing."
-            )
+            Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
         }
         .task {
-            await model.runStartupRecoveryCheckIfNeeded()
+            async let startup: Void = model.runStartupRecoveryCheckIfNeeded()
+            async let preflight: Void = model.loadRepairPreflightIfNeeded()
+            _ = await (startup, preflight)
         }
         .onDisappear(perform: model.cancelDiagnosticsExport)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("database-repair-db-repair-confirm")
     }
+}
 
+private extension DBRepairConfirmView {
     private var header: some View {
         AreaMatrixStepHeader(
             systemImage: "wrench.and.screwdriver",
@@ -106,14 +94,8 @@ struct DBRepairConfirmView: View {
 
     private var repositoryContext: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Repository")
-                .font(.headline)
-            AreaMatrixPathBox(
-                path: model.repoPath,
-                style: .glass,
-                lineLimit: 3,
-                alignment: .leading
-            )
+            Text("Repository").font(.headline)
+            AreaMatrixPathBox(path: model.repoPath, style: .glass, lineLimit: 3, alignment: .leading)
             if let mapping = model.initialMapping {
                 Text(L10n.format("onboarding.databaseRepair.errorKind", mapping.kind.displayName))
                     .font(.callout)
@@ -137,36 +119,79 @@ struct DBRepairConfirmView: View {
     private var startupRecoveryStatus: some View {
         StartupRecoveryCheckStatusView(
             state: model.startupRecoveryState,
-            onRetry: {
-                Task {
-                    await model.retryStartupRecovery()
-                }
-            }
+            onRetry: { Task { await model.retryStartupRecovery() } }
         )
     }
 
-    private var repairPlan: some View {
+    @ViewBuilder
+    private var preflightStatus: some View {
+        switch model.preflightState {
+        case .idle, .loading:
+            Label("Inspecting metadata...", systemImage: "magnifyingglass")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        case let .ready(preflight):
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Metadata inspection complete", systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+                Text(L10n.format("metadataRepair.preflight.state", preflight.localeState.rawValue))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                if let unsupported = preflight.unsupportedLocale {
+                    Text(L10n.format("metadataRepair.preflight.unsupportedLocale", unsupported))
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                }
+                if preflight.requiresExplicitLocaleSelection {
+                    Picker("Repository content language", selection: $model.selectedRecoveryLanguage) {
+                        Text("Choose a language").tag(RepositoryContentLanguage?.none)
+                        ForEach(RepositoryContentLanguage.allCases) { language in
+                            Text(localizer.resolve(language.displayMessage)).tag(Optional(language))
+                        }
+                    }
+                    .accessibilityIdentifier("database-repair-content-language")
+                } else if let policy = preflight.repositoryLocalePolicy {
+                    Text(L10n.format("metadataRepair.preflight.preservedLocale", policy))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        case let .failed(mapping):
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Metadata inspection failed", systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+                Text(mapping.userMessage).font(.callout)
+                Button("Retry inspection") { Task { await model.retryRepairPreflight() } }
+            }
+        }
+    }
+
+    private var metadataRepairPlan: some View {
         VStack(alignment: .leading, spacing: 16) {
             RepairChecklistSection(
-                title: L10n.string("Will do"),
-                systemImage: "arrow.clockwise.circle",
-                items: willDoItems
+                title: L10n.string("Metadata repair will"),
+                systemImage: "wrench.and.screwdriver",
+                items: [
+                    L10n.string("Preserve the current AreaMatrix metadata state for diagnostics."),
+                    L10n.string("Verify, initialize, or rebuild AreaMatrix metadata only.")
+                ]
             )
             RepairChecklistSection(
-                title: L10n.string("Will not do"),
+                title: L10n.string("Metadata repair will not"),
                 systemImage: "checkmark.shield",
-                items: willNotDoItems
+                items: [
+                    L10n.string("Scan or index repository files."),
+                    L10n.string("Generate or rewrite overviews."),
+                    L10n.string("Move, rename, delete, or overwrite user files.")
+                ]
             )
             Toggle(
-                "我理解修复只处理 AreaMatrix 元数据，不会删除我的资料库文件",
-                isOn: Binding(
-                    get: { model.isMetadataSafetyConfirmed },
-                    set: { model.isMetadataSafetyConfirmed = $0 }
-                )
+                "I understand that repair changes AreaMatrix metadata only.",
+                isOn: $model.isMetadataSafetyConfirmed
             )
             .toggleStyle(.checkbox)
             .disabled(model.repairState.isRunning)
-            .accessibilityIdentifier("database-repair-metadata-repair-confirm-metadata-only")
+            .accessibilityIdentifier("database-repair-confirm-metadata-only")
         }
     }
 
@@ -186,25 +211,13 @@ struct DBRepairConfirmView: View {
                 Text(snapshot.snapshotPath)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
-                ForEach(snapshot.warnings.prefix(3), id: \.self) { warning in
-                    Text(warning)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
             }
-            .accessibilityIdentifier("database-repair-metadata-repair-diagnostics-collected")
         case let .failed(mapping):
             VStack(alignment: .leading, spacing: 6) {
                 Label("Diagnostics could not be created", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
-                Text(mapping.userMessage)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Text("Full rescan is disabled until diagnostics can be preserved.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                Text(mapping.userMessage).font(.callout)
             }
-            .accessibilityIdentifier("database-repair-metadata-repair-diagnostics-failed")
         }
     }
 
@@ -215,42 +228,67 @@ struct DBRepairConfirmView: View {
             EmptyView()
         case let .running(step):
             RepairProgressView(currentStep: step)
-                .accessibilityIdentifier("database-repair-metadata-repair-repair-progress")
         case let .succeeded(report):
             VStack(alignment: .leading, spacing: 8) {
-                Label("Repair completed", systemImage: "checkmark.circle")
+                Label("Metadata repair completed", systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
-                Text(report.summaryText)
-                    .font(.callout)
-                if let diagnosticsPath = report.diagnosticsSnapshotPath {
-                    Text("Diagnostics snapshot: \(diagnosticsPath)")
+                Text(report.summaryText).font(.callout)
+                if let path = report.diagnosticsSnapshotPath {
+                    Text(L10n.format("metadataRepair.diagnosticsPath", path))
                         .font(.system(.caption, design: .monospaced))
                         .textSelection(.enabled)
                 }
-                if !report.errors.isEmpty {
-                    Text("Warnings: \(report.errors.prefix(3).joined(separator: "\n"))")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
             }
-            .accessibilityIdentifier("database-repair-metadata-repair-repair-succeeded")
         case let .failed(mapping):
             VStack(alignment: .leading, spacing: 8) {
-                Label("Repair failed", systemImage: "exclamationmark.triangle")
+                Label("Metadata repair failed", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
-                Text(mapping.userMessage)
-                    .font(.callout)
+                Text(mapping.userMessage).font(.callout)
                 Text(mapping.suggestedAction)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                DisclosureGroup("Technical Details") {
-                    Text(mapping.rawContext)
-                        .font(.system(.caption, design: .monospaced))
-                        .textSelection(.enabled)
-                }
-                .font(.callout)
             }
-            .accessibilityIdentifier("database-repair-metadata-repair-repair-failed")
+        }
+    }
+
+    @ViewBuilder
+    private var rescanPlan: some View {
+        if model.repairState.isSucceeded {
+            VStack(alignment: .leading, spacing: 12) {
+                Divider()
+                Text("Rescan Repository Files").font(.headline)
+                Text(L10n.string("metadataRepair.rescanLimitations"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Toggle("I want to scan the repository now.", isOn: $model.isRescanConfirmed)
+                    .toggleStyle(.checkbox)
+                    .disabled(model.rescanState.isRunning)
+                    .accessibilityIdentifier("database-repair-confirm-rescan")
+                rescanStatus
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var rescanStatus: some View {
+        switch model.rescanState {
+        case .idle:
+            EmptyView()
+        case .running:
+            Label("Scanning files...", systemImage: "arrow.clockwise")
+                .foregroundStyle(.secondary)
+        case let .succeeded(report):
+            Label(
+                L10n.format("metadataRepair.rescan.completed", report.inserted, report.updated, report.skipped),
+                systemImage: "checkmark.circle"
+            )
+            .foregroundStyle(.green)
+        case let .failed(mapping):
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Rescan failed", systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+                Text(mapping.userMessage).font(.callout)
+            }
         }
     }
 
@@ -258,29 +296,33 @@ struct DBRepairConfirmView: View {
         HStack(spacing: 12) {
             Button("Cancel", action: onCancel)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
-                .disabled(model.repairState.isRunning)
+                .disabled(model.repairState.isRunning || model.rescanState.isRunning)
             Button("Export diagnostics...", action: model.requestDiagnosticsExport)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .disabled(!model.canExportDiagnostics)
-                .accessibilityIdentifier("database-repair-metadata-repair-export-diagnostics")
             if model.repairState.failure != nil {
                 Button("Open repository in Finder", action: onOpenRepositoryInFinder)
                     .buttonStyle(AreaMatrixSecondaryButtonStyle())
-                    .disabled(model.repairState.isRunning)
             }
             Spacer()
-            Button(model.primaryButtonTitle) {
-                Task {
-                    await model.runFullRescan()
-                    if model.repairState.isSucceeded {
-                        await onRepairSucceeded()
+            if model.repairState.isSucceeded {
+                Button(model.rescanButtonTitle) {
+                    Task {
+                        await model.runRescan()
+                        if model.rescanState.isSucceeded { await onRepairSucceeded() }
                     }
                 }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.gold))
+                .disabled(!model.canRunRescan)
+                .accessibilityIdentifier("database-repair-run-rescan")
+            } else {
+                Button(model.primaryButtonTitle) { Task { await model.runMetadataRepair() } }
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.gold))
+                    .disabled(!model.canRunMetadataRepair)
+                    .accessibilityIdentifier("database-repair-run-metadata-repair")
             }
-            .keyboardShortcut(.defaultAction)
-            .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.gold))
-            .disabled(!model.canRunFullRescan)
-            .accessibilityIdentifier("database-repair-metadata-repair-run-full-rescan")
         }
         .frame(maxWidth: 720)
         .padding(.top, 18)
@@ -292,9 +334,7 @@ struct DBRepairConfirmView: View {
                 if case .confirmingPrivacy = model.diagnosticsState { return true }
                 return false
             },
-            set: { isPresented in
-                if !isPresented { model.cancelDiagnosticsExport() }
-            }
+            set: { if !$0 { model.cancelDiagnosticsExport() } }
         )
     }
 
@@ -302,7 +342,6 @@ struct DBRepairConfirmView: View {
         guard let lastOpenedAt = model.lastOpenedAt else {
             return L10n.string("Last successful open: Not recorded")
         }
-
         let date = Date(timeIntervalSince1970: TimeInterval(lastOpenedAt))
         return L10n.format(
             "onboarding.databaseRepair.lastSuccessfulOpen",

@@ -304,8 +304,9 @@ fn regenerate_affected_overviews(
 ) -> CoreResult<()> {
     let locales = db::external_sync_overview_locales(receipts)?;
     match locales.root_locale {
-        Some(root_locale) if !locales.node_locales.is_empty() => overview::
-            regenerate_external_sync_overviews(repo, &locales.node_locales, &root_locale),
+        Some(root_locale) if !locales.node_locales.is_empty() => {
+            overview::regenerate_external_sync_overviews(repo, &locales.node_locales, &root_locale)
+        }
         _ => Ok(()),
     }
 }

@@ -45,7 +45,7 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 | `v2-dep-003` | `deferred` | `governance-dependency` | v2 live execution not authorized | governance authoring 不授权 promotion apply、execution 写入或 runner。 |
 | `v2-dep-004` | `deferred` | `governance-dependency` | merge readiness requires remote evidence | 本地检查不能替代 remote CI 和 branch protection evidence。 |
 | `global-product-soft-delete-retention` | `closed` | `product-contract-gap` | none | 启动 recovery 已 purge 超过 30 天的 soft-deleted 元数据行（不硬删用户源文件）。 |
-| `global-product-ui-localization` | `closed` | `product-contract-gap` | none | 应用界面语言与资料库内容语言已分离；完整 UI 键由 `Localizable.xcstrings` 和 governance 门禁覆盖（en/zh-Hans）。 |
+| `global-product-ui-localization` | `open` | `product-contract-gap` | v3 bilingual closeout not cleared | 基础 language store 与 catalog 已存在，但 classifier locale map、CAS 冲突 UX、operation provenance、独立 overview regeneration 和四组合 UI 证据尚未闭环。 |
 | `global-docs-core-module-doc-coverage` | `closed` | `product-doc-marker` | none | 高风险模块文档已补写；其余模块以 core-api 为合同深度（见 core-internal-architecture）。 |
 | `global-governance-ios-bindings-verify-gap` | `closed` | `file-safety-gap` | none | `./dev bindings verify` 已含 iOS subset 符号校验。 |
 | `global-ai-classification-call-log-gate` | `closed` | `product-contract-gap` | none | classification 已有前置 call-log gate，gate 失败不调用远程。 |

@@ -119,6 +119,9 @@ fn classifier_impact_preview_contract_exposes_signature_inputs_outputs_and_error
 
 #[test]
 fn classifier_impact_preview_contract_validates_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         preview_classifier_rule_impact(String::new(), valid_request()),
         Err(CoreError::Config { .. })
@@ -161,7 +164,7 @@ fn classifier_impact_preview_contract_validates_inputs_without_fake_success() {
     ));
 
     assert!(matches!(
-        preview_classifier_rule_impact("/tmp/repo".to_owned(), valid_request()),
+        preview_classifier_rule_impact(uninitialized_repo_path, valid_request()),
         Err(CoreError::Db { .. })
     ));
 }

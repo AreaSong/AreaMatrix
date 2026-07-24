@@ -11,12 +11,29 @@ private enum ClassifierRuleEditorActionError: LocalizedError {
     }
 }
 
+struct ClassifierRuleConflictReview: Equatable {
+    var code: String
+    var frozenEditingLocale: ClassifierEditingLocale
+    var localDraft: ClassifierRuleEditorDraft
+    var latestSnapshot: ClassifierRuleEditorSnapshotState
+
+    var latestDraft: ClassifierRuleEditorDraft? {
+        guard let ruleID = localDraft.ruleID,
+              let rule = latestSnapshot.rules.first(where: { $0.ruleID == ruleID })
+        else { return nil }
+        return ClassifierRuleEditorDraft(record: rule, editingLocale: frozenEditingLocale)
+    }
+}
+
 extension ClassifierSettingsModel {
     func loadClassifierRuleEditor() async {
         guard isLoaded else { return }
         classifierRuleEditor.markLoading()
         do {
-            let snapshot = try await ruleEditor.listClassifierRules(repoPath: repoPath)
+            let snapshot = try await ruleEditor.listClassifierRules(
+                repoPath: repoPath,
+                editingLocale: preferredClassifierEditingLocale
+            )
             classifierRuleEditor.replaceSnapshot(snapshot)
         } catch {
             await classifierRuleEditor.markLoadFailed(mappedClassifierRuleEditorError(error))
@@ -63,17 +80,84 @@ extension ClassifierSettingsModel {
         classifierRuleEditor.validateDraft()
     }
 
-    func saveClassifierRuleDraft() async {
-        guard !classifierRuleEditor.isBusy else { return }
-        guard classifierRuleEditor.validateDraft() else { return }
+    @discardableResult
+    func saveClassifierRuleDraft() async -> Bool {
+        guard !classifierRuleEditor.isBusy else { return false }
+        guard classifierRuleEditor.validateDraft() else { return false }
 
         classifierRuleEditor.markSaving()
         do {
             let snapshot = try await saveClassifierRuleRequest()
             classifierRuleEditor.replaceSnapshot(snapshot)
             publishSavedCategoryIfNeeded()
+            return true
         } catch {
+            if await captureClassifierRuleConflict(error) {
+                return false
+            }
             await classifierRuleEditor.markSaveFailed(mappedClassifierRuleEditorError(error))
+            return false
+        }
+    }
+
+    func reloadLatestClassifierRuleConflict() {
+        guard let review = classifierRuleEditor.conflictReview else { return }
+        classifierRuleEditor.replaceSnapshot(review.latestSnapshot)
+    }
+
+    func reviewLatestClassifierRuleConflict() {
+        guard let review = classifierRuleEditor.conflictReview else { return }
+        classifierRuleEditor.rebaseConflictForReview(review)
+    }
+
+    func requestClassifierEditingLocale(_ locale: ClassifierEditingLocale) {
+        guard locale != classifierRuleEditor.editingLocale else { return }
+        if classifierRuleEditor.hasDirtyDraft {
+            classifierRuleEditor.pendingEditingLocale = locale
+        } else {
+            classifierRuleEditor.switchEditingLocale(to: locale)
+        }
+    }
+
+    func saveAndSwitchClassifierEditingLocale() async {
+        guard let locale = classifierRuleEditor.pendingEditingLocale else { return }
+        if await saveClassifierRuleDraft() {
+            classifierRuleEditor.switchEditingLocale(to: locale)
+        }
+    }
+
+    func discardAndSwitchClassifierEditingLocale() {
+        guard let locale = classifierRuleEditor.pendingEditingLocale else { return }
+        classifierRuleEditor.revertDraft()
+        classifierRuleEditor.switchEditingLocale(to: locale)
+    }
+
+    func cancelClassifierEditingLocaleSwitch() {
+        classifierRuleEditor.pendingEditingLocale = nil
+    }
+
+    func requestClassifierRecovery(_ action: ClassifierRecoveryActionState) {
+        classifierRuleEditor.requestRecovery(action)
+    }
+
+    func cancelClassifierRecovery() {
+        classifierRuleEditor.cancelRecovery()
+    }
+
+    func confirmClassifierRecovery() async {
+        guard let action = classifierRuleEditor.pendingRecoveryAction,
+              !classifierRuleEditor.isBusy
+        else { return }
+
+        classifierRuleEditor.markRecovering(action)
+        do {
+            let snapshot = try await performClassifierRecovery(action)
+            classifierRuleEditor.replaceSnapshot(snapshot)
+            classifierRuleEditor.markRecoverySucceeded(action)
+            refreshLoadedClassifierSlugs()
+        } catch {
+            let mapping = await mappedClassifierRuleEditorError(error)
+            classifierRuleEditor.markRecoveryFailed(action, mapping: mapping)
         }
     }
 
@@ -113,7 +197,84 @@ extension ClassifierSettingsModel {
         throw ClassifierRuleEditorActionError.missingRuleDraft
     }
 
+    private func captureClassifierRuleConflict(_ error: Error) async -> Bool {
+        guard let conflict = CoreConflictSnapshot(error),
+              ["classifier_rule_observed_state", "repository_locale_policy"].contains(conflict.path),
+              let locale = classifierRuleEditor.editingLocale,
+              let localDraft = classifierRuleEditor.draft
+        else { return false }
+        do {
+            let latest = try await ruleEditor.listClassifierRules(repoPath: repoPath, editingLocale: locale)
+            classifierRuleEditor.markSaveConflict(ClassifierRuleConflictReview(
+                code: conflict.path,
+                frozenEditingLocale: locale,
+                localDraft: localDraft,
+                latestSnapshot: latest
+            ))
+        } catch {
+            await classifierRuleEditor.markSaveFailed(mappedClassifierRuleEditorError(error))
+        }
+        return true
+    }
+
+    private func performClassifierRecovery(
+        _ action: ClassifierRecoveryActionState
+    ) async throws -> ClassifierRuleEditorSnapshotState {
+        let editingLocale = classifierRuleEditor.editingLocale ?? preferredClassifierEditingLocale
+        switch action {
+        case .createDefault:
+            return try await ruleEditor.createDefaultClassifier(
+                repoPath: repoPath,
+                confirmed: true,
+                editingLocale: editingLocale
+            )
+        case .restoreDefault:
+            return try await ruleEditor.restoreDefaultClassifier(
+                repoPath: repoPath,
+                confirmed: true,
+                editingLocale: editingLocale
+            )
+        case .restoreLastValid:
+            return try await ruleEditor.restoreLastValidClassifier(
+                repoPath: repoPath,
+                confirmed: true,
+                editingLocale: editingLocale
+            )
+        }
+    }
+
     private func mappedClassifierRuleEditorError(_ error: Error) async -> CoreErrorMappingSnapshot {
         await errorMapper.mapError(error)
+    }
+
+    var preferredClassifierEditingLocale: ClassifierEditingLocale? {
+        guard let locale = savedConfig?.locale else { return nil }
+        switch RepositoryContentLanguage(snapshotValue: locale) {
+        case .zhHans: return ClassifierEditingLocale.zhHans
+        case .en: return ClassifierEditingLocale.en
+        case .followInterface:
+            return AppLanguageRuntime.shared.resolvedIdentifier() == "zh-Hans" ? .zhHans : .en
+        case .unsupported: return nil
+        }
+    }
+}
+
+private extension ClassifierRuleEditorModelState {
+    mutating func rebaseConflictForReview(_ review: ClassifierRuleConflictReview) {
+        let latest = review.latestSnapshot
+        rules = latest.rules
+        defaultRuleID = latest.defaultRuleID
+        repositoryLocalePolicy = latest.repositoryLocalePolicy
+        editingLocale = review.frozenEditingLocale
+        health = latest.health
+        recoveryActions = latest.recoveryActions
+        warning = latest.warning
+        selectedRuleID = review.localDraft.ruleID
+        draft = review.localDraft
+        lastValidDraft = review.latestDraft
+        hasValidatedDraft = review.localDraft.validationErrors.isEmpty && review.latestDraft != nil
+        loadState = .loaded
+        saveState = .idle
+        clearRiskConfirmations()
     }
 }

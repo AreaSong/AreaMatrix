@@ -122,7 +122,6 @@ struct SemanticSearchFallbackStatus {
         )
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
     private static func badgeText(kind: AiFallbackKind) -> LocalizedMessage {
         switch kind {
         case .aiDisabled: L10n.message("AI disabled")
@@ -133,12 +132,22 @@ struct SemanticSearchFallbackStatus {
         case .providerUnavailable: L10n.message("Provider unavailable")
         case .privacySkipped: L10n.message("Privacy skipped")
         case .semanticIndexNotReady: L10n.message("Semantic index")
+        case .noEligibleInput, .callLogUnavailable, .normalSearchUnavailable, .rateLimited, .timeout, .internalFailure:
+            secondaryBadgeText(kind: kind)
+        }
+    }
+
+    private static func secondaryBadgeText(kind: AiFallbackKind) -> LocalizedMessage {
+        switch kind {
         case .noEligibleInput: L10n.message("No eligible input")
         case .callLogUnavailable: L10n.message("Call log unavailable")
         case .normalSearchUnavailable: L10n.message("Normal search")
         case .rateLimited: L10n.message("Rate limited")
         case .timeout: L10n.message("Timeout")
         case .internalFailure: L10n.message("Internal failure")
+        case .aiDisabled, .featureDisabled, .localModelNotReady, .remoteNotConfigured, .remoteFailed,
+             .providerUnavailable, .privacySkipped, .semanticIndexNotReady:
+            L10n.message("Internal failure")
         }
     }
 
@@ -152,12 +161,22 @@ struct SemanticSearchFallbackStatus {
         case .providerUnavailable: L10n.message("AI provider is unavailable")
         case .privacySkipped: L10n.message("Skipped by privacy rule")
         case .semanticIndexNotReady: L10n.message("Semantic index is not ready")
+        case .noEligibleInput, .normalSearchUnavailable, .callLogUnavailable, .rateLimited, .timeout, .internalFailure:
+            secondaryTitleMessage(kind: kind)
+        }
+    }
+
+    private static func secondaryTitleMessage(kind: AiFallbackKind) -> LocalizedMessage {
+        switch kind {
         case .noEligibleInput: L10n.message("No eligible AI input")
         case .normalSearchUnavailable: L10n.message("Normal search is unavailable")
         case .callLogUnavailable: L10n.message("AI call log is unavailable")
         case .rateLimited: L10n.message("Provider rate limit reached")
         case .timeout: L10n.message("AI request timed out")
         case .internalFailure: L10n.message("AI fallback status is unavailable")
+        case .aiDisabled, .featureDisabled, .localModelNotReady, .remoteNotConfigured, .remoteFailed,
+             .providerUnavailable, .privacySkipped, .semanticIndexNotReady:
+            L10n.message("AI fallback status is unavailable")
         }
     }
 
@@ -171,12 +190,23 @@ struct SemanticSearchFallbackStatus {
         case .timeout: L10n.message("The AI request timed out. Your files were not changed.")
         case .aiDisabled: L10n.message("AI is disabled in repository settings.")
         case .featureDisabled: L10n.message("This AI feature is disabled in repository settings.")
+        case .remoteNotConfigured, .providerUnavailable, .noEligibleInput, .normalSearchUnavailable,
+             .callLogUnavailable, .internalFailure:
+            secondaryBodyMessage(kind: kind)
+        }
+    }
+
+    private static func secondaryBodyMessage(kind: AiFallbackKind) -> LocalizedMessage {
+        switch kind {
         case .remoteNotConfigured: L10n.message("Remote AI must be configured before this route can run.")
         case .providerUnavailable: L10n.message("No AI provider route is currently available.")
         case .noEligibleInput: L10n.message("There is no eligible safe input for this AI operation.")
         case .normalSearchUnavailable: L10n.message("Normal search fallback could not be loaded.")
         case .callLogUnavailable: L10n.message("AI fallback could not be recorded in the call log.")
         case .internalFailure: L10n.message("Fallback status could not be resolved from safe metadata.")
+        case .privacySkipped, .semanticIndexNotReady, .remoteFailed, .localModelNotReady, .rateLimited, .timeout,
+             .aiDisabled, .featureDisabled:
+            L10n.message("Fallback status could not be resolved from safe metadata.")
         }
     }
 

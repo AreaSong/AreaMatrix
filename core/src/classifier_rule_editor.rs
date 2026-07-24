@@ -4,7 +4,7 @@ use std::path::{Component, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{CoreError, CoreResult};
+use crate::{ContentLocale, CoreError, CoreResult, RepositoryLocalePolicyState};
 
 mod config;
 
@@ -19,6 +19,18 @@ const MAX_NAMING_TEMPLATE_LEN: usize = 200;
 const MIN_PRIORITY: i64 = -1000;
 const MAX_PRIORITY: i64 = 1000;
 const ALLOWED_NAMING_TEMPLATE_FIELDS: [&str; 5] = ["original", "stem", "ext", "date", "slug"];
+
+pub(crate) fn list_classifier_category_slugs(repo: &std::path::Path) -> CoreResult<Vec<String>> {
+    let config = config::read_classifier_config(repo)?;
+    Ok(config.category_slugs())
+}
+
+pub(crate) fn write_classifier_yaml_atomically(
+    repo: &std::path::Path,
+    content: &[u8],
+) -> CoreResult<()> {
+    config::write_classifier_yaml_atomically(repo, content)
+}
 
 struct RuleContent<'a> {
     slug: &'a str,
@@ -40,10 +52,10 @@ pub struct ClassifierRuleRecord {
     pub rule_id: String,
     /// Classifier category slug represented by this editor row.
     pub slug: String,
-    /// User-visible display name for the editor locale fallback.
-    pub display_name: String,
-    /// User-visible category description for the editor locale fallback.
-    pub description: String,
+    /// Complete locale map for the user-visible display name.
+    pub display_names: Vec<ClassifierLocaleValue>,
+    /// Complete locale map for the user-visible category description.
+    pub descriptions: Vec<ClassifierLocaleValue>,
     /// Extension matcher values without a leading dot.
     pub extensions: Vec<String>,
     /// Filename keyword matcher values.
@@ -56,6 +68,15 @@ pub struct ClassifierRuleRecord {
     pub is_default: bool,
 }
 
+/// One locale/value entry from classifier metadata.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ClassifierLocaleValue {
+    /// Exact locale key stored in classifier metadata.
+    pub locale: String,
+    /// User-authored value for that locale.
+    pub value: String,
+}
+
 /// Snapshot returned after listing or mutating classifier editor state.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierRuleEditorSnapshot {
@@ -65,13 +86,49 @@ pub struct ClassifierRuleEditorSnapshot {
     pub default_rule_id: String,
     /// Rule id changed by the last update/delete call, when applicable.
     pub updated_rule_id: Option<String>,
+    /// Exact repository locale policy observed when the snapshot was loaded.
+    pub repository_locale_policy: String,
+    /// Concrete locale frozen by the editor, or `None` for read-only mode.
+    pub editing_locale: Option<ContentLocale>,
+    /// Health of the active classifier configuration.
+    pub health: ClassifierConfigHealth,
+    /// Recovery actions that are safe for the current health and evidence.
+    pub recovery_actions: Vec<ClassifierRecoveryAction>,
     /// Save/delete warning shown by classifier rule editor surface when impact preview is still required.
     pub warning: Option<String>,
+}
+
+/// Health of the active `.areamatrix/classifier.yaml` file.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ClassifierConfigHealth {
+    /// The file is a regular file and its complete schema is valid.
+    Valid,
+    /// No classifier file exists at the managed path.
+    Missing,
+    /// The path cannot be read safely or is not a regular file.
+    Unreadable,
+    /// The file is readable but its YAML or schema is invalid.
+    Invalid,
+}
+
+/// Explicit classifier recovery action authorized by Core evidence.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ClassifierRecoveryAction {
+    /// Create the embedded default only when the active file is missing.
+    CreateDefault,
+    /// Replace readable invalid bytes with the embedded default after backup.
+    RestoreDefault,
+    /// Replace readable invalid bytes with the newest verified valid backup.
+    RestoreLastValid,
 }
 
 /// Create payload for one classifier editor row.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierRuleCreateRequest {
+    /// Exact repository locale policy observed by the editing draft.
+    pub repository_locale_policy: String,
+    /// Concrete locale entry created by this request.
+    pub editing_locale: ContentLocale,
     /// New classifier category slug.
     pub slug: String,
     /// New display name.
@@ -88,11 +145,38 @@ pub struct ClassifierRuleCreateRequest {
     pub naming_template: Option<String>,
 }
 
+/// Persisted target fields observed when an update draft was opened.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ClassifierRuleObservedState {
+    /// Stable rule id observed by the draft.
+    pub rule_id: String,
+    /// Persisted category slug observed by the draft.
+    pub slug: String,
+    /// Explicit value for the frozen editing locale, or empty when absent.
+    pub display_name: String,
+    /// Explicit description for the frozen editing locale, or empty when absent.
+    pub description: String,
+    /// Persisted extension matchers observed by the draft.
+    pub extensions: Vec<String>,
+    /// Persisted keyword matchers observed by the draft.
+    pub keywords: Vec<String>,
+    /// Persisted priority observed by the draft.
+    pub priority: i64,
+    /// Persisted naming template observed by the draft.
+    pub naming_template: Option<String>,
+}
+
 /// Update payload for one classifier editor row.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierRuleUpdate {
+    /// Exact repository locale policy observed by the editing draft.
+    pub repository_locale_policy: String,
+    /// Concrete locale entry patched by this request.
+    pub editing_locale: ContentLocale,
     /// Stable id of the row being updated.
     pub rule_id: String,
+    /// Persisted affected fields observed when the draft was opened.
+    pub observed: ClassifierRuleObservedState,
     /// Replacement classifier category slug.
     pub slug: String,
     /// Replacement display name.
@@ -134,10 +218,117 @@ pub struct ClassifierRuleDeleteRequest {
 /// malformed classifier configuration, `CoreError::PermissionDenied { path }`
 /// for blocked classifier metadata reads, and `CoreError::Io { message }` for
 /// classifier config read failures.
-pub fn list_classifier_rules(repo_path: String) -> CoreResult<ClassifierRuleEditorSnapshot> {
+pub fn list_classifier_rules(
+    repo_path: String,
+    editing_locale: Option<ContentLocale>,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
     let repo = validate_editor_repo_path(&repo_path)?;
-    let classifier_config = config::read_classifier_config(&repo)?;
-    Ok(config::snapshot_from_config(&classifier_config, None, None))
+    let policy = load_repository_locale_policy(&repo_path)?;
+    match config::inspect_classifier_config(&repo)? {
+        config::ClassifierConfigState::Valid(classifier_config) => {
+            let editing_locale = editable_locale(&policy, editing_locale);
+            let warning = policy_warning(&policy);
+            Ok(config::snapshot_from_config(
+                &classifier_config,
+                policy.raw_value,
+                editing_locale,
+                None,
+                warning,
+            ))
+        }
+        state => degraded_snapshot(&repo, policy.raw_value, state),
+    }
+}
+
+/// Creates the embedded default classifier after explicit confirmation.
+pub fn create_default_classifier(
+    repo_path: String,
+    confirmed: bool,
+    editing_locale: Option<ContentLocale>,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    ensure_recovery_confirmed(confirmed)?;
+    let repo = validate_editor_repo_path(&repo_path)?;
+    config::create_default_classifier(&repo)?;
+    list_classifier_rules(repo_path, editing_locale)
+}
+
+/// Restores the embedded default over readable invalid classifier bytes.
+pub fn restore_default_classifier(
+    repo_path: String,
+    confirmed: bool,
+    editing_locale: Option<ContentLocale>,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    ensure_recovery_confirmed(confirmed)?;
+    let repo = validate_editor_repo_path(&repo_path)?;
+    config::restore_default_classifier(&repo)?;
+    list_classifier_rules(repo_path, editing_locale)
+}
+
+/// Restores the newest verified last-valid classifier backup.
+pub fn restore_last_valid_classifier(
+    repo_path: String,
+    confirmed: bool,
+    editing_locale: Option<ContentLocale>,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    ensure_recovery_confirmed(confirmed)?;
+    let repo = validate_editor_repo_path(&repo_path)?;
+    config::restore_last_valid_classifier(&repo)?;
+    list_classifier_rules(repo_path, editing_locale)
+}
+
+fn degraded_snapshot(
+    repo: &std::path::Path,
+    repository_locale_policy: String,
+    state: config::ClassifierConfigState,
+) -> CoreResult<ClassifierRuleEditorSnapshot> {
+    let (health, recovery_actions, warning) = match state {
+        config::ClassifierConfigState::Valid(_) => {
+            return Err(CoreError::internal(
+                "classifier health state is inconsistent",
+            ));
+        }
+        config::ClassifierConfigState::Missing => (
+            ClassifierConfigHealth::Missing,
+            vec![ClassifierRecoveryAction::CreateDefault],
+            "classifier.config_missing",
+        ),
+        config::ClassifierConfigState::Unreadable => (
+            ClassifierConfigHealth::Unreadable,
+            Vec::new(),
+            "classifier.config_unreadable",
+        ),
+        config::ClassifierConfigState::Invalid => {
+            let mut actions = vec![ClassifierRecoveryAction::RestoreDefault];
+            if config::has_valid_classifier_backup(repo)? {
+                actions.push(ClassifierRecoveryAction::RestoreLastValid);
+            }
+            (
+                ClassifierConfigHealth::Invalid,
+                actions,
+                "classifier.config_invalid",
+            )
+        }
+    };
+    Ok(ClassifierRuleEditorSnapshot {
+        rules: Vec::new(),
+        default_rule_id: String::new(),
+        updated_rule_id: None,
+        repository_locale_policy,
+        editing_locale: None,
+        health,
+        recovery_actions,
+        warning: Some(warning.to_owned()),
+    })
+}
+
+fn ensure_recovery_confirmed(confirmed: bool) -> CoreResult<()> {
+    if confirmed {
+        Ok(())
+    } else {
+        Err(CoreError::config(
+            "classifier recovery confirmation is required",
+        ))
+    }
 }
 
 /// Creates one classifier rule editor row.
@@ -160,12 +351,19 @@ pub fn create_classifier_rule(
 ) -> CoreResult<ClassifierRuleEditorSnapshot> {
     let repo = validate_editor_repo_path(&repo_path)?;
     validate_create_request(&request)?;
+    validate_observed_locale_policy(
+        &repo_path,
+        &request.repository_locale_policy,
+        &request.editing_locale,
+    )?;
     let mut classifier_config = config::read_classifier_config(&repo)?;
     let updated_rule_id = config::apply_create(&mut classifier_config, &request)?;
     config::validate_classifier_config(&classifier_config)?;
     config::write_classifier_config_atomically(&repo, &classifier_config)?;
     Ok(config::snapshot_from_config(
         &classifier_config,
+        request.repository_locale_policy,
+        Some(request.editing_locale),
         Some(updated_rule_id),
         None,
     ))
@@ -191,12 +389,20 @@ pub fn update_classifier_rule(
 ) -> CoreResult<ClassifierRuleEditorSnapshot> {
     let repo = validate_editor_repo_path(&repo_path)?;
     validate_update_request(&request)?;
+    validate_observed_locale_policy(
+        &repo_path,
+        &request.repository_locale_policy,
+        &request.editing_locale,
+    )?;
     let mut classifier_config = config::read_classifier_config(&repo)?;
+    config::validate_observed_update(&classifier_config, &request)?;
     let updated_rule_id = config::apply_update(&mut classifier_config, &request)?;
     config::validate_classifier_config(&classifier_config)?;
     config::write_classifier_config_atomically(&repo, &classifier_config)?;
     Ok(config::snapshot_from_config(
         &classifier_config,
+        request.repository_locale_policy,
+        Some(request.editing_locale),
         Some(updated_rule_id),
         None,
     ))
@@ -222,15 +428,70 @@ pub fn delete_classifier_rule(
 ) -> CoreResult<ClassifierRuleEditorSnapshot> {
     let repo = validate_editor_repo_path(&repo_path)?;
     validate_delete_request(&request)?;
+    crate::db::ensure_repository_locale_allows_normal_mutation(&repo)?;
+    let policy = load_repository_locale_policy(&repo_path)?;
+    ensure_policy_is_canonical(&policy)?;
     let mut classifier_config = config::read_classifier_config(&repo)?;
     let updated_rule_id = config::apply_delete(&mut classifier_config, &request)?;
     config::validate_classifier_config(&classifier_config)?;
     config::write_classifier_config_atomically(&repo, &classifier_config)?;
     Ok(config::snapshot_from_config(
         &classifier_config,
+        policy.raw_value,
+        None,
         Some(updated_rule_id),
         None,
     ))
+}
+
+fn load_repository_locale_policy(
+    repo_path: &str,
+) -> CoreResult<crate::RepositoryLocalePolicySnapshot> {
+    Ok(crate::db::load_repo_config_snapshot_or_default(repo_path.to_owned())?.locale_policy)
+}
+
+fn editable_locale(
+    policy: &crate::RepositoryLocalePolicySnapshot,
+    requested: Option<ContentLocale>,
+) -> Option<ContentLocale> {
+    if !policy.is_canonical() || matches!(policy.state, RepositoryLocalePolicyState::Unsupported) {
+        return None;
+    }
+    requested
+}
+
+fn policy_warning(policy: &crate::RepositoryLocalePolicySnapshot) -> Option<String> {
+    if matches!(policy.state, RepositoryLocalePolicyState::Unsupported) {
+        Some("classifier.repository_locale_unsupported".to_owned())
+    } else if !policy.is_canonical() {
+        Some("classifier.repository_locale_requires_canonicalization".to_owned())
+    } else {
+        None
+    }
+}
+
+fn validate_observed_locale_policy(
+    repo_path: &str,
+    observed: &str,
+    _editing_locale: &ContentLocale,
+) -> CoreResult<()> {
+    crate::db::ensure_repository_locale_allows_normal_mutation(std::path::Path::new(repo_path))?;
+    let current = load_repository_locale_policy(repo_path)?;
+    if current.raw_value != observed {
+        return Err(CoreError::conflict("repository_locale_policy"));
+    }
+    ensure_policy_is_canonical(&current)?;
+    Ok(())
+}
+
+fn ensure_policy_is_canonical(policy: &crate::RepositoryLocalePolicySnapshot) -> CoreResult<()> {
+    if policy.is_canonical() && !matches!(policy.state, RepositoryLocalePolicyState::Unsupported) {
+        Ok(())
+    } else {
+        Err(CoreError::config(
+            "repository locale policy must be canonical before classifier mutation",
+        ))
+    }
 }
 
 fn validate_editor_repo_path(repo_path: &str) -> CoreResult<PathBuf> {
@@ -262,6 +523,20 @@ fn validate_create_request(request: &ClassifierRuleCreateRequest) -> CoreResult<
 
 fn validate_update_request(request: &ClassifierRuleUpdate) -> CoreResult<()> {
     validate_rule_id(&request.rule_id)?;
+    validate_rule_id(&request.observed.rule_id)?;
+    if request.observed.rule_id != request.rule_id {
+        return Err(CoreError::config(
+            "classifier observed rule id does not match update target",
+        ));
+    }
+    validate_category_slug(&request.observed.slug)?;
+    if !request.observed.display_name.is_empty() {
+        validate_display_name(&request.observed.display_name)?;
+    }
+    validate_description(&request.observed.description)?;
+    validate_rule_basis(&request.observed.keywords, &request.observed.extensions)?;
+    validate_priority(request.observed.priority)?;
+    validate_naming_template(request.observed.naming_template.as_deref())?;
     validate_rule_content(RuleContent {
         slug: &request.slug,
         display_name: &request.display_name,

@@ -2,16 +2,13 @@
 
 use std::{
     collections::{BTreeMap, HashSet},
-    ffi::OsStr,
     fs, io,
-    io::Write,
     path::{Component, Path, PathBuf},
 };
 
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use crate::{db, CoreError, CoreResult};
+use crate::{db, CoreError, CoreResult, RepositoryLocalePolicyState};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const MAX_CATEGORY_SLUG_LEN: usize = 32;
@@ -90,6 +87,13 @@ pub struct ClassifierRule {
 /// writes and `CoreError::Io { message }` for read or atomic write failures.
 pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResult<ClassifierRule> {
     let repo = validate_classifier_rule_request(&repo_path, &rule)?;
+    db::ensure_repository_locale_allows_normal_mutation(&repo)?;
+    let policy = db::load_repo_config_snapshot_or_default(repo_path.clone())?.locale_policy;
+    if !policy.is_canonical() || matches!(policy.state, RepositoryLocalePolicyState::Unsupported) {
+        return Err(CoreError::config(
+            "repository locale policy must be canonical before classifier mutation",
+        ));
+    }
     let classifier_path = repo.join(AREA_MATRIX_DIR).join(CLASSIFIER_FILE);
     let mut config = read_classifier_config(&classifier_path)?;
     let category = target_category_mut(&mut config, &rule.target_category)?;
@@ -98,7 +102,9 @@ pub fn save_classifier_rule(repo_path: String, rule: ClassifierRule) -> CoreResu
     append_rule_basis(category, &rule);
     category.priority = rule.priority as i32;
     validate_classifier_config(&config)?;
-    write_classifier_config_atomically(&classifier_path, &config)?;
+    let content = serde_yaml::to_string(&config)
+        .map_err(|error| CoreError::config(format!("classifier yaml encode failed: {error}")))?;
+    crate::classifier_rule_editor::write_classifier_yaml_atomically(&repo, content.as_bytes())?;
     Ok(rule)
 }
 
@@ -375,70 +381,9 @@ fn is_area_matrix_component(component: Component<'_>) -> bool {
     component.as_os_str() == AREA_MATRIX_DIR
 }
 
-fn write_classifier_config_atomically(path: &Path, config: &ClassifierConfig) -> CoreResult<()> {
-    let content = serde_yaml::to_string(config)
-        .map_err(|error| CoreError::config(format!("classifier yaml encode failed: {error}")))?;
-    let parent = path
-        .parent()
-        .ok_or_else(|| CoreError::config("classifier config path is invalid"))?;
-    let temp_path = temporary_classifier_path(path)?;
-    let result = write_temp_file(&temp_path, &content).and_then(|()| rename_temp(&temp_path, path));
-    match result {
-        Ok(()) => sync_directory(parent),
-        Err(error) => {
-            cleanup_temp_file(&temp_path)?;
-            Err(error)
-        }
-    }
-}
-
-fn temporary_classifier_path(path: &Path) -> CoreResult<PathBuf> {
-    let file_name = path
-        .file_name()
-        .and_then(OsStr::to_str)
-        .filter(|value| !value.is_empty())
-        .ok_or_else(|| CoreError::config("classifier config path is invalid"))?;
-    Ok(path.with_file_name(format!(".{file_name}.{}.tmp", Uuid::new_v4())))
-}
-
-fn write_temp_file(path: &Path, content: &str) -> CoreResult<()> {
-    let mut file = fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .map_err(map_write_io_error)?;
-    file.write_all(content.as_bytes())
-        .map_err(map_write_io_error)?;
-    file.sync_all().map_err(map_write_io_error)
-}
-
-fn rename_temp(temp_path: &Path, final_path: &Path) -> CoreResult<()> {
-    fs::rename(temp_path, final_path).map_err(map_write_io_error)
-}
-
-fn cleanup_temp_file(path: &Path) -> CoreResult<()> {
-    match fs::remove_file(path) {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
-        Err(error) => Err(map_write_io_error(error)),
-    }
-}
-
-fn sync_directory(path: &Path) -> CoreResult<()> {
-    let directory = fs::File::open(path).map_err(map_read_io_error)?;
-    directory.sync_all().map_err(map_read_io_error)
-}
-
 fn map_read_io_error(error: io::Error) -> CoreError {
     match error.kind() {
         io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
         _ => CoreError::io("classifier config io error"),
-    }
-}
-
-fn map_write_io_error(error: io::Error) -> CoreError {
-    match error.kind() {
-        io::ErrorKind::PermissionDenied => CoreError::permission_denied("permission denied"),
-        _ => CoreError::io("classifier config write failed"),
     }
 }

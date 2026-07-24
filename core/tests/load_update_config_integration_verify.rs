@@ -116,7 +116,8 @@ fn load_update_config_integration_verify_real_core_supports_settings_state() {
     assert!(!initial.allow_replace_during_import);
 
     let expected = settings_page_patch(initial.revision);
-    let updated = update_repo_config(path_string(repo.path()), expected).expect("persist settings config");
+    let updated =
+        update_repo_config(path_string(repo.path()), expected).expect("persist settings config");
 
     assert_eq!(updated.revision, initial.revision + 1);
     assert_eq!(updated.default_mode, StorageMode::Indexed);
@@ -163,7 +164,10 @@ fn load_update_config_integration_verify_failures_preserve_config_and_files() {
         Err(area_matrix_core::CoreError::Conflict { .. })
     ));
 
-    assert_eq!(load_repo_config(path_string(repo.path())), Ok(config_before));
+    assert_eq!(
+        load_repo_config(path_string(repo.path())),
+        Ok(config_before)
+    );
     assert_eq!(
         file_snapshot(&[&readme_path, &overview_path, &classifier_path]),
         file_before

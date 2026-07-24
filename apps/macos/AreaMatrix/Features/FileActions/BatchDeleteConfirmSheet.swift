@@ -79,11 +79,8 @@ struct BatchDeleteConfirmSheet: View {
 
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(
-                "Files managed by AreaMatrix will be moved to Trash. " +
-                    "Index-only items can be removed from the index without deleting the source files."
-            )
-            .foregroundStyle(.secondary)
+            Text(L10n.string("fileActions.delete.modeDetail"))
+                .foregroundStyle(.secondary)
             modePicker
             previewSection
             undoConfirmationSection

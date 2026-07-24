@@ -199,13 +199,9 @@ struct MainRepoErrorView: View {
             EmptyView()
         case .confirmingPrivacy:
             VStack(alignment: .leading, spacing: 8) {
-                Text(
-                    "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
-                        "notes, and other sensitive metadata. Original file contents are not copied, and " +
-                        "diagnostics are not uploaded automatically. Review the snapshot before sharing."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
                 HStack(spacing: 10) {
                     Button("Create diagnostics", action: onConfirmDiagnostics)
                         .buttonStyle(.borderedProminent)

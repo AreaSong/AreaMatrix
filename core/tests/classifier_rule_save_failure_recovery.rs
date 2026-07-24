@@ -5,8 +5,9 @@ use std::{
 };
 
 use area_matrix_core::{
-    init_repo, list_files, map_core_error, save_classifier_rule, ClassifierRule, CoreError,
-    ErrorKind, ErrorMappingInput, FileFilter, OverviewOutput, RepoInitMode, RepoInitOptions,
+    init_repo, list_files, load_repo_config, map_core_error, save_classifier_rule, ClassifierRule,
+    CoreError, ErrorKind, ErrorMappingInput, FileFilter, OverviewOutput, RepoInitMode,
+    RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 
@@ -34,6 +35,7 @@ fn initialized_repo() -> tempfile::TempDir {
         },
     )
     .expect("initialize repository");
+    load_repo_config(path_string(repo.path())).expect("prime repository config read state");
     repo
 }
 
@@ -112,21 +114,33 @@ fn assert_error_kind(error: CoreError, expected: ErrorKind) {
 }
 
 fn mapping_input(error: &CoreError) -> ErrorMappingInput {
-    let raw_context = error.to_error_mapping().raw_context;
+    let raw_context = error
+        .to_error_mapping()
+        .technical_details
+        .unwrap_or_default();
     match error.kind() {
-        ErrorKind::Io | ErrorKind::Db | ErrorKind::Internal => ErrorMappingInput {
+        ErrorKind::Io
+        | ErrorKind::Db
+        | ErrorKind::DbLocked
+        | ErrorKind::DbCorrupted
+        | ErrorKind::Internal => ErrorMappingInput {
             kind: error.kind(),
             path: None,
             reason: None,
             message: Some(raw_context),
+            expected_revision: None,
+            current_revision: None,
         },
         ErrorKind::Config | ErrorKind::Validation | ErrorKind::Classify => ErrorMappingInput {
             kind: error.kind(),
             path: None,
             reason: Some(raw_context),
             message: None,
+            expected_revision: None,
+            current_revision: None,
         },
         ErrorKind::Conflict
+        | ErrorKind::RevisionConflict
         | ErrorKind::DuplicateFile
         | ErrorKind::FileNotFound
         | ErrorKind::ExpiredAction
@@ -139,6 +153,8 @@ fn mapping_input(error: &CoreError) -> ErrorMappingInput {
             path: Some(raw_context),
             reason: None,
             message: None,
+            expected_revision: None,
+            current_revision: None,
         },
     }
 }
@@ -293,7 +309,7 @@ fn classifier_rule_save_failure_recovery_corrupted_db_is_explicit_without_file_w
     let error = list_files(path_string(repo.path()), default_filter())
         .expect_err("corrupted DB should fail explicitly");
 
-    assert_error_kind(error, ErrorKind::Db);
+    assert_error_kind(error, ErrorKind::DbCorrupted);
     assert_eq!(snapshot(repo.path()), before);
     assert_no_classifier_temp_files(repo.path());
 }

@@ -235,6 +235,8 @@ fn files_import_failure_recovery_icloud_placeholder_maps_and_writes_no_state() {
         path: Some(path_string(&placeholder)),
         reason: None,
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(mapping.severity, ErrorSeverity::Medium);
     assert_eq!(mapping.recoverability, ErrorRecoverability::Retryable);
@@ -279,6 +281,8 @@ fn files_import_failure_recovery_permission_denied_keeps_provider_file_and_repo_
         path: Some(path_string(&selected)),
         reason: None,
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(mapping.severity, ErrorSeverity::High);
     assert_eq!(

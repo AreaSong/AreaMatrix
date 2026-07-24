@@ -178,6 +178,51 @@ namespace area_matrix {
     [Throws=CoreError]
     ReindexReport resume_scan_session(string repo_path, i64 scan_session_id);
 
+    [Throws=CoreError]
+    OverviewRegenerationPlan prepare_overview_regeneration(
+        string repo_path, ContentLocale content_locale
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession start_overview_regeneration(
+        string repo_path, OverviewRegenerationStartRequest request
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession commit_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession get_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession? recover_overview_regeneration_on_startup(
+        string repo_path
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession resume_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession cancel_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewRegenerationSession rollback_overview_regeneration(
+        string repo_path, string operation_id
+    );
+
+    [Throws=CoreError]
+    OverviewLanguageStatus get_overview_language_status(
+        string repo_path, ContentLocale content_locale
+    );
+
     // desktop import flow reuses predict_category for read-only
     // Windows/Linux import preview state after the platform picker, drop
     // adapter, or optional shell entry has produced safe display names. Core
@@ -295,7 +340,24 @@ namespace area_matrix {
     );
 
     [Throws=CoreError]
-    ClassifierRuleEditorSnapshot list_classifier_rules(string repo_path);
+    ClassifierRuleEditorSnapshot list_classifier_rules(
+        string repo_path, ContentLocale? editing_locale
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot create_default_classifier(
+        string repo_path, boolean confirmed, ContentLocale? editing_locale
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot restore_default_classifier(
+        string repo_path, boolean confirmed, ContentLocale? editing_locale
+    );
+
+    [Throws=CoreError]
+    ClassifierRuleEditorSnapshot restore_last_valid_classifier(
+        string repo_path, boolean confirmed, ContentLocale? editing_locale
+    );
 
     [Throws=CoreError]
     ClassifierRuleEditorSnapshot create_classifier_rule(
@@ -416,7 +478,7 @@ namespace area_matrix {
 
     // desktop main query also uses this read-only tree JSON for desktop sidebar state.
     [Throws=CoreError]
-    string list_tree_json(string repo_path, ContentLocale locale);
+    string list_tree_json(string repo_path, string locale);
 
     [Throws=CoreError]
     sequence<SyncConflict> detect_sync_conflicts(string repo_path);
@@ -762,6 +824,8 @@ dictionary AiCategorySuggestion {
 };
 
 dictionary AiSummaryGenerationRequest {
+    string operation_id;
+    string? retry_of_operation_id;
     i64 file_id;
     AiSummaryProviderScope provider_scope;
     AiSummaryContextPolicy context_policy;
@@ -771,6 +835,9 @@ dictionary AiSummaryGenerationRequest {
 };
 
 dictionary AiSummaryDraft {
+    string operation_id;
+    ContentLocale content_locale;
+    i64 format_contract_version;
     i64 file_id;
     string? draft_id;
     AiSummaryDraftStatus status;
@@ -788,6 +855,8 @@ dictionary AiSummaryDraft {
 
 dictionary AiSummarySaveRequest {
     i64 file_id;
+    i64 expected_content_revision;
+    boolean confirm_replace_user_owned;
     string summary_text;
     string? draft_id;
     AiSummaryRoute? route;
@@ -796,11 +865,16 @@ dictionary AiSummarySaveRequest {
     sequence<AiSummaryInputField> used_context;
     string? privacy_rule_id;
     i64? call_log_id;
-    boolean edited_by_user;
+    AiContentOwnership ownership;
+    string operation_id;
+    ContentLocale content_locale;
+    i64 format_contract_version;
 };
 
 dictionary AiSummarySaveReport {
     i64 file_id;
+    i64 content_revision;
+    AiContentOwnership ownership;
     string saved_summary;
     i64 saved_at;
     AiSummaryRoute? route;
@@ -809,18 +883,22 @@ dictionary AiSummarySaveReport {
     sequence<AiSummaryInputField> used_context;
     string? privacy_rule_id;
     i64? call_log_id;
-    boolean edited_by_user;
+    string operation_id;
+    ContentLocale content_locale;
+    i64 format_contract_version;
     i64 character_count;
 };
 
 dictionary AiSummaryClearRequest {
     i64 file_id;
+    i64 expected_content_revision;
     boolean confirmed;
 };
 
 dictionary AiSummaryClearReport {
     i64 file_id;
     boolean cleared;
+    i64 content_revision;
     i64 cleared_at;
 };
 
@@ -1660,11 +1738,15 @@ dictionary ClassifierRule {
     boolean preview_confirmed;
 };
 
+enum ClassifierConfigHealth { "Valid", "Missing", "Unreadable", "Invalid" };
+
+enum ClassifierRecoveryAction { "CreateDefault", "RestoreDefault", "RestoreLastValid" };
+
 dictionary ClassifierRuleRecord {
     string rule_id;
     string slug;
-    string display_name;
-    string description;
+    sequence<ClassifierLocaleValue> display_names;
+    sequence<ClassifierLocaleValue> descriptions;
     sequence<string> extensions;
     sequence<string> keywords;
     i64 priority;
@@ -1672,14 +1754,25 @@ dictionary ClassifierRuleRecord {
     boolean is_default;
 };
 
+dictionary ClassifierLocaleValue {
+    string locale;
+    string value;
+};
+
 dictionary ClassifierRuleEditorSnapshot {
     sequence<ClassifierRuleRecord> rules;
     string default_rule_id;
     string? updated_rule_id;
+    string repository_locale_policy;
+    ContentLocale? editing_locale;
+    ClassifierConfigHealth health;
+    sequence<ClassifierRecoveryAction> recovery_actions;
     string? warning;
 };
 
 dictionary ClassifierRuleCreateRequest {
+    string repository_locale_policy;
+    ContentLocale editing_locale;
     string slug;
     string display_name;
     string description;
@@ -1690,7 +1783,10 @@ dictionary ClassifierRuleCreateRequest {
 };
 
 dictionary ClassifierRuleUpdate {
+    string repository_locale_policy;
+    ContentLocale editing_locale;
     string rule_id;
+    ClassifierRuleObservedState observed;
     string slug;
     string display_name;
     string description;
@@ -1699,6 +1795,17 @@ dictionary ClassifierRuleUpdate {
     i64 priority;
     string? naming_template;
     boolean preview_confirmed;
+};
+
+dictionary ClassifierRuleObservedState {
+    string rule_id;
+    string slug;
+    string display_name;
+    string description;
+    sequence<string> extensions;
+    sequence<string> keywords;
+    i64 priority;
+    string? naming_template;
 };
 
 dictionary ClassifierRuleDeleteRequest {
@@ -2212,6 +2319,66 @@ dictionary ScanSession {
     sequence<string> errors;
 };
 
+dictionary RecoverableOperationContext {
+    string operation_id;
+    string? retry_of_operation_id;
+    string operation_code;
+    string operation_payload_json;
+    ContentLocale? content_locale;
+    i64 repository_revision;
+    i64 format_contract_version;
+    string? target_set_hash;
+    i64 run_sequence;
+};
+
+dictionary OverviewRegenerationPlan {
+    string operation_id;
+    string plan_token;
+    i64 repository_revision;
+    ContentLocale content_locale;
+    i64 format_contract_version;
+    string target_set_hash;
+    i64 target_count;
+    i64 create_count;
+    i64 replace_count;
+    i64 delete_count;
+    boolean includes_root_areamatrix_file;
+    sequence<string> warnings;
+};
+
+dictionary OverviewRegenerationStartRequest {
+    string operation_id;
+    string plan_token;
+    i64 expected_repository_revision;
+    boolean confirmed;
+};
+
+dictionary OverviewRegenerationSession {
+    RecoverableOperationContext context;
+    OverviewRegenerationStatus status;
+    i64 target_count;
+    i64 staged_count;
+    i64 applied_count;
+    i64 restored_count;
+    boolean cancellation_allowed;
+    string? error_code;
+    i64 created_at;
+    i64 updated_at;
+    i64? finished_at;
+};
+
+dictionary OverviewLanguageStatus {
+    OverviewLanguageState state;
+    ContentLocale content_locale;
+    i64 target_count;
+    i64 known_target_count;
+    i64 missing_target_count;
+    i64 obsolete_target_count;
+    sequence<ContentLocale> known_locales;
+    sequence<i64> known_format_versions;
+    sequence<OverviewRegenerationReason> reasons;
+};
+
 dictionary ExternalEvent {
     string path;
     ExternalEventKind kind;
@@ -2290,15 +2457,24 @@ dictionary ErrorMappingInput {
     string? path;
     string? reason;
     string? message;
+    i64? expected_revision;
+    i64? current_revision;
+};
+
+dictionary ErrorArgument {
+    string name;
+    string value;
 };
 
 dictionary ErrorMapping {
     ErrorKind kind;
-    string user_message;
+    string code;
+    string? field;
+    sequence<ErrorArgument> arguments;
+    sequence<string> recovery_action_ids;
     ErrorSeverity severity;
-    string suggested_action;
     ErrorRecoverability recoverability;
-    string raw_context;
+    string? technical_details;
 };
 
 enum StorageMode { "Moved", "Copied", "Indexed" };
@@ -2316,7 +2492,7 @@ enum PlatformPathKind { "Local", "ICloudDrive", "OneDrive", "NetworkShare", "Unk
 enum OverviewOutput { "GeneratedOnly", "RootAreaMatrixFile" };
 enum ContentLocale { "ZhHans", "En" };
 enum RepositoryLocalePolicy { "FollowInterface", "ZhHans", "En" };
-enum RepositoryLocalePolicyState { "FollowInterface", "ZhHans", "En", "Unsupported" };
+enum RepositoryLocalePolicyState { "Unknown", "FollowInterface", "ZhHans", "En", "Unsupported" };
 enum RepairMetadataLocaleState {
     "Healthy", "MetadataAbsent", "DatabaseMissing", "DatabaseCorrupt",
     "LocaleMissing", "LocaleUnsupported"
@@ -2362,6 +2538,7 @@ enum AiSummaryInputField {
     "ExistingAiSummary", "NoteSummary", "TagCategoryContext"
 };
 enum AiSummaryRoute { "Local", "Remote" };
+enum AiContentOwnership { "Generated", "UserOwned" };
 enum AiSummaryDraftStatus { "Draft", "Skipped", "Unavailable" };
 enum AiSummarySkipReason {
     "AiDisabled", "FeatureDisabled", "ProviderUnavailable",
@@ -2462,6 +2639,16 @@ enum LocalModelRecommendedAction {
 enum ImportDestination { "AutoClassify", "SelectedDirectory", "Category" };
 enum ScanSessionKind { "Adopt", "Reindex" };
 enum ScanSessionStatus { "Running", "Completed", "Paused", "Failed", "Interrupted" };
+enum OverviewRegenerationStatus {
+    "Running", "Staging", "ReadyToCommit", "Committing", "Completed",
+    "RollbackRequired", "RolledBack", "Failed", "Canceled"
+};
+enum OverviewLanguageState {
+    "NotGenerated", "Synchronized", "NeedsRegeneration", "Mixed", "Unknown"
+};
+enum OverviewRegenerationReason {
+    "LocaleMismatch", "FormatMismatch", "MissingTargets", "ObsoleteTargets"
+};
 enum ManualRescanPreviewItemKind {
     "Added", "Updated", "Missing", "RenamedCandidate",
     "Conflict", "Unreadable", "Unknown", "Skipped"
@@ -2563,7 +2750,7 @@ enum RuleImpactConflictKind { "NameConflict", "MissingFile", "UnsupportedStorage
 enum UndoActionStatus { "Pending", "Executed", "Expired", "Blocked" };
 enum RedoActionStatus { "Available", "Cleared", "Blocked", "Expired", "Executed" };
 enum ErrorKind {
-    "Io", "Db", "Config", "Validation", "Classify", "Conflict", "DuplicateFile",
+    "Io", "Db", "DbLocked", "DbCorrupted", "Config", "Validation", "Classify", "Conflict", "RevisionConflict", "DuplicateFile",
     "FileNotFound", "ExpiredAction", "RepoNotInitialized", "InvalidPath",
     "ICloudPlaceholder", "StagingRecoveryRequired", "PermissionDenied", "Internal"
 };
@@ -2578,10 +2765,13 @@ enum ErrorRecoverability {
 interface CoreError {
     Io(string message);
     Db(string message);
+    DbLocked(string message);
+    DbCorrupted(string message);
     Config(string reason);
     Validation(string reason);
     Classify(string reason);
     Conflict(string path);
+    RevisionConflict(string resource, i64 expected_revision, i64 current_revision);
     DuplicateFile(string existing_path);
     FileNotFound(string path);
     ExpiredAction(string action_id);

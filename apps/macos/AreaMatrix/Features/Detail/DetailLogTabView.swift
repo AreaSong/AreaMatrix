@@ -106,14 +106,10 @@ struct DetailLogTabView: View {
                     Button("Collect Diagnostics...", action: onRequestDiagnostics)
                         .disabled(isCollectingDiagnostics)
                 }
-                Text(
-                    "Repository diagnostics may include paths, file names, tags, notes, and other sensitive " +
-                        "metadata. Original file contents are not copied, and diagnostics are not uploaded " +
-                        "automatically. Review the snapshot before sharing."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 diagnosticsStatus(fileID: fileID)
                 DisclosureGroup("Technical Details") {
                     Text(mapping.rawContext)
@@ -131,12 +127,9 @@ struct DetailLogTabView: View {
             EmptyView()
         case let .confirmingPrivacy(stateFileID) where stateFileID == fileID:
             VStack(alignment: .leading, spacing: 6) {
-                Text(
-                    "Create a repository diagnostics snapshot for this error? It may contain sensitive " +
-                        "metadata. Review the snapshot before sharing."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text(L10n.string("diagnostics.errorSnapshotPrivacyDetail"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 HStack {
                     Button("Create diagnostics", action: onConfirmDiagnostics)
                     Button("Cancel", action: onCancelDiagnostics)

@@ -90,7 +90,12 @@ fn assert_error_kind<T: std::fmt::Debug>(result: Result<T, CoreError>, expected_
     let error = result.expect_err("operation should fail");
     assert_eq!(error.to_error_mapping().kind, expected_kind);
     assert!(
-        !error.to_error_mapping().raw_context.is_empty(),
+        !error
+            .to_error_mapping()
+            .technical_details
+            .as_deref()
+            .unwrap_or_default()
+            .is_empty(),
         "mapped classifier correction errors keep observable context"
     );
 }

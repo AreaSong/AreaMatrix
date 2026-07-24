@@ -65,6 +65,32 @@ pub enum AiSummaryRoute {
     Remote,
 }
 
+/// Durable ownership of accepted AI summary content.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub enum AiContentOwnership {
+    /// Accepted AI output that has not been edited by the user.
+    Generated,
+    /// Content edited or authored by the user.
+    UserOwned,
+}
+
+impl AiContentOwnership {
+    pub(crate) fn as_str(&self) -> &'static str {
+        match self {
+            Self::Generated => "generated",
+            Self::UserOwned => "user_owned",
+        }
+    }
+
+    pub(crate) fn parse(value: &str) -> Option<Self> {
+        match value {
+            "generated" => Some(Self::Generated),
+            "user_owned" => Some(Self::UserOwned),
+            _ => None,
+        }
+    }
+}
+
 /// Stable status for a generated AI summary draft.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AiSummaryDraftStatus {
@@ -96,6 +122,10 @@ pub enum AiSummarySkipReason {
 /// Request for generating an AI summary draft for one file.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiSummaryGenerationRequest {
+    /// Unique UUID for this user-triggered generation attempt.
+    pub operation_id: String,
+    /// Previous terminal attempt when this request is an explicit retry.
+    pub retry_of_operation_id: Option<String>,
     /// Active file id in repository metadata.
     pub file_id: i64,
     /// Provider route scope requested by the page.
@@ -113,6 +143,12 @@ pub struct AiSummaryGenerationRequest {
 /// AI summary draft returned before any durable summary write.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AiSummaryDraft {
+    /// Operation identity frozen before any call-log or provider side effect.
+    pub operation_id: String,
+    /// Concrete content locale frozen for this operation.
+    pub content_locale: ContentLocale,
+    /// Versioned deterministic format contract used by this operation.
+    pub format_contract_version: i64,
     /// Active file id this draft belongs to.
     pub file_id: i64,
     /// Opaque draft id for later save, when generation produced one.
@@ -146,6 +182,10 @@ pub struct AiSummaryDraft {
 pub struct AiSummarySaveRequest {
     /// Active file id in repository metadata.
     pub file_id: i64,
+    /// Revision observed by the editing surface; zero means no saved history.
+    pub expected_content_revision: i64,
+    /// Explicit confirmation required to replace user-owned content.
+    pub confirm_replace_user_owned: bool,
     /// Summary text to persist as AreaMatrix-owned derived metadata.
     pub summary_text: String,
     /// Opaque draft id returned by generation, when available.
@@ -162,8 +202,14 @@ pub struct AiSummarySaveRequest {
     pub privacy_rule_id: Option<String>,
     /// AI call log row id for traceability, when recorded by generation.
     pub call_log_id: Option<i64>,
-    /// Whether the user edited the generated draft before saving.
-    pub edited_by_user: bool,
+    /// Ownership of the accepted text.
+    pub ownership: AiContentOwnership,
+    /// Persisted generation operation identity.
+    pub operation_id: String,
+    /// Frozen concrete locale used by the generation operation.
+    pub content_locale: ContentLocale,
+    /// Versioned deterministic AI summary format contract.
+    pub format_contract_version: i64,
 }
 
 /// Result of saving AI summary metadata.
@@ -171,6 +217,10 @@ pub struct AiSummarySaveRequest {
 pub struct AiSummarySaveReport {
     /// Active file id whose summary was saved.
     pub file_id: i64,
+    /// New monotonic content revision.
+    pub content_revision: i64,
+    /// Durable ownership after the save.
+    pub ownership: AiContentOwnership,
     /// Persisted summary text.
     pub saved_summary: String,
     /// Unix timestamp when the save completed.
@@ -187,8 +237,12 @@ pub struct AiSummarySaveReport {
     pub privacy_rule_id: Option<String>,
     /// AI call log row id for traceability, when available.
     pub call_log_id: Option<i64>,
-    /// Whether the user edited the generated draft before saving.
-    pub edited_by_user: bool,
+    /// Persisted generation operation identity.
+    pub operation_id: String,
+    /// Frozen generation locale.
+    pub content_locale: ContentLocale,
+    /// Persisted format contract version.
+    pub format_contract_version: i64,
     /// Summary length in Unicode scalar count for UI counters.
     pub character_count: i64,
 }
@@ -198,6 +252,8 @@ pub struct AiSummarySaveReport {
 pub struct AiSummaryClearRequest {
     /// Active file id whose summary should be cleared.
     pub file_id: i64,
+    /// Revision observed by the clearing surface.
+    pub expected_content_revision: i64,
     /// Explicit confirmation from the caller's clear-summary sheet.
     pub confirmed: bool,
 }
@@ -209,6 +265,8 @@ pub struct AiSummaryClearReport {
     pub file_id: i64,
     /// Whether a saved summary row was cleared.
     pub cleared: bool,
+    /// New tombstone revision after clear.
+    pub content_revision: i64,
     /// Unix timestamp when the clear completed.
     pub cleared_at: i64,
 }
@@ -249,6 +307,13 @@ fn validate_repo_path(repo_path: &str) -> CoreResult<()> {
 
 fn validate_generation_request(request: &AiSummaryGenerationRequest) -> CoreResult<()> {
     validate_file_id(request.file_id)?;
+    validate_operation_id(&request.operation_id)?;
+    if let Some(retry_of) = request.retry_of_operation_id.as_deref() {
+        validate_operation_id(retry_of)?;
+        if retry_of == request.operation_id {
+            return Err(CoreError::config("AI summary retry operation is invalid"));
+        }
+    }
     if let Some(reference) = request.privacy_policy_ref.as_deref() {
         validate_policy_ref(reference, "AI summary privacy policy reference is invalid")?;
     }
@@ -257,6 +322,12 @@ fn validate_generation_request(request: &AiSummaryGenerationRequest) -> CoreResu
 
 fn validate_save_request(request: &AiSummarySaveRequest) -> CoreResult<()> {
     validate_file_id(request.file_id)?;
+    if request.expected_content_revision < 0 || request.format_contract_version < 1 {
+        return Err(CoreError::config(
+            "AI summary revision or format version is invalid",
+        ));
+    }
+    validate_operation_id(&request.operation_id)?;
     validate_summary_text(&request.summary_text)?;
     validate_optional_identifier(&request.draft_id, "AI summary draft id is invalid")?;
     validate_optional_model_name(&request.model_name)?;
@@ -274,11 +345,26 @@ fn validate_save_request(request: &AiSummarySaveRequest) -> CoreResult<()> {
 
 fn validate_clear_request(request: &AiSummaryClearRequest) -> CoreResult<()> {
     validate_file_id(request.file_id)?;
+    if request.expected_content_revision < 0 {
+        return Err(CoreError::config("AI summary revision is invalid"));
+    }
     if request.confirmed {
         Ok(())
     } else {
         Err(CoreError::config(
             "AI summary clear confirmation is required",
+        ))
+    }
+}
+
+fn validate_operation_id(value: &str) -> CoreResult<()> {
+    let parsed = uuid::Uuid::parse_str(value)
+        .map_err(|_| CoreError::config("AI summary operation id is invalid"))?;
+    if parsed.to_string() == value {
+        Ok(())
+    } else {
+        Err(CoreError::config(
+            "AI summary operation id must be canonical",
         ))
     }
 }

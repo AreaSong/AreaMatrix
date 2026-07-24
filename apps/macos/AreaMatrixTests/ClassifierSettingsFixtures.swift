@@ -27,14 +27,14 @@ extension CoreErrorMappingSnapshot {
     }
 }
 
-extension RepoConfigSnapshot {
+extension AppRepoConfigSnapshot {
     static func classifierSettingsFixture(
         repoPath: String,
         enableExtensionRules: Bool = true,
         enableKeywordRules: Bool = true,
         fallbackToInbox: Bool = true
-    ) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+    ) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath) {
             $0.locale = "system"
             $0.enableExtensionRules = enableExtensionRules
             $0.enableKeywordRules = enableKeywordRules
@@ -42,9 +42,9 @@ extension RepoConfigSnapshot {
         }
     }
 
-    static func classifierRecoveryFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
-            $0.locale = "system"
+    static func classifierRecoveryFixture(repoPath: String) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath) {
+            $0.locale = "en"
         }
     }
 }
@@ -58,7 +58,7 @@ extension ClassifierRuleEditorSnapshotState {
                     displayName: "Documents",
                     isDefault: true
                 ) {
-                    $0.description = "Docs"
+                    $0.descriptions[ClassifierEditingLocale.en.rawValue] = "Docs"
                     $0.extensions = ["md"]
                     $0.keywords = ["report"]
                 },
@@ -66,14 +66,35 @@ extension ClassifierRuleEditorSnapshotState {
                     ruleID: "finance",
                     displayName: "Finance"
                 ) {
-                    $0.description = "Finance docs"
+                    $0.descriptions[ClassifierEditingLocale.en.rawValue] = "Finance docs"
                     $0.extensions = ["pdf"]
                     $0.priority = 10
                 }
             ],
             defaultRuleID: "docs",
             updatedRuleID: updatedRuleID,
+            repositoryLocalePolicy: "system",
+            editingLocale: .en,
+            health: .valid,
+            recoveryActions: [],
             warning: nil
+        )
+    }
+
+    static func classifierDegradedFixture(
+        health: ClassifierConfigHealthState,
+        recoveryActions: [ClassifierRecoveryActionState],
+        warning: String = "classifier unavailable"
+    ) -> ClassifierRuleEditorSnapshotState {
+        ClassifierRuleEditorSnapshotState(
+            rules: [],
+            defaultRuleID: "",
+            updatedRuleID: nil,
+            repositoryLocalePolicy: "system",
+            editingLocale: nil,
+            health: health,
+            recoveryActions: recoveryActions,
+            warning: warning
         )
     }
 }
@@ -89,8 +110,8 @@ extension ClassifierRuleRecordSnapshot {
         var snapshot = ClassifierRuleRecordSnapshot(
             ruleID: ruleID,
             slug: slug ?? ruleID,
-            displayName: displayName ?? ruleID,
-            description: "",
+            displayNames: [ClassifierEditingLocale.en.rawValue: displayName ?? ruleID],
+            descriptions: [:],
             extensions: [],
             keywords: [],
             priority: 0,

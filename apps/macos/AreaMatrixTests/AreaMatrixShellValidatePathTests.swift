@@ -38,7 +38,10 @@ final class AreaMatrixShellValidatePathTests: XCTestCase {
         await model.continueFromChoosePath()
 
         XCTAssertEqual(model.route, .validatePath)
-        XCTAssertEqual(model.repositoryPathError, L10n.message("core.error.PermissionDenied.message", fallback: "无访问权限"))
+        XCTAssertEqual(
+            model.repositoryPathError,
+            L10n.message("core.error.PermissionDenied.message", fallback: "无访问权限")
+        )
         XCTAssertFalse(model.canContinueFromValidatePath)
         XCTAssertNil(model.repositoryPathValidation)
     }

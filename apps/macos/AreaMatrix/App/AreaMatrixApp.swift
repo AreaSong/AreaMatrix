@@ -24,6 +24,7 @@ struct AreaMatrixApp: App {
             MainWindow()
                 .environmentObject(languageStore)
                 .environmentObject(localizer)
+                .environment(\.locale, Locale(identifier: localizer.resourceLocaleIdentifier))
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)

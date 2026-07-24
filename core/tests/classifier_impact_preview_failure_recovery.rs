@@ -274,6 +274,8 @@ fn classifier_impact_failure_edge_permissions_are_not_silently_downgraded() {
         path: Some("/restricted/repo".to_owned()),
         reason: None,
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
 
     assert_eq!(mapping.kind, ErrorKind::PermissionDenied);

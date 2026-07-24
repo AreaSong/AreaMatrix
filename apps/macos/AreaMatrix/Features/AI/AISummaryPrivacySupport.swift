@@ -177,24 +177,6 @@ struct AISummaryPrivacySkip: Equatable {
         return "block:privacy-rule"
     }
 
-    func unloggedDraft(fileID: Int64) -> AiSummaryDraft {
-        AiSummaryDraft(
-            fileId: fileID,
-            draftId: nil,
-            status: summaryDraftStatus,
-            summaryText: nil,
-            route: nil,
-            modelName: nil,
-            generatedAt: nil,
-            usedContext: [],
-            skippedReason: summarySkipReason,
-            privacyRuleId: ruleID,
-            callLogId: nil,
-            requiresUserSave: false,
-            characterCount: 0
-        )
-    }
-
     private var summaryDraftStatus: AiSummaryDraftStatus {
         switch skippedReason {
         case .providerNotConfigured, .providerNotVerified, .providerDisabled,

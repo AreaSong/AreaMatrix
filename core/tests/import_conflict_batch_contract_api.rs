@@ -168,8 +168,11 @@ fn import_conflict_batch_contract_exposes_signatures_inputs_outputs_and_errors()
 
 #[test]
 fn import_conflict_batch_contract_validates_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
-        preview_import_conflict_batch("/tmp/repo".to_owned(), preview_request()),
+        preview_import_conflict_batch(uninitialized_repo_path.clone(), preview_request()),
         Err(CoreError::Db { .. })
     ));
 
@@ -194,7 +197,7 @@ fn import_conflict_batch_contract_validates_inputs_without_fake_success() {
 
     assert!(matches!(
         apply_import_conflict_batch(
-            "/tmp/repo".to_owned(),
+            uninitialized_repo_path.clone(),
             apply_request(false),
             "preview:import-conflict:session-42".to_owned()
         ),
@@ -208,7 +211,7 @@ fn import_conflict_batch_contract_validates_inputs_without_fake_success() {
 
     assert!(matches!(
         apply_import_conflict_batch(
-            "/tmp/repo".to_owned(),
+            uninitialized_repo_path,
             apply_request(true),
             "preview:import-conflict:session-42".to_owned()
         ),

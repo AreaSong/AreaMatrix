@@ -53,7 +53,11 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
         await model.setICloudWarningsEnabled(false)
 
         XCTAssertEqual(model.summary?.iCloudWarningsEnabled, true)
-        XCTAssertEqual(model.saveError?.message, "数据库错误")
+        XCTAssertEqual(model.saveError?.message, L10n.message(
+            "error.unmapped.message",
+            fallback: "数据库错误",
+            technicalDetail: "数据库错误"
+        ))
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
@@ -84,8 +88,16 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
 
         await mapper.assertMappedCoreErrors([CoreError.Config(reason: "invalid repo_config")])
         XCTAssertEqual(model.loadState, .failed(IntegrationsSettingsError(
-            message: "配置错误",
-            recovery: "Retry status"
+            message: L10n.message(
+                "error.unmapped.message",
+                fallback: "配置错误",
+                technicalDetail: "配置错误"
+            ),
+            recovery: L10n.message(
+                "error.unmapped.action",
+                fallback: "Retry status",
+                technicalDetail: "Retry status"
+            )
         )))
         XCTAssertNil(model.summary)
     }

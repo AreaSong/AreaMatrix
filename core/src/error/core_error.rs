@@ -1,16 +1,14 @@
-use super::templates::{
-    is_db_corrupted_message, is_db_locked_message, mapping_template_for_kind, ErrorMappingTemplate,
-    DB_CORRUPTED_MAPPING, DB_LOCKED_MAPPING,
-};
-use super::types::{ErrorKind, ErrorMapping};
+use super::templates::{mapping_template_for_kind, ErrorMappingTemplate};
+use super::types::{ErrorArgument, ErrorKind, ErrorMapping};
 use thiserror::Error;
 
 /// Error variants exposed through the UniFFI boundary.
 ///
 /// error mapping treats each variant and payload as the structured input for Swift-side
 /// error presentation. App code should branch on variants and payloads, not on
-/// localized strings or `Display` output. Mapping an error to UI severity, user
-/// copy, suggested action, and recoverability is side-effect free: it must not
+/// localized strings or `Display` output. Mapping an error to a stable code,
+/// named arguments, recovery action identifiers, severity, and recoverability
+/// is side-effect free: it must not
 /// inspect the filesystem, open the database, write logs, or mutate repository
 /// state.
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
@@ -21,6 +19,12 @@ pub enum CoreError {
     /// SQLite or repository metadata failure.
     #[error("db error: {message}")]
     Db { message: String },
+    /// SQLite reported a typed busy or locked condition.
+    #[error("database locked: {message}")]
+    DbLocked { message: String },
+    /// SQLite reported a typed corruption or not-a-database condition.
+    #[error("database corrupted: {message}")]
+    DbCorrupted { message: String },
     /// Configuration validation or persistence failure.
     #[error("config error: {reason}")]
     Config { reason: String },
@@ -33,6 +37,15 @@ pub enum CoreError {
     /// Path or naming conflict.
     #[error("path conflict: {path}")]
     Conflict { path: String },
+    /// Optimistic revision compare-and-swap conflict.
+    #[error(
+        "revision conflict for {resource}: expected {expected_revision}, current {current_revision}"
+    )]
+    RevisionConflict {
+        resource: String,
+        expected_revision: i64,
+        current_revision: i64,
+    },
     /// Duplicate file detected, with the first active path that owns the hash.
     #[error("duplicate file already exists at: {existing_path}")]
     DuplicateFile { existing_path: String },
@@ -64,11 +77,7 @@ pub enum CoreError {
 
 impl CoreError {
     fn mapping_template(&self) -> &'static ErrorMappingTemplate {
-        match self {
-            Self::Db { message } if is_db_corrupted_message(message) => &DB_CORRUPTED_MAPPING,
-            Self::Db { message } if is_db_locked_message(message) => &DB_LOCKED_MAPPING,
-            _ => mapping_template_for_kind(&self.kind()),
-        }
+        mapping_template_for_kind(&self.kind())
     }
 
     /// Creates an IO error with the raw source message.
@@ -81,6 +90,20 @@ impl CoreError {
     /// Creates a database error with the raw database message.
     pub fn db(message: impl Into<String>) -> Self {
         Self::Db {
+            message: message.into(),
+        }
+    }
+
+    /// Creates a typed SQLite busy or locked error.
+    pub fn db_locked(message: impl Into<String>) -> Self {
+        Self::DbLocked {
+            message: message.into(),
+        }
+    }
+
+    /// Creates a typed SQLite corruption error.
+    pub fn db_corrupted(message: impl Into<String>) -> Self {
+        Self::DbCorrupted {
             message: message.into(),
         }
     }
@@ -109,6 +132,19 @@ impl CoreError {
     /// Creates a conflict error with the conflicting path.
     pub fn conflict(path: impl Into<String>) -> Self {
         Self::Conflict { path: path.into() }
+    }
+
+    /// Creates a typed optimistic revision conflict.
+    pub fn revision_conflict(
+        resource: impl Into<String>,
+        expected_revision: i64,
+        current_revision: i64,
+    ) -> Self {
+        Self::RevisionConflict {
+            resource: resource.into(),
+            expected_revision,
+            current_revision,
+        }
     }
 
     /// Creates a file-not-found error with the missing path.
@@ -160,10 +196,13 @@ impl CoreError {
         match self {
             Self::Io { .. } => ErrorKind::Io,
             Self::Db { .. } => ErrorKind::Db,
+            Self::DbLocked { .. } => ErrorKind::DbLocked,
+            Self::DbCorrupted { .. } => ErrorKind::DbCorrupted,
             Self::Config { .. } => ErrorKind::Config,
             Self::Validation { .. } => ErrorKind::Validation,
             Self::Classify { .. } => ErrorKind::Classify,
             Self::Conflict { .. } => ErrorKind::Conflict,
+            Self::RevisionConflict { .. } => ErrorKind::RevisionConflict,
             Self::DuplicateFile { .. } => ErrorKind::DuplicateFile,
             Self::FileNotFound { .. } => ErrorKind::FileNotFound,
             Self::ExpiredAction { .. } => ErrorKind::ExpiredAction,
@@ -179,7 +218,11 @@ impl CoreError {
     /// Returns the raw path, reason, or message carried by the error.
     pub fn raw_context(&self) -> &str {
         match self {
-            Self::Io { message } | Self::Db { message } | Self::Internal { message } => message,
+            Self::Io { message }
+            | Self::Db { message }
+            | Self::DbLocked { message }
+            | Self::DbCorrupted { message }
+            | Self::Internal { message } => message,
             Self::Config { reason } | Self::Validation { reason } | Self::Classify { reason } => {
                 reason
             }
@@ -192,6 +235,7 @@ impl CoreError {
             | Self::StagingRecoveryRequired { path }
             | Self::PermissionDenied { path } => path,
             Self::DuplicateFile { existing_path } => existing_path,
+            Self::RevisionConflict { resource, .. } => resource,
         }
     }
 
@@ -200,13 +244,72 @@ impl CoreError {
         let kind = self.kind();
         let template = self.mapping_template();
 
+        let code = match self {
+            Self::RevisionConflict { resource, .. } if resource == "repo_config" => {
+                "repo_config_revision_conflict"
+            }
+            _ => template.code,
+        };
         ErrorMapping {
             kind,
-            user_message: template.user_message.to_owned(),
+            code: code.to_owned(),
+            field: template.field.map(str::to_owned),
+            arguments: self.error_arguments(),
+            recovery_action_ids: template
+                .recovery_action_ids
+                .iter()
+                .map(|value| (*value).to_owned())
+                .collect(),
             severity: template.severity.clone(),
-            suggested_action: template.suggested_action.to_owned(),
             recoverability: template.recoverability.clone(),
-            raw_context: self.raw_context().to_owned(),
+            technical_details: self.technical_details(),
+        }
+    }
+
+    fn error_arguments(&self) -> Vec<ErrorArgument> {
+        let argument = |name: &str, value: &str| ErrorArgument {
+            name: name.to_owned(),
+            value: value.to_owned(),
+        };
+        match self {
+            Self::Conflict { path }
+            | Self::FileNotFound { path }
+            | Self::RepoNotInitialized { path }
+            | Self::InvalidPath { path }
+            | Self::ICloudPlaceholder { path }
+            | Self::StagingRecoveryRequired { path }
+            | Self::PermissionDenied { path } => vec![argument("path", path)],
+            Self::DuplicateFile { existing_path } => {
+                vec![argument("existing_path", existing_path)]
+            }
+            Self::ExpiredAction { action_id } => vec![argument("action_id", action_id)],
+            Self::Config { reason } | Self::Validation { reason } | Self::Classify { reason } => {
+                vec![argument("reason", reason)]
+            }
+            Self::RevisionConflict {
+                resource,
+                expected_revision,
+                current_revision,
+            } => vec![
+                argument("resource", resource),
+                argument("expected_revision", &expected_revision.to_string()),
+                argument("current_revision", &current_revision.to_string()),
+            ],
+            Self::Io { .. }
+            | Self::Db { .. }
+            | Self::DbLocked { .. }
+            | Self::DbCorrupted { .. }
+            | Self::Internal { .. } => Vec::new(),
+        }
+    }
+
+    fn technical_details(&self) -> Option<String> {
+        match self {
+            Self::RevisionConflict { .. } => None,
+            _ => {
+                let value = self.raw_context();
+                (!value.is_empty()).then(|| value.to_owned())
+            }
         }
     }
 }

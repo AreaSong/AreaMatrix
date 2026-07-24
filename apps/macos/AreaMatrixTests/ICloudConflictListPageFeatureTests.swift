@@ -337,9 +337,9 @@ private extension ICloudConflictPairSnapshot {
     }
 }
 
-private extension RepoConfigSnapshot {
-    static func iCloudConflictListIntegrationsFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+private extension AppRepoConfigSnapshot {
+    static func iCloudConflictListIntegrationsFixture(repoPath: String) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath) {
             $0.locale = "system"
         }
     }

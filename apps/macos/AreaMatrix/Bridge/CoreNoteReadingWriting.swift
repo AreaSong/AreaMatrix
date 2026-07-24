@@ -113,7 +113,17 @@ struct AISummarySavedSnapshot: Equatable {
     var privacyRuleID: String?
     var callLogID: Int64?
     var editedByUser: Bool
+    var contentRevision: Int64
+    var ownership: AiContentOwnership
+    var operationID: String?
+    var contentLocale: ContentLocale?
+    var formatContractVersion: Int64?
     var characterCount: Int64
+}
+
+struct AISummaryPersistedStateSnapshot: Equatable {
+    var summary: AISummarySavedSnapshot?
+    var contentRevision: Int64
 }
 
 enum TagSuggestionApplyStatusSnapshot: String, Equatable {
@@ -163,10 +173,21 @@ protocol CoreNoteReadingWriting: Sendable {
 }
 
 protocol CoreAISummaryManaging: Sendable {
+    func loadAISummaryState(repoPath: String, fileID: Int64) async throws -> AISummaryPersistedStateSnapshot
     func loadSavedAISummary(repoPath: String, fileID: Int64) async throws -> AISummarySavedSnapshot?
     func generateAISummary(repoPath: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft
     func saveAISummary(repoPath: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport
     func clearAISummary(repoPath: String, request: AiSummaryClearRequest) async throws -> AiSummaryClearReport
+}
+
+extension CoreAISummaryManaging {
+    func loadAISummaryState(repoPath: String, fileID: Int64) async throws -> AISummaryPersistedStateSnapshot {
+        let summary = try await loadSavedAISummary(repoPath: repoPath, fileID: fileID)
+        return AISummaryPersistedStateSnapshot(
+            summary: summary,
+            contentRevision: summary?.contentRevision ?? 0
+        )
+    }
 }
 
 extension CoreBridge: RepositoryContentLocaleSnapshotting {}
@@ -186,8 +207,12 @@ extension CoreBridge: CoreNoteReadingWriting {
 }
 
 extension CoreBridge: CoreAISummaryManaging {
+    func loadAISummaryState(repoPath: String, fileID: Int64) async throws -> AISummaryPersistedStateSnapshot {
+        try await SQLiteAISummaryMetadataReader().persistedState(repoPath: repoPath, fileID: fileID)
+    }
+
     func loadSavedAISummary(repoPath: String, fileID: Int64) async throws -> AISummarySavedSnapshot? {
-        try await SQLiteAISummaryMetadataReader().savedSummary(repoPath: repoPath, fileID: fileID)
+        try await loadAISummaryState(repoPath: repoPath, fileID: fileID).summary
     }
 
     func generateAISummary(repoPath: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft {

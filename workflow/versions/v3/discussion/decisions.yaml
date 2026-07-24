@@ -25,6 +25,8 @@ exact_docs:
   - docs/modules/repair.md
   - docs/api/classifier-yaml.md
   - docs/api/core-api.md
+  - docs/api/error-codes.md
+  - docs/ux/error-messages.md
   - docs/development/coding-standards.md
   - docs/development/testing.md
   - docs/development/ci-governance.md
@@ -34,13 +36,22 @@ decisions:
     summary: Keep interface preference, repository policy, operation content locale, region formatting, and verbatim values as separate typed domains.
   - id: interface-selection
     status: accepted
-    summary: App language is device-local system, Simplified Chinese, or English; Welcome cycles without a menu and General commits immediately.
+    summary: App language is device-local system, Simplified Chinese, or English; Welcome cycles without a menu, displays the stored preference rather than only the resolved locale, and General commits immediately.
+  - id: interface-switcher-presentation
+    status: accepted
+    summary: The compact Welcome switcher renders follow-system as a globe with an automatic marker, Simplified Chinese as 中, and English as EN; tooltip and accessibility expose the full stored mode and, for follow-system, its current concrete resolution.
   - id: system-resolution
     status: accepted
     summary: Resolve only preferred-language item one; zh-Hans/zh-CN/zh-SG map to zh-Hans, en-* maps to en, all other first items map to en.
+  - id: system-runtime-refresh
+    status: accepted
+    summary: System preference re-resolves on launch, app activation and locale-change notification and broadcasts to all windows; explicit locales ignore OS changes, while unknown stored app values run as system without implicit write-back.
   - id: content-selection
     status: accepted
-    summary: Repository policy is follow-interface, Simplified Chinese, or English; new repositories choose it before first generation and default to follow-interface.
+    summary: Repository policy is follow-interface, Simplified Chinese, or English; follow-interface displays its current concrete resolution, new repositories choose it before first generation, and the default remains follow-interface.
+  - id: repository-language-feedback
+    status: accepted
+    summary: Saving repository content language immediately reports the canonical saved policy and concrete result, states that existing generated content was not rewritten, and offers explicit regeneration only when provenance reports a non-synchronized state.
   - id: multi-window-state
     status: accepted
     summary: Multiple windows are supported; interface changes broadcast, repository drafts remain local, and stale saves fail with revision CAS conflict.
@@ -55,13 +66,25 @@ decisions:
     summary: Content locale controls built-in labels and future generated content; user-authored values and technical identifiers remain verbatim.
   - id: existing-output
     status: accepted
-    summary: Language changes never rewrite existing output; explicit full overview regeneration is recoverable all-old-or-all-new and records provenance.
+    summary: Language changes never rewrite existing output; explicit full overview regeneration uses a durable journal and converges to an all-old or all-new settled state while touching only generated overview files and the legal managed block.
+  - id: overview-language-state
+    status: accepted
+    summary: Overview provenance reports not-generated, synchronized, needs-regeneration, mixed, or unknown; needs-regeneration carries stable locale-mismatch, format-mismatch, missing-targets, and obsolete-targets reasons, mixed means multiple known locale/format values, and unknown means any existing output lacks trusted provenance.
+  - id: stale-generated-overviews
+    status: accepted
+    summary: Full regeneration removes obsolete AreaMatrix-owned generated node outputs inside the strict generated-path whitelist, with the same journal, backup, rollback, and non-regular-file fail-closed guarantees as replacements.
+  - id: legacy-overview-provenance
+    status: accepted
+    summary: Existing generated output without durable provenance is reported as unknown and is never assigned a language by inspecting text or guessing from current settings.
   - id: managed-root-file
     status: accepted
     summary: New AREAMATRIX.md app-owned scaffold is inside the managed block; existing outside-block text is user-owned and immutable to regeneration.
   - id: classifier-editor
     status: accepted
-    summary: Classifier editor exposes Simplified Chinese and English segments, patches only dirty locale entries atomically, requires explicit alias canonicalization, and never auto-translates.
+    summary: A canonical repository may edit either Simplified Chinese or English classifier entries independently of its active content policy; one draft freezes one editing locale, switching a dirty draft uses Save/Discard/Cancel, saves patch only that locale, aliases require explicit canonicalization, and values are never auto-translated.
+  - id: classifier-missing-locale-editor
+    status: accepted
+    summary: A missing locale entry is represented by an empty editor field plus a separate read-only fallback preview; fallback text is never injected into an editable field or persisted as an explicit translation unless the user enters it.
   - id: invalid-classifier
     status: accepted
     summary: Missing, unreadable, or invalid classifier YAML yields slug-based degraded read-only browsing with persistent error; no silent embedded fallback; explicit validate/restore is the recovery path.
@@ -73,16 +96,82 @@ decisions:
     summary: Core has no mutable process-global interface locale; every generation-capable API receives a concrete operation locale and binding contract v2 removes the old setter.
   - id: operation-snapshot
     status: accepted
-    summary: Durable operation context is persisted before first side effect/remote call; new attempts recapture, continuation/resume/replay/same sync window/existing automatic fallback reuse.
+    summary: A data-minimized durable operation context is persisted before the first side effect or remote call; it stores stable identifiers, revisions, hashes and options rather than duplicate user content, while continuation/resume/replay/same sync window/existing automatic fallback reuse it.
   - id: ai-provenance
     status: accepted
-    summary: Persistable AI natural language uses frozen content locale; generated/user ownership and operation/provider/model provenance are stored, and user-owned replacement needs confirmation.
+    summary: Persistable AI natural language uses the frozen content locale; accepted unedited summaries remain generated, edits and accepted tags become user-owned, all saves use content-revision CAS, and no saved result is silently replaced.
+  - id: ai-user-owned-replacement-presentation
+    status: accepted
+    summary: Generating against a user-owned summary preserves the saved value, presents the saved and new drafts side by side, and requires an explicit replace, keep, or continue-editing choice; clear also requires confirmation, and a save conflict retains the draft.
+  - id: ai-language-compliance
+    status: accepted
+    summary: Frozen content locale is the requested and recorded AI language, not a claim of reliable language detection; only provider metadata or a high-confidence advisory detector may raise a mismatch warning, and the verbatim draft is never silently translated or retried.
+  - id: cas-conflict-recovery
+    status: accepted
+    summary: Stale saves retain local dirty fields and never auto-retry or silently merge; users explicitly reload or review against the latest revision and save again, while clean sibling windows refresh immediately.
+  - id: repository-conflict-review-presentation
+    status: accepted
+    summary: Repository config conflicts are resolved in context with saved, latest, and local values for dirty fields; reload discards the draft, review only rebases the visible baseline, and a second explicit Save is always required without force-overwrite or silent non-overlap merge.
+  - id: classifier-conflict-review-presentation
+    status: accepted
+    summary: Classifier conflicts retain the complete draft and frozen editing locale, compare only that locale and affected rule fields against the latest snapshot, keep other locale maps read-only, and require reload or explicit review followed by a new Save.
+  - id: operation-identity
+    status: accepted
+    summary: Each user-triggered attempt has one operation_id; terminal retry creates a new operation_id linked by retry_of_operation_id, while resume/replay/rollback reuse it, internal restarts use run_sequence, provider calls use call_id, and no overlapping public attempt_id is exposed.
+  - id: overview-regeneration-consistency
+    status: accepted
+    summary: Regeneration freezes repository revision, targets, locale and format version; a pre-commit revision mismatch aborts without changing active output, cancellation is allowed before but not during the short commit, and crash recovery rolls forward when the staged plan is valid, otherwise rolls back from a valid backup, while unverifiable state blocks normal writes.
+  - id: overview-regeneration-presentation
+    status: accepted
+    summary: Preflight presents the concrete target locale and create/replace/delete counts, identifies managed-root participation, and states that AI results, README and user-authored bytes are excluded; all windows observe one operation while only its initiating window owns interaction.
+  - id: overview-regeneration-interaction
+    status: accepted
+    summary: Repository owns the regeneration entry and completion summary; pre-commit cancellation is available, commit removes cancellation, non-initiating windows are read-only observers, and crash recovery automatically rolls forward or back from verified evidence instead of asking the user to choose an unsafe direction.
+  - id: recoverable-context-privacy
+    status: accepted
+    summary: Recoverable context stores only stable operation identity, type, concrete locale, revisions, canonical options, target identifiers or hashes, format version and recovery state; it does not duplicate reconstructable user content, full prompts or secrets.
+  - id: structured-conflict-payload
+    status: accepted
+    summary: Repository CAS uses a stable repo_config_revision_conflict code with expected and current revisions; Swift reloads the latest snapshot explicitly, retains the local draft, and never parses display strings or silently retries.
+  - id: deterministic-formatting
+    status: accepted
+    summary: Persisted generated text uses frozen content locale, UTC and a versioned deterministic format contract; transient UI formatting continues to follow the live macOS region.
+  - id: structured-error-boundary
+    status: accepted
+    summary: Core returns stable codes, fields, arguments, recovery action identifiers and optional verbatim technical details; Swift localizes presentation and translated sentences are never persisted in logs or recovery state.
+  - id: contextual-recovery-placement
+    status: accepted
+    summary: Config, classifier, overview and AI recovery remain in their owning surfaces; only startup file-transaction recovery may block application entry, technical details stay verbatim and collapsible, unknown recovery actions are omitted, and live interface changes re-resolve display copy without changing operation state.
   - id: legacy-receipt-recovery
     status: accepted
     summary: Legacy NULL receipt locale requires a repo/cursor/exact-set recovery token and explicit concrete locale selection; no implicit claim or current-setting guess.
   - id: schema-v3-safety
     status: accepted
-    summary: Schema v3 uses immediate transactional migration, fresh numbered non-overwriting pre-v3 backups, locale CHECK/triggers, integrity checks, and v2-preserving rollback.
+    summary: Schema v3 uses immediate transactional migration, fresh numbered non-overwriting pre-v3 backups, locale CHECK/triggers, integrity checks, and v2-preserving rollback; the application does not automatically delete migration backups.
+  - id: legacy-repository-locale
+    status: accepted
+    summary: Legacy explicit values and recognized aliases remain readable without write-back, while a repository with no provable language policy remains unknown and read-only for generation until the user explicitly selects a canonical policy; existing prose is never inspected to infer language.
+  - id: legacy-repository-locale-presentation
+    status: accepted
+    summary: An unknown legacy repository remains browsable with persistent non-blocking guidance, exposes an unselected three-policy chooser in Repository, displays the concrete result for follow-interface, and unlocks generation only after explicit Save without regenerating existing output.
+  - id: classifier-recovery-safety
+    status: accepted
+    summary: A missing classifier enters degraded read-only and may be explicitly created from defaults; readable invalid content may be explicitly restored only after a numbered non-overwriting backup, unreadable content must first regain readable permissions, and no path silently substitutes embedded rules.
+  - id: classifier-display-fallback
+    status: accepted
+    summary: Known explicit or alias policies resolve display names by exact raw, concrete locale, English, then slug; follow-interface starts at its current concrete locale; unknown policies browse by exact raw, English, then slug while all normal mutation and generation remain blocked.
+  - id: follow-interface-runtime
+    status: accepted
+    summary: Follow-interface stores only the system policy, reprojects clean content presentation when the concrete interface locale changes without incrementing repository revision, freezes dirty classifier drafts and running operations, and resolves independently on each device for new operations.
+  - id: language-stable-ordering
+    status: accepted
+    summary: Interface or content language changes replace presentation text without changing stable category order, file sort mode, selection, expansion, scroll, focus, route, sheet, or draft identity.
+  - id: generated-drift-safety
+    status: accepted
+    summary: A generated file whose bytes no longer match trusted provenance becomes unknown; normal incremental generation fails closed, while explicit full regeneration may replace it only through preflight, journal, backup and strict regular-file/path validation.
+  - id: localization-fallback
+    status: accepted
+    summary: Missing app-owned catalog copy falls back to English plus the stable error code; if English is also missing a built-in generic English sentence plus code is shown, unknown recovery action IDs never create unusable buttons, verbatim technical details remain collapsible and copyable, and translated sentences never enter logs or recovery state.
   - id: repair-separation
     status: accepted
     summary: Metadata repair, filesystem reindex, and overview regeneration are separate APIs, confirmations, sessions, and rollback units.

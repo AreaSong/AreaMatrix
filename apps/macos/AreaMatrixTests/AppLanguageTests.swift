@@ -1,3 +1,4 @@
+import AppKit
 @testable import AreaMatrix
 import Observation
 import XCTest
@@ -79,6 +80,23 @@ final class AppLanguageTests: XCTestCase {
 
         XCTAssertEqual(store.selection, .zhHans)
         XCTAssertEqual(defaults.string(forKey: AppLanguage.defaultsKey), "zh-Hans")
+    }
+
+    @MainActor
+    func testUnknownPreferenceRunsAsSystemWithoutImplicitWriteBack() throws {
+        let defaults = try makeDefaults()
+        defaults.set("fr-FR", forKey: AppLanguage.defaultsKey)
+        let runtime = AppLanguageRuntime()
+
+        let store = AppLanguageStore(
+            defaults: defaults,
+            runtime: runtime,
+            preferredLanguages: { ["zh-CN"] }
+        )
+
+        XCTAssertEqual(store.selection, .system)
+        XCTAssertEqual(store.resolvedResourceLocaleIdentifier, "zh-Hans")
+        XCTAssertEqual(defaults.string(forKey: AppLanguage.defaultsKey), "fr-FR")
     }
 
     @MainActor
@@ -248,6 +266,30 @@ final class AppLanguageTests: XCTestCase {
         notifications.post(name: NSLocale.currentLocaleDidChangeNotification, object: nil)
         RunLoop.main.run(until: Date().addingTimeInterval(0.01))
         XCTAssertEqual(localizer.resourceLocaleIdentifier, "en")
+    }
+
+    @MainActor
+    func testApplicationActivationReResolvesFollowSystemSelection() throws {
+        let defaults = try makeDefaults()
+        let notifications = NotificationCenter()
+        var preferred = ["en-US"]
+        let runtime = AppLanguageRuntime(selection: .system)
+        let localizer = AppLocalizer(runtime: runtime)
+        let store = AppLanguageStore(
+            defaults: defaults,
+            runtime: runtime,
+            localizer: localizer,
+            preferredLanguages: { preferred },
+            notificationCenter: notifications
+        )
+        XCTAssertEqual(localizer.resourceLocaleIdentifier, "en")
+
+        preferred = ["zh-SG"]
+        notifications.post(name: NSApplication.didBecomeActiveNotification, object: nil)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.01))
+
+        XCTAssertEqual(localizer.resourceLocaleIdentifier, "zh-Hans")
+        withExtendedLifetime(store) {}
     }
 
     private func makeDefaults() throws -> UserDefaults {

@@ -108,8 +108,7 @@ impl ContentLocaleInput for ContentLocale {
 
 impl ContentLocaleInput for String {
     fn into_content_locale(self) -> CoreResult<ContentLocale> {
-        ContentLocale::parse(&self)
-            .ok_or_else(|| CoreError::config("unsupported content locale"))
+        ContentLocale::parse(&self).ok_or_else(|| CoreError::config("unsupported content locale"))
     }
 }
 
@@ -144,6 +143,8 @@ impl RepositoryLocalePolicy {
 /// Read state for a persisted repository locale, including unsupported values.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum RepositoryLocalePolicyState {
+    /// No persisted policy exists and no compatible value can be proven.
+    Unknown,
     /// Canonical follow-interface policy.
     FollowInterface,
     /// Canonical or compatible Simplified Chinese policy.
@@ -169,7 +170,8 @@ impl RepositoryLocalePolicySnapshot {
         let trimmed = raw_value.trim();
         let normalized = trimmed.replace('_', "-").to_ascii_lowercase();
         let state = match trimmed {
-            "" | "system" => RepositoryLocalePolicyState::FollowInterface,
+            "" => RepositoryLocalePolicyState::Unknown,
+            "system" => RepositoryLocalePolicyState::FollowInterface,
             "zh-Hans" | "zh-CN" | "zh-SG" => RepositoryLocalePolicyState::ZhHans,
             "en" => RepositoryLocalePolicyState::En,
             _ if normalized.starts_with("zh-hans-") => RepositoryLocalePolicyState::ZhHans,

@@ -12,7 +12,8 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
             mode: .createEmpty,
             createDefaultCategories: false,
             overviewOutput: .generatedOnly,
-            contentLocale: "en"
+            localePolicy: .followInterface,
+            contentLocale: .en
         ))
         let keyReference = "keychain:remote-ai-other-runtime-test"
         let endpointURL = "https://provider.example.test/probe"
@@ -63,7 +64,8 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
             mode: .createEmpty,
             createDefaultCategories: false,
             overviewOutput: .generatedOnly,
-            contentLocale: "en"
+            localePolicy: .followInterface,
+            contentLocale: .en
         ))
         let performer = CancellationAwareProbePerformer()
         let bridge = CoreBridge(remoteProviderProbePerformer: performer)

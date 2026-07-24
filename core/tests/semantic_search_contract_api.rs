@@ -191,6 +191,9 @@ fn semantic_search_contract_exposes_signatures_inputs_outputs_and_errors() {
 
 #[test]
 fn semantic_search_contract_rejects_invalid_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         semantic_search(String::new(), "invoice".to_owned(), filter(), pagination()),
         Err(CoreError::Config { .. })
@@ -198,7 +201,7 @@ fn semantic_search_contract_rejects_invalid_inputs_without_fake_success() {
 
     assert!(matches!(
         semantic_search(
-            "/tmp/repo".to_owned(),
+            uninitialized_repo_path.clone(),
             " ".to_owned(),
             filter(),
             pagination()
@@ -232,7 +235,7 @@ fn semantic_search_contract_rejects_invalid_inputs_without_fake_success() {
 
     assert!(matches!(
         semantic_search(
-            "/tmp/repo".to_owned(),
+            uninitialized_repo_path.clone(),
             "invoice".to_owned(),
             filter(),
             pagination()
@@ -255,7 +258,7 @@ fn semantic_search_contract_rejects_invalid_inputs_without_fake_success() {
     ));
 
     assert!(matches!(
-        build_embedding_index("/tmp/repo".to_owned(), index_scope()),
+        build_embedding_index(uninitialized_repo_path, index_scope()),
         Err(CoreError::Db { .. })
     ));
 }

@@ -17,7 +17,7 @@ struct CoreAIPrivacyRuleRegistryReader: AIPrivacyRuleRegistryReading {
     }
 
     func loadRegistry(repoPath: String) async throws -> AIPrivacyRuleRegistrySnapshot {
-        async let classifier = classifierReader.listClassifierRules(repoPath: repoPath)
+        async let classifier = classifierReader.listClassifierRules(repoPath: repoPath, editingLocale: nil)
         async let facets = facetReader.listFilterFacets(
             repoPath: repoPath,
             request: SearchFacetRequestSnapshot(

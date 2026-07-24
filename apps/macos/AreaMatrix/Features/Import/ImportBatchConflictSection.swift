@@ -113,7 +113,9 @@ struct ImportBatchConflictSection: View {
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
+}
 
+private extension ImportBatchConflictSection {
     @ViewBuilder
     private var coreConflictBatchSummary: some View {
         if batchImportModel.conflictBatchPreviewState.isLoading {
@@ -134,10 +136,15 @@ struct ImportBatchConflictSection: View {
         } else if let preview = batchImportModel.conflictBatchPreviewReport {
             VStack(alignment: .leading, spacing: 4) {
                 Text(localizer.resolve(batchImportModel.conflictBatchScopeSummary))
-                Text("\(preview.includedCount) included · \(preview.pendingCount) pending · " +
-                    "\(preview.blockedCount) blocked · \(preview.replaceCount) replace")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(L10n.format(
+                    "import.conflict.previewCounts",
+                    preview.includedCount,
+                    preview.pendingCount,
+                    preview.blockedCount,
+                    preview.replaceCount
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 Text("Existing files will not be replaced unless you explicitly choose Replace.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -237,10 +244,15 @@ struct ImportBatchConflictSection: View {
     @ViewBuilder
     private var coreConflictBatchResult: some View {
         if let report = batchImportModel.conflictBatchApplyResult?.report {
-            Text("\(report.resolvedCount) resolved · \(report.failedCount) failed · " +
-                "\(report.pendingCount) pending · \(report.queuedForPerItemCount) queued for per-item")
-                .font(.callout)
-                .foregroundStyle(report.failedCount > 0 ? .orange : .secondary)
+            Text(L10n.format(
+                "import.conflict.applyCounts",
+                report.resolvedCount,
+                report.failedCount,
+                report.pendingCount,
+                report.queuedForPerItemCount
+            ))
+            .font(.callout)
+            .foregroundStyle(report.failedCount > 0 ? .orange : .secondary)
             if report.failedCount > 0 {
                 Text(L10n.plural("import.conflict.apply-failure-summary", count: report.failedCount))
                     .font(.caption)
@@ -318,8 +330,13 @@ struct ImportBatchConflictSection: View {
 }
 
 private extension ImportBatchCopyImportModel {
-    var conflictBatchReplaceCount: Int64 { conflictBatchPreviewReport?.replaceCount ?? 0 }
-    var conflictBatchReplaceAppliesToAll: Bool { conflictBatchPreviewReport?.applyToAllSimilarConflicts == true }
+    var conflictBatchReplaceCount: Int64 {
+        conflictBatchPreviewReport?.replaceCount ?? 0
+    }
+
+    var conflictBatchReplaceAppliesToAll: Bool {
+        conflictBatchPreviewReport?.applyToAllSimilarConflicts == true
+    }
 }
 
 private extension ImportBatchConflictSection {

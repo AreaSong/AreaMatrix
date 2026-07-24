@@ -7,23 +7,33 @@ use std::{
     path::Path,
 };
 
+use sha2::{Digest, Sha256};
+use uuid::Uuid;
+
 use self::atomic_write::{write_plans_with_rollback, WritePlan};
 use crate::{
-    db::{self, OverviewChangeRow, OverviewFileRow, OverviewNodeSummary},
-    CoreError, CoreResult, FileEntry, OverviewOutput,
+    db::{self, OverviewChangeRow, OverviewFileRow, OverviewNodeSummary, OverviewProvenanceRecord},
+    ContentLocale, CoreError, CoreResult, FileEntry, OverviewOutput, RecoverableOperationContext,
 };
 
 mod atomic_write;
+pub(crate) mod regeneration;
+
+pub use regeneration::{
+    OverviewLanguageState, OverviewLanguageStatus, OverviewRegenerationPlan,
+    OverviewRegenerationReason, OverviewRegenerationSession, OverviewRegenerationStartRequest,
+    OverviewRegenerationStatus,
+};
 
 const BEGIN_TAG: &str =
     "<!-- AREAMATRIX:BEGIN auto-generated content; do NOT edit between markers -->";
 const BEGIN_PREFIX: &str = "<!-- AREAMATRIX:BEGIN";
 const END_TAG: &str = "<!-- AREAMATRIX:END -->";
-const GENERATED_DIR: &str = ".areamatrix/generated";
-const NODE_OVERVIEW_LIMIT: i64 = 200;
-const NODE_RECENT_DAYS: i64 = 30;
-const ROOT_RECENT_DAYS: i64 = 7;
-const RECENT_LIMIT: i64 = 20;
+pub(super) const GENERATED_DIR: &str = ".areamatrix/generated";
+pub(super) const NODE_OVERVIEW_LIMIT: i64 = 200;
+pub(super) const NODE_RECENT_DAYS: i64 = 30;
+pub(super) const ROOT_RECENT_DAYS: i64 = 7;
+pub(super) const RECENT_LIMIT: i64 = 20;
 
 pub(crate) fn write_generated_root(generated_dir: &Path, locale: &str) -> CoreResult<()> {
     fs::create_dir_all(generated_dir).map_err(map_io_error)?;
@@ -65,6 +75,7 @@ pub(crate) fn regenerate_external_sync_overviews(
     if node_locales.is_empty() {
         return Ok(());
     }
+    db::ensure_repository_locale_allows_normal_mutation(repo)?;
     let config = load_config(repo)?;
     let generated_dir = repo.join(GENERATED_DIR);
     let mut plans = Vec::with_capacity(node_locales.len() + 2);
@@ -97,7 +108,130 @@ pub(crate) fn regenerate_external_sync_overviews(
             root_entry_content(repo, root_locale, &managed)?,
         ));
     }
-    write_plans_with_rollback(&plans)
+    let mut provenance_targets = node_locales
+        .iter()
+        .map(|(slug, locale)| {
+            Ok((
+                format!("{GENERATED_DIR}/nodes/{slug}.md"),
+                ContentLocale::parse(locale)
+                    .ok_or_else(|| CoreError::config("unsupported content locale"))?,
+            ))
+        })
+        .collect::<CoreResult<Vec<_>>>()?;
+    let operation_locale = ContentLocale::parse(root_locale)
+        .ok_or_else(|| CoreError::config("unsupported content locale"))?;
+    provenance_targets.push((format!("{GENERATED_DIR}/root.md"), operation_locale.clone()));
+    if config.overview_output == OverviewOutput::RootAreaMatrixFile {
+        provenance_targets.push(("AREAMATRIX.md".to_owned(), operation_locale.clone()));
+    }
+    ensure_incremental_targets_trusted(repo, &provenance_targets)?;
+    write_plans_with_rollback(&plans)?;
+    record_provenance(
+        repo,
+        provenance_targets,
+        "overview_incremental",
+        operation_locale,
+    )
+}
+
+pub(crate) fn record_initialized_overview_provenance(
+    repo: &Path,
+    content_locale: &ContentLocale,
+) -> CoreResult<()> {
+    let mut targets = vec![(format!("{GENERATED_DIR}/root.md"), content_locale.clone())];
+    if repo
+        .join("AREAMATRIX.md")
+        .try_exists()
+        .map_err(map_io_error)?
+    {
+        targets.push(("AREAMATRIX.md".to_owned(), content_locale.clone()));
+    }
+    record_provenance(repo, targets, "repo_init_overview", content_locale.clone())?;
+    let locale = content_locale.as_str().to_owned();
+    let node_locales = crate::classifier_rule_editor::list_classifier_category_slugs(repo)?
+        .into_iter()
+        .map(|slug| (slug, locale.clone()))
+        .collect::<BTreeMap<_, _>>();
+    regenerate_external_sync_overviews(repo, &node_locales, &locale)
+}
+
+fn ensure_incremental_targets_trusted(
+    repo: &Path,
+    targets: &[(String, ContentLocale)],
+) -> CoreResult<()> {
+    for (relative_path, _) in targets {
+        let path = repo.join(relative_path);
+        let Some(hash) = regular_file_hash_if_present(&path)? else {
+            continue;
+        };
+        let provenance = db::load_overview_provenance(repo, relative_path)?
+            .ok_or_else(|| CoreError::conflict("overview provenance is unknown"))?;
+        if provenance.content_sha256 != hash {
+            return Err(CoreError::conflict("overview provenance hash changed"));
+        }
+    }
+    Ok(())
+}
+
+fn record_provenance(
+    repo: &Path,
+    targets: Vec<(String, ContentLocale)>,
+    operation_code: &str,
+    operation_locale: ContentLocale,
+) -> CoreResult<()> {
+    let operation_id = Uuid::new_v4().to_string();
+    let snapshot = db::load_repo_config_snapshot_or_default(repo.to_string_lossy().into_owned())?;
+    let generated_at = chrono::Utc::now().timestamp();
+    let mut payload_targets = Vec::with_capacity(targets.len());
+    let mut records = Vec::with_capacity(targets.len());
+    let mut target_hasher = Sha256::new();
+    for (relative_path, content_locale) in targets {
+        let hash = regular_file_hash_if_present(&repo.join(&relative_path))?
+            .ok_or_else(|| CoreError::file_not_found(&relative_path))?;
+        target_hasher.update((relative_path.len() as u64).to_le_bytes());
+        target_hasher.update(relative_path.as_bytes());
+        target_hasher.update(hash.as_bytes());
+        payload_targets.push(serde_json::json!({
+            "relative_path": relative_path,
+            "content_sha256": hash,
+        }));
+        records.push(OverviewProvenanceRecord {
+            relative_path,
+            operation_id: operation_id.clone(),
+            content_locale,
+            format_contract_version: regeneration::FORMAT_CONTRACT_VERSION,
+            repository_revision: snapshot.revision,
+            content_sha256: hash,
+            generated_at,
+        });
+    }
+    let target_set_hash = format!("{:x}", target_hasher.finalize());
+    let context = RecoverableOperationContext {
+        operation_id,
+        retry_of_operation_id: None,
+        operation_code: operation_code.to_owned(),
+        operation_payload_json: serde_json::to_string(&serde_json::json!({
+            "targets": payload_targets,
+        }))
+        .map_err(|_| CoreError::internal("overview provenance payload encoding failed"))?,
+        content_locale: Some(operation_locale),
+        repository_revision: snapshot.revision,
+        format_contract_version: regeneration::FORMAT_CONTRACT_VERSION,
+        target_set_hash: Some(target_set_hash),
+        run_sequence: 1,
+    };
+    db::record_completed_overview_generation(repo, &context, &records)
+}
+
+fn regular_file_hash_if_present(path: &Path) -> CoreResult<Option<String>> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.is_file() && !metadata.file_type().is_symlink() => fs::read(path)
+            .map(|bytes| Some(format!("{:x}", Sha256::digest(bytes))))
+            .map_err(map_io_error),
+        Ok(_) => Err(CoreError::config("overview target is not a regular file")),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(map_io_error(error)),
+    }
 }
 
 fn root_entry_content(repo: &Path, locale: &str, managed: &str) -> CoreResult<String> {

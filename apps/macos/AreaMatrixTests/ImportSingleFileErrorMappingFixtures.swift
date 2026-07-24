@@ -81,6 +81,8 @@ extension CoreErrorMappingSnapshot {
             "分类失败"
         case .conflict:
             "命名冲突未解决"
+        case .revisionConflict:
+            "配置版本冲突"
         case .repoNotInitialized:
             "资料库尚未初始化"
         case .stagingRecoveryRequired:

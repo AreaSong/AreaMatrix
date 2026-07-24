@@ -329,9 +329,9 @@ fn repository_settings_failure_corrupted_db_preserves_user_files_and_maps_fatal(
     .expect_err("corrupted db must fail update");
 
     for error in [load_error, update_error] {
-        assert_eq!(error.kind(), ErrorKind::Db);
+        assert_eq!(error.kind(), ErrorKind::DbCorrupted);
         let mapping = error.to_error_mapping();
-        assert_eq!(mapping.kind, ErrorKind::Db);
+        assert_eq!(mapping.kind, ErrorKind::DbCorrupted);
         assert_eq!(mapping.recoverability, ErrorRecoverability::Fatal);
     }
     assert_eq!(
@@ -353,6 +353,8 @@ fn repository_settings_failure_error_mapping_covers_documented_kinds() {
                 path: None,
                 reason: Some("repository settings payload is invalid".to_owned()),
                 message: None,
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorSeverity::Medium,
             ErrorRecoverability::UserActionRequired,
@@ -363,6 +365,8 @@ fn repository_settings_failure_error_mapping_covers_documented_kinds() {
                 path: Some("/repo/.areamatrix".to_owned()),
                 reason: None,
                 message: None,
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorSeverity::High,
             ErrorRecoverability::UserActionRequired,
@@ -373,26 +377,32 @@ fn repository_settings_failure_error_mapping_covers_documented_kinds() {
                 path: None,
                 reason: None,
                 message: Some("metadata inspection failed".to_owned()),
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorSeverity::Medium,
             ErrorRecoverability::Retryable,
         ),
         (
             ErrorMappingInput {
-                kind: ErrorKind::Db,
+                kind: ErrorKind::DbLocked,
                 path: None,
                 reason: None,
                 message: Some("SQLITE_BUSY: database is locked".to_owned()),
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorSeverity::Medium,
             ErrorRecoverability::Retryable,
         ),
         (
             ErrorMappingInput {
-                kind: ErrorKind::Db,
+                kind: ErrorKind::DbCorrupted,
                 path: None,
                 reason: None,
                 message: Some("database disk image is malformed".to_owned()),
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorSeverity::Critical,
             ErrorRecoverability::Fatal,
@@ -403,8 +413,8 @@ fn repository_settings_failure_error_mapping_covers_documented_kinds() {
         let mapping = map_core_error(input);
         assert_eq!(mapping.severity, severity);
         assert_eq!(mapping.recoverability, recoverability);
-        assert!(!mapping.user_message.is_empty());
-        assert!(!mapping.suggested_action.is_empty());
+        assert!(!mapping.code.is_empty());
+        assert!(!mapping.recovery_action_ids.is_empty());
     }
 }
 

@@ -68,10 +68,7 @@ struct AIPrivacyRulesView: View {
             Button("Cancel", role: .cancel) { deletionCandidate = nil }
             Button("Delete rule", role: .destructive) { confirmDeleteRule() }
         } message: {
-            Text(
-                "Future AI calls may no longer skip content that matched this rule. " +
-                    "This will not delete files, existing AI results, tags, summaries, notes, or call logs."
-            )
+            Text(L10n.string("ai.privacy.deleteRuleDetail"))
         }
         .confirmationDialog(
             "You have unsaved changes.",

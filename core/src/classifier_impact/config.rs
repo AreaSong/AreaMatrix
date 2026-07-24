@@ -118,7 +118,10 @@ fn ensure_impact_repo_initialized(repo: &Path) -> CoreResult<()> {
         CoreError::InvalidPath { .. } => {
             CoreError::config("classifier impact repository is not initialized")
         }
-        CoreError::RepoNotInitialized { .. } | CoreError::Db { .. } => {
+        CoreError::RepoNotInitialized { .. }
+        | CoreError::Db { .. }
+        | CoreError::DbLocked { .. }
+        | CoreError::DbCorrupted { .. } => {
             CoreError::db("classifier impact metadata is unavailable")
         }
         other => other,

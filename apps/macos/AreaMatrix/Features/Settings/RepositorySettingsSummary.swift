@@ -5,11 +5,6 @@ struct RepositorySettingsLoadError: Equatable {
     var recovery: LocalizedMessage
 }
 
-struct RepositorySettingsSyncError: Equatable {
-    var message: LocalizedMessage
-    var recovery: LocalizedMessage
-}
-
 struct RepositorySettingsOverviewActionError: Equatable {
     var message: LocalizedMessage
     var recovery: LocalizedMessage
@@ -74,16 +69,36 @@ struct RepositorySettingsSummary: Equatable {
     private var coreVersionValue: String?
     private var overviewOutput: String
 
-    var metadataStatus: String { metadataPresence.directoryStatusLabel }
-    var locationType: String { Self.locationType(for: location) }
-    var coreVersion: String { coreVersionValue ?? L10n.string("Unknown") }
-    var overviewMode: String { Self.overviewModeLabel(for: overviewOutput) }
-    var generatedPath: String { Self.generatedOverviewRelativePath }
-    var rootFile: String { overviewOutput == "RootAreaMatrixFile" ? "AREAMATRIX.md" : L10n.string("Off") }
-    var readmePolicy: String { L10n.string("User file, never managed by AreaMatrix") }
+    var metadataStatus: String {
+        metadataPresence.directoryStatusLabel
+    }
+
+    var locationType: String {
+        Self.locationType(for: location)
+    }
+
+    var coreVersion: String {
+        coreVersionValue ?? L10n.string("Unknown")
+    }
+
+    var overviewMode: String {
+        Self.overviewModeLabel(for: overviewOutput)
+    }
+
+    var generatedPath: String {
+        Self.generatedOverviewRelativePath
+    }
+
+    var rootFile: String {
+        overviewOutput == "RootAreaMatrixFile" ? "AREAMATRIX.md" : L10n.string("Off")
+    }
+
+    var readmePolicy: String {
+        L10n.string("User file, never managed by AreaMatrix")
+    }
 
     init(
-        config: RepoConfigSnapshot,
+        config: AppRepoConfigSnapshot,
         fallbackRepoPath: String,
         coreVersion: String?,
         metadataPresence: RepoMetadataPresence
@@ -124,8 +139,8 @@ struct RepositorySettingsSummary: Equatable {
     }
 }
 
-extension RepoConfigSnapshot {
-    func withRepositoryPath(_ value: String) -> RepoConfigSnapshot {
+extension AppRepoConfigSnapshot {
+    func withRepositoryPath(_ value: String) -> AppRepoConfigSnapshot {
         var config = self
         config.repoPath = value
         return config

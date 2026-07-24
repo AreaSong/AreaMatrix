@@ -44,14 +44,12 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
 
         let updater = GeneralSettingsIntegrationUpdater(results: [
             .success(()),
-            .success(()),
-            .failure(CoreError.Config(reason: "locked")),
             .success(())
         ])
         let ignoreRulesManager = RecordingRepositoryIgnoreRulesManager(openScenario: .missingThenSuccess)
         let model = GeneralSettingsModel(
             repoPath: repoURL.path,
-            loader: StaticConfigurationLoader(config: RepoConfigSnapshot
+            loader: StaticConfigurationLoader(config: AppRepoConfigSnapshot
                 .generalSettingsFixture(repoPath: repoURL.path)),
             updater: updater,
             rootOverviewInspector: LocalRootOverviewFileInspector(),
@@ -81,16 +79,6 @@ final class GeneralSettingsIntegrationTests: XCTestCase {
         try assertGeneralSettingsFileBoundaries(repoURL: repoURL, sourceURL: sourceURL)
         ignoreRulesManager.assertCreatedPaths([repoURL.path])
         ignoreRulesManager.assertOpenedPaths([repoURL.path, repoURL.path])
-
-        await model.updateContentLanguage(RepositoryContentLanguage.en)
-        XCTAssertEqual(model.draft?.contentLanguage, .followInterface)
-        XCTAssertEqual(model.saveError?.message, "配置错误")
-
-        await model.retrySave()
-
-        await updater.assertRequestedConfigValues(\.locale, ["system", "system", "en", "en"])
-        XCTAssertEqual(model.draft?.contentLanguage, .en)
-        XCTAssertNil(model.saveError)
     }
 
     @MainActor

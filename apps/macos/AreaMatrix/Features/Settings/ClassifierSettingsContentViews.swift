@@ -43,21 +43,21 @@ private struct ClassifierSettingsRulesSection: View {
     var body: some View {
         ClassifierSettingsSection(title: L10n.string("settings.classifier.section.ruleEngine")) {
             VStack(alignment: .leading, spacing: 12) {
-                Toggle("Enable extension rules", isOn: extensionRulesSelection)
+                Toggle(L10n.string("Enable extension rules"), isOn: extensionRulesSelection)
                     .accessibilityIdentifier("classifier-settings-enable-extension-rules")
-                Text("Match file extensions before falling back to inbox.")
+                Text(L10n.string("Match file extensions before falling back to inbox."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                Toggle("Enable keyword rules", isOn: keywordRulesSelection)
+                Toggle(L10n.string("Enable keyword rules"), isOn: keywordRulesSelection)
                     .accessibilityIdentifier("classifier-settings-enable-keyword-rules")
-                Text("Use keyword matching for the current repository configuration.")
+                Text(L10n.string("Use keyword matching for the current repository configuration."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                Toggle("Fallback to inbox", isOn: fallbackToInboxSelection)
+                Toggle(L10n.string("Fallback to inbox"), isOn: fallbackToInboxSelection)
                     .accessibilityIdentifier("classifier-settings-fallback-to-inbox")
-                Text("Keep unmatched files in inbox.")
+                Text(L10n.string("Keep unmatched files in inbox."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -119,7 +119,7 @@ private struct ClassifierSettingsYAMLActionsSection: View {
                     Button {
                         model.openClassifierYaml()
                     } label: {
-                        Label("Open classifier.yaml", systemImage: "doc.text")
+                        Label(L10n.string("Open classifier.yaml"), systemImage: "doc.text")
                     }
                     .disabled(model.isSaving)
                     .accessibilityIdentifier("classifier-settings-open-classifier-yaml")
@@ -127,7 +127,7 @@ private struct ClassifierSettingsYAMLActionsSection: View {
                     Button {
                         model.revealClassifierYamlInFinder()
                     } label: {
-                        Label("Reveal in Finder", systemImage: "folder")
+                        Label(L10n.string("Reveal in Finder"), systemImage: "folder")
                     }
                     .disabled(model.isSaving)
                     .accessibilityIdentifier("classifier-settings-reveal-classifier-yaml")
@@ -141,10 +141,10 @@ private struct ClassifierSettingsYAMLActionsSection: View {
                             HStack(spacing: 6) {
                                 ProgressView()
                                     .controlSize(.small)
-                                Text("Validate")
+                                Text(L10n.string("Validate"))
                             }
                         } else {
-                            Label("Validate", systemImage: "checkmark.circle")
+                            Label(L10n.string("Validate"), systemImage: "checkmark.circle")
                         }
                     }
                     .disabled(model.isSaving || model.isValidating)
@@ -154,14 +154,14 @@ private struct ClassifierSettingsYAMLActionsSection: View {
                     Button {
                         showingRevertConfirmation = true
                     } label: {
-                        Label("Revert to last valid", systemImage: "arrow.counterclockwise")
+                        Label(L10n.string("Revert to last valid"), systemImage: "arrow.counterclockwise")
                     }
                     .disabled(!model.canRevertToLastValid || model.isSaving || model.isValidating)
                     .accessibilityIdentifier("classifier-settings-revert-classifier-rules")
                 }
 
                 if model.isValidating {
-                    ProgressView("Validating...")
+                    ProgressView(L10n.string("Validating..."))
                         .controlSize(.small)
                         .accessibilityIdentifier("classifier-settings-classifier-validating")
                 }
@@ -187,11 +187,11 @@ private struct ClassifierSettingsYAMLActionsSection: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
-                Button("Reveal in Finder") {
+                Button(L10n.string("Reveal in Finder")) {
                     model.revealClassifierYamlInFinder()
                 }
                 .accessibilityIdentifier("classifier-settings-file-error-reveal-classifier-yaml")
-                Button("Create default") {
+                Button(L10n.string("Create default")) {
                     Task {
                         await model.createDefaultClassifierYaml()
                     }
@@ -212,14 +212,14 @@ private struct ClassifierSettingsYAMLActionsSection: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
-                Button("Open classifier.yaml") {
+                Button(L10n.string("Open classifier.yaml")) {
                     model.openClassifierYaml()
                 }
-                Button("Reveal in Finder") {
+                Button(L10n.string("Reveal in Finder")) {
                     model.revealClassifierYamlInFinder()
                 }
                 .accessibilityIdentifier("classifier-settings-validation-reveal-classifier-yaml")
-                Button("Create default") {
+                Button(L10n.string("Create default")) {
                     Task {
                         await model.createDefaultClassifierYaml()
                     }
@@ -239,7 +239,7 @@ private struct ClassifierSettingsPreviewSection: View {
         ClassifierSettingsSection(title: L10n.string("settings.classifier.section.preview")) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    TextField("Invoice_2026Q1.pdf", text: previewFilenameBinding)
+                    TextField(L10n.string("Invoice_2026Q1.pdf"), text: previewFilenameBinding)
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: .infinity)
                         .accessibilityLabel(L10n.string("Preview filename"))
@@ -253,7 +253,7 @@ private struct ClassifierSettingsPreviewSection: View {
                             ProgressView()
                                 .controlSize(.small)
                         } else {
-                            Label("Preview", systemImage: "play.circle")
+                            Label(L10n.string("Preview"), systemImage: "play.circle")
                         }
                     }
                     .disabled(previewButtonDisabled)
@@ -266,7 +266,7 @@ private struct ClassifierSettingsPreviewSection: View {
                 } else if let result = model.previewResult {
                     previewResultView(result)
                 } else if model.isPreviewing {
-                    ProgressView("Previewing...")
+                    ProgressView(L10n.string("Previewing..."))
                         .controlSize(.small)
                 }
             }
@@ -288,7 +288,7 @@ private struct ClassifierSettingsPreviewSection: View {
                     await model.previewClassification()
                 }
             } label: {
-                Label("Retry preview", systemImage: "arrow.clockwise")
+                Label(L10n.string("Retry preview"), systemImage: "arrow.clockwise")
             }
             .disabled(previewButtonDisabled)
         }
@@ -348,11 +348,11 @@ private struct ClassifierSettingsSaveErrorBanner: View {
                 Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text("The UI has been restored to the last saved values.")
+                Text(L10n.string("The UI has been restored to the last saved values."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 if model.hasRetryableSave {
-                    Button("Retry save") {
+                    Button(L10n.string("Retry save")) {
                         Task {
                             await model.retrySave()
                         }

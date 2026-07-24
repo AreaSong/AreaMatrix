@@ -188,7 +188,10 @@ private struct AIPrivacyRulesAISettingsPrivacySummary {
 }
 
 private actor AIPrivacyRulesClassifierRegistryBridge: CoreClassifierRuleEditing {
-    func listClassifierRules(repoPath _: String) async throws -> ClassifierRuleEditorSnapshotState {
+    func listClassifierRules(
+        repoPath _: String,
+        editingLocale _: ClassifierEditingLocale?
+    ) async throws -> ClassifierRuleEditorSnapshotState {
         ClassifierRuleEditorSnapshotState(
             rules: [
                 ClassifierRuleRecordSnapshot.testFixture(
@@ -205,6 +208,10 @@ private actor AIPrivacyRulesClassifierRegistryBridge: CoreClassifierRuleEditing 
             ],
             defaultRuleID: "inbox",
             updatedRuleID: nil,
+            repositoryLocalePolicy: "en",
+            editingLocale: .en,
+            health: .valid,
+            recoveryActions: [],
             warning: nil
         )
     }
@@ -226,6 +233,30 @@ private actor AIPrivacyRulesClassifierRegistryBridge: CoreClassifierRuleEditing 
     func deleteClassifierRule(
         repoPath _: String,
         request _: ClassifierRuleDeleteRequestSnapshot
+    ) async throws -> ClassifierRuleEditorSnapshotState {
+        throw CoreError.Internal(message: "ai-privacy-rules registry test is read-only")
+    }
+
+    func createDefaultClassifier(
+        repoPath _: String,
+        confirmed _: Bool,
+        editingLocale _: ClassifierEditingLocale?
+    ) async throws -> ClassifierRuleEditorSnapshotState {
+        throw CoreError.Internal(message: "ai-privacy-rules registry test is read-only")
+    }
+
+    func restoreDefaultClassifier(
+        repoPath _: String,
+        confirmed _: Bool,
+        editingLocale _: ClassifierEditingLocale?
+    ) async throws -> ClassifierRuleEditorSnapshotState {
+        throw CoreError.Internal(message: "ai-privacy-rules registry test is read-only")
+    }
+
+    func restoreLastValidClassifier(
+        repoPath _: String,
+        confirmed _: Bool,
+        editingLocale _: ClassifierEditingLocale?
     ) async throws -> ClassifierRuleEditorSnapshotState {
         throw CoreError.Internal(message: "ai-privacy-rules registry test is read-only")
     }

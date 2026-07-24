@@ -67,12 +67,21 @@ enum ImportBatchCopyImportRowStatus: Equatable {
             return L10n.resolve(message)
         case let .importing(mode):
             return mode.importingMessage
+        case .skippedDuplicate, .skippedICloud, .imported:
+            return completionDetail
+        }
+    }
+
+    private var completionDetail: String {
+        switch self {
         case let .skippedDuplicate(existingPath):
-            return L10n.format("import.preview.duplicate-skipped", existingPath)
+            L10n.format("import.preview.duplicate-skipped", existingPath)
         case let .skippedICloud(path):
-            return L10n.format("import.conflict.icloud-pending", path)
+            L10n.format("import.conflict.icloud-pending", path)
         case .imported:
-            return L10n.string("import.result.completed")
+            L10n.string("import.result.completed")
+        case .loading, .ready, .duplicate, .nameConflict, .iCloudPlaceholder, .blocked, .importing, .error:
+            L10n.string("Import failed")
         }
     }
 
@@ -86,21 +95,22 @@ enum ImportBatchCopyImportRowStatus: Equatable {
 
 enum ImportStatusTagLocalization {
     static func message(for tag: String) -> LocalizedMessage {
-        switch tag {
-        case "PREVIEW": L10n.message("PREVIEW")
-        case "OK": L10n.message("OK")
-        case "DUP": L10n.message("DUP")
-        case "NAME": L10n.message("NAME")
-        case "ICLOUD": L10n.message("ICLOUD")
-        case "BLOCKED": L10n.message("BLOCKED")
-        case "IMPORTING": L10n.message("IMPORTING")
-        case "SKIPPED": L10n.message("SKIPPED")
-        case "PENDING": L10n.message("PENDING")
-        case "IMPORTED": L10n.message("IMPORTED")
-        case "ERROR": L10n.message("ERROR")
-        default: L10n.message("ERROR")
-        }
+        knownMessages[tag] ?? L10n.message("ERROR")
     }
+
+    private static let knownMessages: [String: LocalizedMessage] = [
+        "PREVIEW": L10n.message("PREVIEW"),
+        "OK": L10n.message("OK"),
+        "DUP": L10n.message("DUP"),
+        "NAME": L10n.message("NAME"),
+        "ICLOUD": L10n.message("ICLOUD"),
+        "BLOCKED": L10n.message("BLOCKED"),
+        "IMPORTING": L10n.message("IMPORTING"),
+        "SKIPPED": L10n.message("SKIPPED"),
+        "PENDING": L10n.message("PENDING"),
+        "IMPORTED": L10n.message("IMPORTED"),
+        "ERROR": L10n.message("ERROR")
+    ]
 }
 
 enum ImportBatchDuplicateResolutionStrategy: String, CaseIterable, Equatable {

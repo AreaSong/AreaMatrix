@@ -82,12 +82,138 @@ final class ClassifierRuleEditorRecoveryTests: XCTestCase {
         await editor.assertSingleClassifierRuleUpdateRequest(.init(
             repoPath: repoURL.path,
             ruleID: "finance",
+            observedDisplayName: "Finance",
             displayName: "Finance Rules",
             extensions: ["pdf"],
             keywords: ["invoice"],
             previewConfirmed: true
         ))
         XCTAssertEqual(model.classifierRuleEditor.saveState, .saved("finance"))
+    }
+
+    @MainActor
+    func testClassifierRuleEditorConflictPreservesDraftReviewsLatestAndRequiresSecondSave() async throws {
+        let repoURL = try temporaryClassifierRecoveryRepo()
+        defer { removeTestTemporaryItems(repoURL) }
+        var latest = ClassifierRuleEditorSnapshotState.classifierEditorFixture()
+        latest.rules[1].displayNames[ClassifierEditingLocale.en.rawValue] = "Finance Latest"
+        latest.rules[1].descriptions[ClassifierEditingLocale.en.rawValue] = "Saved elsewhere"
+        let editor = ClassifierSettingsRecordingRuleEditor(
+            listResults: [.success(.classifierEditorFixture()), .success(latest)],
+            mutationResults: [
+                .failure(CoreError.Conflict(path: "classifier_rule_observed_state")),
+                .success(.classifierEditorFixture(updatedRuleID: "finance"))
+            ]
+        )
+        let model = await classifierSettingsRecoveryModel(
+            repoURL: repoURL,
+            predictor: ClassifierSettingsSequencePredictor(),
+            editor: editor
+        )
+        model.selectClassifierRule(ruleID: "finance")
+        var local = try XCTUnwrap(model.classifierRuleEditor.draft)
+        local.displayName = "My Local Finance"
+        local.description = "My retained local description"
+        model.updateClassifierRuleDraft(local)
+        model.validateClassifierRuleDraft()
+
+        let firstSaveSucceeded = await model.saveClassifierRuleDraft()
+        XCTAssertFalse(firstSaveSucceeded)
+
+        let review = try XCTUnwrap(model.classifierRuleEditor.conflictReview)
+        XCTAssertEqual(review.frozenEditingLocale, .en)
+        XCTAssertEqual(review.localDraft.displayName, "My Local Finance")
+        XCTAssertEqual(review.latestDraft?.displayName, "Finance Latest")
+        XCTAssertEqual(model.classifierRuleEditor.draft?.description, "My retained local description")
+        await editor.assertClassifierRuleUpdateRequestCount(1)
+
+        model.reviewLatestClassifierRuleConflict()
+
+        XCTAssertNil(model.classifierRuleEditor.conflictReview)
+        XCTAssertEqual(model.classifierRuleEditor.draft?.displayName, "My Local Finance")
+        XCTAssertEqual(model.classifierRuleEditor.lastValidDraft?.displayName, "Finance Latest")
+        XCTAssertTrue(model.classifierRuleEditor.canSave)
+        await editor.assertClassifierRuleUpdateRequestCount(1)
+
+        let secondSaveSucceeded = await model.saveClassifierRuleDraft()
+        XCTAssertTrue(secondSaveSucceeded)
+        let secondRequest = await editor.classifierRuleUpdateRequest(at: 1)
+        XCTAssertEqual(secondRequest?.observed.displayName, "Finance Latest")
+        XCTAssertEqual(secondRequest?.displayName, "My Local Finance")
+        await editor.assertClassifierRuleUpdateRequestCount(2)
+    }
+
+    @MainActor
+    func testClassifierRuleEditorConflictReloadDiscardsLocalDraft() async throws {
+        let repoURL = try temporaryClassifierRecoveryRepo()
+        defer { removeTestTemporaryItems(repoURL) }
+        var latest = ClassifierRuleEditorSnapshotState.classifierEditorFixture()
+        latest.rules[1].displayNames[ClassifierEditingLocale.en.rawValue] = "Finance Latest"
+        let editor = ClassifierSettingsRecordingRuleEditor(
+            listResults: [.success(.classifierEditorFixture()), .success(latest)],
+            mutationResult: .failure(CoreError.Conflict(path: "classifier_rule_observed_state"))
+        )
+        let model = await classifierSettingsRecoveryModel(
+            repoURL: repoURL,
+            predictor: ClassifierSettingsSequencePredictor(),
+            editor: editor
+        )
+        model.selectClassifierRule(ruleID: "finance")
+        var local = try XCTUnwrap(model.classifierRuleEditor.draft)
+        local.displayName = "Discard me"
+        model.updateClassifierRuleDraft(local)
+        model.validateClassifierRuleDraft()
+
+        let saveSucceeded = await model.saveClassifierRuleDraft()
+        XCTAssertFalse(saveSucceeded)
+        model.reloadLatestClassifierRuleConflict()
+
+        XCTAssertNil(model.classifierRuleEditor.conflictReview)
+        XCTAssertEqual(model.classifierRuleEditor.draft?.displayName, "Finance Latest")
+        XCTAssertFalse(model.classifierRuleEditor.hasDirtyDraft)
+        await editor.assertClassifierRuleUpdateRequestCount(1)
+    }
+
+    @MainActor
+    func testClassifierRuleEditorRepositoryPolicyConflictDoesNotRetrySilently() async throws {
+        let repoURL = try temporaryClassifierRecoveryRepo()
+        defer { removeTestTemporaryItems(repoURL) }
+        var latest = ClassifierRuleEditorSnapshotState.classifierEditorFixture()
+        latest.repositoryLocalePolicy = "en"
+        let editor = ClassifierSettingsRecordingRuleEditor(
+            listResults: [.success(.classifierEditorFixture()), .success(latest)],
+            mutationResults: [
+                .failure(CoreError.Conflict(path: "repository_locale_policy")),
+                .success(latest)
+            ]
+        )
+        let model = await classifierSettingsRecoveryModel(
+            repoURL: repoURL,
+            predictor: ClassifierSettingsSequencePredictor(),
+            editor: editor
+        )
+        model.selectClassifierRule(ruleID: "finance")
+        var local = try XCTUnwrap(model.classifierRuleEditor.draft)
+        local.displayName = "Policy conflict draft"
+        model.updateClassifierRuleDraft(local)
+        model.validateClassifierRuleDraft()
+
+        let firstSaveSucceeded = await model.saveClassifierRuleDraft()
+
+        XCTAssertFalse(firstSaveSucceeded)
+        XCTAssertEqual(model.classifierRuleEditor.conflictReview?.code, "repository_locale_policy")
+        XCTAssertEqual(model.classifierRuleEditor.draft?.displayName, "Policy conflict draft")
+        await editor.assertClassifierRuleUpdateRequestCount(1)
+
+        model.reviewLatestClassifierRuleConflict()
+        XCTAssertEqual(model.classifierRuleEditor.repositoryLocalePolicy, "en")
+        await editor.assertClassifierRuleUpdateRequestCount(1)
+
+        let secondSaveSucceeded = await model.saveClassifierRuleDraft()
+        XCTAssertTrue(secondSaveSucceeded)
+        let secondRequest = await editor.classifierRuleUpdateRequest(at: 1)
+        XCTAssertEqual(secondRequest?.repositoryLocalePolicy, "en")
+        await editor.assertClassifierRuleUpdateRequestCount(2)
     }
 
     @MainActor

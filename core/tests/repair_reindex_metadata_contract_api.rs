@@ -1,7 +1,7 @@
 use area_matrix_core::{
     create_diagnostics_snapshot, preflight_repair_metadata, reindex_from_filesystem,
-    repair_metadata, CoreError, CoreResult, DiagnosticsSnapshot, ReindexReport, RepairMetadataOutcome,
-    RepairMetadataPreflight, RepairOptions, RepairReport,
+    repair_metadata, CoreError, CoreResult, DiagnosticsSnapshot, ReindexReport,
+    RepairMetadataOutcome, RepairMetadataPreflight, RepairOptions, RepairReport,
 };
 use pretty_assertions::assert_eq;
 

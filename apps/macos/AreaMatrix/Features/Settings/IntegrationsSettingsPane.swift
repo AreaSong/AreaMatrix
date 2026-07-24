@@ -138,13 +138,10 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var iCloudDriveDescription: some View {
-        Text(
-            "AreaMatrix stores your files in a normal folder. If that folder is in iCloud Drive, " +
-                "iCloud controls sync timing. AreaMatrix will not delete conflict copies automatically."
-        )
-        .font(.callout)
-        .foregroundStyle(.secondary)
-        .fixedSize(horizontal: false, vertical: true)
+        Text(L10n.string("settings.integrations.iCloudFolderDetail"))
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var iCloudWarningsToggle: some View {

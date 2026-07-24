@@ -10,6 +10,7 @@ use area_matrix_core::{
     RepoInitMode, RepoInitOptions, ScanSessionKind, ScanSessionStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
+use rusqlite::{params, Connection};
 use serde_json::Value;
 
 fn path_string(path: &Path) -> String {
@@ -54,7 +55,8 @@ fn empty_filter() -> FileFilter {
 }
 
 fn repair_options(repo: &Path, preserve_snapshot: bool) -> RepairOptions {
-    let preflight = preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
+    let preflight =
+        preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
     let repository_locale_policy = if preflight.locale_state == RepairMetadataLocaleState::Healthy {
         preflight
             .repository_locale_policy
@@ -120,6 +122,30 @@ fn user_file_snapshot(paths: &[&Path]) -> Vec<(String, Vec<u8>)> {
         .collect()
 }
 
+fn metadata_connection(repo: &Path) -> Connection {
+    Connection::open(repo.join(".areamatrix/index.db")).expect("open metadata database fixture")
+}
+
+fn persisted_locale(repo: &Path) -> String {
+    metadata_connection(repo)
+        .query_row(
+            "SELECT value FROM repo_config WHERE key = 'locale'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("read persisted repository locale")
+}
+
+fn config_revision(repo: &Path) -> i64 {
+    metadata_connection(repo)
+        .query_row(
+            "SELECT revision FROM repo_config_revision WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .expect("read repository configuration revision")
+}
+
 #[test]
 fn repair_reindex_metadata_validation_repair_preserves_files_before_explicit_reindex() {
     let repo = initialized_repo();
@@ -133,11 +159,8 @@ fn repair_reindex_metadata_validation_repair_preserves_files_before_explicit_rei
     );
     let before = user_file_snapshot(&[&readme, &spec, &root_overview]);
 
-    let report = repair_metadata(
-        path_string(repo.path()),
-        repair_options(repo.path(), true),
-    )
-    .expect("run metadata repair");
+    let report = repair_metadata(path_string(repo.path()), repair_options(repo.path(), true))
+        .expect("run metadata repair");
 
     let snapshot_path = report
         .diagnostics_snapshot_path
@@ -151,10 +174,7 @@ fn repair_reindex_metadata_validation_repair_preserves_files_before_explicit_rei
         before
     );
 
-    assert_eq!(
-        sorted_list_paths(repo.path()),
-        Vec::<String>::new()
-    );
+    assert_eq!(sorted_list_paths(repo.path()), Vec::<String>::new());
     assert_eq!(
         get_latest_scan_session(path_string(repo.path())).expect("read repair scan session"),
         None
@@ -162,7 +182,10 @@ fn repair_reindex_metadata_validation_repair_preserves_files_before_explicit_rei
 
     let reindex = reindex_from_filesystem(path_string(repo.path())).expect("run explicit reindex");
     assert_eq!(reindex.inserted, 2);
-    assert_eq!(sorted_list_paths(repo.path()), vec!["README.md", "docs/spec.txt"]);
+    assert_eq!(
+        sorted_list_paths(repo.path()),
+        vec!["README.md", "docs/spec.txt"]
+    );
     let tree = parse_tree(repo.path());
     assert_eq!(tree["file_count"], 2);
     assert_eq!(child_by_slug(&tree, "docs")["file_count"], 1);
@@ -175,11 +198,8 @@ fn repair_reindex_metadata_validation_metadata_repair_does_not_reindex_user_file
     let unindexed = write_repo_file(repo.path(), "docs/unindexed.txt", b"pending content\n");
     let before = user_file_snapshot(&[&unindexed]);
 
-    let report = repair_metadata(
-        path_string(repo.path()),
-        repair_options(repo.path(), false),
-    )
-    .expect("run metadata-only repair");
+    let report = repair_metadata(path_string(repo.path()), repair_options(repo.path(), false))
+        .expect("run metadata-only repair");
 
     assert_eq!(report.diagnostics_snapshot_path, None);
     assert_eq!(report.outcome, RepairMetadataOutcome::Verified);
@@ -189,6 +209,182 @@ fn repair_reindex_metadata_validation_metadata_repair_does_not_reindex_user_file
         get_latest_scan_session(path_string(repo.path())).expect("read latest scan session"),
         None
     );
+}
+
+#[test]
+fn repair_reindex_metadata_validation_preflight_is_side_effect_free() {
+    let repo = initialized_repo();
+    let metadata = repo.path().join(".areamatrix");
+    let wal = metadata.join("index.db-wal");
+    let shm = metadata.join("index.db-shm");
+    assert!(!wal.exists());
+    assert!(!shm.exists());
+    let before = fs::read(metadata.join("index.db")).expect("read database before preflight");
+
+    let preflight = preflight_repair_metadata(path_string(repo.path()))
+        .expect("run read-only metadata repair preflight");
+
+    assert_eq!(preflight.locale_state, RepairMetadataLocaleState::Healthy);
+    assert_eq!(
+        preflight.repository_locale_policy.as_deref(),
+        Some("system")
+    );
+    assert!(!preflight.requires_explicit_locale_selection);
+    assert!(!wal.exists());
+    assert!(!shm.exists());
+    assert_eq!(
+        fs::read(metadata.join("index.db")).expect("read database after preflight"),
+        before
+    );
+}
+
+#[test]
+fn repair_reindex_metadata_validation_preserves_healthy_locale_alias_exactly() {
+    let repo = initialized_repo();
+    metadata_connection(repo.path())
+        .execute(
+            "UPDATE repo_config SET value = 'zh-CN' WHERE key = 'locale'",
+            [],
+        )
+        .expect("write compatible locale alias fixture");
+    let preflight = preflight_repair_metadata(path_string(repo.path()))
+        .expect("preflight compatible locale alias");
+    assert_eq!(preflight.locale_state, RepairMetadataLocaleState::Healthy);
+    assert_eq!(preflight.repository_locale_policy.as_deref(), Some("zh-CN"));
+
+    let report = repair_metadata(
+        path_string(repo.path()),
+        RepairOptions {
+            preserve_diagnostics_snapshot: false,
+            preflight_token: preflight.preflight_token,
+            repository_locale_policy: "zh-CN".to_owned(),
+        },
+    )
+    .expect("verify healthy locale alias without canonicalizing");
+
+    assert_eq!(report.outcome, RepairMetadataOutcome::Verified);
+    assert_eq!(persisted_locale(repo.path()), "zh-CN");
+}
+
+#[test]
+fn repair_reindex_metadata_validation_repairs_missing_locale_without_rebuilding_database() {
+    let repo = initialized_repo();
+    let user_file = write_repo_file(repo.path(), "docs/spec.txt", b"user content\n");
+    let generated = repo.path().join(".areamatrix/generated/root.md");
+    let before = user_file_snapshot(&[&user_file, &generated]);
+    let connection = metadata_connection(repo.path());
+    connection
+        .execute(
+            "INSERT INTO saved_searches (
+               name, query_json, pinned, created_at, updated_at
+             ) VALUES ('Keep me', '{}', 0, 1, 1)",
+            [],
+        )
+        .expect("insert DB-only metadata fixture");
+    connection
+        .execute("DELETE FROM repo_config WHERE key = 'locale'", [])
+        .expect("remove locale fixture");
+    drop(connection);
+    let revision_before = config_revision(repo.path());
+    let preflight =
+        preflight_repair_metadata(path_string(repo.path())).expect("preflight missing locale");
+    assert_eq!(
+        preflight.locale_state,
+        RepairMetadataLocaleState::LocaleMissing
+    );
+    assert!(preflight.requires_explicit_locale_selection);
+
+    let report = repair_metadata(
+        path_string(repo.path()),
+        RepairOptions {
+            preserve_diagnostics_snapshot: false,
+            preflight_token: preflight.preflight_token,
+            repository_locale_policy: "en".to_owned(),
+        },
+    )
+    .expect("repair only the missing locale row");
+
+    assert_eq!(report.outcome, RepairMetadataOutcome::Rebuilt);
+    assert_eq!(persisted_locale(repo.path()), "en");
+    assert_eq!(config_revision(repo.path()), revision_before + 1);
+    let saved_search_count: i64 = metadata_connection(repo.path())
+        .query_row("SELECT COUNT(*) FROM saved_searches", [], |row| row.get(0))
+        .expect("count preserved DB-only metadata");
+    assert_eq!(saved_search_count, 1);
+    assert_eq!(user_file_snapshot(&[&user_file, &generated]), before);
+    assert_eq!(
+        get_latest_scan_session(path_string(repo.path())).expect("read repair scan session"),
+        None
+    );
+}
+
+#[test]
+fn repair_reindex_metadata_validation_stale_token_has_zero_repair_writes() {
+    let repo = initialized_repo();
+    let preflight =
+        preflight_repair_metadata(path_string(repo.path())).expect("preflight healthy metadata");
+    metadata_connection(repo.path())
+        .execute(
+            "UPDATE repo_config SET value = 'zh-CN' WHERE key = 'locale'",
+            [],
+        )
+        .expect("change metadata after preflight");
+    let diagnostics = repo.path().join(".areamatrix/diagnostics");
+
+    let result = repair_metadata(
+        path_string(repo.path()),
+        RepairOptions {
+            preserve_diagnostics_snapshot: true,
+            preflight_token: preflight.preflight_token,
+            repository_locale_policy: "system".to_owned(),
+        },
+    );
+
+    assert_eq!(result, Err(CoreError::conflict(path_string(repo.path()))));
+    assert_eq!(persisted_locale(repo.path()), "zh-CN");
+    assert!(!diagnostics.exists());
+}
+
+#[test]
+fn repair_reindex_metadata_validation_requires_explicit_unsupported_locale_recovery() {
+    let repo = initialized_repo();
+    metadata_connection(repo.path())
+        .execute(
+            "UPDATE repo_config SET value = ?1 WHERE key = 'locale'",
+            params!["fr-FR"],
+        )
+        .expect("write unsupported locale fixture");
+    let preflight =
+        preflight_repair_metadata(path_string(repo.path())).expect("preflight unsupported locale");
+    assert_eq!(
+        preflight.locale_state,
+        RepairMetadataLocaleState::LocaleUnsupported
+    );
+    assert_eq!(preflight.unsupported_locale.as_deref(), Some("fr-FR"));
+    assert!(preflight.repository_locale_policy.is_none());
+
+    let rejected = repair_metadata(
+        path_string(repo.path()),
+        RepairOptions {
+            preserve_diagnostics_snapshot: false,
+            preflight_token: preflight.preflight_token.clone(),
+            repository_locale_policy: "fr-FR".to_owned(),
+        },
+    );
+    assert_eq!(rejected, Err(CoreError::config("configuration error")));
+    assert_eq!(persisted_locale(repo.path()), "fr-FR");
+
+    let report = repair_metadata(
+        path_string(repo.path()),
+        RepairOptions {
+            preserve_diagnostics_snapshot: false,
+            preflight_token: preflight.preflight_token,
+            repository_locale_policy: "zh-Hans".to_owned(),
+        },
+    )
+    .expect("apply explicit canonical locale recovery");
+    assert_eq!(report.outcome, RepairMetadataOutcome::Rebuilt);
+    assert_eq!(persisted_locale(repo.path()), "zh-Hans");
 }
 
 #[test]
@@ -203,11 +399,8 @@ fn repair_reindex_metadata_validation_uninitialized_repo_requires_confirmed_repa
             "repository not initialized"
         ))
     );
-    let report = repair_metadata(
-        path_string(repo.path()),
-        repair_options(repo.path(), true),
-    )
-    .expect("confirmed repair should initialize missing metadata");
+    let report = repair_metadata(path_string(repo.path()), repair_options(repo.path(), true))
+        .expect("confirmed repair should initialize missing metadata");
 
     assert!(repo.path().join(".areamatrix/index.db").is_file());
     assert_eq!(report.diagnostics_snapshot_path, None);

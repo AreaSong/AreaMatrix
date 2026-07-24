@@ -50,8 +50,8 @@ fn snapshot_files(paths: &[PathBuf]) -> Vec<(PathBuf, Vec<u8>)> {
 fn assert_error_kind(error: CoreError, expected: ErrorKind) -> CoreError {
     let mapping = error.to_error_mapping();
     assert_eq!(mapping.kind, expected);
-    assert!(!mapping.user_message.is_empty());
-    assert!(!mapping.suggested_action.is_empty());
+    assert!(!mapping.code.is_empty());
+    assert!(!mapping.recovery_action_ids.is_empty());
     error
 }
 
@@ -160,7 +160,7 @@ fn windows_repo_connect_failure_corrupted_metadata_maps_db_without_repair_side_e
     let load_error = load_config(path_string(&repo)).expect_err("corrupted config DB fails");
 
     assert_error_kind(validate_error, ErrorKind::Db);
-    let load_error = assert_error_kind(load_error, ErrorKind::Db);
+    let load_error = assert_error_kind(load_error, ErrorKind::DbCorrupted);
     assert_eq!(
         load_error.to_error_mapping().recoverability,
         ErrorRecoverability::Fatal

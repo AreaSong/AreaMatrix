@@ -10,12 +10,12 @@ protocol MobileRepositoryCoreBridge: Sendable {
     func updateConfig(repoPath: String, newConfig: MobileRepositoryConfig) async throws
 }
 
-enum MobileRepositoryInitMode: String, Equatable, Sendable {
+enum MobileRepositoryInitMode: String, Equatable {
     case createEmpty = "CreateEmpty"
     case adoptExisting = "AdoptExisting"
 }
 
-enum MobileRepositoryPathIssue: String, Equatable, Sendable {
+enum MobileRepositoryPathIssue: String, Equatable {
     case missingPath = "MissingPath"
     case notDirectory = "NotDirectory"
     case notReadable = "NotReadable"
@@ -30,7 +30,7 @@ enum MobileRepositoryPathIssue: String, Equatable, Sendable {
     case unfinishedScanSession = "UnfinishedScanSession"
 }
 
-enum MobileRepositoryPlatformPathKind: String, Equatable, Sendable {
+enum MobileRepositoryPlatformPathKind: String, Equatable {
     case local = "Local"
     case iCloudDrive = "ICloudDrive"
     case oneDrive = "OneDrive"
@@ -38,7 +38,7 @@ enum MobileRepositoryPlatformPathKind: String, Equatable, Sendable {
     case unknown = "Unknown"
 }
 
-struct MobileRepositoryValidation: Equatable, Sendable {
+struct MobileRepositoryValidation: Equatable {
     var repoPath: String
     var exists: Bool
     var isDirectory: Bool
@@ -70,8 +70,9 @@ struct MobileRepositoryValidation: Equatable, Sendable {
     }
 }
 
-struct MobileRepositoryConfig: Equatable, Sendable {
+struct MobileRepositoryConfig: Equatable {
     var repoPath: String
+    var revision: Int64 = 0
     var defaultMode: String
     var overviewOutput = "GeneratedOnly"
     var aiEnabled = true
@@ -83,25 +84,25 @@ struct MobileRepositoryConfig: Equatable, Sendable {
     var allowReplaceDuringImport = false
 }
 
-struct MobileRepositoryConnection: Equatable, Sendable {
+struct MobileRepositoryConnection: Equatable {
     var validation: MobileRepositoryValidation
     var config: MobileRepositoryConfig
     var bookmark: RepositoryBookmark
 }
 
-struct MobileRepositoryCandidate: Equatable, Sendable {
+struct MobileRepositoryCandidate: Equatable {
     var validation: MobileRepositoryValidation
     var bookmark: RepositoryBookmark
 }
 
-enum MobileRepositoryConnectionRoute: Equatable, Sendable {
+enum MobileRepositoryConnectionRoute: Equatable {
     case mobileLibrary(MobileRepositoryConnection)
     case repositoryInitConfirm(MobileRepositoryCandidate)
     case repositoryAdoptConfirm(MobileRepositoryCandidate)
     case iCloudPermission(MobileRepositoryConnectionError)
 }
 
-enum MobileRepositoryConnectionError: Error, Equatable, Sendable {
+enum MobileRepositoryConnectionError: Error, Equatable {
     case invalidPath(String)
     case selectedFile(String)
     case permissionDenied(String)

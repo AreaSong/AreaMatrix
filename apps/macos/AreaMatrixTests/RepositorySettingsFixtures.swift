@@ -1,8 +1,8 @@
 @testable import AreaMatrix
 
-extension RepoConfigSnapshot {
-    static func repositorySettingsConfigFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath) {
+extension AppRepoConfigSnapshot {
+    static func repositorySettingsConfigFixture(repoPath: String) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath) {
             $0.aiEnabled = true
         }
     }

@@ -255,6 +255,8 @@ fn share_extension_import_failure_recovery_permission_denied_maps_and_keeps_payl
         path: Some(path_string(&source)),
         reason: None,
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(mapping.kind, ErrorKind::PermissionDenied);
     assert_eq!(mapping.severity, ErrorSeverity::High);
@@ -350,18 +352,24 @@ fn share_extension_import_failure_recovery_error_mapping_is_structured_and_side_
             path: Some(path_string(&source)),
             reason: None,
             message: None,
+            expected_revision: None,
+            current_revision: None,
         }),
         map_core_error(ErrorMappingInput {
             kind: ErrorKind::Io,
             path: None,
             reason: None,
             message: Some("share import filesystem failure".to_owned()),
+            expected_revision: None,
+            current_revision: None,
         }),
         map_core_error(ErrorMappingInput {
             kind: ErrorKind::Db,
             path: None,
             reason: None,
             message: Some("SQLITE_BUSY: database is locked".to_owned()),
+            expected_revision: None,
+            current_revision: None,
         }),
     ];
 

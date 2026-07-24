@@ -399,6 +399,8 @@ fn ai_privacy_rules_failure_error_mapping_matches_documented_codes() {
             path: Some("repository metadata".to_owned()),
             reason: Some("AI privacy failure edge".to_owned()),
             message: Some("AI privacy metadata unavailable".to_owned()),
+            expected_revision: None,
+            current_revision: None,
         });
         assert_eq!(mapping.kind, kind);
         assert_eq!(mapping.severity, severity);
@@ -406,10 +408,12 @@ fn ai_privacy_rules_failure_error_mapping_matches_documented_codes() {
     }
 
     let locked = map_core_error(ErrorMappingInput {
-        kind: ErrorKind::Db,
+        kind: ErrorKind::DbLocked,
         path: None,
         reason: None,
         message: Some("database is locked".to_owned()),
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(locked.recoverability, ErrorRecoverability::Retryable);
 }

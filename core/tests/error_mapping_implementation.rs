@@ -14,6 +14,8 @@ fn input(
         path: path.map(str::to_owned),
         reason: reason.map(str::to_owned),
         message: message.map(str::to_owned),
+        expected_revision: None,
+        current_revision: None,
     }
 }
 
@@ -36,13 +38,19 @@ fn error_mapping_implementation_branches_on_kind_not_payload_text() {
     );
 
     assert_eq!(permission.kind, ErrorKind::PermissionDenied);
-    assert_eq!(permission.user_message, "无访问权限");
+    assert_eq!(permission.code, "permission_denied");
+    assert_eq!(permission.field.as_deref(), Some("path"));
+    assert_eq!(permission.arguments[0].name, "path");
+    assert_eq!(permission.arguments[0].value, "/restricted/repo");
     assert_eq!(permission.severity, ErrorSeverity::High);
     assert_eq!(
         permission.recoverability,
         ErrorRecoverability::UserActionRequired
     );
-    assert_eq!(permission.raw_context, "/restricted/repo");
+    assert_eq!(
+        permission.technical_details.as_deref().unwrap_or_default(),
+        "/restricted/repo"
+    );
 
     let invalid = map(
         ErrorKind::InvalidPath,
@@ -52,9 +60,12 @@ fn error_mapping_implementation_branches_on_kind_not_payload_text() {
     );
 
     assert_eq!(invalid.kind, ErrorKind::InvalidPath);
-    assert_eq!(invalid.user_message, "路径不合法");
+    assert_eq!(invalid.code, "invalid_path");
     assert_eq!(invalid.severity, ErrorSeverity::Low);
-    assert_eq!(invalid.raw_context, "../escape.pdf");
+    assert_eq!(
+        invalid.technical_details.as_deref().unwrap_or_default(),
+        "../escape.pdf"
+    );
 }
 
 #[test]
@@ -99,9 +110,12 @@ fn error_mapping_implementation_uses_payload_for_declared_kind() {
     ];
 
     for (mapping, raw_context) in cases {
-        assert_eq!(mapping.raw_context, raw_context);
-        assert!(!mapping.user_message.is_empty());
-        assert!(!mapping.suggested_action.is_empty());
+        assert_eq!(
+            mapping.technical_details.as_deref().unwrap_or_default(),
+            raw_context
+        );
+        assert!(!mapping.code.is_empty());
+        assert!(!mapping.recovery_action_ids.is_empty());
     }
 }
 
@@ -115,8 +129,8 @@ fn error_mapping_implementation_high_severity_errors_are_actionable() {
                 None,
                 Some("database disk image is malformed"),
             ),
-            ErrorSeverity::Critical,
-            ErrorRecoverability::Fatal,
+            ErrorSeverity::High,
+            ErrorRecoverability::UserActionRequired,
         ),
         (
             map(ErrorKind::RepoNotInitialized, Some("/repo"), None, None),
@@ -138,7 +152,7 @@ fn error_mapping_implementation_high_severity_errors_are_actionable() {
     for (mapping, severity, recoverability) in cases {
         assert_eq!(mapping.severity, severity);
         assert_eq!(mapping.recoverability, recoverability);
-        assert!(!mapping.suggested_action.is_empty());
+        assert!(!mapping.recovery_action_ids.is_empty());
         assert!(!matches!(
             mapping.recoverability,
             ErrorRecoverability::Retryable
@@ -147,14 +161,20 @@ fn error_mapping_implementation_high_severity_errors_are_actionable() {
 }
 
 #[test]
-fn error_mapping_implementation_db_locked_stays_retryable_without_repair_route() {
+fn error_mapping_implementation_generic_db_text_is_not_reclassified() {
     let mapping = map(ErrorKind::Db, None, None, Some("database is locked"));
 
     assert_eq!(mapping.kind, ErrorKind::Db);
-    assert_eq!(mapping.severity, ErrorSeverity::Medium);
-    assert_eq!(mapping.recoverability, ErrorRecoverability::Retryable);
-    assert_eq!(mapping.user_message, "数据库暂时被占用");
-    assert!(mapping.suggested_action.contains("重试"));
+    assert_eq!(mapping.severity, ErrorSeverity::High);
+    assert_eq!(
+        mapping.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
+    assert_eq!(mapping.code, "database_error");
+    assert_eq!(
+        mapping.recovery_action_ids,
+        vec!["collect_diagnostics", "open_recovery"]
+    );
 }
 
 #[test]
@@ -176,7 +196,10 @@ fn error_mapping_implementation_missing_payloads_have_stable_fallbacks() {
 
     for (kind, raw_context) in cases {
         let mapping = map_core_error(input(kind, None, None, None));
-        assert_eq!(mapping.raw_context, raw_context);
+        assert_eq!(
+            mapping.technical_details.as_deref().unwrap_or_default(),
+            raw_context
+        );
     }
 }
 

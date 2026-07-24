@@ -128,7 +128,8 @@ fn load_update_config_validation_success_updates_db_only_and_preserves_files() {
 
     let before = load_repo_config(path_string(repo.path())).expect("load initial config");
     let config = updated_patch(before.revision);
-    let updated = update_repo_config(path_string(repo.path()), config).expect("persist config update");
+    let updated =
+        update_repo_config(path_string(repo.path()), config).expect("persist config update");
 
     assert_eq!(updated.revision, before.revision + 1);
     assert_eq!(updated.locale_policy.raw_value, "en");
@@ -181,7 +182,10 @@ fn load_update_config_validation_failed_update_keeps_previous_rows_readable() {
 
     assert!(matches!(result, Err(CoreError::Db { .. })));
 
-    assert_eq!(load_repo_config(path_string(repo.path())), Ok(before_config));
+    assert_eq!(
+        load_repo_config(path_string(repo.path())),
+        Ok(before_config)
+    );
     assert_eq!(config_rows(repo.path()), before_rows);
     assert_eq!(sqlite_integrity_check(repo.path()), "ok");
     assert!(foreign_key_violations(repo.path()).is_empty());

@@ -234,7 +234,7 @@ fn mobile_library_query_failure_uninitialized_repo_is_structured_and_creates_no_
             mapping.recoverability,
             ErrorRecoverability::UserActionRequired
         );
-        assert!(!mapping.user_message.is_empty());
+        assert!(!mapping.code.is_empty());
     }
     assert_eq!(
         fs::read(repo.path().join("README.md")).expect("read README after query"),
@@ -258,9 +258,9 @@ fn mobile_library_query_failure_corrupted_metadata_is_fatal_without_half_product
 
     let error = list_files(path_string(repo.path()), default_file_filter())
         .expect_err("corrupted DB must fail explicitly");
-    let mapping = assert_db_error(error).to_error_mapping();
+    let mapping = error.to_error_mapping();
 
-    assert_eq!(mapping.kind, ErrorKind::Db);
+    assert_eq!(mapping.kind, ErrorKind::DbCorrupted);
     assert_eq!(mapping.recoverability, ErrorRecoverability::Fatal);
     assert_eq!(
         fs::read(user_file).expect("read user file after corrupted query"),
@@ -380,6 +380,8 @@ fn mobile_library_query_failure_error_mapping_keeps_mobile_recovery_actions_stru
                 path: Some("/repo".to_owned()),
                 reason: None,
                 message: None,
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorKind::RepoNotInitialized,
             ErrorRecoverability::UserActionRequired,
@@ -390,6 +392,8 @@ fn mobile_library_query_failure_error_mapping_keeps_mobile_recovery_actions_stru
                 path: Some("docs/missing.pdf".to_owned()),
                 reason: None,
                 message: None,
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorKind::FileNotFound,
             ErrorRecoverability::RefreshRequired,
@@ -400,28 +404,34 @@ fn mobile_library_query_failure_error_mapping_keeps_mobile_recovery_actions_stru
                 path: None,
                 reason: None,
                 message: Some("io error".to_owned()),
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorKind::Io,
             ErrorRecoverability::Retryable,
         ),
         (
             ErrorMappingInput {
-                kind: ErrorKind::Db,
+                kind: ErrorKind::DbLocked,
                 path: None,
                 reason: None,
                 message: Some("database is locked".to_owned()),
+                expected_revision: None,
+                current_revision: None,
             },
-            ErrorKind::Db,
+            ErrorKind::DbLocked,
             ErrorRecoverability::Retryable,
         ),
         (
             ErrorMappingInput {
-                kind: ErrorKind::Db,
+                kind: ErrorKind::DbCorrupted,
                 path: None,
                 reason: None,
                 message: Some("file is not a database".to_owned()),
+                expected_revision: None,
+                current_revision: None,
             },
-            ErrorKind::Db,
+            ErrorKind::DbCorrupted,
             ErrorRecoverability::Fatal,
         ),
         (
@@ -430,6 +440,8 @@ fn mobile_library_query_failure_error_mapping_keeps_mobile_recovery_actions_stru
                 path: Some("/repo/.areamatrix".to_owned()),
                 reason: None,
                 message: None,
+                expected_revision: None,
+                current_revision: None,
             },
             ErrorKind::PermissionDenied,
             ErrorRecoverability::UserActionRequired,
@@ -440,7 +452,11 @@ fn mobile_library_query_failure_error_mapping_keeps_mobile_recovery_actions_stru
         let mapping = map_core_error(input);
         assert_eq!(mapping.kind, expected_kind);
         assert_eq!(mapping.recoverability, expected_recoverability);
-        assert!(!mapping.suggested_action.is_empty());
-        assert!(!mapping.raw_context.is_empty());
+        assert!(!mapping.recovery_action_ids.is_empty());
+        assert!(!mapping
+            .technical_details
+            .as_deref()
+            .unwrap_or_default()
+            .is_empty());
     }
 }

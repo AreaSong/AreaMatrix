@@ -145,7 +145,10 @@ fn legacy_null_receipt_requires_explicit_recovery_and_keeps_selected_locale_fixe
     let repo = initialized_repo();
     install_migrated_receipt_schema(repo.path());
     open_db(repo.path())
-        .execute("DROP TRIGGER external_sync_receipts_require_locale_insert", [])
+        .execute(
+            "DROP TRIGGER external_sync_receipts_require_locale_insert",
+            [],
+        )
         .expect("allow legacy fixture insertion");
     open_db(repo.path())
         .execute(

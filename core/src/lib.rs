@@ -38,6 +38,7 @@ mod note;
 pub mod overview;
 mod platform_capabilities;
 mod platform_watcher_status;
+mod recoverable_operation;
 mod recovery;
 mod redo;
 mod remote_provider_config;
@@ -83,9 +84,10 @@ pub use ai_settings::{
     AiProviderPreference,
 };
 pub use ai_summary::{
-    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryContextPolicy, AiSummaryDraft,
-    AiSummaryDraftStatus, AiSummaryGenerationRequest, AiSummaryInputField, AiSummaryProviderScope,
-    AiSummaryRoute, AiSummarySaveReport, AiSummarySaveRequest, AiSummarySkipReason,
+    AiContentOwnership, AiSummaryClearReport, AiSummaryClearRequest, AiSummaryContextPolicy,
+    AiSummaryDraft, AiSummaryDraftStatus, AiSummaryGenerationRequest, AiSummaryInputField,
+    AiSummaryProviderScope, AiSummaryRoute, AiSummarySaveReport, AiSummarySaveRequest,
+    AiSummarySkipReason,
 };
 pub use ai_tags_suggestion::{
     AiTagSuggestion, AiTagSuggestionApplyItemResult, AiTagSuggestionApplyReport,
@@ -119,9 +121,12 @@ pub use classifier_impact::{
     RuleImpactSample, RuleImpactStatus,
 };
 pub use classifier_rule_editor::{
-    create_classifier_rule, delete_classifier_rule, list_classifier_rules, update_classifier_rule,
-    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
-    ClassifierRuleRecord, ClassifierRuleUpdate,
+    create_classifier_rule, create_default_classifier, delete_classifier_rule,
+    list_classifier_rules, restore_default_classifier, restore_last_valid_classifier,
+    update_classifier_rule, ClassifierConfigHealth, ClassifierLocaleValue,
+    ClassifierRecoveryAction, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest,
+    ClassifierRuleEditorSnapshot, ClassifierRuleObservedState, ClassifierRuleRecord,
+    ClassifierRuleUpdate,
 };
 pub use classifier_rules::{save_classifier_rule, ClassifierRule};
 pub use cloud_permission_state::{
@@ -138,8 +143,8 @@ pub use cross_platform_ffi::{
 };
 pub use domain::*;
 pub use error::{
-    map_core_error, CoreError, CoreResult, ErrorKind, ErrorMapping, ErrorMappingInput,
-    ErrorRecoverability, ErrorSeverity,
+    map_core_error, CoreError, CoreResult, ErrorArgument, ErrorKind, ErrorMapping,
+    ErrorMappingInput, ErrorRecoverability, ErrorSeverity,
 };
 pub use import_conflict_batch::{
     apply_import_conflict_batch, preview_import_conflict_batch, ImportConflictBatchApplyReport,
@@ -157,6 +162,11 @@ pub use missing_file_recovery::{
     MissingFileReason, MissingFileRecoveryReport, MissingFileRecoveryStatus,
     MissingFileRelinkRequest, MissingFileRemoveRecordRequest, MissingFileState,
 };
+pub use overview::{
+    OverviewLanguageState, OverviewLanguageStatus, OverviewRegenerationPlan,
+    OverviewRegenerationReason, OverviewRegenerationSession, OverviewRegenerationStartRequest,
+    OverviewRegenerationStatus,
+};
 pub use platform_capabilities::{
     PlatformCapabilities, PlatformCapabilityStatus, PlatformCapabilitySupport, PlatformId,
 };
@@ -164,6 +174,7 @@ pub use platform_watcher_status::{
     PlatformWatcherBackend, PlatformWatcherEventSample, PlatformWatcherHealthReason,
     PlatformWatcherHealthSignal, PlatformWatcherSnapshot, PlatformWatcherStatus,
 };
+pub use recoverable_operation::{RecoverableOperationContext, RecoverableOperationStatus};
 pub use redo::{
     list_redo_actions, redo_action, RedoActionRecord, RedoActionResult, RedoActionStatus,
 };

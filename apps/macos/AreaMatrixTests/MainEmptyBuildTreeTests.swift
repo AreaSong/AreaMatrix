@@ -51,6 +51,34 @@ final class MainEmptyBuildTreeTests: XCTestCase {
         }
     }
 
+    func testInterfaceLocaleTreeRefreshKeepsStableSelectionAndSavedSearches() {
+        let refreshedTree = RepositoryTreeNodeSnapshot.testRoot(
+            displayName: "资料库",
+            children: [
+                .testCategory("inbox", displayName: "收件箱"),
+                .testCategory("docs", displayName: "文档")
+            ]
+        )
+        let savedSearch = SavedSearchSnapshot.testFixture(
+            id: 42,
+            name: "Quarterly reports",
+            query: .testFixture(request: .testFixture(query: "quarterly"))
+        )
+
+        let plan = InterfaceLocaleTreeRefreshPlan.make(
+            refreshedTree: refreshedTree,
+            savedSearches: [savedSearch],
+            selectedSidebarID: "docs"
+        )
+
+        XCTAssertEqual(plan.selectedSidebarID, "docs")
+        XCTAssertEqual(plan.tree.sidebarRow(id: "docs")?.displayName, "文档")
+        XCTAssertEqual(
+            plan.tree.sidebarRow(id: RepositoryTreeNodeSnapshot.savedSearchSidebarID(42))?.displayName,
+            "Quarterly reports"
+        )
+    }
+
     @MainActor
     func testMainEmptyOpeningUsesBuildTreeCoreTreeNodesForVisibleSidebar() async {
         let tree = RepositoryTreeNodeSnapshot.mainEmptyFixtureTree()
@@ -259,9 +287,9 @@ private extension RepositoryOpeningResult {
     }
 }
 
-private extension RepoConfigSnapshot {
-    static func mainEmptyBuildTreeFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath)
+private extension AppRepoConfigSnapshot {
+    static func mainEmptyBuildTreeFixture(repoPath: String) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 

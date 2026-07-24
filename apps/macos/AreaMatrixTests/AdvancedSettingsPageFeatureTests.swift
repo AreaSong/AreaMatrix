@@ -127,7 +127,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         await model.confirmRootOverview()
 
         XCTAssertEqual(model.draft?.overviewOutput, .generatedOnly)
-        XCTAssertEqual(model.saveError?.message, L10n.string("Could not save overview setting"))
+        XCTAssertEqual(model.saveError?.message, L10n.message("Could not save overview setting"))
         XCTAssertEqual(model.retrySaveAccessibilityIdentifier, "advanced-settings-overview-generated-retry-save")
         XCTAssertTrue(model.hasRetryableSave)
 
@@ -182,8 +182,12 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         await model.confirmAllowReplaceDuringImport()
 
         XCTAssertEqual(model.draft?.allowReplaceDuringImport, false)
-        XCTAssertEqual(model.saveError?.message, L10n.string("Could not save advanced setting"))
-        XCTAssertEqual(model.saveError?.recovery, "Retry save")
+        XCTAssertEqual(model.saveError?.message, L10n.message("Could not save advanced setting"))
+        XCTAssertEqual(model.saveError?.recovery, L10n.message(
+            "error.unmapped.action",
+            fallback: "Retry save",
+            technicalDetail: "Retry save"
+        ))
         XCTAssertTrue(model.hasRetryableSave)
 
         await model.retrySave()
@@ -254,7 +258,7 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
     @MainActor
     private func loadedAdvancedModel(
         updater: RecordingConfigurationUpdater,
-        config: RepoConfigSnapshot = .advancedSettingsFixture(repoPath: "/tmp/repo"),
+        config: AppRepoConfigSnapshot = .advancedSettingsFixture(repoPath: "/tmp/repo"),
         inspector: any RootOverviewFileInspecting = StaticRootOverviewFileInspector(status: .missing)
     ) async -> AdvancedSettingsModel {
         let model = AdvancedSettingsModel(

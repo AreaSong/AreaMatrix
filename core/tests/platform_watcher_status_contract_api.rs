@@ -98,6 +98,9 @@ fn platform_watcher_status_contract_exports_signature_inputs_outputs_and_errors(
 
 #[test]
 fn platform_watcher_status_contract_rejects_invalid_input_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         record_watcher_health(String::new(), watcher_signal()),
         Err(CoreError::Db { .. })
@@ -110,7 +113,8 @@ fn platform_watcher_status_contract_rejects_invalid_input_without_fake_success()
         Err(CoreError::Db { .. })
     ));
 
-    let valid_without_persistence = record_watcher_health("/tmp/repo".to_owned(), watcher_signal());
+    let valid_without_persistence =
+        record_watcher_health(uninitialized_repo_path, watcher_signal());
     assert!(matches!(
         valid_without_persistence,
         Err(CoreError::Db { .. })

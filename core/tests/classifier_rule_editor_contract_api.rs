@@ -1,7 +1,10 @@
 use area_matrix_core::{
-    create_classifier_rule, delete_classifier_rule, list_classifier_rules, update_classifier_rule,
-    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleEditorSnapshot,
-    ClassifierRuleRecord, ClassifierRuleUpdate, CoreError, CoreResult,
+    create_classifier_rule, create_default_classifier, delete_classifier_rule,
+    list_classifier_rules, restore_default_classifier, restore_last_valid_classifier,
+    update_classifier_rule, ClassifierConfigHealth, ClassifierLocaleValue,
+    ClassifierRecoveryAction, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest,
+    ClassifierRuleEditorSnapshot, ClassifierRuleObservedState, ClassifierRuleRecord,
+    ClassifierRuleUpdate, ContentLocale, CoreError, CoreResult,
 };
 use pretty_assertions::assert_eq;
 
@@ -23,7 +26,29 @@ fn assert_contains(haystack: &str, needle: &str) {
 
 fn update_request() -> ClassifierRuleUpdate {
     ClassifierRuleUpdate {
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: ContentLocale::En,
         rule_id: "finance".to_owned(),
+        observed: ClassifierRuleObservedState {
+            rule_id: "finance".to_owned(),
+            slug: "finance".to_owned(),
+            display_name: "Finance".to_owned(),
+            description: String::new(),
+            extensions: Vec::new(),
+            keywords: vec![
+                "invoice".to_owned(),
+                "receipt".to_owned(),
+                "tax".to_owned(),
+                "contract".to_owned(),
+                "发票".to_owned(),
+                "收据".to_owned(),
+                "税务".to_owned(),
+                "合同".to_owned(),
+                "报销".to_owned(),
+            ],
+            priority: 10,
+            naming_template: None,
+        },
         slug: "finance".to_owned(),
         display_name: "Finance".to_owned(),
         description: "Finance documents".to_owned(),
@@ -37,6 +62,8 @@ fn update_request() -> ClassifierRuleUpdate {
 
 fn create_request() -> ClassifierRuleCreateRequest {
     ClassifierRuleCreateRequest {
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: ContentLocale::En,
         slug: "tax".to_owned(),
         display_name: "Tax".to_owned(),
         description: "Tax documents".to_owned(),
@@ -57,7 +84,10 @@ fn delete_request() -> ClassifierRuleDeleteRequest {
 
 #[test]
 fn classifier_rule_editor_contract_exposes_signatures_inputs_outputs_and_errors() {
-    fn assert_list(_: fn(String) -> CoreResult<ClassifierRuleEditorSnapshot>) {}
+    fn assert_list(
+        _: fn(String, Option<ContentLocale>) -> CoreResult<ClassifierRuleEditorSnapshot>,
+    ) {
+    }
     fn assert_create(
         _: fn(String, ClassifierRuleCreateRequest) -> CoreResult<ClassifierRuleEditorSnapshot>,
     ) {
@@ -70,16 +100,29 @@ fn classifier_rule_editor_contract_exposes_signatures_inputs_outputs_and_errors(
         _: fn(String, ClassifierRuleDeleteRequest) -> CoreResult<ClassifierRuleEditorSnapshot>,
     ) {
     }
+    fn assert_recovery(
+        _: fn(String, bool, Option<ContentLocale>) -> CoreResult<ClassifierRuleEditorSnapshot>,
+    ) {
+    }
     assert_list(list_classifier_rules);
     assert_create(create_classifier_rule);
     assert_update(update_classifier_rule);
     assert_delete(delete_classifier_rule);
+    assert_recovery(create_default_classifier);
+    assert_recovery(restore_default_classifier);
+    assert_recovery(restore_last_valid_classifier);
 
     let rule = ClassifierRuleRecord {
         rule_id: "finance".to_owned(),
         slug: "finance".to_owned(),
-        display_name: "Finance".to_owned(),
-        description: "Finance documents".to_owned(),
+        display_names: vec![ClassifierLocaleValue {
+            locale: "en".to_owned(),
+            value: "Finance".to_owned(),
+        }],
+        descriptions: vec![ClassifierLocaleValue {
+            locale: "en".to_owned(),
+            value: "Finance documents".to_owned(),
+        }],
         extensions: vec!["pdf".to_owned()],
         keywords: vec!["invoice".to_owned()],
         priority: 10,
@@ -90,6 +133,10 @@ fn classifier_rule_editor_contract_exposes_signatures_inputs_outputs_and_errors(
         rules: vec![rule],
         default_rule_id: "inbox".to_owned(),
         updated_rule_id: Some("finance".to_owned()),
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: Some(ContentLocale::En),
+        health: ClassifierConfigHealth::Valid,
+        recovery_actions: vec![ClassifierRecoveryAction::RestoreDefault],
         warning: Some("impact preview required before deleting this rule".to_owned()),
     };
 
@@ -123,72 +170,74 @@ fn classifier_rule_editor_contract_exposes_signatures_inputs_outputs_and_errors(
 
 #[test]
 fn classifier_rule_editor_contract_validates_inputs_without_fake_success_or_side_effects() {
+    let uninitialized = tempfile::tempdir().expect("create uninitialized repository fixture");
+    let uninitialized_path = uninitialized.path().to_string_lossy().into_owned();
     assert!(matches!(
-        list_classifier_rules(String::new()),
+        list_classifier_rules(String::new(), Some(ContentLocale::En)),
         Err(CoreError::Config { .. })
     ));
 
     let mut invalid_id = update_request();
     invalid_id.rule_id.clear();
     assert!(matches!(
-        update_classifier_rule("/tmp/repo".to_owned(), invalid_id),
+        update_classifier_rule(uninitialized_path.clone(), invalid_id),
         Err(CoreError::Config { .. })
     ));
 
     let mut invalid_slug = update_request();
     invalid_slug.slug = "Bad Category".to_owned();
     assert!(matches!(
-        update_classifier_rule("/tmp/repo".to_owned(), invalid_slug),
+        update_classifier_rule(uninitialized_path.clone(), invalid_slug),
         Err(CoreError::Config { .. })
     ));
 
     let mut dotted_extension = update_request();
     dotted_extension.extensions = vec![".pdf".to_owned()];
     assert!(matches!(
-        update_classifier_rule("/tmp/repo".to_owned(), dotted_extension),
+        update_classifier_rule(uninitialized_path.clone(), dotted_extension),
         Err(CoreError::Config { .. })
     ));
 
     let mut duplicate_keyword = update_request();
     duplicate_keyword.keywords = vec!["invoice".to_owned(), "invoice".to_owned()];
     assert!(matches!(
-        update_classifier_rule("/tmp/repo".to_owned(), duplicate_keyword),
+        update_classifier_rule(uninitialized_path.clone(), duplicate_keyword),
         Err(CoreError::Config { .. })
     ));
 
     let mut invalid_priority = update_request();
     invalid_priority.priority = 1001;
     assert!(matches!(
-        update_classifier_rule("/tmp/repo".to_owned(), invalid_priority),
+        update_classifier_rule(uninitialized_path.clone(), invalid_priority),
         Err(CoreError::Config { .. })
     ));
 
     let mut invalid_create = create_request();
     invalid_create.slug = "Bad Category".to_owned();
     assert!(matches!(
-        create_classifier_rule("/tmp/repo".to_owned(), invalid_create),
+        create_classifier_rule(uninitialized_path.clone(), invalid_create),
         Err(CoreError::Config { .. })
     ));
 
-    assert!(matches!(
-        create_classifier_rule("/tmp/repo".to_owned(), create_request()),
-        Err(CoreError::Config { .. })
-    ));
-    assert!(matches!(
-        update_classifier_rule("/tmp/repo".to_owned(), update_request()),
-        Err(CoreError::Config { .. })
-    ));
-    assert!(matches!(
-        delete_classifier_rule("/tmp/repo".to_owned(), delete_request()),
-        Err(CoreError::Config { .. })
-    ));
+    assert!(create_classifier_rule(uninitialized_path.clone(), create_request()).is_err());
+    assert!(update_classifier_rule(uninitialized_path.clone(), update_request()).is_err());
+    assert!(delete_classifier_rule(uninitialized_path, delete_request()).is_err());
+    assert_eq!(
+        std::fs::read_dir(uninitialized.path())
+            .expect("read uninitialized fixture")
+            .count(),
+        0
+    );
 }
 
 #[test]
 fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
-        "ClassifierRuleEditorSnapshot list_classifier_rules(string repo_path);",
+        "string repo_path, ContentLocale? editing_locale",
         "ClassifierRuleEditorSnapshot create_classifier_rule(",
+        "ClassifierRuleEditorSnapshot create_default_classifier(",
+        "ClassifierRuleEditorSnapshot restore_default_classifier(",
+        "ClassifierRuleEditorSnapshot restore_last_valid_classifier(",
         "ClassifierRuleCreateRequest request",
         "ClassifierRuleEditorSnapshot update_classifier_rule(",
         "ClassifierRuleUpdate request",
@@ -197,8 +246,8 @@ fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
         "dictionary ClassifierRuleRecord",
         "string rule_id;",
         "string slug;",
-        "string display_name;",
-        "string description;",
+        "sequence<ClassifierLocaleValue> display_names;",
+        "sequence<ClassifierLocaleValue> descriptions;",
         "sequence<string> extensions;",
         "sequence<string> keywords;",
         "string? naming_template;",
@@ -207,6 +256,12 @@ fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
         "sequence<ClassifierRuleRecord> rules;",
         "string default_rule_id;",
         "string? updated_rule_id;",
+        "string repository_locale_policy;",
+        "ContentLocale? editing_locale;",
+        "enum ClassifierConfigHealth",
+        "enum ClassifierRecoveryAction",
+        "ClassifierConfigHealth health;",
+        "sequence<ClassifierRecoveryAction> recovery_actions;",
         "dictionary ClassifierRuleCreateRequest",
         "dictionary ClassifierRuleUpdate",
         "boolean preview_confirmed;",
@@ -218,11 +273,14 @@ fn classifier_rule_editor_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "| `list_classifier_rules(repo)` | classify | √ | Config / PermissionDenied / Io |",
-        "| `create_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |",
-        "| `update_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |",
+        "| `list_classifier_rules(repo, editing_locale)` | classify | √ | Config / PermissionDenied / Io |",
+        "| `create_default_classifier(repo, confirmed, editing_locale)` | classify | √ | Config / PermissionDenied / Io |",
+        "| `restore_default_classifier(repo, confirmed, editing_locale)` | classify | √ | Config / PermissionDenied / Io |",
+        "| `restore_last_valid_classifier(repo, confirmed, editing_locale)` | classify | √ | Config / PermissionDenied / Io |",
+        "| `create_classifier_rule(repo, request)` | classify | √ | Config / Conflict / PermissionDenied / Io |",
+        "| `update_classifier_rule(repo, request)` | classify | √ | Config / Conflict / PermissionDenied / Io |",
         "| `delete_classifier_rule(repo, request)` | classify | √ | Config / PermissionDenied / Io |",
-        "### `list_classifier_rules(repoPath) throws -> ClassifierRuleEditorSnapshot`",
+        "### `list_classifier_rules(repoPath, editingLocale) throws -> ClassifierRuleEditorSnapshot`",
         "### `create_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
         "### `update_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",
         "### `delete_classifier_rule(repoPath, request) throws -> ClassifierRuleEditorSnapshot`",

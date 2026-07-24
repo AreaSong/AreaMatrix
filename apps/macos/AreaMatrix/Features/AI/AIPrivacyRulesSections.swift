@@ -57,11 +57,12 @@ extension AIPrivacyRulesView {
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(rule.kind.aiPrivacyRulesLabel): \(rule.pattern)")
                     .font(.callout.weight(.medium))
-                Text(
-                    "\(rule.appliesTo.aiPrivacyRulesLabel), " +
-                        "\(rule.matchCount) files, " +
-                        rule.aiPrivacyRulesLastMatchedText
-                )
+                Text(L10n.format(
+                    "ai.privacy.ruleSummary",
+                    rule.appliesTo.aiPrivacyRulesLabel,
+                    rule.matchCount,
+                    rule.aiPrivacyRulesLastMatchedText
+                ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 if let description = rule.description, !description.isEmpty {

@@ -22,3 +22,178 @@ docs:
     excerpt: '# macOS 前端架构'
     sha256: '79ffef3ea6b364a25e5e4af4d49bcb95d17b49bfb09562b71befb545e1df8ba1'
     source: 'changes:v3-bilingual-architecture'
+  - file: 'docs/architecture/data-model.md'
+    line_start: 1
+    line_end: 228
+    heading: ''
+    excerpt: '# 数据模型'
+    sha256: '8700a9916d75482032ea179f162bb66e227bd5a66d4dbfbba937c104d3cf965b'
+    source: 'discussion:exact_docs'
+  - file: 'docs/architecture/migration.md'
+    line_start: 1
+    line_end: 109
+    heading: ''
+    excerpt: '# 数据库迁移'
+    sha256: '087b38bbefbad53a57945569ca738d440f9ceb5c4b8b2adfce92476637f3b9af'
+    source: 'discussion:exact_docs'
+  - file: 'docs/architecture/source-of-truth.md'
+    line_start: 1
+    line_end: 152
+    heading: ''
+    excerpt: '# 真相源策略'
+    sha256: '10be0b9420ca1450df2b07d82eac44558367e74dcf0d1acf214eb131f4ff8dbd'
+    source: 'discussion:exact_docs'
+  - file: 'docs/architecture/transactional-import.md'
+    line_start: 1
+    line_end: 126
+    heading: ''
+    excerpt: '# 事务式导入'
+    sha256: 'ba9957153d6a9f030afa957338726a6607f4a521dfc5cc543930dfba284d4e8c'
+    source: 'discussion:exact_docs'
+  - file: 'docs/architecture/fs-watcher.md'
+    line_start: 1
+    line_end: 238
+    heading: ''
+    excerpt: '# 文件监听与外部变化同步'
+    sha256: '7d6b1b4560b34aa772a44b5225b980b6cec97ce89c53c0e90f12167c288309d7'
+    source: 'discussion:exact_docs'
+  - file: 'docs/architecture/ffi-design.md'
+    line_start: 1
+    line_end: 106
+    heading: ''
+    excerpt: '# FFI 设计'
+    sha256: 'b1135e9bc0d4e0be3205a9d6680eda00d956999e998fbd34bde1b6c7d75a30a5'
+    source: 'discussion:exact_docs'
+  - file: 'docs/product/overview.md'
+    line_start: 1
+    line_end: 56
+    heading: ''
+    excerpt: '# AreaMatrix 产品概览'
+    sha256: 'edb60bc04f673986d502ed025966d59e1ea40562dc42bc3ddae9b13e3c9ff0d4'
+    source: 'discussion:exact_docs'
+  - file: 'docs/product/product-surfaces.md'
+    line_start: 1
+    line_end: 126
+    heading: ''
+    excerpt: '# AreaMatrix 产品界面地图'
+    sha256: 'd05586fac6e62d4197c17d7eee15660662a7b3990fc88723d3f2da940d4acd93'
+    source: 'discussion:exact_docs'
+  - file: 'docs/ux/first-launch.md'
+    line_start: 1
+    line_end: 179
+    heading: ''
+    excerpt: '# 首次启动与资料库打开'
+    sha256: 'd35b3d1fd460be1340fcbefdb6cdf0473b986451f68f12e4c8b867ff088d557b'
+    source: 'discussion:exact_docs'
+  - file: 'docs/ux/settings-panel.md'
+    line_start: 1
+    line_end: 260
+    heading: ''
+    excerpt: '# 设置面板'
+    sha256: 'f276f7c3befd8c48d041ca3a1133f6242059c3216d38813aba1692a2edb4b041'
+    source: 'discussion:exact_docs'
+  - file: 'docs/ux/classifier-calibration.md'
+    line_start: 1
+    line_end: 281
+    heading: ''
+    excerpt: '# 分类器调教（Classifier Calibration）'
+    sha256: '669ab4ab5812ec8bc23b269b7a88c46e37b382fa7dd320f5c94a98f9cc5d5836'
+    source: 'discussion:exact_docs'
+  - file: 'docs/user-guide/settings.md'
+    line_start: 1
+    line_end: 81
+    heading: ''
+    excerpt: '# 设置'
+    sha256: '3cac63df44723d5faf1ac8ff72aa91a9b00019547bf384c9c7f31ee4ae2867ad'
+    source: 'discussion:exact_docs'
+  - file: 'docs/user-guide/ai-features-and-privacy.md'
+    line_start: 1
+    line_end: 77
+    heading: ''
+    excerpt: '# AI 功能与隐私'
+    sha256: '301f9845597e85c70c7ff650b20634fa30832b8db2e5fe74bf61d3f9a9d30ec8'
+    source: 'discussion:exact_docs'
+  - file: 'docs/modules/repo-init.md'
+    line_start: 1
+    line_end: 72
+    heading: ''
+    excerpt: '# 资料库初始化（repo_init）'
+    sha256: '36c3b1e44d4e8791c565823da85a62f4f2c627c05a781b0aeb8f106c211029fa'
+    source: 'discussion:exact_docs'
+  - file: 'docs/modules/classify.md'
+    line_start: 1
+    line_end: 140
+    heading: ''
+    excerpt: '# 分类模块'
+    sha256: 'c98117032b3fc57cda785545841c3a7914330636ffa068bc93db5f749eb2269b'
+    source: 'discussion:exact_docs'
+  - file: 'docs/modules/tree-scan.md'
+    line_start: 1
+    line_end: 76
+    heading: ''
+    excerpt: '# 目录树扫描'
+    sha256: '1a23c3bd213d3187b7777a622c7dc8aeb15a5f7dfb8de59fcf8782b3ed97e94b'
+    source: 'discussion:exact_docs'
+  - file: 'docs/modules/overview-gen.md'
+    line_start: 1
+    line_end: 211
+    heading: ''
+    excerpt: '# 概览生成模块'
+    sha256: 'bdf61f6c46ebfd063cc6e4474d3e205688116f35cab569206883edf6c86288a1'
+    source: 'discussion:exact_docs'
+  - file: 'docs/modules/repo-scan.md'
+    line_start: 1
+    line_end: 88
+    heading: ''
+    excerpt: '# 文件系统扫描（repo_scan）'
+    sha256: '66e095c113f4253bcff9476b6ce0d2abfe9f8c09adb58f0500e29e7cf2ab7945'
+    source: 'discussion:exact_docs'
+  - file: 'docs/modules/repair.md'
+    line_start: 1
+    line_end: 115
+    heading: ''
+    excerpt: '# 元数据修复与诊断（repair）'
+    sha256: '65a32f73cffdd3e1ef90a9bb55241685bc3575c4390ca1faf9dcf4fb8c6367e4'
+    source: 'discussion:exact_docs'
+  - file: 'docs/api/classifier-yaml.md'
+    line_start: 1
+    line_end: 144
+    heading: ''
+    excerpt: '# classifier.yaml 配置规范'
+    sha256: '4c0b86538e02b2c7a85ea216f78ac62a9ec95d93d37035e26c7a159bca8f7876'
+    source: 'discussion:exact_docs'
+  - file: 'docs/api/error-codes.md'
+    line_start: 1
+    line_end: 157
+    heading: ''
+    excerpt: '# 错误码表（CoreError）'
+    sha256: '3229b37f07726c8fa04efbdecac831d2feb57db5d9a5069ecf196976bb36bb55'
+    source: 'discussion:exact_docs'
+  - file: 'docs/ux/error-messages.md'
+    line_start: 1
+    line_end: 317
+    heading: ''
+    excerpt: '# 错误文案与恢复路径（Error Messages & Recovery）'
+    sha256: 'e50daa1d808e8b68db69171be6a9619f79ec158457e7aa4c4ce2ba3ed657d2fc'
+    source: 'discussion:exact_docs'
+  - file: 'docs/development/coding-standards.md'
+    line_start: 1
+    line_end: 367
+    heading: ''
+    excerpt: '# 编码规范'
+    sha256: '4e3a4a483c2083bb9e78a528521b1fcddc1df10a90356ba3098c0ee950e909b0'
+    source: 'discussion:exact_docs'
+  - file: 'docs/development/testing.md'
+    line_start: 1
+    line_end: 178
+    heading: ''
+    excerpt: '# 测试策略'
+    sha256: '3a3ec2697470243cc5fc7c5ea774027042628edbbcb245e2b95d0f5367e62b94'
+    source: 'discussion:exact_docs'
+  - file: 'docs/development/ci-governance.md'
+    line_start: 1
+    line_end: 160
+    heading: ''
+    excerpt: '# CI Governance'
+    sha256: 'd85fb297f61fbfa4df875d37d445dc0ac6642763f49f15a6480d186b6641923d'
+    source: 'discussion:exact_docs'

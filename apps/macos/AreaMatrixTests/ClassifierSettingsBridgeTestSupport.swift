@@ -50,6 +50,17 @@ actor ClassifierSettingsSequencePredictor: CoreCategoryPredicting {
 }
 
 actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
+    struct ListRequest: Equatable {
+        var repoPath: String
+        var editingLocale: ClassifierEditingLocale?
+    }
+
+    struct RecoveryRequest: Equatable {
+        var repoPath: String
+        var confirmed: Bool
+        var editingLocale: ClassifierEditingLocale?
+    }
+
     typealias CreateRequest = (repoPath: String, request: ClassifierRuleCreateRequestSnapshot)
     typealias UpdateRequest = (repoPath: String, request: ClassifierRuleUpdateSnapshot)
     typealias DeleteRequest = (repoPath: String, request: ClassifierRuleDeleteRequestSnapshot)
@@ -57,30 +68,40 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
     struct UpdateRequestExpectation {
         var repoPath: String
         var ruleID: String
+        var observedDisplayName: String
         var displayName: String
         var extensions: [String]
         var keywords: [String]
         var previewConfirmed: Bool
     }
 
-    private let listResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error>
-    private let mutationResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error>
-    private var listRequestsStorage: [String] = []
+    private var listResults: [Swift.Result<ClassifierRuleEditorSnapshotState, Error>]
+    private var mutationResults: [Swift.Result<ClassifierRuleEditorSnapshotState, Error>]
+    private var listRequestsStorage: [ListRequest] = []
     private var createRequestsStorage: [CreateRequest] = []
     private var updateRequestsStorage: [UpdateRequest] = []
     private var deleteRequestsStorage: [DeleteRequest] = []
+    private var createDefaultRequestsStorage: [RecoveryRequest] = []
+    private var restoreDefaultRequestsStorage: [RecoveryRequest] = []
+    private var restoreLastValidRequestsStorage: [RecoveryRequest] = []
 
     init(
         listResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error> = .success(.classifierEditorFixture()),
-        mutationResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error> = .success(.classifierEditorFixture())
+        listResults: [Swift.Result<ClassifierRuleEditorSnapshotState, Error>]? = nil,
+        mutationResult: Swift.Result<ClassifierRuleEditorSnapshotState, Error> = .success(.classifierEditorFixture()),
+        mutationResults: [Swift.Result<ClassifierRuleEditorSnapshotState, Error>]? = nil
     ) {
-        self.listResult = listResult
-        self.mutationResult = mutationResult
+        self.listResults = listResults ?? [listResult]
+        self.mutationResults = mutationResults ?? [mutationResult]
     }
 
-    func listClassifierRules(repoPath: String) async throws -> ClassifierRuleEditorSnapshotState {
-        listRequestsStorage.append(repoPath)
-        return try resolve(listResult)
+    func listClassifierRules(
+        repoPath: String,
+        editingLocale: ClassifierEditingLocale?
+    ) async throws -> ClassifierRuleEditorSnapshotState {
+        listRequestsStorage.append(ListRequest(repoPath: repoPath, editingLocale: editingLocale))
+        let result = listResults.count > 1 ? listResults.removeFirst() : listResults[0]
+        return try resolve(result)
     }
 
     func createClassifierRule(
@@ -88,7 +109,7 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
         request: ClassifierRuleCreateRequestSnapshot
     ) async throws -> ClassifierRuleEditorSnapshotState {
         createRequestsStorage.append((repoPath, request))
-        return try resolve(mutationResult)
+        return try resolve(nextMutationResult())
     }
 
     func updateClassifierRule(
@@ -96,7 +117,7 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
         request: ClassifierRuleUpdateSnapshot
     ) async throws -> ClassifierRuleEditorSnapshotState {
         updateRequestsStorage.append((repoPath, request))
-        return try resolve(mutationResult)
+        return try resolve(nextMutationResult())
     }
 
     func deleteClassifierRule(
@@ -104,7 +125,46 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
         request: ClassifierRuleDeleteRequestSnapshot
     ) async throws -> ClassifierRuleEditorSnapshotState {
         deleteRequestsStorage.append((repoPath, request))
-        return try resolve(mutationResult)
+        return try resolve(nextMutationResult())
+    }
+
+    func createDefaultClassifier(
+        repoPath: String,
+        confirmed: Bool,
+        editingLocale: ClassifierEditingLocale?
+    ) async throws -> ClassifierRuleEditorSnapshotState {
+        createDefaultRequestsStorage.append(RecoveryRequest(
+            repoPath: repoPath,
+            confirmed: confirmed,
+            editingLocale: editingLocale
+        ))
+        return try resolve(nextMutationResult())
+    }
+
+    func restoreDefaultClassifier(
+        repoPath: String,
+        confirmed: Bool,
+        editingLocale: ClassifierEditingLocale?
+    ) async throws -> ClassifierRuleEditorSnapshotState {
+        restoreDefaultRequestsStorage.append(RecoveryRequest(
+            repoPath: repoPath,
+            confirmed: confirmed,
+            editingLocale: editingLocale
+        ))
+        return try resolve(nextMutationResult())
+    }
+
+    func restoreLastValidClassifier(
+        repoPath: String,
+        confirmed: Bool,
+        editingLocale: ClassifierEditingLocale?
+    ) async throws -> ClassifierRuleEditorSnapshotState {
+        restoreLastValidRequestsStorage.append(RecoveryRequest(
+            repoPath: repoPath,
+            confirmed: confirmed,
+            editingLocale: editingLocale
+        ))
+        return try resolve(nextMutationResult())
     }
 
     func assertClassifierRuleListRequests(
@@ -112,7 +172,39 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
+        XCTAssertEqual(listRequestsStorage.map(\.repoPath), expectedRequests, file: file, line: line)
+    }
+
+    func assertClassifierRuleListRequestDetails(
+        _ expectedRequests: [ListRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         XCTAssertEqual(listRequestsStorage, expectedRequests, file: file, line: line)
+    }
+
+    func assertCreateDefaultRequests(
+        _ expectedRequests: [RecoveryRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(createDefaultRequestsStorage, expectedRequests, file: file, line: line)
+    }
+
+    func assertRestoreDefaultRequests(
+        _ expectedRequests: [RecoveryRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(restoreDefaultRequestsStorage, expectedRequests, file: file, line: line)
+    }
+
+    func assertRestoreLastValidRequests(
+        _ expectedRequests: [RecoveryRequest],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(restoreLastValidRequestsStorage, expectedRequests, file: file, line: line)
     }
 
     func assertSingleClassifierRuleCreateRequest(
@@ -142,10 +234,24 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
         let request = updateRequestsStorage.first
         XCTAssertEqual(request?.repoPath, expected.repoPath, file: file, line: line)
         XCTAssertEqual(request?.request.ruleID, expected.ruleID, file: file, line: line)
+        XCTAssertEqual(request?.request.observed.displayName, expected.observedDisplayName, file: file, line: line)
         XCTAssertEqual(request?.request.displayName, expected.displayName, file: file, line: line)
         XCTAssertEqual(request?.request.extensions, expected.extensions, file: file, line: line)
         XCTAssertEqual(request?.request.keywords, expected.keywords, file: file, line: line)
         XCTAssertEqual(request?.request.previewConfirmed, expected.previewConfirmed, file: file, line: line)
+    }
+
+    func assertClassifierRuleUpdateRequestCount(
+        _ expectedCount: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(updateRequestsStorage.count, expectedCount, file: file, line: line)
+    }
+
+    func classifierRuleUpdateRequest(at index: Int) -> ClassifierRuleUpdateSnapshot? {
+        guard updateRequestsStorage.indices.contains(index) else { return nil }
+        return updateRequestsStorage[index].request
     }
 
     func assertNoClassifierRuleDeleteRequests(
@@ -174,5 +280,12 @@ actor ClassifierSettingsRecordingRuleEditor: CoreClassifierRuleEditing {
     private func resolve(_ result: Swift.Result<ClassifierRuleEditorSnapshotState, Error>)
         throws -> ClassifierRuleEditorSnapshotState {
         try result.get()
+    }
+
+    private func nextMutationResult() -> Swift.Result<ClassifierRuleEditorSnapshotState, Error> {
+        if mutationResults.count > 1 {
+            return mutationResults.removeFirst()
+        }
+        return mutationResults[0]
     }
 }

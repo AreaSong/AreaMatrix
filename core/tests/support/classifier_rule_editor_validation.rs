@@ -5,8 +5,9 @@ use std::{
 };
 
 use area_matrix_core::{
-    init_repo, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleUpdate,
-    OverviewOutput, RepoInitMode, RepoInitOptions,
+    init_repo, load_repo_config, ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest,
+    ClassifierRuleObservedState, ClassifierRuleUpdate, ContentLocale, OverviewOutput, RepoInitMode,
+    RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
@@ -64,6 +65,7 @@ pub(crate) fn initialized_repo() -> tempfile::TempDir {
         },
     )
     .expect("initialize repository");
+    load_repo_config(path_string(repo.path())).expect("prime repository config read state");
     repo
 }
 
@@ -77,7 +79,10 @@ fn open_db(repo: &Path) -> Connection {
 
 pub(crate) fn update_request() -> ClassifierRuleUpdate {
     ClassifierRuleUpdate {
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: ContentLocale::En,
         rule_id: "finance".to_owned(),
+        observed: observed_finance_rule(),
         slug: "contracts".to_owned(),
         display_name: "Contracts".to_owned(),
         description: "Signed client contracts".to_owned(),
@@ -89,8 +94,33 @@ pub(crate) fn update_request() -> ClassifierRuleUpdate {
     }
 }
 
+pub(crate) fn observed_finance_rule() -> ClassifierRuleObservedState {
+    ClassifierRuleObservedState {
+        rule_id: "finance".to_owned(),
+        slug: "finance".to_owned(),
+        display_name: "Finance".to_owned(),
+        description: String::new(),
+        extensions: Vec::new(),
+        keywords: vec![
+            "invoice".to_owned(),
+            "receipt".to_owned(),
+            "tax".to_owned(),
+            "contract".to_owned(),
+            "发票".to_owned(),
+            "收据".to_owned(),
+            "税务".to_owned(),
+            "合同".to_owned(),
+            "报销".to_owned(),
+        ],
+        priority: 10,
+        naming_template: None,
+    }
+}
+
 pub(crate) fn create_request() -> ClassifierRuleCreateRequest {
     ClassifierRuleCreateRequest {
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: ContentLocale::En,
         slug: "tax".to_owned(),
         display_name: "Tax".to_owned(),
         description: "Tax documents".to_owned(),

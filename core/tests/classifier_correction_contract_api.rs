@@ -80,6 +80,9 @@ fn classifier_correction_contract_exposes_signature_inputs_outputs_and_errors() 
 
 #[test]
 fn classifier_correction_contract_validates_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         correct_file_category(String::new(), 1, "finance".to_owned(), true, false),
         Err(CoreError::Db { .. })
@@ -103,7 +106,13 @@ fn classifier_correction_contract_validates_inputs_without_fake_success() {
         Err(CoreError::Classify { .. })
     ));
     assert!(matches!(
-        correct_file_category("/tmp/repo".to_owned(), 1, "finance".to_owned(), false, true),
+        correct_file_category(
+            uninitialized_repo_path,
+            1,
+            "finance".to_owned(),
+            false,
+            true
+        ),
         Err(CoreError::Db { .. })
     ));
 }

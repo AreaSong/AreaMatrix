@@ -11,7 +11,7 @@ final class GeneralSettingsModel: ObservableObject {
 
     @Published private(set) var loadState: LoadState = .loading
     @Published private(set) var draft: GeneralSettingsDraft?
-    @Published private(set) var savedConfig: RepoConfigSnapshot?
+    @Published private(set) var savedConfig: AppRepoConfigSnapshot?
     @Published private(set) var pendingStorageConfirmation: GeneralSettingsStorageMode?
     @Published private(set) var pendingRootOverviewStatus: RootOverviewFileStatus?
     @Published private(set) var pendingIgnoreRulesAlert: GeneralSettingsIgnoreRulesAlert?
@@ -183,18 +183,17 @@ final class GeneralSettingsModel: ObservableObject {
         await persist(updating: pendingRetry.config)
     }
 
-    private func persist(updating config: RepoConfigSnapshot) async {
+    private func persist(updating config: AppRepoConfigSnapshot) async {
+        guard let savedConfig else { return }
         isSaving = true
         saveError = nil
         do {
-            try await updater.updateConfig(repoPath: repoPath, newConfig: config)
-            savedConfig = config
-            draft = GeneralSettingsDraft(config: config)
+            let updated = try await updater.updateConfig(repoPath: repoPath, from: savedConfig, to: config)
+            self.savedConfig = updated
+            draft = GeneralSettingsDraft(config: updated)
             pendingRetry = nil
         } catch {
-            if let savedConfig {
-                draft = GeneralSettingsDraft(config: savedConfig)
-            }
+            draft = GeneralSettingsDraft(config: savedConfig)
             let mappedError = await saveError(for: error)
             saveError = mappedError
             pendingRetry = GeneralSettingsPendingSave(config: config, error: mappedError)
@@ -220,14 +219,14 @@ final class GeneralSettingsModel: ObservableObject {
     }
 }
 
-extension RepoConfigSnapshot {
-    func withDefaultMode(_ value: String) -> RepoConfigSnapshot {
+extension AppRepoConfigSnapshot {
+    func withDefaultMode(_ value: String) -> AppRepoConfigSnapshot {
         var config = self
         config.defaultMode = value
         return config
     }
 
-    func withOverviewOutput(_ value: String) -> RepoConfigSnapshot {
+    func withOverviewOutput(_ value: String) -> AppRepoConfigSnapshot {
         var config = self
         config.overviewOutput = value
         return config

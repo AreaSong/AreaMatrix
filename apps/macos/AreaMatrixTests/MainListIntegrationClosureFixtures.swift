@@ -17,9 +17,9 @@ extension RepositoryOpeningResult {
     }
 }
 
-extension RepoConfigSnapshot {
-    static func integrationClosureFixture(repoPath: String) -> RepoConfigSnapshot {
-        RepoConfigSnapshot.testFixture(repoPath: repoPath)
+extension AppRepoConfigSnapshot {
+    static func integrationClosureFixture(repoPath: String) -> AppRepoConfigSnapshot {
+        AppRepoConfigSnapshot.testFixture(repoPath: repoPath)
     }
 }
 

@@ -25,6 +25,13 @@ Welcome 提供两个主要动作：
 - `了解 AreaMatrix 如何工作`：打开
   `https://github.com/AreaSong/AreaMatrix/blob/main/docs/user-guide/getting-started.md`。
 
+右上角界面语言控件单击后按“跟随系统 → 简体中文 → English → 跟随系统”循环，不打开 menu。每次点击
+立即保存设备级 `AppLanguage` 并广播到所有窗口；它不修改资料库内容语言。图标、tooltip、VoiceOver label
+和 value 必须明确表达当前模式：跟随系统显示带自动标识的地球，简体中文显示“中”，English 显示“EN”。
+tooltip 与 VoiceOver 使用完整模式名称；跟随系统时还要说明当前解析为简体中文或 English。Welcome 与
+General 使用同一个 app-level store，任一入口的变化会立即在
+另一入口反映，且不重建 onboarding route 或丢失已输入的路径。
+
 帮助链接必须通过 HTTPS URL policy；URL 无效、非 HTTPS 或系统拒绝打开时，显示 help unavailable 错误，不回退到任意本地路径或 shell 命令。
 
 Welcome 的动效和扫描文案只用于过渡到 Choose Path。用户在 Browse 中选择目录前不会写入用户资料。
@@ -72,6 +79,9 @@ Choose Path 是 Welcome 与 Core 路径校验之间的独立步骤：
 ## 创建空资料库
 
 创建空资料库只在用户选择的目录内建立 AreaMatrix-owned 结构和默认配置。默认概览写入 `.areamatrix/generated/`。
+
+第一次生成概览前必须确认资料库内容语言。默认选择是“跟随界面”并持久化为 policy，而不是把当时的
+concrete 界面语言写死；用户显式选择简体中文或 English 后，之后切换 Welcome 界面不改变该选择。
 
 创建流程不得删除选择目录中的既有内容。如果目录在确认后变为非空，必须重新校验而不是继续按空目录处理。
 

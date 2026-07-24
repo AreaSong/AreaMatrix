@@ -163,7 +163,13 @@ fn assert_sanitized(error: &CoreError, kind: ErrorKind) {
     assert_eq!(error.to_error_mapping().kind, kind);
     assert_no_secret_material(&error.to_string());
     assert_no_secret_material(error.raw_context());
-    assert_no_secret_material(&error.to_error_mapping().raw_context);
+    assert_no_secret_material(
+        error
+            .to_error_mapping()
+            .technical_details
+            .as_deref()
+            .unwrap_or_default(),
+    );
 }
 
 fn assert_no_secret_material(value: &str) {
@@ -344,6 +350,8 @@ fn ai_classification_suggestion_failure_error_mapping_matches_documented_codes()
             path: Some("metadata".to_owned()),
             reason: Some("AI classification failure edge".to_owned()),
             message: Some("AI classification internal failure".to_owned()),
+            expected_revision: None,
+            current_revision: None,
         });
         assert_eq!(mapping.kind, kind);
         assert_eq!(mapping.severity, severity);

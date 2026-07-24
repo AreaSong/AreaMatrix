@@ -81,12 +81,15 @@ fn redo_action_log_contract_exposes_signatures_outputs_and_errors() {
 
 #[test]
 fn redo_action_log_contract_validates_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         list_redo_actions(String::new()),
         Err(CoreError::Db { .. })
     ));
     assert!(matches!(
-        list_redo_actions("/tmp/repo".to_owned()),
+        list_redo_actions(uninitialized_repo_path.clone()),
         Err(CoreError::Db { .. })
     ));
     assert!(matches!(
@@ -98,7 +101,7 @@ fn redo_action_log_contract_validates_inputs_without_fake_success() {
         Err(CoreError::Db { .. })
     ));
     assert!(matches!(
-        redo_action("/tmp/repo".to_owned(), "redo:batch-tags:42".to_owned()),
+        redo_action(uninitialized_repo_path, "redo:batch-tags:42".to_owned()),
         Err(CoreError::Db { .. })
     ));
 }

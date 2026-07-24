@@ -5,8 +5,8 @@ use std::{
 };
 
 use area_matrix_core::{
-    init_repo, predict_category, save_classifier_rule, ClassifierRule, ClassifyReason, CoreError,
-    OverviewOutput, RepoInitMode, RepoInitOptions,
+    init_repo, load_repo_config, predict_category, save_classifier_rule, ClassifierRule,
+    ClassifyReason, CoreError, OverviewOutput, RepoInitMode, RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 use serde::Deserialize;
@@ -51,6 +51,7 @@ fn initialized_repo() -> tempfile::TempDir {
         },
     )
     .expect("initialize repository");
+    load_repo_config(path_string(repo.path())).expect("prime repository config read state");
     repo
 }
 

@@ -16,7 +16,7 @@ enum CoreRepositoryTreeLocaleResolver {
         return switch normalize(trimmed) {
         case "", "system":
             normalize(interfaceLocaleIdentifier) == "zh-hans" ? "zh-Hans" : "en"
-        case "zh-cn", "zh-hans":
+        case "zh-hans":
             "zh-Hans"
         case "en":
             "en"
@@ -31,7 +31,6 @@ enum CoreRepositoryTreeLocaleResolver {
             .replacingOccurrences(of: "_", with: "-")
             .lowercased()
     }
-
 }
 
 extension CoreEmptyRepositoryOpening {
@@ -41,7 +40,7 @@ extension CoreEmptyRepositoryOpening {
 }
 
 struct RepositoryOpeningResult: Equatable {
-    var config: RepoConfigSnapshot
+    var config: AppRepoConfigSnapshot
     var tree: RepositoryTreeNodeSnapshot
     var currentCategoryFiles: [FileEntrySnapshot]
     var currentCategoryListError: CoreErrorMappingSnapshot?
@@ -253,7 +252,7 @@ extension CoreBridge: CoreEmptyRepositoryOpening, CoreRepositoryTreeListing {
         repoPath: String,
         fileLoading: CurrentCategoryFileLoading
     ) async throws -> RepositoryOpeningResult {
-        let config = try RepoConfigSnapshot(coreConfig: loadOpeningCoreConfig(repoPath: repoPath))
+        let config = try AppRepoConfigSnapshot(coreConfig: loadOpeningCoreConfig(repoPath: repoPath))
         let tree = try await listTree(repoPath: repoPath, locale: config.locale)
         let currentCategory = loadOpeningCurrentCategoryFiles(
             repoPath: repoPath,
@@ -287,8 +286,8 @@ private enum RepositoryOpeningAccessState {
     }
 }
 
-private func loadOpeningCoreConfig(repoPath: String) throws -> RepoConfig {
-    try loadConfig(repoPath: repoPath)
+private func loadOpeningCoreConfig(repoPath: String) throws -> RepoConfigSnapshot {
+    try loadRepoConfig(repoPath: repoPath)
 }
 
 private func listOpeningCoreFiles(repoPath: String, filter: FileFilterSnapshot) throws -> [FileEntrySnapshot] {

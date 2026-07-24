@@ -1,49 +1,111 @@
 import Foundation
 
 protocol CoreMetadataRepairing: Sendable {
+    func preflightRepairMetadata(repoPath: String) async throws -> RepairMetadataPreflightSnapshot
     func repairMetadata(repoPath: String, options: RepairOptionsSnapshot) async throws -> RepairReportSnapshot
 }
 
+protocol CoreRepositoryReindexing: Sendable {
+    func reindexRepository(repoPath: String) async throws -> ReindexReportSnapshot
+}
+
 struct RepairOptionsSnapshot: Equatable {
-    var fullRescan: Bool
     var preserveDiagnosticsSnapshot: Bool
+    var preflightToken: String
+    var repositoryLocalePolicy: String
+}
+
+enum RepairMetadataLocaleStateSnapshot: String, Equatable {
+    case healthy = "Healthy"
+    case metadataAbsent = "MetadataAbsent"
+    case databaseMissing = "DatabaseMissing"
+    case databaseCorrupt = "DatabaseCorrupt"
+    case localeMissing = "LocaleMissing"
+    case localeUnsupported = "LocaleUnsupported"
+}
+
+struct RepairMetadataPreflightSnapshot: Equatable {
+    var localeState: RepairMetadataLocaleStateSnapshot
+    var repositoryLocalePolicy: String?
+    var unsupportedLocale: String?
+    var requiresExplicitLocaleSelection: Bool
+    var preflightToken: String
 }
 
 struct RepairReportSnapshot: Equatable {
-    var scanSessionId: Int64?
     var diagnosticsSnapshotPath: String?
-    var inserted: Int64
-    var updated: Int64
-    var skipped: Int64
-    var errors: [String]
+    var outcome: String
 }
 
 extension RepairReportSnapshot {
     init(coreReport: RepairReport) {
-        scanSessionId = coreReport.scanSessionId
         diagnosticsSnapshotPath = coreReport.diagnosticsSnapshotPath
-        inserted = coreReport.inserted
-        updated = coreReport.updated
-        skipped = coreReport.skipped
-        errors = coreReport.errors
+        switch coreReport.outcome {
+        case .verified: outcome = "Verified"
+        case .initialized: outcome = "Initialized"
+        case .rebuilt: outcome = "Rebuilt"
+        }
     }
 
     var summaryText: String {
-        L10n.format("metadataRepair.summary", inserted, updated, skipped)
+        switch outcome {
+        case "Verified": L10n.string("metadataRepair.outcome.verified")
+        case "Initialized": L10n.string("metadataRepair.outcome.initialized")
+        case "Rebuilt": L10n.string("metadataRepair.outcome.rebuilt")
+        default: L10n.string("metadataRepair.outcome.unknown")
+        }
     }
 }
 
 extension CoreBridge: CoreMetadataRepairing {
+    func preflightRepairMetadata(repoPath: String) async throws -> RepairMetadataPreflightSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try RepairMetadataPreflightSnapshot(
+                corePreflight: preflightCoreRepairMetadata(repoPath: repoPath)
+            )
+        }.value
+    }
+
     func repairMetadata(repoPath: String, options: RepairOptionsSnapshot) async throws -> RepairReportSnapshot {
-        let contentLocale = AppLanguageRuntime.shared.resolvedIdentifier()
-        return try await Task.detached(priority: .userInitiated) {
+        try await Task.detached(priority: .userInitiated) {
             let coreOptions = RepairOptions(
-                fullRescan: options.fullRescan,
                 preserveDiagnosticsSnapshot: options.preserveDiagnosticsSnapshot,
-                contentLocale: contentLocale
+                preflightToken: options.preflightToken,
+                repositoryLocalePolicy: options.repositoryLocalePolicy
             )
             return try RepairReportSnapshot(coreReport: repairCoreMetadata(repoPath: repoPath, options: coreOptions))
         }.value
+    }
+}
+
+extension CoreBridge: CoreRepositoryReindexing {
+    func reindexRepository(repoPath: String) async throws -> ReindexReportSnapshot {
+        try await Task.detached(priority: .userInitiated) {
+            try ReindexReportSnapshot(coreReport: reindexCoreRepository(repoPath: repoPath))
+        }.value
+    }
+}
+
+private extension RepairMetadataPreflightSnapshot {
+    init(corePreflight: RepairMetadataPreflight) {
+        localeState = RepairMetadataLocaleStateSnapshot(coreState: corePreflight.localeState)
+        repositoryLocalePolicy = corePreflight.repositoryLocalePolicy
+        unsupportedLocale = corePreflight.unsupportedLocale
+        requiresExplicitLocaleSelection = corePreflight.requiresExplicitLocaleSelection
+        preflightToken = corePreflight.preflightToken
+    }
+}
+
+private extension RepairMetadataLocaleStateSnapshot {
+    init(coreState: RepairMetadataLocaleState) {
+        switch coreState {
+        case .healthy: self = .healthy
+        case .metadataAbsent: self = .metadataAbsent
+        case .databaseMissing: self = .databaseMissing
+        case .databaseCorrupt: self = .databaseCorrupt
+        case .localeMissing: self = .localeMissing
+        case .localeUnsupported: self = .localeUnsupported
+        }
     }
 }
 
@@ -75,6 +137,14 @@ extension CoreBridge: CoreLocalModelStatusReading {
 
 private func repairCoreMetadata(repoPath: String, options: RepairOptions) throws -> RepairReport {
     try repairMetadata(repoPath: repoPath, options: options)
+}
+
+private func preflightCoreRepairMetadata(repoPath: String) throws -> RepairMetadataPreflight {
+    try preflightRepairMetadata(repoPath: repoPath)
+}
+
+private func reindexCoreRepository(repoPath: String) throws -> ReindexReport {
+    try reindexFromFilesystem(repoPath: repoPath)
 }
 
 private func getCoreLocalModelStatus(

@@ -1,7 +1,11 @@
 @testable import AreaMatrix
 
 extension AISummarySavedSnapshot {
-    static func aiSummarySavedSummary(fileID: Int64, text: String) -> AISummarySavedSnapshot {
+    static func aiSummarySavedSummary(
+        fileID: Int64,
+        text: String,
+        ownership: AiContentOwnership = .generated
+    ) -> AISummarySavedSnapshot {
         AISummarySavedSnapshot(
             fileID: fileID,
             summaryText: text,
@@ -13,7 +17,12 @@ extension AISummarySavedSnapshot {
             usedContext: [.fileName, .extractedTextExcerpt],
             privacyRuleID: nil,
             callLogID: 8000 + fileID,
-            editedByUser: false,
+            editedByUser: ownership == .userOwned,
+            contentRevision: 1,
+            ownership: ownership,
+            operationID: "saved-operation-\(fileID)",
+            contentLocale: .en,
+            formatContractVersion: 1,
             characterCount: Int64(text.count)
         )
     }
@@ -66,6 +75,9 @@ extension AiSummaryDraft {
         callLogID: Int64
     ) -> AiSummaryDraft {
         AiSummaryDraft(
+            operationId: "operation-\(fileID)-\(draftID)",
+            contentLocale: .en,
+            formatContractVersion: 1,
             fileId: fileID,
             draftId: draftID,
             status: .draft,
@@ -87,6 +99,9 @@ extension AiSummaryDraft {
         reason: AiSummarySkipReason
     ) -> AiSummaryDraft {
         AiSummaryDraft(
+            operationId: "operation-\(fileID)-unavailable",
+            contentLocale: .en,
+            formatContractVersion: 1,
             fileId: fileID,
             draftId: nil,
             status: .unavailable,
@@ -109,6 +124,9 @@ extension AiSummaryDraft {
         callLogID: Int64
     ) -> AiSummaryDraft {
         AiSummaryDraft(
+            operationId: "operation-\(fileID)-privacy",
+            contentLocale: .en,
+            formatContractVersion: 1,
             fileId: fileID,
             draftId: nil,
             status: .skipped,

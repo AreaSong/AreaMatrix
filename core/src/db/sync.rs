@@ -8,13 +8,13 @@ use super::{open_repo_connection, storage_mode_to_db};
 
 mod receipts;
 
-use receipts::{count_existing_receipts, insert_external_sync_receipt};
 pub(crate) use receipts::{
     claim_external_sync_receipts, ensure_external_sync_receipts, external_sync_overview_locales,
-    get_fs_event_cursor, latest_external_rename_source_category, set_fs_event_cursor,
+    get_fs_event_cursor, latest_external_rename_source_category,
     prepare_external_sync_locale_recovery, resolve_external_sync_locale_recovery,
-    ExternalSyncReceiptKey, ExternalSyncReceiptRow,
+    set_fs_event_cursor, ExternalSyncReceiptKey, ExternalSyncReceiptRow,
 };
+use receipts::{count_existing_receipts, insert_external_sync_receipt};
 
 pub(crate) struct ExternalCreatedRow {
     pub(crate) path: String,

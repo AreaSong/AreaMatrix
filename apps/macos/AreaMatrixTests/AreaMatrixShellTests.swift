@@ -80,7 +80,10 @@ final class AreaMatrixShellTests: XCTestCase {
         model.updateRepositoryPath("/tmp/repo")
         await model.continueFromChoosePath()
 
-        XCTAssertEqual(model.repositoryPathError, L10n.message("core.error.PermissionDenied.message", fallback: "无访问权限"))
+        XCTAssertEqual(
+            model.repositoryPathError,
+            L10n.message("core.error.PermissionDenied.message", fallback: "无访问权限")
+        )
         XCTAssertNil(model.choosePathAction)
     }
 

@@ -92,17 +92,15 @@ categories:
 }
 
 #[test]
-fn classify_preview_validation_missing_classifier_uses_default_without_writes() {
+fn classify_preview_validation_missing_classifier_fails_closed_without_writes() {
     let repo = initialized_repo();
     let classifier = classifier_path(repo.path());
     fs::remove_file(&classifier).expect("remove classifier fixture");
     let before = snapshot_files(repo.path());
 
-    let result = predict_category(path_string(repo.path()), "Receipt_2026.pdf".to_owned())
-        .expect("predict category from bundled default classifier");
+    let result = predict_category(path_string(repo.path()), "Receipt_2026.pdf".to_owned());
 
-    assert_eq!(result.category, "finance");
-    assert_eq!(result.reason, ClassifyReason::Keyword);
+    assert!(matches!(result, Err(CoreError::Classify { .. })));
     assert!(!classifier.exists());
     assert_eq!(snapshot_files(repo.path()), before);
 }

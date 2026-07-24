@@ -2,14 +2,15 @@ import SwiftUI
 
 struct RepositorySettingsConfigSection: View {
     @EnvironmentObject private var localizer: AppLocalizer
-    let config: RepoConfigSnapshot?
+    let config: AppRepoConfigSnapshot?
     @ObservedObject var model: RepositorySettingsConfigModel
     let capabilityState: RepositorySettingsCapabilityState
     let onSaved: () async -> Void
     @State private var draft: RepositorySettingsConfigDraft
+    @State private var baseline: AppRepoConfigSnapshot?
 
     init(
-        config: RepoConfigSnapshot?,
+        config: AppRepoConfigSnapshot?,
         model: RepositorySettingsConfigModel,
         capabilityState: RepositorySettingsCapabilityState,
         onSaved: @escaping () async -> Void
@@ -19,6 +20,7 @@ struct RepositorySettingsConfigSection: View {
         self.capabilityState = capabilityState
         self.onSaved = onSaved
         _draft = State(initialValue: config.map(RepositorySettingsConfigDraft.init(config:)) ?? .empty)
+        _baseline = State(initialValue: config)
     }
 
     var body: some View {
@@ -29,6 +31,9 @@ struct RepositorySettingsConfigSection: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onChange(of: config) { _, newConfig in
+            let hasLocalChanges = baseline.map { !draft.dirtyFields(comparedTo: $0).isEmpty } ?? false
+            guard !hasLocalChanges, !model.saveState.isSaving else { return }
+            baseline = newConfig
             draft = newConfig.map(RepositorySettingsConfigDraft.init(config:)) ?? .empty
             model.resetFeedback()
         }
@@ -90,9 +95,18 @@ struct RepositorySettingsConfigSection: View {
         HStack(spacing: 10) {
             Button(saveTitle) {
                 Task {
-                    guard let config else { return }
-                    let didSave = await model.save(draft: draft, currentConfig: config)
+                    guard let baseline else { return }
+                    let dirtyFields = draft.dirtyFields(comparedTo: baseline)
+                    let didSave = await model.save(
+                        draft: draft,
+                        currentConfig: baseline,
+                        dirtyFields: dirtyFields
+                    )
                     if didSave {
+                        if let savedConfig = model.lastSavedConfig {
+                            self.baseline = savedConfig
+                            draft = RepositorySettingsConfigDraft(config: savedConfig)
+                        }
                         await onSaved()
                     }
                 }
@@ -101,7 +115,7 @@ struct RepositorySettingsConfigSection: View {
             .accessibilityIdentifier("repository-settings-repository-settings-core-save-repository-config")
 
             Button("Reset changes") {
-                draft = config.map(RepositorySettingsConfigDraft.init(config:)) ?? .empty
+                draft = baseline.map(RepositorySettingsConfigDraft.init(config:)) ?? .empty
                 model.resetFeedback()
             }
             .disabled(!hasChanges || model.saveState.isSaving)
@@ -124,6 +138,8 @@ struct RepositorySettingsConfigSection: View {
                 .foregroundStyle(.secondary)
         case let .saved(message):
             SettingsStatusBanner(title: localizer.resolve(message), systemImage: "checkmark.circle", tint: .green)
+        case let .conflict(conflict):
+            conflictReview(conflict)
         case let .failed(error):
             SettingsStatusBanner(
                 title: localizer.resolve(error.message),
@@ -138,12 +154,12 @@ struct RepositorySettingsConfigSection: View {
     }
 
     private var canSave: Bool {
-        config != nil && hasChanges && editingDisabledReason == nil && !model.saveState.isSaving
+        baseline != nil && hasChanges && editingDisabledReason == nil && !model.saveState.isSaving
     }
 
     private var hasChanges: Bool {
-        guard let config else { return false }
-        return draft != RepositorySettingsConfigDraft(config: config)
+        guard let baseline else { return false }
+        return !draft.dirtyFields(comparedTo: baseline).isEmpty
     }
 
     private var saveTitle: String {
@@ -164,6 +180,54 @@ struct RepositorySettingsConfigSection: View {
         case let .failed(_, error):
             localizer.resolve(error.recovery)
         }
+    }
+
+    private func conflictReview(_ conflict: RepositorySettingsConfigConflict) -> some View {
+        SettingsStatusBanner(
+            title: L10n.string("settings.repository.conflict.title"),
+            systemImage: "arrow.triangle.2.circlepath",
+            tint: .orange
+        ) {
+            Text(L10n.format(
+                "settings.repository.conflict.revisions",
+                conflict.expectedRevision,
+                conflict.currentRevision
+            ))
+            .font(.callout)
+            .foregroundStyle(.secondary)
+
+            ForEach(RepositorySettingsConfigField.allCases.filter(conflict.dirtyFields.contains)) { field in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(field.label).font(.callout.weight(.semibold))
+                    Text(L10n.format("settings.repository.conflict.saved", field.value(in: conflict.saved)))
+                    Text(L10n.format("settings.repository.conflict.latest", field.value(in: conflict.latest)))
+                    Text(L10n.format("settings.repository.conflict.local", field.value(in: conflict.local)))
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Text(L10n.string("settings.repository.conflict.reviewDetail"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 10) {
+                Button(L10n.string("settings.repository.conflict.reload")) {
+                    baseline = conflict.latest
+                    draft = RepositorySettingsConfigDraft(config: conflict.latest)
+                    model.resetFeedback()
+                }
+                Button(L10n.string("settings.repository.conflict.review")) {
+                    baseline = conflict.latest
+                    draft = conflict.local.rebased(
+                        onto: conflict.latest,
+                        preserving: conflict.dirtyFields
+                    )
+                    model.resetFeedback()
+                }
+            }
+        }
+        .accessibilityIdentifier("repository-settings-config-revision-conflict")
     }
 }
 

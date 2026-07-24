@@ -742,6 +742,21 @@ documents:
 
         self.assertEqual(checks._swift_unlocalized_dynamic_display_violations(source), [])
 
+    def test_concatenated_localized_call_scan_rejects_compiler_invisible_keys(self) -> None:
+        source = '''
+        Text(
+            "Repository diagnostics may contain sensitive " +
+                "metadata."
+        )
+        Label("Included \(count) " + "files", systemImage: "doc")
+        Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
+        '''
+
+        self.assertEqual(
+            checks._swift_concatenated_localized_call_violations(source),
+            [(2, "Text"), (6, "Label")],
+        )
+
     def test_enterprise_governance_baseline_accepts_complete_fixture(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

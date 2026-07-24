@@ -41,7 +41,7 @@ struct RepositoryErrorPresentation: Equatable {
             ioFailure
         case .internal:
             internalFailure
-        case .classify, .conflict, .duplicateFile, .expiredAction:
+        case .classify, .conflict, .revisionConflict, .duplicateFile, .expiredAction:
             fallback
         }
     }

@@ -34,7 +34,8 @@ fn empty_filter() -> FileFilter {
 }
 
 fn repair_options(repo: &Path, preserve_snapshot: bool) -> RepairOptions {
-    let preflight = preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
+    let preflight =
+        preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
     let repository_locale_policy = if preflight.locale_state == RepairMetadataLocaleState::Healthy {
         preflight
             .repository_locale_policy
@@ -153,11 +154,8 @@ fn repair_reindex_metadata_implementation_preserves_snapshot_without_implicit_re
     fs::create_dir(repo.path().join("docs")).expect("create docs directory");
     fs::write(repo.path().join("docs/spec.txt"), "spec content\n").expect("write document");
 
-    let report = repair_metadata(
-        path_string(repo.path()),
-        repair_options(repo.path(), true),
-    )
-    .expect("verify healthy metadata");
+    let report = repair_metadata(path_string(repo.path()), repair_options(repo.path(), true))
+        .expect("verify healthy metadata");
 
     let snapshot_path = report
         .diagnostics_snapshot_path
@@ -194,11 +192,8 @@ fn repair_reindex_metadata_implementation_initializes_metadata_without_implicit_
     fs::write(&spec, "spec content\n").expect("write user document");
     let before = user_file_snapshot(&[&readme, &spec]);
 
-    let report = repair_metadata(
-        path_string(repo.path()),
-        repair_options(repo.path(), true),
-    )
-    .expect("initialize missing metadata");
+    let report = repair_metadata(path_string(repo.path()), repair_options(repo.path(), true))
+        .expect("initialize missing metadata");
 
     assert!(repo.path().join(".areamatrix/index.db").is_file());
     assert_eq!(report.diagnostics_snapshot_path, None);

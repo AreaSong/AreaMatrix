@@ -122,7 +122,12 @@ fn smart_list_failure_recovery_malformed_saved_query_is_db_not_silent_drop() {
         first_page(),
     ));
 
-    assert!(!error.to_error_mapping().raw_context.is_empty());
+    assert!(!error
+        .to_error_mapping()
+        .technical_details
+        .as_deref()
+        .unwrap_or_default()
+        .is_empty());
     assert!(snapshot(repo.path())
         .files
         .iter()
@@ -178,11 +183,13 @@ fn smart_list_failure_recovery_corrupted_db_is_fatal_and_preserves_user_files() 
     fs::write(metadata_dir.join("index.db"), b"not a sqlite database")
         .expect("write corrupted database fixture");
 
-    let error = assert_db_error(run_smart_list(path_string(repo.path()), 1, first_page()));
+    let error = run_smart_list(path_string(repo.path()), 1, first_page())
+        .expect_err("corrupted database must fail");
 
+    assert_eq!(error.kind(), ErrorKind::Db);
     assert_eq!(
         error.to_error_mapping().recoverability,
-        ErrorRecoverability::Fatal
+        ErrorRecoverability::UserActionRequired
     );
     assert_eq!(
         fs::read(user_file).expect("read user file after corrupted db failure"),

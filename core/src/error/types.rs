@@ -5,6 +5,10 @@ pub enum ErrorKind {
     Io,
     /// SQLite or repository metadata failure.
     Db,
+    /// SQLite busy or locked condition.
+    DbLocked,
+    /// SQLite corruption or not-a-database condition.
+    DbCorrupted,
     /// Configuration validation or persistence failure.
     Config,
     /// User input validation failed.
@@ -13,6 +17,8 @@ pub enum ErrorKind {
     Classify,
     /// Path or naming conflict.
     Conflict,
+    /// Optimistic revision compare-and-swap conflict.
+    RevisionConflict,
     /// Duplicate file detected.
     DuplicateFile,
     /// Requested file does not exist.
@@ -70,21 +76,38 @@ pub struct ErrorMappingInput {
     pub reason: Option<String>,
     /// Original message when the error comes from IO, DB, or internal code.
     pub message: Option<String>,
+    /// Revision observed by the caller for a revision conflict.
+    pub expected_revision: Option<i64>,
+    /// Current persisted revision for a revision conflict.
+    pub current_revision: Option<i64>,
 }
 
-/// User-facing error mapping metadata returned to Swift.
+/// Stable named argument used by Swift when localizing error presentation.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ErrorArgument {
+    /// Stable argument name.
+    pub name: String,
+    /// Verbatim argument value.
+    pub value: String,
+}
+
+/// Structured, non-localized error metadata returned to Swift.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ErrorMapping {
     /// Stable error category.
     pub kind: ErrorKind,
-    /// Localizable short user message.
-    pub user_message: String,
+    /// Stable error code used as the String Catalog lookup key.
+    pub code: String,
+    /// Optional stable field identifier.
+    pub field: Option<String>,
+    /// Stable named arguments whose values remain verbatim.
+    pub arguments: Vec<ErrorArgument>,
+    /// Stable recovery action identifiers.
+    pub recovery_action_ids: Vec<String>,
     /// Severity used to select the UI treatment.
     pub severity: ErrorSeverity,
-    /// Suggested next action for the user.
-    pub suggested_action: String,
     /// Recovery posture for retries and blocking states.
     pub recoverability: ErrorRecoverability,
-    /// Raw path, reason, or message for logs and detailed UI.
-    pub raw_context: String,
+    /// Optional verbatim technical detail for a controlled disclosure surface.
+    pub technical_details: Option<String>,
 }

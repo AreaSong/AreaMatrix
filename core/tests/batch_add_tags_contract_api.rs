@@ -74,36 +74,31 @@ fn batch_add_tags_contract_exposes_signature_inputs_outputs_and_errors() {
 
 #[test]
 fn batch_add_tags_contract_validates_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         batch_add_tags(String::new(), vec![1], vec!["urgent".to_owned()]),
         Err(CoreError::Db { .. })
     ));
     assert!(matches!(
-        batch_add_tags(
-            "/tmp/repo".to_owned(),
-            Vec::new(),
-            vec!["urgent".to_owned()]
-        ),
+        batch_add_tags(repo_path.clone(), Vec::new(), vec!["urgent".to_owned()]),
         Err(CoreError::FileNotFound { .. })
     ));
     assert!(matches!(
-        batch_add_tags("/tmp/repo".to_owned(), vec![0], vec!["urgent".to_owned()]),
+        batch_add_tags(repo_path.clone(), vec![0], vec!["urgent".to_owned()]),
         Err(CoreError::FileNotFound { .. })
     ));
     assert!(matches!(
-        batch_add_tags("/tmp/repo".to_owned(), vec![1], Vec::new()),
+        batch_add_tags(repo_path.clone(), vec![1], Vec::new()),
         Err(CoreError::Db { .. })
     ));
     assert!(matches!(
-        batch_add_tags("/tmp/repo".to_owned(), vec![1], vec!["bad/tag".to_owned()]),
+        batch_add_tags(repo_path.clone(), vec![1], vec!["bad/tag".to_owned()]),
         Err(CoreError::Db { .. })
     ));
     assert!(matches!(
-        batch_add_tags(
-            "/tmp/repo".to_owned(),
-            vec![1, 1],
-            vec!["Urgent".to_owned()]
-        ),
+        batch_add_tags(repo_path, vec![1, 1], vec!["Urgent".to_owned()]),
         Err(CoreError::Db { .. })
     ));
 }

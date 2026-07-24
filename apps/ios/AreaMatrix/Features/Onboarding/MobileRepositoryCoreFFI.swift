@@ -42,7 +42,7 @@ actor LiveMobileRepositoryCoreBridge: MobileRepositoryCoreBridge {
     }
 }
 
-struct MobileRepositoryCoreFFIClient: Sendable {
+struct MobileRepositoryCoreFFIClient {
     func getVersion() throws -> String {
         try ensureCurrentContract()
         let result = try rustCallWithCoreError {
@@ -53,7 +53,7 @@ struct MobileRepositoryCoreFFIClient: Sendable {
 
     func validateRepoPath(repoPath: String) throws -> MobileRepositoryValidation {
         try ensureCurrentContract()
-        let path = try FFIWriter.lowerString(repoPath)
+        let path = try MobileRepositoryFFIWriter.lowerString(repoPath)
         let result = try rustCallWithCoreError {
             uniffi_area_matrix_core_fn_func_validate_repo_path(path, $0)
         }
@@ -66,8 +66,8 @@ struct MobileRepositoryCoreFFIClient: Sendable {
         createDefaultCategories: Bool
     ) throws {
         try ensureCurrentContract()
-        let path = try FFIWriter.lowerString(repoPath)
-        let options = try FFIWriter.lowerRepoInitOptions(
+        let path = try MobileRepositoryFFIWriter.lowerString(repoPath)
+        let options = try MobileRepositoryFFIWriter.lowerRepoInitOptions(
             mode: mode,
             createDefaultCategories: createDefaultCategories,
             overviewOutput: .generatedOnly
@@ -79,43 +79,50 @@ struct MobileRepositoryCoreFFIClient: Sendable {
 
     func loadConfig(repoPath: String) throws -> MobileRepositoryConfig {
         try ensureCurrentContract()
-        let path = try FFIWriter.lowerString(repoPath)
+        let path = try MobileRepositoryFFIWriter.lowerString(repoPath)
         let result = try rustCallWithCoreError {
-            uniffi_area_matrix_core_fn_func_load_config(path, $0)
+            uniffi_area_matrix_core_fn_func_load_repo_config(path, $0)
         }
         return try FFIReader.liftConfig(result)
     }
 
     func updateConfig(repoPath: String, newConfig: MobileRepositoryConfig) throws {
         try ensureCurrentContract()
-        let path = try FFIWriter.lowerString(repoPath)
-        let config = try FFIWriter.lowerRepoConfig(newConfig)
-        try rustCallVoidWithCoreError {
-            uniffi_area_matrix_core_fn_func_update_config(path, config, $0)
+        let path = try MobileRepositoryFFIWriter.lowerString(repoPath)
+        let patch = try MobileRepositoryFFIWriter.lowerRepoConfigPatch(newConfig)
+        let result = try rustCallWithCoreError {
+            uniffi_area_matrix_core_fn_func_update_repo_config(path, patch, $0)
         }
+        _ = try FFIReader.liftConfig(result)
     }
 
     private func ensureCurrentContract() throws {
         guard ffi_area_matrix_core_uniffi_contract_version() == 26,
               uniffi_area_matrix_core_checksum_func_get_version() == 61902,
               uniffi_area_matrix_core_checksum_func_validate_repo_path() == 43498,
-              uniffi_area_matrix_core_checksum_func_load_config() == 64573,
-              uniffi_area_matrix_core_checksum_func_update_config() == 60628,
+              uniffi_area_matrix_core_checksum_func_load_repo_config() == 33004,
+              uniffi_area_matrix_core_checksum_func_update_repo_config() == 26832,
               uniffi_area_matrix_core_checksum_func_init_repo() == 29414 else {
             throw MobileRepositoryConnectionError.unavailable("AreaMatrix Core binding contract mismatch.")
         }
     }
 }
 
-private enum MobileRepositoryOverviewOutput: Int32 {
+enum MobileRepositoryOverviewOutput: Int32 {
     case generatedOnly = 1
 }
 
-private enum MobileRepositoryCoreFFIError: LocalizedError {
+enum MobileRepositoryContentLocale: Int32 {
+    case zhHans = 1
+    case en = 2
+}
+
+enum MobileRepositoryCoreFFIError: LocalizedError {
     case bufferOverflow
     case unexpectedStatus(Int8)
     case unexpectedEnumCase(Int32)
     case unexpectedOptionalTag(Int8)
+    case unsupportedRepositoryLocale(String)
     case incompleteData
     case rustPanic(String)
 
@@ -129,6 +136,8 @@ private enum MobileRepositoryCoreFFIError: LocalizedError {
             "Unexpected Core enum value: \(value)."
         case let .unexpectedOptionalTag(tag):
             "Unexpected Core optional tag: \(tag)."
+        case let .unsupportedRepositoryLocale(locale):
+            "Unsupported repository locale policy: \(locale)."
         case .incompleteData:
             "Core response buffer contained trailing data."
         case let .rustPanic(message):
@@ -137,7 +146,8 @@ private enum MobileRepositoryCoreFFIError: LocalizedError {
     }
 }
 
-private func rustCallWithCoreError(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> RustBuffer) throws -> RustBuffer {
+private func rustCallWithCoreError(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> RustBuffer) throws
+    -> RustBuffer {
     var status = RustCallStatus()
     let result = callback(&status)
     try checkStatus(status)
@@ -165,97 +175,6 @@ private func checkStatus(_ status: RustCallStatus) throws {
     default:
         try FFIReader.deallocate(status.errorBuf)
         throw MobileRepositoryCoreFFIError.unexpectedStatus(status.code)
-    }
-}
-
-private enum FFIWriter {
-    static func lowerString(_ value: String) throws -> RustBuffer {
-        try value.utf8CString.withUnsafeBufferPointer { int8Pointer in
-            try int8Pointer.withMemoryRebound(to: UInt8.self) { pointer in
-                let bytes = UnsafeBufferPointer(rebasing: pointer.prefix(upTo: pointer.count - 1))
-                return try lowerBytes(bytes)
-            }
-        }
-    }
-
-    static func lowerRepoInitOptions(
-        mode: MobileRepositoryInitMode,
-        createDefaultCategories: Bool,
-        overviewOutput: MobileRepositoryOverviewOutput
-    ) throws -> RustBuffer {
-        var bytes: [UInt8] = []
-        writeInt32(enumValue(for: mode), into: &bytes)
-        writeBool(createDefaultCategories, into: &bytes)
-        writeInt32(overviewOutput.rawValue, into: &bytes)
-        return try bytes.withUnsafeBufferPointer { try lowerBytes($0) }
-    }
-
-    static func lowerRepoConfig(_ config: MobileRepositoryConfig) throws -> RustBuffer {
-        var bytes: [UInt8] = []
-        writeString(config.repoPath, into: &bytes)
-        writeStorageMode(config.defaultMode, into: &bytes)
-        writeOverviewOutput(config.overviewOutput, into: &bytes)
-        writeBool(config.aiEnabled, into: &bytes)
-        writeString(config.locale, into: &bytes)
-        writeBool(config.iCloudWarn, into: &bytes)
-        writeBool(config.enableExtensionRules, into: &bytes)
-        writeBool(config.enableKeywordRules, into: &bytes)
-        writeBool(config.fallbackToInbox, into: &bytes)
-        writeBool(config.allowReplaceDuringImport, into: &bytes)
-        return try bytes.withUnsafeBufferPointer { try lowerBytes($0) }
-    }
-
-    private static func enumValue(for mode: MobileRepositoryInitMode) -> Int32 {
-        switch mode {
-        case .createEmpty:
-            1
-        case .adoptExisting:
-            2
-        }
-    }
-
-    private static func writeStorageMode(_ value: String, into bytes: inout [UInt8]) {
-        switch value {
-        case "Moved":
-            writeInt32(1, into: &bytes)
-        case "Copied":
-            writeInt32(2, into: &bytes)
-        case "Indexed":
-            writeInt32(3, into: &bytes)
-        default:
-            writeInt32(2, into: &bytes)
-        }
-    }
-
-    private static func writeOverviewOutput(_ value: String, into bytes: inout [UInt8]) {
-        writeInt32(value == "RootAreaMatrixFile" ? 2 : 1, into: &bytes)
-    }
-
-    private static func writeString(_ value: String, into bytes: inout [UInt8]) {
-        let stringBytes = Array(value.utf8)
-        writeInt32(Int32(stringBytes.count), into: &bytes)
-        bytes.append(contentsOf: stringBytes)
-    }
-
-    private static func lowerBytes(_ bytes: UnsafeBufferPointer<UInt8>) throws -> RustBuffer {
-        var status = RustCallStatus()
-        let buffer = ffi_area_matrix_core_rustbuffer_from_bytes(
-            ForeignBytes(len: Int32(bytes.count), data: bytes.baseAddress),
-            &status
-        )
-        guard status.code == 0 else {
-            throw MobileRepositoryCoreFFIError.unexpectedStatus(status.code)
-        }
-        return buffer
-    }
-
-    private static func writeBool(_ value: Bool, into bytes: inout [UInt8]) {
-        bytes.append(value ? 1 : 0)
-    }
-
-    private static func writeInt32(_ value: Int32, into bytes: inout [UInt8]) {
-        var bigEndian = value.bigEndian
-        withUnsafeBytes(of: &bigEndian) { bytes.append(contentsOf: $0) }
     }
 }
 
@@ -287,10 +206,11 @@ private enum FFIReader {
         var reader = Reader(buffer: buffer)
         let config = try MobileRepositoryConfig(
             repoPath: reader.readString(),
+            revision: reader.readInt64(),
             defaultMode: reader.readStorageMode(),
             overviewOutput: reader.readOverviewOutput(),
             aiEnabled: reader.readBool(),
-            locale: reader.readString(),
+            locale: reader.readRepositoryLocalePolicy(),
             iCloudWarn: reader.readBool(),
             enableExtensionRules: reader.readBool(),
             enableKeywordRules: reader.readBool(),
@@ -304,18 +224,17 @@ private enum FFIReader {
     static func liftCoreError(_ buffer: RustBuffer) throws -> MobileRepositoryConnectionError {
         var reader = Reader(buffer: buffer)
         let variant = try reader.readInt32()
-        let error: MobileRepositoryConnectionError
-        switch variant {
-        case 10:
-            error = try .invalidRepository(reader.readString())
-        case 11:
-            error = try .invalidPath(reader.readString())
-        case 12:
-            error = try .iCloudPlaceholder(reader.readString())
+        let error: MobileRepositoryConnectionError = switch variant {
+        case 13:
+            try .invalidRepository(reader.readString())
         case 14:
-            error = try .permissionDenied(reader.readString())
+            try .invalidPath(reader.readString())
+        case 15:
+            try .iCloudPlaceholder(reader.readString())
+        case 17:
+            try .permissionDenied(reader.readString())
         default:
-            error = try .unavailable(reader.readCoreErrorPayload(variant: variant))
+            try .unavailable(reader.readCoreErrorPayload(variant: variant))
         }
         try reader.finish()
         return error
@@ -357,7 +276,7 @@ private enum FFIReader {
         }
 
         mutating func readString() throws -> String {
-            let count = Int(try readInt32())
+            let count = try Int(readInt32())
             guard count >= 0, data.count >= offset + count else {
                 throw MobileRepositoryCoreFFIError.bufferOverflow
             }
@@ -382,14 +301,14 @@ private enum FFIReader {
         }
 
         mutating func readPathIssues() throws -> [MobileRepositoryPathIssue] {
-            let count = Int(try readInt32())
+            let count = try Int(readInt32())
             guard count >= 0 else {
                 throw MobileRepositoryCoreFFIError.bufferOverflow
             }
             var issues: [MobileRepositoryPathIssue] = []
             issues.reserveCapacity(count)
             for _ in 0 ..< count {
-                issues.append(try readPathIssue())
+                try issues.append(readPathIssue())
             }
             return issues
         }
@@ -424,10 +343,23 @@ private enum FFIReader {
             }
         }
 
+        mutating func readRepositoryLocalePolicy() throws -> String {
+            let state = try readInt32()
+            guard (1 ... 5).contains(state) else {
+                throw MobileRepositoryCoreFFIError.unexpectedEnumCase(state)
+            }
+            return try readString()
+        }
+
         mutating func readCoreErrorPayload(variant: Int32) throws -> String {
             switch variant {
-            case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15:
+            case 1 ... 8, 10 ... 18:
                 return try readString()
+            case 9:
+                let resource = try readString()
+                let expected = try readInt64()
+                let current = try readInt64()
+                return "\(resource): expected revision \(expected), current revision \(current)"
             default:
                 throw MobileRepositoryCoreFFIError.unexpectedEnumCase(variant)
             }
@@ -501,6 +433,16 @@ private enum FFIReader {
             defer { offset += 4 }
             var value: Int32 = 0
             _ = withUnsafeMutableBytes(of: &value) { data.copyBytes(to: $0, from: offset ..< offset + 4) }
+            return value.bigEndian
+        }
+
+        mutating func readInt64() throws -> Int64 {
+            guard data.count >= offset + 8 else {
+                throw MobileRepositoryCoreFFIError.bufferOverflow
+            }
+            defer { offset += 8 }
+            var value: Int64 = 0
+            _ = withUnsafeMutableBytes(of: &value) { data.copyBytes(to: $0, from: offset ..< offset + 8) }
             return value.bigEndian
         }
     }

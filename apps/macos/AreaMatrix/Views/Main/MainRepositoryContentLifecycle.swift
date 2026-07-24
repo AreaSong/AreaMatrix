@@ -65,6 +65,11 @@ extension MainRepositoryContentView {
                 guard state == .list else { return }
                 await syncConflictEntryModel.loadIfNeeded()
             }
+            .task(id: localizer.resourceLocaleIdentifier) {
+                await refreshTreeForInterfaceLocaleChange(
+                    localizer.resourceLocaleIdentifier
+                )
+            }
             .task(id: externalSyncQueueRevision) {
                 fileListModel.scheduleExternalSyncDrain(
                     windows: externalSyncWindows,
@@ -80,6 +85,33 @@ extension MainRepositoryContentView {
             .onChange(of: selectedFileIDs) { previousIDs, ids in
                 handleSelectedFileIDsChange(previousIDs: previousIDs, ids: ids)
             }
+    }
+
+    private func refreshTreeForInterfaceLocaleChange(_ localeIdentifier: String) async {
+        defer { observedInterfaceLocaleIdentifier = localeIdentifier }
+        guard let previousLocale = observedInterfaceLocaleIdentifier,
+              previousLocale != localeIdentifier,
+              RepositoryContentLanguage(snapshotValue: opening.config.locale) == .followInterface
+        else { return }
+
+        do {
+            let refreshedTree = try await treeLister.listTree(
+                repoPath: opening.config.repoPath,
+                locale: opening.config.locale
+            )
+            guard !Task.isCancelled,
+                  localizer.resourceLocaleIdentifier == localeIdentifier
+            else { return }
+            let plan = InterfaceLocaleTreeRefreshPlan.make(
+                refreshedTree: refreshedTree,
+                savedSearches: Array(savedSearchesBySidebarID.values),
+                selectedSidebarID: selectedSidebarID
+            )
+            repositoryTree = plan.tree
+            selectedSidebarID = plan.selectedSidebarID
+        } catch {
+            // Presentation refresh is best-effort; keep the stable current tree and all user state.
+        }
     }
 
     private var externalSyncQueueRevision: String {
@@ -119,11 +151,7 @@ extension MainRepositoryContentView {
                 Task { await fileListModel.collectCurrentListDiagnostics() }
             }
         } message: {
-            Text(
-                "Repository diagnostics may include paths, file names, tags, notes, and other sensitive " +
-                    "metadata. Original file contents are not copied, and diagnostics are not uploaded " +
-                    "automatically. Review the snapshot before sharing."
-            )
+            Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
         }
     }
 
@@ -172,5 +200,23 @@ extension MainRepositoryContentView {
         await fileListModel.selectFiles([focus.fileID])
         fileListModel.presentSelectedFileTagSuggestions(source: focus.source)
         onPendingTagSuggestionFocusConsumed(focus)
+    }
+}
+
+struct InterfaceLocaleTreeRefreshPlan: Equatable {
+    var tree: RepositoryTreeNodeSnapshot
+    var selectedSidebarID: String
+
+    static func make(
+        refreshedTree: RepositoryTreeNodeSnapshot,
+        savedSearches: [SavedSearchSnapshot],
+        selectedSidebarID: String
+    ) -> InterfaceLocaleTreeRefreshPlan {
+        let tree = savedSearches.reduce(refreshedTree) { tree, savedSearch in
+            tree.insertingSavedSearch(savedSearch)
+        }
+        let retainedSelection = tree.sidebarRow(id: selectedSidebarID)?.id
+            ?? MainRepositoryContentView.defaultSelectedSidebarID(from: tree.sidebarRows)
+        return InterfaceLocaleTreeRefreshPlan(tree: tree, selectedSidebarID: retainedSelection)
     }
 }

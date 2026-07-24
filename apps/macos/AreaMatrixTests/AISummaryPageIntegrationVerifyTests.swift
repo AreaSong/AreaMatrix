@@ -40,6 +40,139 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
     }
 
     @MainActor
+    func testUserOwnedSummaryGenerationRequiresSideBySideReplacementReview() async {
+        let saved = AISummarySavedSnapshot.aiSummarySavedSummary(
+            fileID: 720,
+            text: "Current user summary.",
+            ownership: .userOwned
+        )
+        let summary = AISummaryIntegrationSummaryBridge(
+            drafts: [
+                .aiSummaryIntegrationDraft(
+                    fileID: 720,
+                    text: "New generated candidate.",
+                    draftID: "replacement",
+                    callLogID: 1720
+                )
+            ],
+            savedSummary: saved
+        )
+        let model = aiSummaryIntegrationModel(fileID: 720, summary: summary)
+
+        await model.loadEntryState()
+        await model.generate(regenerate: true)
+
+        XCTAssertEqual(model.status, .saved)
+        XCTAssertEqual(model.draftText, "Current user summary.")
+        XCTAssertEqual(model.replacementReview?.savedText, "Current user summary.")
+        XCTAssertEqual(model.replacementReview?.candidateText, "New generated candidate.")
+        XCTAssertEqual(model.replacementReview?.savedProvenance.ownership, .userOwned)
+        await summary.assertSaveReplacementConfirmations([])
+
+        model.continueEditingReplacement()
+        XCTAssertEqual(model.status, .dirty)
+        XCTAssertEqual(model.draftText, "New generated candidate.")
+
+        let savedWithoutConfirmation = await model.save()
+        XCTAssertFalse(savedWithoutConfirmation)
+        XCTAssertNotNil(model.replacementReview)
+        await summary.assertSaveReplacementConfirmations([])
+
+        let replaced = await model.replaceReviewedSummary()
+        XCTAssertTrue(replaced)
+        XCTAssertEqual(model.status, .saved)
+        XCTAssertEqual(model.provenance?.ownership, .userOwned)
+        await summary.assertSaveReplacementConfirmations([true])
+    }
+
+    @MainActor
+    func testUserOwnedSummaryCanKeepGeneratedCandidateWithoutChangingSavedValue() async {
+        let summary = AISummaryIntegrationSummaryBridge(
+            drafts: [
+                .aiSummaryIntegrationDraft(
+                    fileID: 721,
+                    text: "Discarded candidate.",
+                    draftID: "discarded",
+                    callLogID: 1721
+                )
+            ],
+            savedSummary: .aiSummarySavedSummary(
+                fileID: 721,
+                text: "Keep this user summary.",
+                ownership: .userOwned
+            )
+        )
+        let model = aiSummaryIntegrationModel(fileID: 721, summary: summary)
+
+        await model.loadEntryState()
+        await model.generate(regenerate: true)
+        model.keepExistingSummary()
+
+        XCTAssertNil(model.replacementReview)
+        XCTAssertEqual(model.status, .saved)
+        XCTAssertEqual(model.draftText, "Keep this user summary.")
+        await summary.assertSaveReplacementConfirmations([])
+    }
+
+    @MainActor
+    func testRetryGenerationCreatesLinkedNewOperationIdentity() async {
+        let draft = AiSummaryDraft.aiSummaryIntegrationDraft(
+            fileID: 722,
+            text: "Retry succeeded.",
+            draftID: "retry",
+            callLogID: 1722
+        )
+        let summary = AISummaryIntegrationSummaryBridge(draftResults: [
+            .failure(CoreError.Db(message: "provider temporarily unavailable")),
+            .success(draft)
+        ])
+        let model = aiSummaryIntegrationModel(fileID: 722, summary: summary)
+
+        await model.generate(regenerate: false)
+        XCTAssertEqual(model.failedAction, .generate)
+
+        await model.retryGeneration()
+
+        XCTAssertEqual(model.status, .draft)
+        XCTAssertEqual(model.draftText, "Retry succeeded.")
+        await summary.assertGenerationRetryChain()
+    }
+
+    @MainActor
+    func testSaveConflictRetainsDraftLoadsLatestAndRequiresSecondConfirmedSave() async {
+        let context = makeAISummarySaveConflictContext()
+        let bridge = context.bridge
+        let model = context.model
+
+        await model.loadEntryState()
+        model.updateDraft("My retained local draft.")
+        let firstSave = await model.save()
+        XCTAssertFalse(firstSave)
+        XCTAssertNotNil(model.replacementReview)
+        let conflictedSave = await model.replaceReviewedSummary()
+        XCTAssertFalse(conflictedSave)
+
+        XCTAssertEqual(model.draftText, "My retained local draft.")
+        XCTAssertEqual(
+            model.saveConflictReview?.latestState.summary?.summaryText,
+            "Latest summary from another window."
+        )
+        XCTAssertEqual(model.saveConflictReview?.localText, "My retained local draft.")
+
+        model.reviewLatestAfterSaveConflict()
+        XCTAssertNil(model.saveConflictReview)
+        XCTAssertEqual(model.status, .dirty)
+        let unconfirmedSecondSave = await model.save()
+        XCTAssertFalse(unconfirmedSecondSave)
+        let secondSave = await model.replaceReviewedSummary()
+        XCTAssertTrue(secondSave)
+        XCTAssertEqual(model.status, .saved)
+        await bridge.assertSaveCAS(expectedRevisions: [1, 2], confirmations: [true, true])
+    }
+}
+
+extension AISummaryPageIntegrationVerifyTests {
+    @MainActor
     func testAISummarySummaryPrivacyAndProvenanceStayOnDeclaredCoreBridgePath() async {
         let privacy = AISummaryIntegrationPrivacyBridge()
         let summary = AISummaryIntegrationSummaryBridge(drafts: [
@@ -147,6 +280,10 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
         XCTAssertEqual(saved?.callLogID, 42)
         XCTAssertTrue(saved?.editedByUser == true)
         XCTAssertEqual(saved?.characterCount, Int64("Saved SQLite AI summary.".count))
+
+        let tombstone = try await CoreBridge().loadAISummaryState(repoPath: repoURL.path, fileID: 715)
+        XCTAssertNil(tombstone.summary)
+        XCTAssertEqual(tombstone.contentRevision, 4)
     }
 
     @MainActor
@@ -240,55 +377,63 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
     }
 }
 
-private func createAISummaryMetadataDatabase(in repoURL: URL) throws {
-    let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
-    try FileManager.default.createDirectory(at: metadataURL, withIntermediateDirectories: true)
-    let dbURL = metadataURL.appendingPathComponent("index.db", isDirectory: false)
-
-    var database: OpaquePointer?
-    guard sqlite3_open_v2(dbURL.path, &database, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK,
-          let openedDatabase = database
-    else {
-        let message = database.flatMap { sqlite3_errmsg($0).map { String(cString: $0) } } ?? "sqlite open failed"
-        if let database {
-            sqlite3_close(database)
-        }
-        throw CoreError.Db(message: message)
-    }
-    defer { sqlite3_close(openedDatabase) }
-
-    try execAISummarySQL(
-        database: openedDatabase,
-        sql: """
-        CREATE TABLE ai_summaries (
-            file_id INTEGER PRIMARY KEY,
-            summary_text TEXT NOT NULL,
-            draft_id TEXT,
-            route TEXT,
-            model_name TEXT,
-            generated_at INTEGER,
-            used_context_json TEXT NOT NULL,
-            privacy_rule_id TEXT,
-            call_log_id INTEGER,
-            edited_by_user INTEGER NOT NULL DEFAULT 0,
-            saved_at INTEGER NOT NULL
-        );
-        INSERT INTO ai_summaries (
-            file_id, summary_text, draft_id, route, model_name, generated_at,
-            used_context_json, privacy_rule_id, call_log_id, edited_by_user, saved_at
-        ) VALUES (
-            714, 'Saved SQLite AI summary.', 'draft-714', 'remote', 'summary-model', 1700000714,
-            '["filename","repo_relative_path"]', 'rule-1', 42, 1, 1700000814
-        );
-        """
+@MainActor
+private func makeAISummarySaveConflictContext() -> (
+    bridge: AISummaryConflictBridge,
+    model: AISummaryEditorModel
+) {
+    let observed = AISummarySavedSnapshot.aiSummarySavedSummary(
+        fileID: 723,
+        text: "Observed user summary.",
+        ownership: .userOwned
     )
+    var latest = AISummarySavedSnapshot.aiSummarySavedSummary(
+        fileID: 723,
+        text: "Latest summary from another window.",
+        ownership: .userOwned
+    )
+    latest.contentRevision = 2
+    let bridge = AISummaryConflictBridge(
+        states: [
+            AISummaryPersistedStateSnapshot(summary: observed, contentRevision: 1),
+            AISummaryPersistedStateSnapshot(summary: latest, contentRevision: 2)
+        ],
+        saveResults: [
+            .failure(CoreError.RevisionConflict(
+                resource: "ai_summary_content_revision",
+                expectedRevision: 1,
+                currentRevision: 2
+            )),
+            .success(makeAISummaryFinalReport(observed: observed))
+        ]
+    )
+    let model = AISummaryEditorModel(
+        repoPath: "/tmp/repo",
+        fileID: 723,
+        summaryStore: bridge,
+        contentLocaleSnapshotter: StaticRepositoryContentLocaleSnapshotter(),
+        privacyRules: AISummaryIntegrationPrivacyBridge(),
+        errorMapper: RecordingCoreErrorMapper.aiSummaryIntegration()
+    )
+    return (bridge, model)
 }
 
-private func execAISummarySQL(database: OpaquePointer, sql: String) throws {
-    var errorMessage: UnsafeMutablePointer<CChar>?
-    guard sqlite3_exec(database, sql, nil, nil, &errorMessage) == SQLITE_OK else {
-        let message = errorMessage.map { String(cString: $0) } ?? "sqlite exec failed"
-        sqlite3_free(errorMessage)
-        throw CoreError.Db(message: message)
-    }
+private func makeAISummaryFinalReport(observed: AISummarySavedSnapshot) -> AiSummarySaveReport {
+    AiSummarySaveReport(
+        fileId: 723,
+        contentRevision: 3,
+        ownership: .userOwned,
+        savedSummary: "My retained local draft.",
+        savedAt: 1_700_000_400,
+        route: observed.route,
+        modelName: observed.modelName,
+        generatedAt: observed.generatedAt,
+        usedContext: observed.usedContext,
+        privacyRuleId: observed.privacyRuleID,
+        callLogId: observed.callLogID,
+        operationId: observed.operationID ?? "saved-operation-723",
+        contentLocale: observed.contentLocale ?? .en,
+        formatContractVersion: observed.formatContractVersion ?? 1,
+        characterCount: Int64("My retained local draft.".count)
+    )
 }

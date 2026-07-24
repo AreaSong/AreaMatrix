@@ -330,12 +330,14 @@ fn desktop_import_flow_failure_recovery_maps_error_codes_without_string_parsing(
             path: Some("desktop/imports/report.pdf".to_owned()),
             reason: None,
             message: Some("database is locked".to_owned()),
+            expected_revision: None,
+            current_revision: None,
         });
 
         assert_eq!(mapping.kind, kind);
         assert_eq!(mapping.severity, severity);
         assert_eq!(mapping.recoverability, recoverability);
-        assert!(!mapping.user_message.is_empty());
-        assert!(!mapping.suggested_action.is_empty());
+        assert!(!mapping.code.is_empty());
+        assert!(!mapping.recovery_action_ids.is_empty());
     }
 }

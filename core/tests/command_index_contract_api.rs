@@ -127,6 +127,8 @@ fn command_index_contract_exposes_signature_inputs_outputs_and_errors() {
 
 #[test]
 fn command_index_contract_validates_context_without_fake_success() {
+    let repo = tempfile::tempdir().expect("create isolated command-index repository");
+    let repo_path = repo.path().to_string_lossy().into_owned();
     let valid = CommandIndexContext {
         query: None,
         selected_file_ids: Vec::new(),
@@ -141,19 +143,19 @@ fn command_index_contract_validates_context_without_fake_success() {
     let mut invalid_selection = valid.clone();
     invalid_selection.selected_file_ids = vec![0];
     assert!(matches!(
-        list_command_targets("/tmp/repo".to_owned(), invalid_selection),
+        list_command_targets(repo_path.clone(), invalid_selection),
         Err(CoreError::Db { .. })
     ));
 
     let mut invalid_path = valid;
     invalid_path.current_path = Some("../outside".to_owned());
     assert!(matches!(
-        list_command_targets("/tmp/repo".to_owned(), invalid_path),
+        list_command_targets(repo_path.clone(), invalid_path),
         Err(CoreError::Db { .. })
     ));
 
     let db_result = list_command_targets(
-        "/tmp/repo".to_owned(),
+        repo_path,
         CommandIndexContext {
             query: Some("smart".to_owned()),
             selected_file_ids: vec![1],

@@ -9,7 +9,7 @@ struct StaticICloudStatusDetector: ICloudStatusDetecting {
         self.snapshot = snapshot
     }
 
-    func snapshot(repoPath _: String, config _: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
+    func snapshot(repoPath _: String, config _: AppRepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
         snapshot
     }
 }

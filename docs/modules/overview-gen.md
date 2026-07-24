@@ -126,8 +126,9 @@ emoji 和其他非 unreserved bytes 使用大写十六进制 `%XX` 表示。
 ## locale
 
 `RepoConfig.locale` 是资料库内容 policy。`system` 表示跟随当前已解析界面语言；`zh-CN` / `zh-SG` 和
-`en-*` 是只读兼容别名，普通读取不得隐式写回。未知非空值允许浏览，树和分类显示依次查 exact raw
-locale、`en`、slug，但新的概览生成返回 `Config`，直到用户在 Repository 设置中明确选择支持值。
+`en-*` 是只读兼容别名，普通读取不得隐式写回。已知显式/alias policy 的树和分类显示依次查询 exact raw、
+resolved concrete、`en`、slug；`system` 从当前 concrete locale 开始；未知非空值只读浏览依次查询 exact raw、
+`en`、slug，但新的概览生成返回 `Config`，直到用户在 Repository 设置中明确选择支持值。
 
 Core 不读取进程级界面语言。init、import、repo-owned rename、repair 和 external sync 调用都显式携带
 concrete `zh-Hans` 或 `en` 的 operation snapshot；同一事务、rollback、continuation 或 replay 必须复用。
@@ -137,7 +138,43 @@ new attempt 才重新捕获。切换任一语言设置都不主动重写已有�
 
 设置保存本身不调用 overview 入口。之后正常发生且本来就会刷新 overview 的 operation 可以按新快照替换
 派生输出。持久化 Markdown 不使用 macOS `autoupdatingCurrent` region；日期、数字、文件大小和货币使用
-内容 locale 对应的固定格式，保证同一 operation 的 replay 在不同设备上产生相同文本。
+内容 locale 对应的固定格式，时间统一使用 UTC，并记录 format contract version，保证同一 operation 的
+replay 在不同设备上产生相同文本。
+
+全库 overview regeneration 是独立的显式 operation。它只覆盖 `.areamatrix/generated/root.md`、全部
+`.areamatrix/generated/nodes/*.md` 与已启用且 marker 合法的根 `AREAMATRIX.md` managed block；不处理
+AI summary、classifier、note、tag、`README.md` 或 managed block 外文本。普通 operation 可以让不同
+overview 暂时保留不同历史 locale，只有该显式入口负责统一。
+
+Repository 页通过 durable provenance 报告五种状态：没有任何现有目标时为 `NotGenerated`；全部活动目标
+与当前 concrete locale 和 format version 一致且目标集合完整时为 `Synchronized`；存在单一可信状态但语言、
+格式、缺失目标或失效目标要求收敛时为 `NeedsRegeneration`，并返回 `locale_mismatch`、`format_mismatch`、
+`missing_targets`、`obsolete_targets` 原因；存在多个已知历史 locale/format 时为 `Mixed`；任一现有目标没有
+可验证 provenance，或当前 bytes 与 provenance hash 不符时为 `Unknown`。状态计算不解析 Markdown 自然语言，
+也不按当前 policy 猜测 legacy 输出。普通增量 overview 更新在 `Unknown` 状态下 fail closed；显式全库
+regeneration 才能在 preflight、journal 与 verified backup 保护下替换异常 bytes。
+
+preflight 生成新的 `operation_id` 和签名 plan token，并冻结 Repository revision、完整目标集合、concrete
+locale、format contract version 与 target-set hash。start 在第一次 staging 写入前持久化 operation/context 和
+全部 journal items。生成过程不长时间锁住资料库；commit 前重新比较 revision，变化时保持全旧并要求新 attempt。
+
+preflight 向 UI 返回 concrete target locale、create/replace/delete 数量、managed-root 是否参与和目标 hash；
+确认文案明确排除 AI、`README.md` 与用户正文。同一资料库的所有窗口观察同一 operation，只有发起窗口持有
+确认、取消或恢复交互权。
+
+取消只允许发生在 commit 之前，并删除 AreaMatrix-owned staging 后保持全旧。短 commit 开始后不可取消。
+普通错误按逆序恢复旧字节和旧 provenance；进程崩溃可能让物理文件暂时处于中间状态。下次打开先验证
+staged plan，完整时继续提交；否则验证 backup 并回滚。两者均无法验证时保持 recovery-required 并阻断普通
+写入，不猜测成功。最终稳定状态只能是全旧或全新，这一合同不宣称多个独立
+文件具有文件系统级瞬时原子交换能力。
+
+staging、backup 和 journal 全部属于 `.areamatrix/`。相对路径白名单、旧/新 hash 和 managed block 校验必须
+在 preflight 与 commit 各执行一次；任何 `README.md`、绝对路径、`..`、symlink/non-regular target 或非法
+marker 都 fail closed。成功后写入 durable overview provenance，清理 staging/backup，但保留 operation
+审计；回滚恢复原字节与原 provenance。
+完整目标集合包含 classifier 中所有当前 category（包括空分类）。`nodes/` 下不再对应当前 category 的普通
+`.md` 文件作为 obsolete AreaMatrix-owned output 纳入删除计划；删除也必须保存旧字节与 provenance，并在
+取消、失败或 rollback 时恢复。symlink、目录、特殊文件、非 `.md` 文件或任何越界目标都会阻断操作。
 
 ## 性能
 
@@ -159,6 +196,11 @@ new attempt 才重新捕获。切换任一语言设置都不主动重写已有�
 - overview 失败不推进 FSEvent cursor。
 - operation replay 使用原 content locale，不产生同批混合语言概览。
 - unknown repository locale 允许 exact raw/en/slug 浏览回退，但阻断生成。
+- interface/content locale 变化不改变稳定 category order、file sort、selection、expanded state、scroll、focus、
+  route、sheet 或 draft identity；follow-interface 只重投影 clean presentation，不增加 repository revision。
+- pre-commit Repository revision drift 零写入失败；Retry 获得新的 operation ID。
+- commit 崩溃注入后 reopen 必须恢复为全旧或全新，且恢复前阻断普通 mutation。
+- cancellation 在 commit 前保持全旧，commit 开始后返回不可取消状态。
 
 ## Related
 

@@ -42,7 +42,8 @@ extension GeneralSettingsView {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
+        _ = localizer.resourceLocaleIdentifier
+        return HStack(spacing: 0) {
             sidebar
                 .areaMatrixWorkspaceRegionShell(cornerRadius: 0)
             Divider()

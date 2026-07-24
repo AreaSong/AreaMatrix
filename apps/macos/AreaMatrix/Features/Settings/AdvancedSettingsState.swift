@@ -61,31 +61,31 @@ struct AdvancedSettingsDraft: Equatable {
     var overviewOutput: AdvancedSettingsOverviewOutput
     var allowReplaceDuringImport: Bool
 
-    init(config: RepoConfigSnapshot) {
+    init(config: AppRepoConfigSnapshot) {
         overviewOutput = AdvancedSettingsOverviewOutput(snapshotValue: config.overviewOutput)
         allowReplaceDuringImport = config.allowReplaceDuringImport
     }
 }
 
 struct AdvancedSettingsPendingSave: Equatable {
-    var config: RepoConfigSnapshot
+    var config: AppRepoConfigSnapshot
     var kind: AdvancedSettingsSaveKind
 }
 
-extension RepoConfigSnapshot {
-    func withAdvancedRepositoryPath(_ value: String) -> RepoConfigSnapshot {
+extension AppRepoConfigSnapshot {
+    func withAdvancedRepositoryPath(_ value: String) -> AppRepoConfigSnapshot {
         var config = self
         config.repoPath = value
         return config
     }
 
-    func withAdvancedOverviewOutput(_ value: String) -> RepoConfigSnapshot {
+    func withAdvancedOverviewOutput(_ value: String) -> AppRepoConfigSnapshot {
         var config = self
         config.overviewOutput = value
         return config
     }
 
-    func withAdvancedAllowReplaceDuringImport(_ value: Bool) -> RepoConfigSnapshot {
+    func withAdvancedAllowReplaceDuringImport(_ value: Bool) -> AppRepoConfigSnapshot {
         var config = self
         config.allowReplaceDuringImport = value
         return config

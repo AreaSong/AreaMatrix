@@ -364,6 +364,8 @@ fn semantic_search_failure_error_mapping_matches_documented_recoverability() {
         path: None,
         reason: Some("semantic search query is invalid".to_owned()),
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(config.severity, ErrorSeverity::Medium);
     assert_eq!(
@@ -376,6 +378,8 @@ fn semantic_search_failure_error_mapping_matches_documented_recoverability() {
         path: Some("repo/secure/private.txt".to_owned()),
         reason: None,
         message: None,
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(permission.severity, ErrorSeverity::High);
     assert_eq!(
@@ -384,10 +388,12 @@ fn semantic_search_failure_error_mapping_matches_documented_recoverability() {
     );
 
     let locked = map_core_error(ErrorMappingInput {
-        kind: ErrorKind::Db,
+        kind: ErrorKind::DbLocked,
         path: None,
         reason: None,
         message: Some("database is locked".to_owned()),
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(locked.recoverability, ErrorRecoverability::Retryable);
 
@@ -396,15 +402,22 @@ fn semantic_search_failure_error_mapping_matches_documented_recoverability() {
         path: None,
         reason: None,
         message: Some("no such table: semantic_index_entries".to_owned()),
+        expected_revision: None,
+        current_revision: None,
     });
-    assert_eq!(corrupted.severity, ErrorSeverity::Critical);
-    assert_eq!(corrupted.recoverability, ErrorRecoverability::Fatal);
+    assert_eq!(corrupted.severity, ErrorSeverity::High);
+    assert_eq!(
+        corrupted.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
 
     let internal = map_core_error(ErrorMappingInput {
         kind: ErrorKind::Internal,
         path: None,
         reason: None,
         message: Some("semantic runtime unavailable".to_owned()),
+        expected_revision: None,
+        current_revision: None,
     });
     assert_eq!(internal.severity, ErrorSeverity::Critical);
     assert_eq!(internal.recoverability, ErrorRecoverability::Fatal);

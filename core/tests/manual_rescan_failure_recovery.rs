@@ -276,7 +276,7 @@ fn manual_rescan_failure_recovery_migrates_legacy_scan_session_schema() {
     let report =
         reindex_from_filesystem(path_string(repo.path())).expect("rescan legacy schema repo");
 
-    assert_eq!(schema_version(repo.path()), 2);
+    assert_eq!(schema_version(repo.path()), 3);
     for column in ["missing", "conflicts", "unreadable", "unknown"] {
         assert!(
             scan_session_columns(repo.path()).contains(&column.to_owned()),
@@ -285,7 +285,7 @@ fn manual_rescan_failure_recovery_migrates_legacy_scan_session_schema() {
     }
     assert!(repo
         .path()
-        .join(".areamatrix/index.db.pre-v2.bak")
+        .join(".areamatrix/index.db.pre-v3.bak")
         .is_file());
     assert_eq!(report.inserted, 1);
     assert_eq!(report.missing, 0);
@@ -414,10 +414,13 @@ fn manual_rescan_failure_recovery_error_mapping_stays_structured() {
         permission.recoverability,
         ErrorRecoverability::UserActionRequired
     );
-    assert_eq!(permission.raw_context, "/repo/docs/blocked.pdf");
+    assert_eq!(
+        permission.technical_details.as_deref(),
+        Some("/repo/docs/blocked.pdf")
+    );
 
-    let db_locked = CoreError::db("database is locked").to_error_mapping();
-    assert_eq!(db_locked.kind, ErrorKind::Db);
+    let db_locked = CoreError::db_locked("database is locked").to_error_mapping();
+    assert_eq!(db_locked.kind, ErrorKind::DbLocked);
     assert_eq!(db_locked.recoverability, ErrorRecoverability::Retryable);
 
     let io = CoreError::io("io error").to_error_mapping();

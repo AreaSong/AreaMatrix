@@ -8,12 +8,9 @@ struct AIPrivacyEmptyRulesView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("No AI privacy rules yet")
                 .font(.headline)
-            Text(
-                "Remote AI is still off by default. Add rules to block specific folders, keywords, " +
-                    "extensions, categories, or tags whenever AI is enabled."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
+            Text(L10n.string("ai.privacy.emptyRulesDetail"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 Button("Add rule", action: onAddRule)
                 Button("Use recommended templates...", action: onTemplates)

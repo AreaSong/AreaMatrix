@@ -1,11 +1,41 @@
 import Foundation
 
 protocol CoreConfigurationLoading: Sendable {
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot
+    func loadConfig(repoPath: String) async throws -> AppRepoConfigSnapshot
 }
 
 protocol CoreConfigurationUpdating: Sendable {
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws
+    func updateConfig(
+        repoPath: String,
+        from currentConfig: AppRepoConfigSnapshot,
+        to updatedConfig: AppRepoConfigSnapshot
+    ) async throws -> AppRepoConfigSnapshot
+}
+
+struct CoreRevisionConflictSnapshot: Equatable {
+    var resource: String
+    var expectedRevision: Int64
+    var currentRevision: Int64
+
+    init?(_ error: Error) {
+        guard let coreError = error as? CoreError,
+              case let .RevisionConflict(resource, expectedRevision, currentRevision) = coreError
+        else { return nil }
+        self.resource = resource
+        self.expectedRevision = expectedRevision
+        self.currentRevision = currentRevision
+    }
+}
+
+struct CoreConflictSnapshot: Equatable {
+    var path: String
+
+    init?(_ error: Error) {
+        guard let coreError = error as? CoreError,
+              case let .Conflict(path) = coreError
+        else { return nil }
+        self.path = path
+    }
 }
 
 protocol CoreRepositoryPathValidating: Sendable {
@@ -32,6 +62,23 @@ protocol CoreCategoryPredicting: Sendable {
 
 protocol CoreCommandIndexing: Sendable {
     func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex
+}
+
+extension ContentLocale {
+    init(snapshotValue: String) throws {
+        switch snapshotValue {
+        case "zh-Hans": self = .zhHans
+        case "en": self = .en
+        default: throw CoreError.Config(reason: "unsupported concrete content locale")
+        }
+    }
+
+    var snapshotValue: String {
+        switch self {
+        case .zhHans: "zh-Hans"
+        case .en: "en"
+        }
+    }
 }
 
 extension CoreScanSessionReading {
@@ -132,8 +179,9 @@ struct ScanSessionSnapshot: Equatable {
     var errors: [String]
 }
 
-struct RepoConfigSnapshot: Equatable {
+struct AppRepoConfigSnapshot: Equatable {
     var repoPath: String
+    var revision: Int64
     var defaultMode: String
     var overviewOutput: String
     var aiEnabled: Bool
@@ -145,18 +193,30 @@ struct RepoConfigSnapshot: Equatable {
     var allowReplaceDuringImport: Bool
 }
 
-extension RepoConfigSnapshot {
-    init(coreConfig: RepoConfig) {
+extension AppRepoConfigSnapshot {
+    init(coreConfig: RepoConfigSnapshot) {
         repoPath = coreConfig.repoPath
+        revision = coreConfig.revision
         defaultMode = coreConfig.defaultMode.displayName
         overviewOutput = coreConfig.overviewOutput.displayName
         aiEnabled = coreConfig.aiEnabled
-        locale = coreConfig.locale
+        locale = coreConfig.localePolicy.rawValue
         iCloudWarn = coreConfig.icloudWarn
         enableExtensionRules = coreConfig.enableExtensionRules
         enableKeywordRules = coreConfig.enableKeywordRules
         fallbackToInbox = coreConfig.fallbackToInbox
         allowReplaceDuringImport = coreConfig.allowReplaceDuringImport
+    }
+}
+
+extension RepositoryLocalePolicy {
+    init(snapshotValue: String) throws {
+        switch snapshotValue {
+        case "system": self = .followInterface
+        case "zh-Hans": self = .zhHans
+        case "en": self = .en
+        default: throw CoreError.Config(reason: "unsupported repository locale policy")
+        }
     }
 }
 

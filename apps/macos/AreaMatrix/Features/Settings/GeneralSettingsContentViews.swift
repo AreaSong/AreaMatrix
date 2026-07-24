@@ -224,7 +224,6 @@ struct GeneralSettingsLoadedContent: View {
             set: languageStore.select
         )
     }
-
 }
 
 struct GeneralSettingsLoadingContent: View {

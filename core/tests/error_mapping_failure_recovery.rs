@@ -16,6 +16,8 @@ fn input(
         path: path.map(str::to_owned),
         reason: reason.map(str::to_owned),
         message: message.map(str::to_owned),
+        expected_revision: None,
+        current_revision: None,
     }
 }
 
@@ -42,14 +44,20 @@ fn error_mapping_failure_recovery_permission_denied_never_becomes_retryable() {
     );
 
     assert_eq!(mapping.kind, ErrorKind::PermissionDenied);
-    assert_eq!(mapping.user_message, "无访问权限");
+    assert_eq!(mapping.code, "permission_denied");
     assert_eq!(mapping.severity, ErrorSeverity::High);
     assert_eq!(
         mapping.recoverability,
         ErrorRecoverability::UserActionRequired
     );
-    assert_eq!(mapping.raw_context, "/restricted/repo");
-    assert!(mapping.suggested_action.contains("系统设置"));
+    assert_eq!(
+        mapping.technical_details.as_deref().unwrap_or_default(),
+        "/restricted/repo"
+    );
+    assert_eq!(
+        mapping.recovery_action_ids,
+        vec!["choose_folder", "open_system_settings"]
+    );
     assert!(!matches!(
         mapping.recoverability,
         ErrorRecoverability::Retryable
@@ -94,8 +102,8 @@ fn error_mapping_failure_recovery_retry_policy_stays_structured_by_kind() {
     for (mapping, severity, recoverability) in cases {
         assert_eq!(mapping.severity, severity);
         assert_eq!(mapping.recoverability, recoverability);
-        assert!(!mapping.user_message.is_empty());
-        assert!(!mapping.suggested_action.is_empty());
+        assert!(!mapping.code.is_empty());
+        assert!(!mapping.recovery_action_ids.is_empty());
     }
 }
 
@@ -113,13 +121,19 @@ fn error_mapping_failure_recovery_repeated_mapping_is_idempotent() {
 
     assert_eq!(first, second);
     assert_eq!(first.kind, ErrorKind::Db);
-    assert_eq!(first.severity, ErrorSeverity::Critical);
-    assert_eq!(first.recoverability, ErrorRecoverability::Fatal);
-    assert_eq!(first.raw_context, "database disk image is malformed");
+    assert_eq!(first.severity, ErrorSeverity::High);
+    assert_eq!(
+        first.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
+    assert_eq!(
+        first.technical_details.as_deref().unwrap_or_default(),
+        "database disk image is malformed"
+    );
 }
 
 #[test]
-fn error_mapping_failure_recovery_db_locked_does_not_open_repair_flow() {
+fn error_mapping_failure_recovery_generic_db_messages_share_one_safe_route() {
     let locked = map(
         ErrorKind::Db,
         None,
@@ -134,11 +148,19 @@ fn error_mapping_failure_recovery_db_locked_does_not_open_repair_flow() {
     );
 
     assert_eq!(locked.kind, ErrorKind::Db);
-    assert_eq!(locked.severity, ErrorSeverity::Medium);
-    assert_eq!(locked.recoverability, ErrorRecoverability::Retryable);
+    assert_eq!(locked.code, "database_error");
+    assert_eq!(locked.severity, ErrorSeverity::High);
+    assert_eq!(
+        locked.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
     assert_eq!(corrupted.kind, ErrorKind::Db);
-    assert_eq!(corrupted.severity, ErrorSeverity::Critical);
-    assert_eq!(corrupted.recoverability, ErrorRecoverability::Fatal);
+    assert_eq!(corrupted.code, "database_error");
+    assert_eq!(corrupted.severity, ErrorSeverity::High);
+    assert_eq!(
+        corrupted.recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
 }
 
 #[test]

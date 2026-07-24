@@ -1,6 +1,11 @@
 use std::path::{Path, PathBuf};
 
-use crate::{db, AiCapabilityState, AiFeatureKind, CoreError, CoreResult};
+use serde_json::json;
+
+use crate::{
+    db, AiCapabilityState, AiFeatureKind, CoreError, CoreResult, RecoverableOperationContext,
+    RecoverableOperationStatus,
+};
 
 use super::{
     super::{
@@ -11,10 +16,15 @@ use super::{
         AiSummaryGenerationRequest, AiSummaryInputField, AiSummaryRoute, AiSummarySkipReason,
     },
     common::map_file_lookup_error,
-    draft::{draft_result, skipped, unavailable_after_runtime_error, unavailable_provider},
+    draft::{
+        draft_result, skipped, unavailable_after_runtime_error, unavailable_provider,
+        SummaryDraftContext,
+    },
     privacy::{privacy_blocks, privacy_rule_id},
     route::select_route,
 };
+
+const AI_SUMMARY_FORMAT_VERSION: i64 = 1;
 
 pub(in crate::ai_summary) fn generate_ai_summary(
     repo_path: String,
@@ -22,16 +32,38 @@ pub(in crate::ai_summary) fn generate_ai_summary(
 ) -> CoreResult<AiSummaryDraft> {
     validate_repo_path(&repo_path)?;
     validate_generation_request(&request)?;
-
     let repo = PathBuf::from(&repo_path);
     let file = db::get_active_file_by_id(&repo, request.file_id).map_err(map_file_lookup_error)?;
-    let ai_config = crate::ai_settings::load_ai_config(repo_path.clone())?;
+    let ai_config = crate::ai_settings::load_ai_config(repo_path)?;
     let capability = summary_capability(&ai_config.capabilities)?;
 
-    if !ai_config.config.ai_enabled {
+    persist_operation_context(&repo, &request)?;
+    let result = generate_after_context(&repo, &file, capability, &ai_config.config, &request);
+    let (status, error_code) = match &result {
+        Ok(_) => (RecoverableOperationStatus::Completed, None),
+        Err(error) => (RecoverableOperationStatus::Failed, Some(error_code(error))),
+    };
+    db::update_recoverable_operation_status(&repo, &request.operation_id, status, error_code)?;
+    result
+}
+
+fn generate_after_context(
+    repo: &Path,
+    file: &crate::FileEntry,
+    capability: &AiCapabilityState,
+    config: &crate::AiConfig,
+    request: &AiSummaryGenerationRequest,
+) -> CoreResult<AiSummaryDraft> {
+    let draft_context = SummaryDraftContext {
+        repo,
+        file,
+        operation_id: &request.operation_id,
+        content_locale: &request.content_locale,
+        format_contract_version: AI_SUMMARY_FORMAT_VERSION,
+    };
+    if !config.ai_enabled {
         return skipped(
-            &repo,
-            &file,
+            &draft_context,
             AiSummarySkipReason::AiDisabled,
             "AI summaries are off",
             false,
@@ -40,38 +72,30 @@ pub(in crate::ai_summary) fn generate_ai_summary(
     }
     if !capability.enabled {
         return skipped(
-            &repo,
-            &file,
+            &draft_context,
             AiSummarySkipReason::FeatureDisabled,
             "Auto summaries feature is off",
             false,
             None,
         );
     }
-    if privacy_blocks(&ai_config.config.privacy_policy_ref, &request) {
+    if privacy_blocks(&config.privacy_policy_ref, request) {
         return skipped(
-            &repo,
-            &file,
+            &draft_context,
             AiSummarySkipReason::PrivacyRule,
             "Skipped by privacy rule",
             true,
-            privacy_rule_id(&request),
+            privacy_rule_id(request),
         );
     }
 
-    let existing_summary = db::load_ai_summary_metadata(&repo, file.id)?
+    let existing = db::load_ai_summary_metadata(repo, file.id)?
         .map(|row| row.summary_text)
         .filter(|summary| request.regenerate_existing || summary.trim().is_empty());
-    let context = build_context(
-        &repo,
-        &file,
-        existing_summary.as_deref(),
-        &request.context_policy,
-    )?;
+    let context = build_context(repo, file, existing.as_deref(), &request.context_policy)?;
     if !has_eligible_input(&context) {
         return skipped(
-            &repo,
-            &file,
+            &draft_context,
             AiSummarySkipReason::NoEligibleInput,
             "No eligible AI summary input is available",
             true,
@@ -79,24 +103,65 @@ pub(in crate::ai_summary) fn generate_ai_summary(
         );
     }
 
-    let Some(route) = select_route(
-        capability,
-        &ai_config.config.provider_preference,
-        &request,
-        &repo,
-    )?
-    else {
-        return unavailable_provider(&repo, &file);
+    let Some(route) = select_route(capability, &config.provider_preference, request, repo)? else {
+        return unavailable_provider(
+            repo,
+            file,
+            &request.operation_id,
+            &request.content_locale,
+            AI_SUMMARY_FORMAT_VERSION,
+        );
     };
-    ensure_summary_call_log_gate(&repo)?;
+    ensure_summary_call_log_gate(repo)?;
     let route_for_error = route.clone();
-    let draft = match execute_summary(route, &repo, &context, request.content_locale.as_str()) {
+    let draft = match execute_summary(route, repo, &context, request.content_locale.as_str()) {
         Ok(draft) => draft,
         Err(error) => {
-            return unavailable_after_runtime_error(&repo, &file, route_for_error, &context, error);
+            return unavailable_after_runtime_error(
+                &draft_context,
+                route_for_error,
+                &context,
+                error,
+            );
         }
     };
-    draft_result(&repo, &file, draft)
+    draft_result(
+        repo,
+        file,
+        &request.operation_id,
+        &request.content_locale,
+        AI_SUMMARY_FORMAT_VERSION,
+        draft,
+    )
+}
+
+fn persist_operation_context(repo: &Path, request: &AiSummaryGenerationRequest) -> CoreResult<()> {
+    let payload = json!({
+        "file_id": request.file_id,
+        "provider_scope": format!("{:?}", request.provider_scope),
+        "context_policy": format!("{:?}", request.context_policy),
+        "regenerate_existing": request.regenerate_existing,
+    });
+    db::insert_recoverable_operation(
+        repo,
+        &RecoverableOperationContext {
+            operation_id: request.operation_id.clone(),
+            retry_of_operation_id: request.retry_of_operation_id.clone(),
+            operation_code: "ai_summary_generation".to_owned(),
+            operation_payload_json: serde_json::to_string(&payload)
+                .map_err(|_| CoreError::internal("AI summary operation payload is invalid"))?,
+            content_locale: Some(request.content_locale.clone()),
+            repository_revision: db::load_repo_config_snapshot_or_default(
+                repo.to_string_lossy().into_owned(),
+            )?
+            .revision,
+            format_contract_version: AI_SUMMARY_FORMAT_VERSION,
+            target_set_hash: None,
+            run_sequence: 1,
+        },
+        RecoverableOperationStatus::Running,
+    )?;
+    Ok(())
 }
 
 fn summary_capability(capabilities: &[AiCapabilityState]) -> CoreResult<&AiCapabilityState> {
@@ -128,5 +193,14 @@ fn execute_summary(
     match route {
         AiSummaryRoute::Local => execute_local(context, content_locale),
         AiSummaryRoute::Remote => execute_remote(repo, context, content_locale),
+    }
+}
+
+fn error_code(error: &CoreError) -> &'static str {
+    match error {
+        CoreError::Config { .. } => "config_error",
+        CoreError::PermissionDenied { .. } => "permission_denied",
+        CoreError::Db { .. } => "database_error",
+        _ => "ai_summary_generation_failed",
     }
 }

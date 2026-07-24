@@ -22,7 +22,8 @@ struct MainWindow: View {
 
 extension MainWindow {
     var body: some View {
-        ZStack(alignment: .top) {
+        _ = localizer.resourceLocaleIdentifier
+        return ZStack(alignment: .top) {
             MainWindowRouteContent(model: model, windowCloser: windowCloser)
 
             if let toastMessage = model.toastMessage {

@@ -79,8 +79,8 @@ fn classify_preview_integration_verify_docs_api_and_udl_stay_aligned() {
     }
 
     for fragment in [
-        "| `predict_category(repo, name)` | classify | √ | Config / Classify |",
-        "无写入副作用：只读取 `.areamatrix/classifier.yaml`",
+        "| `predict_category(repo, name)` | classify | √ | RepoNotInitialized / Db / DbLocked / DbCorrupted / Config / Classify |",
+        "无写入副作用：只读取 Repository 语言策略和 `.areamatrix/classifier.yaml`",
         "UI 在拖入时调用以填充 ImportSheet",
         "`Config`：`repoPath` / `filename` 为空",
         "`Classify`：classifier 规则源无法作为文件读取",

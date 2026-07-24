@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 enum MainRepositoryContentState: Equatable { case empty, list }
 struct MainRepositoryContentView: View {
+    @EnvironmentObject var localizer: AppLocalizer
     let opening: RepositoryOpeningResult
     let state: MainRepositoryContentState
     let onImport: () -> Void
@@ -55,6 +56,7 @@ struct MainRepositoryContentView: View {
         .init(\FileEntrySnapshot.importedAt, order: .reverse)
     ]
     @State var summarySelectionExitState = AISummarySelectionExitState()
+    @State var observedInterfaceLocaleIdentifier: String?
 
     init(
         opening: RepositoryOpeningResult,

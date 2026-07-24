@@ -56,7 +56,7 @@ protocol CoreAICallLogClearing: Sendable {
 
 extension CoreBridge: CoreRemoteProviderConfiguring {
     func loadRemoteProviderConfig(repoPath: String) async throws -> RemoteProviderConfigState {
-        return try await Task.detached(priority: .userInitiated) {
+        try await Task.detached(priority: .userInitiated) {
             try RemoteProviderConfigState(coreSnapshot: loadRemoteAiProviderConfig(repoPath: repoPath))
         }.value
     }
@@ -149,7 +149,7 @@ extension CoreBridge: CoreAIClassificationSuggesting {
         request: AIClassificationSuggestionRequestState
     ) async throws -> AIClassificationSuggestionState {
         let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
-        let coreRequest = AiCategorySuggestionRequest(snapshot: request, contentLocale: contentLocale)
+        let coreRequest = try AiCategorySuggestionRequest(snapshot: request, contentLocale: contentLocale)
         return try await Task.detached(priority: .userInitiated) {
             try AIClassificationSuggestionState(coreSuggestion: suggestCategoryWithAi(
                 repoPath: repoPath,

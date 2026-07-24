@@ -37,6 +37,9 @@ struct AISummaryEditor: View {
             header
             gateNoticeView
             provenanceRows
+            clearConflictNoticeView
+            saveConflictReviewView
+            replacementReviewView
             editor
             progressView
             errorView
@@ -85,7 +88,9 @@ struct AISummaryEditor: View {
         .onChange(of: model.draftText) { _, _ in syncExitController() }
         .accessibilityIdentifier("ai-summary-ai-summary-core-ai-summary-editor")
     }
+}
 
+private extension AISummaryEditor {
     private var header: some View {
         HStack {
             Text("AI Summary").font(.headline).accessibilityAddTraits(.isHeader)
@@ -137,6 +142,10 @@ struct AISummaryEditor: View {
         if let provenance = model.provenance {
             VStack(alignment: .leading, spacing: 4) {
                 Text(provenanceTitle(provenance))
+                Text(summaryOwnershipLabel(provenance.ownership))
+                if let locale = provenance.contentLocale {
+                    Text(L10n.format("ai.summary.contentLanguage", summaryLocaleLabel(locale)))
+                }
                 Text(L10n.format("ai.summary.model", provenance.modelName ?? L10n.string("Not recorded")))
                 Text("Used fields: \(summaryUsedFields(provenance.usedContext))")
                 if let generatedAt = provenance.generatedAt {
@@ -202,6 +211,130 @@ struct AISummaryEditor: View {
     }
 
     @ViewBuilder
+    private var clearConflictNoticeView: some View {
+        if let notice = model.clearConflictNotice {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("The summary changed before it could be cleared", systemImage: "arrow.clockwise")
+                    .font(.headline)
+                Text(L10n.format(
+                    "ai.summary.clearConflict.revisions",
+                    notice.expectedRevision,
+                    notice.currentRevision
+                ))
+                Text("The latest summary has been loaded. Review it and choose Clear summary again if needed.")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(10)
+            .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityIdentifier("ai-summary-clear-content-revision-conflict")
+        }
+    }
+
+    @ViewBuilder
+    private var saveConflictReviewView: some View {
+        if let review = model.saveConflictReview {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Summary changed in another window", systemImage: "exclamationmark.triangle")
+                    .font(.headline)
+                Text(L10n.format(
+                    "ai.summary.conflict.revisions",
+                    review.expectedRevision,
+                    review.currentRevision
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                HStack(alignment: .top, spacing: 12) {
+                    conflictSummaryColumn(
+                        title: L10n.string("Latest saved summary"),
+                        text: review.latestState.summary?.summaryText ?? L10n.string("No saved summary")
+                    )
+                    conflictSummaryColumn(
+                        title: L10n.string("Your local draft"),
+                        text: review.localText
+                    )
+                }
+                Text("Reviewing updates the baseline only. You must Save again to apply your draft.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Button("Reload latest", action: model.reloadLatestAfterSaveConflict)
+                    Spacer()
+                    Button("Review changes", action: model.reviewLatestAfterSaveConflict)
+                        .buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(10)
+            .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityIdentifier("ai-summary-content-revision-conflict-review")
+        }
+    }
+
+    private func conflictSummaryColumn(title: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.caption.weight(.semibold))
+            Text(text).frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(.quaternary))
+    }
+
+    @ViewBuilder
+    private var replacementReviewView: some View {
+        if let review = model.replacementReview {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Review summary replacement")
+                    .font(.headline)
+                Text("The saved user-owned summary will remain unchanged until you explicitly replace it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack(alignment: .top, spacing: 12) {
+                    summaryReplacementColumn(
+                        title: L10n.string("Current saved summary"),
+                        text: review.savedText,
+                        provenance: review.savedProvenance
+                    )
+                    summaryReplacementColumn(
+                        title: L10n.string("New summary draft"),
+                        text: review.candidateText,
+                        provenance: review.candidateProvenance
+                    )
+                }
+                HStack {
+                    Button("Keep existing", action: model.keepExistingSummary)
+                    Button("Continue editing", action: model.continueEditingReplacement)
+                    Spacer()
+                    Button("Replace") { Task { await model.replaceReviewedSummary() } }
+                        .buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(10)
+            .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityIdentifier("ai-summary-user-owned-replacement-review")
+        }
+    }
+
+    private func summaryReplacementColumn(
+        title: String,
+        text: String,
+        provenance: AISummaryProvenance
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.caption.weight(.semibold))
+            Text(text).frame(maxWidth: .infinity, minHeight: 90, alignment: .topLeading)
+            Text(summaryOwnershipLabel(provenance.ownership))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(.quaternary))
+    }
+}
+
+private extension AISummaryEditor {
+    @ViewBuilder
     private var progressView: some View {
         if let progressText = model.operation.progressText {
             Label(progressText, systemImage: "arrow.triangle.2.circlepath")
@@ -234,7 +367,7 @@ struct AISummaryEditor: View {
             }
         case .generate:
             HStack {
-                Button("Retry generate") { Task { await model.generate(regenerate: false) } }
+                Button("Retry generate") { Task { await model.retryGeneration() } }
                 Button("Cancel", action: model.cancelFailedAction)
             }
         case .save:
@@ -292,6 +425,14 @@ struct AISummaryEditor: View {
         } discardHandler: {
             model.discardChanges()
         }
+    }
+
+    private func summaryOwnershipLabel(_ ownership: AiContentOwnership) -> String {
+        ownership == .userOwned ? L10n.string("User-owned") : L10n.string("Generated")
+    }
+
+    private func summaryLocaleLabel(_ locale: ContentLocale) -> String {
+        locale == .zhHans ? L10n.string("简体中文") : L10n.string("English")
     }
 }
 

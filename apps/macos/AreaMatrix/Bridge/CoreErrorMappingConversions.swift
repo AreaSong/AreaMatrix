@@ -8,11 +8,12 @@ extension CoreError {
     var kindSnapshot: CoreErrorKindSnapshot {
         switch self {
         case .Io: .io
-        case .Db: .db
+        case .Db, .DbLocked, .DbCorrupted: .db
         case .Config: .config
         case .Validation: .validation
         case .Classify: .classify
         case .Conflict: .conflict
+        case .RevisionConflict: .revisionConflict
         case .DuplicateFile: .duplicateFile
         case .FileNotFound: .fileNotFound
         case .ExpiredAction: .expiredAction
@@ -29,6 +30,8 @@ extension CoreError {
         switch self {
         case let .Io(message),
              let .Db(message),
+             let .DbLocked(message),
+             let .DbCorrupted(message),
              let .Internal(message):
             message
         case let .Config(reason),
@@ -45,67 +48,133 @@ extension CoreError {
              let .StagingRecoveryRequired(path),
              let .PermissionDenied(path):
             path
+        case let .RevisionConflict(resource, _, _):
+            resource
         }
     }
 }
 
 private extension ErrorMappingInput {
-    // swiftlint:disable:next cyclomatic_complexity
+    init(coreError: CoreError) {
+        let values = ErrorMappingInputValues(coreError: coreError)
+        self.init(
+            kind: values.kind,
+            path: values.path,
+            reason: values.reason,
+            message: values.message,
+            expectedRevision: values.expectedRevision,
+            currentRevision: values.currentRevision
+        )
+    }
+}
+
+private struct ErrorMappingInputValues {
+    let kind: ErrorKind
+    var path: String?
+    var reason: String?
+    var message: String?
+    var expectedRevision: Int64?
+    var currentRevision: Int64?
+
     init(coreError: CoreError) {
         switch coreError {
-        case let .Io(message):
-            self.init(kind: .io, path: nil, reason: nil, message: message)
-        case let .Db(message):
-            self.init(kind: .db, path: nil, reason: nil, message: message)
-        case let .Config(reason):
-            self.init(kind: .config, path: nil, reason: reason, message: nil)
-        case let .Validation(reason):
-            self.init(kind: .validation, path: nil, reason: reason, message: nil)
-        case let .Classify(reason):
-            self.init(kind: .classify, path: nil, reason: reason, message: nil)
-        case let .Conflict(path):
-            self.init(kind: .conflict, path: path, reason: nil, message: nil)
-        case let .DuplicateFile(existingPath):
-            self.init(kind: .duplicateFile, path: existingPath, reason: nil, message: nil)
-        case let .FileNotFound(path):
-            self.init(kind: .fileNotFound, path: path, reason: nil, message: nil)
-        case let .ExpiredAction(actionId):
-            self.init(kind: .expiredAction, path: actionId, reason: nil, message: nil)
-        case let .RepoNotInitialized(path):
-            self.init(kind: .repoNotInitialized, path: path, reason: nil, message: nil)
-        case let .InvalidPath(path):
-            self.init(kind: .invalidPath, path: path, reason: nil, message: nil)
-        case let .ICloudPlaceholder(path):
-            self.init(kind: .iCloudPlaceholder, path: path, reason: nil, message: nil)
-        case let .StagingRecoveryRequired(path):
-            self.init(kind: .stagingRecoveryRequired, path: path, reason: nil, message: nil)
-        case let .PermissionDenied(path):
-            self.init(kind: .permissionDenied, path: path, reason: nil, message: nil)
-        case let .Internal(message):
-            self.init(kind: .internal, path: nil, reason: nil, message: message)
+        case let .Io(value): self = .message(.io, value)
+        case let .Db(value): self = .message(.db, value)
+        case let .DbLocked(value): self = .message(.dbLocked, value)
+        case let .DbCorrupted(value): self = .message(.dbCorrupted, value)
+        case let .Config(value): self = .reason(.config, value)
+        case let .Validation(value): self = .reason(.validation, value)
+        case let .Classify(value): self = .reason(.classify, value)
+        case let .Conflict(value): self = .path(.conflict, value)
+        case let .RevisionConflict(resource, expected, current):
+            self = .revision(resource, expected, current)
+        case .DuplicateFile, .FileNotFound, .ExpiredAction, .RepoNotInitialized, .InvalidPath,
+             .ICloudPlaceholder, .StagingRecoveryRequired, .PermissionDenied, .Internal:
+            self = Self.remaining(coreError)
         }
+    }
+
+    private init(kind: ErrorKind) {
+        self.kind = kind
+    }
+
+    private static func remaining(_ coreError: CoreError) -> Self {
+        switch coreError {
+        case let .DuplicateFile(value): .path(.duplicateFile, value)
+        case let .FileNotFound(value): .path(.fileNotFound, value)
+        case let .ExpiredAction(value): .path(.expiredAction, value)
+        case let .RepoNotInitialized(value): .path(.repoNotInitialized, value)
+        case let .InvalidPath(value): .path(.invalidPath, value)
+        case let .ICloudPlaceholder(value): .path(.iCloudPlaceholder, value)
+        case let .StagingRecoveryRequired(value): .path(.stagingRecoveryRequired, value)
+        case let .PermissionDenied(value): .path(.permissionDenied, value)
+        case let .Internal(value): .message(.internal, value)
+        case .Io, .Db, .DbLocked, .DbCorrupted, .Config, .Validation, .Classify, .Conflict, .RevisionConflict:
+            Self(kind: .internal)
+        }
+    }
+
+    private static func message(_ kind: ErrorKind, _ value: String) -> Self {
+        var values = Self(kind: kind)
+        values.message = value
+        return values
+    }
+
+    private static func reason(_ kind: ErrorKind, _ value: String) -> Self {
+        var values = Self(kind: kind)
+        values.reason = value
+        return values
+    }
+
+    private static func path(_ kind: ErrorKind, _ value: String) -> Self {
+        var values = Self(kind: kind)
+        values.path = value
+        return values
+    }
+
+    private static func revision(_ resource: String, _ expected: Int64, _ current: Int64) -> Self {
+        var values = Self(kind: .revisionConflict)
+        values.path = resource
+        values.expectedRevision = expected
+        values.currentRevision = current
+        return values
     }
 }
 
 extension CoreErrorKindSnapshot {
-    // swiftlint:disable:next cyclomatic_complexity
     init(coreKind: ErrorKind) {
+        self = Self.primary(coreKind)
+    }
+
+    private static func primary(_ coreKind: ErrorKind) -> Self {
         switch coreKind {
-        case .io: self = .io
-        case .db: self = .db
-        case .config: self = .config
-        case .validation: self = .validation
-        case .classify: self = .classify
-        case .conflict: self = .conflict
-        case .duplicateFile: self = .duplicateFile
-        case .fileNotFound: self = .fileNotFound
-        case .expiredAction: self = .expiredAction
-        case .repoNotInitialized: self = .repoNotInitialized
-        case .invalidPath: self = .invalidPath
-        case .iCloudPlaceholder: self = .iCloudPlaceholder
-        case .stagingRecoveryRequired: self = .stagingRecoveryRequired
-        case .permissionDenied: self = .permissionDenied
-        case .internal: self = .internal
+        case .io: .io
+        case .db, .dbLocked, .dbCorrupted: .db
+        case .config: .config
+        case .validation: .validation
+        case .classify: .classify
+        case .conflict: .conflict
+        case .revisionConflict: .revisionConflict
+        case .duplicateFile: .duplicateFile
+        case .fileNotFound, .expiredAction, .repoNotInitialized, .invalidPath, .iCloudPlaceholder,
+             .stagingRecoveryRequired, .permissionDenied, .internal:
+            secondary(coreKind)
+        }
+    }
+
+    private static func secondary(_ coreKind: ErrorKind) -> Self {
+        switch coreKind {
+        case .fileNotFound: .fileNotFound
+        case .expiredAction: .expiredAction
+        case .repoNotInitialized: .repoNotInitialized
+        case .invalidPath: .invalidPath
+        case .iCloudPlaceholder: .iCloudPlaceholder
+        case .stagingRecoveryRequired: .stagingRecoveryRequired
+        case .permissionDenied: .permissionDenied
+        case .internal: .internal
+        case .io, .db, .dbLocked, .dbCorrupted, .config, .validation, .classify, .conflict, .revisionConflict,
+             .duplicateFile:
+            .internal
         }
     }
 }

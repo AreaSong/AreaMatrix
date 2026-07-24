@@ -195,12 +195,8 @@ pub fn list_changes(repo_path: String, filter: ChangeFilter) -> CoreResult<Vec<C
 /// `CoreError::Db { message }` when the tree cannot be read from SQLite, and
 /// `CoreError::Io { message }` when repository file paths, file metadata, or classifier
 /// config cannot be inspected.
-pub fn list_tree_json(
-    repo_path: String,
-    locale: impl crate::ContentLocaleInput,
-) -> CoreResult<String> {
-    let locale = locale.into_content_locale()?;
-    tree::list_tree_json(repo_path, locale.as_str().to_owned())
+pub fn list_tree_json(repo_path: String, locale: String) -> CoreResult<String> {
+    tree::list_tree_json(repo_path, locale)
 }
 
 /// Reads the markdown note associated with one active file entry.

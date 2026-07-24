@@ -861,19 +861,19 @@ def check_lightweight_tasks_and_backlog(h: Harness) -> None:
     assert_contains(task_status, "backlog prompt packages: 5", "tasks status backlog packages")
     assert_contains(task_status, "backlog open: 0", "tasks status backlog open count")
     assert_contains(task_status, "backlog closed: 5", "tasks status backlog closed count")
-    assert_contains(task_status, "backlog records: 3", "tasks status backlog records")
+    assert_contains(task_status, "backlog records: 4", "tasks status backlog records")
     assert_contains(task_status, "Backlog", "tasks status backlog section")
     assert_contains(task_status, "prompt packages: 5", "tasks status backlog package section")
     assert_contains(task_status, "open: 0", "tasks status backlog section open count")
     assert_contains(task_status, "closed: 5", "tasks status backlog section closed count")
-    assert_contains(task_status, "records: 3", "tasks status backlog record section")
+    assert_contains(task_status, "records: 4", "tasks status backlog record section")
 
     task_doctor = h.run([h.dev, "tasks", "doctor"]).stdout
     assert_contains(task_doctor, "lightweight tasks doctor: OK", "tasks doctor")
     assert_contains(task_doctor, "backlog prompt packages: 5", "tasks doctor backlog packages")
     assert_contains(task_doctor, "backlog open: 0", "tasks doctor backlog open count")
     assert_contains(task_doctor, "backlog closed: 5", "tasks doctor backlog closed count")
-    assert_contains(task_doctor, "backlog records: 3", "tasks doctor backlog records")
+    assert_contains(task_doctor, "backlog records: 4", "tasks doctor backlog records")
 
     backlog_list = h.run([h.dev, "backlog", "list"]).stdout
     assert_contains(backlog_list, "Backlog prompt packages", "backlog list packages")

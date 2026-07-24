@@ -2,7 +2,13 @@
 import XCTest
 
 struct NoopConfigurationUpdater: CoreConfigurationUpdating {
-    func updateConfig(repoPath _: String, newConfig _: RepoConfigSnapshot) async throws {}
+    func updateConfig(
+        repoPath _: String,
+        from currentConfig: AppRepoConfigSnapshot,
+        to updatedConfig: AppRepoConfigSnapshot
+    ) async throws -> AppRepoConfigSnapshot {
+        updatedConfig.withRevision(currentConfig.revision + 1)
+    }
 }
 
 actor RecordingConfigurationUpdater:
@@ -11,7 +17,7 @@ actor RecordingConfigurationUpdater:
     ConfigUpdateRecording {
     struct Request: Equatable {
         var repoPath: String
-        var config: RepoConfigSnapshot
+        var config: AppRepoConfigSnapshot
     }
 
     private var resultQueue: VoidResultQueue
@@ -29,9 +35,14 @@ actor RecordingConfigurationUpdater:
         resultQueue = VoidResultQueue(failureThenSuccess: error)
     }
 
-    func updateConfig(repoPath: String, newConfig: RepoConfigSnapshot) async throws {
-        requestLog.append(Request(repoPath: repoPath, config: newConfig))
+    func updateConfig(
+        repoPath: String,
+        from currentConfig: AppRepoConfigSnapshot,
+        to updatedConfig: AppRepoConfigSnapshot
+    ) async throws -> AppRepoConfigSnapshot {
+        requestLog.append(Request(repoPath: repoPath, config: updatedConfig))
         try resultQueue.next().get()
+        return updatedConfig.withRevision(currentConfig.revision + 1)
     }
 
     func assertConfigurationUpdateRequests(
@@ -53,7 +64,7 @@ actor RecordingConfigurationUpdater:
         requestLog.requests.map(\.repoPath)
     }
 
-    var updatedConfigsForAssertions: [RepoConfigSnapshot] {
+    var updatedConfigsForAssertions: [AppRepoConfigSnapshot] {
         requestLog.requests.map(\.config)
     }
 
@@ -66,7 +77,7 @@ actor RecordingConfigurationUpdater:
     }
 
     func assertRequestedConfigValues<Value: Equatable>(
-        _ keyPath: KeyPath<RepoConfigSnapshot, Value>,
+        _ keyPath: KeyPath<AppRepoConfigSnapshot, Value>,
         _ expectedValues: [Value],
         file: StaticString = #filePath,
         line: UInt = #line
@@ -76,7 +87,7 @@ actor RecordingConfigurationUpdater:
 
     func assertRequestedConfigValue<Value: Equatable>(
         at index: Int,
-        _ keyPath: KeyPath<RepoConfigSnapshot, Value>,
+        _ keyPath: KeyPath<AppRepoConfigSnapshot, Value>,
         _ expectedValue: Value,
         file: StaticString = #filePath,
         line: UInt = #line
@@ -89,6 +100,14 @@ actor RecordingConfigurationUpdater:
             file: file,
             line: line
         )
+    }
+}
+
+private extension AppRepoConfigSnapshot {
+    func withRevision(_ value: Int64) -> AppRepoConfigSnapshot {
+        var config = self
+        config.revision = value
+        return config
     }
 }
 
@@ -143,34 +162,34 @@ extension ConfigUpdateRecording {
 }
 
 actor StaticConfigurationLoader: CoreConfigurationLoading {
-    private let config: RepoConfigSnapshot
+    private let config: AppRepoConfigSnapshot
 
-    init(config: RepoConfigSnapshot) {
+    init(config: AppRepoConfigSnapshot) {
         self.config = config
     }
 
-    func loadConfig(repoPath _: String) async throws -> RepoConfigSnapshot {
+    func loadConfig(repoPath _: String) async throws -> AppRepoConfigSnapshot {
         config
     }
 }
 
 actor RecordingConfigurationLoader: CoreConfigurationLoading {
-    private var resultQueue: TestResultQueue<RepoConfigSnapshot>
+    private var resultQueue: TestResultQueue<AppRepoConfigSnapshot>
     private var pathLog = TestRequestLog<String>()
 
-    init(result: Result<RepoConfigSnapshot, Error>) {
+    init(result: Result<AppRepoConfigSnapshot, Error>) {
         resultQueue = TestResultQueue(result: result) {
             .failure(CoreError.Internal(message: "missing config"))
         }
     }
 
-    init(results: [Result<RepoConfigSnapshot, Error>]) {
+    init(results: [Result<AppRepoConfigSnapshot, Error>]) {
         resultQueue = TestResultQueue(results: results) {
             .failure(CoreError.Internal(message: "missing config"))
         }
     }
 
-    func loadConfig(repoPath: String) async throws -> RepoConfigSnapshot {
+    func loadConfig(repoPath: String) async throws -> AppRepoConfigSnapshot {
         pathLog.append(repoPath)
         return try resultQueue.next()
     }

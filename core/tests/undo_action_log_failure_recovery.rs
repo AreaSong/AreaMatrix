@@ -307,11 +307,19 @@ fn undo_action_log_failure_recovery_db_metadata_errors_do_not_mutate() {
 
     let list_error = list_undo_actions(path_string(repo.path()))
         .expect_err("missing undo metadata table fails list");
-    assert_error_mapping(&list_error, ErrorKind::Db, ErrorRecoverability::Fatal);
+    assert_error_mapping(
+        &list_error,
+        ErrorKind::Db,
+        ErrorRecoverability::UserActionRequired,
+    );
 
     let undo_error = undo_action(path_string(repo.path()), only_undo_token(repo.path()))
         .expect_err("missing undo metadata table fails execute");
-    assert_error_mapping(&undo_error, ErrorKind::Db, ErrorRecoverability::Fatal);
+    assert_error_mapping(
+        &undo_error,
+        ErrorKind::Db,
+        ErrorRecoverability::UserActionRequired,
+    );
 
     assert_eq!(file_rows(repo.path()), before.files);
     assert_eq!(change_rows(repo.path()), before.changes);

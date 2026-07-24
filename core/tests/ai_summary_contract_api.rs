@@ -1,8 +1,9 @@
 use area_matrix_core::{
-    clear_ai_summary, generate_ai_summary, save_ai_summary, AiSummaryClearReport,
-    AiSummaryClearRequest, AiSummaryContextPolicy, AiSummaryDraft, AiSummaryDraftStatus,
-    AiSummaryGenerationRequest, AiSummaryInputField, AiSummaryProviderScope, AiSummaryRoute,
-    AiSummarySaveReport, AiSummarySaveRequest, AiSummarySkipReason, CoreError, CoreResult,
+    clear_ai_summary, generate_ai_summary, save_ai_summary, AiContentOwnership,
+    AiSummaryClearReport, AiSummaryClearRequest, AiSummaryContextPolicy, AiSummaryDraft,
+    AiSummaryDraftStatus, AiSummaryGenerationRequest, AiSummaryInputField, AiSummaryProviderScope,
+    AiSummaryRoute, AiSummarySaveReport, AiSummarySaveRequest, AiSummarySkipReason, ContentLocale,
+    CoreError, CoreResult,
 };
 use pretty_assertions::assert_eq;
 
@@ -14,6 +15,7 @@ mod api_contract_source;
 use api_contract_source::API_RS;
 const AI_SUMMARY_RS: &str = include_str!("../src/ai_summary.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
+const OPERATION_ID: &str = "00000000-0000-4000-8000-000000000042";
 
 fn assert_contains(haystack: &str, needle: &str) {
     assert!(
@@ -24,6 +26,8 @@ fn assert_contains(haystack: &str, needle: &str) {
 
 fn generation_request() -> AiSummaryGenerationRequest {
     AiSummaryGenerationRequest {
+        operation_id: OPERATION_ID.to_owned(),
+        retry_of_operation_id: None,
         file_id: 42,
         provider_scope: AiSummaryProviderScope::LocalPreferred,
         context_policy: AiSummaryContextPolicy::MetadataAndExtractedText,
@@ -36,6 +40,8 @@ fn generation_request() -> AiSummaryGenerationRequest {
 fn save_request() -> AiSummarySaveRequest {
     AiSummarySaveRequest {
         file_id: 42,
+        expected_content_revision: 0,
+        confirm_replace_user_owned: false,
         summary_text: "Invoice summary drafted by AI and edited by the user.".to_owned(),
         draft_id: Some("draft:summary:42".to_owned()),
         route: Some(AiSummaryRoute::Local),
@@ -47,13 +53,17 @@ fn save_request() -> AiSummarySaveRequest {
         ],
         privacy_rule_id: None,
         call_log_id: Some(7),
-        edited_by_user: true,
+        ownership: AiContentOwnership::UserOwned,
+        operation_id: OPERATION_ID.to_owned(),
+        content_locale: area_matrix_core::ContentLocale::En,
+        format_contract_version: 1,
     }
 }
 
 fn clear_request() -> AiSummaryClearRequest {
     AiSummaryClearRequest {
         file_id: 42,
+        expected_content_revision: 1,
         confirmed: true,
     }
 }
@@ -69,6 +79,9 @@ fn ai_summary_contract_exposes_signatures_inputs_outputs_and_errors() {
     assert_clear(clear_ai_summary);
 
     let draft = AiSummaryDraft {
+        operation_id: OPERATION_ID.to_owned(),
+        content_locale: ContentLocale::En,
+        format_contract_version: 1,
         file_id: 42,
         draft_id: Some("draft:summary:42".to_owned()),
         status: AiSummaryDraftStatus::Draft,
@@ -91,6 +104,9 @@ fn ai_summary_contract_exposes_signatures_inputs_outputs_and_errors() {
     assert_eq!(draft.route, Some(AiSummaryRoute::Remote));
 
     let skipped = AiSummaryDraft {
+        operation_id: OPERATION_ID.to_owned(),
+        content_locale: ContentLocale::En,
+        format_contract_version: 1,
         file_id: 42,
         draft_id: None,
         status: AiSummaryDraftStatus::Skipped,
@@ -112,6 +128,8 @@ fn ai_summary_contract_exposes_signatures_inputs_outputs_and_errors() {
 
     let saved = AiSummarySaveReport {
         file_id: 42,
+        content_revision: 1,
+        ownership: AiContentOwnership::UserOwned,
         saved_summary: "Edited summary.".to_owned(),
         saved_at: 1_777_300_900,
         route: Some(AiSummaryRoute::Local),
@@ -120,15 +138,18 @@ fn ai_summary_contract_exposes_signatures_inputs_outputs_and_errors() {
         used_context: vec![AiSummaryInputField::NoteSummary],
         privacy_rule_id: None,
         call_log_id: Some(8),
-        edited_by_user: true,
+        operation_id: OPERATION_ID.to_owned(),
+        content_locale: area_matrix_core::ContentLocale::En,
+        format_contract_version: 1,
         character_count: 15,
     };
-    assert!(saved.edited_by_user);
+    assert_eq!(saved.ownership, AiContentOwnership::UserOwned);
     assert_eq!(saved.character_count, 15);
 
     let cleared = AiSummaryClearReport {
         file_id: 42,
         cleared: true,
+        content_revision: 2,
         cleared_at: 1_777_301_000,
     };
     assert!(cleared.cleared);
@@ -144,6 +165,9 @@ fn ai_summary_contract_exposes_signatures_inputs_outputs_and_errors() {
 
 #[test]
 fn ai_summary_contract_rejects_invalid_inputs_without_fake_success() {
+    let non_repo = tempfile::tempdir().expect("create isolated non-repository path");
+    let non_repo_path = non_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         generate_ai_summary(String::new(), generation_request()),
         Err(CoreError::Config { .. })
@@ -152,26 +176,26 @@ fn ai_summary_contract_rejects_invalid_inputs_without_fake_success() {
     let mut invalid_file = generation_request();
     invalid_file.file_id = 0;
     assert!(matches!(
-        generate_ai_summary("/tmp/repo".to_owned(), invalid_file),
+        generate_ai_summary(non_repo_path.clone(), invalid_file),
         Err(CoreError::Config { .. })
     ));
 
     let mut raw_secret = generation_request();
     raw_secret.privacy_policy_ref = Some("sk-secret-key-material".to_owned());
     assert!(matches!(
-        generate_ai_summary("/tmp/repo".to_owned(), raw_secret),
+        generate_ai_summary(non_repo_path.clone(), raw_secret),
         Err(CoreError::Config { .. })
     ));
 
     assert!(matches!(
-        generate_ai_summary("/tmp/repo".to_owned(), generation_request()),
+        generate_ai_summary(non_repo_path.clone(), generation_request()),
         Err(CoreError::Config { .. })
     ));
 
     let mut empty_summary = save_request();
     empty_summary.summary_text = " ".to_owned();
     assert!(matches!(
-        save_ai_summary("/tmp/repo".to_owned(), empty_summary),
+        save_ai_summary(non_repo_path.clone(), empty_summary),
         Err(CoreError::Config { .. })
     ));
 
@@ -180,31 +204,31 @@ fn ai_summary_contract_rejects_invalid_inputs_without_fake_success() {
         .used_context
         .push(AiSummaryInputField::FileName);
     assert!(matches!(
-        save_ai_summary("/tmp/repo".to_owned(), duplicate_context),
+        save_ai_summary(non_repo_path.clone(), duplicate_context),
         Err(CoreError::Config { .. })
     ));
 
     let mut raw_draft_id = save_request();
     raw_draft_id.draft_id = Some("bearer-token".to_owned());
     assert!(matches!(
-        save_ai_summary("/tmp/repo".to_owned(), raw_draft_id),
+        save_ai_summary(non_repo_path.clone(), raw_draft_id),
         Err(CoreError::Config { .. })
     ));
 
     assert!(matches!(
-        save_ai_summary("/tmp/repo".to_owned(), save_request()),
+        save_ai_summary(non_repo_path.clone(), save_request()),
         Err(CoreError::Config { .. })
     ));
 
     let mut missing_confirmation = clear_request();
     missing_confirmation.confirmed = false;
     assert!(matches!(
-        clear_ai_summary("/tmp/repo".to_owned(), missing_confirmation),
+        clear_ai_summary(non_repo_path.clone(), missing_confirmation),
         Err(CoreError::Config { .. })
     ));
 
     assert!(matches!(
-        clear_ai_summary("/tmp/repo".to_owned(), clear_request()),
+        clear_ai_summary(non_repo_path, clear_request()),
         Err(CoreError::Config { .. })
     ));
 }
@@ -230,7 +254,9 @@ fn ai_summary_contract_docs_api_udl_and_control_map_stay_aligned() {
         "boolean requires_user_save;",
         "dictionary AiSummarySaveRequest",
         "string summary_text;",
-        "boolean edited_by_user;",
+        "AiContentOwnership ownership;",
+        "i64 expected_content_revision;",
+        "string operation_id;",
         "dictionary AiSummarySaveReport",
         "string saved_summary;",
         "dictionary AiSummaryClearRequest",

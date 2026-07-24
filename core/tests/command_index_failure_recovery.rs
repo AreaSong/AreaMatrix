@@ -312,9 +312,14 @@ fn command_index_failure_recovery_selection_and_file_candidate_db_failures_prese
 
     assert_eq!(
         error.to_error_mapping().recoverability,
-        ErrorRecoverability::Fatal
+        ErrorRecoverability::UserActionRequired
     );
-    assert!(!error.to_error_mapping().raw_context.is_empty());
+    assert!(!error
+        .to_error_mapping()
+        .technical_details
+        .as_deref()
+        .unwrap_or_default()
+        .is_empty());
     assert_eq!(
         fs::read(user_file).expect("read user file after db failure"),
         b"fixture bytes for finance/report.pdf"
@@ -363,14 +368,13 @@ fn command_index_failure_recovery_corrupted_db_is_fatal_and_preserves_side_effec
     fs::write(metadata.join("index.db"), b"not a sqlite database")
         .expect("write corrupted database fixture");
 
-    let error = assert_db_error(list_command_targets(
-        path_string(repo.path()),
-        default_context(),
-    ));
+    let error = list_command_targets(path_string(repo.path()), default_context())
+        .expect_err("corrupted database must fail");
 
+    assert_eq!(error.kind(), ErrorKind::Db);
     assert_eq!(
         error.to_error_mapping().recoverability,
-        ErrorRecoverability::Fatal
+        ErrorRecoverability::UserActionRequired
     );
     assert_eq!(
         fs::read(user_file).expect("read user file after corrupted db failure"),

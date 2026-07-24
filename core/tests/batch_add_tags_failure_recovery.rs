@@ -373,7 +373,7 @@ fn batch_add_tags_failure_recovery_missing_metadata_tables_return_db_without_par
 
     assert_eq!(
         error.to_error_mapping().recoverability,
-        ErrorRecoverability::Fatal
+        ErrorRecoverability::UserActionRequired
     );
     assert_eq!(tag_rows(repo.path()), Vec::<(i64, String)>::new());
     assert_eq!(

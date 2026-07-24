@@ -132,21 +132,25 @@ final class BatchChangeCategoryVerifyTests: XCTestCase {
     func testBatchChangeCategoryClassifierSettingsValidatePublishesSavedCategoryForRealReturnEvent() async throws {
         let repoURL = try makeImportSingleFileTemporaryDirectory(prefix: "batchChangeCategory-classifier")
         defer { removeTestTemporaryItems(repoURL) }
-        let manager = ClassifierSettingsTestRulesManager()
         var savedCategories: [String] = []
-        try manager.writeClassifier(repoURL: repoURL, slugs: ["docs", "inbox"])
+        let initialSnapshot = ClassifierRuleEditorSnapshotState.classifierEditorFixture()
+        var updatedSnapshot = initialSnapshot
+        updatedSnapshot.rules.append(.testFixture(ruleID: "tax", displayName: "Tax"))
+        let ruleEditor = ClassifierSettingsRecordingRuleEditor(listResults: [
+            .success(initialSnapshot),
+            .success(updatedSnapshot)
+        ])
         let model = ClassifierSettingsModel(
             repoPath: repoURL.path,
             loader: StaticConfigurationLoader(config: .classifierSettingsFixture(repoPath: repoURL.path)),
             updater: NoopConfigurationUpdater(),
             predictor: ClassifierSettingsSequencePredictor(),
+            ruleEditor: ruleEditor,
             errorMapper: RecordingCoreErrorMapper.classifierSettings(),
-            classifierRulesManager: manager,
             accessibilityAnnouncer: NoopAccessibilityAnnouncer(),
             onSavedCategory: { savedCategories.append($0) }
         )
         await model.load()
-        try manager.writeClassifier(repoURL: repoURL, slugs: ["docs", "tax", "inbox"])
 
         let didValidate = await model.validateClassifierRules()
 

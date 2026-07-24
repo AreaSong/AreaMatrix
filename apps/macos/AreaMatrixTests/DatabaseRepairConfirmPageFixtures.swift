@@ -2,40 +2,82 @@
 
 extension RepairOptionsSnapshot {
     static func testFixture(
-        fullRescan: Bool = true,
-        preserveDiagnosticsSnapshot: Bool = true
+        preserveDiagnosticsSnapshot: Bool = true,
+        preflightToken: String = "repair-preflight-token",
+        repositoryLocalePolicy: String = "system"
     ) -> RepairOptionsSnapshot {
         RepairOptionsSnapshot(
-            fullRescan: fullRescan,
-            preserveDiagnosticsSnapshot: preserveDiagnosticsSnapshot
+            preserveDiagnosticsSnapshot: preserveDiagnosticsSnapshot,
+            preflightToken: preflightToken,
+            repositoryLocalePolicy: repositoryLocalePolicy
         )
     }
 
-    static func databaseRepairFullRescanFixture() -> RepairOptionsSnapshot {
-        testFixture(fullRescan: true, preserveDiagnosticsSnapshot: true)
+    static func databaseRepairMetadataFixture(
+        preflightToken: String = "repair-preflight-token",
+        repositoryLocalePolicy: String = "system"
+    ) -> RepairOptionsSnapshot {
+        testFixture(
+            preserveDiagnosticsSnapshot: true,
+            preflightToken: preflightToken,
+            repositoryLocalePolicy: repositoryLocalePolicy
+        )
+    }
+}
+
+extension RepairMetadataPreflightSnapshot {
+    static func testFixture(
+        localeState: RepairMetadataLocaleStateSnapshot = .healthy,
+        repositoryLocalePolicy: String? = "system",
+        unsupportedLocale: String? = nil,
+        requiresExplicitLocaleSelection: Bool = false,
+        preflightToken: String = "repair-preflight-token"
+    ) -> RepairMetadataPreflightSnapshot {
+        RepairMetadataPreflightSnapshot(
+            localeState: localeState,
+            repositoryLocalePolicy: repositoryLocalePolicy,
+            unsupportedLocale: unsupportedLocale,
+            requiresExplicitLocaleSelection: requiresExplicitLocaleSelection,
+            preflightToken: preflightToken
+        )
+    }
+
+    static func databaseRepairHealthyPreflightFixture() -> RepairMetadataPreflightSnapshot {
+        testFixture()
     }
 }
 
 extension RepairReportSnapshot {
     static func testFixture(
-        scanSessionId: Int64 = 7,
-        inserted: Int64 = 1,
-        updated: Int64 = 2,
-        skipped: Int64 = 3,
-        errors: [String] = []
+        diagnosticsSnapshotPath: String? = ".areamatrix/diagnostics/repair.zip",
+        outcome: String = "Verified"
     ) -> RepairReportSnapshot {
         RepairReportSnapshot(
-            scanSessionId: scanSessionId,
-            diagnosticsSnapshotPath: ".areamatrix/diagnostics/repair.zip",
-            inserted: inserted,
-            updated: updated,
-            skipped: skipped,
-            errors: errors
+            diagnosticsSnapshotPath: diagnosticsSnapshotPath,
+            outcome: outcome
         )
     }
 
     static func databaseRepairRepairReportFixture() -> RepairReportSnapshot {
         testFixture()
+    }
+}
+
+extension ReindexReportSnapshot {
+    static func databaseRepairReindexReportFixture(
+        scanSessionId: Int64? = 7,
+        inserted: Int64 = 1,
+        updated: Int64 = 2,
+        skipped: Int64 = 3,
+        errors: [String] = []
+    ) -> ReindexReportSnapshot {
+        ReindexReportSnapshot(
+            scanSessionId: scanSessionId,
+            inserted: inserted,
+            updated: updated,
+            skipped: skipped,
+            errors: errors
+        )
     }
 }
 

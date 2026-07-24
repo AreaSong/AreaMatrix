@@ -6,9 +6,10 @@ use std::{
 
 use area_matrix_core::{
     create_classifier_rule, delete_classifier_rule, init_repo, list_classifier_rules,
-    predict_category, update_classifier_rule, ClassifierRuleCreateRequest,
-    ClassifierRuleDeleteRequest, ClassifierRuleUpdate, ClassifyReason, CoreError, OverviewOutput,
-    RepoInitMode, RepoInitOptions,
+    load_repo_config, predict_category, update_classifier_rule, update_repo_config,
+    ClassifierRuleCreateRequest, ClassifierRuleDeleteRequest, ClassifierRuleObservedState,
+    ClassifierRuleUpdate, ClassifyReason, ContentLocale, CoreError, OverviewOutput,
+    RepoConfigPatch, RepoInitMode, RepoInitOptions, RepositoryLocalePolicy,
 };
 use pretty_assertions::assert_eq;
 use serde::Deserialize;
@@ -59,6 +60,7 @@ fn initialized_repo() -> tempfile::TempDir {
         },
     )
     .expect("initialize repository");
+    load_repo_config(path_string(repo.path())).expect("prime repository config read state");
     repo
 }
 
@@ -81,7 +83,10 @@ fn category<'a>(config: &'a ClassifierConfig, slug: &str) -> &'a CategoryConfig 
 
 fn update_request() -> ClassifierRuleUpdate {
     ClassifierRuleUpdate {
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: ContentLocale::En,
         rule_id: "finance".to_owned(),
+        observed: observed_finance_rule(),
         slug: "contracts".to_owned(),
         display_name: "Contracts".to_owned(),
         description: "Signed client contracts".to_owned(),
@@ -93,8 +98,33 @@ fn update_request() -> ClassifierRuleUpdate {
     }
 }
 
+fn observed_finance_rule() -> ClassifierRuleObservedState {
+    ClassifierRuleObservedState {
+        rule_id: "finance".to_owned(),
+        slug: "finance".to_owned(),
+        display_name: "Finance".to_owned(),
+        description: String::new(),
+        extensions: Vec::new(),
+        keywords: vec![
+            "invoice".to_owned(),
+            "receipt".to_owned(),
+            "tax".to_owned(),
+            "contract".to_owned(),
+            "发票".to_owned(),
+            "收据".to_owned(),
+            "税务".to_owned(),
+            "合同".to_owned(),
+            "报销".to_owned(),
+        ],
+        priority: 10,
+        naming_template: None,
+    }
+}
+
 fn create_request() -> ClassifierRuleCreateRequest {
     ClassifierRuleCreateRequest {
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: ContentLocale::En,
         slug: "tax".to_owned(),
         display_name: "Tax".to_owned(),
         description: "Tax documents".to_owned(),
@@ -180,11 +210,22 @@ fn assert_no_classifier_temp_files(repo: &Path) {
     assert_eq!(temp_files, Vec::<std::ffi::OsString>::new());
 }
 
+fn locale_value<'a>(
+    values: &'a [area_matrix_core::ClassifierLocaleValue],
+    locale: &str,
+) -> Option<&'a str> {
+    values
+        .iter()
+        .find(|entry| entry.locale == locale)
+        .map(|entry| entry.value.as_str())
+}
+
 #[test]
 fn classifier_rule_editor_implementation_lists_persisted_classifier_rows() {
     let repo = initialized_repo();
 
-    let snapshot = list_classifier_rules(path_string(repo.path())).expect("list rules");
+    let snapshot = list_classifier_rules(path_string(repo.path()), Some(ContentLocale::En))
+        .expect("list rules");
 
     assert_eq!(snapshot.default_rule_id, "inbox");
     assert_eq!(snapshot.updated_rule_id, None);
@@ -192,7 +233,7 @@ fn classifier_rule_editor_implementation_lists_persisted_classifier_rows() {
     assert!(snapshot.rules.iter().any(|rule| {
         rule.rule_id == "finance"
             && rule.slug == "finance"
-            && rule.display_name == "Finance"
+            && locale_value(&rule.display_names, "en") == Some("Finance")
             && rule.keywords.iter().any(|keyword| keyword == "invoice")
             && !rule.is_default
     }));
@@ -215,8 +256,8 @@ fn classifier_rule_editor_implementation_creates_rule_for_future_classification_
     assert_eq!(saved.warning, None);
     assert!(saved.rules.iter().any(|rule| {
         rule.rule_id == "tax"
-            && rule.display_name == "Tax"
-            && rule.description == "Tax documents"
+            && locale_value(&rule.display_names, "en") == Some("Tax")
+            && locale_value(&rule.descriptions, "en") == Some("Tax documents")
             && rule.extensions == ["pdf"]
             && rule.keywords == ["tax"]
             && rule.priority == 20
@@ -261,7 +302,7 @@ fn classifier_rule_editor_implementation_updates_rule_for_future_classification_
     assert_eq!(saved.updated_rule_id.as_deref(), Some("contracts"));
     assert!(saved.rules.iter().any(|rule| {
         rule.rule_id == "contracts"
-            && rule.display_name == "Contracts"
+            && locale_value(&rule.display_names, "en") == Some("Contracts")
             && rule.extensions == ["pdf", "docx"]
             && rule.keywords == ["agreement", "合同"]
             && rule.priority == 30
@@ -294,6 +335,182 @@ fn classifier_rule_editor_implementation_updates_rule_for_future_classification_
         fs::read_to_string(classifier_path(repo.path())).expect("read classifier yaml"),
         before.classifier_yaml
     );
+}
+
+#[test]
+fn classifier_rule_editor_implementation_edits_zh_map_under_explicit_en_policy() {
+    let repo = initialized_repo();
+    let config_snapshot =
+        load_repo_config(path_string(repo.path())).expect("load repository config");
+    update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: config_snapshot.revision,
+            locale_policy: Some(RepositoryLocalePolicy::En),
+            ..RepoConfigPatch::default()
+        },
+    )
+    .expect("switch repository policy to English");
+
+    let listed = list_classifier_rules(path_string(repo.path()), Some(ContentLocale::ZhHans))
+        .expect("list Chinese classifier draft under English policy");
+    assert_eq!(listed.repository_locale_policy, "en");
+    assert_eq!(listed.editing_locale, Some(ContentLocale::ZhHans));
+
+    let config = read_classifier(repo.path());
+    let finance = category(&config, "finance");
+    let request = ClassifierRuleUpdate {
+        repository_locale_policy: "en".to_owned(),
+        editing_locale: ContentLocale::ZhHans,
+        rule_id: "finance".to_owned(),
+        observed: ClassifierRuleObservedState {
+            display_name: "财务".to_owned(),
+            description: String::new(),
+            ..observed_finance_rule()
+        },
+        slug: "finance".to_owned(),
+        display_name: "财务资料".to_owned(),
+        description: "用户维护的中文分类说明".to_owned(),
+        extensions: finance.extensions.clone(),
+        keywords: finance.keywords.clone(),
+        priority: finance.priority,
+        naming_template: finance.naming_template.clone(),
+        preview_confirmed: false,
+    };
+
+    let saved = update_classifier_rule(path_string(repo.path()), request)
+        .expect("patch Chinese classifier entry");
+    let finance_record = saved
+        .rules
+        .iter()
+        .find(|rule| rule.rule_id == "finance")
+        .expect("finance rule remains available");
+    assert_eq!(
+        locale_value(&finance_record.display_names, "en"),
+        Some("Finance")
+    );
+    assert_eq!(
+        locale_value(&finance_record.display_names, "zh-Hans"),
+        Some("财务资料")
+    );
+    assert_eq!(
+        locale_value(&finance_record.descriptions, "zh-Hans"),
+        Some("用户维护的中文分类说明")
+    );
+
+    let persisted = read_classifier(repo.path());
+    let persisted_finance = category(&persisted, "finance");
+    assert_eq!(
+        persisted_finance.display_name.get("en").map(String::as_str),
+        Some("Finance")
+    );
+    assert_eq!(
+        persisted_finance
+            .display_name
+            .get("zh-Hans")
+            .map(String::as_str),
+        Some("财务资料")
+    );
+}
+
+#[test]
+fn classifier_rule_editor_implementation_rejects_stale_observed_rule_without_writing() {
+    let repo = initialized_repo();
+    let stale_request = update_request();
+
+    let mut concurrent_request = update_request();
+    concurrent_request.slug = "finance".to_owned();
+    concurrent_request.display_name = "Finance latest".to_owned();
+    concurrent_request.description = "Changed in another window".to_owned();
+    concurrent_request.extensions = Vec::new();
+    concurrent_request.keywords = observed_finance_rule().keywords;
+    concurrent_request.priority = 10;
+    concurrent_request.naming_template = None;
+    concurrent_request.preview_confirmed = false;
+    update_classifier_rule(path_string(repo.path()), concurrent_request)
+        .expect("persist concurrent English edit");
+    let after_concurrent_edit = snapshot(repo.path());
+
+    let result = update_classifier_rule(path_string(repo.path()), stale_request);
+
+    assert!(matches!(
+        result,
+        Err(CoreError::Conflict { path }) if path == "classifier_rule_observed_state"
+    ));
+    assert_eq!(snapshot(repo.path()), after_concurrent_edit);
+    assert_no_classifier_temp_files(repo.path());
+}
+
+#[test]
+fn classifier_rule_editor_implementation_reports_removed_observed_rule_as_conflict() {
+    let repo = initialized_repo();
+    let stale_request = update_request();
+    delete_classifier_rule(path_string(repo.path()), delete_request("finance"))
+        .expect("remove rule in another window");
+    let after_concurrent_delete = snapshot(repo.path());
+
+    let result = update_classifier_rule(path_string(repo.path()), stale_request);
+
+    assert!(matches!(
+        result,
+        Err(CoreError::Conflict { path }) if path == "classifier_rule_observed_state"
+    ));
+    assert_eq!(snapshot(repo.path()), after_concurrent_delete);
+    assert_no_classifier_temp_files(repo.path());
+}
+
+#[test]
+fn classifier_rule_editor_implementation_ignores_other_locale_change_and_preserves_it() {
+    let repo = initialized_repo();
+    let config = read_classifier(repo.path());
+    let finance = category(&config, "finance");
+    let mut zh_observed = observed_finance_rule();
+    zh_observed.display_name = "财务".to_owned();
+    let zh_request = ClassifierRuleUpdate {
+        repository_locale_policy: "system".to_owned(),
+        editing_locale: ContentLocale::ZhHans,
+        rule_id: "finance".to_owned(),
+        observed: zh_observed,
+        slug: "finance".to_owned(),
+        display_name: "财务资料".to_owned(),
+        description: "另一窗口保存的中文说明".to_owned(),
+        extensions: finance.extensions.clone(),
+        keywords: finance.keywords.clone(),
+        priority: finance.priority,
+        naming_template: finance.naming_template.clone(),
+        preview_confirmed: false,
+    };
+    update_classifier_rule(path_string(repo.path()), zh_request)
+        .expect("persist Chinese-only concurrent edit");
+
+    let mut english_request = update_request();
+    english_request.slug = "finance".to_owned();
+    english_request.extensions = finance.extensions.clone();
+    english_request.keywords = finance.keywords.clone();
+    english_request.priority = finance.priority;
+    english_request.naming_template = finance.naming_template.clone();
+    english_request.preview_confirmed = false;
+    let saved = update_classifier_rule(path_string(repo.path()), english_request)
+        .expect("English save ignores Chinese-only change");
+
+    let finance_record = saved
+        .rules
+        .iter()
+        .find(|rule| rule.rule_id == "finance")
+        .expect("finance rule remains available");
+    assert_eq!(
+        locale_value(&finance_record.display_names, "zh-Hans"),
+        Some("财务资料")
+    );
+    assert_eq!(
+        locale_value(&finance_record.descriptions, "zh-Hans"),
+        Some("另一窗口保存的中文说明")
+    );
+    assert_eq!(
+        locale_value(&finance_record.display_names, "en"),
+        Some("Contracts")
+    );
+    assert_no_classifier_temp_files(repo.path());
 }
 
 #[test]

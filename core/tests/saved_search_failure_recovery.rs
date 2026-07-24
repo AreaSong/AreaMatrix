@@ -218,11 +218,13 @@ fn saved_search_failure_recovery_corrupted_db_is_fatal_mapping_and_preserves_fil
     fs::write(repo.path().join(".areamatrix/index.db"), b"not sqlite")
         .expect("write corrupted database fixture");
 
-    let error = assert_db_error(list_saved_searches(path_string(repo.path())));
+    let error =
+        list_saved_searches(path_string(repo.path())).expect_err("corrupted database must fail");
 
+    assert_eq!(error.kind(), ErrorKind::Db);
     assert_eq!(
         error.to_error_mapping().recoverability,
-        ErrorRecoverability::Fatal
+        ErrorRecoverability::UserActionRequired
     );
     assert_eq!(
         fs::read(&user_file).expect("read user file after db failure"),

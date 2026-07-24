@@ -14,12 +14,9 @@ struct AIPrivacyRulesHeader: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .textSelection(.enabled)
-            Text(
-                "Privacy rules are checked before AI uses file metadata or extracted text. " +
-                    "Remote AI is blocked by default for matching rules."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
+            Text(L10n.string("ai.privacy.headerDetail"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
         .padding(24)
     }
@@ -44,12 +41,9 @@ struct AIPrivacyRulesRemoteGateSection: View {
             AdvancedSettingsKeyValueRow(label: L10n.string("Provider verified"), value: verifiedStatusText)
             AdvancedSettingsKeyValueRow(label: L10n.string("Remote provider enabled"), value: enabledStatusText)
             AdvancedSettingsKeyValueRow(label: L10n.string("Feature scope"), value: featureScopeText)
-            Text(
-                "This is a privacy gate, not the provider disable page. Blocking here does not delete " +
-                    "Keychain credentials, provider configuration, local AI settings, summaries, tags, or call logs."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
+            Text(L10n.string("ai.privacy.remoteGateDetail"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
             HStack(spacing: 10) {
                 Button("Allow remote AI after provider consent", action: onAllowRemoteGate)
                     .disabled(allowRemoteGateDisabled)

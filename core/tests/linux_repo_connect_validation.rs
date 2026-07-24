@@ -199,9 +199,15 @@ fn linux_repo_connect_validation_covers_failures_without_user_file_mutation() {
         mapping.recoverability,
         ErrorRecoverability::UserActionRequired
     );
-    assert!(!mapping.user_message.is_empty());
-    assert!(!mapping.suggested_action.contains("sudo"));
-    assert!(!mapping.suggested_action.contains("chmod"));
+    assert!(!mapping.code.is_empty());
+    assert!(!mapping
+        .recovery_action_ids
+        .iter()
+        .any(|action| action == "sudo"));
+    assert!(!mapping
+        .recovery_action_ids
+        .iter()
+        .any(|action| action == "chmod"));
 
     assert!(!missing.exists);
     assert_eq!(missing.platform_path_kind, PlatformPathKind::Local);

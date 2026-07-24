@@ -37,11 +37,7 @@ struct InitFailedStepView: View {
             }
             Button(L10n.string("settings.action.cancel"), role: .cancel) {}
         } message: {
-            Text(
-                "Repository diagnostics copy AreaMatrix metadata and may include paths, file names, tags, " +
-                    "notes, and other sensitive metadata. Original file contents are not copied, and " +
-                    "diagnostics are not uploaded automatically. Review the snapshot before sharing."
-            )
+            Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
         }
     }
 

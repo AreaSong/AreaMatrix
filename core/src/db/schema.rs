@@ -20,7 +20,42 @@ const SCAN_SESSION_V2_COLUMNS: &[(&str, &str)] = &[
     ("conflicts", "conflicts INTEGER NOT NULL DEFAULT 0"),
     ("unreadable", "unreadable INTEGER NOT NULL DEFAULT 0"),
     ("unknown", "unknown INTEGER NOT NULL DEFAULT 0"),
+    (
+        "operation_id",
+        "operation_id TEXT REFERENCES recoverable_operations(operation_id)",
+    ),
 ];
+const OVERVIEW_ITEM_V3_COLUMNS: &[(&str, &str)] = &[
+    (
+        "new_exists",
+        "new_exists INTEGER NOT NULL DEFAULT 1 CHECK (new_exists IN (0, 1))",
+    ),
+    (
+        "old_provenance_operation_id",
+        "old_provenance_operation_id TEXT",
+    ),
+    (
+        "old_provenance_content_locale",
+        "old_provenance_content_locale TEXT",
+    ),
+    (
+        "old_provenance_format_version",
+        "old_provenance_format_version INTEGER",
+    ),
+    (
+        "old_provenance_repository_revision",
+        "old_provenance_repository_revision INTEGER",
+    ),
+    (
+        "old_provenance_content_sha256",
+        "old_provenance_content_sha256 TEXT",
+    ),
+    (
+        "old_provenance_generated_at",
+        "old_provenance_generated_at INTEGER",
+    ),
+];
+const RECOVERABLE_OPERATION_V3_COLUMNS: &[(&str, &str)] = &[("error_code", "error_code TEXT")];
 
 pub(crate) const INITIAL_SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -117,7 +152,7 @@ CREATE TABLE IF NOT EXISTS external_sync_receipts (
   file_id INTEGER,
   previous_category TEXT,
   current_category TEXT,
-  content_locale TEXT NOT NULL CHECK (content_locale IN ('zh-Hans', 'en')),
+  content_locale TEXT CHECK (content_locale IN ('zh-Hans', 'en')),
   applied_at INTEGER NOT NULL,
   PRIMARY KEY (event_id, kind, path)
 );
@@ -140,6 +175,62 @@ BEGIN
   SELECT RAISE(ABORT, 'external sync receipt locale is immutable');
 END;
 
+CREATE TABLE IF NOT EXISTS recoverable_operations (
+  operation_id TEXT PRIMARY KEY,
+  retry_of_operation_id TEXT,
+  operation_code TEXT NOT NULL,
+  operation_payload_json TEXT NOT NULL,
+  content_locale TEXT CHECK (content_locale IS NULL OR content_locale IN ('zh-Hans', 'en')),
+  repository_revision INTEGER NOT NULL CHECK (repository_revision >= 0),
+  format_contract_version INTEGER NOT NULL CHECK (format_contract_version >= 1),
+  target_set_hash TEXT,
+  status TEXT NOT NULL CHECK (status IN (
+    'running','staging','ready_to_commit','committing','completed',
+    'rollback_required','rolled_back','failed','canceled'
+  )),
+  run_sequence INTEGER NOT NULL DEFAULT 1 CHECK (run_sequence >= 1),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  finished_at INTEGER,
+  error_code TEXT,
+  FOREIGN KEY (retry_of_operation_id) REFERENCES recoverable_operations(operation_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_recoverable_operations_status
+  ON recoverable_operations(status, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS overview_regeneration_items (
+  operation_id TEXT NOT NULL,
+  relative_path TEXT NOT NULL,
+  target_kind TEXT NOT NULL CHECK (target_kind IN ('generated','managed_root')),
+  old_exists INTEGER NOT NULL CHECK (old_exists IN (0, 1)),
+  old_sha256 TEXT,
+  new_exists INTEGER NOT NULL DEFAULT 1 CHECK (new_exists IN (0, 1)),
+  new_sha256 TEXT NOT NULL,
+  staging_relative_path TEXT NOT NULL,
+  backup_relative_path TEXT,
+  old_provenance_operation_id TEXT,
+  old_provenance_content_locale TEXT,
+  old_provenance_format_version INTEGER,
+  old_provenance_repository_revision INTEGER,
+  old_provenance_content_sha256 TEXT,
+  old_provenance_generated_at INTEGER,
+  state TEXT NOT NULL CHECK (state IN ('planned','staged','applied','restored')),
+  PRIMARY KEY (operation_id, relative_path),
+  FOREIGN KEY (operation_id) REFERENCES recoverable_operations(operation_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS overview_provenance (
+  relative_path TEXT PRIMARY KEY,
+  operation_id TEXT NOT NULL,
+  content_locale TEXT NOT NULL CHECK (content_locale IN ('zh-Hans', 'en')),
+  format_contract_version INTEGER NOT NULL CHECK (format_contract_version >= 1),
+  repository_revision INTEGER NOT NULL CHECK (repository_revision >= 0),
+  content_sha256 TEXT NOT NULL,
+  generated_at INTEGER NOT NULL,
+  FOREIGN KEY (operation_id) REFERENCES recoverable_operations(operation_id)
+);
+
 CREATE TABLE IF NOT EXISTS scan_sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   kind TEXT NOT NULL CHECK (kind IN ('adopt', 'reindex')),
@@ -157,7 +248,8 @@ CREATE TABLE IF NOT EXISTS scan_sessions (
   unreadable INTEGER NOT NULL DEFAULT 0,
   unknown INTEGER NOT NULL DEFAULT 0,
   skipped INTEGER NOT NULL DEFAULT 0,
-  errors_json TEXT NOT NULL DEFAULT '[]'
+  errors_json TEXT NOT NULL DEFAULT '[]',
+  operation_id TEXT REFERENCES recoverable_operations(operation_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_scan_sessions_status
@@ -211,11 +303,35 @@ pub(super) fn run_schema_migrations(
         .collect::<Vec<_>>();
     let receipt_state = receipt_schema_state(connection)?;
     let config_revision_valid = repo_config_revision_is_valid(connection)?;
+    let operation_schema_valid = recoverable_operation_schema_is_valid(connection)?;
+    let recoverable_operation_columns = table_columns(connection, "recoverable_operations")?;
+    let missing_recoverable_operation_columns = if recoverable_operation_columns.is_empty() {
+        Vec::new()
+    } else {
+        RECOVERABLE_OPERATION_V3_COLUMNS
+            .iter()
+            .filter(|(name, _)| !recoverable_operation_columns.contains(*name))
+            .copied()
+            .collect::<Vec<_>>()
+    };
+    let overview_item_columns = table_columns(connection, "overview_regeneration_items")?;
+    let missing_overview_item_columns = if overview_item_columns.is_empty() {
+        Vec::new()
+    } else {
+        OVERVIEW_ITEM_V3_COLUMNS
+            .iter()
+            .filter(|(name, _)| !overview_item_columns.contains(*name))
+            .copied()
+            .collect::<Vec<_>>()
+    };
 
     if current >= LATEST_SCHEMA_VERSION
         && missing_scan_columns.is_empty()
         && receipt_state.is_valid()
         && config_revision_valid
+        && operation_schema_valid
+        && missing_recoverable_operation_columns.is_empty()
+        && missing_overview_item_columns.is_empty()
     {
         return Ok(());
     }
@@ -228,6 +344,21 @@ pub(super) fn run_schema_migrations(
         .transaction_with_behavior(TransactionBehavior::Immediate)
         .map_err(|error| CoreError::db(error.to_string()))?;
     create_pre_migration_backup(repo_path, LATEST_SCHEMA_VERSION)?;
+    install_recoverable_operation_schema(&tx)?;
+    for (_, definition) in missing_recoverable_operation_columns {
+        tx.execute(
+            &format!("ALTER TABLE recoverable_operations ADD COLUMN {definition}"),
+            [],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    }
+    for (_, definition) in missing_overview_item_columns {
+        tx.execute(
+            &format!("ALTER TABLE overview_regeneration_items ADD COLUMN {definition}"),
+            [],
+        )
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    }
     for (_, definition) in missing_scan_columns {
         tx.execute(
             &format!("ALTER TABLE scan_sessions ADD COLUMN {definition}"),
@@ -241,12 +372,105 @@ pub(super) fn run_schema_migrations(
     insert_schema_version(&tx, LATEST_SCHEMA_VERSION, schema_version_has_applied_by)?;
     validate_receipt_schema(&tx)?;
     validate_repo_config_revision(&tx)?;
+    validate_recoverable_operation_schema(&tx)?;
     validate_database_integrity(&tx)?;
     tx.commit()
         .map_err(|error| CoreError::db(error.to_string()))?;
     validate_receipt_schema(connection)?;
     validate_repo_config_revision(connection)?;
+    validate_recoverable_operation_schema(connection)?;
     validate_database_integrity(connection)
+}
+
+fn install_recoverable_operation_schema(tx: &Transaction<'_>) -> CoreResult<()> {
+    tx.execute_batch(
+        "CREATE TABLE IF NOT EXISTS recoverable_operations (
+           operation_id TEXT PRIMARY KEY,
+           retry_of_operation_id TEXT,
+           operation_code TEXT NOT NULL,
+           operation_payload_json TEXT NOT NULL,
+           content_locale TEXT CHECK (content_locale IS NULL OR content_locale IN ('zh-Hans', 'en')),
+           repository_revision INTEGER NOT NULL CHECK (repository_revision >= 0),
+           format_contract_version INTEGER NOT NULL CHECK (format_contract_version >= 1),
+           target_set_hash TEXT,
+           status TEXT NOT NULL CHECK (status IN (
+             'running','staging','ready_to_commit','committing','completed',
+             'rollback_required','rolled_back','failed','canceled'
+           )),
+           run_sequence INTEGER NOT NULL DEFAULT 1 CHECK (run_sequence >= 1),
+           created_at INTEGER NOT NULL,
+           updated_at INTEGER NOT NULL,
+           finished_at INTEGER,
+           error_code TEXT,
+           FOREIGN KEY (retry_of_operation_id) REFERENCES recoverable_operations(operation_id)
+         );
+         CREATE INDEX IF NOT EXISTS idx_recoverable_operations_status
+           ON recoverable_operations(status, updated_at DESC);
+         CREATE TABLE IF NOT EXISTS overview_regeneration_items (
+           operation_id TEXT NOT NULL,
+           relative_path TEXT NOT NULL,
+           target_kind TEXT NOT NULL CHECK (target_kind IN ('generated','managed_root')),
+           old_exists INTEGER NOT NULL CHECK (old_exists IN (0, 1)),
+           old_sha256 TEXT,
+           new_exists INTEGER NOT NULL DEFAULT 1 CHECK (new_exists IN (0, 1)),
+           new_sha256 TEXT NOT NULL,
+           staging_relative_path TEXT NOT NULL,
+           backup_relative_path TEXT,
+           old_provenance_operation_id TEXT,
+           old_provenance_content_locale TEXT,
+           old_provenance_format_version INTEGER,
+           old_provenance_repository_revision INTEGER,
+           old_provenance_content_sha256 TEXT,
+           old_provenance_generated_at INTEGER,
+           state TEXT NOT NULL CHECK (state IN ('planned','staged','applied','restored')),
+           PRIMARY KEY (operation_id, relative_path),
+           FOREIGN KEY (operation_id) REFERENCES recoverable_operations(operation_id) ON DELETE CASCADE
+         );
+         CREATE TABLE IF NOT EXISTS overview_provenance (
+           relative_path TEXT PRIMARY KEY,
+           operation_id TEXT NOT NULL,
+           content_locale TEXT NOT NULL CHECK (content_locale IN ('zh-Hans', 'en')),
+           format_contract_version INTEGER NOT NULL CHECK (format_contract_version >= 1),
+           repository_revision INTEGER NOT NULL CHECK (repository_revision >= 0),
+           content_sha256 TEXT NOT NULL,
+           generated_at INTEGER NOT NULL,
+           FOREIGN KEY (operation_id) REFERENCES recoverable_operations(operation_id)
+         );",
+    )
+    .map_err(|error| CoreError::db(error.to_string()))
+}
+
+fn recoverable_operation_schema_is_valid(connection: &Connection) -> CoreResult<bool> {
+    let required = [
+        ("recoverable_operations", "operation_id"),
+        ("recoverable_operations", "operation_payload_json"),
+        ("recoverable_operations", "content_locale"),
+        ("recoverable_operations", "run_sequence"),
+        ("recoverable_operations", "error_code"),
+        ("overview_regeneration_items", "relative_path"),
+        ("overview_regeneration_items", "new_exists"),
+        ("overview_regeneration_items", "new_sha256"),
+        (
+            "overview_regeneration_items",
+            "old_provenance_content_sha256",
+        ),
+        ("overview_provenance", "content_sha256"),
+        ("overview_provenance", "format_contract_version"),
+    ];
+    for (table, column) in required {
+        if !table_columns(connection, table)?.contains(column) {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+fn validate_recoverable_operation_schema(connection: &Connection) -> CoreResult<()> {
+    if recoverable_operation_schema_is_valid(connection)? {
+        Ok(())
+    } else {
+        Err(CoreError::db("recoverable operation schema is incomplete"))
+    }
 }
 
 fn install_repo_config_revision(tx: &Transaction<'_>) -> CoreResult<()> {
@@ -324,8 +548,8 @@ impl ReceiptSchemaState {
 
 fn receipt_schema_state(connection: &Connection) -> CoreResult<ReceiptSchemaState> {
     let columns = table_columns(connection, "external_sync_receipts")?;
-    let table_sql = schema_object_sql(connection, "table", "external_sync_receipts")?
-        .unwrap_or_default();
+    let table_sql =
+        schema_object_sql(connection, "table", "external_sync_receipts")?.unwrap_or_default();
     Ok(ReceiptSchemaState {
         columns,
         has_locale_check: normalized_sql(&table_sql)
@@ -359,10 +583,7 @@ fn normalized_sql(sql: &str) -> String {
         .collect()
 }
 
-fn migrate_receipt_schema(
-    tx: &Transaction<'_>,
-    state: &ReceiptSchemaState,
-) -> CoreResult<()> {
+fn migrate_receipt_schema(tx: &Transaction<'_>, state: &ReceiptSchemaState) -> CoreResult<()> {
     if state.columns.is_empty() {
         create_legacy_compatible_receipt_table(tx)?;
     } else if !state.columns.contains("content_locale") {
@@ -519,9 +740,12 @@ fn checkpoint_wal(connection: &Connection) -> CoreResult<()> {
 
 fn create_pre_migration_backup(repo_path: &Path, target_version: i64) -> CoreResult<PathBuf> {
     let source = db_path(repo_path);
-    let metadata = fs::symlink_metadata(&source).map_err(|error| CoreError::db(error.to_string()))?;
+    let metadata =
+        fs::symlink_metadata(&source).map_err(|error| CoreError::db(error.to_string()))?;
     if metadata.file_type().is_symlink() || !metadata.is_file() {
-        return Err(CoreError::db("database backup source is not a regular file"));
+        return Err(CoreError::db(
+            "database backup source is not a regular file",
+        ));
     }
 
     let temp = create_backup_temp_path(&source, target_version)?;
@@ -539,13 +763,19 @@ fn create_backup_temp_path(source: &Path, target_version: i64) -> CoreResult<Pat
             "{INDEX_DB_FILE}.pre-v{target_version}.tmp-{}-{attempt}",
             std::process::id()
         ));
-        match OpenOptions::new().write(true).create_new(true).open(&candidate) {
+        match OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&candidate)
+        {
             Ok(_) => return Ok(candidate),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(error) => return Err(CoreError::db(error.to_string())),
         }
     }
-    Err(CoreError::db("unable to allocate migration backup temp file"))
+    Err(CoreError::db(
+        "unable to allocate migration backup temp file",
+    ))
 }
 
 fn write_synced_backup_temp(source: &Path, temp: &Path, metadata: &fs::Metadata) -> CoreResult<()> {
@@ -558,7 +788,9 @@ fn write_synced_backup_temp(source: &Path, temp: &Path, metadata: &fs::Metadata)
     let mut reader = BufReader::with_capacity(BACKUP_COPY_BUFFER_BYTES, source_file);
     let mut writer = BufWriter::with_capacity(BACKUP_COPY_BUFFER_BYTES, temp_file);
     io::copy(&mut reader, &mut writer).map_err(|error| CoreError::db(error.to_string()))?;
-    writer.flush().map_err(|error| CoreError::db(error.to_string()))?;
+    writer
+        .flush()
+        .map_err(|error| CoreError::db(error.to_string()))?;
     writer
         .get_ref()
         .sync_all()
@@ -578,9 +810,8 @@ fn publish_backup_without_overwrite(
         } else {
             format!(".{sequence}")
         };
-        let target = source.with_file_name(format!(
-            "{INDEX_DB_FILE}.pre-v{target_version}{suffix}.bak"
-        ));
+        let target =
+            source.with_file_name(format!("{INDEX_DB_FILE}.pre-v{target_version}{suffix}.bak"));
         match fs::hard_link(temp, &target) {
             Ok(()) => {
                 fs::remove_file(temp).map_err(|error| CoreError::db(error.to_string()))?;
@@ -633,7 +864,8 @@ mod tests {
     use rusqlite::Connection;
 
     use super::{
-        current_schema_version, run_schema_migrations, table_columns, LATEST_SCHEMA_VERSION,
+        current_schema_version, receipt_schema_state, run_schema_migrations, table_columns,
+        INITIAL_SCHEMA, LATEST_SCHEMA_VERSION,
     };
     use crate::db::{configure_connection, db_path};
 
@@ -710,6 +942,21 @@ CREATE TABLE scan_sessions (
         assert!(table_columns(&connection, "external_sync_receipts")
             .expect("read migrated receipt columns")
             .contains("content_locale"));
+        for table in [
+            "recoverable_operations",
+            "overview_regeneration_items",
+            "overview_provenance",
+        ] {
+            assert!(
+                !table_columns(&connection, table)
+                    .expect("read migrated operation table")
+                    .is_empty(),
+                "{table} must be installed by v3 migration"
+            );
+        }
+        assert!(table_columns(&connection, "scan_sessions")
+            .expect("read migrated scan session columns")
+            .contains("operation_id"));
         let legacy_locale: Option<String> = connection
             .query_row(
                 "SELECT content_locale FROM external_sync_receipts WHERE event_id = 1",
@@ -726,6 +973,26 @@ CREATE TABLE scan_sessions (
                 [],
             )
             .is_err());
+        connection
+            .execute(
+                "UPDATE external_sync_receipts SET content_locale = 'en' WHERE event_id = 1",
+                [],
+            )
+            .expect("explicitly recover one legacy null receipt locale");
+        assert!(connection
+            .execute(
+                "UPDATE external_sync_receipts SET content_locale = 'zh-Hans' WHERE event_id = 1",
+                [],
+            )
+            .is_err());
+        assert!(connection
+            .execute(
+                "INSERT INTO external_sync_receipts (
+                   event_id, kind, path, applied_at
+                 ) VALUES (3, 'created', 'docs/missing-locale.txt', 3)",
+                [],
+            )
+            .is_err());
         let integrity: String = connection
             .query_row("PRAGMA integrity_check", [], |row| row.get(0))
             .expect("check migrated database integrity");
@@ -738,6 +1005,72 @@ CREATE TABLE scan_sessions (
             current_schema_version(&backup_connection).expect("read backup schema version"),
             2
         );
+    }
+
+    #[test]
+    fn fresh_and_migrated_v3_share_operation_and_nullable_receipt_shape() {
+        let (repo, mut migrated) = v2_repo();
+        run_schema_migrations(&mut migrated, repo.path()).expect("migrate schema to v3");
+
+        let fresh = Connection::open_in_memory().expect("create fresh database");
+        fresh
+            .execute_batch(INITIAL_SCHEMA)
+            .expect("install fresh v3 schema");
+
+        for table in [
+            "external_sync_receipts",
+            "scan_sessions",
+            "recoverable_operations",
+            "overview_regeneration_items",
+            "overview_provenance",
+        ] {
+            assert_eq!(
+                table_columns(&fresh, table).expect("read fresh columns"),
+                table_columns(&migrated, table).expect("read migrated columns"),
+                "fresh and migrated columns differ for {table}"
+            );
+        }
+        assert!(!column_is_not_null(
+            &fresh,
+            "external_sync_receipts",
+            "content_locale"
+        ));
+        assert!(receipt_schema_state(&fresh)
+            .expect("inspect fresh receipt schema")
+            .is_valid());
+        assert!(receipt_schema_state(&migrated)
+            .expect("inspect migrated receipt schema")
+            .is_valid());
+        for connection in [&fresh, &migrated] {
+            assert!(connection
+                .execute(
+                    "INSERT INTO external_sync_receipts (
+                       event_id, kind, path, applied_at
+                     ) VALUES (9, 'created', 'docs/no-locale.txt', 9)",
+                    [],
+                )
+                .is_err());
+        }
+        assert!(!column_is_not_null(
+            &migrated,
+            "external_sync_receipts",
+            "content_locale"
+        ));
+    }
+
+    fn column_is_not_null(connection: &Connection, table: &str, column: &str) -> bool {
+        let mut statement = connection
+            .prepare(&format!("PRAGMA table_info({table})"))
+            .expect("prepare table info");
+        let result = statement
+            .query_map([], |row| {
+                Ok((row.get::<_, String>(1)?, row.get::<_, i64>(3)?))
+            })
+            .expect("query table info")
+            .map(|row| row.expect("read table info row"))
+            .find_map(|(name, not_null)| (name == column).then_some(not_null != 0))
+            .expect("column exists");
+        result
     }
 
     #[test]
@@ -769,5 +1102,33 @@ CREATE TABLE scan_sessions (
             .path()
             .join(".areamatrix/index.db.pre-v3.bak")
             .is_file());
+    }
+
+    #[test]
+    fn migration_backup_is_numbered_without_overwrite_and_user_bytes_are_unchanged() {
+        let (repo, mut connection) = v2_repo();
+        let existing_backup = repo.path().join(".areamatrix/index.db.pre-v3.bak");
+        fs::write(&existing_backup, b"preexisting backup bytes")
+            .expect("write preexisting backup fixture");
+        let user_file = repo.path().join("README.md");
+        fs::write(&user_file, b"user-owned readme bytes").expect("write user fixture");
+
+        run_schema_migrations(&mut connection, repo.path()).expect("migrate schema to v3");
+
+        assert_eq!(
+            fs::read(&existing_backup).expect("read preserved preexisting backup"),
+            b"preexisting backup bytes"
+        );
+        let numbered = repo.path().join(".areamatrix/index.db.pre-v3.1.bak");
+        assert!(numbered.is_file());
+        let backup_connection = Connection::open(numbered).expect("open numbered v2 backup");
+        assert_eq!(
+            current_schema_version(&backup_connection).expect("read numbered backup version"),
+            2
+        );
+        assert_eq!(
+            fs::read(user_file).expect("read user fixture after migration"),
+            b"user-owned readme bytes"
+        );
     }
 }

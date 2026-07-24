@@ -119,6 +119,35 @@ fn build_tree_implementation_counts_files_recursively_with_stable_path_keys() {
 }
 
 #[test]
+fn build_tree_implementation_preserves_exact_alias_and_uses_canonical_fallback() {
+    let repo = initialized_repo(false);
+    fs::write(
+        repo.path().join(".areamatrix/classifier.yaml"),
+        r#"version: 1
+default: docs
+categories:
+  - slug: docs
+    display_name: { zh-CN: 精确简体, zh-Hans: 简体回退, en: Documents }
+"#,
+    )
+    .expect("write localized classifier config");
+    write_file(repo.path(), "docs/a.pdf", b"x");
+
+    assert_eq!(
+        child_by_slug(&tree_for(repo.path(), "zh-CN"), "docs")["display_name"],
+        "精确简体"
+    );
+    assert_eq!(
+        child_by_slug(&tree_for(repo.path(), "zh-SG"), "docs")["display_name"],
+        "简体回退"
+    );
+    assert_eq!(
+        child_by_slug(&tree_for(repo.path(), "unsupported-locale"), "docs")["display_name"],
+        "Documents"
+    );
+}
+
+#[test]
 fn build_tree_implementation_skips_generated_outputs_and_honors_ignore_config() {
     let repo = initialized_repo(false);
     fs::write(

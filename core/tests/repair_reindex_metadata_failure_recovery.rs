@@ -34,7 +34,8 @@ fn empty_filter() -> FileFilter {
 }
 
 fn repair_options(repo: &Path, preserve_snapshot: bool) -> RepairOptions {
-    let preflight = preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
+    let preflight =
+        preflight_repair_metadata(path_string(repo)).expect("preflight metadata repair");
     let repository_locale_policy = if preflight.locale_state == RepairMetadataLocaleState::Healthy {
         preflight
             .repository_locale_policy
@@ -95,11 +96,8 @@ fn repair_reindex_metadata_failure_recovery_rebuilds_corrupted_db_after_snapshot
     let db_path = repo.path().join(".areamatrix/index.db");
     fs::write(&db_path, b"not a sqlite database").expect("corrupt AreaMatrix metadata");
 
-    let report = repair_metadata(
-        path_string(repo.path()),
-        repair_options(repo.path(), true),
-    )
-    .expect("confirmed repair should rebuild corrupted metadata");
+    let report = repair_metadata(path_string(repo.path()), repair_options(repo.path(), true))
+        .expect("confirmed repair should rebuild corrupted metadata");
 
     assert_eq!(user_file_snapshot(&[&readme]), before);
     assert_eq!(report.outcome, RepairMetadataOutcome::Rebuilt);
@@ -137,11 +135,8 @@ fn repair_reindex_metadata_failure_recovery_recreates_missing_db_and_preserves_o
     fs::write(&readme, "# User project\n").expect("write user README");
     let before = user_file_snapshot(&[&readme]);
 
-    let report = repair_metadata(
-        path_string(repo.path()),
-        repair_options(repo.path(), true),
-    )
-    .expect("recreate missing metadata database");
+    let report = repair_metadata(path_string(repo.path()), repair_options(repo.path(), true))
+        .expect("recreate missing metadata database");
 
     assert!(metadata_dir.join("index.db").is_file());
     assert!(!orphaned_wal.exists());

@@ -11,8 +11,9 @@ use crate::{
 
 use super::{
     bool_from_db, bool_to_db, configure_connection, db_path, open_repo_connection,
-    open_repo_read_connection, overview_output_from_db, overview_output_to_db, path_exists,
-    storage_mode_from_db, storage_mode_to_db, AREA_MATRIX_DIR, INITIAL_SCHEMA,
+    open_repo_read_connection, open_repo_snapshot_read_connection, overview_output_from_db,
+    overview_output_to_db, path_exists, storage_mode_from_db, storage_mode_to_db, AREA_MATRIX_DIR,
+    INITIAL_SCHEMA,
 };
 
 pub(crate) fn initialize_repository_db(db_path: &Path, config: &RepoConfig) -> CoreResult<()> {
@@ -97,18 +98,29 @@ pub(crate) fn load_repo_config_snapshot_or_default(
     Ok(RepoConfigSnapshot::from_config(config, revision))
 }
 
-pub(crate) fn ensure_repository_locale_allows_normal_mutation(
+pub(crate) fn ensure_repository_locale_allows_normal_mutation(repo_path: &Path) -> CoreResult<()> {
+    if super::has_unsettled_overview_regeneration(repo_path)? {
+        return Err(CoreError::conflict(
+            "overview regeneration recovery is required",
+        ));
+    }
+    let connection = open_repo_snapshot_read_connection(repo_path)?;
+    ensure_canonical_repository_locale(&connection)
+}
+
+pub(crate) fn ensure_repository_locale_allows_generation_preview(
     repo_path: &Path,
 ) -> CoreResult<()> {
-    let connection = open_repo_read_connection(repo_path)?;
-    let raw_locale = config_value(&connection, "locale")?.unwrap_or_else(|| "system".to_owned());
+    let connection = open_repo_snapshot_read_connection(repo_path)?;
+    ensure_canonical_repository_locale(&connection)
+}
+
+fn ensure_canonical_repository_locale(connection: &Connection) -> CoreResult<()> {
+    let raw_locale = config_value(&connection, "locale")?.unwrap_or_default();
     let snapshot = crate::RepositoryLocalePolicySnapshot::from_raw(raw_locale);
-    if matches!(
-        snapshot.state,
-        crate::RepositoryLocalePolicyState::Unsupported
-    ) {
+    if !snapshot.is_canonical() {
         Err(CoreError::config(
-            "unsupported repository locale requires explicit canonical policy save",
+            "repository locale requires explicit canonical policy save",
         ))
     } else {
         Ok(())
@@ -134,14 +146,17 @@ pub(crate) fn update_repo_config_patch(
         .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
         .map_err(|error| CoreError::db(error.to_string()))?;
 
-    let current_revision = current_revision(&tx)?.ok_or_else(|| {
-        CoreError::db("repository configuration revision row is missing")
-    })?;
+    let current_revision = current_revision(&tx)?
+        .ok_or_else(|| CoreError::db("repository configuration revision row is missing"))?;
     if current_revision != patch.expected_revision {
-        return Err(CoreError::conflict(repo_path));
+        return Err(CoreError::revision_conflict(
+            "repo_config",
+            patch.expected_revision,
+            current_revision,
+        ));
     }
 
-    let current_locale = config_value(&tx, "locale")?.unwrap_or_else(|| "system".to_owned());
+    let current_locale = config_value(&tx, "locale")?.unwrap_or_default();
     let locale_snapshot = crate::RepositoryLocalePolicySnapshot::from_raw(current_locale);
     let has_mutations = !patch.is_empty();
     if matches!(
@@ -269,7 +284,9 @@ fn read_config(connection: &Connection, repo_path: String) -> CoreResult<RepoCon
             .map(|value| bool_from_db(&value))
             .transpose()?
             .unwrap_or(default.ai_enabled),
-        locale: config_value(connection, "locale")?.unwrap_or(default.locale),
+        // An initialized legacy repository without a locale row is unknown.
+        // Only an uninitialized path receives the new-repository default.
+        locale: config_value(connection, "locale")?.unwrap_or_default(),
         icloud_warn: config_value(connection, "icloud_warn")?
             .map(|value| bool_from_db(&value))
             .transpose()?
@@ -381,7 +398,13 @@ fn validate_config_payload(repo_path: &str, config: &RepoConfig) -> CoreResult<(
 
 pub(crate) fn ensure_config_storage_writable(repo_path: &Path) -> CoreResult<()> {
     ensure_writable_path(&repo_path.join(AREA_MATRIX_DIR))?;
-    ensure_writable_path(&db_path(repo_path))
+    ensure_writable_path(&db_path(repo_path))?;
+    if super::has_unsettled_overview_regeneration(repo_path)? {
+        return Err(CoreError::conflict(
+            "overview regeneration recovery is required",
+        ));
+    }
+    Ok(())
 }
 
 fn ensure_writable_path(path: &Path) -> CoreResult<()> {

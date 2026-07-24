@@ -84,7 +84,12 @@ pub(crate) fn resolve_external_sync_locale_recovery(
                  SET content_locale = ?4
                  WHERE event_id = ?1 AND kind = ?2 AND path = ?3
                    AND content_locale IS NULL",
-                params![receipt.event_id, event_kind_name(&receipt.kind), receipt.path, locale],
+                params![
+                    receipt.event_id,
+                    event_kind_name(&receipt.kind),
+                    receipt.path,
+                    locale
+                ],
             )
             .map_err(|error| CoreError::db(error.to_string()))?;
         if changed != 1 {
@@ -195,9 +200,9 @@ pub(crate) fn external_sync_overview_locales(
         .into_iter()
         .filter_map(|(scope, provenance)| match scope {
             OverviewLocaleScope::Root => None,
-            OverviewLocaleScope::Node(node) => Some(
-                resolve_locale_provenance(provenance).map(|locale| (node, locale)),
-            ),
+            OverviewLocaleScope::Node(node) => {
+                Some(resolve_locale_provenance(provenance).map(|locale| (node, locale)))
+            }
         })
         .collect::<CoreResult<BTreeMap<_, _>>>()?;
     Ok(ExternalSyncOverviewLocales {
@@ -221,7 +226,10 @@ fn record_locale_provenance(
             entry.insert(locale_at_event(receipt));
         }
         Entry::Occupied(mut entry) if receipt.event_id == entry.get().event_id => {
-            entry.get_mut().locales.insert(receipt.content_locale.clone());
+            entry
+                .get_mut()
+                .locales
+                .insert(receipt.content_locale.clone());
         }
         Entry::Occupied(_) => {}
     }
@@ -240,9 +248,11 @@ fn resolve_locale_provenance(provenance: LocaleAtEvent) -> CoreResult<String> {
             "external sync receipt locale provenance invariant",
         ));
     }
-    provenance.locales.into_iter().next().ok_or_else(|| {
-        CoreError::internal("external sync receipt locale provenance missing")
-    })
+    provenance
+        .locales
+        .into_iter()
+        .next()
+        .ok_or_else(|| CoreError::internal("external sync receipt locale provenance missing"))
 }
 
 fn claim_external_sync_receipt(
@@ -301,9 +311,7 @@ fn resolve_external_sync_receipt_locale(
     })
 }
 
-fn legacy_receipts(
-    connection: &Connection,
-) -> CoreResult<Vec<ExternalSyncLocaleRecoveryReceipt>> {
+fn legacy_receipts(connection: &Connection) -> CoreResult<Vec<ExternalSyncLocaleRecoveryReceipt>> {
     let mut statement = connection
         .prepare(
             "SELECT event_id, kind, path

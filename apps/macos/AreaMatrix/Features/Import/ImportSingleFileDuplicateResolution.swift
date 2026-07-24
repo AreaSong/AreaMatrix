@@ -361,10 +361,10 @@ extension ImportSingleFilePreviewModel {
     }
 
     var nameConflictResolutionBlockingReason: String? {
-        nameConflictResolutionBlockingDisplayText.map(L10n.resolve)
+        nameConflictBlockingText.map(L10n.resolve)
     }
 
-    var nameConflictResolutionBlockingDisplayText: AppDisplayText? {
+    var nameConflictBlockingText: AppDisplayText? {
         guard let result = currentPreflightResult, case .name = result.conflict else { return nil }
         switch nameConflictResolution {
         case .keepBoth:

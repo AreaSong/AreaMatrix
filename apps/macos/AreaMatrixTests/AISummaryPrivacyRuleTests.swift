@@ -161,6 +161,53 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
         }
     }
 
+    @MainActor
+    func testClearConflictLoadsLatestAndRequiresFreshConfirmedClear() async {
+        let observed = AISummarySavedSnapshot.aiSummarySavedSummary(fileID: 724, text: "Observed summary.")
+        var latest = AISummarySavedSnapshot.aiSummarySavedSummary(fileID: 724, text: "Latest summary.")
+        latest.contentRevision = 2
+        let bridge = AISummaryConflictBridge(
+            states: [
+                AISummaryPersistedStateSnapshot(summary: observed, contentRevision: 1),
+                AISummaryPersistedStateSnapshot(summary: latest, contentRevision: 2)
+            ],
+            clearResults: [
+                .failure(CoreError.RevisionConflict(
+                    resource: "ai_summary_content_revision",
+                    expectedRevision: 1,
+                    currentRevision: 2
+                )),
+                .success(AiSummaryClearReport(
+                    fileId: 724,
+                    cleared: true,
+                    contentRevision: 3,
+                    clearedAt: 1_700_000_500
+                ))
+            ]
+        )
+        let model = AISummaryEditorModel(
+            repoPath: "/tmp/repo",
+            fileID: 724,
+            summaryStore: bridge,
+            contentLocaleSnapshotter: StaticRepositoryContentLocaleSnapshotter(),
+            privacyRules: AISummaryIntegrationPrivacyBridge(),
+            errorMapper: RecordingCoreErrorMapper.aiSummaryIntegration()
+        )
+
+        await model.loadEntryState()
+        await model.clear()
+
+        XCTAssertEqual(model.draftText, "Latest summary.")
+        XCTAssertEqual(model.clearConflictNotice?.expectedRevision, 1)
+        XCTAssertEqual(model.clearConflictNotice?.currentRevision, 2)
+
+        await model.clear()
+
+        XCTAssertEqual(model.status, .empty)
+        XCTAssertNil(model.clearConflictNotice)
+        await bridge.assertClearCAS(expectedRevisions: [1, 2])
+    }
+
     func testAITagSuggestionPrivacyRuleReferenceNormalizesCorePolicyPrefix() {
         XCTAssertEqual(normalizedAITagPrivacyRuleID(from: "rule:block:rule-confidential"), "rule-confidential")
         XCTAssertEqual(normalizedAITagPrivacyRuleID(from: "block:rule-confidential"), "rule-confidential")
@@ -214,7 +261,7 @@ private actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
     }
 
     func generateAISummary(repoPath _: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft {
-        generatedContentLocales.append(request.contentLocale)
+        generatedContentLocales.append(request.contentLocale == .zhHans ? "zh-Hans" : "en")
         if let policyRef = request.privacyPolicyRef {
             recordedEvents.append(.generateSkipped(
                 fileID: request.fileId,
@@ -228,12 +275,18 @@ private actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
     }
 
     func saveAISummary(repoPath _: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport {
-        recordedEvents.append(.save(fileID: request.fileId, text: request.summaryText, edited: request.editedByUser))
+        recordedEvents.append(.save(
+            fileID: request.fileId,
+            text: request.summaryText,
+            edited: request.ownership == .userOwned
+        ))
         if let saveResult {
             return try saveResult.get()
         }
         return AiSummarySaveReport(
             fileId: request.fileId,
+            contentRevision: request.expectedContentRevision + 1,
+            ownership: request.ownership,
             savedSummary: request.summaryText,
             savedAt: 1_700_000_100,
             route: request.route,
@@ -242,14 +295,21 @@ private actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
             usedContext: request.usedContext,
             privacyRuleId: request.privacyRuleId,
             callLogId: request.callLogId,
-            editedByUser: request.editedByUser,
+            operationId: request.operationId,
+            contentLocale: request.contentLocale,
+            formatContractVersion: request.formatContractVersion,
             characterCount: Int64(request.summaryText.count)
         )
     }
 
     func clearAISummary(repoPath _: String, request: AiSummaryClearRequest) async throws -> AiSummaryClearReport {
         recordedEvents.append(.clear(fileID: request.fileId, confirmed: request.confirmed))
-        return AiSummaryClearReport(fileId: request.fileId, cleared: request.confirmed, clearedAt: 1_700_000_200)
+        return AiSummaryClearReport(
+            fileId: request.fileId,
+            cleared: request.confirmed,
+            contentRevision: request.expectedContentRevision + 1,
+            clearedAt: 1_700_000_200
+        )
     }
 
     func assertEvents(
@@ -266,7 +326,6 @@ private actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
     ) {
         assertEvents([], file: file, line: line)
     }
-
 
     func assertGeneratedContentLocales(
         _ expected: [String],
@@ -305,6 +364,9 @@ private actor AISummaryPrivacyRulesBridge: CoreAIPrivacyEvaluating {
 private extension AiSummaryDraft {
     static func aiSummaryPrivacyDraft(request: AiSummaryGenerationRequest) -> AiSummaryDraft {
         AiSummaryDraft(
+            operationId: request.operationId,
+            contentLocale: request.contentLocale,
+            formatContractVersion: 1,
             fileId: request.fileId,
             draftId: "draft-aiSummary",
             status: .draft,
@@ -326,6 +388,9 @@ private extension AiSummaryDraft {
         privacyPolicyRef: String
     ) -> AiSummaryDraft {
         AiSummaryDraft(
+            operationId: request.operationId,
+            contentLocale: request.contentLocale,
+            formatContractVersion: 1,
             fileId: request.fileId,
             draftId: nil,
             status: .skipped,
@@ -400,11 +465,11 @@ private extension AiPrivacyRulesSnapshot {
 
 private extension CoreErrorMappingSnapshot {
     static var aiSummarySaveFailure: CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot.testFixture(
+        CoreErrorMappingSnapshot(
             kind: .db,
-            userMessage: "Summary metadata is unavailable.",
+            userMessage: L10n.message("Summary metadata is unavailable."),
             severity: .medium,
-            suggestedAction: "Retry save.",
+            suggestedAction: L10n.message("Retry save."),
             recoverability: .retryable,
             rawContext: "ai-summary ai-summary-core"
         )

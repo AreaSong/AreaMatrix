@@ -28,6 +28,107 @@ enum AISummaryEditorFailedAction: Equatable {
     case load, generate, save, clear
 }
 
+extension AISummaryEditorModel {
+    var characterCountText: String {
+        contentState.characterCountText
+    }
+
+    var status: AISummaryEditorStatus {
+        contentState.status
+    }
+
+    var provenance: AISummaryProvenance? {
+        contentState.provenance
+    }
+
+    var draftText: String {
+        contentState.draftText
+    }
+
+    var canGenerate: Bool {
+        canEdit && gateState.allowsGeneration
+    }
+
+    var canCancelGeneration: Bool {
+        operation == .generating
+    }
+
+    var canRegenerate: Bool {
+        canGenerate && contentState.hasSummaryContent
+    }
+
+    var canDiscard: Bool {
+        canEdit && contentState.canDiscard
+    }
+
+    var canClear: Bool {
+        canEdit && privacySkip == nil && contentState.hasSummaryContent
+    }
+
+    var canSave: Bool {
+        canEdit && contentState.canSave
+    }
+
+    var needsExitConfirmation: Bool {
+        contentState.needsExitConfirmation
+    }
+
+    var canEdit: Bool {
+        !operation.isBusy
+    }
+
+    func retryGeneration() async {
+        let failed = failedGenerationAttempt
+        await generate(
+            regenerate: failed?.regenerate ?? false,
+            retryOfOperationID: failed?.operationID
+        )
+    }
+
+    func cancelFailedAction() {
+        guard failedAction != nil else { return }
+        failedAction = nil
+        operation = .idle
+    }
+
+    func summaryError(for error: Error, message: LocalizedMessage) async -> AISettingsError {
+        await AISummaryEditorPresentationSupport.error(
+            for: error,
+            message: message,
+            errorMapper: errorMapper
+        )
+    }
+
+    func applyClearConflictIfPresent(_ error: Error) async -> Bool {
+        guard case let CoreError.RevisionConflict(resource, expected, current) = error,
+              resource == "ai_summary_content_revision"
+        else {
+            return false
+        }
+        do {
+            let latest = try await summaryStore.loadAISummaryState(repoPath: repoPath, fileID: fileID)
+            apply(latest)
+            clearConflictNotice = AISummaryClearConflictNotice(
+                expectedRevision: expected,
+                currentRevision: current
+            )
+            failedAction = nil
+            operation = .idle
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    func saveRequest() -> AiSummarySaveRequest? {
+        contentState.saveRequest(fileID: fileID, confirmReplaceUserOwned: confirmedReplacement)
+    }
+
+    func snapshot() -> AISummaryEditorSnapshot {
+        contentState.snapshot
+    }
+}
+
 enum AISummaryEditorStatus: Equatable {
     case empty, draft, saved, dirty
     case skipped(AiSummarySkipReason?)
@@ -46,6 +147,11 @@ enum AISummaryEditorStatus: Equatable {
 }
 
 struct AISummaryProvenance: Equatable {
+    var operationID: String?
+    var contentLocale: ContentLocale?
+    var formatContractVersion: Int64?
+    var contentRevision: Int64
+    var ownership: AiContentOwnership
     var draftID: String?
     var route: AiSummaryRoute?
     var modelName: String?
@@ -56,6 +162,11 @@ struct AISummaryProvenance: Equatable {
     var characterCount: Int64
 
     init(draft: AiSummaryDraft) {
+        operationID = draft.operationId
+        contentLocale = draft.contentLocale
+        formatContractVersion = draft.formatContractVersion
+        contentRevision = 0
+        ownership = .generated
         draftID = draft.draftId
         route = draft.route
         modelName = draft.modelName
@@ -67,6 +178,11 @@ struct AISummaryProvenance: Equatable {
     }
 
     init(report: AiSummarySaveReport) {
+        operationID = report.operationId
+        contentLocale = report.contentLocale
+        formatContractVersion = report.formatContractVersion
+        contentRevision = report.contentRevision
+        ownership = report.ownership
         draftID = nil
         route = report.route
         modelName = report.modelName
@@ -78,6 +194,11 @@ struct AISummaryProvenance: Equatable {
     }
 
     init(saved: AISummarySavedSnapshot) {
+        operationID = saved.operationID
+        contentLocale = saved.contentLocale
+        formatContractVersion = saved.formatContractVersion
+        contentRevision = saved.contentRevision
+        ownership = saved.ownership
         draftID = saved.draftID
         route = saved.route
         modelName = saved.modelName
@@ -95,7 +216,41 @@ struct AISummaryEditorSnapshot {
     var savedProvenance: AISummaryProvenance?
     var baselineText: String?
     var provenance: AISummaryProvenance?
+    var draftOwnership: AiContentOwnership
+    var expectedContentRevision: Int64
     var status: AISummaryEditorStatus
+}
+
+struct AISummarySaveConflictReview: Equatable {
+    var observedText: String?
+    var latestState: AISummaryPersistedStateSnapshot
+    var localText: String
+    var expectedRevision: Int64
+    var currentRevision: Int64
+}
+
+struct AISummaryClearConflictNotice: Equatable {
+    var expectedRevision: Int64
+    var currentRevision: Int64
+}
+
+struct AISummaryReplacementReview: Equatable {
+    enum Source: Equatable {
+        case generatedCandidate
+        case currentDraft
+    }
+
+    var source: Source
+    var savedText: String
+    var savedProvenance: AISummaryProvenance
+    var candidateText: String
+    var candidateProvenance: AISummaryProvenance
+}
+
+struct AISummaryGenerationAttempt: Equatable {
+    var operationID: String
+    var retryOfOperationID: String?
+    var regenerate: Bool
 }
 
 struct AISummaryEditorIdentity: Equatable {

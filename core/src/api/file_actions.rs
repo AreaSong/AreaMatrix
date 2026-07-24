@@ -8,10 +8,10 @@ use crate::{
 /// Predicts a category for a filename without importing or mutating files.
 ///
 /// category prediction uses this API for import previews and classifier settings. It reads
-/// classifier rules from `.areamatrix/classifier.yaml`, falls back to the
-/// bundled default rules when the file is absent, and returns a suggested
-/// category/name pair. It must not create repository metadata, touch the
-/// database, import files, or move user content.
+/// the repository locale policy and `.areamatrix/classifier.yaml`, then returns a suggested
+/// category/name pair. Missing, unreadable, or invalid rules fail closed instead of silently
+/// substituting embedded defaults. It must not create repository metadata or SQLite sidecars,
+/// write the database, import files, or move user content.
 ///
 /// camera import reuses this read-only preview surface after the
 /// platform layer has captured a photo and generated a candidate filename.
@@ -42,9 +42,10 @@ use crate::{
 ///
 /// # Errors
 ///
-/// Returns `CoreError::Config { reason }` when the repository path, filename, YAML syntax,
-/// or classifier schema is invalid. Returns `CoreError::Classify { reason }` when the
-/// classifier rule source cannot be read as a file.
+/// Returns `CoreError::Config { reason }` when the repository path, filename, repository locale
+/// policy, YAML syntax, or classifier schema is invalid. Returns `CoreError::Classify { reason }`
+/// when the classifier rule source cannot be read as a file. Repository initialization and
+/// read-only locale-policy failures retain their structured repository or database errors.
 pub fn predict_category(repo_path: String, filename: String) -> CoreResult<ClassifyResult> {
     classify::predict_category(repo_path, filename)
 }

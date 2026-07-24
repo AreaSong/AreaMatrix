@@ -20,6 +20,7 @@ pub(crate) fn rename_file(
     crate::config::validate_content_locale(&content_locale)?;
     let repo = validate_repo_path(&repo_path)?;
     db::ensure_initialized(&repo)?;
+    db::ensure_repository_locale_allows_normal_mutation(&repo)?;
     validate::filename(&new_name)?;
 
     let entry = db::get_active_file_by_id(&repo, file_id)?;

@@ -24,7 +24,7 @@ struct ClassifierRuleListView: View {
 
     private func ruleLabel(_ rule: ClassifierRuleRecordSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(rule.displayName.isEmpty ? rule.slug : rule.displayName)
+            Text(model.classifierRuleEditor.displayName(for: rule))
                 .font(.callout.weight(.semibold))
             Text(rule.slug)
                 .font(.caption)
@@ -35,11 +35,11 @@ struct ClassifierRuleListView: View {
     @ViewBuilder
     private func ruleStatus(_ rule: ClassifierRuleRecordSnapshot) -> some View {
         if rule.isDefault {
-            Text("default").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+            Text(L10n.string("default")).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
         }
         if model.classifierRuleEditor.selectedRuleID == rule.ruleID,
            model.classifierRuleEditor.hasDirtyDraft {
-            Text("dirty").font(.caption2.weight(.semibold)).foregroundStyle(.orange)
+            Text(L10n.string("dirty")).font(.caption2.weight(.semibold)).foregroundStyle(.orange)
         }
     }
 
@@ -66,26 +66,32 @@ struct ClassifierRuleDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
         } else {
-            Text("Select a category or create a new category.")
+            Text(L10n.string("Select a category or create a new category."))
                 .foregroundStyle(.secondary)
         }
     }
 
     private func fields(_ draft: ClassifierRuleEditorDraft) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextField("slug", text: draftBinding(\.slug))
+            TextField(L10n.string("slug"), text: draftBinding(\.slug))
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("classifier-rule-editor-slug")
-            TextField("display name", text: draftBinding(\.displayName))
+            TextField(L10n.string("display name"), text: draftBinding(\.displayName))
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("classifier-rule-editor-display-name")
-            TextField("description", text: draftBinding(\.description))
+            TextField(L10n.string("description"), text: draftBinding(\.description))
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("classifier-rule-editor-description")
+            if let fallback = model.classifierRuleEditor.fallbackDisplayName(for: draft) {
+                Text(L10n.format("settings.classifier.fallbackPreview", fallback))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("classifier-rule-editor-fallback-preview")
+            }
             Stepper(value: priorityBinding, in: ClassifierRuleEditorValidation.priorityRange) {
                 Text(L10n.format("settings.classifier.priorityValue", draft.priority))
             }
-            TextField("naming template", text: draftBinding(\.namingTemplate))
+            TextField(L10n.string("naming template"), text: draftBinding(\.namingTemplate))
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("classifier-rule-editor-naming-template")
         }
@@ -121,12 +127,15 @@ struct ClassifierRuleDetailView: View {
     @ViewBuilder
     private func validation(_ draft: ClassifierRuleEditorDraft) -> some View {
         if !draft.previewConfirmed {
-            Label("Impact summary required before Save; existing files are not moved or deleted.", systemImage: "eye")
-                .foregroundStyle(.orange)
-                .accessibilityIdentifier("classifier-rule-editor-impact-required")
+            Label(
+                L10n.string("Impact summary required before Save; existing files are not moved or deleted."),
+                systemImage: "eye"
+            )
+            .foregroundStyle(.orange)
+            .accessibilityIdentifier("classifier-rule-editor-impact-required")
         }
-        ForEach(draft.validationErrors, id: \.self) { error in
-            Label(error, systemImage: "exclamationmark.triangle")
+        ForEach(draft.validationErrors) { error in
+            Label(error.displayText, systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.red)
         }
@@ -134,20 +143,20 @@ struct ClassifierRuleDetailView: View {
 
     private var actions: some View {
         HStack(spacing: 10) {
-            Button("Preview impact") { model.requestClassifierRuleImpactSummary() }
+            Button(L10n.string("Preview impact")) { model.requestClassifierRuleImpactSummary() }
                 .disabled(model.classifierRuleEditor.isBusy)
                 .accessibilityIdentifier("classifier-rule-editor-preview-impact")
-            Button("Validate") { model.validateClassifierRuleDraft() }
+            Button(L10n.string("Validate")) { model.validateClassifierRuleDraft() }
                 .disabled(model.classifierRuleEditor.isBusy)
                 .accessibilityIdentifier("classifier-rule-editor-validate")
-            Button("Save") { Task { await model.saveClassifierRuleDraft() } }
+            Button(L10n.string("Save")) { Task { await model.saveClassifierRuleDraft() } }
                 .disabled(!model.classifierRuleEditor.canSave)
                 .keyboardShortcut(.defaultAction)
                 .accessibilityIdentifier("classifier-rule-editor-save")
-            Button("Revert") { model.revertClassifierRuleDraft() }
+            Button(L10n.string("Revert")) { model.revertClassifierRuleDraft() }
                 .disabled(!model.classifierRuleEditor.canRevert)
                 .accessibilityIdentifier("classifier-rule-editor-revert")
-            Button("Delete category...") { model.requestDeleteSelectedClassifierRule() }
+            Button(L10n.string("Delete category...")) { model.requestDeleteSelectedClassifierRule() }
                 .disabled(!model.classifierRuleEditor.canDeleteSelectedRule)
                 .accessibilityIdentifier("classifier-rule-editor-delete-category")
         }
@@ -166,14 +175,14 @@ struct ClassifierRuleDetailView: View {
 
     private func matcherImpactSummary(_ removal: ClassifierRuleMatcherRemoval) -> some View {
         riskPanel(identifier: "classifier-rule-editor-matcher-impact-summary") {
-            Label("Impact summary", systemImage: "eye")
+            Label(L10n.string("Impact summary"), systemImage: "eye")
                 .font(.callout.weight(.semibold))
             Text(matcherImpactCopy(removal))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Cancel") { model.cancelClassifierRuleRiskConfirmation() }
-                Button("Confirm removal") { model.confirmClassifierRuleImpactSummary() }
+                Button(L10n.string("Cancel")) { model.cancelClassifierRuleRiskConfirmation() }
+                Button(L10n.string("Confirm removal")) { model.confirmClassifierRuleImpactSummary() }
                     .keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("classifier-rule-editor-confirm-matcher-removal")
             }
@@ -182,17 +191,18 @@ struct ClassifierRuleDetailView: View {
 
     private func categoryDeleteConfirmation(_ deletion: ClassifierRuleDeleteConfirmation) -> some View {
         riskPanel(identifier: "classifier-rule-editor-delete-category-confirmation") {
-            Label("Delete category?", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("Delete category?"), systemImage: "exclamationmark.triangle")
                 .font(.callout.weight(.semibold))
-            Text("This removes the category from classifier.yaml. Existing files are not moved or deleted.")
+            Text(L10n
+                .string("This removes the category from classifier.yaml. Existing files are not moved or deleted."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Text(categoryDeleteDetail(deletion))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Cancel") { model.cancelClassifierRuleRiskConfirmation() }
-                Button("Confirm delete") { Task { await model.confirmDeleteSelectedClassifierRule() } }
+                Button(L10n.string("Cancel")) { model.cancelClassifierRuleRiskConfirmation() }
+                Button(L10n.string("Confirm delete")) { Task { await model.confirmDeleteSelectedClassifierRule() } }
                     .keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("classifier-rule-editor-confirm-delete-category")
             }
@@ -201,17 +211,17 @@ struct ClassifierRuleDetailView: View {
 
     private var draftImpactSummary: some View {
         riskPanel(identifier: "classifier-rule-editor-impact-summary") {
-            Label("Impact summary", systemImage: "eye")
+            Label(L10n.string("Impact summary"), systemImage: "eye")
                 .font(.callout.weight(.semibold))
-            Text("Saving this classifier draft updates future classification rules only.")
+            Text(L10n.string("Saving this classifier draft updates future classification rules only."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Text("Existing files are not moved, deleted, renamed, or reclassified from this page.")
+            Text(L10n.string("Existing files are not moved, deleted, renamed, or reclassified from this page."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Cancel") { model.cancelClassifierRuleRiskConfirmation() }
-                Button("Confirm summary") { model.confirmClassifierRuleImpactSummary() }
+                Button(L10n.string("Cancel")) { model.cancelClassifierRuleRiskConfirmation() }
+                Button(L10n.string("Confirm summary")) { model.confirmClassifierRuleImpactSummary() }
                     .keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("classifier-rule-editor-confirm-impact-summary")
             }
@@ -312,7 +322,7 @@ private struct FlowLikeChipStack<Content: View>: View {
 
     var body: some View {
         if values.isEmpty {
-            Text("No custom classifier rules yet")
+            Text(L10n.string("No custom classifier rules yet"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {

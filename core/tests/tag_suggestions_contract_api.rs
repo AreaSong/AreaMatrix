@@ -153,6 +153,9 @@ fn tag_suggestions_contract_exposes_signatures_outputs_and_errors() {
 
 #[test]
 fn tag_suggestions_contract_validates_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         suggest_tags_for_file(
             "/tmp/repo".to_owned(),
@@ -187,7 +190,7 @@ fn tag_suggestions_contract_validates_inputs_without_fake_success() {
         Err(CoreError::Validation { .. })
     ));
     assert!(matches!(
-        suggest_tags_for_file("/tmp/repo".to_owned(), request()),
+        suggest_tags_for_file(uninitialized_repo_path.clone(), request()),
         Err(CoreError::Db { .. })
     ));
     for invalid_repo in ["", "/tmp/repo/.areamatrix"] {
@@ -246,7 +249,7 @@ fn tag_suggestions_contract_validates_inputs_without_fake_success() {
         Err(CoreError::Conflict { .. })
     ));
     assert!(matches!(
-        apply_tag_suggestions("/tmp/repo".to_owned(), apply_request()),
+        apply_tag_suggestions(uninitialized_repo_path, apply_request()),
         Err(CoreError::Db { .. })
     ));
     for invalid_repo in ["", "/tmp/repo/.areamatrix"] {

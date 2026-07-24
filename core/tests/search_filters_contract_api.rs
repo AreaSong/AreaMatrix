@@ -37,6 +37,9 @@ fn facet_query() -> SearchFacetQuery {
 
 #[test]
 fn search_filters_contract_exposes_signature_inputs_outputs_and_errors() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     fn assert_facets(_: fn(String, SearchFacetQuery) -> CoreResult<SearchFacets>) {}
     assert_facets(list_filter_facets);
 
@@ -65,7 +68,7 @@ fn search_filters_contract_exposes_signature_inputs_outputs_and_errors() {
     let result = list_filter_facets("/tmp/repo".to_owned(), invalid_scope);
     assert!(matches!(result, Err(CoreError::Config { .. })));
 
-    let db_result = list_filter_facets("/tmp/repo".to_owned(), facet_query());
+    let db_result = list_filter_facets(uninitialized_repo_path, facet_query());
     assert!(matches!(db_result, Err(CoreError::Db { .. })));
 }
 

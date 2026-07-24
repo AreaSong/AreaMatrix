@@ -77,12 +77,15 @@ struct IntegrationsSettingsSummary: Equatable {
 }
 
 enum IntegrationConflictListPresentation {
-    static var reviewConflictsTitle: String { L10n.string("Review conflicts") }
+    static var reviewConflictsTitle: String {
+        L10n.string("Review conflicts")
+    }
+
     static let reviewConflictsAccessibilityID = "icloud-conflicts-icloud-conflicts-core-review-conflicts"
 }
 
 protocol ICloudStatusDetecting: Sendable {
-    func snapshot(repoPath: String, config: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot
+    func snapshot(repoPath: String, config: AppRepoConfigSnapshot) async -> IntegrationsICloudSnapshot
 }
 
 protocol ICloudHelpOpening: Sendable {
@@ -112,8 +115,8 @@ final class IntegrationsSettingsModel: ObservableObject {
     private let statusDetector: any ICloudStatusDetecting
     private let finderOpener: any RepositoryFinderOpening
     private let helpOpener: any ICloudHelpOpening
-    private var savedConfig: RepoConfigSnapshot?
-    private var pendingRetry: RepoConfigSnapshot?
+    private var savedConfig: AppRepoConfigSnapshot?
+    private var pendingRetry: AppRepoConfigSnapshot?
 
     init(
         repoPath: String,
@@ -223,19 +226,18 @@ final class IntegrationsSettingsModel: ObservableObject {
         }
     }
 
-    private func persist(updating config: RepoConfigSnapshot) async {
+    private func persist(updating config: AppRepoConfigSnapshot) async {
+        guard let savedConfig else { return }
         isSaving = true
         saveError = nil
         actionFeedback = nil
         do {
-            try await updater.updateConfig(repoPath: repoPath, newConfig: config)
-            savedConfig = config
-            summary = summary?.withICloudWarningsEnabled(config.iCloudWarn)
+            let updated = try await updater.updateConfig(repoPath: repoPath, from: savedConfig, to: config)
+            self.savedConfig = updated
+            summary = summary?.withICloudWarningsEnabled(updated.iCloudWarn)
             pendingRetry = nil
         } catch {
-            if let savedConfig {
-                summary = summary?.withICloudWarningsEnabled(savedConfig.iCloudWarn)
-            }
+            summary = summary?.withICloudWarningsEnabled(savedConfig.iCloudWarn)
             let mappedError = await settingsError(for: error, fallbackRecovery: L10n.message("Retry save"))
             saveError = mappedError
             pendingRetry = config
@@ -264,14 +266,14 @@ final class IntegrationsSettingsModel: ObservableObject {
     }
 }
 
-extension RepoConfigSnapshot {
-    func withIntegrationsRepositoryPath(_ value: String) -> RepoConfigSnapshot {
+extension AppRepoConfigSnapshot {
+    func withIntegrationsRepositoryPath(_ value: String) -> AppRepoConfigSnapshot {
         var config = self
         config.repoPath = value
         return config
     }
 
-    func withIntegrationsICloudWarn(_ value: Bool) -> RepoConfigSnapshot {
+    func withIntegrationsICloudWarn(_ value: Bool) -> AppRepoConfigSnapshot {
         var config = self
         config.iCloudWarn = value
         return config

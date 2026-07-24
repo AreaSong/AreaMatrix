@@ -154,6 +154,45 @@ fn load_update_config_loads_defaults_when_metadata_is_missing() {
 }
 
 #[test]
+fn initialized_legacy_repo_without_locale_remains_unknown_until_explicit_save() {
+    let repo = initialized_repo();
+    let db_path = repo.path().join(".areamatrix/index.db");
+    let connection = Connection::open(&db_path).expect("open repository database");
+    connection
+        .execute("DELETE FROM repo_config WHERE key = 'locale'", [])
+        .expect("remove legacy locale row");
+    drop(connection);
+
+    let unknown = load_repo_config(path_string(repo.path())).expect("load legacy config");
+    assert_eq!(unknown.locale_policy.raw_value, "");
+    assert_eq!(
+        unknown.locale_policy.state,
+        RepositoryLocalePolicyState::Unknown
+    );
+
+    let blocked = area_matrix_core::prepare_overview_regeneration(
+        path_string(repo.path()),
+        area_matrix_core::ContentLocale::En,
+    );
+    assert!(matches!(blocked, Err(CoreError::Config { .. })));
+
+    let saved = update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: unknown.revision,
+            locale_policy: Some(RepositoryLocalePolicy::FollowInterface),
+            ..RepoConfigPatch::default()
+        },
+    )
+    .expect("save explicit repository locale");
+    assert_eq!(saved.locale_policy.raw_value, "system");
+    assert_eq!(
+        saved.locale_policy.state,
+        RepositoryLocalePolicyState::FollowInterface
+    );
+}
+
+#[test]
 fn load_update_config_rejects_empty_repo_path_as_config_error() {
     assert!(matches!(
         load_repo_config(String::new()),
@@ -170,11 +209,8 @@ fn load_update_config_rejects_empty_repo_path_as_config_error() {
 fn load_update_config_update_persists_all_repo_config_fields() {
     let repo = initialized_repo();
     let initial = load_repo_config(path_string(repo.path())).expect("load initial config");
-    let updated = update_repo_config(
-        path_string(repo.path()),
-        settings_patch(initial.revision),
-    )
-    .expect("persist config update");
+    let updated = update_repo_config(path_string(repo.path()), settings_patch(initial.revision))
+        .expect("persist config update");
 
     let reloaded = load_repo_config(path_string(repo.path())).expect("reload updated config");
     assert_eq!(reloaded, updated);
@@ -228,9 +264,15 @@ fn load_update_config_update_rejects_stale_revision_without_changing_previous_co
     let repo = initialized_repo();
     let before = load_repo_config(path_string(repo.path())).expect("load initial config");
 
-    let result = update_repo_config(path_string(repo.path()), settings_patch(before.revision + 1));
+    let result = update_repo_config(
+        path_string(repo.path()),
+        settings_patch(before.revision + 1),
+    );
 
-    assert!(matches!(result, Err(CoreError::Conflict { .. })));
+    assert!(
+        matches!(result, Err(CoreError::RevisionConflict { .. })),
+        "unexpected stale-save result: {result:?}"
+    );
 
     let after =
         load_repo_config(path_string(repo.path())).expect("reload config after failed update");
@@ -292,16 +334,16 @@ fn load_update_config_update_rolls_back_when_late_repo_config_write_fails() {
 fn load_update_config_update_is_repeatable_without_duplicate_rows() {
     let repo = initialized_repo();
     let initial = load_repo_config(path_string(repo.path())).expect("load initial config");
-    let first = update_repo_config(
-        path_string(repo.path()),
-        settings_patch(initial.revision),
-    )
-    .expect("first update");
+    let first = update_repo_config(path_string(repo.path()), settings_patch(initial.revision))
+        .expect("first update");
     let first_key_values = config_key_values(repo.path());
     let second = update_repo_config(path_string(repo.path()), settings_patch(first.revision))
         .expect("second update");
 
-    assert_eq!(load_repo_config(path_string(repo.path())), Ok(second.clone()));
+    assert_eq!(
+        load_repo_config(path_string(repo.path())),
+        Ok(second.clone())
+    );
     assert_eq!(second.revision, first.revision + 1);
     assert_eq!(config_key_values(repo.path()), first_key_values);
     assert_eq!(config_rows(repo.path()).len(), 10);
@@ -342,7 +384,10 @@ fn load_update_config_update_requires_initialized_metadata_without_creating_it()
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     let result = update_repo_config(path_string(repo.path()), settings_patch(1));
 
-    assert!(matches!(result, Err(CoreError::Config { .. })));
+    assert!(
+        matches!(result, Err(CoreError::RepoNotInitialized { .. })),
+        "unexpected uninitialized update result: {result:?}"
+    );
 
     assert!(!repo.path().join(".areamatrix").exists());
 }

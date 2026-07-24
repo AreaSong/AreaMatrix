@@ -10,12 +10,14 @@
 
 - 路径：`<repo>/.areamatrix/classifier.yaml`。
 - 初始化资料库时，Core 把内嵌 `core/resources/classifier.yaml` 写入该路径。
-- 文件缺失：进入 degraded read-only；浏览只使用稳定 `slug`，并保留持久化配置错误。不得静默使用或重新创建内嵌规则。
+- 文件缺失：进入 degraded read-only；浏览只使用稳定 `slug`，并保留持久化配置错误。不得静默使用或重新创建内嵌规则；只有用户确认的独立 `Create Default` recovery API 可以创建新文件。
 - 文件存在但 unreadable、YAML 无效或校验失败：进入同一 degraded read-only 状态，返回结构化 `Config`/`Classify` error。
 - parser 拒绝 unknown fields。
 
 普通打开资料库或 Core 升级不会覆盖已有 YAML。只有明确的 rule save/editor API，或用户确认的
-`Restore default` / `Restore last valid` recovery API 会写入用户配置；恢复前保留原始 bytes，恢复失败时原文件不变。
+`Create Default` / `Restore Default` / `Restore Last Valid` recovery API 会写入用户配置。Create Default 只适用
+于路径确实缺失；可读取但无效的现有文件在 restore 前创建编号、非覆盖 backup，恢复失败时原文件不变；因
+权限不可读的现有文件不得覆盖，必须先恢复可读权限。
 
 仓库当前没有 tracked `classifier.schema.json` 或 AJV CI gate；机械合同由 Rust parser 和测试执行。
 
@@ -114,6 +116,8 @@ Core 的 rule save/editor API 都先写入同目录临时文件、同步文件�
 - 不自动重分类、移动、重命名、删除或 reindex 已有文件。
 - 删除 default category、最后一个 category 或未确认影响的规则会被拒绝。
 - Swift UI 不直接编辑 YAML；通过 Core API 获取 editor snapshot 和提交 request。
+- locale map 缺少当前编辑语言时，editor DTO 保持该显式值为空；展示 fallback 由独立只读字段或调用方
+  解析，不得把 fallback 冒充已保存值或在无用户输入时写回 YAML。
 
 用户手工编辑 YAML 后，下次规则读取会重新解析；当前没有 classifier cache。缺失、不可读或无效时，
 UI 必须明确显示 degraded 状态，禁止把 embedded/default 规则伪装成当前资料库规则。

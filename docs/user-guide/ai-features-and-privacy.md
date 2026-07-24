@@ -44,6 +44,19 @@ AI 生成的摘要以及建议中的自然语言 display/reason 使用该 conten
 已有 candidate tag、用户自定义 tag 和用户输入保持原文。AreaMatrix 不把这些值隐式翻译后回写，也不因
 跨语言近义关系自动合并 tag/category；接受建议仍需用户审阅，并使用现有精确冲突与重复处理规则。
 
+未编辑的生成结果属于 generated-owned。用户编辑摘要或接受建议 tag 后，对应值立即转为 user-owned
+verbatim content；之后替换它必须再次明确确认。修改界面语言或资料库内容语言不会重新调用 AI，也不会
+重写任何已有结果。“重新生成全部概览”不包含 AI 摘要。搜索查询与返回的用户内容保持原文，不执行隐式
+翻译；持久化 AI 自然语言才使用 operation 冻结的 content locale。
+
+对 user-owned 摘要再次生成时，当前已保存值保持不变；新 draft 与当前摘要并列展示，用户明确选择替换、
+保留原摘要或继续编辑。清除 user-owned 摘要也需要确认。最终保存遇到 content revision 冲突时保留 draft，
+不得自动重试或合并；终态失败后的 Retry 创建新的 `operation_id` 并通过 `retry_of_operation_id` 关联旧操作。
+
+content locale 只记录请求语言。只有 provider 返回结构化 language metadata，或本地 advisory detector 达到
+明确高置信度时，界面才提示“结果语言可能不同”；没有可靠信号时不猜测。警告不会改变 provenance、内容
+或所有权，也不会触发自动翻译、自动重试或静默 provider 切换。
+
 ## 隐私规则
 
 隐私规则决定某类任务和数据是否可以离开本机。规则至少应区分文件名、路径、笔记、提取文本、标签、摘要和完整内容。未明确允许的数据不得发送。

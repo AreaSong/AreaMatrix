@@ -100,6 +100,8 @@ fn import_conflict_batch_maps_staging_residue_to_recovery_required() {
             path: Some(".areamatrix/staging/staged-missing".to_owned()),
             reason: None,
             message: None,
+            expected_revision: None,
+            current_revision: None,
         })
         .recoverability,
         ErrorRecoverability::UserActionRequired

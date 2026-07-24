@@ -40,7 +40,10 @@ fn file_snapshot(paths: &[PathBuf]) -> Vec<(PathBuf, Vec<u8>)> {
 fn assert_config_reason(error: CoreError, reason: &str) {
     assert_eq!(error.kind(), ErrorKind::Config);
     assert_eq!(error.raw_context(), reason);
-    assert_eq!(error.to_error_mapping().raw_context, reason);
+    assert_eq!(
+        error.to_error_mapping().technical_details.as_deref(),
+        Some(reason)
+    );
 }
 
 fn capability_rows(

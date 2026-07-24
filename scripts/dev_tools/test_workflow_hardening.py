@@ -12,7 +12,7 @@ from pathlib import Path
 
 from scripts.dev_tools.changes import parse_yaml_subset
 from scripts.dev_tools.workflow import run_workflow_doctor, validate_queue_gate
-from scripts.dev_tools.workflow_baseline import validate_baseline
+from scripts.dev_tools.workflow_baseline import build_baseline_entries, validate_baseline
 from scripts.dev_tools.changes import FeatureRecord
 from scripts.dev_tools.promotion import (
     PromotionConfig,
@@ -89,6 +89,25 @@ class WorkflowHardeningTest(unittest.TestCase):
         errors, _ = validate_baseline(self.root, "v-template", require_file=True)
 
         self.assertTrue(any("docs drift detected" in error for error in errors), errors)
+
+    def test_baseline_includes_exact_doc_without_change_entry(self) -> None:
+        decisions = self.root / "workflow/versions/v-template/discussion/decisions.yaml"
+        text = decisions.read_text(encoding="utf-8")
+        decisions.write_text(
+            text.replace(
+                "  - workflow/pipeline.md\n",
+                "  - workflow/pipeline.md\n  - workflow/README.md\n",
+                1,
+            ),
+            encoding="utf-8",
+        )
+
+        errors, entries = build_baseline_entries(self.root, "v-template")
+
+        self.assertEqual(errors, [])
+        readme_entries = [entry for entry in entries if entry.file == "workflow/README.md"]
+        self.assertEqual(len(readme_entries), 1)
+        self.assertEqual(readme_entries[0].source, "discussion:exact_docs")
 
     def test_projection_and_closeout_reject_legacy_partial_status(self) -> None:
         projection = self.root / "workflow/versions/v-template/projection/projection.yaml"

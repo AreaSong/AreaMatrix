@@ -352,6 +352,15 @@ final class ConnectRepositoryModelTests: XCTestCase {
         XCTAssertEqual(connection.validation.repoPath, url.path)
         XCTAssertTrue(connection.validation.isInitialized)
         XCTAssertEqual(connection.config.repoPath, url.path)
+        XCTAssertGreaterThanOrEqual(connection.config.revision, 0)
+
+        var updatedConfig = connection.config
+        updatedConfig.locale = connection.config.locale == "en" ? "zh-Hans" : "en"
+        try await bridge.updateConfig(repoPath: url.path, newConfig: updatedConfig)
+        let reloadedConfig = try await bridge.loadConfig(repoPath: url.path)
+
+        XCTAssertEqual(reloadedConfig.revision, connection.config.revision + 1)
+        XCTAssertEqual(reloadedConfig.locale, updatedConfig.locale)
         XCTAssertNil(model.error)
     }
 

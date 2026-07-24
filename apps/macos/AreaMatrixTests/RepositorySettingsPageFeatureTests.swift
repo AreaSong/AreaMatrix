@@ -4,10 +4,9 @@ import XCTest
 final class RepositorySettingsPageFeatureTests: XCTestCase {
     @MainActor
     func testLoadUsesRepositoryConfigCoreConfigForVisibleRepositorySettings() async {
-        var config = RepoConfigSnapshot.shellFixture(repoPath: "/tmp/AreaMatrixRepo")
+        var config = AppRepoConfigSnapshot.shellFixture(repoPath: "/tmp/AreaMatrixRepo")
         config.overviewOutput = "RootAreaMatrixFile"
         let loader = RecordingConfigurationLoader(results: [.success(config)])
-        let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(.testFixture(
                 schemaVersion: 1,
@@ -21,7 +20,6 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/AreaMatrixRepo",
             loader: loader,
-            updater: updater,
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
@@ -31,7 +29,6 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         await model.load()
 
         await loader.assertRequestedPaths(["/tmp/AreaMatrixRepo"])
-        await updater.assertNoConfigurationUpdateRequests()
         XCTAssertEqual(model.loadedConfig, config)
         XCTAssertEqual(model.summary?.repositoryName, "AreaMatrixRepo")
         XCTAssertEqual(model.summary?.location, "/tmp/AreaMatrixRepo")
@@ -44,12 +41,11 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
     @MainActor
     func testRetryStatusReloadsThroughLoadConfigOnly() async {
-        var first = RepoConfigSnapshot.shellFixture(repoPath: "/tmp/repo")
+        var first = AppRepoConfigSnapshot.shellFixture(repoPath: "/tmp/repo")
         first.overviewOutput = "GeneratedOnly"
-        var second = RepoConfigSnapshot.shellFixture(repoPath: "/tmp/repo")
+        var second = AppRepoConfigSnapshot.shellFixture(repoPath: "/tmp/repo")
         second.overviewOutput = "RootAreaMatrixFile"
         let loader = RecordingConfigurationLoader(results: [.success(first), .success(second)])
-        let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(.testFixture(
                 schemaVersion: 1,
@@ -68,7 +64,6 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: updater,
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
@@ -81,7 +76,6 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         await model.load()
 
         await loader.assertRequestedPaths(["/tmp/repo", "/tmp/repo"])
-        await updater.assertNoConfigurationUpdateRequests()
         XCTAssertEqual(model.summary?.overviewMode, "Root AREAMATRIX.md enabled")
     }
 
@@ -94,20 +88,25 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
-            updater: RecordingConfigurationUpdater(result: .success(())),
             errorMapper: mapper
         )
 
         await model.load()
 
         await mapper.assertMappedCoreErrors([CoreError.Config(reason: "invalid repo_config")])
-        XCTAssertEqual(model.loadError?.message, "配置错误")
-        XCTAssertEqual(model.loadError?.recovery, "Retry status")
+        XCTAssertEqual(
+            model.loadError?.message,
+            L10n.message("error.unmapped.message", fallback: "配置错误", technicalDetail: "配置错误")
+        )
+        XCTAssertEqual(
+            model.loadError?.recovery,
+            L10n.message("error.unmapped.action", fallback: "Retry status", technicalDetail: "Retry status")
+        )
         XCTAssertNil(model.loadedConfig)
     }
 
     @MainActor
-    func testLoadSynchronizesStaleRepoPathThroughUpdateConfig() async throws {
+    func testLoadUsesCurrentConnectionPathWithoutWritingRepositoryConfig() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
         defer { removeTestTemporaryItems(repoURL) }
         let metadataPresenceChecker = RecordingRepoMetadataPresenceChecker(
@@ -117,12 +116,11 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             )
         )
 
-        var config = RepoConfigSnapshot.shellFixture(repoPath: "/tmp/stale-repo")
+        var config = AppRepoConfigSnapshot.shellFixture(repoPath: "/tmp/stale-repo")
         config.overviewOutput = "RootAreaMatrixFile"
         var expected = config
         expected.repoPath = repoURL.path
         let loader = RecordingConfigurationLoader(results: [.success(config)])
-        let updater = RecordingConfigurationUpdater(result: .success(()))
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(.testFixture(
                 schemaVersion: 1,
@@ -136,7 +134,6 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: loader,
-            updater: updater,
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
@@ -146,59 +143,12 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
         await model.load()
 
-        await updater.assertConfigurationUpdateRequests([RecordingConfigurationUpdater.Request(
-            repoPath: repoURL.path,
-            config: expected
-        )])
         metadataPresenceChecker.assertRepoPaths([repoURL.path])
         XCTAssertEqual(model.loadedConfig, expected)
         XCTAssertEqual(model.summary?.location, repoURL.path)
         XCTAssertEqual(model.summary?.repositoryName, repoURL.lastPathComponent)
         XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.summary?.rootFile, "AREAMATRIX.md")
-        XCTAssertNil(model.syncError)
-    }
-
-    @MainActor
-    func testUpdateConfigFailureKeepsVisibleSettingsAndMapsSyncError() async throws {
-        let repoURL = try temporaryRepositorySettingsRepo()
-        defer { removeTestTemporaryItems(repoURL) }
-        try createRepositorySettingsMetadataDatabaseMarker(in: repoURL)
-
-        let loader = RecordingConfigurationLoader(results: [
-            .success(.shellFixture(repoPath: "/tmp/stale-repo"))
-        ])
-        let updater = RecordingConfigurationUpdater(result: .failure(CoreError.Db(message: "locked")))
-        let mapper = RecordingCoreErrorMapper.repositorySettings()
-        let metadataReader = RepoSettingsMetadataReader(results: [
-            .success(.testFixture(
-                schemaVersion: 1,
-                lastOpenedAt: 1_778_000_000,
-                configuredRepoPath: repoURL.path
-            ))
-        ])
-        let opener = RepoSettingsRepositoryOpener(
-            result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: repoURL.path))
-        )
-        let model = RepositorySettingsModel(
-            repoPath: repoURL.path,
-            loader: loader,
-            updater: updater,
-            repositoryOpener: opener,
-            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
-            existingRepositoryMetadataReader: metadataReader,
-            errorMapper: mapper
-        )
-
-        await model.load()
-
-        await updater.assertRequestCount(1)
-        await mapper.assertMappedCoreErrors([CoreError.Db(message: "locked")])
-        XCTAssertEqual(model.loadedConfig?.repoPath, repoURL.path)
-        XCTAssertEqual(model.summary?.location, repoURL.path)
-        XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
-        XCTAssertEqual(model.syncError?.message, "数据库错误")
-        XCTAssertEqual(model.syncError?.recovery, "Retry status")
     }
 
     @MainActor
@@ -210,7 +160,6 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: bridge,
-            updater: bridge,
             errorMapper: bridge
         )
 
@@ -221,7 +170,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         XCTAssertEqual(model.summary?.rootFile, "Off")
         XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
-        XCTAssertEqual(model.healthSummary?.schemaVersion, 2)
+        XCTAssertEqual(model.healthSummary?.schemaVersion, 3)
         XCTAssertEqual(model.healthSummary?.filesIndexed, 0)
         XCTAssertFalse(FileManager.default.fileExists(atPath: repoURL.appendingPathComponent("README.md").path))
         XCTAssertFalse(FileManager.default.fileExists(
@@ -243,7 +192,6 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: bridge,
-            updater: bridge,
             repositoryOpener: bridge,
             scanSessionReader: bridge,
             existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
@@ -276,7 +224,6 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: RecordingConfigurationLoader(results: []),
-            updater: RecordingConfigurationUpdater(result: .success(())),
             generatedOverviewRevealer: revealer,
             errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
@@ -287,10 +234,13 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
         )])
-        XCTAssertEqual(model.overviewActionError?.message, "Generated overview cannot be shown in Finder.")
+        XCTAssertEqual(
+            model.overviewActionError?.message,
+            L10n.message("Generated overview cannot be shown in Finder.")
+        )
         XCTAssertEqual(
             model.overviewActionError?.recovery,
-            "Retry after AreaMatrix regenerates .areamatrix/generated/root.md."
+            L10n.message("Retry after AreaMatrix regenerates .areamatrix/generated/root.md.")
         )
     }
 }

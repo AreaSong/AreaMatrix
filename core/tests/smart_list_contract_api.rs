@@ -15,6 +15,9 @@ fn assert_contains(haystack: &str, needle: &str) {
 
 #[test]
 fn smart_list_contract_exposes_signature_inputs_outputs_and_errors() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     fn assert_run(_: fn(String, i64, SearchPagination) -> CoreResult<SearchResultPage>) {}
     assert_run(run_smart_list);
 
@@ -47,7 +50,7 @@ fn smart_list_contract_exposes_signature_inputs_outputs_and_errors() {
     ));
 
     assert!(matches!(
-        run_smart_list("/tmp/repo".to_owned(), 1, pagination),
+        run_smart_list(uninitialized_repo_path, 1, pagination),
         Err(CoreError::Db { .. })
     ));
 }

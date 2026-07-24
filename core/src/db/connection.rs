@@ -34,14 +34,13 @@ pub(crate) fn ensure_initialized_readable(repo_path: &Path) -> CoreResult<()> {
     if &header == SQLITE_HEADER {
         Ok(())
     } else {
-        Err(CoreError::db("file is not a database"))
+        Err(CoreError::db_corrupted("file is not a database"))
     }
 }
 
 pub(crate) fn open_repo_connection(repo_path: &Path) -> CoreResult<Connection> {
     ensure_initialized(repo_path)?;
-    let mut connection =
-        Connection::open(db_path(repo_path)).map_err(|error| CoreError::db(error.to_string()))?;
+    let mut connection = Connection::open(db_path(repo_path)).map_err(CoreError::from)?;
     configure_connection(&connection)?;
     run_schema_migrations(&mut connection, repo_path)?;
     Ok(connection)
@@ -51,7 +50,29 @@ pub(crate) fn open_repo_read_connection(repo_path: &Path) -> CoreResult<Connecti
     ensure_initialized_readable(repo_path)?;
     let connection =
         Connection::open_with_flags(db_path(repo_path), OpenFlags::SQLITE_OPEN_READ_ONLY)
-            .map_err(|error| CoreError::db(error.to_string()))?;
+            .map_err(CoreError::from)?;
+    configure_read_connection(&connection)?;
+    Ok(connection)
+}
+
+pub(crate) fn open_repo_snapshot_read_connection(repo_path: &Path) -> CoreResult<Connection> {
+    ensure_initialized_readable(repo_path)?;
+    let database = db_path(repo_path);
+    let wal_exists = sqlite_sidecar_exists(&database, "-wal")?;
+    let shm_exists = sqlite_sidecar_exists(&database, "-shm")?;
+    if wal_exists != shm_exists {
+        return Err(CoreError::db("database sidecar state is incomplete"));
+    }
+
+    let connection = if wal_exists {
+        Connection::open_with_flags(&database, OpenFlags::SQLITE_OPEN_READ_ONLY)
+    } else {
+        Connection::open_with_flags(
+            sqlite_immutable_uri(&database),
+            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
+        )
+    }
+    .map_err(CoreError::from)?;
     configure_read_connection(&connection)?;
     Ok(connection)
 }
@@ -67,7 +88,7 @@ pub(crate) fn configure_connection(connection: &Connection) -> CoreResult<()> {
              PRAGMA cache_size = -65536;
              PRAGMA busy_timeout = 5000;",
         )
-        .map_err(|error| CoreError::db(error.to_string()))
+        .map_err(CoreError::from)
 }
 
 fn configure_read_connection(connection: &Connection) -> CoreResult<()> {
@@ -77,7 +98,35 @@ fn configure_read_connection(connection: &Connection) -> CoreResult<()> {
              PRAGMA foreign_keys = ON;
              PRAGMA busy_timeout = 5000;",
         )
-        .map_err(|error| CoreError::db(error.to_string()))
+        .map_err(CoreError::from)
+}
+
+fn sqlite_sidecar_exists(database: &Path, suffix: &str) -> CoreResult<bool> {
+    let file_name = database
+        .file_name()
+        .ok_or_else(|| CoreError::invalid_path("invalid path"))?
+        .to_string_lossy();
+    let sidecar = database.with_file_name(format!("{file_name}{suffix}"));
+    match sidecar.symlink_metadata() {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => {
+            Err(CoreError::db("database sidecar state is invalid"))
+        }
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(CoreError::from(error)),
+    }
+}
+
+fn sqlite_immutable_uri(path: &Path) -> String {
+    let mut encoded = String::with_capacity(path.as_os_str().len() + 24);
+    for byte in path.to_string_lossy().bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'/' | b'-' | b'_' | b'.' | b'~') {
+            encoded.push(char::from(byte));
+        } else {
+            encoded.push_str(&format!("%{byte:02X}"));
+        }
+    }
+    format!("file:{encoded}?immutable=1")
 }
 
 pub(crate) fn db_path(repo_path: &Path) -> PathBuf {

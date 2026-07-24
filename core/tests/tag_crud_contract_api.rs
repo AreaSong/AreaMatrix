@@ -70,6 +70,9 @@ fn tag_crud_contract_exposes_signatures_inputs_outputs_and_errors() {
 
 #[test]
 fn tag_crud_contract_validates_inputs_without_fake_success() {
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
+
     assert!(matches!(
         add_tag(String::new(), 1, "clientA".to_owned()),
         Err(CoreError::InvalidPath { .. })
@@ -87,7 +90,7 @@ fn tag_crud_contract_validates_inputs_without_fake_success() {
         Err(CoreError::InvalidPath { .. })
     ));
     assert!(matches!(
-        list_tags("/tmp/repo".to_owned(), 1),
+        list_tags(uninitialized_repo_path, 1),
         Err(CoreError::Db { .. })
     ));
 }

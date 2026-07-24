@@ -204,8 +204,10 @@ fn ai_tags_suggestion_contract_rejects_invalid_inputs_without_fake_success() {
         Err(CoreError::Config { .. })
     ));
 
+    let uninitialized_repo = tempfile::tempdir().expect("create uninitialized repository");
+    let uninitialized_repo_path = uninitialized_repo.path().to_string_lossy().into_owned();
     assert!(matches!(
-        suggest_tags_with_ai("/tmp/repo".to_owned(), request()),
+        suggest_tags_with_ai(uninitialized_repo_path.clone(), request()),
         Err(CoreError::Db { .. })
     ));
 
@@ -241,7 +243,7 @@ fn ai_tags_suggestion_contract_rejects_invalid_inputs_without_fake_success() {
     ));
 
     assert!(matches!(
-        apply_ai_tag_suggestions("/tmp/repo".to_owned(), apply_request()),
+        apply_ai_tag_suggestions(uninitialized_repo_path, apply_request()),
         Err(CoreError::Db { .. })
     ));
 }

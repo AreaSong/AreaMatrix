@@ -143,6 +143,7 @@ fn init_create_empty_inner(
         overview::write_root_areamatrix_file(repo, options.content_locale.as_str())?;
         rollback.mark_root_entry_created();
     }
+    overview::record_initialized_overview_provenance(repo, &options.content_locale)?;
 
     rollback.mark_complete();
     Ok(())
@@ -157,6 +158,7 @@ fn init_adopt_existing_inner(
 ) -> CoreResult<()> {
     create_metadata_staging(repo_path, init_dir, options)?;
     commit_metadata_staging(repo, init_dir, rollback)?;
+    overview::record_initialized_overview_provenance(repo, &options.content_locale)?;
     repo_scan::start_adopt_scan(repo)?;
     rollback.mark_complete();
     Ok(())
@@ -175,13 +177,11 @@ fn create_metadata_staging(
     write_new_file(&init_dir.join("classifier.yaml"), DEFAULT_CLASSIFIER_YAML)?;
     write_new_file(&init_dir.join("ignore.yaml"), DEFAULT_IGNORE_YAML)?;
 
-    let mut config = config::default_repo_config(repo_path.to_owned(), options.overview_output.clone());
+    let mut config =
+        config::default_repo_config(repo_path.to_owned(), options.overview_output.clone());
     config.locale = options.locale_policy.as_str().to_owned();
     db::initialize_repository_db(&init_dir.join("index.db"), &config)?;
-    overview::write_generated_root(
-        &init_dir.join("generated"),
-        options.content_locale.as_str(),
-    )?;
+    overview::write_generated_root(&init_dir.join("generated"), options.content_locale.as_str())?;
     Ok(config)
 }
 

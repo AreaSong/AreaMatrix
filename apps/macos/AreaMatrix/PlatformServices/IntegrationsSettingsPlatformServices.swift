@@ -48,7 +48,7 @@ struct LocalICloudStatusDetector: ICloudStatusDetecting {
         self.resourceValueReader = resourceValueReader
     }
 
-    func snapshot(repoPath: String, config: RepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
+    func snapshot(repoPath: String, config: AppRepoConfigSnapshot) async -> IntegrationsICloudSnapshot {
         let effectivePath = config.repoPath.isEmpty ? repoPath : config.repoPath
         let url = URL(fileURLWithPath: effectivePath, isDirectory: true)
 

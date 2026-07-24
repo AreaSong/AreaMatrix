@@ -1,139 +1,168 @@
 use super::types::{ErrorKind, ErrorRecoverability, ErrorSeverity};
 
 pub(super) struct ErrorMappingTemplate {
-    pub(super) user_message: &'static str,
+    pub(super) code: &'static str,
+    pub(super) field: Option<&'static str>,
     pub(super) severity: ErrorSeverity,
-    pub(super) suggested_action: &'static str,
     pub(super) recoverability: ErrorRecoverability,
+    pub(super) recovery_action_ids: &'static [&'static str],
 }
 
-static IO_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "文件操作失败",
+const IO_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "io_error",
+    field: None,
     severity: ErrorSeverity::Medium,
-    suggested_action: "请重试；如果仍失败，请检查磁盘空间或文件状态",
     recoverability: ErrorRecoverability::Retryable,
+    recovery_action_ids: &["retry", "collect_diagnostics"],
 };
 
-static DB_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "数据库错误",
+const DB_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "database_error",
+    field: None,
     severity: ErrorSeverity::High,
-    suggested_action: "请重启应用；如果仍失败，请重建索引或从备份恢复",
     recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["collect_diagnostics", "open_recovery"],
 };
 
-pub(super) static DB_LOCKED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "数据库暂时被占用",
+pub(super) const DB_LOCKED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "database_locked",
+    field: None,
     severity: ErrorSeverity::Medium,
-    suggested_action: "请稍后重试；如果仍失败，请导出诊断信息",
     recoverability: ErrorRecoverability::Retryable,
+    recovery_action_ids: &["retry", "collect_diagnostics"],
 };
 
-pub(super) static DB_CORRUPTED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "资料库索引损坏",
+pub(super) const DB_CORRUPTED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "database_corrupted",
+    field: None,
     severity: ErrorSeverity::Critical,
-    suggested_action: "请打开修复并重建索引，或从备份恢复",
     recoverability: ErrorRecoverability::Fatal,
+    recovery_action_ids: &["open_recovery", "collect_diagnostics"],
 };
 
-static CONFIG_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "配置错误",
+const CONFIG_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "config_error",
+    field: None,
     severity: ErrorSeverity::Medium,
-    suggested_action: "请打开设置检查配置，或恢复默认配置",
     recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["open_settings", "review_configuration"],
 };
 
-static VALIDATION_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "输入无效",
+const VALIDATION_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "validation_error",
+    field: None,
     severity: ErrorSeverity::Low,
-    suggested_action: "请修改输入后重试",
     recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["fix_input"],
 };
 
-static CLASSIFY_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "分类失败",
+const CLASSIFY_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "classification_error",
+    field: None,
     severity: ErrorSeverity::Low,
-    suggested_action: "文件可先落入 inbox，稍后检查分类规则",
     recoverability: ErrorRecoverability::RefreshRequired,
+    recovery_action_ids: &["open_classifier", "refresh"],
 };
 
-static CONFLICT_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "路径冲突",
+const CONFLICT_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "conflict",
+    field: None,
     severity: ErrorSeverity::Medium,
-    suggested_action: "请换一个名称或稍后重试",
     recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["review_conflict", "reload_latest"],
 };
 
-static DUPLICATE_FILE_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "文件已存在",
-    severity: ErrorSeverity::Low,
-    suggested_action: "请选择跳过、覆盖现有文件或保留两份",
+const REVISION_CONFLICT_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "revision_conflict",
+    field: Some("revision"),
+    severity: ErrorSeverity::Medium,
     recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["review_changes", "reload_latest"],
 };
 
-static FILE_NOT_FOUND_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "文件不存在",
+const DUPLICATE_FILE_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "duplicate_file",
+    field: Some("existing_path"),
     severity: ErrorSeverity::Low,
-    suggested_action: "请刷新列表后重试",
-    recoverability: ErrorRecoverability::RefreshRequired,
+    recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["skip", "keep_both", "review_replace"],
 };
 
-static EXPIRED_ACTION_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "操作已过期",
+const FILE_NOT_FOUND_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "file_not_found",
+    field: Some("path"),
     severity: ErrorSeverity::Low,
-    suggested_action: "请刷新撤销历史后继续操作",
     recoverability: ErrorRecoverability::RefreshRequired,
+    recovery_action_ids: &["refresh", "locate_file"],
 };
 
-static REPO_NOT_INITIALIZED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "资料库未初始化",
+const EXPIRED_ACTION_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "expired_action",
+    field: Some("action_id"),
+    severity: ErrorSeverity::Low,
+    recoverability: ErrorRecoverability::RefreshRequired,
+    recovery_action_ids: &["refresh_history"],
+};
+
+const REPO_NOT_INITIALIZED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "repository_not_initialized",
+    field: Some("path"),
     severity: ErrorSeverity::High,
-    suggested_action: "请先完成资料库初始化",
     recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["initialize_repository", "choose_repository"],
 };
 
-static INVALID_PATH_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "路径不合法",
+const INVALID_PATH_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "invalid_path",
+    field: Some("path"),
     severity: ErrorSeverity::Low,
-    suggested_action: "请修改路径或文件名后重试",
     recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["change_path"],
 };
 
-static ICLOUD_PLACEHOLDER_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "iCloud 文件未下载",
+const ICLOUD_PLACEHOLDER_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "icloud_placeholder_not_downloaded",
+    field: Some("path"),
     severity: ErrorSeverity::Medium,
-    suggested_action: "请手动下载文件后重试，或选择 Download & retry",
     recoverability: ErrorRecoverability::Retryable,
+    recovery_action_ids: &["download_and_retry", "choose_local_repository"],
 };
 
-static STAGING_RECOVERY_REQUIRED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "导入暂存需要恢复",
+const STAGING_RECOVERY_REQUIRED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "staging_recovery_required",
+    field: Some("path"),
     severity: ErrorSeverity::High,
-    suggested_action: "请先运行导入恢复后再重试当前操作",
     recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["open_recovery"],
 };
 
-static PERMISSION_DENIED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "无访问权限",
+const PERMISSION_DENIED_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "permission_denied",
+    field: Some("path"),
     severity: ErrorSeverity::High,
-    suggested_action: "请在系统设置中授予权限，或选择其他资料库位置",
     recoverability: ErrorRecoverability::UserActionRequired,
+    recovery_action_ids: &["choose_folder", "open_system_settings"],
 };
 
-static INTERNAL_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
-    user_message: "应用内部错误",
+const INTERNAL_MAPPING: ErrorMappingTemplate = ErrorMappingTemplate {
+    code: "internal_error",
+    field: None,
     severity: ErrorSeverity::Critical,
-    suggested_action: "请记录错误信息并重启应用",
     recoverability: ErrorRecoverability::Fatal,
+    recovery_action_ids: &["collect_diagnostics", "leave_flow", "open_issue"],
 };
 
 pub(super) fn mapping_template_for_kind(kind: &ErrorKind) -> &'static ErrorMappingTemplate {
     match kind {
         ErrorKind::Io => &IO_MAPPING,
         ErrorKind::Db => &DB_MAPPING,
+        ErrorKind::DbLocked => &DB_LOCKED_MAPPING,
+        ErrorKind::DbCorrupted => &DB_CORRUPTED_MAPPING,
         ErrorKind::Config => &CONFIG_MAPPING,
         ErrorKind::Validation => &VALIDATION_MAPPING,
         ErrorKind::Classify => &CLASSIFY_MAPPING,
         ErrorKind::Conflict => &CONFLICT_MAPPING,
+        ErrorKind::RevisionConflict => &REVISION_CONFLICT_MAPPING,
         ErrorKind::DuplicateFile => &DUPLICATE_FILE_MAPPING,
         ErrorKind::FileNotFound => &FILE_NOT_FOUND_MAPPING,
         ErrorKind::ExpiredAction => &EXPIRED_ACTION_MAPPING,
@@ -144,39 +173,4 @@ pub(super) fn mapping_template_for_kind(kind: &ErrorKind) -> &'static ErrorMappi
         ErrorKind::PermissionDenied => &PERMISSION_DENIED_MAPPING,
         ErrorKind::Internal => &INTERNAL_MAPPING,
     }
-}
-
-pub(super) fn is_db_locked_message(message: &str) -> bool {
-    let normalized = message.to_ascii_lowercase();
-    let retryable_markers = [
-        "database is locked",
-        "database table is locked",
-        "database is busy",
-        "sqlite_busy",
-    ];
-
-    retryable_markers
-        .iter()
-        .any(|marker| normalized.contains(marker))
-}
-
-pub(super) fn is_db_corrupted_message(message: &str) -> bool {
-    let normalized = message.to_ascii_lowercase();
-    let repair_markers = [
-        "corrupt",
-        "corrupted",
-        "damaged",
-        "database corrupted",
-        "database disk image is malformed",
-        "file is not a database",
-        "not a database",
-        "schema_version",
-        "no such table",
-        "integrity_check",
-        "malformed",
-    ];
-
-    repair_markers
-        .iter()
-        .any(|marker| normalized.contains(marker))
 }

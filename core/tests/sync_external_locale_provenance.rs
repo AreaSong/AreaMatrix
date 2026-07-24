@@ -103,7 +103,9 @@ fn mixed_replay_uses_receipt_max_locale_per_node_and_global_max_for_root() {
         Some(20)
     );
     let receipt_count: i64 = open_db(repo.path())
-        .query_row("SELECT COUNT(*) FROM external_sync_receipts", [], |row| row.get(0))
+        .query_row("SELECT COUNT(*) FROM external_sync_receipts", [], |row| {
+            row.get(0)
+        })
         .expect("count cleaned receipts");
     assert_eq!(receipt_count, 0);
     assert_eq!(
@@ -153,7 +155,9 @@ fn equal_max_event_id_with_different_receipt_locales_fails_closed() {
     );
     assert_eq!(read_generated(repo.path(), "nodes/docs.md"), node_before);
     let receipt_count: i64 = open_db(repo.path())
-        .query_row("SELECT COUNT(*) FROM external_sync_receipts", [], |row| row.get(0))
+        .query_row("SELECT COUNT(*) FROM external_sync_receipts", [], |row| {
+            row.get(0)
+        })
         .expect("count retained receipts");
     assert_eq!(receipt_count, 2);
 }
