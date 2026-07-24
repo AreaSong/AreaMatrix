@@ -164,6 +164,12 @@ fn ensure_incremental_targets_trusted(
         let Some(hash) = regular_file_hash_if_present(&path)? else {
             continue;
         };
+        if relative_path == "AREAMATRIX.md" {
+            let existing = fs::read_to_string(&path).map_err(map_io_error)?;
+            if !root_has_managed_block(&existing)? {
+                continue;
+            }
+        }
         let provenance = db::load_overview_provenance(repo, relative_path)?
             .ok_or_else(|| CoreError::conflict("overview provenance is unknown"))?;
         if provenance.content_sha256 != hash {
@@ -245,7 +251,24 @@ fn root_entry_content(repo: &Path, locale: &str, managed: &str) -> CoreResult<St
         Err(error) => return Err(map_io_error(error)),
     };
     let existing = fs::read_to_string(&path).map_err(map_io_error)?;
+    root_has_managed_block(&existing)?;
     Ok(merge_managed_block(&existing, managed))
+}
+
+fn root_has_managed_block(existing: &str) -> CoreResult<bool> {
+    let begin_count = existing.matches(BEGIN_PREFIX).count();
+    let end_count = existing.matches(END_TAG).count();
+    match (
+        begin_count,
+        end_count,
+        find_managed_block(existing).is_some(),
+    ) {
+        (0, 0, false) => Ok(false),
+        (1, 1, true) => Ok(true),
+        _ => Err(CoreError::config(
+            "AREAMATRIX.md contains invalid managed block markers",
+        )),
+    }
 }
 
 fn node_document(

@@ -83,6 +83,7 @@ fn file_snapshot(paths: &[&Path]) -> Vec<(String, Vec<u8>)> {
 fn updated_patch(expected_revision: i64) -> RepoConfigPatch {
     RepoConfigPatch {
         expected_revision,
+        repo_path: None,
         default_mode: Some(StorageMode::Indexed),
         overview_output: Some(OverviewOutput::RootAreaMatrixFile),
         ai_enabled: Some(true),

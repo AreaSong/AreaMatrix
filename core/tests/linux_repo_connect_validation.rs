@@ -4,10 +4,10 @@ use std::{
 };
 
 use area_matrix_core::{
-    get_latest_scan_session, init_repo, list_files, load_config, validate_repo_path, CoreError,
-    CoreResult, ErrorKind, ErrorRecoverability, FileFilter, FileOrigin, OverviewOutput,
-    PlatformPathKind, RepoConfig, RepoInitMode, RepoInitOptions, RepoPathIssue, RepoPathValidation,
-    ScanSessionKind, ScanSessionStatus, StorageMode,
+    get_latest_scan_session, init_repo, list_files, load_repo_config, validate_repo_path,
+    CoreError, CoreResult, ErrorKind, ErrorRecoverability, FileFilter, FileOrigin, OverviewOutput,
+    PlatformPathKind, RepoConfigSnapshot, RepoInitMode, RepoInitOptions, RepoPathIssue,
+    RepoPathValidation, ScanSessionKind, ScanSessionStatus, StorageMode,
 };
 use pretty_assertions::assert_eq;
 
@@ -100,7 +100,7 @@ fn linux_repo_connect_validation_proves_create_and_adopt_paths_are_ui_ready() {
 
     init_repo(path_string(empty_repo.path()), create_empty_options())
         .expect("initialize Linux repo after confirmation");
-    let config = load_config(path_string(empty_repo.path())).expect("load initialized config");
+    let config = load_repo_config(path_string(empty_repo.path())).expect("load initialized config");
     assert_eq!(config.repo_path, path_string(empty_repo.path()));
     assert_eq!(config.default_mode, StorageMode::Copied);
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);
@@ -234,11 +234,11 @@ fn linux_repo_connect_validation_covers_failures_without_user_file_mutation() {
 fn linux_repo_connect_validation_locks_core_api_udl_rust_and_test_evidence() {
     fn assert_validate(_: fn(String) -> CoreResult<RepoPathValidation>) {}
     fn assert_init(_: fn(String, RepoInitOptions) -> CoreResult<()>) {}
-    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfig>) {}
+    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfigSnapshot>) {}
 
     assert_validate(validate_repo_path);
     assert_init(init_repo);
-    assert_load_config(load_config);
+    assert_load_config(load_repo_config);
 
     assert_validation_docs_alignment();
     assert_core_api_udl_and_rust_alignment();
@@ -274,7 +274,7 @@ fn assert_core_api_and_udl_type_alignment() {
     for fragment in [
         "RepoPathValidation validate_repo_path(string repo_path);",
         "void init_repo(string repo_path, RepoInitOptions options);",
-        "RepoConfig load_config(string repo_path);",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
         "dictionary RepoPathValidation",
         "boolean is_readable;",
         "boolean is_writable;",

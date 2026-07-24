@@ -136,7 +136,7 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
         assertTestMirrorDescription(of: view.body, contains: [
             "icloud-conflict-minimal-error-mapping-error-mapping",
             "Repository check failed: PermissionDenied",
-            "AreaMatrix cannot inspect this conflict source.",
+            L10n.string("error.unmapped.message"),
             "Severity: High; Recoverability: UserActionRequired",
             "icloud-conflict-minimal-error-mapping-retry-repository-check"
         ])

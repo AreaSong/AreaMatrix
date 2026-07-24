@@ -1,5 +1,5 @@
 let snapshotConstructorInventories = [
-    snapshotCtorInventory("CoreErrorMappingSnapshot", [("CoreErrorMappingTestDoubleSupport.swift", 1)]),
+    snapshotCtorInventory("CoreErrorMappingSnapshot", [("CoreErrorMappingTestDoubleSupport.swift", 2)]),
     snapshotCtorInventory("SavedSearchSnapshot", [("SavedSearchPageFixtures.swift", 1)]),
     snapshotCtorInventory("SavedSearchQuerySnapshot", [("SavedSearchPageFixtures.swift", 1)], suffix: "(request:"),
     snapshotCtorInventory("CreateSavedSearchRequestSnapshot", [("SavedSearchPageFixtures.swift", 1)]),

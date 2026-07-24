@@ -16,11 +16,12 @@ struct CameraImportCoreFFIClient {
 
     func importCapturedPhoto(request: CameraImportCoreRequest) throws -> MobileLibraryFile {
         try ensureCurrentContract()
+        let contentLocale = try MobileRepositoryCoreFFIClient().contentLocale(repoPath: request.repoPath)
         let result = try rustCallWithCoreError {
             uniffi_area_matrix_core_fn_func_import_file(
                 try FFIWriter.lowerString(request.repoPath),
                 try FFIWriter.lowerString(request.sourceURL.path),
-                try FFIWriter.lowerImportOptions(request),
+                try FFIWriter.lowerImportOptions(request, contentLocale: contentLocale),
                 $0
             )
         }
@@ -98,7 +99,10 @@ private enum FFIWriter {
         }
     }
 
-    static func lowerImportOptions(_ request: CameraImportCoreRequest) throws -> RustBuffer {
+    static func lowerImportOptions(
+        _ request: CameraImportCoreRequest,
+        contentLocale: MobileRepositoryContentLocale
+    ) throws -> RustBuffer {
         var bytes: [UInt8] = []
         writeInt32(2, into: &bytes)
         writeInt32(3, into: &bytes)
@@ -106,6 +110,7 @@ private enum FFIWriter {
         writeOptionalString(request.category, into: &bytes)
         writeOptionalString(request.filename, into: &bytes)
         writeInt32(request.duplicateStrategy == .keepBoth ? 3 : 1, into: &bytes)
+        writeInt32(contentLocale.rawValue, into: &bytes)
         return try bytes.withUnsafeBufferPointer { try lowerBytes($0) }
     }
 

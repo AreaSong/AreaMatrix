@@ -99,13 +99,13 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             )
         ])
         XCTAssertEqual(model.repairState, .succeeded(report))
-        await reindexer.assertRequests([])
+        await reindexer.assertReindexRequests([])
 
         await model.runRescan()
-        await reindexer.assertRequests([])
+        await reindexer.assertReindexRequests([])
         model.isRescanConfirmed = true
         await model.runRescan()
-        await reindexer.assertRequests(["/tmp/repo"])
+        await reindexer.assertReindexRequests(["/tmp/repo"])
         XCTAssertTrue(model.rescanState.isSucceeded)
     }
 

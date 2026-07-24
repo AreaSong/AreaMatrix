@@ -72,7 +72,7 @@ actor RepairRecordingReindexer: CoreRepositoryReindexing {
         return try result.get()
     }
 
-    func assertRequests(
+    func assertReindexRequests(
         _ expectedRepoPaths: [String],
         file: StaticString = #filePath,
         line: UInt = #line

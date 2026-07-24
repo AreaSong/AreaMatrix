@@ -41,6 +41,8 @@ private let expectedAppCoreServiceSurface = [
     "App/AppCoreServices.swift:static var localModelStatusReader",
     "App/AppCoreServices.swift:static var missingFileRecoverer",
     "App/AppCoreServices.swift:static var noteStore",
+    "App/AppCoreServices.swift:static var overviewRegenerationCoordinator",
+    "App/AppCoreServices.swift:static var overviewRegenerator",
     "App/AppCoreServices.swift:static var platformCapabilityLoader",
     "App/AppCoreServices.swift:static var redoActionStore",
     "App/AppCoreServices.swift:static var remoteProviderConfigurer",

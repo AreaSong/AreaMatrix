@@ -78,7 +78,10 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
         XCTAssertEqual(state.recoveryErrorMapping, mapping)
         XCTAssertEqual(state.treeLoading, .failed(mapping))
         XCTAssertEqual(state.repositoryOpeningErrorMapping, mapping)
-        XCTAssertEqual(state.treeStatusText, "Repository tree failed to load: 扫描状态暂不可用")
+        XCTAssertEqual(
+            state.treeStatusText,
+            "Repository tree failed to load: \(L10n.string("error.unmapped.message"))"
+        )
     }
 
     @MainActor
@@ -206,7 +209,10 @@ final class MainLoadingAdoptExistingTests: XCTestCase {
             return
         }
 
-        XCTAssertEqual(failedState.treeStatusText, "Repository tree failed to load: 扫描状态暂不可用")
+        XCTAssertEqual(
+            failedState.treeStatusText,
+            "Repository tree failed to load: \(L10n.string("error.unmapped.message"))"
+        )
 
         await model.retryMainLoadingTree()
 

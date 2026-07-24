@@ -316,8 +316,8 @@ fn desktop_import_flow_failure_recovery_maps_error_codes_without_string_parsing(
         ),
         (
             ErrorKind::Db,
-            ErrorSeverity::Medium,
-            ErrorRecoverability::Retryable,
+            ErrorSeverity::High,
+            ErrorRecoverability::UserActionRequired,
         ),
         (
             ErrorKind::Io,

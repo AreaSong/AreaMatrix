@@ -54,7 +54,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             of: view.body,
             contains: [
                 "startup-recovery-error-mapping-error-mapping",
-                "Startup recovery could not finish",
+                L10n.string("error.unmapped.message"),
                 "Severity: Medium",
                 "Recoverability: Retryable",
                 "database is locked",
@@ -90,7 +90,7 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             "Internal",
             "Severity: Critical",
             "Recoverability: Fatal",
-            "Retry the failed action or collect diagnostics from the source page.",
+            L10n.string("error.unmapped.action"),
             "No technical context was provided by Core."
         ])
     }
@@ -140,7 +140,10 @@ final class StartupRecoveryPageFeatureTests: XCTestCase {
             message: "Expected startup-recovery startup recovery to stay in main loading"
         ) else { return }
         XCTAssertEqual(failedState.recoveryErrorMapping, mapping)
-        XCTAssertEqual(failedState.recoveryStatusText, "Startup recovery failed: Startup recovery could not finish")
+        XCTAssertEqual(
+            failedState.recoveryStatusText,
+            "Startup recovery failed: \(L10n.string("error.unmapped.message"))"
+        )
 
         let retryTask = Task {
             await model.retryMainRepositoryFromError(repoPath: "/tmp/repo")

@@ -60,7 +60,11 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.contractState, .failed(PlatformDifferencesContractError(
             message: L10n.message("Binding contract unavailable"),
-            recovery: L10n.message("Choose a supported binding version."),
+            recovery: L10n.message(
+                "error.unmapped.action",
+                fallback: "Choose a supported binding version.",
+                technicalDetail: "Choose a supported binding version."
+            ),
             detail: "bad version"
         )))
         XCTAssertEqual(model.capabilityState, .loaded(.fixture()))
@@ -81,7 +85,11 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
             reason: "platform Unknown"
         ), PlatformDifferencesCapabilityError(
             message: L10n.message("Capability snapshot unavailable"),
-            recovery: L10n.message("Choose a supported binding version."),
+            recovery: L10n.message(
+                "error.unmapped.action",
+                fallback: "Choose a supported binding version.",
+                technicalDetail: "Choose a supported binding version."
+            ),
             detail: "platform Unknown"
         )))
     }

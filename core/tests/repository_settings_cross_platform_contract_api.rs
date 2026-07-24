@@ -1,9 +1,10 @@
 use std::path::Path;
 
 use area_matrix_core::{
-    get_platform_capabilities, init_repo, load_config, update_config, CoreError, CoreResult,
-    OverviewOutput, PlatformCapabilities, PlatformCapabilityStatus, PlatformId, RepoConfig,
-    RepoInitMode, RepoInitOptions, StorageMode,
+    get_platform_capabilities, init_repo, load_repo_config, update_repo_config, CoreError,
+    CoreResult, OverviewOutput, PlatformCapabilities, PlatformCapabilityStatus, PlatformId,
+    RepoConfigPatch, RepoConfigSnapshot, RepoInitMode, RepoInitOptions, RepositoryLocalePolicy,
+    StorageMode,
 };
 use pretty_assertions::assert_eq;
 
@@ -44,12 +45,12 @@ fn initialized_repo() -> tempfile::TempDir {
 
 #[test]
 fn repository_settings_contract_reuses_config_and_platform_capability_apis() {
-    fn assert_load(_: fn(String) -> CoreResult<RepoConfig>) {}
-    fn assert_update(_: fn(String, RepoConfig) -> CoreResult<()>) {}
+    fn assert_load(_: fn(String) -> CoreResult<RepoConfigSnapshot>) {}
+    fn assert_update(_: fn(String, RepoConfigPatch) -> CoreResult<RepoConfigSnapshot>) {}
     fn assert_capabilities(_: fn(PlatformId, String) -> CoreResult<PlatformCapabilities>) {}
 
-    assert_load(load_config);
-    assert_update(update_config);
+    assert_load(load_repo_config);
+    assert_update(update_repo_config);
     assert_capabilities(get_platform_capabilities);
 
     let documented_errors = [
@@ -63,18 +64,25 @@ fn repository_settings_contract_reuses_config_and_platform_capability_apis() {
 #[test]
 fn repository_settings_contract_exposes_page_consumable_state() {
     let repo = initialized_repo();
-    let mut config = load_config(path_string(repo.path())).expect("load initial repo config");
-    config.default_mode = StorageMode::Indexed;
-    config.locale = "en".to_owned();
-    config.icloud_warn = false;
-    config.allow_replace_during_import = false;
-
-    update_config(path_string(repo.path()), config.clone()).expect("persist repository settings");
-    let reloaded = load_config(path_string(repo.path())).expect("reload repository settings");
+    let config = load_repo_config(path_string(repo.path())).expect("load initial repo config");
+    let updated = update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: config.revision,
+            default_mode: Some(StorageMode::Indexed),
+            locale_policy: Some(RepositoryLocalePolicy::En),
+            icloud_warn: Some(false),
+            allow_replace_during_import: Some(false),
+            ..RepoConfigPatch::default()
+        },
+    )
+    .expect("persist repository settings");
+    let reloaded = load_repo_config(path_string(repo.path())).expect("reload repository settings");
     let capabilities =
         get_platform_capabilities(PlatformId::Linux, "0.1.0".to_owned()).expect("matrix");
 
-    assert_eq!(reloaded, config);
+    assert_eq!(reloaded, updated);
+    assert_eq!(reloaded.revision, config.revision + 1);
     assert_eq!(capabilities.platform, PlatformId::Linux);
     assert_eq!(
         capabilities.cloud_placeholder.status,
@@ -92,15 +100,18 @@ fn repository_settings_contract_exposes_page_consumable_state() {
 #[test]
 fn repository_settings_contract_rejects_invalid_update_without_partial_write() {
     let repo = initialized_repo();
-    let before = load_config(path_string(repo.path())).expect("load initial config");
-    let mut invalid = before.clone();
-    invalid.repo_path = "/tmp/other-repo".to_owned();
-    invalid.locale = "en".to_owned();
-
-    let result = update_config(path_string(repo.path()), invalid);
+    let before = load_repo_config(path_string(repo.path())).expect("load initial config");
+    let result = update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: -1,
+            locale_policy: Some(RepositoryLocalePolicy::En),
+            ..RepoConfigPatch::default()
+        },
+    );
 
     assert!(matches!(result, Err(CoreError::Config { .. })));
-    let after = load_config(path_string(repo.path())).expect("reload config");
+    let after = load_repo_config(path_string(repo.path())).expect("reload config");
     assert_eq!(after, before);
 }
 
@@ -112,10 +123,17 @@ fn repository_settings_contract_preserves_user_visible_files() {
     std::fs::write(&readme_path, "user readme\n").expect("write user README");
     std::fs::write(&overview_path, "user overview\n").expect("write user overview");
 
-    let mut config = load_config(path_string(repo.path())).expect("load initial config");
-    config.locale = "en".to_owned();
-    config.overview_output = OverviewOutput::RootAreaMatrixFile;
-    update_config(path_string(repo.path()), config).expect("persist settings");
+    let config = load_repo_config(path_string(repo.path())).expect("load initial config");
+    update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: config.revision,
+            locale_policy: Some(RepositoryLocalePolicy::En),
+            overview_output: Some(OverviewOutput::RootAreaMatrixFile),
+            ..RepoConfigPatch::default()
+        },
+    )
+    .expect("persist settings");
 
     assert_eq!(
         std::fs::read_to_string(&readme_path).expect("read README"),
@@ -131,9 +149,10 @@ fn repository_settings_contract_preserves_user_visible_files() {
 fn repository_settings_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "PlatformCapabilities get_platform_capabilities(",
-        "RepoConfig load_config(string repo_path);",
-        "void update_config(string repo_path, RepoConfig new_config);",
-        "dictionary RepoConfig",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
+        "RepoConfigSnapshot update_repo_config(string repo_path, RepoConfigPatch patch);",
+        "dictionary RepoConfigSnapshot",
+        "dictionary RepoConfigPatch",
         "StorageMode default_mode;",
         "OverviewOutput overview_output;",
         "boolean icloud_warn;",
@@ -150,12 +169,12 @@ fn repository_settings_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "| `load_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |",
-        "| `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |",
+        "| `load_repo_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |",
+        "| `update_repo_config(repo, patch)` | repo | √ | Config / Conflict / PermissionDenied / Io / Db |",
         "| `get_platform_capabilities(platform, app_version)` | platform | √ | Config |",
         "#### repository settings contract",
-        "`load_config` 是 repository settings `repository-settings-cross-platform` 的 repo config",
-        "`update_config` 是 repository settings `repository-settings-cross-platform` 的 repo config",
+        "`load_repo_config` 是 repository settings `repository-settings-cross-platform` 的 repo config",
+        "`update_repo_config` 是 repository settings `repository-settings-cross-platform` 的 repo config",
         "`repository settings surface`",
         "禁用平台不支持的设置",
         "不接受 control map 之外的页面能力",
@@ -186,11 +205,6 @@ fn repository_settings_contract_documents_consumer_scope() {
         assert_contains(API_RS, fragment);
     }
 
-    for fragment in [
-        "repository settings reads this repository config snapshot",
-        "repository settings persists only repo_config",
-        "Platform-unsupported",
-    ] {
-        assert_contains(UDL, fragment);
-    }
+    assert_contains(UDL, "repository settings reads a revisioned snapshot");
+    assert_contains(UDL, "repository settings submits dirty fields");
 }

@@ -84,7 +84,9 @@ final class UndoHistoryActionLogTests: XCTestCase {
         )
 
         XCTAssertEqual(state.actions, [blocked])
-        XCTAssertEqual(state.failure?.userMessage, "External change prevents undo.")
+        XCTAssertEqual(state.failure?.userMessage, "Undo action is currently unavailable.")
+        XCTAssertEqual(state.failure?.technicalDetails, "External change prevents undo.")
+        XCTAssertEqual(state.failure?.rawContext, "External change prevents undo.")
         await undoStore.assertUndoActionRequests([])
     }
 

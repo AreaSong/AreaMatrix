@@ -608,6 +608,7 @@ dictionary RepoConfigSnapshot {
 
 dictionary RepoConfigPatch {
     i64 expected_revision;
+    string? repo_path;
     StorageMode? default_mode;
     OverviewOutput? overview_output;
     boolean? ai_enabled;
@@ -2911,7 +2912,7 @@ unknown field/code、非法 locale 或缺失必需字段均 fail closed。legacy
 | `update_repo_config(repo, patch)` | repo | √ | Config / Conflict / PermissionDenied / Io / Db |
 | `load_ai_config(repo)` | ai | √ | Config / PermissionDenied / Io |
 | `update_ai_config(repo, cfg)` | ai | √ | Config / PermissionDenied / Io |
-| `get_local_model_status(repo, request)` | ai | √ | Config / PermissionDenied / Io |
+| `get_local_model_status(repo, request)` | ai | √ | Config / PermissionDenied / Io / Db / DbLocked / DbCorrupted |
 | `locate_local_model_folder(repo, request)` | ai | √ | Config / PermissionDenied / Io |
 | `prepare_remote_ai_provider_probe(repo, request)` | ai | √ | Config / Internal |
 | `complete_remote_ai_provider_probe(repo, observation)` | ai | √ | Config / PermissionDenied / Internal |
@@ -2932,7 +2933,7 @@ unknown field/code、非法 locale 或缺失必需字段均 fail closed。legacy
 | `get_ai_fallback_status(repo, request)` | ai/fallback | √ | Config / PermissionDenied / Internal |
 | `semantic_search(repo, query, filter, pagination)` | ai/search | √ | Config / PermissionDenied / Db / Internal |
 | `build_embedding_index(repo, scope)` | ai/search | √ | Config / PermissionDenied / Db / Internal |
-| `recover_on_startup(repo)` | repo | √ | Db |
+| `recover_on_startup(repo)` | repo | √ | Db / DbLocked / DbCorrupted |
 | `preview_manual_rescan(repo)` | repo | √ | Io / Db / PermissionDenied / Conflict |
 | `reindex_from_filesystem(repo)` | repo | √ | Io / Db / PermissionDenied / Conflict |
 | `create_diagnostics_snapshot(repo)` | repo | √ | InvalidPath / RepoNotInitialized / FileNotFound / PermissionDenied / Io / Internal |
@@ -2993,11 +2994,11 @@ unknown field/code、非法 locale 或缺失必需字段均 fail closed。legacy
 | `list_redo_actions(repo)` | redo | √ | Db / Io |
 | `redo_action(repo, action_id)` | redo | √ | Conflict / FileNotFound / ExpiredAction / PermissionDenied / Db / Io |
 | `get_file(repo, file_id)` | query | √ | FileNotFound |
-| `get_missing_file_state(repo, file_id)` | recovery | √ | FileNotFound / PermissionDenied / Db |
-| `relink_missing_file(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |
-| `remove_missing_file_record(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |
+| `get_missing_file_state(repo, file_id)` | recovery | √ | FileNotFound / PermissionDenied / Db / DbLocked / DbCorrupted |
+| `relink_missing_file(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db / DbLocked / DbCorrupted |
+| `remove_missing_file_record(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db / DbLocked / DbCorrupted |
 | `list_changes(repo, filter)` | query | √ | Db |
-| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |
+| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / DbLocked / DbCorrupted / Io |
 | `detect_sync_conflicts(repo)` | sync/conflict | √ | Db / Io / Conflict |
 | `preview_sync_conflict_resolution(repo, conflict_id, resolution)` | sync/conflict | √ | Conflict / PermissionDenied / Io / Db |
 | `resolve_sync_conflict(repo, conflict_id, resolution)` | sync/conflict | √ | Conflict / PermissionDenied / Io / Db |
@@ -3315,6 +3316,7 @@ let updated = try AreaMatrix.updateRepoConfig(
     repoPath: repoPath,
     patch: RepoConfigPatch(
         expectedRevision: cfg.revision,
+        repoPath: nil,
         defaultMode: .copied,
         overviewOutput: .generatedOnly,
         aiEnabled: nil,
@@ -3333,12 +3335,13 @@ let updated = try AreaMatrix.updateRepoConfig(
 rename，也不创建或更新 `README.md`、`AREAMATRIX.md` 或
 `.areamatrix/classifier.yaml`。
 
+`repo_path` 仅用于资料库目录移动后的元数据自同步，值必须与调用参数 `repoPath` 完全一致；
 `enable_extension_rules`、`enable_keyword_rules` 与 `fallback_to_inbox`
 支撑 `classifier rule toggle` 分类规则开关；`allow_replace_during_import` 支撑 `replace import setting`
 危险导入选项的默认关闭策略。它们只保存设置状态，不执行分类、导入或
 替换行为。
 
-`expected_revision` 必须来自最近读取的 snapshot。unknown locale policy 下只接受 locale-only canonical patch；
+`expected_revision` 必须来自最近读取的 snapshot。unknown locale policy 下只接受 locale 和/或 path-only patch；
 普通字段 patch 与生成操作均 fail closed。任一校验、权限、IO 或 DB 持久化失败时，事务回滚，旧配置保持
 可读；主要错误码为 `Config`、`Conflict`、`PermissionDenied`、`Io`、`Db`。
 
@@ -3522,6 +3525,8 @@ local model status 的本地模型状态读取入口，服务 `local model statu
   metadata schema 不可用。
 - `PermissionDenied`：模型目录、manifest、runtime 状态或 AreaMatrix-owned status cache 不可读。
 - `Io`：读取模型 manifest、目录 metadata、磁盘占用或 runtime health metadata 失败。
+- `Db` / `DbLocked` / `DbCorrupted`：写入 AreaMatrix-owned status cache 时发生通用、锁定或损坏错误；
+  locked 保持可重试，corrupted 进入阻断恢复，不压扁为 `Config`。
 
 页面消费状态：
 
@@ -7007,7 +7012,7 @@ snake_case 以配合 Swift `JSONDecoder.KeyDecodingStrategy.convertFromSnakeCase
 错误码边界：
 
 - `RepoNotInitialized`：资料库 metadata 缺失。
-- `Db`：树构建需要读取 SQLite metadata 时失败。
+- `Db` / `DbLocked` / `DbCorrupted`：树构建需要读取 SQLite metadata 时发生通用、锁定或损坏错误。
 - `Io`：资料库目录、文件路径、文件 metadata 或分类配置无法读取。
 
 副作用边界：该 API 只读取资料库文件路径和分类配置，不写 DB，不创建 generated

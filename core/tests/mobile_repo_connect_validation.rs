@@ -1,8 +1,8 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, list_files, load_config, validate_repo_path, CoreError, CoreResult, FileFilter,
-    FileOrigin, OverviewOutput, RepoConfig, RepoInitMode, RepoInitOptions, RepoPathIssue,
+    init_repo, list_files, load_repo_config, validate_repo_path, CoreError, CoreResult, FileFilter,
+    FileOrigin, OverviewOutput, RepoConfigSnapshot, RepoInitMode, RepoInitOptions, RepoPathIssue,
     RepoPathValidation, StorageMode,
 };
 use pretty_assertions::assert_eq;
@@ -78,7 +78,8 @@ fn mobile_repo_connect_validation_proves_ui_ready_create_and_adopt_paths() {
 
     init_repo(path_string(empty_repo.path()), create_empty_options())
         .expect("initialize after create confirmation");
-    let empty_config = load_config(path_string(empty_repo.path())).expect("load created config");
+    let empty_config =
+        load_repo_config(path_string(empty_repo.path())).expect("load created config");
     assert_eq!(empty_config.repo_path, path_string(empty_repo.path()));
     assert_eq!(empty_config.overview_output, OverviewOutput::GeneratedOnly);
     assert!(empty_repo.path().join(".areamatrix/index.db").is_file());
@@ -166,11 +167,11 @@ fn mobile_repo_connect_validation_rejects_failures_without_user_file_side_effect
 fn mobile_repo_connect_validation_locks_core_api_udl_rust_and_test_evidence() {
     fn assert_validate(_: fn(String) -> CoreResult<RepoPathValidation>) {}
     fn assert_init(_: fn(String, RepoInitOptions) -> CoreResult<()>) {}
-    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfig>) {}
+    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfigSnapshot>) {}
 
     assert_validate(validate_repo_path);
     assert_init(init_repo);
-    assert_load_config(load_config);
+    assert_load_config(load_repo_config);
 
     assert_task_docs_and_testing_alignment();
     assert_core_api_udl_and_rust_alignment();
@@ -191,14 +192,14 @@ fn assert_core_api_udl_and_rust_alignment() {
     for fragment in [
         "RepoPathValidation validate_repo_path(string repo_path);",
         "void init_repo(string repo_path, RepoInitOptions options);",
-        "RepoConfig load_config(string repo_path);",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
         "dictionary RepoPathValidation",
         "RepoInitMode? recommended_mode;",
         "sequence<RepoPathIssue> issues;",
         "dictionary RepoInitOptions",
         "RepoInitMode mode;",
         "OverviewOutput overview_output;",
-        "dictionary RepoConfig",
+        "dictionary RepoConfigSnapshot",
         "StorageMode default_mode;",
         "enum RepoInitMode { \"CreateEmpty\", \"AdoptExisting\" };",
         "InvalidPath(string path);",
@@ -212,7 +213,7 @@ fn assert_core_api_udl_and_rust_alignment() {
     for fragment in [
         "### `validate_repo_path(repoPath: String) throws -> RepoPathValidation`",
         "### `init_repo(repoPath: String, options: RepoInitOptions) throws`",
-        "### `load_config(repoPath: String) throws -> RepoConfig`",
+        "### `load_repo_config(repoPath: String) throws -> RepoConfigSnapshot`",
         "不触发 iCloud 占位符下载。",
         "非空目录只返回 `AdoptExisting` 推荐和结构化风险。",
         "永不写入或覆盖已有 `README.md`",

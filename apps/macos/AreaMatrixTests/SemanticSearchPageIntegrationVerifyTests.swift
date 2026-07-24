@@ -159,23 +159,19 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             fallbackMessage: "Semantic index is not ready yet."
         )
         let status = SemanticSearchFallbackStatus.fromSemanticPage(page)
-        let region = SemanticSearchFallbackStatusRegion(
-            page: page,
-            state: .idle,
-            isIndexBuildBusy: false,
-            isPrivacyGateChecking: false,
-            onAction: { _ in }
-        )
+        let localizer = AppLocalizer(runtime: AppLanguageRuntime(selection: .en))
 
         XCTAssertEqual(status.primaryAction, .buildSemanticIndex)
         XCTAssertEqual(status.nonAiFallbackAction, .useNormalSearch)
         XCTAssertEqual(status.actions, [.buildSemanticIndex, .useNormalSearch])
         XCTAssertTrue(status.canBuildSemanticIndex)
-        assertTestMirrorDescription(of: region.body, contains: [
-            "Semantic index is not ready",
-            "Build semantic index",
-            "Use normal search"
-        ], doesNotContain: "Classify manually", maxDepth: 8)
+        XCTAssertEqual(localizer.resolve(status.title), "Semantic index is not ready")
+        XCTAssertEqual(localizer.resolve(status.message), "Semantic index is not ready yet.")
+        XCTAssertEqual(status.actionPresentations.map(\.accessibilityIdentifier), [
+            "ai-fallback-semantic-search-core-action-build-semantic-index",
+            "ai-fallback-semantic-search-core-action-use-normal-search"
+        ])
+        XCTAssertFalse(status.actions.contains(.classifyManually))
     }
 
     @MainActor
@@ -188,22 +184,23 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             fallbackMessage: "Remote AI could not be reached. Your files were not changed."
         )
         let status = SemanticSearchFallbackStatus.fromSemanticPage(page)
-        let region = SemanticSearchFallbackStatusRegion(
-            page: page,
-            state: .idle,
-            isIndexBuildBusy: false,
-            isPrivacyGateChecking: false,
-            onAction: { _ in }
-        )
+        let localizer = AppLocalizer(runtime: AppLanguageRuntime(selection: .en))
 
         XCTAssertEqual(status.title, L10n.message("Remote AI could not be reached"))
         XCTAssertTrue(status.retryable)
         XCTAssertEqual(status.actions, [.viewCallLog, .useNormalSearch])
         XCTAssertFalse(status.canBuildSemanticIndex)
-        assertTestMirrorDescription(of: region.body, contains: [
+        let presentations = [status.presentation(for: .retry)] + status.actionPresentations
+        XCTAssertEqual(presentations.map(\.accessibilityIdentifier), [
+            "ai-fallback-semantic-search-core-action-retry",
+            "ai-fallback-semantic-search-core-action-view-call-log",
+            "ai-fallback-semantic-search-core-action-use-normal-search"
+        ])
+        XCTAssertEqual(presentations.map { localizer.resolve($0.title) }, [
             "Retry",
             "View call log",
             "Use normal search"
-        ], doesNotContain: "Classify manually", maxDepth: 8)
+        ])
+        XCTAssertFalse(status.actions.contains(.classifyManually))
     }
 }

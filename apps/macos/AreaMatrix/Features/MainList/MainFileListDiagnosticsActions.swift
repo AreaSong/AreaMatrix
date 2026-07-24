@@ -255,16 +255,17 @@ enum UndoHistoryActionLog {
     }
 
     private static func unavailableRedoMapping(for action: RedoActionRecordSnapshot) -> CoreErrorMappingSnapshot {
-        CoreErrorMappingSnapshot(
+        let reason = RedoActionFeedback.disabledReason(for: action)
+        return CoreErrorMappingSnapshot(
             kind: action.status == .expired ? .expiredAction : .conflict,
             userMessage: L10n.message(
                 "Redo action is currently unavailable.",
-                technicalDetail: RedoActionFeedback.disabledReason(for: action)
+                technicalDetail: reason
             ),
             severity: .medium,
             suggestedAction: L10n.message("Review details in Undo History."),
             recoverability: .refreshRequired,
-            rawContext: RedoActionFeedback.disabledReason(for: action)
+            rawContext: reason
         )
     }
 }

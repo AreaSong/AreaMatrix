@@ -233,6 +233,7 @@ private func repoConfigPatch(
 ) throws -> RepoConfigPatch {
     try RepoConfigPatch(
         expectedRevision: current.revision,
+        repoPath: current.repoPath == updated.repoPath ? nil : updated.repoPath,
         defaultMode: current.defaultMode == updated.defaultMode
             ? nil : StorageMode(snapshotValue: updated.defaultMode),
         overviewOutput: current.overviewOutput == updated.overviewOutput

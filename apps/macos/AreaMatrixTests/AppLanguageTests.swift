@@ -142,6 +142,20 @@ final class AppLanguageTests: XCTestCase {
         XCTAssertEqual(runtime.localizedString("settings.page.general"), "通用")
     }
 
+    func testPrimaryMainSurfaceLabelsUsePolishedRuntimeTranslations() {
+        let runtime = AppLanguageRuntime(selection: .zhHans)
+
+        XCTAssertEqual(runtime.localizedString("Import..."), "导入...")
+        XCTAssertEqual(runtime.localizedString("Normal"), "普通")
+        XCTAssertEqual(runtime.localizedString("Semantic"), "语义")
+        XCTAssertEqual(runtime.localizedString("Disabled"), "已禁用")
+        XCTAssertEqual(runtime.localizedString("settings.language.simplifiedChinese"), "简体中文")
+        XCTAssertEqual(
+            runtime.localizedString("导入时仍可在 ImportSheet 临时更改。"),
+            "每次导入时仍可临时更改。"
+        )
+    }
+
     func testRuntimeLocalizationRegistersAnObservationDependency() {
         let runtime = AppLanguageRuntime(selection: .en)
         let invalidated = expectation(description: "localized dependency invalidated")
@@ -241,7 +255,7 @@ final class AppLanguageTests: XCTestCase {
     }
 
     @MainActor
-    func testSystemLocaleNotificationRefreshesOnlyFollowSystemSelection() throws {
+    func testSystemLocaleNotificationRefreshesOnlyFollowSystemSelection() async throws {
         let defaults = try makeDefaults()
         let notifications = NotificationCenter()
         var preferred = ["en-US"]
@@ -256,16 +270,27 @@ final class AppLanguageTests: XCTestCase {
         )
         XCTAssertEqual(localizer.resourceLocaleIdentifier, "en")
 
+        let systemRefresh = expectation(description: "system locale refresh")
+        let refreshObservation = store.objectWillChange.sink {
+            systemRefresh.fulfill()
+        }
         preferred = ["zh-CN"]
         notifications.post(name: NSLocale.currentLocaleDidChangeNotification, object: nil)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.01))
+        await fulfillment(of: [systemRefresh], timeout: 1)
         XCTAssertEqual(localizer.resourceLocaleIdentifier, "zh-Hans")
+        refreshObservation.cancel()
 
         store.select(.en)
+        let fixedLanguageRefresh = expectation(description: "fixed language does not refresh")
+        fixedLanguageRefresh.isInverted = true
+        let fixedObservation = store.objectWillChange.sink {
+            fixedLanguageRefresh.fulfill()
+        }
         preferred = ["zh-CN"]
         notifications.post(name: NSLocale.currentLocaleDidChangeNotification, object: nil)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.01))
+        await fulfillment(of: [fixedLanguageRefresh], timeout: 0.05)
         XCTAssertEqual(localizer.resourceLocaleIdentifier, "en")
+        withExtendedLifetime(fixedObservation) {}
     }
 
     @MainActor

@@ -171,7 +171,7 @@ fn install_rename_change_log_failure(repo: &Path) {
 #[test]
 fn rename_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     for fragment in [
-        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, string content_locale\n    );",
+        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, ContentLocale content_locale\n    );",
         "dictionary FileEntry",
         "string path;",
         "string current_name;",
@@ -199,8 +199,10 @@ fn rename_file_integration_verify_docs_api_udl_and_consumers_stay_aligned() {
     }
 
     for fragment in [
-        "pub fn rename_file(repo_path: String, file_id: i64, new_name: String)",
-        "storage::rename_file(repo_path, file_id, new_name, content_locale)",
+        "pub fn rename_file(",
+        "content_locale: impl crate::ContentLocaleInput",
+        "content_locale.into_content_locale()?",
+        "storage::rename_file(",
         "file rename owns the user-visible rename contract",
         "Indexed rows are display-name only",
         "Repository-owned rename also triggers generated overview",

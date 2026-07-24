@@ -61,8 +61,8 @@ final class MainRepoErrorMappingTests: XCTestCase {
 
     func testDefaultCoreBridgeMapsDbLockedAndCorruptedToDistinctRecoveryActions() async {
         let bridge = CoreBridge()
-        let locked = await bridge.mapCoreError(CoreError.Db(message: "database is locked"))
-        let corrupted = await bridge.mapCoreError(CoreError.Db(message: "database disk image is malformed"))
+        let locked = await bridge.mapCoreError(CoreError.DbLocked(message: "database is locked"))
+        let corrupted = await bridge.mapCoreError(CoreError.DbCorrupted(message: "database disk image is malformed"))
 
         XCTAssertEqual(locked.kind, .db)
         XCTAssertEqual(locked.severity, .medium)
@@ -83,18 +83,17 @@ final class MainRepoErrorMappingTests: XCTestCase {
             recoverability: .retryable,
             rawContext: "database is locked"
         )
-        let fallbackOnly = CoreErrorMappingSnapshot.testFixture(
+        let fallbackOnly = CoreErrorMappingSnapshot.fallbackOnlyTestFixture(
             kind: .internal,
             userMessage: "应用内部错误",
             severity: .critical,
-            suggestedAction: "",
             recoverability: .fatal,
             rawContext: "missing action"
         )
 
-        XCTAssertEqual(mapped.recoveryText, "请稍后重试")
-        XCTAssertEqual(mapped.recoveryText(fallback: "Retry"), "请稍后重试")
-        XCTAssertEqual(fallbackOnly.recoveryText, "应用内部错误")
+        XCTAssertEqual(mapped.recoveryText, L10n.string("error.unmapped.action"))
+        XCTAssertEqual(mapped.recoveryText(fallback: "Retry"), L10n.string("error.unmapped.action"))
+        XCTAssertEqual(fallbackOnly.recoveryText, L10n.string("error.unmapped.message"))
         XCTAssertEqual(fallbackOnly.recoveryText(fallback: "Retry"), "Retry")
     }
 }

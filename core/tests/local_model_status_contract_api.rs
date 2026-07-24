@@ -201,7 +201,7 @@ fn local_model_status_contract_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "| `get_local_model_status(repo, request)` | ai | √ | Config / PermissionDenied / Io |",
+        "| `get_local_model_status(repo, request)` | ai | √ | Config / PermissionDenied / Io / Db / DbLocked / DbCorrupted |",
         "| `locate_local_model_folder(repo, request)` | ai | √ | Config / PermissionDenied / Io |",
         "### `get_local_model_status(repoPath: String, request: LocalModelStatusRequest) throws -> LocalModelStatusSnapshot`",
         "### `locate_local_model_folder(repoPath: String, request: LocalModelFolderRequest) throws -> LocalModelFolderLocation`",

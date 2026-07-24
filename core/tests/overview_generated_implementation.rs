@@ -4,10 +4,11 @@ use std::{
 };
 
 use area_matrix_core::{
-    import_file, init_repo, list_changes, list_files, load_config, rename_file,
-    sync_external_changes, update_config, ChangeFilter, CoreError, DuplicateStrategy,
-    ExternalEvent, ExternalEventKind, FileEntry, FileFilter, ImportDestination, ImportOptions,
-    OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
+    commit_overview_regeneration, import_file, init_repo, list_changes, list_files, load_config,
+    prepare_overview_regeneration, rename_file, start_overview_regeneration, sync_external_changes,
+    update_config, ChangeFilter, ContentLocale, CoreError, DuplicateStrategy, ExternalEvent,
+    ExternalEventKind, FileEntry, FileFilter, ImportDestination, ImportOptions, OverviewOutput,
+    OverviewRegenerationStartRequest, RepoInitMode, RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
 
@@ -144,7 +145,7 @@ fn overview_generated_implementation_import_updates_generated_root_and_node_only
     let generated_node = read_file(&repo.path().join(".areamatrix/generated/nodes/docs.md"));
     assert_contains(&generated_root, "AREAMATRIX:BEGIN");
     assert_contains(&generated_root, "docs");
-    assert_contains(&generated_root, "1 个文件");
+    assert_contains(&generated_root, "1 files");
     assert_contains(&generated_node, "report.pdf");
     assert_contains(&generated_node, "12 B");
     assert_eq!(read_file(&readme_path), "user readme\n");
@@ -185,12 +186,25 @@ fn overview_generated_implementation_root_file_replaces_only_marker_block() {
     let mut config = load_config(path_string(repo.path())).expect("load config");
     config.overview_output = OverviewOutput::RootAreaMatrixFile;
     update_config(path_string(repo.path()), config).expect("enable root overview output");
-    import_doc(repo.path(), "contract.pdf", b"contract bytes");
+    let plan = prepare_overview_regeneration(path_string(repo.path()), ContentLocale::En)
+        .expect("prepare explicit full regeneration");
+    let session = start_overview_regeneration(
+        path_string(repo.path()),
+        OverviewRegenerationStartRequest {
+            operation_id: plan.operation_id.clone(),
+            plan_token: plan.plan_token,
+            expected_repository_revision: plan.repository_revision,
+            confirmed: true,
+        },
+    )
+    .expect("start explicit full regeneration");
+    commit_overview_regeneration(path_string(repo.path()), session.context.operation_id)
+        .expect("commit explicit full regeneration");
 
     let root_content = read_file(&root_entry);
     assert_contains(&root_content, "# User overview");
     assert_contains(&root_content, "manual tail");
-    assert_contains(&root_content, "contract.pdf");
+    assert_contains(&root_content, "**Overview**");
     assert_not_contains(&root_content, "old managed");
 }
 

@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import SwiftUI
 
 enum AISummaryEditorOperation: Equatable {
     case idle, loading, generating, saving, clearing, failed(AISettingsError)
@@ -100,17 +101,18 @@ extension AISummaryEditorModel {
     }
 
     func applyClearConflictIfPresent(_ error: Error) async -> Bool {
-        guard case let CoreError.RevisionConflict(resource, expected, current) = error,
-              resource == "ai_summary_content_revision"
-        else {
+        guard let conflict = coreRevisionConflict(
+            from: error,
+            resource: "ai_summary_content_revision"
+        ) else {
             return false
         }
         do {
             let latest = try await summaryStore.loadAISummaryState(repoPath: repoPath, fileID: fileID)
             apply(latest)
             clearConflictNotice = AISummaryClearConflictNotice(
-                expectedRevision: expected,
-                currentRevision: current
+                expectedRevision: conflict.expectedRevision,
+                currentRevision: conflict.currentRevision
             )
             failedAction = nil
             operation = .idle
@@ -323,5 +325,111 @@ struct AISummaryCallLogRoute: Identifiable, Equatable {
     var callLogID: Int64
     var id: Int64 {
         callLogID
+    }
+}
+
+struct AISummaryGenerationRequestFactory {
+    let fileID: Int64
+    let providerScope: AiSummaryProviderScope
+    let privacyContext: AISummaryPrivacyContext
+
+    func makeGenerationRequest(
+        _ regenerate: Bool,
+        contentLocale: String,
+        attempt: AISummaryGenerationAttempt,
+        privacyPolicyRef: String? = nil
+    ) throws -> AiSummaryGenerationRequest {
+        try AiSummaryGenerationRequest(
+            operationId: attempt.operationID,
+            retryOfOperationId: attempt.retryOfOperationID,
+            fileId: fileID,
+            providerScope: providerScope,
+            contextPolicy: .metadataAndExtractedText,
+            privacyPolicyRef: privacyPolicyRef,
+            regenerateExisting: regenerate,
+            contentLocale: ContentLocale(snapshotValue: contentLocale)
+        )
+    }
+
+    func makePrivacyEvaluationRequest(snapshot: AiPrivacyRulesSnapshot) -> AiPrivacyEvaluationRequest {
+        var context = privacyContext.coreContext
+        context.fileId = fileID
+        return AiPrivacyEvaluationRequest(
+            feature: .autoSummaries,
+            route: AiPrivacyEvaluationRoute(summaryProviderScope: providerScope),
+            requestedFields: [.fileName, .repoRelativePath, .extractedTextExcerpt],
+            privacyGateEnabled: snapshot.privacyGateEnabled,
+            providerScope: snapshot.providerScope,
+            rules: snapshot.rules.map(AiPrivacyRuleInput.init(summaryRule:)),
+            remoteAllowedFields: snapshot.remoteAllowedFields.map(AiPrivacyFieldRule.init(state:)),
+            context: context
+        )
+    }
+
+    func makeLoggedPrivacySkipDraft(
+        _ skip: AISummaryPrivacySkip,
+        summaryStore: any CoreAISummaryManaging,
+        repoPath: String,
+        contentLocale: String,
+        attempt: AISummaryGenerationAttempt
+    ) async throws -> AiSummaryDraft {
+        guard let policyRef = skip.privacyPolicyRefForSummaryLog else {
+            throw AppSemanticError(appErrorMapping: .internalFailure(
+                rawContext: "AI summary privacy skip is not loggable"
+            ))
+        }
+        return try await summaryStore.generateAISummary(
+            repoPath: repoPath,
+            request: makeGenerationRequest(
+                attempt.regenerate,
+                contentLocale: contentLocale,
+                attempt: attempt,
+                privacyPolicyRef: policyRef
+            )
+        )
+    }
+}
+
+struct AISummaryGateNoticeView: View {
+    @EnvironmentObject private var localizer: AppLocalizer
+    let notice: AISummaryEditorNotice
+    let repoPath: String
+    let accessibilityID: String
+    let onOpenAISettings: () -> Void
+    let onOpenPrivacyRule: (AIPrivacyRulesRoute) -> Void
+
+    var body: some View {
+        TintedStatusBanner(
+            tint: .yellow,
+            cornerRadius: 0,
+            fillsWidth: false,
+            contentPadding: 8,
+            backgroundOpacity: 0.12
+        ) {
+            VStack(alignment: .leading, spacing: 6) {
+                Label(notice.title, systemImage: "exclamationmark.triangle")
+                Text(notice.detail).font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    Text(localizer.resolve(notice.recovery)).font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    action
+                }
+            }
+        }
+        .accessibilityIdentifier(accessibilityID)
+    }
+
+    @ViewBuilder
+    private var action: some View {
+        if notice.opensAISettings {
+            Button("Open AI settings", action: onOpenAISettings)
+                .accessibilityIdentifier("ai-summary-\(notice.capability)-open-ai-settings")
+        } else if let route = notice.aiPrivacyRulesPrivacyRulesRoute(repoPath: repoPath),
+                  let suffix = notice.aiPrivacyRulesRouteAccessibilitySuffix {
+            Button("View privacy rule") {
+                onOpenPrivacyRule(route)
+            }
+            .accessibilityIdentifier("ai-summary-\(notice.capability)-view-\(suffix)")
+        }
     }
 }

@@ -295,7 +295,7 @@ fn sync_external_renamed_failure_recovery_replay_refreshes_source_category_overv
         "en".to_owned(),
     );
 
-    assert!(matches!(failed, Err(CoreError::Io { .. })));
+    assert!(matches!(failed, Err(CoreError::Config { .. })));
     assert_eq!(fs_cursor(repo.path()), Some(30));
     assert_eq!(
         get_file(path_string(repo.path()), file_id)
@@ -352,7 +352,7 @@ fn sync_external_renamed_failure_recovery_replays_legacy_log_without_target_file
         vec![renamed("aaa/legacy.pdf", 41)],
         "en".to_owned(),
     );
-    assert!(matches!(failed, Err(CoreError::Io { .. })));
+    assert!(matches!(failed, Err(CoreError::Config { .. })));
     assert_eq!(fs_cursor(repo.path()), Some(40));
     assert_eq!(change_log_count(repo.path(), "renamed"), 1);
 

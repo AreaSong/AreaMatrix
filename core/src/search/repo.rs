@@ -58,9 +58,7 @@ pub(super) fn validate_current_path(filter: &SearchFilter) -> CoreResult<()> {
 
 pub(super) fn query_rows(repo: &Path, filter: &SearchFilter) -> CoreResult<Vec<SearchRow>> {
     let connection = open_connection(repo)?;
-    let mut statement = connection
-        .prepare(search_sql())
-        .map_err(|error| CoreError::db(error.to_string()))?;
+    let mut statement = connection.prepare(search_sql()).map_err(CoreError::from)?;
     let mut rows = statement
         .query(params![
             filter.include_deleted.unwrap_or(false),
@@ -73,13 +71,10 @@ pub(super) fn query_rows(repo: &Path, filter: &SearchFilter) -> CoreResult<Vec<S
             storage_mode_filter(filter.storage_mode.as_ref()),
             current_scope_path(filter),
         ])
-        .map_err(|error| CoreError::db(error.to_string()))?;
+        .map_err(CoreError::from)?;
 
     let mut results = Vec::new();
-    while let Some(row) = rows
-        .next()
-        .map_err(|error| CoreError::db(error.to_string()))?
-    {
+    while let Some(row) = rows.next().map_err(CoreError::from)? {
         results.push(row_to_search_row(row)?);
     }
     Ok(results)
@@ -111,21 +106,11 @@ fn search_sql() -> &'static str {
 }
 
 fn row_to_search_row(row: &Row<'_>) -> CoreResult<SearchRow> {
-    let storage_mode_value: String = row
-        .get(7)
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    let origin_value: String = row
-        .get(8)
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    let note: String = row
-        .get(12)
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    let changes: String = row
-        .get(13)
-        .map_err(|error| CoreError::db(error.to_string()))?;
-    let tags: String = row
-        .get(14)
-        .map_err(|error| CoreError::db(error.to_string()))?;
+    let storage_mode_value: String = row.get(7).map_err(CoreError::from)?;
+    let origin_value: String = row.get(8).map_err(CoreError::from)?;
+    let note: String = row.get(12).map_err(CoreError::from)?;
+    let changes: String = row.get(13).map_err(CoreError::from)?;
+    let tags: String = row.get(14).map_err(CoreError::from)?;
 
     Ok(SearchRow {
         entry: file_entry_from_row(row, &storage_mode_value, &origin_value)?,
@@ -141,39 +126,19 @@ fn file_entry_from_row(
     origin_value: &str,
 ) -> CoreResult<FileEntry> {
     Ok(FileEntry {
-        id: row
-            .get(0)
-            .map_err(|error| CoreError::db(error.to_string()))?,
-        path: row
-            .get(1)
-            .map_err(|error| CoreError::db(error.to_string()))?,
-        original_name: row
-            .get(2)
-            .map_err(|error| CoreError::db(error.to_string()))?,
-        current_name: row
-            .get(3)
-            .map_err(|error| CoreError::db(error.to_string()))?,
-        category: row
-            .get(4)
-            .map_err(|error| CoreError::db(error.to_string()))?,
-        size_bytes: row
-            .get(5)
-            .map_err(|error| CoreError::db(error.to_string()))?,
-        hash_sha256: row
-            .get(6)
-            .map_err(|error| CoreError::db(error.to_string()))?,
+        id: row.get(0).map_err(CoreError::from)?,
+        path: row.get(1).map_err(CoreError::from)?,
+        original_name: row.get(2).map_err(CoreError::from)?,
+        current_name: row.get(3).map_err(CoreError::from)?,
+        category: row.get(4).map_err(CoreError::from)?,
+        size_bytes: row.get(5).map_err(CoreError::from)?,
+        hash_sha256: row.get(6).map_err(CoreError::from)?,
         storage_mode: storage_mode_from_db(storage_mode_value)?,
         origin: origin_from_db(origin_value)?,
-        source_path: row
-            .get(9)
-            .map_err(|error| CoreError::db(error.to_string()))?,
+        source_path: row.get(9).map_err(CoreError::from)?,
         availability_status: FileAvailabilityStatus::Available,
-        imported_at: row
-            .get(10)
-            .map_err(|error| CoreError::db(error.to_string()))?,
-        updated_at: row
-            .get(11)
-            .map_err(|error| CoreError::db(error.to_string()))?,
+        imported_at: row.get(10).map_err(CoreError::from)?,
+        updated_at: row.get(11).map_err(CoreError::from)?,
     })
 }
 
@@ -186,13 +151,13 @@ fn open_connection(repo: &Path) -> CoreResult<Connection> {
         return Err(CoreError::db("database error"));
     }
     let connection = Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|error| CoreError::db(error.to_string()))?;
+        .map_err(CoreError::from)?;
     connection
         .execute_batch(
             "PRAGMA query_only = ON;
              PRAGMA busy_timeout = 5000;",
         )
-        .map_err(|error| CoreError::db(error.to_string()))?;
+        .map_err(CoreError::from)?;
     Ok(connection)
 }
 

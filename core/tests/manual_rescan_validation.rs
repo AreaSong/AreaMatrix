@@ -409,7 +409,7 @@ fn assert_core_api_udl_and_rust_alignment() {
     assert_contains(DB_RS, "const LATEST_SCHEMA_VERSION: i64 = 3;");
     assert_contains(DB_RS, "fn run_schema_migrations");
     assert_contains(DB_RS, "ALTER TABLE scan_sessions ADD COLUMN");
-    assert_contains(DB_RS, "{INDEX_DB_FILE}.pre-v{target_version}.bak");
+    assert_contains(DB_RS, "{INDEX_DB_FILE}.pre-v{target_version}{suffix}.bak");
     assert_contains(
         DB_RS,
         "kind TEXT NOT NULL CHECK (kind IN ('adopt', 'reindex'))",

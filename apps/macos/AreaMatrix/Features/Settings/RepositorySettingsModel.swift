@@ -13,6 +13,7 @@ final class RepositorySettingsModel: ObservableObject {
     @Published private(set) var loadedConfig: AppRepoConfigSnapshot?
     @Published var healthSummary: RepositorySettingsHealthSummary?
     @Published var healthError: RepositorySettingsHealthError?
+    @Published private(set) var syncError: RepositorySettingsSyncError?
     @Published private(set) var repositoryActionMessage: LocalizedMessage?
     @Published private(set) var repositoryActionError: RepositorySettingsPathActionError?
     @Published private(set) var overviewActionError: RepositorySettingsOverviewActionError?
@@ -20,6 +21,7 @@ final class RepositorySettingsModel: ObservableObject {
 
     let repoPath: String
     private let loader: any CoreConfigurationLoading
+    private let updater: any CoreConfigurationUpdating
     let repositoryOpener: any CoreEmptyRepositoryOpening
     let fileLister: (any CoreFileListing)?
     let scanSessionReader: any CoreScanSessionReading
@@ -32,11 +34,13 @@ final class RepositorySettingsModel: ObservableObject {
     private let coreVersionLoader: any CoreVersionLoading
     let errorMapper: any CoreErrorMapping
     private let accessibilityAnnouncer: any AccessibilityAnnouncing
+    private var hasPendingRepositoryPathSync = false
     private var diagnosticsGeneration = SettingsDiagnosticsGeneration()
 
     init(
         repoPath: String,
         loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
+        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
         repositoryOpener: any CoreEmptyRepositoryOpening = AppCoreServices.emptyRepositoryOpener,
         fileLister: (any CoreFileListing)? = nil,
         scanSessionReader: any CoreScanSessionReading = AppCoreServices.scanSessionReader,
@@ -55,6 +59,7 @@ final class RepositorySettingsModel: ObservableObject {
     ) {
         self.repoPath = repoPath
         self.loader = loader
+        self.updater = updater
         self.repositoryOpener = repositoryOpener
         self.fileLister = fileLister ?? (repositoryOpener as? any CoreFileListing)
         self.scanSessionReader = scanSessionReader
@@ -102,11 +107,13 @@ extension RepositorySettingsModel {
         loadState = .loading
         healthSummary = nil
         healthError = nil
+        syncError = nil
         repositoryActionMessage = nil
         repositoryActionError = nil
         overviewActionError = nil
         diagnosticsGeneration.invalidate()
         diagnosticsState = .idle
+        hasPendingRepositoryPathSync = false
         do {
             let config = try await loader.loadConfig(repoPath: repoPath)
             let effectiveConfig = config.withRepositoryPath(repoPath)
@@ -114,8 +121,12 @@ extension RepositorySettingsModel {
             let coreVersion = await currentCoreVersion()
             loadedConfig = effectiveConfig
 
+            if metadataPresence.hasMetadataDatabase, config.repoPath != repoPath {
+                await synchronizeRepositoryPath(from: config)
+            }
+
             loadState = .loaded(RepositorySettingsSummary(
-                config: effectiveConfig,
+                config: loadedConfig ?? effectiveConfig,
                 fallbackRepoPath: repoPath,
                 coreVersion: coreVersion,
                 metadataPresence: metadataPresence
@@ -124,6 +135,18 @@ extension RepositorySettingsModel {
         } catch {
             loadedConfig = nil
             loadState = await .failed(loadError(for: error))
+        }
+    }
+
+    func retryRepositoryPathSync() async {
+        guard hasPendingRepositoryPathSync else { return }
+
+        syncError = nil
+        do {
+            let currentConfig = try await loader.loadConfig(repoPath: repoPath)
+            await synchronizeRepositoryPath(from: currentConfig)
+        } catch {
+            syncError = await repositoryPathSyncError(for: error)
         }
     }
 
@@ -204,6 +227,40 @@ extension RepositorySettingsModel {
         } catch {
             return nil
         }
+    }
+
+    private func synchronizeRepositoryPath(from currentConfig: AppRepoConfigSnapshot) async {
+        let updatedConfig = currentConfig.withRepositoryPath(repoPath)
+        guard currentConfig.repoPath != repoPath else {
+            loadedConfig = updatedConfig
+            hasPendingRepositoryPathSync = false
+            return
+        }
+
+        hasPendingRepositoryPathSync = true
+        do {
+            loadedConfig = try await updater.updateConfig(
+                repoPath: repoPath,
+                from: currentConfig,
+                to: updatedConfig
+            )
+            hasPendingRepositoryPathSync = false
+        } catch {
+            syncError = await repositoryPathSyncError(for: error)
+        }
+    }
+
+    private func repositoryPathSyncError(for error: Error) async -> RepositorySettingsSyncError {
+        if let mapping = await errorMapper.mapKnownErrorIfPresent(error) {
+            return RepositorySettingsSyncError(
+                message: mapping.userMessageDescriptor,
+                recovery: mapping.suggestedActionDescriptor
+            )
+        }
+        return RepositorySettingsSyncError(
+            message: L10n.message("settings.error.syncRepositoryPath", technicalDetail: error.localizedDescription),
+            recovery: L10n.message("settings.error.syncRepositoryPathRecovery")
+        )
     }
 
     private func loadError(for error: Error) async -> RepositorySettingsLoadError {

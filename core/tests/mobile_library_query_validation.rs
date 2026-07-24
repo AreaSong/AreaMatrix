@@ -301,7 +301,7 @@ fn assert_core_api_udl_and_rust_alignment() {
         "### `list_tree_json(repoPath, locale) throws -> String`",
         "按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。",
         "- `RepoNotInitialized`：资料库 metadata 缺失。",
-        "- `Db`：树构建需要读取 SQLite metadata 时失败。",
+        "- `Db` / `DbLocked` / `DbCorrupted`：树构建需要读取 SQLite metadata 时发生通用、锁定或损坏错误。",
     ] {
         assert_contains(CORE_API, fragment);
     }

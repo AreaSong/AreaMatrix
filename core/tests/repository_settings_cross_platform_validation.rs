@@ -268,9 +268,10 @@ fn assert_core_api_udl_and_rust_alignment() {
 fn assert_udl_surface_alignment() {
     for fragment in [
         "PlatformCapabilities get_platform_capabilities(",
-        "RepoConfig load_config(string repo_path);",
-        "void update_config(string repo_path, RepoConfig new_config);",
-        "dictionary RepoConfig",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
+        "RepoConfigSnapshot update_repo_config(string repo_path, RepoConfigPatch patch);",
+        "dictionary RepoConfigSnapshot",
+        "dictionary RepoConfigPatch",
         "StorageMode default_mode;",
         "OverviewOutput overview_output;",
         "boolean icloud_warn;",
@@ -288,8 +289,8 @@ fn assert_udl_surface_alignment() {
 
 fn assert_core_api_contract_alignment() {
     for fragment in [
-        "| `load_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |",
-        "| `update_config(repo, cfg)` | repo | √ | Config / PermissionDenied / Io / Db |",
+        "| `load_repo_config(repo)` | repo | √ | Config / PermissionDenied / Io / Db |",
+        "| `update_repo_config(repo, patch)` | repo | √ | Config / Conflict / PermissionDenied / Io / Db |",
         "| `get_platform_capabilities(platform, app_version)` | platform | √ | Config |",
         "#### repository settings contract",
         "禁用平台不支持的设置",

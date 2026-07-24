@@ -149,7 +149,7 @@ private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSet
     XCTAssertTrue(FileManager.default.fileExists(atPath: context.sourceURL.path))
     XCTAssertEqual(context.model.versionInfo.appVersion, "9.8.7 (654)")
     XCTAssertEqual(context.model.versionInfo.coreVersion, "0.1.0-test")
-    XCTAssertEqual(context.model.versionInfo.repoSchemaVersion, 2)
+    XCTAssertEqual(context.model.versionInfo.repoSchemaVersion, 3)
     XCTAssertNil(context.model.versionError)
     XCTAssertEqual(context.model.diagnosticsState, .collected(context.diagnosticsSnapshot))
     await context.diagnosticsCollector.assertRequestedRepoPaths([context.repoURL.path])
@@ -160,7 +160,7 @@ private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSet
             context.repoURL.lastPathComponent,
             "9.8.7 (654)",
             "0.1.0-test",
-            "v2",
+            "v3",
             "GeneratedOnly",
             "false"
         )

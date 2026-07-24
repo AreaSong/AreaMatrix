@@ -167,7 +167,7 @@ fn recover_on_startup_validation_db_error_keeps_staging_retryable() {
 
     let result = recover_on_startup(path_string(repo.path()));
 
-    assert!(matches!(result, Err(CoreError::Db { .. })));
+    assert!(matches!(result, Err(CoreError::DbCorrupted { .. })));
 
     assert_eq!(
         fs::read(&orphan).expect("staging file should remain retryable after DB error"),

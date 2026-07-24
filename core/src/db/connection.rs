@@ -29,8 +29,13 @@ pub(crate) fn ensure_initialized_readable(repo_path: &Path) -> CoreResult<()> {
     let mut file =
         File::open(db_path(repo_path)).map_err(|error| CoreError::db(error.to_string()))?;
     let mut header = [0_u8; 16];
-    file.read_exact(&mut header)
-        .map_err(|error| CoreError::db(error.to_string()))?;
+    if let Err(error) = file.read_exact(&mut header) {
+        return if error.kind() == std::io::ErrorKind::UnexpectedEof {
+            Err(CoreError::db_corrupted("file is not a database"))
+        } else {
+            Err(CoreError::db(error.to_string()))
+        };
+    }
     if &header == SQLITE_HEADER {
         Ok(())
     } else {

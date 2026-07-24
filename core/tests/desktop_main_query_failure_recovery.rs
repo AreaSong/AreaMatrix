@@ -335,12 +335,17 @@ fn desktop_main_query_failure_db_corruption_is_explicit_and_leaves_no_half_produ
     let tree_error = list_tree_json(path_string(repo.path()), "en".to_owned())
         .expect_err("tree must report DB corruption");
 
-    for error in [list_error, search_error, tree_error] {
+    for (surface, error) in [
+        ("list", list_error),
+        ("search", search_error),
+        ("tree", tree_error),
+    ] {
         let mapping = error.to_error_mapping();
-        assert_eq!(mapping.kind, ErrorKind::Db);
+        assert_eq!(mapping.kind, ErrorKind::DbCorrupted, "{surface}");
         assert_eq!(
             mapping.recoverability,
-            ErrorRecoverability::UserActionRequired
+            ErrorRecoverability::Fatal,
+            "{surface}"
         );
     }
     assert_eq!(visible_paths(repo.path()), before_user_paths);

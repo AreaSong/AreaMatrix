@@ -90,7 +90,7 @@ final class ImportResultCopyRetryTests: XCTestCase {
             matching: { $0.status == .failed },
             message: "Expected failed retry import result item"
         ) else { return }
-        XCTAssertEqual(failedItem.reason, "无访问权限")
+        XCTAssertEqual(failedItem.reason, L10n.string("error.unmapped.message"))
         assertImportResultRetryAvailability(
             result,
             canRetryFailedItems: true,

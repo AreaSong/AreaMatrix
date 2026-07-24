@@ -96,6 +96,10 @@ struct MobileRepositoryCoreFFIClient {
         _ = try FFIReader.liftConfig(result)
     }
 
+    func contentLocale(repoPath: String) throws -> MobileRepositoryContentLocale {
+        try MobileRepositoryFFIWriter.contentLocale(for: loadConfig(repoPath: repoPath).locale)
+    }
+
     private func ensureCurrentContract() throws {
         guard ffi_area_matrix_core_uniffi_contract_version() == 26,
               uniffi_area_matrix_core_checksum_func_get_version() == 61902,

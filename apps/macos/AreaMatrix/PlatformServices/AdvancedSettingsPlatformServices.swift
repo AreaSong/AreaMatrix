@@ -27,12 +27,16 @@ struct BundleAppVersionReader: AppVersionReading {
     func appVersion() -> String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+        return Self.versionIdentifier(version: version, build: build)
+    }
+
+    static func versionIdentifier(version: String?, build: String?) -> String {
         let trimmedVersion = version?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let trimmedBuild = build?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         if trimmedVersion.isEmpty { return L10n.string("Unknown") }
         if trimmedBuild.isEmpty { return trimmedVersion }
-        return "\(trimmedVersion) (\(trimmedBuild))"
+        return "\(trimmedVersion)+\(trimmedBuild)"
     }
 }
 

@@ -77,17 +77,13 @@ final class ImportFolderConflictResolutionTests: XCTestCase {
     }
 
     func testImportConflictBatchUndoActionLogCoreFallbackUsesAppSemanticFailureSnapshot() {
-        XCTAssertEqual(
-            CoreErrorMappingSnapshot.internalFailure(rawContext: "undo_action returned no result"),
-            CoreErrorMappingSnapshot.testFixture(
-                kind: .internal,
-                userMessage: "Internal application error",
-                severity: .critical,
-                suggestedAction: "Record the error information and restart the app",
-                recoverability: .fatal,
-                rawContext: "undo_action returned no result"
-            )
-        )
+        let mapping = CoreErrorMappingSnapshot.internalFailure(rawContext: "undo_action returned no result")
+
+        XCTAssertEqual(mapping.userMessageDescriptor, L10n.message("error.internal.message"))
+        XCTAssertEqual(mapping.suggestedActionDescriptor, L10n.message("error.internal.action"))
+        XCTAssertEqual(mapping.severity, .critical)
+        XCTAssertEqual(mapping.recoverability, .fatal)
+        XCTAssertEqual(mapping.rawContext, "undo_action returned no result")
     }
 
     @MainActor

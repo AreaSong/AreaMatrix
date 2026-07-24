@@ -141,7 +141,7 @@ private func assertStartupRecoveryStartupRecoveryFailureState(
         onRetry: {}
     )
     XCTAssertEqual(state.recoveryErrorMapping, mapping)
-    XCTAssertTrue(state.recoveryStatusText?.contains("Startup recovery could not finish") == true)
+    XCTAssertTrue(state.recoveryStatusText?.contains(L10n.string("error.unmapped.message")) == true)
     XCTAssertEqual(recoveryView.retryButtonTitle, "Retry startup recovery")
     XCTAssertFalse(recoveryView.retryButtonIsDisabled)
     assertTestMirrorDescription(of: MainLoadingView(

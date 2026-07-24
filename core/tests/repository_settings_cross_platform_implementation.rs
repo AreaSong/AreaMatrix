@@ -87,7 +87,7 @@ fn repository_settings_implementation_loads_defaults_and_platform_limits_without
     assert_eq!(config.repo_path, repo_path);
     assert_eq!(config.default_mode, StorageMode::Copied);
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);
-    assert_eq!(config.locale, "zh-Hans");
+    assert_eq!(config.locale, "system");
     assert!(config.icloud_warn);
     assert_eq!(
         linux.cloud_placeholder.status,

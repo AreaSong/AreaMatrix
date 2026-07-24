@@ -116,7 +116,7 @@ pub(crate) fn ensure_repository_locale_allows_generation_preview(
 }
 
 fn ensure_canonical_repository_locale(connection: &Connection) -> CoreResult<()> {
-    let raw_locale = config_value(&connection, "locale")?.unwrap_or_default();
+    let raw_locale = config_value(connection, "locale")?.unwrap_or_default();
     let snapshot = crate::RepositoryLocalePolicySnapshot::from_raw(raw_locale);
     if !snapshot.is_canonical() {
         Err(CoreError::config(
@@ -137,6 +137,13 @@ pub(crate) fn update_repo_config_patch(
     }
     if patch.expected_revision < 1 {
         return Err(CoreError::config("configuration revision is invalid"));
+    }
+    if let Some(patched_repo_path) = patch.repo_path.as_deref() {
+        if patched_repo_path.trim().is_empty() || patched_repo_path != repo_path {
+            return Err(CoreError::config(
+                "repository path patch must match repo_path",
+            ));
+        }
     }
 
     let repo = PathBuf::from(&repo_path);
@@ -162,7 +169,7 @@ pub(crate) fn update_repo_config_patch(
     if matches!(
         locale_snapshot.state,
         crate::RepositoryLocalePolicyState::Unsupported
-    ) && !patch.is_locale_only()
+    ) && !patch.is_locale_or_path_only()
     {
         return Err(CoreError::config(
             "unsupported repository locale requires explicit canonical policy save",
@@ -170,6 +177,9 @@ pub(crate) fn update_repo_config_patch(
     }
 
     let timestamp = chrono::Utc::now().timestamp();
+    if let Some(value) = patch.repo_path {
+        upsert_config_value(&tx, "repo_path", &value, timestamp)?;
+    }
     if let Some(value) = patch.default_mode {
         upsert_config_value(&tx, "default_mode", storage_mode_to_db(&value), timestamp)?;
     }

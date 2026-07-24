@@ -113,6 +113,9 @@ final class CameraImportReviewModelTests: XCTestCase {
         let bridge = LiveMobileRepositoryCoreBridge()
 
         try await bridge.initializeEmptyRepository(repoPath: repo.path)
+        var config = try await bridge.loadConfig(repoPath: repo.path)
+        config.locale = Locale.preferredLanguages.first?.lowercased().hasPrefix("zh") == true ? "en" : "zh-Hans"
+        try await bridge.updateConfig(repoPath: repo.path, newConfig: config)
         let model = CameraImportReviewModel(repoPath: repo.path, sourceURL: source, bridge: bridge)
         await model.prepare()
         model.filename = "Camera Evidence.jpg"

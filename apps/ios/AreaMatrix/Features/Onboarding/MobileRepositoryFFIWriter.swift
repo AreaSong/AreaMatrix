@@ -25,13 +25,27 @@ enum MobileRepositoryFFIWriter {
         return try bytes.withUnsafeBufferPointer { try lowerBytes($0) }
     }
 
-    private static func preferredContentLocale() -> MobileRepositoryContentLocale {
+    static func preferredContentLocale() -> MobileRepositoryContentLocale {
         Locale.preferredLanguages.first?.lowercased().hasPrefix("zh") == true ? .zhHans : .en
+    }
+
+    static func contentLocale(for policy: String) throws -> MobileRepositoryContentLocale {
+        switch policy.lowercased() {
+        case "follow-interface", "system":
+            preferredContentLocale()
+        case "zh-hans":
+            .zhHans
+        case "en":
+            .en
+        default:
+            throw MobileRepositoryCoreFFIError.unsupportedRepositoryLocale(policy)
+        }
     }
 
     static func lowerRepoConfigPatch(_ config: MobileRepositoryConfig) throws -> RustBuffer {
         var bytes: [UInt8] = []
         writeInt64(config.revision, into: &bytes)
+        writeOptionalString(config.repoPath, into: &bytes)
         writeOptionalStorageMode(config.defaultMode, into: &bytes)
         writeOptionalOverviewOutput(config.overviewOutput, into: &bytes)
         writeOptionalBool(config.aiEnabled, into: &bytes)
@@ -71,6 +85,17 @@ enum MobileRepositoryFFIWriter {
         default:
             throw MobileRepositoryCoreFFIError.unsupportedRepositoryLocale(value)
         }
+    }
+
+    private static func writeOptionalString(_ value: String?, into bytes: inout [UInt8]) {
+        guard let value else {
+            bytes.append(0)
+            return
+        }
+        bytes.append(1)
+        let data = Array(value.utf8)
+        writeInt32(Int32(data.count), into: &bytes)
+        bytes.append(contentsOf: data)
     }
 
     private static func enumValue(for mode: MobileRepositoryInitMode) -> Int32 {

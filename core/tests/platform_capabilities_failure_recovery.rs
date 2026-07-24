@@ -199,7 +199,8 @@ fn platform_capabilities_failure_docs_record_recovery_and_scope_boundaries() {
 
     for fragment in [
         "| `Config { reason }` | 配置无效或保存失败",
-        "`Config { reason }` 必须始终提供经过控制、可向用户解释的 reason",
+        "`Config { reason }` 的 reason 是 technical details，不是 UI 文案",
+        "Swift 不解析 reason",
     ] {
         assert!(ERROR_CODES.contains(fragment));
     }

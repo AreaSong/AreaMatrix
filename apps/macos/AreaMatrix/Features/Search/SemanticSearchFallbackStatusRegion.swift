@@ -103,7 +103,7 @@ struct SemanticSearchFallbackStatusRegion: View {
                 performAction(presentation.action)
             }
             .disabled(isDisabled(presentation.action, status: status))
-            .accessibilityIdentifier("ai-fallback-semantic-search-core-action-\(presentation.accessibilityID)")
+            .accessibilityIdentifier(presentation.accessibilityIdentifier)
         }
     }
 

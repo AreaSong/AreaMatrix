@@ -24,7 +24,7 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 | v1-mvp distribution evidence | `blocked-external` / `blocked-decision` / `deferred` | [../versions/v1-mvp/residuals/](../versions/v1-mvp/residuals/) | v1 分发证据和分发决策未关闭；其中 `v1-ref-003-1-task-05` 走分发证据 review。 |
 | v1-mvp checkpoint gaps | `accepted-exception` | [../versions/v1-mvp/residuals/accepted-exceptions.md](../versions/v1-mvp/residuals/accepted-exceptions.md) | 35 个历史 checkpoint gaps 已接受为 closeout exceptions，不回填历史。 |
 | v2 governance | `open` / `deferred` | [../versions/v2/residuals/](../versions/v2/residuals/) | 独立复核风险、execution authorization 与 remote merge controls 保持真实状态；均不是 executable task。 |
-| closed product contract corrections | `closed` | [Core API](../../docs/api/core-api.md) / [macOS architecture](../../docs/architecture/macos-frontend-architecture.md) | 无效的独立恢复合同已移除；metadata reader 已收紧为只读打开。 |
+| closed product contract corrections | `closed` | [Core API](../../docs/api/core-api.md) / [ADR-0008](../../docs/adr/0008-naming-and-i18n.md) / [macOS architecture](../../docs/architecture/macos-frontend-architecture.md) | 无效的独立恢复合同已移除；metadata reader 已收紧为只读打开；界面语言与资料库内容语言合同已闭环。 |
 | AreaFlow | `reference-only` | [non-current-references.md](non-current-references.md) | 历史愿景材料，不是当前产品范围或 active backlog。 |
 | v-template | `template-only` | [non-current-references.md](non-current-references.md) | 模板参考实例，blocked-by-design，不是真版本未完成。 |
 | closed backlog packages | `reference-only` | [../../tasks/indexes/residuals.md](../../tasks/indexes/residuals.md) | 5 个 backlog prompt package 均 closed，不是当前待执行任务。 |
@@ -45,7 +45,7 @@ AreaMatrix 遗留问题账本入口：集中索引仍会影响规划、发布或
 | `v2-dep-003` | `deferred` | `governance-dependency` | v2 live execution not authorized | governance authoring 不授权 promotion apply、execution 写入或 runner。 |
 | `v2-dep-004` | `deferred` | `governance-dependency` | merge readiness requires remote evidence | 本地检查不能替代 remote CI 和 branch protection evidence。 |
 | `global-product-soft-delete-retention` | `closed` | `product-contract-gap` | none | 启动 recovery 已 purge 超过 30 天的 soft-deleted 元数据行（不硬删用户源文件）。 |
-| `global-product-ui-localization` | `open` | `product-contract-gap` | v3 bilingual closeout not cleared | 基础 language store 与 catalog 已存在，但 classifier locale map、CAS 冲突 UX、operation provenance、独立 overview regeneration 和四组合 UI 证据尚未闭环。 |
+| `global-product-ui-localization` | `closed` | `product-contract-gap` | none | Core/UDL/macOS 已实现独立界面与内容语言、classifier locale map、CAS 冲突 UX、operation provenance、显式 overview regeneration，并完成四组合 fixture UI 验证。 |
 | `global-docs-core-module-doc-coverage` | `closed` | `product-doc-marker` | none | 高风险模块文档已补写；其余模块以 core-api 为合同深度（见 core-internal-architecture）。 |
 | `global-governance-ios-bindings-verify-gap` | `closed` | `file-safety-gap` | none | `./dev bindings verify` 已含 iOS subset 符号校验。 |
 | `global-ai-classification-call-log-gate` | `closed` | `product-contract-gap` | none | classification 已有前置 call-log gate，gate 失败不调用远程。 |

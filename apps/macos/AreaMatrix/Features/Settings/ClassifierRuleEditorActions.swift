@@ -278,3 +278,95 @@ private extension ClassifierRuleEditorModelState {
         clearRiskConfirmations()
     }
 }
+
+extension ClassifierRuleEditorModelState {
+    var createRequest: ClassifierRuleCreateRequestSnapshot? {
+        guard let draft, let editingLocale, draft.ruleID == nil, draft.validationErrors.isEmpty else { return nil }
+        return ClassifierRuleCreateRequestSnapshot(
+            repositoryLocalePolicy: repositoryLocalePolicy,
+            editingLocale: editingLocale,
+            slug: draft.slug,
+            displayName: draft.displayName,
+            description: draft.description,
+            extensions: draft.extensions,
+            keywords: draft.keywords,
+            priority: draft.priority,
+            namingTemplate: draft.namingTemplateValue
+        )
+    }
+
+    var updateRequest: ClassifierRuleUpdateSnapshot? {
+        guard let draft, let baseline = lastValidDraft, let editingLocale,
+              let ruleID = draft.ruleID, baseline.ruleID == ruleID,
+              draft.validationErrors.isEmpty
+        else { return nil }
+        return ClassifierRuleUpdateSnapshot(
+            repositoryLocalePolicy: repositoryLocalePolicy,
+            editingLocale: editingLocale,
+            ruleID: ruleID,
+            observed: ClassifierRuleObservedStateSnapshot(draft: baseline),
+            slug: draft.slug,
+            displayName: draft.displayName,
+            description: draft.description,
+            extensions: draft.extensions,
+            keywords: draft.keywords,
+            priority: draft.priority,
+            namingTemplate: draft.namingTemplateValue,
+            previewConfirmed: draft.previewConfirmed
+        )
+    }
+
+    var deleteRequest: ClassifierRuleDeleteRequestSnapshot? {
+        guard let selectedRule, canDeleteSelectedRule else { return nil }
+        guard pendingDeleteConfirmation?.ruleID == selectedRule.ruleID else { return nil }
+        return ClassifierRuleDeleteRequestSnapshot(
+            ruleID: selectedRule.ruleID,
+            replacementCategory: defaultRuleID.isEmpty ? nil : defaultRuleID,
+            previewConfirmed: true
+        )
+    }
+}
+
+extension ClassifierRuleEditorDraft {
+    init(record: ClassifierRuleRecordSnapshot, editingLocale: ClassifierEditingLocale) {
+        ruleID = record.ruleID
+        slug = record.slug
+        displayName = record.displayName(for: editingLocale)
+        description = record.description(for: editingLocale)
+        extensions = record.extensions
+        keywords = record.keywords
+        priority = record.priority
+        namingTemplate = record.namingTemplate ?? ""
+        isDefault = record.isDefault
+        previewConfirmed = true
+    }
+
+    var namingTemplateValue: String? {
+        let trimmed = namingTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    func normalizedForEditing() -> ClassifierRuleEditorDraft {
+        var copy = self
+        copy.slug = copy.slug.trimmingCharacters(in: .whitespacesAndNewlines)
+        copy.displayName = copy.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        copy.description = copy.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        copy.namingTemplate = copy.namingTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
+        copy.extensions = copy.extensions.map(ClassifierRuleEditorValidation.normalizedExtension)
+        copy.keywords = copy.keywords.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        return copy
+    }
+}
+
+extension ClassifierRuleObservedStateSnapshot {
+    init(draft: ClassifierRuleEditorDraft) {
+        ruleID = draft.ruleID ?? ""
+        slug = draft.slug
+        displayName = draft.displayName
+        description = draft.description
+        extensions = draft.extensions
+        keywords = draft.keywords
+        priority = draft.priority
+        namingTemplate = draft.namingTemplateValue
+    }
+}

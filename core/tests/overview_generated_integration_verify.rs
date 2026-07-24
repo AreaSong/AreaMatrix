@@ -77,9 +77,9 @@ fn overview_generated_integration_verify_api_udl_and_rust_wiring_are_real() {
     for fragment in [
         "void init_repo(string repo_path, RepoInitOptions options);",
         "FileEntry import_file(",
-        "void update_config(string repo_path, RepoConfig new_config);",
+        "RepoConfigSnapshot update_repo_config(string repo_path, RepoConfigPatch patch);",
         "OverviewOutput overview_output;",
-        "string content_locale;",
+        "ContentLocale content_locale;",
         "enum OverviewOutput { \"GeneratedOnly\", \"RootAreaMatrixFile\" };",
     ] {
         assert_contains(CORE_API, fragment);
@@ -115,7 +115,7 @@ fn overview_generated_integration_verify_api_udl_and_rust_wiring_are_real() {
 
     for fragment in [
         "write_plans_with_rollback",
-        "regenerate_for_node(repo, &entry.category)",
+        "regenerate_for_node(repo, &entry.category, content_locale)",
         "repo.join(\"AREAMATRIX.md\")",
         "merge_managed_block",
         "write_atomic_replace",

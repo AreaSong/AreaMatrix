@@ -1,7 +1,7 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, list_files, list_tree_json, load_config, CoreError, FileFilter, OverviewOutput,
+    init_repo, list_files, list_tree_json, load_repo_config, CoreError, FileFilter, OverviewOutput,
     RepoInitMode, RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
@@ -62,7 +62,7 @@ fn tree_child_names(tree_json: &str) -> Vec<String> {
 fn init_empty_repo_integration_verify_docs_udl_and_public_api_stay_aligned() {
     for api_fragment in [
         "void init_repo(string repo_path, RepoInitOptions options);",
-        "RepoConfig load_config(string repo_path);",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
         "string list_tree_json(string repo_path, string locale);",
         "dictionary RepoInitOptions",
         "RepoInitMode mode;",
@@ -90,7 +90,7 @@ fn init_empty_repo_integration_verify_real_create_empty_flow_supports_ux_consump
     assert!(repo.path().join(".areamatrix/ignore.yaml").is_file());
     assert!(!repo.path().join("README.md").exists());
 
-    let config = load_config(path_string(repo.path())).expect("load initialized config");
+    let config = load_repo_config(path_string(repo.path())).expect("load initialized config");
     assert_eq!(config.repo_path, path_string(repo.path()));
     assert_eq!(config.default_mode, StorageMode::Copied);
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);

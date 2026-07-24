@@ -194,9 +194,9 @@ final class AreaMatrixShellTests: XCTestCase {
             error: CoreError.Db(message: "database error")
         )
 
-        XCTAssertEqual(config.title, L10n.message("Repository Settings Are Invalid"))
-        XCTAssertEqual(permission.title, L10n.message("Repository Settings Need Permission"))
-        XCTAssertEqual(io.title, L10n.message("Repository Settings Are Unavailable"))
-        XCTAssertEqual(db.title, L10n.message("Repository Metadata Cannot Be Opened"))
+        XCTAssertEqual(config.title, L10n.message("repository.loadError.invalidTitle"))
+        XCTAssertEqual(permission.title, L10n.message("repository.loadError.permissionTitle"))
+        XCTAssertEqual(io.title, L10n.message("repository.loadError.ioTitle"))
+        XCTAssertEqual(db.title, L10n.message("repository.loadError.databaseTitle"))
     }
 }

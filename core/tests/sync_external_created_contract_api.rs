@@ -67,7 +67,7 @@ fn sync_external_created_contract_api_exposes_documented_signatures_inputs_and_o
 #[test]
 fn sync_external_created_contract_api_docs_control_map_and_udl_stay_aligned() {
     for fragment in [
-        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, string content_locale\n    );",
+        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, ContentLocale content_locale\n    );",
         "i64? get_fs_event_cursor(string repo_path);",
         "void set_fs_event_cursor(string repo_path, i64 last_event_id);",
         "dictionary ExternalEvent",

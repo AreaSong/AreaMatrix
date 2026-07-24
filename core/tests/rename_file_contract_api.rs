@@ -154,7 +154,7 @@ fn rename_file_contract_exports_core_api_and_udl_signature() {
     assert_rename(rename_file);
 
     for fragment in [
-        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, string content_locale\n    );",
+        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, ContentLocale content_locale\n    );",
         "dictionary FileEntry",
         "string path;",
         "string current_name;",

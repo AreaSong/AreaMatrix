@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-21"
+updated: "2026-07-25"
 scope: global
 authority: index-only
 source_of_truth:
@@ -77,28 +77,34 @@ items:
       - ADR-0003/0006 and core-api.md updated for purge-on-startup metadata-only retention
     notes: Closed 2026-07-21. recover_on_startup purges files.status=deleted rows with deleted_at older than 30 days; user source files and Trash are not hard-deleted.
   - id: global-product-ui-localization
-    status: open
+    status: closed
     type: product-contract-gap
     title: UI string localization pipeline from ADR-0008 is not implemented
     source: docs/adr/0008-naming-and-i18n.md
     supporting_sources:
+      - core/area_matrix.udl
+      - core/src/db/repo_config.rs
+      - core/src/overview/mod.rs
       - apps/macos/AreaMatrix/Localizations/Localizable.xcstrings
       - apps/macos/AreaMatrix/App/AppLanguage.swift
+      - apps/macos/AreaMatrix/Features/Settings/RepositorySettingsModel.swift
       - scripts/dev_tools/checks.py
     owner: macos-frontend
-    current_impact: v3-bilingual-closeout-not-cleared
+    current_impact: none
     executable_task: false
     promotion_required: true
-    close_condition: Complete the v3 bilingual contract across Core, UDL, generated bindings and macOS; prove responsive app-owned UI, repository locale CAS, classifier locale maps, operation provenance, structured errors and all four interface/content combinations with fixture-only UI evidence.
+    close_condition: Completed. Core, UDL, generated bindings and macOS implement independent interface/content languages, responsive app-owned UI, repository locale CAS, classifier locale maps, operation provenance, structured errors and explicit overview regeneration.
     validation:
-      - xcodebuild AreaMatrix succeeds with Localizable.xcstrings in app bundle
-      - AppLanguage tests cover persistence, runtime switching, zh-* fallback, and legacy zh-CN canonicalization
-      - Core tests cover system content locale following the interface while explicit repository locales remain stable
-      - governance check enforces extracted UI key coverage, locale parity, and placeholder parity
+      - cargo fmt, clippy and workspace tests pass for the final Core contract
       - ./dev bindings verify
-      - ./dev test macos
+      - xcodebuild Debug build succeeds with Localizable.xcstrings in the app bundle
+      - ./dev test macos --disable-parallel-testing executes 1052 tests with 5 skipped and 0 failures
+      - localization compiler contract passes for 739 extracted keys with locale and placeholder parity
+      - full macOS SwiftFormat and SwiftLint pass with 0 findings across 749 Swift files
       - fixture-only Debug UI smoke covers en/en, en/zh-Hans, zh-Hans/en and zh-Hans/zh-Hans
-    notes: Reopened 2026-07-24 after v3 audit found the prior closure premature. Catalog resources and the basic language store exist, but classifier locale maps, repository conflict UX, operation provenance, standalone overview regeneration and complete responsive presentation evidence remain incomplete.
+      - explicit zh-Hans and en overview regeneration each completes preflight, stage and commit for all 7 targets
+      - fixture SQLite integrity_check is ok and no root README.md, root AREAMATRIX.md or user-file mutation occurs
+    notes: Closed 2026-07-25 after the reopened gap was completed across Core, UDL, generated bindings and macOS. Four interface/content combinations refresh immediately without coupling the two language stores; existing generated content remains unchanged until explicit journaled regeneration.
   - id: global-docs-core-module-doc-coverage
     status: closed
     type: product-doc-marker

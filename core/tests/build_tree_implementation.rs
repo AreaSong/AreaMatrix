@@ -212,7 +212,7 @@ fn build_tree_implementation_requires_initialized_readable_metadata() {
 
     assert!(matches!(
         list_tree_json(path_string(repo.path()), "en".to_owned()),
-        Err(CoreError::Db { .. })
+        Err(CoreError::DbCorrupted { .. })
     ));
 }
 

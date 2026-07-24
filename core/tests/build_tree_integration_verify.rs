@@ -122,7 +122,7 @@ fn assert_c1_15_capability_spec() {}
 fn assert_core_api_and_udl_contract() {
     for fragment in [
         "string list_tree_json(string repo_path, string locale);",
-        "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |",
+        "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / DbLocked / DbCorrupted / Io |",
         "### `list_tree_json(repoPath, locale) throws -> String`",
         "\"slug\": \"__root__\"",
         "\"display_name\": \"资料库\"",
@@ -135,7 +135,7 @@ fn assert_core_api_and_udl_contract() {
         "`relative_path` 是稳定 path key",
         "`RepositoryRoot`、`SystemCategory`、`UserFolder` 或 `Subdir`",
         "`RepoNotInitialized`：资料库 metadata 缺失。",
-        "`Db`：树构建需要读取 SQLite metadata 时失败。",
+        "`Db` / `DbLocked` / `DbCorrupted`：树构建需要读取 SQLite metadata 时发生通用、锁定或损坏错误。",
         "`Io`：资料库目录、文件路径、文件 metadata 或分类配置无法读取。",
         "不写 DB，不创建 generated",
         "搜索结果树投影不属于本接口。",
@@ -275,7 +275,7 @@ fn build_tree_integration_verify_error_scope_and_read_only_boundary_are_real() {
     remove_if_exists(repo.path().join(".areamatrix/index.db-shm"));
     assert!(matches!(
         list_tree_json(path_string(repo.path()), "en".to_owned()),
-        Err(CoreError::Db { .. })
+        Err(CoreError::DbCorrupted { .. })
     ));
 }
 

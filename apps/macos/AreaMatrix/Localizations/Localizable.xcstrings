@@ -12584,7 +12584,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "残疾人"
+            "value" : "已禁用"
           }
         }
       }
@@ -27948,7 +27948,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "普通的"
+            "value" : "普通"
           }
         }
       }
@@ -44922,7 +44922,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "语义学"
+            "value" : "语义"
           }
         }
       }
@@ -46912,6 +46912,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法加载资料库状态"
+          }
+        }
+      }
+    },
+    "settings.error.syncRepositoryPath" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not update the repository location"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法更新资料库位置"
+          }
+        }
+      }
+    },
+    "settings.error.syncRepositoryPathRecovery" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry after the repository metadata becomes writable."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在资料库元数据恢复可写后重试。"
           }
         }
       }
@@ -54304,13 +54338,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You can still make temporary changes in ImportSheet during import."
+            "value" : "You can still change this for each import."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "导入时仍可在 ImportSheet 临时更改。"
+            "value" : "每次导入时仍可临时更改。"
           }
         }
       }

@@ -50,8 +50,12 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
             model.loadState,
             .failed(AISettingsError(
                 message: L10n.message("Remote provider state could not be loaded."),
-                recovery: L10n.message("Configure remote AI", fallback: "Configure remote AI"),
-                detail: "Remote provider unavailable"
+                recovery: L10n.message(
+                    "error.unmapped.action",
+                    fallback: "Configure remote AI",
+                    technicalDetail: "Configure remote AI"
+                ),
+                detail: L10n.string("error.unmapped.message")
             ))
         )
         XCTAssertNil(model.snapshot)

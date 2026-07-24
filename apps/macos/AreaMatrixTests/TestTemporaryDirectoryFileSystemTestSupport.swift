@@ -11,6 +11,13 @@ func makeTestTemporaryDirectory(prefix: String, named name: String) throws -> UR
     try makeTestTemporaryDirectory(named: "\(name)-\(prefix)")
 }
 
+func createTestTemporaryDirectory(at url: URL, fileManager: FileManager = .default) throws {
+    guard isTestTemporaryItem(url, fileManager: fileManager) else {
+        throw testTemporaryBoundaryError("Refusing to create non-temporary test directory: \(url.path)")
+    }
+    try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+}
+
 func removeTestTemporaryItems(_ urls: URL..., fileManager: FileManager = .default) {
     removeTestTemporaryItems(urls, fileManager: fileManager)
 }
@@ -25,14 +32,18 @@ func removeTestTemporaryItem(_ url: URL, fileManager: FileManager = .default) th
     guard isTestTemporaryItem(url, fileManager: fileManager) else {
         let message = "Refusing to remove non-temporary test item: \(url.path)"
         assertionFailure(message)
-        throw NSError(
-            domain: "AreaMatrixTests.TestTemporaryDirectoryFileSystemTestSupport",
-            code: 1,
-            userInfo: [NSLocalizedDescriptionKey: message]
-        )
+        throw testTemporaryBoundaryError(message)
     }
 
     try fileManager.removeItem(at: url)
+}
+
+private func testTemporaryBoundaryError(_ message: String) -> NSError {
+    NSError(
+        domain: "AreaMatrixTests.TestTemporaryDirectoryFileSystemTestSupport",
+        code: 1,
+        userInfo: [NSLocalizedDescriptionKey: message]
+    )
 }
 
 private func isTestTemporaryItem(_ url: URL, fileManager: FileManager) -> Bool {

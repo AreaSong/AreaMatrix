@@ -68,6 +68,7 @@ fn config_key_values(repo: &Path) -> Vec<(String, String)> {
 fn settings_patch(expected_revision: i64) -> RepoConfigPatch {
     RepoConfigPatch {
         expected_revision,
+        repo_path: None,
         default_mode: Some(StorageMode::Indexed),
         overview_output: Some(OverviewOutput::RootAreaMatrixFile),
         ai_enabled: Some(true),
@@ -78,6 +79,73 @@ fn settings_patch(expected_revision: i64) -> RepoConfigPatch {
         fallback_to_inbox: Some(false),
         allow_replace_during_import: Some(true),
     }
+}
+
+#[test]
+fn load_update_config_updates_persisted_path_after_repository_move() {
+    let workspace = tempfile::tempdir().expect("create temporary workspace");
+    let original_path = workspace.path().join("original");
+    let moved_path = workspace.path().join("moved");
+    fs::create_dir(&original_path).expect("create original repository directory");
+    init_repo(path_string(&original_path), create_empty_options()).expect("initialize repository");
+    fs::rename(&original_path, &moved_path).expect("move temporary repository fixture");
+
+    let before = load_repo_config(path_string(&moved_path)).expect("load moved repository config");
+    assert_eq!(before.repo_path, path_string(&original_path));
+
+    let updated = update_repo_config(
+        path_string(&moved_path),
+        RepoConfigPatch {
+            expected_revision: before.revision,
+            repo_path: Some(path_string(&moved_path)),
+            ..RepoConfigPatch::default()
+        },
+    )
+    .expect("synchronize moved repository path");
+
+    assert_eq!(updated.repo_path, path_string(&moved_path));
+    assert_eq!(updated.revision, before.revision + 1);
+    assert_eq!(
+        load_repo_config(path_string(&moved_path)),
+        Ok(updated),
+        "the synchronized path and revision must persist together"
+    );
+}
+
+#[test]
+fn load_update_config_rejects_empty_path_patch_without_mutation() {
+    let repo = initialized_repo();
+    let before = load_repo_config(path_string(repo.path())).expect("load initial config");
+
+    let result = update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: before.revision,
+            repo_path: Some("   ".to_owned()),
+            ..RepoConfigPatch::default()
+        },
+    );
+
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+    assert_eq!(load_repo_config(path_string(repo.path())), Ok(before));
+}
+
+#[test]
+fn load_update_config_rejects_mismatched_path_patch_without_mutation() {
+    let repo = initialized_repo();
+    let before = load_repo_config(path_string(repo.path())).expect("load initial config");
+
+    let result = update_repo_config(
+        path_string(repo.path()),
+        RepoConfigPatch {
+            expected_revision: before.revision,
+            repo_path: Some(path_string(&repo.path().join("different"))),
+            ..RepoConfigPatch::default()
+        },
+    );
+
+    assert!(matches!(result, Err(CoreError::Config { .. })));
+    assert_eq!(load_repo_config(path_string(repo.path())), Ok(before));
 }
 
 #[test]
@@ -385,7 +453,7 @@ fn load_update_config_update_requires_initialized_metadata_without_creating_it()
     let result = update_repo_config(path_string(repo.path()), settings_patch(1));
 
     assert!(
-        matches!(result, Err(CoreError::RepoNotInitialized { .. })),
+        matches!(result, Err(CoreError::Config { .. })),
         "unexpected uninitialized update result: {result:?}"
     );
 

@@ -124,7 +124,7 @@ fn mobile_library_query_docs_core_api_and_udl_stay_aligned() {
         "| `list_files(repo, filter)` | query | √ | Db |",
         "| `get_file(repo, file_id)` | query | √ | FileNotFound |",
         "| `list_changes(repo, filter)` | query | √ | Db |",
-        "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |",
+        "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / DbLocked / DbCorrupted / Io |",
         "按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。",
         "`FileEntry.availability_status` 会结构化标记 backing file 是否 `Missing`",
         "单条 `list_files`（limit ≤ 50）",

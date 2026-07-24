@@ -15,6 +15,24 @@
 > - 跟随系统只检查 `AppleLanguages` / preferred languages 的第一项，不扫描后续偏好：`zh-Hans` / `zh-CN` / `zh-SG` 解析为 `zh-Hans`，`en-*` 解析为 `en`，其他第一项直接回退 `en`；`zh-Hant`、`zh-HK`、`zh-TW` 和 bare `zh` 不隐含简体中文。
 > - 「DB 中 path 列做 NFC 归一 + case-insensitive 索引」未实现：`files.path` 为 `TEXT NOT NULL UNIQUE`，无 `COLLATE NOCASE`、无 NFC 归一（`core/src/db/schema.rs`）；unicode NFC 归一目前仅用于分类关键词匹配。
 
+## 当前实施状态
+
+截至 2026-07-25，本 ADR 的双语言合同已在 Core、UDL、生成绑定与 macOS 应用中落地：
+
+- `AppLanguage` 与 `RepositoryContentLanguage` 使用独立持久化和解析链路；界面语言切换会立即重投影全部
+  application-owned 文案，资料库内容语言只影响内置分类显示名和之后生成的内容。
+- 资料库内容语言通过 revision/CAS 更新，classifier 的 `display_name` / `description` locale map、未知 policy
+  只读兼容、结构化冲突与错误映射均由 Core 合同约束。
+- 会生成内容的 operation 冻结 concrete locale、operation provenance 与恢复上下文；路径、文件名、slug、
+  provider/model、搜索正文和 technical details 保持原文。
+- overview provenance 能区分 synchronized、needs regeneration、mixed 与 unknown。内容语言切换不会自动改写
+  既有文件；全库 regeneration 只能由用户显式触发，并经过 preflight、durable journal、staging、backup、commit
+  与恢复门禁。
+- 自动门禁覆盖 739 个 String Catalog key 的抽取、locale parity 与 placeholder parity；macOS 全量测试执行
+  1052 项、跳过 5 项、失败 0 项。fixture-only UI 检查覆盖 `en/en`、`en/zh-Hans`、`zh-Hans/en` 与
+  `zh-Hans/zh-Hans` 四种界面/内容组合，并验证即时界面刷新、两套语言状态独立、显式 overview regeneration
+  以及用户路径和文件不被改写。
+
 ## 上下文
 
 AreaMatrix 是面向中文用户为主的本地资料管理工具，但要兼顾跨语言场景：

@@ -168,7 +168,13 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
         XCTAssertEqual(result.failedCount, 1)
         XCTAssertEqual(result.total, 2)
         assertImportRowStatusTags(model.rows, ["ERROR", "IMPORTED"])
-        assertImportRowStatusDetails(model.rows, [0: "无访问权限"])
+        assertImportRowStatusDetails(model.rows, [
+            0: L10n.resolve(L10n.message(
+                "error.unmapped.message",
+                fallback: "无访问权限",
+                technicalDetail: "无访问权限"
+            ))
+        ])
         assertImportStatusMessage(model.status, "Batch import completed: 1 succeeded, 1 failed")
         XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 1,

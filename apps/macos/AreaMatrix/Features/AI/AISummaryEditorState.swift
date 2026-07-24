@@ -114,7 +114,6 @@ extension AISummaryEditorModel {
             await handleBlockedGenerate(
                 blocked,
                 snapshot: preGateSnapshot,
-                regenerate: regenerate,
                 contentLocale: contentLocale,
                 attempt: attempt
             )
@@ -129,7 +128,7 @@ extension AISummaryEditorModel {
         do {
             let draft = try await summaryStore.generateAISummary(
                 repoPath: repoPath,
-                request: generationRequest(
+                request: generationRequestFactory.makeGenerationRequest(
                     regenerate,
                     contentLocale: contentLocale,
                     attempt: attempt
@@ -290,7 +289,7 @@ extension AISummaryEditorModel {
         let snapshot = try await privacyRules.loadAIPrivacyRules(repoPath: repoPath)
         let report = try await privacyRules.evaluateAIPrivacy(
             repoPath: repoPath,
-            request: privacyEvaluationRequest(snapshot: snapshot)
+            request: generationRequestFactory.makePrivacyEvaluationRequest(snapshot: snapshot)
         )
         guard report.decision != .allowed else { return nil }
         let skip = AISummaryPrivacySkip(report: report)
@@ -300,7 +299,6 @@ extension AISummaryEditorModel {
     private func handleBlockedGenerate(
         _ block: AISummaryEditorNotice,
         snapshot: AISummaryEditorSnapshot,
-        regenerate: Bool,
         contentLocale: String,
         attempt: AISummaryGenerationAttempt
     ) async {
@@ -309,7 +307,6 @@ extension AISummaryEditorModel {
         case let .privacyBlocked(skip), let .noEligibleInput(skip):
             await applyPrivacyBlockedGenerate(
                 skip,
-                regenerate: regenerate,
                 contentLocale: contentLocale,
                 attempt: attempt
             )
@@ -321,7 +318,6 @@ extension AISummaryEditorModel {
 
     private func applyPrivacyBlockedGenerate(
         _ skip: AISummaryPrivacySkip,
-        regenerate: Bool,
         contentLocale: String,
         attempt: AISummaryGenerationAttempt
     ) async {
@@ -334,9 +330,10 @@ extension AISummaryEditorModel {
         operation = .generating
         failedAction = nil
         do {
-            let draft = try await loggedPrivacySkipDraft(
+            let draft = try await generationRequestFactory.makeLoggedPrivacySkipDraft(
                 skip,
-                regenerate: regenerate,
+                summaryStore: summaryStore,
+                repoPath: repoPath,
                 contentLocale: contentLocale,
                 attempt: attempt
             )
@@ -351,60 +348,11 @@ extension AISummaryEditorModel {
         }
     }
 
-    private func generationRequest(
-        _ regenerate: Bool,
-        contentLocale: String,
-        attempt: AISummaryGenerationAttempt,
-        privacyPolicyRef: String? = nil
-    ) throws -> AiSummaryGenerationRequest {
-        try AiSummaryGenerationRequest(
-            operationId: attempt.operationID,
-            retryOfOperationId: attempt.retryOfOperationID,
-            fileId: fileID,
+    private var generationRequestFactory: AISummaryGenerationRequestFactory {
+        AISummaryGenerationRequestFactory(
+            fileID: fileID,
             providerScope: summaryProviderScope,
-            contextPolicy: .metadataAndExtractedText,
-            privacyPolicyRef: privacyPolicyRef,
-            regenerateExisting: regenerate,
-            contentLocale: ContentLocale(snapshotValue: contentLocale)
-        )
-    }
-
-    private func privacyEvaluationRequest(snapshot: AiPrivacyRulesSnapshot) -> AiPrivacyEvaluationRequest {
-        AiPrivacyEvaluationRequest(
-            feature: .autoSummaries,
-            route: AiPrivacyEvaluationRoute(summaryProviderScope: summaryProviderScope),
-            requestedFields: [.fileName, .repoRelativePath, .extractedTextExcerpt],
-            privacyGateEnabled: snapshot.privacyGateEnabled,
-            providerScope: snapshot.providerScope,
-            rules: snapshot.rules.map(AiPrivacyRuleInput.init(summaryRule:)),
-            remoteAllowedFields: snapshot.remoteAllowedFields.map(AiPrivacyFieldRule.init(state:)),
-            context: privacyEvaluationContext()
-        )
-    }
-
-    private func privacyEvaluationContext() -> AiPrivacyEvaluationContext {
-        var context = privacyContext.coreContext
-        context.fileId = fileID
-        return context
-    }
-
-    private func loggedPrivacySkipDraft(
-        _ skip: AISummaryPrivacySkip,
-        regenerate: Bool,
-        contentLocale: String,
-        attempt: AISummaryGenerationAttempt
-    ) async throws -> AiSummaryDraft {
-        guard let policyRef = skip.privacyPolicyRefForSummaryLog else {
-            throw CoreError.Config(reason: "AI summary privacy skip is not loggable")
-        }
-        return try await summaryStore.generateAISummary(
-            repoPath: repoPath,
-            request: generationRequest(
-                regenerate,
-                contentLocale: contentLocale,
-                attempt: attempt,
-                privacyPolicyRef: policyRef
-            )
+            privacyContext: privacyContext
         )
     }
 
@@ -460,9 +408,10 @@ extension AISummaryEditorModel {
         _ error: Error,
         request: AiSummarySaveRequest
     ) async -> Bool {
-        guard case let CoreError.RevisionConflict(resource, expected, current) = error,
-              resource == "ai_summary_content_revision"
-        else {
+        guard let conflict = coreRevisionConflict(
+            from: error,
+            resource: "ai_summary_content_revision"
+        ) else {
             return false
         }
         do {
@@ -471,8 +420,8 @@ extension AISummaryEditorModel {
                 observedText: contentState.savedText,
                 latestState: latest,
                 localText: request.summaryText,
-                expectedRevision: expected,
-                currentRevision: current
+                expectedRevision: conflict.expectedRevision,
+                currentRevision: conflict.currentRevision
             )
             confirmedReplacement = false
             failedAction = nil

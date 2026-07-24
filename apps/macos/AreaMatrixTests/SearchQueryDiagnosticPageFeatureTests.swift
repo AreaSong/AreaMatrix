@@ -176,7 +176,7 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
         XCTAssertEqual(invalid.badgeText, "Invalid query")
         XCTAssertEqual(invalid.warningMessage, "Unknown field `kindd`")
         XCTAssertEqual(failed.badgeText, "--")
-        XCTAssertEqual(failed.warningMessage, "Query syntax is invalid.")
+        XCTAssertEqual(failed.warningMessage, L10n.string("error.unmapped.message"))
     }
 
     @MainActor

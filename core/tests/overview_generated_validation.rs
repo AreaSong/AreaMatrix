@@ -173,7 +173,7 @@ fn overview_generated_validation_default_import_updates_generated_outputs_only()
     let generated_node = read_file(&repo.path().join(".areamatrix/generated/nodes/docs.md"));
     assert_contains(&generated_root, "AREAMATRIX:BEGIN");
     assert_contains(&generated_root, "docs");
-    assert_contains(&generated_root, "1 个文件");
+    assert_contains(&generated_root, "1 files");
     assert_contains(&generated_node, "validation.pdf");
     assert_contains(&generated_node, "16 B");
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
@@ -307,4 +307,32 @@ fn overview_generated_validation_root_entry_symlink_is_rejected_without_replacem
     );
     assert_clean_db(repo.path(), 1, 1);
     assert_eq!(staging_entries(repo.path()), Vec::<PathBuf>::new());
+}
+
+#[test]
+fn overview_generated_validation_invalid_root_markers_fail_closed_without_writes() {
+    let fixtures = [
+        "# User overview\n\n<!-- AREAMATRIX:BEGIN incomplete -->\n",
+        "<!-- AREAMATRIX:BEGIN one -->\nfirst\n<!-- AREAMATRIX:END -->\n\n<!-- AREAMATRIX:BEGIN two -->\nsecond\n<!-- AREAMATRIX:END -->\n",
+    ];
+    for existing in fixtures {
+        let repo = initialized_repo(OverviewOutput::GeneratedOnly);
+        let root_entry = repo.path().join("AREAMATRIX.md");
+        fs::write(&root_entry, existing).expect("write invalid managed marker fixture");
+        let mut config = load_config(path_string(repo.path())).expect("load config");
+        config.overview_output = OverviewOutput::RootAreaMatrixFile;
+        update_config(path_string(repo.path()), config).expect("enable root overview policy");
+        let (_source_root, source) = source_file("blocked.pdf", b"blocked bytes");
+
+        let result = import_file(
+            path_string(repo.path()),
+            path_string(&source),
+            copied_options("docs"),
+        );
+
+        assert!(matches!(result, Err(CoreError::Config { .. })));
+        assert_eq!(read_file(&root_entry), existing);
+        assert!(!repo.path().join("docs/blocked.pdf").exists());
+        assert_clean_db(repo.path(), 0, 0);
+    }
 }

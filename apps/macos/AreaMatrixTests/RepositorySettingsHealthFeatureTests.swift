@@ -2,6 +2,20 @@
 import XCTest
 
 final class RepositorySettingsHealthFeatureTests: XCTestCase {
+    func testBundleAppVersionReaderBuildsCoreCompatibleVersionIdentifier() async throws {
+        let appVersion = BundleAppVersionReader.versionIdentifier(
+            version: " 0.1.0 ",
+            build: " 202605101812 "
+        )
+
+        XCTAssertEqual(appVersion, "0.1.0+202605101812")
+        let capabilities = try await CoreBridge().getPlatformCapabilities(
+            platform: .macos,
+            appVersion: appVersion
+        )
+        XCTAssertEqual(capabilities.appVersion, appVersion)
+    }
+
     @MainActor
     func testMetadataReaderReadsSchemaVersionFromRealInitializedRepositoryWithoutWalSidecars() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
@@ -13,7 +27,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         do {
             let metadata = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
-            XCTAssertEqual(metadata.schemaVersion, 2)
+            XCTAssertEqual(metadata.schemaVersion, 3)
             XCTAssertEqual(metadata.configuredRepoPath, repoURL.path)
             XCTAssertEqual(try repositorySettingsMetadataFootprint(in: repoURL), before)
         } catch {
@@ -36,7 +50,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         let metadata = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
 
-        XCTAssertEqual(metadata.schemaVersion, 2)
+        XCTAssertEqual(metadata.schemaVersion, 3)
         XCTAssertEqual(metadata.configuredRepoPath, repoURL.path)
         XCTAssertEqual(
             try repositorySettingsMetadataFootprint(in: repoURL).normalizingSQLiteSharedMemoryCoordination(),
@@ -101,7 +115,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         let metadata = try await SQLiteExistingRepositoryMetadataReader().metadata(repoPath: repoURL.path)
 
-        XCTAssertEqual(metadata.schemaVersion, 2)
+        XCTAssertEqual(metadata.schemaVersion, 3)
         XCTAssertEqual(metadata.configuredRepoPath, repoURL.path)
         XCTAssertEqual(try repositorySettingsMetadataFootprint(in: repoURL), before)
     }
@@ -174,7 +188,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.summary?.metadataStatus, ".areamatrix/ found")
         XCTAssertEqual(model.healthSummary?.databaseStatus, .ok)
-        XCTAssertEqual(model.healthSummary?.schemaVersion, 2)
+        XCTAssertEqual(model.healthSummary?.schemaVersion, 3)
         XCTAssertEqual(model.healthSummary?.filesIndexed, 1)
         XCTAssertEqual(model.healthSummary?.watcherStatus, .paused)
         XCTAssertNil(model.healthError)
@@ -210,8 +224,16 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         XCTAssertEqual(model.healthSummary?.schemaVersion, 1)
         XCTAssertEqual(model.healthSummary?.databaseStatus, .locked)
         XCTAssertEqual(model.healthError?.databaseStatus, .locked)
-        XCTAssertEqual(model.healthError?.message, L10n.message("数据库错误"))
-        XCTAssertEqual(model.healthError?.recovery, L10n.message("Retry status"))
+        XCTAssertEqual(model.healthError?.message, L10n.message(
+            "error.unmapped.message",
+            fallback: "数据库错误",
+            technicalDetail: "数据库错误"
+        ))
+        XCTAssertEqual(model.healthError?.recovery, L10n.message(
+            "error.unmapped.action",
+            fallback: "Retry status",
+            technicalDetail: "Retry status"
+        ))
     }
 
     @MainActor

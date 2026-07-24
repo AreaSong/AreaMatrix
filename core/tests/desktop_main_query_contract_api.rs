@@ -134,7 +134,7 @@ fn desktop_main_query_docs_core_api_udl_and_control_map_stay_aligned() {
         "| `list_files(repo, filter)` | query | √ | Db |",
         "| `search_files(repo, query, filter, sort, pagination)` | search | √ | Db / Config / InvalidPath |",
         "| `get_file(repo, file_id)` | query | √ | FileNotFound |",
-        "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |",
+        "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / DbLocked / DbCorrupted / Io |",
         "### `list_files(repoPath, filter) throws -> [FileEntry]`",
         "按 `imported_at DESC` 排序。`limit > 1000` 自动 clamp。",
         "### `search_files(repoPath, query, filter, sort, pagination) throws -> SearchResultPage`",

@@ -114,7 +114,7 @@ fn assert_c1_17_capability_spec() {}
 
 fn assert_core_api_and_udl_contract() {
     for fragment in [
-        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, string content_locale\n    );",
+        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, ContentLocale content_locale\n    );",
         "i64? get_fs_event_cursor(string repo_path);",
         "void set_fs_event_cursor(string repo_path, i64 last_event_id);",
         "dictionary ExternalEvent",
@@ -137,10 +137,13 @@ fn assert_core_api_and_udl_contract() {
         "去抖 + InFlight 过滤后传入",
         "### `get_fs_event_cursor(repoPath) throws -> Int64?`",
         "### `set_fs_event_cursor(repoPath, lastEventId) throws`",
-        "最后单独持久化最大 `fs_event_id`",
+        "overview 和 cursor 成功前 receipts 都保留",
+        "只有 cursor 成功单调推进后，才清理不高于 cursor 的旧 receipts",
+        "Swift 可以在 Core\n成功后补写更高的回调窗口 watermark",
         "`sync_external_changes`（批量事件）",
-        "`external_sync_receipts`",
-        "收据保证幂等",
+        "`external_sync_receipts.content_locale`",
+        "事件收据命中",
+        "重放继续按 receipt provenance 生成",
     ] {
         assert_contains(CORE_API, fragment);
     }

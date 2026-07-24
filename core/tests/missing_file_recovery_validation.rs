@@ -252,9 +252,9 @@ fn assert_core_api_behavior_alignment() {
         "只能移除 AreaMatrix metadata",
         "不能删除、移动、重命名、覆盖、Trash 或下载任何用户文件",
         "`file_deleted = false`",
-        "| `get_missing_file_state(repo, file_id)` | recovery | √ | FileNotFound / PermissionDenied / Db |",
-        "| `relink_missing_file(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |",
-        "| `remove_missing_file_record(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |",
+        "| `get_missing_file_state(repo, file_id)` | recovery | √ | FileNotFound / PermissionDenied / Db / DbLocked / DbCorrupted |",
+        "| `relink_missing_file(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db / DbLocked / DbCorrupted |",
+        "| `remove_missing_file_record(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db / DbLocked / DbCorrupted |",
     ] {
         assert_contains(CORE_API, fragment);
     }

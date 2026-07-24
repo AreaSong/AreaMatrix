@@ -8,6 +8,10 @@ struct SemanticSearchFallbackActionPresentation: Identifiable, Equatable {
     var id: AiFallbackAction {
         action
     }
+
+    var accessibilityIdentifier: String {
+        "ai-fallback-semantic-search-core-action-\(accessibilityID)"
+    }
 }
 
 struct SemanticSearchFallbackStatus {

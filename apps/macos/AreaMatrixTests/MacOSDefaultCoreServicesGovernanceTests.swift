@@ -9,7 +9,8 @@ final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
             "Features/AI/RemoteProviderConfigState.swift:CoreBridge(:1",
             "Features/Import/ImportBatchCopyImportModel.swift:CoreBridge(:1",
             "Features/Import/ImportEntrySheetView.swift:CoreBridge(:3",
-            "Features/Onboarding/DatabaseRepairConfirmView.swift:CoreBridge(:2",
+            "Features/Onboarding/DatabaseRepairConfirmModel.swift:CoreBridge(:1",
+            "Features/Onboarding/DatabaseRepairConfirmView.swift:CoreBridge(:3",
             "Features/SyncConflicts/SyncConflictReviewModel.swift:CoreBridge(:1"
         ]
         let actual = try countedRegexMatches(

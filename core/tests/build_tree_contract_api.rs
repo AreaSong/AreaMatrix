@@ -80,7 +80,7 @@ fn assert_control_map_fragments() {}
 
 fn assert_core_api_fragments() {
     for fragment in [
-        "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / Io |",
+        "| `list_tree_json(repo, locale)` | query | √ | RepoNotInitialized / Db / DbLocked / DbCorrupted / Io |",
         "### `list_tree_json(repoPath, locale) throws -> String`",
         "`repoPath`：已初始化的资料库根目录。",
         "`locale`：资料库的 exact raw content policy/view locale",
@@ -89,7 +89,7 @@ fn assert_core_api_fragments() {
         "`relative_path` 是稳定 path key",
         "`RepositoryRoot`、`SystemCategory`、`UserFolder` 或 `Subdir`",
         "`RepoNotInitialized`：资料库 metadata 缺失。",
-        "`Db`：树构建需要读取 SQLite metadata 时失败。",
+        "`Db` / `DbLocked` / `DbCorrupted`：树构建需要读取 SQLite metadata 时发生通用、锁定或损坏错误。",
         "`Io`：资料库目录、文件路径、文件 metadata 或分类配置无法读取。",
         "只读取资料库文件路径和分类配置",
         "不写 DB，不创建 generated",

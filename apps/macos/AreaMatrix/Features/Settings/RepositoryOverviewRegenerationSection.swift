@@ -20,10 +20,9 @@ struct RepositoryOverviewRegenerationSection: View {
                 L10n.string("settings.repository.overview.languageStatus"),
                 value: stateLabel(status.state)
             )
-            LabeledContent(
-                L10n.string("settings.repository.overview.targetLocale"),
-                value: localeLabel(status.contentLocale)
-            )
+            LabeledContent(L10n.string("settings.repository.overview.targetLocale")) {
+                Text(verbatim: localeLabel(status.contentLocale))
+            }
             if !status.reasons.isEmpty {
                 Text(status.reasons.map(reasonLabel).joined(separator: ", "))
                     .font(.callout)
@@ -74,10 +73,9 @@ struct RepositoryOverviewRegenerationSection: View {
             systemImage: "doc.text.magnifyingglass",
             tint: .orange
         ) {
-            LabeledContent(
-                L10n.string("settings.repository.overview.targetLocale"),
-                value: localeLabel(plan.contentLocale)
-            )
+            LabeledContent(L10n.string("settings.repository.overview.targetLocale")) {
+                Text(verbatim: localeLabel(plan.contentLocale))
+            }
             Text(L10n.format(
                 "settings.repository.overview.preflightCounts",
                 plan.createCount,
@@ -171,7 +169,9 @@ struct RepositoryOverviewRegenerationSection: View {
     }
 
     private func localeLabel(_ locale: String) -> String {
-        locale == "zh-Hans" ? L10n.string("简体中文") : L10n.string("English")
+        locale == "zh-Hans"
+            ? L10n.string("settings.language.simplifiedChinese")
+            : L10n.string("settings.language.english")
     }
 
     private func sessionTitle(_ status: CoreOverviewRegenerationStatusSnapshot) -> String {

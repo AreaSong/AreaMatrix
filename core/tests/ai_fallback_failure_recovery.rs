@@ -148,7 +148,7 @@ fn ai_fallback_failure_maps_corrupt_db_without_leaving_half_log_or_user_file_cha
     let error = get_ai_fallback_status(repo_path, remote_rate_limited_request())
         .expect_err("corrupt db must fail");
 
-    assert!(matches!(error, CoreError::Internal { .. }));
+    assert!(matches!(error, CoreError::DbCorrupted { .. }));
     assert_eq!(
         fs::read(&user_file).expect("read user file after db failure"),
         b"user content"

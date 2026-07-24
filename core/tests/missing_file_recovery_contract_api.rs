@@ -176,9 +176,9 @@ fn missing_file_recovery_docs_api_udl_and_control_map_stay_aligned() {
     }
 
     for fragment in [
-        "| `get_missing_file_state(repo, file_id)` | recovery | √ | FileNotFound / PermissionDenied / Db |",
-        "| `relink_missing_file(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |",
-        "| `remove_missing_file_record(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db |",
+        "| `get_missing_file_state(repo, file_id)` | recovery | √ | FileNotFound / PermissionDenied / Db / DbLocked / DbCorrupted |",
+        "| `relink_missing_file(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db / DbLocked / DbCorrupted |",
+        "| `remove_missing_file_record(repo, request)` | recovery | √ | FileNotFound / PermissionDenied / Db / DbLocked / DbCorrupted |",
         "### `get_missing_file_state(repoPath, fileId) throws -> MissingFileState`",
         "missing-file recovery surface",
         "不做全库 rescan",

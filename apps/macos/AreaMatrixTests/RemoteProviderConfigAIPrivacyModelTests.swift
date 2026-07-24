@@ -64,7 +64,7 @@ final class RemoteProviderConfigAIPrivacyModelTests: XCTestCase {
             model.failure?.message,
             L10n.message("Remote provider was configured, but privacy gate could not be enabled.")
         )
-        XCTAssertEqual(model.failure?.detail, "Remote provider save failed")
+        XCTAssertEqual(model.failure?.detail, L10n.string("error.unmapped.message"))
     }
 
     @MainActor

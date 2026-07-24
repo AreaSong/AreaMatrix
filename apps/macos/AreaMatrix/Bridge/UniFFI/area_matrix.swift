@@ -15604,6 +15604,7 @@ public func FfiConverterTypeRepairReport_lower(_ value: RepairReport) -> RustBuf
 
 public struct RepoConfigPatch {
     public var expectedRevision: Int64
+    public var repoPath: String?
     public var defaultMode: StorageMode?
     public var overviewOutput: OverviewOutput?
     public var aiEnabled: Bool?
@@ -15616,8 +15617,9 @@ public struct RepoConfigPatch {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(expectedRevision: Int64, defaultMode: StorageMode?, overviewOutput: OverviewOutput?, aiEnabled: Bool?, localePolicy: RepositoryLocalePolicy?, icloudWarn: Bool?, enableExtensionRules: Bool?, enableKeywordRules: Bool?, fallbackToInbox: Bool?, allowReplaceDuringImport: Bool?) {
+    public init(expectedRevision: Int64, repoPath: String?, defaultMode: StorageMode?, overviewOutput: OverviewOutput?, aiEnabled: Bool?, localePolicy: RepositoryLocalePolicy?, icloudWarn: Bool?, enableExtensionRules: Bool?, enableKeywordRules: Bool?, fallbackToInbox: Bool?, allowReplaceDuringImport: Bool?) {
         self.expectedRevision = expectedRevision
+        self.repoPath = repoPath
         self.defaultMode = defaultMode
         self.overviewOutput = overviewOutput
         self.aiEnabled = aiEnabled
@@ -15635,6 +15637,9 @@ public struct RepoConfigPatch {
 extension RepoConfigPatch: Equatable, Hashable {
     public static func ==(lhs: RepoConfigPatch, rhs: RepoConfigPatch) -> Bool {
         if lhs.expectedRevision != rhs.expectedRevision {
+            return false
+        }
+        if lhs.repoPath != rhs.repoPath {
             return false
         }
         if lhs.defaultMode != rhs.defaultMode {
@@ -15669,6 +15674,7 @@ extension RepoConfigPatch: Equatable, Hashable {
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(expectedRevision)
+        hasher.combine(repoPath)
         hasher.combine(defaultMode)
         hasher.combine(overviewOutput)
         hasher.combine(aiEnabled)
@@ -15690,6 +15696,7 @@ public struct FfiConverterTypeRepoConfigPatch: FfiConverterRustBuffer {
         return
             try RepoConfigPatch(
                 expectedRevision: FfiConverterInt64.read(from: &buf),
+                repoPath: FfiConverterOptionString.read(from: &buf),
                 defaultMode: FfiConverterOptionTypeStorageMode.read(from: &buf),
                 overviewOutput: FfiConverterOptionTypeOverviewOutput.read(from: &buf),
                 aiEnabled: FfiConverterOptionBool.read(from: &buf),
@@ -15704,6 +15711,7 @@ public struct FfiConverterTypeRepoConfigPatch: FfiConverterRustBuffer {
 
     public static func write(_ value: RepoConfigPatch, into buf: inout [UInt8]) {
         FfiConverterInt64.write(value.expectedRevision, into: &buf)
+        FfiConverterOptionString.write(value.repoPath, into: &buf)
         FfiConverterOptionTypeStorageMode.write(value.defaultMode, into: &buf)
         FfiConverterOptionTypeOverviewOutput.write(value.overviewOutput, into: &buf)
         FfiConverterOptionBool.write(value.aiEnabled, into: &buf)
@@ -34977,11 +34985,11 @@ public func listTags(repoPath: String, fileId: Int64)throws  -> TagSet {
     )
 })
 }
-public func listTreeJson(repoPath: String, locale: ContentLocale)throws  -> String {
+public func listTreeJson(repoPath: String, locale: String)throws  -> String {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_list_tree_json(
         FfiConverterString.lower(repoPath),
-        FfiConverterTypeContentLocale.lower(locale),$0
+        FfiConverterString.lower(locale),$0
     )
 })
 }
@@ -35661,7 +35669,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_area_matrix_core_checksum_func_list_tags() != 4233) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_area_matrix_core_checksum_func_list_tree_json() != 14047) {
+    if (uniffi_area_matrix_core_checksum_func_list_tree_json() != 45468) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_list_undo_actions() != 21506) {

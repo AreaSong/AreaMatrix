@@ -45,7 +45,9 @@ final class BatchRenameRedoActionLogTests: XCTestCase {
         )
 
         XCTAssertEqual(state.failure?.kind, .conflict)
-        XCTAssertEqual(state.failure?.userMessage, "Redo was cleared by the next file operation.")
+        XCTAssertEqual(state.failure?.userMessage, "Redo action is currently unavailable.")
+        XCTAssertEqual(state.failure?.technicalDetails, "Redo was cleared by the next file operation.")
+        XCTAssertEqual(state.failure?.rawContext, "Redo was cleared by the next file operation.")
         await redoStore.assertRedoActionRequests([])
     }
 

@@ -185,7 +185,7 @@ fn build_tree_validation_returns_repo_not_initialized_and_db_errors() {
 
     assert!(matches!(
         list_tree_json(path_string(repo.path()), "en".to_owned()),
-        Err(CoreError::Db { .. })
+        Err(CoreError::DbCorrupted { .. })
     ));
 }
 

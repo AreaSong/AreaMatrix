@@ -585,6 +585,7 @@ dictionary RepoConfigSnapshot {
 
 dictionary RepoConfigPatch {
     i64 expected_revision;
+    string? repo_path;
     StorageMode? default_mode;
     OverviewOutput? overview_output;
     boolean? ai_enabled;

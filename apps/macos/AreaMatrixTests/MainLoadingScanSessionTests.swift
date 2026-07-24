@@ -78,7 +78,10 @@ final class MainLoadingScanSessionTests: XCTestCase {
         }
 
         XCTAssertEqual(state.scanSessionErrorMapping, mapping)
-        XCTAssertEqual(state.scanStatusText, "Scan status is unavailable: 扫描状态暂不可用")
+        XCTAssertEqual(
+            state.scanStatusText,
+            "Scan status is unavailable: \(L10n.string("error.unmapped.message"))"
+        )
 
         await opener.finishOpen()
         await openTask.value

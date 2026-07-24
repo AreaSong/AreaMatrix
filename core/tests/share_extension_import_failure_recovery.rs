@@ -381,7 +381,10 @@ fn share_extension_import_failure_recovery_error_mapping_is_structured_and_side_
     assert_eq!(mappings[1].kind, ErrorKind::Io);
     assert_eq!(mappings[1].recoverability, ErrorRecoverability::Retryable);
     assert_eq!(mappings[2].kind, ErrorKind::Db);
-    assert_eq!(mappings[2].recoverability, ErrorRecoverability::Retryable);
+    assert_eq!(
+        mappings[2].recoverability,
+        ErrorRecoverability::UserActionRequired
+    );
     assert_eq!(
         fs::read(&source).expect("mapping does not touch payload"),
         b"private share payload marker must not be logged"

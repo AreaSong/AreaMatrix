@@ -158,7 +158,7 @@ fn import_with_name(
 fn resolve_name_conflict_integration_verify_docs_control_map_udl_and_consumers_stay_aligned() {
     for fragment in [
         "FileEntry import_file(",
-        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, string content_locale\n    );",
+        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, ContentLocale content_locale\n    );",
         "string? override_filename;",
         "DuplicateStrategy duplicate_strategy;",
         "string path;",

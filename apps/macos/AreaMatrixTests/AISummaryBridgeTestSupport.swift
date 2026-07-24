@@ -26,7 +26,7 @@ actor StaticRepositoryContentLocaleSnapshotter: RepositoryContentLocaleSnapshott
 
 func createAISummaryMetadataDatabase(in repoURL: URL) throws {
     let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
-    try FileManager.default.createDirectory(at: metadataURL, withIntermediateDirectories: true)
+    try createTestTemporaryDirectory(at: metadataURL)
     let dbURL = metadataURL.appendingPathComponent("index.db", isDirectory: false)
 
     var database: OpaquePointer?

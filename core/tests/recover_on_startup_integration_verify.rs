@@ -168,7 +168,7 @@ fn assert_core_api_and_udl_contract() {
         "### `recover_on_startup(repoPath: String) throws -> RecoveryReport`",
         "应用启动必调",
         "耗时与残留 staging 文件数成正比",
-        "| `recover_on_startup(repo)` | repo | √ | Db |",
+        "| `recover_on_startup(repo)` | repo | √ | Db / DbLocked / DbCorrupted |",
         "RecoveryReport recover_on_startup(string repo_path);",
     ] {
         assert_contains(CORE_API, fragment);
@@ -339,6 +339,6 @@ fn recover_on_startup_integration_verify_warning_and_error_scope_stays_c1_16_onl
     remove_if_exists(repo.path().join(".areamatrix/index.db-shm"));
     assert!(matches!(
         recover_on_startup(path_string(repo.path())),
-        Err(CoreError::Db { .. })
+        Err(CoreError::DbCorrupted { .. })
     ));
 }

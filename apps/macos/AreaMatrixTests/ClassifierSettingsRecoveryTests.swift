@@ -128,7 +128,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         try Data("user bytes".utf8).write(to: userURL)
         try Data("readme bytes".utf8).write(to: readmeURL)
         try Data("root user bytes".utf8).write(to: areaMatrixURL)
-        try FileManager.default.removeItem(at: classifierURL(repoURL: repoURL))
+        try removeTestTemporaryItem(classifierURL(repoURL: repoURL))
 
         let degraded = try await bridge.listClassifierRules(repoPath: repoURL.path, editingLocale: .en)
         XCTAssertEqual(degraded.health, .missing)
@@ -182,7 +182,7 @@ final class ClassifierSettingsRecoveryTests: XCTestCase {
         let outsideURL = repoURL.appendingPathComponent("outside.txt")
         let outsideBytes = Data("outside bytes".utf8)
         try outsideBytes.write(to: outsideURL)
-        try FileManager.default.removeItem(at: classifierURL(repoURL: repoURL))
+        try removeTestTemporaryItem(classifierURL(repoURL: repoURL))
         try FileManager.default.createSymbolicLink(
             at: classifierURL(repoURL: repoURL),
             withDestinationURL: outsideURL

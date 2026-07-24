@@ -228,7 +228,7 @@ private func assertRepositorySettingsIntegrationState(context: RepositorySetting
     XCTAssertEqual(summary?.metadataStatus, ".areamatrix/ found")
     XCTAssertEqual(summary?.coreVersion, "0.1.0")
     XCTAssertEqual(healthSummary?.databaseStatus, .ok)
-    XCTAssertEqual(healthSummary?.schemaVersion, 2)
+    XCTAssertEqual(healthSummary?.schemaVersion, 3)
     XCTAssertEqual(healthSummary?.filesIndexed, 1)
     XCTAssertNil(repositoryActionError)
     XCTAssertEqual(diagnosticsState, .collected(context.diagnosticsSnapshot))

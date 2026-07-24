@@ -370,11 +370,19 @@ extension CoreErrorMappingSnapshot {
     }
 
     func recoveryText(fallback: String) -> String {
-        suggestedAction.isEmpty ? fallback : suggestedAction
+        guard customSuggestedAction != nil || usesKindLocalization ||
+            !fallbackSuggestedAction.isEmpty || !code.isEmpty || !recoveryActionIDs.isEmpty
+        else {
+            return fallback
+        }
+        return suggestedAction
     }
 
     func recoveryMessage(fallback: LocalizedMessage) -> LocalizedMessage {
-        !usesKindLocalization && fallbackSuggestedAction.isEmpty ? fallback : suggestedActionDescriptor
+        if customSuggestedAction != nil {
+            return suggestedActionDescriptor
+        }
+        return !usesKindLocalization && fallbackSuggestedAction.isEmpty ? fallback : suggestedActionDescriptor
     }
 
     private static let knownRecoveryActionIDs: Set<String> = [
@@ -393,66 +401,6 @@ struct CoreErrorLocalizedSnapshotInput {
     var suggestedAction: String
     var recoverability: CoreErrorRecoverabilitySnapshot
     var rawContext: String
-}
-
-private extension CoreErrorKindSnapshot {
-    func messageDescriptor(fallback: String) -> LocalizedMessage {
-        switch self {
-        case .io: L10n.message("core.error.Io.message", fallback: fallback)
-        case .db: L10n.message("core.error.Db.message", fallback: fallback)
-        case .config: L10n.message("core.error.Config.message", fallback: fallback)
-        case .validation: L10n.message("core.error.Validation.message", fallback: fallback)
-        case .classify: L10n.message("core.error.Classify.message", fallback: fallback)
-        case .conflict: L10n.message("core.error.Conflict.message", fallback: fallback)
-        case .revisionConflict: L10n.message("core.error.RevisionConflict.message", fallback: fallback)
-        case .duplicateFile: L10n.message("core.error.DuplicateFile.message", fallback: fallback)
-        default: secondaryMessageDescriptor(fallback: fallback)
-        }
-    }
-
-    private func secondaryMessageDescriptor(fallback: String) -> LocalizedMessage {
-        switch self {
-        case .fileNotFound: L10n.message("core.error.FileNotFound.message", fallback: fallback)
-        case .expiredAction: L10n.message("core.error.ExpiredAction.message", fallback: fallback)
-        case .repoNotInitialized: L10n.message("core.error.RepoNotInitialized.message", fallback: fallback)
-        case .invalidPath: L10n.message("core.error.InvalidPath.message", fallback: fallback)
-        case .iCloudPlaceholder: L10n.message("core.error.ICloudPlaceholder.message", fallback: fallback)
-        case .stagingRecoveryRequired:
-            L10n.message("core.error.StagingRecoveryRequired.message", fallback: fallback)
-        case .permissionDenied: L10n.message("core.error.PermissionDenied.message", fallback: fallback)
-        case .internal: L10n.message("core.error.Internal.message", fallback: fallback)
-        default: L10n.message("core.error.Internal.message", fallback: fallback)
-        }
-    }
-
-    func actionDescriptor(fallback: String) -> LocalizedMessage {
-        switch self {
-        case .io: L10n.message("core.error.Io.action", fallback: fallback)
-        case .db: L10n.message("core.error.Db.action", fallback: fallback)
-        case .config: L10n.message("core.error.Config.action", fallback: fallback)
-        case .validation: L10n.message("core.error.Validation.action", fallback: fallback)
-        case .classify: L10n.message("core.error.Classify.action", fallback: fallback)
-        case .conflict: L10n.message("core.error.Conflict.action", fallback: fallback)
-        case .revisionConflict: L10n.message("core.error.RevisionConflict.action", fallback: fallback)
-        case .duplicateFile: L10n.message("core.error.DuplicateFile.action", fallback: fallback)
-        default: secondaryActionDescriptor(fallback: fallback)
-        }
-    }
-
-    private func secondaryActionDescriptor(fallback: String) -> LocalizedMessage {
-        switch self {
-        case .fileNotFound: L10n.message("core.error.FileNotFound.action", fallback: fallback)
-        case .expiredAction: L10n.message("core.error.ExpiredAction.action", fallback: fallback)
-        case .repoNotInitialized: L10n.message("core.error.RepoNotInitialized.action", fallback: fallback)
-        case .invalidPath: L10n.message("core.error.InvalidPath.action", fallback: fallback)
-        case .iCloudPlaceholder: L10n.message("core.error.ICloudPlaceholder.action", fallback: fallback)
-        case .stagingRecoveryRequired:
-            L10n.message("core.error.StagingRecoveryRequired.action", fallback: fallback)
-        case .permissionDenied: L10n.message("core.error.PermissionDenied.action", fallback: fallback)
-        case .internal: L10n.message("core.error.Internal.action", fallback: fallback)
-        default: L10n.message("core.error.Internal.action", fallback: fallback)
-        }
-    }
 }
 
 extension AppSemanticError {

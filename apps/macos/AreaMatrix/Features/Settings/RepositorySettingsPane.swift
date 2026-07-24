@@ -39,6 +39,7 @@ extension RepositorySettingsPane {
         _model = StateObject(wrappedValue: RepositorySettingsModel(
             repoPath: repoPath,
             loader: loader,
+            updater: updater,
             repositoryOpener: repositoryOpener,
             fileLister: fileLister,
             scanSessionReader: scanSessionReader,
@@ -168,6 +169,7 @@ extension RepositorySettingsPane {
 
     private func loadedContent(_ summary: RepositorySettingsSummary) -> some View {
         SettingsPageScrollContent {
+            syncErrorBanner
             healthErrorBanner
             repositoryActionBanner
             diagnosticsStatusBanner
@@ -206,7 +208,7 @@ extension RepositorySettingsPane {
             model: configModel,
             capabilityState: capabilityModel.state,
             onSaved: {
-                await model.load()
+                await reload()
             }
         )
     }
@@ -281,6 +283,27 @@ extension RepositorySettingsPane {
         await capabilityModel.load()
         if let concreteLocale = resolvedContentLocale {
             await overviewRegenerationModel.load(contentLocale: concreteLocale)
+        }
+    }
+
+    @ViewBuilder
+    private var syncErrorBanner: some View {
+        if let error = model.syncError {
+            SettingsStatusBanner(
+                title: localizer.resolve(error.message),
+                systemImage: "exclamationmark.triangle",
+                tint: .red
+            ) {
+                Text(localizer.resolve(error.recovery))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Button("Retry path sync") {
+                    Task {
+                        await model.retryRepositoryPathSync()
+                    }
+                }
+                .accessibilityIdentifier("repository-settings-retry-path-sync")
+            }
         }
     }
 

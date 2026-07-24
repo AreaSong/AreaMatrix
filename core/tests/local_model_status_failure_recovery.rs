@@ -250,7 +250,7 @@ fn local_model_status_failure_maps_status_cache_permission_and_preserves_files()
 }
 
 #[test]
-fn local_model_status_failure_maps_db_persistence_error_to_documented_config_error() {
+fn local_model_status_failure_preserves_typed_db_corruption_error() {
     let repo = initialized_repo();
     let model_dir = repo.path().join("models/db-error");
     write_manifest(
@@ -269,7 +269,7 @@ fn local_model_status_failure_maps_db_persistence_error_to_documented_config_err
     let error = get_local_model_status(path_string(repo.path()), request(&model_dir))
         .expect_err("corrupt status cache database fails explicitly");
 
-    assert!(matches!(error, CoreError::Config { reason } if reason.contains("persistence")));
+    assert!(matches!(error, CoreError::DbCorrupted { .. }));
     assert!(model_dir.join("manifest.json").is_file());
 }
 

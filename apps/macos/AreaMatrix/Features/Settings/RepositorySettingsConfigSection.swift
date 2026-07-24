@@ -42,7 +42,10 @@ struct RepositorySettingsConfigSection: View {
     @ViewBuilder
     private var content: some View {
         if let config {
-            RepositorySettingsConfigValueRow(label: L10n.string("Default import mode"), value: config.defaultMode)
+            RepositorySettingsConfigValueRow(
+                label: L10n.string("Default import mode"),
+                value: GeneralSettingsStorageMode(snapshotValue: config.defaultMode).label
+            )
             RepositorySettingsConfigValueRow(
                 label: L10n.string("AI"),
                 value: config.aiEnabled ? L10n.string("Enabled") : L10n.string("Disabled")

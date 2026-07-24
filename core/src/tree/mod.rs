@@ -441,7 +441,10 @@ fn map_io_kind(kind: io::ErrorKind) -> CoreError {
 
 fn normalize_contract_error(error: CoreError) -> CoreError {
     match error {
-        CoreError::RepoNotInitialized { .. } | CoreError::Db { .. } => error,
+        CoreError::RepoNotInitialized { .. }
+        | CoreError::Db { .. }
+        | CoreError::DbLocked { .. }
+        | CoreError::DbCorrupted { .. } => error,
         _ => CoreError::io("io error"),
     }
 }

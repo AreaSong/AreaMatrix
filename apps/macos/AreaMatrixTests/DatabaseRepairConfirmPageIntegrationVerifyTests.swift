@@ -57,7 +57,7 @@ final class DatabaseRepairIntegrationTests: XCTestCase {
                 options: .databaseRepairMetadataFixture()
             )
         ])
-        await reindexer.assertRequests([])
+        await reindexer.assertReindexRequests([])
         XCTAssertEqual(repairModel.repairState, .failed(mapping))
         XCTAssertEqual(repairModel.primaryButtonTitle, "Retry Metadata Repair")
         XCTAssertEqual(shell.route, .dbRepairConfirm(repairRoute))

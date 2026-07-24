@@ -26,7 +26,7 @@ extension MainRepositoryContentView {
                 systemImage: "tray.and.arrow.down",
                 title: L10n.string("main.empty.title"),
                 message: L10n.string("main.empty.message"),
-                primaryTitle: opening.isReadOnly ? nil : "Import...",
+                primaryTitle: opening.isReadOnly ? nil : L10n.string("Import..."),
                 primaryAction: opening.isReadOnly ? nil : onImport
             )
             .modifier(ImportDropTargetModifier(

@@ -5,6 +5,11 @@ struct RepositorySettingsLoadError: Equatable {
     var recovery: LocalizedMessage
 }
 
+struct RepositorySettingsSyncError: Equatable {
+    var message: LocalizedMessage
+    var recovery: LocalizedMessage
+}
+
 struct RepositorySettingsOverviewActionError: Equatable {
     var message: LocalizedMessage
     var recovery: LocalizedMessage

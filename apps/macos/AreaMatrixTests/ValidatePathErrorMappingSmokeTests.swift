@@ -18,7 +18,10 @@ final class ValidatePathErrorMappingTests: XCTestCase {
         await model.continueFromChoosePath()
 
         await errorMapper.assertMappedCoreErrors([CoreError.PermissionDenied(path: "/tmp/repo")])
-        XCTAssertEqual(model.repositoryPathError, L10n.message("无访问权限", fallback: "无访问权限"))
+        XCTAssertEqual(
+            model.repositoryPathError,
+            L10n.message("error.unmapped.message", fallback: "无访问权限", technicalDetail: "无访问权限")
+        )
         XCTAssertEqual(model.repositoryPathErrorMapping, mapping)
         XCTAssertFalse(model.canContinueFromValidatePath)
     }

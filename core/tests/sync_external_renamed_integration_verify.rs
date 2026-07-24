@@ -180,7 +180,7 @@ fn assert_c1_18_capability_spec() {}
 
 fn assert_core_api_and_udl_contract() {
     for fragment in [
-        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, string content_locale\n    );",
+        "SyncResult sync_external_changes(\n        string repo_path, sequence<ExternalEvent> events, ContentLocale content_locale\n    );",
         "dictionary ExternalEvent",
         "string path;",
         "ExternalEventKind kind;",

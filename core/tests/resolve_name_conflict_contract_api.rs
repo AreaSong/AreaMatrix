@@ -332,7 +332,7 @@ fn resolve_name_conflict_contract_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "FileEntry import_file(",
         "string repo_path, string source_path, ImportOptions options",
-        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, string content_locale\n    );",
+        "FileEntry rename_file(\n        string repo_path, i64 file_id, string new_name, ContentLocale content_locale\n    );",
         "dictionary ImportOptions",
         "string? override_filename;",
         "DuplicateStrategy duplicate_strategy;",

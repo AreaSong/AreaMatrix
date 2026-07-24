@@ -1,8 +1,8 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, load_config, validate_repo_path, CoreError, CoreResult, PlatformPathKind,
-    RepoConfig, RepoInitMode, RepoInitOptions, RepoPathIssue, RepoPathValidation,
+    init_repo, load_repo_config, validate_repo_path, CoreError, CoreResult, PlatformPathKind,
+    RepoConfigSnapshot, RepoInitMode, RepoInitOptions, RepoPathIssue, RepoPathValidation,
 };
 use pretty_assertions::assert_eq;
 
@@ -34,11 +34,11 @@ fn assert_contains(haystack: &str, needle: &str) {
 fn windows_repo_connect_contract_exports_existing_repo_signatures_and_errors() {
     fn assert_validate(_: fn(String) -> CoreResult<RepoPathValidation>) {}
     fn assert_init(_: fn(String, RepoInitOptions) -> CoreResult<()>) {}
-    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfig>) {}
+    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfigSnapshot>) {}
 
     assert_validate(validate_repo_path);
     assert_init(init_repo);
-    assert_load_config(load_config);
+    assert_load_config(load_repo_config);
 
     let documented_errors = [
         CoreError::invalid_path("invalid path"),
@@ -130,7 +130,7 @@ fn windows_repo_connect_docs_api_udl_and_control_map_stay_aligned() {
     for fragment in [
         "RepoPathValidation validate_repo_path(string repo_path);",
         "void init_repo(string repo_path, RepoInitOptions options);",
-        "RepoConfig load_config(string repo_path);",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
         "dictionary RepoPathValidation",
         "boolean is_onedrive_path;",
         "PlatformPathKind platform_path_kind;",

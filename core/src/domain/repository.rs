@@ -268,6 +268,8 @@ impl RepoConfigSnapshot {
 pub struct RepoConfigPatch {
     /// Revision observed by the editing window.
     pub expected_revision: i64,
+    /// Optional repository path replacement after the repository directory moves.
+    pub repo_path: Option<String>,
     /// Optional default storage behavior replacement.
     pub default_mode: Option<StorageMode>,
     /// Optional overview output replacement.
@@ -291,7 +293,8 @@ pub struct RepoConfigPatch {
 impl RepoConfigPatch {
     /// Whether the patch contains any field mutation.
     pub fn is_empty(&self) -> bool {
-        self.default_mode.is_none()
+        self.repo_path.is_none()
+            && self.default_mode.is_none()
             && self.overview_output.is_none()
             && self.ai_enabled.is_none()
             && self.locale_policy.is_none()
@@ -303,8 +306,8 @@ impl RepoConfigPatch {
     }
 
     /// Whether locale canonicalization is the patch's only mutation.
-    pub fn is_locale_only(&self) -> bool {
-        self.locale_policy.is_some()
+    pub fn is_locale_or_path_only(&self) -> bool {
+        (self.locale_policy.is_some() || self.repo_path.is_some())
             && self.default_mode.is_none()
             && self.overview_output.is_none()
             && self.ai_enabled.is_none()

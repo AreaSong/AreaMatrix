@@ -173,8 +173,8 @@ fn sync_external_created_failure_recovery_overview_failure_defers_cursor_and_rep
     let repo = initialized_repo();
     write_repo_file(repo.path(), "docs/external.pdf", b"external bytes");
     let generated_nodes = repo.path().join(".areamatrix/generated/nodes");
-    fs::create_dir_all(generated_nodes.parent().expect("generated parent"))
-        .expect("create generated parent directory");
+    fs::remove_dir_all(&generated_nodes)
+        .expect("remove generated nodes directory for failure setup");
     fs::write(&generated_nodes, b"block generated node directory")
         .expect("install generated output blocker");
 

@@ -79,8 +79,8 @@ fn overview_generated_contract_api_core_api_and_udl_stay_aligned() {
     for fragment in [
         "void init_repo(string repo_path, RepoInitOptions options);",
         "FileEntry import_file(",
-        "void update_config(string repo_path, RepoConfig new_config);",
-        "dictionary RepoConfig",
+        "RepoConfigSnapshot update_repo_config(string repo_path, RepoConfigPatch patch);",
+        "dictionary RepoConfigPatch",
         "OverviewOutput overview_output;",
         "dictionary RepoInitOptions",
         "enum OverviewOutput { \"GeneratedOnly\", \"RootAreaMatrixFile\" };",

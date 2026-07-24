@@ -80,11 +80,15 @@ final class ImportFolderPreviewImportTests: XCTestCase {
             currentPath: "finance/Invoice_2026Q1.pdf",
             pending: 1,
             items: [
-                importBatchProgressItem(
+                ImportBatchProgressSnapshot.Item(
                     sourcePath: invoiceURL.path,
                     targetPath: "finance/Invoice_2026Q1.pdf",
                     phase: .failed,
-                    errorMessage: "无访问权限"
+                    errorDisplayText: .localized(L10n.message(
+                        "error.unmapped.message",
+                        fallback: "无访问权限",
+                        technicalDetail: "无访问权限"
+                    ))
                 ),
                 importBatchProgressItem(
                     sourcePath: cloudURL.path,
@@ -131,7 +135,13 @@ final class ImportFolderPreviewImportTests: XCTestCase {
         XCTAssertEqual(outcome?.succeededEntries, [])
         XCTAssertEqual(outcome?.failedCount, 1)
         assertImportRowStatusTags(model.rows, ["ERROR"])
-        assertImportRowStatusDetails(model.rows, [0: "无访问权限"])
+        assertImportRowStatusDetails(model.rows, [
+            0: L10n.resolve(L10n.message(
+                "error.unmapped.message",
+                fallback: "无访问权限",
+                technicalDetail: "无访问权限"
+            ))
+        ])
         XCTAssertEqual(model.lastFailureMapping?.kind, .permissionDenied)
     }
 

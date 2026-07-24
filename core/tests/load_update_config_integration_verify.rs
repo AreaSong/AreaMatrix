@@ -65,6 +65,7 @@ fn file_snapshot(paths: &[&Path]) -> Vec<(String, Vec<u8>)> {
 fn settings_page_patch(expected_revision: i64) -> RepoConfigPatch {
     RepoConfigPatch {
         expected_revision,
+        repo_path: None,
         default_mode: Some(StorageMode::Indexed),
         overview_output: Some(OverviewOutput::RootAreaMatrixFile),
         ai_enabled: Some(true),
@@ -82,6 +83,7 @@ fn load_update_config_integration_verify_docs_api_and_udl_stay_aligned() {
     for fragment in [
         "RepoConfigSnapshot load_repo_config(string repo_path);",
         "RepoConfigSnapshot update_repo_config(string repo_path, RepoConfigPatch patch);",
+        "string? repo_path;",
         "boolean enable_extension_rules;",
         "boolean enable_keyword_rules;",
         "boolean fallback_to_inbox;",
@@ -161,7 +163,7 @@ fn load_update_config_integration_verify_failures_preserve_config_and_files() {
 
     assert!(matches!(
         result,
-        Err(area_matrix_core::CoreError::Conflict { .. })
+        Err(area_matrix_core::CoreError::RevisionConflict { .. })
     ));
 
     assert_eq!(

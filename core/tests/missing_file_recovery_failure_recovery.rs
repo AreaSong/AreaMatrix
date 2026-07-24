@@ -381,10 +381,10 @@ fn missing_file_recovery_failure_corrupted_db_is_db_error_and_preserves_user_fil
     fs::write(repo.path().join(".areamatrix/index.db"), b"not sqlite")
         .expect("corrupt repository database fixture");
 
-    assert_db_error(
-        get_missing_file_state(path_string(repo.path()), 1)
-            .expect_err("corrupted metadata is explicit Db"),
-    );
+    let error = get_missing_file_state(path_string(repo.path()), 1)
+        .expect_err("corrupted metadata is explicit DbCorrupted");
+    assert!(matches!(error, CoreError::DbCorrupted { .. }));
+    assert_eq!(error.to_error_mapping().kind, ErrorKind::DbCorrupted);
 
     assert_eq!(
         fs::read(&user_file).expect("read user file after corrupted DB failure"),

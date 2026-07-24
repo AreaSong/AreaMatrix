@@ -1,18 +1,18 @@
 use area_matrix_core::{
-    init_repo, list_files, list_tree_json, load_config, CoreError, CoreResult, FileEntry,
-    FileFilter, OverviewOutput, RepoConfig, RepoInitMode, RepoInitOptions, StorageMode,
+    init_repo, list_files, list_tree_json, load_repo_config, CoreError, CoreResult, FileEntry,
+    FileFilter, OverviewOutput, RepoConfigSnapshot, RepoInitMode, RepoInitOptions, StorageMode,
 };
 use pretty_assertions::assert_eq;
 
 #[test]
 fn init_empty_repo_contract_exports_callable_signatures() {
     fn assert_init(_: fn(String, RepoInitOptions) -> CoreResult<()>) {}
-    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfig>) {}
+    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfigSnapshot>) {}
     fn assert_list_files(_: fn(String, FileFilter) -> CoreResult<Vec<FileEntry>>) {}
     fn assert_list_tree_json(_: fn(String, String) -> CoreResult<String>) {}
 
     assert_init(init_repo);
-    assert_load_config(load_config);
+    assert_load_config(load_repo_config);
     assert_list_files(list_files);
     assert_list_tree_json(list_tree_json);
 }
@@ -54,18 +54,6 @@ fn init_empty_repo_contract_keeps_create_empty_separate_from_adopt_existing() {
 
 #[test]
 fn init_empty_repo_contract_exposes_documented_outputs() {
-    let config = RepoConfig {
-        repo_path: "/tmp/area-matrix-empty".to_owned(),
-        default_mode: StorageMode::Copied,
-        overview_output: OverviewOutput::GeneratedOnly,
-        ai_enabled: false,
-        locale: "zh-Hans".to_owned(),
-        icloud_warn: true,
-        enable_extension_rules: true,
-        enable_keyword_rules: true,
-        fallback_to_inbox: true,
-        allow_replace_during_import: false,
-    };
     let repo = tempfile::tempdir().expect("create temporary repository directory");
     init_repo(
         repo.path().to_string_lossy().into_owned(),
@@ -78,6 +66,8 @@ fn init_empty_repo_contract_exposes_documented_outputs() {
         },
     )
     .expect("initialize empty repository");
+    let config = load_repo_config(repo.path().to_string_lossy().into_owned())
+        .expect("load initialized repository config");
     let empty_tree_json = list_tree_json(
         repo.path().to_string_lossy().into_owned(),
         "zh-Hans".to_owned(),
@@ -86,8 +76,10 @@ fn init_empty_repo_contract_exposes_documented_outputs() {
     let empty_tree: serde_json::Value =
         serde_json::from_str(&empty_tree_json).expect("parse empty tree JSON");
 
-    assert_eq!(config.repo_path, "/tmp/area-matrix-empty");
+    assert_eq!(config.repo_path, repo.path().to_string_lossy());
+    assert_eq!(config.default_mode, StorageMode::Copied);
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);
+    assert_eq!(config.revision, 1);
     assert_eq!(empty_tree["slug"], "__root__");
     assert!(empty_tree["children"]
         .as_array()
@@ -113,7 +105,8 @@ fn init_empty_repo_contract_udl_matches_public_api() {
     let udl = include_str!("../area_matrix.udl");
 
     assert!(udl.contains("void init_repo(string repo_path, RepoInitOptions options);"));
-    assert!(udl.contains("RepoConfig load_config(string repo_path);"));
+    assert!(udl.contains("RepoConfigSnapshot load_repo_config(string repo_path);"));
+    assert!(udl.contains("dictionary RepoConfigSnapshot"));
     assert!(udl.contains("string list_tree_json(string repo_path, string locale);"));
     assert!(udl.contains("dictionary RepoInitOptions"));
     assert!(udl.contains("RepoInitMode mode;"));

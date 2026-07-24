@@ -205,6 +205,12 @@ fn assert_db_error(result: Result<area_matrix_core::SearchFacets, CoreError>) {
     assert_eq!(error.to_error_mapping().kind, ErrorKind::Db);
 }
 
+fn assert_db_corrupted_error(result: Result<area_matrix_core::SearchFacets, CoreError>) {
+    let error = result.expect_err("facet query should fail with DbCorrupted");
+    assert!(matches!(error, CoreError::DbCorrupted { .. }));
+    assert_eq!(error.to_error_mapping().kind, ErrorKind::DbCorrupted);
+}
+
 #[test]
 fn search_filters_failure_recovery_empty_repo_returns_empty_facets_without_writes() {
     let repo = initialized_repo();
@@ -275,7 +281,7 @@ fn search_filters_failure_recovery_db_error_preserves_user_files_and_no_staging(
     fs::write(metadata_dir.join("index.db"), b"not a sqlite database")
         .expect("write corrupted database fixture");
 
-    assert_db_error(list_filter_facets(
+    assert_db_corrupted_error(list_filter_facets(
         path_string(repo.path()),
         default_query(),
     ));

@@ -4,9 +4,9 @@ use std::{
 };
 
 use area_matrix_core::{
-    init_repo, list_files, load_config, validate_repo_path, CoreError, CoreResult, FileFilter,
-    FileOrigin, OverviewOutput, PlatformPathKind, RepoConfig, RepoInitMode, RepoInitOptions,
-    RepoPathIssue, RepoPathValidation, StorageMode,
+    init_repo, list_files, load_repo_config, validate_repo_path, CoreError, CoreResult, FileFilter,
+    FileOrigin, OverviewOutput, PlatformPathKind, RepoConfigSnapshot, RepoInitMode,
+    RepoInitOptions, RepoPathIssue, RepoPathValidation, StorageMode,
 };
 use pretty_assertions::assert_eq;
 
@@ -95,7 +95,7 @@ fn windows_repo_connect_validation_proves_create_and_adopt_paths_are_ui_ready() 
     );
     init_repo(path_string(&empty_repo), create_empty_options())
         .expect("initialize after create confirmation");
-    let config = load_config(path_string(&empty_repo)).expect("load initialized config");
+    let config = load_repo_config(path_string(&empty_repo)).expect("load initialized config");
     assert_eq!(config.repo_path, path_string(&empty_repo));
     assert_eq!(config.overview_output, OverviewOutput::GeneratedOnly);
     assert!(empty_repo.join(".areamatrix/index.db").is_file());
@@ -203,11 +203,11 @@ fn windows_repo_connect_validation_covers_failures_without_user_file_mutation() 
 fn windows_repo_connect_validation_locks_core_api_udl_rust_and_test_evidence() {
     fn assert_validate(_: fn(String) -> CoreResult<RepoPathValidation>) {}
     fn assert_init(_: fn(String, RepoInitOptions) -> CoreResult<()>) {}
-    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfig>) {}
+    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfigSnapshot>) {}
 
     assert_validate(validate_repo_path);
     assert_init(init_repo);
-    assert_load_config(load_config);
+    assert_load_config(load_repo_config);
 
     assert_validation_docs_alignment();
     assert_core_api_udl_and_rust_alignment();
@@ -228,7 +228,7 @@ fn assert_core_api_udl_and_rust_alignment() {
     for fragment in [
         "RepoPathValidation validate_repo_path(string repo_path);",
         "void init_repo(string repo_path, RepoInitOptions options);",
-        "RepoConfig load_config(string repo_path);",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
         "dictionary RepoPathValidation",
         "boolean is_onedrive_path;",
         "PlatformPathKind platform_path_kind;",
@@ -259,7 +259,7 @@ fn assert_core_api_udl_and_rust_alignment() {
     for fragment in [
         "pub fn validate_repo_path(repo_path: String) -> CoreResult<RepoPathValidation>",
         "pub fn init_repo(repo_path: String, options: RepoInitOptions) -> CoreResult<()>",
-        "pub fn load_config(repo_path: String) -> CoreResult<RepoConfig>",
+        "pub fn load_repo_config(repo_path: String) -> CoreResult<RepoConfigSnapshot>",
     ] {
         assert_contains(API_RS, fragment);
     }

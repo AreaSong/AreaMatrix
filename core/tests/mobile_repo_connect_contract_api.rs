@@ -1,8 +1,8 @@
 use std::{fs, path::Path};
 
 use area_matrix_core::{
-    init_repo, load_config, validate_repo_path, CoreError, CoreResult, OverviewOutput, RepoConfig,
-    RepoInitMode, RepoInitOptions, RepoPathIssue, RepoPathValidation,
+    init_repo, load_repo_config, validate_repo_path, CoreError, CoreResult, OverviewOutput,
+    RepoConfigSnapshot, RepoInitMode, RepoInitOptions, RepoPathIssue, RepoPathValidation,
 };
 use pretty_assertions::assert_eq;
 
@@ -29,11 +29,11 @@ fn assert_contains(haystack: &str, needle: &str) {
 fn mobile_repo_connect_contract_exports_documented_signatures_and_errors() {
     fn assert_validate(_: fn(String) -> CoreResult<RepoPathValidation>) {}
     fn assert_init(_: fn(String, RepoInitOptions) -> CoreResult<()>) {}
-    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfig>) {}
+    fn assert_load_config(_: fn(String) -> CoreResult<RepoConfigSnapshot>) {}
 
     assert_validate(validate_repo_path);
     assert_init(init_repo);
-    assert_load_config(load_config);
+    assert_load_config(load_repo_config);
 
     let errors = [
         CoreError::permission_denied("permission denied"),
@@ -48,13 +48,13 @@ fn mobile_repo_connect_docs_core_api_and_udl_stay_aligned() {
     for fragment in [
         "RepoPathValidation validate_repo_path(string repo_path);",
         "void init_repo(string repo_path, RepoInitOptions options);",
-        "RepoConfig load_config(string repo_path);",
+        "RepoConfigSnapshot load_repo_config(string repo_path);",
         "dictionary RepoPathValidation",
         "RepoInitMode? recommended_mode;",
         "sequence<RepoPathIssue> issues;",
         "dictionary RepoInitOptions",
         "RepoInitMode mode;",
-        "dictionary RepoConfig",
+        "dictionary RepoConfigSnapshot",
         "enum RepoInitMode { \"CreateEmpty\", \"AdoptExisting\" };",
         "PermissionDenied(string path);",
         "InvalidPath(string path);",
@@ -66,7 +66,7 @@ fn mobile_repo_connect_docs_core_api_and_udl_stay_aligned() {
     for fragment in [
         "### `validate_repo_path(repoPath: String) throws -> RepoPathValidation`",
         "### `init_repo(repoPath: String, options: RepoInitOptions) throws`",
-        "### `load_config(repoPath: String) throws -> RepoConfig`",
+        "### `load_repo_config(repoPath: String) throws -> RepoConfigSnapshot`",
         "recommendedMode",
         "`PermissionDenied`：无法读取目录 metadata、列出目录内容或确认写权限。",
         "`ICloudPlaceholder`：候选路径或关键 metadata 仍是未下载的 iCloud 占位符。",
@@ -126,7 +126,8 @@ fn mobile_repo_connect_consumers_can_route_from_structured_status() {
 
     let initialized_validation = validate_repo_path(path_string(initialized_repo.path()))
         .expect("validate initialized path");
-    let config = load_config(path_string(initialized_repo.path())).expect("load mobile config");
+    let config =
+        load_repo_config(path_string(initialized_repo.path())).expect("load mobile config");
 
     assert!(initialized_validation.is_initialized);
     assert_eq!(initialized_validation.recommended_mode, None);

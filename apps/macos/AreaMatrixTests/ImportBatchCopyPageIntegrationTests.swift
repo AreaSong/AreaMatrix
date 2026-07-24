@@ -35,7 +35,7 @@ final class ImportBatchCopyPageIntegrationTests: XCTestCase {
         XCTAssertEqual(outcome?.succeededEntries.count, 1)
         XCTAssertEqual(outcome?.failedCount, 1)
         XCTAssertEqual(outcome?.lastImportedPath, "finance/Invoice_2026Q1.pdf")
-        XCTAssertEqual(model.lastFailureMapping?.userMessage, "无访问权限")
+        XCTAssertEqual(model.lastFailureMapping?.userMessage, L10n.string("error.unmapped.message"))
         XCTAssertEqual(progressSnapshots.last, importBatchProgress(
             completed: 1,
             failed: 1,

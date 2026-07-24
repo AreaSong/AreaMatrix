@@ -83,11 +83,36 @@ extension CoreErrorMappingSnapshot {
     ) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(
             kind: kind,
-            userMessage: userMessage,
+            userMessage: L10n.message(
+                "error.unmapped.message",
+                fallback: userMessage,
+                technicalDetail: userMessage
+            ),
             severity: severity,
-            suggestedAction: suggestedAction,
+            suggestedAction: L10n.message(
+                "error.unmapped.action",
+                fallback: suggestedAction,
+                technicalDetail: suggestedAction
+            ),
             recoverability: recoverability,
             rawContext: rawContext ?? kind.rawValue
+        )
+    }
+
+    static func fallbackOnlyTestFixture(
+        kind: CoreErrorKindSnapshot,
+        userMessage: String,
+        severity: CoreErrorSeveritySnapshot,
+        recoverability: CoreErrorRecoverabilitySnapshot,
+        rawContext: String
+    ) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: kind,
+            userMessage: userMessage,
+            severity: severity,
+            suggestedAction: "",
+            recoverability: recoverability,
+            rawContext: rawContext
         )
     }
 }

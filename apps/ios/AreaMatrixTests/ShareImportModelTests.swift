@@ -148,6 +148,7 @@ final class ShareImportModelTests: XCTestCase {
             try? FileManager.default.removeItem(at: source)
         }
         let provider = NSItemProvider(item: source as NSURL, typeIdentifier: UTType.fileURL.identifier)
+        provider.suggestedName = "Shared.pdf"
         let extensionItem = NSExtensionItem()
         extensionItem.attributedTitle = NSAttributedString(string: "Files")
         extensionItem.attachments = [provider]
@@ -158,7 +159,8 @@ final class ShareImportModelTests: XCTestCase {
         XCTAssertEqual(payload.readableItems.count, 1)
         XCTAssertEqual(payload.readableItems.first?.displayName, "Shared.pdf")
         XCTAssertEqual(payload.readableItems.first?.sourceApp, "Files")
-        XCTAssertEqual(payload.readableItems.first?.sourceURL, source)
+        XCTAssertNotNil(payload.readableItems.first?.deferredProvider)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: payload.readableItems.first?.sourceURL.path ?? ""))
         XCTAssertEqual((try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? [], [])
     }
 

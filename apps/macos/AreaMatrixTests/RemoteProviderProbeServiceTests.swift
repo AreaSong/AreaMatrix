@@ -390,8 +390,12 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
             return
         }
         XCTAssertEqual(error.message, L10n.message("AI privacy rule could not be loaded."))
-        XCTAssertEqual(error.recovery, L10n.message("Open privacy rules", fallback: "Open privacy rules"))
-        XCTAssertEqual(error.detail, "Mapped ai-privacy-rules-core core error")
+        XCTAssertEqual(error.recovery, L10n.message(
+            "error.unmapped.action",
+            fallback: "Open privacy rules",
+            technicalDetail: "Open privacy rules"
+        ))
+        XCTAssertEqual(error.detail, L10n.string("error.unmapped.message"))
     }
 
     @MainActor
@@ -408,8 +412,12 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
 
         XCTAssertEqual(model.statusText, "AI suggestion failed.")
         XCTAssertEqual(model.failure?.message, L10n.message("AI category suggestion could not be loaded."))
-        XCTAssertEqual(model.failure?.recovery, L10n.message("Open AI settings", fallback: "Open AI settings"))
-        XCTAssertEqual(model.failure?.detail, "Mapped ai-classification-suggestion core error")
+        XCTAssertEqual(model.failure?.recovery, L10n.message(
+            "error.unmapped.action",
+            fallback: "Open AI settings",
+            technicalDetail: "Open AI settings"
+        ))
+        XCTAssertEqual(model.failure?.detail, L10n.string("error.unmapped.message"))
         XCTAssertEqual(model.acceptDisabledReason, "No suggestion to accept.")
         XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
     }
