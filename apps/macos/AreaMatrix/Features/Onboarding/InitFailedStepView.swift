@@ -14,18 +14,21 @@ struct InitFailedStepView: View {
     @State private var isDiagnosticsPrivacyPresented = false
 
     var body: some View {
-        VStack(alignment: .center, spacing: 28) {
+        VStack(alignment: .leading, spacing: 40) {
             header
 
-            VStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 20) {
                 errorSummary
                 recoveryAdvice
                 diagnosticsSection
             }
-            .frame(maxWidth: 440)
 
+            Spacer()
             footer
         }
+        .frame(maxWidth: 580)
+        .padding(.horizontal, 48)
+        .padding(.vertical, 32)
         .areaMatrixOnboardingPanel()
         .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .confirmationDialog(
@@ -42,12 +45,34 @@ struct InitFailedStepView: View {
     }
 
     private var header: some View {
-        AreaMatrixStepHeader(
-            systemImage: "exclamationmark.triangle",
-            tint: AreaMatrixTheme.Colors.coral,
-            title: L10n.string("onboarding.failed.title"),
-            subtitle: L10n.string("onboarding.failed.subtitle")
-        )
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                AreaMatrixLucideIcon(name: .alertTriangle, lineWidth: 2)
+                    .frame(width: 28, height: 28)
+                    .foregroundStyle(AreaMatrixTheme.Colors.coral)
+                    .background(
+                        Circle()
+                            .fill(AreaMatrixTheme.Colors.coral.opacity(0.1))
+                            .frame(width: 48, height: 48)
+                    )
+                Text("INITIALIZATION FAILED")
+                    .font(.system(size: 13, weight: .black, design: .monospaced))
+                    .foregroundStyle(AreaMatrixTheme.Colors.coral)
+                    .tracking(6)
+            }
+            .padding(.bottom, 8)
+            
+            Text(L10n.string("onboarding.failed.title"))
+                .font(.system(size: 42, weight: .heavy))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+            
+            Text(L10n.string("onboarding.failed.subtitle"))
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 20)
     }
 
     private var errorSummary: some View {
@@ -145,31 +170,30 @@ struct InitFailedStepView: View {
 
     private var footer: some View {
         HStack {
-            Button(action: onQuit) { Text(L10n.string("onboarding.failed.quit")) }
-                .buttonStyle(AreaMatrixSecondaryButtonStyle())
+            HoverableGhostButton(
+                action: onQuit,
+                icon: nil,
+                title: L10n.string("onboarding.failed.quit")
+            )
+
+            HoverableGhostButton(
+                action: onChangePath,
+                icon: .folder,
+                title: L10n.string("onboarding.failed.changePath")
+            )
 
             Spacer()
 
-            Button(L10n.string("onboarding.failed.diagnostics")) {
-                isDiagnosticsPrivacyPresented = true
-            }
-            .buttonStyle(AreaMatrixSecondaryButtonStyle())
-            .controlSize(.large)
-            .disabled(isActionInFlight)
-
-            Button(L10n.string("onboarding.failed.changeLocation"), action: onChangePath)
-                .buttonStyle(AreaMatrixSecondaryButtonStyle())
-                .controlSize(.large)
-                .disabled(isActionInFlight)
-
-            Button(L10n.string("onboarding.failed.retry"), action: onRetry)
+            if canRetry {
+                HoverableCapsuleButton(
+                    action: onRetry,
+                    title: L10n.string("onboarding.failed.retry"),
+                    isDisabled: false,
+                    accent: AreaMatrixTheme.Colors.coral
+                )
                 .keyboardShortcut(.defaultAction)
-                .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.coral))
-                .controlSize(.large)
-                .disabled(!canRetry || isActionInFlight)
+            }
         }
-        .frame(maxWidth: 440)
-        .padding(.top, 16)
     }
 
     private var isActionInFlight: Bool {
@@ -177,5 +201,50 @@ struct InitFailedStepView: View {
             return true
         }
         return false
+    }
+}
+
+private struct HoverableGhostButton: View {
+    let action: () -> Void
+    let icon: AreaMatrixLucideIcon.IconName?
+    let title: String
+    @State private var isHovered = false
+    
+    var body: some View {
+        AreaMatrixGhostButton(isHovered: isHovered, action: action) {
+            HStack(spacing: 6) {
+                if let icon {
+                    AreaMatrixLucideIcon(name: icon, lineWidth: 2)
+                        .frame(width: 14, height: 14)
+                }
+                Text(title)
+            }
+        }
+        .onHover { hovering in
+            isHovered = hovering
+            AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+        }
+    }
+}
+
+private struct HoverableCapsuleButton: View {
+    let action: () -> Void
+    let title: String
+    let isDisabled: Bool
+    let accent: Color
+    @State private var isHovered = false
+    
+    var body: some View {
+        AreaMatrixCapsuleButton(accent: accent, isHovered: isHovered, action: action) {
+            Text(title)
+        }
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.5 : 1)
+        .onHover { hovering in
+            if !isDisabled {
+                isHovered = hovering
+                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+            }
+        }
     }
 }

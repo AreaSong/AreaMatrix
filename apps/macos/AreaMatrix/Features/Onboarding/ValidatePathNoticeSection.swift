@@ -24,7 +24,7 @@ struct ValidatePathNotices: View {
     let onICloudRiskAcceptedChanged: (Bool) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .center, spacing: 16) {
             if isValidating {
                 ProgressView(L10n.string("onboarding.validate.checkingPath"))
             }
@@ -33,7 +33,7 @@ struct ValidatePathNotices: View {
             } else if let errorMessage {
                 ValidatePathNoticeCard(
                     title: L10n.string("onboarding.validate.pathUnavailable"),
-                    image: "exclamationmark.triangle",
+                    icon: .alertTriangle,
                     tint: .red,
                     lines: [localizer.resolve(errorMessage)]
                 )
@@ -41,7 +41,7 @@ struct ValidatePathNotices: View {
             if validation?.isInitialized == true {
                 ValidatePathNoticeCard(
                     title: L10n.string("onboarding.validate.repositoryFound"),
-                    image: "externaldrive.connected.to.line.below",
+                    icon: .hardDrive,
                     tint: .green,
                     lines: existingRepoLines
                 )
@@ -49,7 +49,7 @@ struct ValidatePathNotices: View {
             if ValidatePathNoticeRules.shouldShowAdoptExistingNotice(for: validation) {
                 ValidatePathNoticeCard(
                     title: L10n.string("onboarding.validate.adoptTitle"),
-                    image: "folder.badge.gearshape",
+                    icon: .folderCog,
                     tint: .orange,
                     lines: [
                         L10n.string("onboarding.validate.adopt.createMetadata"),
@@ -68,7 +68,7 @@ struct ValidatePathNotices: View {
             if validation?.isExternalVolume == true {
                 ValidatePathNoticeCard(
                     title: L10n.string("onboarding.validate.externalVolumeTitle"),
-                    image: "externaldrive",
+                    icon: .hardDrive,
                     tint: .orange,
                     lines: [
                         L10n.string("onboarding.validate.externalVolumeUnavailable"),
@@ -119,7 +119,7 @@ struct ValidatePathNotices: View {
     private func scanSessionNotice(_ session: ScanSessionSnapshot) -> some View {
         ValidatePathNoticeCard(
             title: L10n.string("onboarding.validate.unfinishedScanTitle"),
-            image: "arrow.clockwise.circle",
+            icon: .refreshCcw,
             tint: .orange,
             lines: [
                 L10n.format("onboarding.validate.scanStatus", session.status.displayName),
@@ -135,7 +135,7 @@ struct ValidatePathNotices: View {
     private func errorMappingNotice(_ mapping: CoreErrorMappingSnapshot) -> some View {
         ValidatePathNoticeCard(
             title: L10n.string("onboarding.validate.pathUnavailable"),
-            image: "exclamationmark.triangle",
+            icon: .alertTriangle,
             tint: mapping.severity.tint,
             lines: [
                 mapping.userMessage,
@@ -155,41 +155,63 @@ private struct ValidatePathICloudNotice: View {
     let onAcceptedChanged: (Bool) -> Void
 
     var body: some View {
-        TintedOutlinedStatusBanner(tint: .blue) {
-            VStack(alignment: .leading, spacing: 10) {
-                Label(L10n.string("onboarding.validate.icloudTitle"), systemImage: "icloud")
-                    .font(.headline)
+        VStack(alignment: .center, spacing: 12) {
+            HStack(alignment: .center, spacing: 8) {
+                AreaMatrixLucideIcon(name: .cloud, lineWidth: 2)
+                    .frame(width: 16, height: 16)
                     .foregroundStyle(.blue)
+                Text(L10n.string("onboarding.validate.icloudTitle"))
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.blue)
+            }
+            
+            VStack(alignment: .center, spacing: 8) {
                 Text(L10n.string("onboarding.validate.icloudRisk"))
-                    .font(.callout)
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    
                 Toggle(
                     L10n.string("onboarding.validate.icloudRiskAcceptance"),
                     isOn: Binding(get: { isAccepted }, set: onAcceptedChanged)
                 )
+                .font(.system(size: 12, weight: .bold))
+                .toggleStyle(.switch)
+                .controlSize(.mini)
             }
         }
+        .padding(.top, 8)
     }
 }
 
 private struct ValidatePathNoticeCard: View {
     let title: String
-    let image: String
+    let icon: AreaMatrixLucideIcon.IconName
     let tint: Color
     let lines: [String]
 
     var body: some View {
-        TintedOutlinedStatusBanner(tint: tint) {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(title, systemImage: image)
-                    .font(.headline)
+        VStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
+                AreaMatrixLucideIcon(name: icon, lineWidth: 2)
+                    .frame(width: 16, height: 16)
                     .foregroundStyle(tint)
-                ForEach(lines, id: \.self) { line in
-                    Text(line)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                Text(title)
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundStyle(tint)
+            }
+            
+            if !lines.isEmpty {
+                VStack(alignment: .center, spacing: 4) {
+                    ForEach(lines, id: \.self) { line in
+                        Text(line)
+                            .font(.system(size: 11, weight: .regular, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
                 }
             }
         }
+        .padding(.top, 4)
     }
 }

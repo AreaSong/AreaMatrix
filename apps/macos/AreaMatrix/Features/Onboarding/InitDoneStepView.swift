@@ -9,29 +9,54 @@ struct InitDoneStepView: View {
     @State private var isOpeningFinder = false
 
     var body: some View {
-        VStack(alignment: .center, spacing: 28) {
+        VStack(alignment: .leading, spacing: 40) {
             header
 
-            VStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                 pathBox
                 summarySection
                 openErrorSection
             }
-            .frame(maxWidth: 440)
 
+            Spacer()
             footer
         }
+        .frame(maxWidth: 580)
+        .padding(.horizontal, 48)
+        .padding(.vertical, 32)
         .areaMatrixOnboardingPanel()
         .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
     }
 
     private var header: some View {
-        AreaMatrixStepHeader(
-            systemImage: "checkmark.circle.fill",
-            tint: AreaMatrixTheme.Colors.emerald,
-            title: L10n.string("onboarding.done.title"),
-            subtitle: L10n.string("onboarding.done.subtitle")
-        )
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                AreaMatrixLucideIcon(name: .checkCircle, lineWidth: 2)
+                    .frame(width: 28, height: 28)
+                    .foregroundStyle(AreaMatrixTheme.Colors.emerald)
+                    .background(
+                        Circle()
+                            .fill(AreaMatrixTheme.Colors.emerald.opacity(0.1))
+                            .frame(width: 48, height: 48)
+                    )
+                Text("SUCCESS")
+                    .font(.system(size: 13, weight: .black, design: .monospaced))
+                    .foregroundStyle(AreaMatrixTheme.Colors.emerald)
+                    .tracking(6)
+            }
+            .padding(.bottom, 8)
+            
+            Text(L10n.string("onboarding.done.title"))
+                .font(.system(size: 42, weight: .heavy))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+            
+            Text(L10n.string("onboarding.done.subtitle"))
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 20)
     }
 
     private var pathBox: some View {
@@ -40,16 +65,33 @@ struct InitDoneStepView: View {
 
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(summaryItems, id: \.self) { item in
-                    Label(item, systemImage: "checkmark")
-                        .font(.callout)
-                        .foregroundStyle(.green)
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(Array(summaryItems.enumerated()), id: \.element) { index, item in
+                    HStack(spacing: 10) {
+                        AreaMatrixLucideIcon(name: .checkCircle, lineWidth: 2)
+                            .frame(width: 14, height: 14)
+                            .foregroundStyle(AreaMatrixTheme.Colors.emerald)
+                        Text(item)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.primary)
+                    }
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                    .animation(
+                        .spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.04),
+                        value: summaryItems
+                    )
                 }
             }
-            .padding(16)
+            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .areaMatrixGlassCard()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.primary.opacity(0.03))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(Color.primary.opacity(0.05), lineWidth: 1)
+                    )
+            )
         }
     }
 
@@ -71,12 +113,11 @@ struct InitDoneStepView: View {
 
     private var footer: some View {
         HStack {
-            Button(L10n.string("onboarding.done.openInFinder")) {
-                Task {
-                    await openInFinder()
-                }
-            }
-            .buttonStyle(AreaMatrixSecondaryButtonStyle())
+            HoverableGhostButton(
+                action: { Task { await openInFinder() } },
+                icon: .folder,
+                title: L10n.string("onboarding.done.openInFinder")
+            )
             .disabled(isOpeningFinder)
 
             if isOpeningFinder {
@@ -86,20 +127,63 @@ struct InitDoneStepView: View {
 
             Spacer()
 
-            Button(action: onOpenRepository) {
-                Text(errorMapping == nil
-                    ? L10n.string("onboarding.done.openRepository")
-                    : L10n.string("onboarding.done.retry"))
-                    .font(.body.weight(.medium))
-            }
+            HoverableCapsuleButton(
+                action: onOpenRepository,
+                title: errorMapping == nil ? L10n.string("onboarding.done.openRepository") : L10n.string("onboarding.done.retry"),
+                isDisabled: false,
+                accent: AreaMatrixTheme.Colors.emerald
+            )
             .keyboardShortcut(.defaultAction)
-            .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.emerald))
-            .controlSize(.large)
         }
-        .frame(maxWidth: 440)
-        .padding(.top, 16)
     }
+}
 
+private struct HoverableGhostButton: View {
+    let action: () -> Void
+    let icon: AreaMatrixLucideIcon.IconName?
+    let title: String
+    @State private var isHovered = false
+    
+    var body: some View {
+        AreaMatrixGhostButton(isHovered: isHovered, action: action) {
+            HStack(spacing: 6) {
+                if let icon {
+                    AreaMatrixLucideIcon(name: icon, lineWidth: 2)
+                        .frame(width: 14, height: 14)
+                }
+                Text(title)
+            }
+        }
+        .onHover { hovering in
+            isHovered = hovering
+            AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+        }
+    }
+}
+
+private struct HoverableCapsuleButton: View {
+    let action: () -> Void
+    let title: String
+    let isDisabled: Bool
+    let accent: Color
+    @State private var isHovered = false
+    
+    var body: some View {
+        AreaMatrixCapsuleButton(accent: accent, isHovered: isHovered, action: action) {
+            Text(title)
+        }
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.5 : 1)
+        .onHover { hovering in
+            if !isDisabled {
+                isHovered = hovering
+                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+            }
+        }
+    }
+}
+
+extension InitDoneStepView {
     @MainActor
     private func openInFinder() async {
         guard !isOpeningFinder else { return }

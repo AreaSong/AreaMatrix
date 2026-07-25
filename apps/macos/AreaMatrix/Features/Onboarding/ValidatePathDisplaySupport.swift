@@ -26,12 +26,12 @@ enum ValidatePathCheckStatus: Equatable {
         }
     }
 
-    var systemImage: String {
+    var lucideIcon: AreaMatrixLucideIcon.IconName {
         switch self {
-        case .checking: "clock"
-        case .passed: "checkmark.circle.fill"
-        case .warning: "exclamationmark.triangle.fill"
-        case .failed: "xmark.octagon.fill"
+        case .checking: .moreHorizontal
+        case .passed: .checkCircle
+        case .warning: .alertTriangle
+        case .failed: .xCircle
         }
     }
 

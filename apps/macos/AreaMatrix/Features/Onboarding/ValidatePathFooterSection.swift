@@ -27,51 +27,109 @@ struct ValidatePathFooter: View {
 
     @ViewBuilder
     private var defaultFooter: some View {
-        Button(action: onBack) { Text(L10n.string("onboarding.validate.back")).font(.body.weight(.medium)) }
-            .buttonStyle(AreaMatrixSecondaryButtonStyle())
+        HoverableGhostButton(
+            action: onBack,
+            icon: .arrowRight, // 这里可以不用，或者用 .arrowLeft，暂时不用图标
+            title: L10n.string("onboarding.validate.back")
+        )
 
         if showsCancel {
-            Button(action: onCancel) { Text(L10n.string("onboarding.validate.cancel")).font(.body.weight(.medium)) }
-                .buttonStyle(AreaMatrixSecondaryButtonStyle())
+            HoverableGhostButton(
+                action: onCancel,
+                icon: .xCircle,
+                title: L10n.string("onboarding.validate.cancel")
+            )
         }
 
         Spacer()
 
-        Button(action: onChangePath) { Text(L10n.string("onboarding.validate.change")) }
-            .buttonStyle(AreaMatrixSecondaryButtonStyle())
-            .controlSize(.large)
+        HoverableGhostButton(
+            action: onChangePath,
+            icon: .folder,
+            title: L10n.string("onboarding.validate.change")
+        )
 
-        Button(action: onRetry) { Text(L10n.string("onboarding.validate.retry")) }
-            .buttonStyle(AreaMatrixSecondaryButtonStyle())
-            .controlSize(.large)
+        HoverableGhostButton(
+            action: onRetry,
+            icon: .refreshCcw,
+            title: L10n.string("onboarding.validate.retry")
+        )
 
         primaryButton
     }
 
     private var existingRepositoryFooter: some View {
         Group {
-            Button(action: onBack) { Text(L10n.string("onboarding.validate.back")).font(.body.weight(.medium)) }
-                .buttonStyle(AreaMatrixSecondaryButtonStyle())
+            HoverableGhostButton(
+                action: onBack,
+                icon: nil,
+                title: L10n.string("onboarding.validate.back")
+            )
 
             Spacer()
 
-            Button(action: onChangePath) { Text(L10n.string("onboarding.validate.changeLocation")) }
-                .buttonStyle(AreaMatrixSecondaryButtonStyle())
-                .controlSize(.large)
+            HoverableGhostButton(
+                action: onChangePath,
+                icon: .folder,
+                title: L10n.string("onboarding.validate.changeLocation")
+            )
 
             primaryButton
         }
     }
 
     private var primaryButton: some View {
-        Button(action: onContinue) {
-            Text(primaryActionTitle)
-                .font(.body.weight(.medium))
-                .frame(minWidth: 80)
-        }
+        HoverableCapsuleButton(
+            action: onContinue,
+            title: primaryActionTitle,
+            isDisabled: !canContinue,
+            accent: AreaMatrixTheme.Colors.teal
+        )
         .keyboardShortcut(.defaultAction)
-        .buttonStyle(AreaMatrixPrimaryButtonStyle())
-        .controlSize(.large)
-        .disabled(!canContinue)
+    }
+}
+
+private struct HoverableGhostButton: View {
+    let action: () -> Void
+    let icon: AreaMatrixLucideIcon.IconName?
+    let title: String
+    @State private var isHovered = false
+    
+    var body: some View {
+        AreaMatrixGhostButton(isHovered: isHovered, action: action) {
+            HStack(spacing: 6) {
+                if let icon {
+                    AreaMatrixLucideIcon(name: icon, lineWidth: 2)
+                        .frame(width: 14, height: 14)
+                }
+                Text(title)
+            }
+        }
+        .onHover { hovering in
+            isHovered = hovering
+            AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+        }
+    }
+}
+
+private struct HoverableCapsuleButton: View {
+    let action: () -> Void
+    let title: String
+    let isDisabled: Bool
+    let accent: Color
+    @State private var isHovered = false
+    
+    var body: some View {
+        AreaMatrixCapsuleButton(accent: accent, isHovered: isHovered, action: action) {
+            Text(title)
+        }
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.5 : 1)
+        .onHover { hovering in
+            if !isDisabled {
+                isHovered = hovering
+                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+            }
+        }
     }
 }

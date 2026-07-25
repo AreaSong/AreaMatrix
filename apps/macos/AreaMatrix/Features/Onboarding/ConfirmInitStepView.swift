@@ -38,22 +38,25 @@ struct ConfirmInitStepView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    header
-                    pathBox
-                    planSection
-                    confirmationIssueSection
-                    safetySection
-                    iCloudWarning
-                }
-                .frame(maxWidth: 680, alignment: .leading)
+        VStack(alignment: .leading, spacing: 40) {
+            header
+            
+            VStack(alignment: .leading, spacing: 24) {
+                pathBox
+                planSection
+                confirmationIssueSection
+                safetySection
+                iCloudWarning
             }
+            .padding(.top, 10)
+            
+            Spacer()
             footer
         }
-        .padding(40)
-        .areaMatrixGlassContentPanel(width: 720, padding: 0)
+        .frame(maxWidth: 580)
+        .padding(.horizontal, 48)
+        .padding(.vertical, 32)
+        .areaMatrixOnboardingPanel()
         .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .confirmationDialog(L10n.string("onboarding.confirm.quitSetup"), isPresented: $isCancelConfirmationPresented) {
             Button(L10n.string("onboarding.confirm.quit"), role: .destructive, action: onCancelSetup)
@@ -64,15 +67,34 @@ struct ConfirmInitStepView: View {
     }
 
     private var header: some View {
-        AreaMatrixStepHeader(
-            systemImage: isCreateMode ? "plus.rectangle.on.folder" : "folder.badge.plus",
-            tint: AreaMatrixTheme.Colors.tealBright,
-            title: isCreateMode
-                ? L10n.string("onboarding.confirm.createTitle")
-                : L10n.string("onboarding.confirm.adoptTitle"),
-            subtitle: L10n.string("onboarding.confirm.subtitle")
-        )
-        .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                AreaMatrixLucideIcon(name: isCreateMode ? .filePlus2 : .folderOpen, lineWidth: 2)
+                    .frame(width: 28, height: 28)
+                    .foregroundStyle(AreaMatrixTheme.Colors.teal)
+                    .background(
+                        Circle()
+                            .fill(AreaMatrixTheme.Colors.teal.opacity(0.1))
+                            .frame(width: 48, height: 48)
+                    )
+                Text("INITIALIZATION")
+                    .font(.system(size: 13, weight: .black, design: .monospaced))
+                    .foregroundStyle(AreaMatrixTheme.Colors.teal)
+                    .tracking(6)
+            }
+            .padding(.bottom, 8)
+            
+            Text(isCreateMode ? L10n.string("onboarding.confirm.createTitle") : L10n.string("onboarding.confirm.adoptTitle"))
+                .font(.system(size: 42, weight: .heavy))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+            
+            Text(L10n.string("onboarding.confirm.subtitle"))
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 20)
     }
 
     private var pathBox: some View {
@@ -93,7 +115,8 @@ struct ConfirmInitStepView: View {
             title: isCreateMode
                 ? L10n.string("onboarding.confirm.willCreate")
                 : L10n.string("onboarding.confirm.willExecute"),
-            items: isCreateMode ? createItems : adoptItems
+            items: isCreateMode ? createItems : adoptItems,
+            iconName: .checkCircle
         )
     }
 
@@ -101,7 +124,8 @@ struct ConfirmInitStepView: View {
         InitPlanList(
             title: L10n.string("onboarding.confirm.willNotExecute"),
             items: safetyItems,
-            iconName: "checkmark.shield"
+            iconName: .shieldCheck,
+            tint: .blue
         )
     }
 
@@ -132,34 +156,37 @@ struct ConfirmInitStepView: View {
     private var footer: some View {
         HStack {
             if footerActions.contains(.back) {
-                Button(L10n.string("onboarding.confirm.back"), action: onBack)
-                    .buttonStyle(AreaMatrixSecondaryButtonStyle())
+                HoverableGhostButton(
+                    action: onBack,
+                    icon: .arrowLeft,
+                    title: L10n.string("onboarding.confirm.back")
+                )
             }
             if footerActions.contains(.cancelSetup) {
-                Button(L10n.string("onboarding.confirm.cancelSetup")) {
-                    isCancelConfirmationPresented = true
-                }
-                .buttonStyle(AreaMatrixSecondaryButtonStyle())
+                HoverableGhostButton(
+                    action: { isCancelConfirmationPresented = true },
+                    icon: .xCircle,
+                    title: L10n.string("onboarding.confirm.cancelSetup")
+                )
             }
             if footerActions.contains(.changePath) {
-                Button(L10n.string("onboarding.confirm.changePath"), action: onChangePath)
-                    .buttonStyle(AreaMatrixSecondaryButtonStyle())
+                HoverableGhostButton(
+                    action: onChangePath,
+                    icon: .folder,
+                    title: L10n.string("onboarding.confirm.changePath")
+                )
             }
             Spacer()
             if footerActions.contains(.primary) {
-                Button(
-                    isCreateMode
-                        ? L10n.string("onboarding.confirm.createRepository")
-                        : L10n.string("onboarding.confirm.adoptFolder"),
-                    action: primaryAction
+                HoverableCapsuleButton(
+                    action: primaryAction,
+                    title: isCreateMode ? L10n.string("onboarding.confirm.createRepository") : L10n.string("onboarding.confirm.adoptFolder"),
+                    isDisabled: !canRunPrimaryAction,
+                    accent: AreaMatrixTheme.Colors.teal
                 )
                 .keyboardShortcut(.defaultAction)
-                .buttonStyle(AreaMatrixPrimaryButtonStyle())
-                .disabled(!canRunPrimaryAction)
             }
         }
-        .frame(maxWidth: 680)
-        .padding(.top, 18)
     }
 
     private var primaryAction: () -> Void {
@@ -248,24 +275,95 @@ enum ConfirmInitStepRules {
 }
 
 private struct InitPlanList: View {
-    let title: String
-    let items: [String]
-    var iconName = "plus.circle"
+        let title: String
+        let items: [String]
+        var iconName: AreaMatrixLucideIcon.IconName = .checkCircle
+        var tint: Color = AreaMatrixTheme.Colors.teal
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: iconName)
-                .font(.headline)
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(items, id: \.self) { item in
-                    Text("• \(item)")
-                        .font(.callout)
-                        .accessibilityLabel(item)
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    AreaMatrixLucideIcon(name: iconName, lineWidth: 2)
+                        .frame(width: 16, height: 16)
+                        .foregroundStyle(tint)
+                    Text(title)
+                        .font(.system(size: 14, weight: .bold))
                 }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(Array(items.enumerated()), id: \.element) { index, item in
+                        HStack(alignment: .top, spacing: 8) {
+                            Text("•")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(tint.opacity(0.8))
+                            Text(item)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                        .animation(
+                            .spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.04),
+                            value: items
+                        )
+                    }
+                }
+                .padding(.leading, 8)
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.primary.opacity(0.03))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(Color.primary.opacity(0.05), lineWidth: 1)
+                        )
+                )
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .areaMatrixGlassCard(cornerRadius: 10)
         }
     }
-}
+
+    private struct HoverableGhostButton: View {
+        let action: () -> Void
+        let icon: AreaMatrixLucideIcon.IconName?
+        let title: String
+        @State private var isHovered = false
+        
+        var body: some View {
+            AreaMatrixGhostButton(isHovered: isHovered, action: action) {
+                HStack(spacing: 6) {
+                    if let icon {
+                        AreaMatrixLucideIcon(name: icon, lineWidth: 2)
+                            .frame(width: 14, height: 14)
+                    }
+                    Text(title)
+                }
+            }
+            .onHover { hovering in
+                isHovered = hovering
+                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+            }
+        }
+    }
+
+    private struct HoverableCapsuleButton: View {
+        let action: () -> Void
+        let title: String
+        let isDisabled: Bool
+        let accent: Color
+        @State private var isHovered = false
+        
+        var body: some View {
+            AreaMatrixCapsuleButton(accent: accent, isHovered: isHovered, action: action) {
+                Text(title)
+            }
+            .disabled(isDisabled)
+            .opacity(isDisabled ? 0.5 : 1)
+            .onHover { hovering in
+                if !isDisabled {
+                    isHovered = hovering
+                    AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+                }
+            }
+        }
+    }

@@ -255,3 +255,57 @@ struct AreaMatrixSecondaryButtonStyle: ButtonStyle {
             }
     }
 }
+
+// MARK: - Awwwards Style Buttons
+
+struct AreaMatrixCapsuleButton<Label: View>: View {
+    var accent: Color = AreaMatrixTheme.Colors.teal
+    let isHovered: Bool
+    let action: () -> Void
+    @ViewBuilder let label: () -> Label
+
+    var body: some View {
+        Button(action: action) {
+            label()
+                .font(.system(size: 14, weight: .bold))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 28)
+                .padding(.vertical, 14)
+                .background(
+                    AreaMatrixTheme.Gradients.primaryAction(accent: accent)
+                        .opacity(isHovered ? 1 : 0.9)
+                )
+                .foregroundStyle(.black)
+                .clipShape(Capsule())
+                .shadow(
+                    color: accent.opacity(isHovered ? 0.5 : 0.2),
+                    radius: isHovered ? 16 : 8,
+                    y: isHovered ? 8 : 4
+                )
+                .scaleEffect(isHovered ? 1.02 : 1)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHovered)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct AreaMatrixGhostButton<Label: View>: View {
+    let isHovered: Bool
+    let action: () -> Void
+    @ViewBuilder let label: () -> Label
+
+    var body: some View {
+        Button(action: action) {
+            label()
+                .font(.system(size: 11, weight: .bold))
+                .tracking(1)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .foregroundStyle(isHovered ? .primary : .secondary)
+                .background(Color.primary.opacity(isHovered ? 0.08 : 0), in: Capsule())
+                .animation(.areaMatrixQuickFade, value: isHovered)
+        }
+        .buttonStyle(.plain)
+    }
+}

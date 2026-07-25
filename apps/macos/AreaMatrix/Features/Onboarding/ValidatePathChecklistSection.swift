@@ -1,19 +1,72 @@
 import SwiftUI
 
-struct ValidatePathChecklist: View {
+struct ValidatePathSatelliteRadar: View {
     let displayedPath: String
     let validation: RepoPathValidationSnapshot?
+    let isValidating: Bool
+    let errorMessage: LocalizedMessage?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(rows, id: \.title) { row in
-                    ValidatePathCheckRowView(row: row)
+        HStack(alignment: .center, spacing: 64) {
+            // ================= 左翼 4 颗伴星 =================
+            VStack(alignment: .trailing, spacing: 32) {
+                ForEach(0..<min(4, rows.count), id: \.self) { index in
+                    ValidatePathSatelliteNode(row: rows[index], alignment: .trailing, index: index)
                 }
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .areaMatrixGlassCard()
+            .frame(width: 220, alignment: .trailing)
+            
+            // ================= 巨型中心雷达 =================
+            ZStack {
+                Circle()
+                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 8]))
+                    .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.2))
+                    .frame(width: 280, height: 280)
+                
+                Circle()
+                    .stroke(style: StrokeStyle(lineWidth: 0.5, dash: [2, 4]))
+                    .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.15))
+                    .frame(width: 220, height: 220)
+
+                Circle()
+                    .strokeBorder(AreaMatrixTheme.Colors.teal.opacity(0.1), lineWidth: 1)
+                    .frame(width: 160, height: 160)
+                
+                Circle()
+                    .fill(AreaMatrixTheme.Colors.teal.opacity(0.06))
+                    .frame(width: 120, height: 120)
+                
+                if isValidating {
+                    AreaMatrixLucideIcon(name: .refreshCcw, lineWidth: 1.5)
+                        .frame(width: 52, height: 52)
+                        .foregroundStyle(AreaMatrixTheme.Colors.teal)
+                } else if validation?.isInitialized == true {
+                    AreaMatrixLucideIcon(name: .checkCircle, lineWidth: 2)
+                        .frame(width: 64, height: 64)
+                        .foregroundStyle(AreaMatrixTheme.Colors.teal)
+                } else if errorMessage != nil {
+                    AreaMatrixLucideIcon(name: .alertTriangle, lineWidth: 2)
+                        .frame(width: 64, height: 64)
+                        .foregroundStyle(Color.orange)
+                } else {
+                    AreaMatrixLucideIcon(name: .hardDrive, lineWidth: 1.5)
+                        .frame(width: 52, height: 52)
+                        .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.5))
+                }
+            }
+            .frame(width: 280, height: 280)
+            
+            // ================= 右翼 4 颗伴星 =================
+            VStack(alignment: .leading, spacing: 32) {
+                if rows.count > 4 {
+                    ForEach(4..<rows.count, id: \.self) { index in
+                        ValidatePathSatelliteNode(row: rows[index], alignment: .leading, index: index)
+                    }
+                } else {
+                    Spacer().frame(height: 1)
+                }
+            }
+            .frame(width: 220, alignment: .leading)
         }
     }
 
@@ -23,17 +76,9 @@ struct ValidatePathChecklist: View {
                 .init(L10n.string("onboarding.validate.check.directory"), displayedPath, .checking),
                 .init(L10n.string("onboarding.validate.check.readable"), waitingForCore, .checking),
                 .init(L10n.string("onboarding.validate.check.writable"), waitingForCore, .checking),
-                .init(
-                    L10n.string("onboarding.validate.check.capacity"),
-                    L10n.string("onboarding.validate.check.waitingCapacity"),
-                    .checking
-                ),
+                .init(L10n.string("onboarding.validate.check.capacity"), L10n.string("onboarding.validate.check.waitingCapacity"), .checking),
                 .init(L10n.string("onboarding.validate.check.icloud"), waitingForCore, .checking),
-                .init(
-                    L10n.string("onboarding.validate.check.externalVolume"),
-                    L10n.string("onboarding.validate.check.waitingVolume"),
-                    .checking
-                ),
+                .init(L10n.string("onboarding.validate.check.externalVolume"), L10n.string("onboarding.validate.check.waitingVolume"), .checking),
                 .init(L10n.string("onboarding.validate.check.existingRepo"), waitingForCore, .checking),
                 .init(L10n.string("onboarding.validate.check.nonEmpty"), waitingForCore, .checking)
             ]
@@ -45,9 +90,7 @@ struct ValidatePathChecklist: View {
         return [
             .init(
                 L10n.string("onboarding.validate.check.directory"),
-                isUsableDirectory
-                    ? L10n.string("onboarding.validate.check.candidateDirectory")
-                    : L10n.string("onboarding.validate.check.chooseExistingFolder"),
+                isUsableDirectory ? L10n.string("onboarding.validate.check.candidateDirectory") : L10n.string("onboarding.validate.check.chooseExistingFolder"),
                 isUsableDirectory ? .passed : .failed
             ),
             .init(
@@ -88,17 +131,9 @@ struct ValidatePathChecklist: View {
         ]
     }
 
-    private var waitingForCore: String {
-        L10n.string("onboarding.validate.check.waitingCore")
-    }
-
-    private var passedDetail: String {
-        L10n.string("onboarding.validate.check.passed")
-    }
-
-    private var warningDetail: String {
-        L10n.string("onboarding.validate.check.warning")
-    }
+    private var waitingForCore: String { L10n.string("onboarding.validate.check.waitingCore") }
+    private var passedDetail: String { L10n.string("onboarding.validate.check.passed") }
+    private var warningDetail: String { L10n.string("onboarding.validate.check.warning") }
 
     private func statusDetail(_ passed: Bool) -> String {
         passed ? passedDetail : L10n.string("onboarding.validate.check.failed")
@@ -108,31 +143,27 @@ struct ValidatePathChecklist: View {
         guard let bytes = validation.availableCapacityBytes else {
             return L10n.string("onboarding.validate.check.missingResult")
         }
-
         return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
     private func capacityStatus(for validation: RepoPathValidationSnapshot) -> ValidatePathCheckStatus {
-        if validation.hasInsufficientAvailableCapacity {
-            return .failed
-        }
-
+        if validation.hasInsufficientAvailableCapacity { return .failed }
         return validation.availableCapacityBytes == nil ? .failed : .passed
     }
 
     private func externalVolumeDetail(for validation: RepoPathValidationSnapshot) -> String {
         switch validation.isExternalVolume {
-        case .some(true): warningDetail
-        case .some(false): passedDetail
-        case nil: L10n.string("onboarding.validate.check.missingResult")
+        case .some(true): return warningDetail
+        case .some(false): return passedDetail
+        case nil: return L10n.string("onboarding.validate.check.missingResult")
         }
     }
 
     private func externalVolumeStatus(for validation: RepoPathValidationSnapshot) -> ValidatePathCheckStatus {
         switch validation.isExternalVolume {
-        case .some(true): .warning
-        case .some(false): .passed
-        case nil: .failed
+        case .some(true): return .warning
+        case .some(false): return .passed
+        case nil: return .failed
         }
     }
 }
@@ -149,21 +180,45 @@ private struct ValidatePathCheckRow: Equatable {
     }
 }
 
-private struct ValidatePathCheckRowView: View {
+private struct ValidatePathSatelliteNode: View {
     let row: ValidatePathCheckRow
+    let alignment: HorizontalAlignment
+    let index: Int
+
+    @State private var isVisible = false
 
     var body: some View {
-        Label {
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 12) {
+            if alignment == .leading {
+                // 圆点在左侧，文字在右（雷达的右翼）
+                Circle()
+                    .fill(row.status.tint)
+                    .frame(width: 6, height: 6)
+                    .shadow(color: row.status.tint.opacity(0.5), radius: 4)
+                
                 Text(row.title)
-                    .font(.body.weight(.medium))
-                Text(L10n.format("onboarding.validate.checkStatusDetail", row.status.text, row.detail))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.primary.opacity(0.7))
+                    .lineLimit(1)
+            } else {
+                // 文字在左侧，圆点在右（雷达的左翼）
+                Text(row.title)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.primary.opacity(0.7))
+                    .lineLimit(1)
+                
+                Circle()
+                    .fill(row.status.tint)
+                    .frame(width: 6, height: 6)
+                    .shadow(color: row.status.tint.opacity(0.5), radius: 4)
             }
-        } icon: {
-            Image(systemName: row.status.systemImage)
-                .foregroundStyle(row.status.tint)
+        }
+        .opacity(isVisible ? 1 : 0)
+        .offset(x: isVisible ? 0 : (alignment == .leading ? -10 : 10))
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5).delay(Double(index) * 0.1)) {
+                isVisible = true
+            }
         }
     }
 }

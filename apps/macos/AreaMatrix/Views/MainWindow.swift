@@ -182,23 +182,19 @@ extension MainWindow {
     }
 
     private var minWindowWidth: CGFloat {
-        if case .welcome = model.route { return 860 }
-        return 760
+        isOnboardingRoute ? 860 : 760
     }
 
     private var maxWindowWidth: CGFloat? {
-        if case .welcome = model.route { return 860 }
-        return nil
+        isOnboardingRoute ? 860 : nil
     }
 
     private var minWindowHeight: CGFloat {
-        if case .welcome = model.route { return 640 }
-        return 520
+        isOnboardingRoute ? 680 : 520
     }
 
     private var maxWindowHeight: CGFloat? {
-        if case .welcome = model.route { return 640 }
-        return nil
+        isOnboardingRoute ? 680 : nil
     }
 
     private var setupQuitConfirmationTitle: String {

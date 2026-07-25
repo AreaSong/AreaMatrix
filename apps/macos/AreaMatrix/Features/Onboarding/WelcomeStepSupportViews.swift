@@ -93,7 +93,7 @@ struct WelcomeFeatureCardsGrid: View {
         [
             AreaMatrixFeatureCardSpec(
                 id: .feat1,
-                icon: "arrow.down.doc",
+                icon: .files,
                 title: L10n.string("onboarding.welcome.feature.classify.title"),
                 description: L10n.string("onboarding.welcome.feature.classify.description"),
                 accentColor: AreaMatrixTheme.Colors.tealBright,
@@ -101,7 +101,7 @@ struct WelcomeFeatureCardsGrid: View {
             ),
             AreaMatrixFeatureCardSpec(
                 id: .feat2,
-                icon: "checkmark.shield",
+                icon: .shieldCheck,
                 title: L10n.string("onboarding.welcome.feature.safety.title"),
                 description: L10n.string("onboarding.welcome.feature.safety.description"),
                 accentColor: AreaMatrixTheme.Colors.gold,
@@ -109,7 +109,7 @@ struct WelcomeFeatureCardsGrid: View {
             ),
             AreaMatrixFeatureCardSpec(
                 id: .feat3,
-                icon: "rectangle.split.2x1",
+                icon: .globe,
                 title: L10n.string("onboarding.welcome.feature.overview.title"),
                 description: L10n.string("onboarding.welcome.feature.overview.description"),
                 accentColor: AreaMatrixTheme.Colors.coral,

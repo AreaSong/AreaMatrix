@@ -24,17 +24,38 @@ struct ValidatePathStepView: View {
     }
 
     var body: some View {
-        VStack(alignment: .center, spacing: 28) {
-            AreaMatrixStepHeader(
-                systemImage: "checklist",
-                tint: AreaMatrixTheme.Colors.tealBright,
-                title: L10n.string("onboarding.validate.title"),
-                subtitle: L10n.string("onboarding.validate.subtitle")
-            )
-
-            VStack(spacing: 24) {
+        VStack(spacing: 0) {
+            // ================== 顶部：极简信息极 ==================
+            VStack(spacing: 16) {
+                HStack(spacing: 12) {
+                    AreaMatrixLucideIcon(name: .hardDrive, lineWidth: 2)
+                        .frame(width: 16, height: 16)
+                        .foregroundStyle(AreaMatrixTheme.Colors.teal)
+                    Text("DIAGNOSTICS")
+                        .font(.system(size: 12, weight: .black, design: .monospaced))
+                        .foregroundStyle(AreaMatrixTheme.Colors.teal)
+                        .tracking(4)
+                }
+                
                 AreaMatrixPathBox(path: displayedPath)
-                ValidatePathChecklist(displayedPath: displayedPath, validation: validation)
+                    .frame(maxWidth: 360)
+            }
+            .padding(.top, 48)
+            
+            // ================== 中枢：巨型深空雷达与卫星阵列 ==================
+            Spacer(minLength: 40)
+            
+            ValidatePathSatelliteRadar(
+                displayedPath: displayedPath,
+                validation: validation,
+                isValidating: isValidating,
+                errorMessage: errorMessage
+            )
+            
+            Spacer(minLength: 40)
+            
+            // ================== 底部：极简状态与控制 ==================
+            VStack(spacing: 32) {
                 ValidatePathNotices(
                     displayedPath: displayedPath,
                     validation: validation,
@@ -46,22 +67,25 @@ struct ValidatePathStepView: View {
                     isICloudRiskAccepted: isICloudRiskAccepted,
                     onICloudRiskAcceptedChanged: onICloudRiskAcceptedChanged
                 )
+                .frame(maxWidth: 600)
+                
+                ValidatePathFooter(
+                    isInitializedRepository: validation?.isInitialized == true,
+                    isValidating: isValidating,
+                    canContinue: canContinue,
+                    primaryActionTitle: primaryActionTitle,
+                    showsCancel: showsCancel,
+                    onBack: onBack,
+                    onCancel: onCancel,
+                    onChangePath: onChangePath,
+                    onRetry: onRetry,
+                    onContinue: onContinue
+                )
             }
-            .frame(maxWidth: 440)
-
-            ValidatePathFooter(
-                isInitializedRepository: validation?.isInitialized == true,
-                isValidating: isValidating,
-                canContinue: canContinue,
-                primaryActionTitle: primaryActionTitle,
-                showsCancel: showsCancel,
-                onBack: onBack,
-                onCancel: onCancel,
-                onChangePath: onChangePath,
-                onRetry: onRetry,
-                onContinue: onContinue
-            )
+            .padding(.bottom, 48)
+            .padding(.horizontal, 48)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .areaMatrixOnboardingPanel()
         .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
     }

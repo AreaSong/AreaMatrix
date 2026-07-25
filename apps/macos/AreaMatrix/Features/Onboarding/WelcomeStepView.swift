@@ -183,78 +183,46 @@ private extension WelcomeStepView {
     }
 
     private var footer: some View {
-        HStack {
-            Button(
-                action: onLearnMore,
-                label: {
-                    AreaMatrixLinkActionLabel(
-                        title: L10n.string("onboarding.welcome.learnMore"),
-                        iconName: "questionmark.circle",
-                        isHovered: isLearnMoreHovered
-                    )
+        HStack(alignment: .center) {
+            AreaMatrixGhostButton(isHovered: isLearnMoreHovered, action: onLearnMore) {
+                HStack(spacing: 8) {
+                    AreaMatrixLucideIcon(name: .info, lineWidth: 2.0)
+                        .frame(width: 14, height: 14)
+                    Text(L10n.string("onboarding.welcome.learnMore").uppercased())
                 }
-            )
-            .buttonStyle(.plain)
+            }
             .focused($isLearnMoreFocused)
             .focusEffectDisabled()
             .onChange(of: isLearnMoreFocused) { _, focused in
-                if focused {
-                    activateHoverScene(.feat4)
-                } else if hoverScene == .feat4 {
-                    scheduleHoverReset(for: .feat4)
-                }
+                if focused { activateHoverScene(.feat4) } else if hoverScene == .feat4 { scheduleHoverReset(for: .feat4) }
             }
             .onHover { hovering in
                 isLearnMoreHovered = hovering
                 AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
-                if hovering {
-                    activateHoverScene(.feat4)
-                } else {
-                    scheduleHoverReset(for: .feat4)
-                }
+                if hovering { activateHoverScene(.feat4) } else { scheduleHoverReset(for: .feat4) }
             }
             .areaMatrixDelayedEntrance(isVisible: footerEntered, delay: AreaMatrixMotionTokens.EntranceDelay.footer)
 
             Spacer()
 
-            Button(
-                action: {
-                    startScanningSequence()
-                },
-                label: {
-                    AreaMatrixPrimaryGlowButton(
-                        accent: AreaMatrixTheme.Colors.teal,
-                        isHovered: isCtaHovered,
-                        shimmerPhase: $shimmerPhase
-                    ) {
-                        AreaMatrixPrimaryActionLabel(
-                            title: L10n.string("onboarding.welcome.chooseFolder"),
-                            iconName: "folder.badge.plus",
-                            shortcut: "⌘O",
-                            isHovered: isCtaHovered
-                        )
-                    }
+            AreaMatrixCapsuleButton(accent: AreaMatrixTheme.Colors.teal, isHovered: isCtaHovered, action: startScanningSequence) {
+                HStack(spacing: 12) {
+                    Text(L10n.string("onboarding.welcome.chooseFolder"))
+                    AreaMatrixLucideIcon(name: .folder, lineWidth: 2.0)
+                        .frame(width: 18, height: 18)
+                        .offset(x: isCtaHovered ? 4 : 0)
                 }
-            )
-            .buttonStyle(.plain)
+            }
             .keyboardShortcut("o", modifiers: [.command])
             .focused($isChooseFolderFocused)
             .focusEffectDisabled()
             .onChange(of: isChooseFolderFocused) { _, focused in
-                if focused {
-                    activateHoverScene(.feat5)
-                } else if hoverScene == .feat5 {
-                    scheduleHoverReset(for: .feat5)
-                }
+                if focused { activateHoverScene(.feat5) } else if hoverScene == .feat5 { scheduleHoverReset(for: .feat5) }
             }
             .onHover { hovering in
                 isCtaHovered = hovering
                 AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
-                if hovering {
-                    activateHoverScene(.feat5)
-                } else {
-                    scheduleHoverReset(for: .feat5)
-                }
+                if hovering { activateHoverScene(.feat5) } else { scheduleHoverReset(for: .feat5) }
             }
             .areaMatrixDelayedEntrance(isVisible: footerEntered, delay: 0.6)
         }
