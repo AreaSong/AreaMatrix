@@ -251,6 +251,26 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_CORE_LOG_CALLBACK_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_CORE_LOG_CALLBACK_METHOD0
+typedef void (*UniffiCallbackInterfaceCoreLogCallbackMethod0)(uint64_t, RustBuffer, void* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_CORE_LOG_CALLBACK
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_CORE_LOG_CALLBACK
+typedef struct UniffiVTableCallbackInterfaceCoreLogCallback {
+    UniffiCallbackInterfaceCoreLogCallbackMethod0 _Nonnull onLog;
+    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
+} UniffiVTableCallbackInterfaceCoreLogCallback;
+
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_INIT_CALLBACK_VTABLE_CORELOGCALLBACK
+#define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_INIT_CALLBACK_VTABLE_CORELOGCALLBACK
+void uniffi_area_matrix_core_fn_init_callback_vtable_corelogcallback(UniffiVTableCallbackInterfaceCoreLogCallback* _Nonnull vtable
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_ACKNOWLEDGE_ONEDRIVE_RISK_NOTICE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_ACKNOWLEDGE_ONEDRIVE_RISK_NOTICE
 RustBuffer uniffi_area_matrix_core_fn_func_acknowledge_onedrive_risk_notice(RustBuffer repo_path, RustCallStatus *_Nonnull out_status
@@ -459,7 +479,7 @@ RustBuffer uniffi_area_matrix_core_fn_func_import_file_with_result(RustBuffer re
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_INIT_LOGGING
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_INIT_LOGGING
-void uniffi_area_matrix_core_fn_func_init_logging(RustBuffer level, RustBuffer log_dir, RustCallStatus *_Nonnull out_status
+void uniffi_area_matrix_core_fn_func_init_logging(RustBuffer level, uint64_t callback, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_INIT_REPO
@@ -1816,6 +1836,12 @@ uint16_t uniffi_area_matrix_core_checksum_func_validate_repo_path(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_WRITE_NOTE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_WRITE_NOTE
 uint16_t uniffi_area_matrix_core_checksum_func_write_note(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_METHOD_CORELOGCALLBACK_ON_LOG
+#define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_METHOD_CORELOGCALLBACK_ON_LOG
+uint16_t uniffi_area_matrix_core_checksum_method_corelogcallback_on_log(void
     
 );
 #endif

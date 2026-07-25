@@ -19,6 +19,7 @@ struct ImportBatchCopyFooterSection: View {
                 .keyboardShortcut(.cancelAction)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button(L10n.string("Import")) {
+                AppLogger.shared.logUIAction("User confirmed Batch Import for \(request.urls.count) items")
                 Task { await importBatch() }
             }
             .keyboardShortcut(.defaultAction)

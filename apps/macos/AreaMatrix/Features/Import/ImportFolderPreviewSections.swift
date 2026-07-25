@@ -10,76 +10,113 @@ struct ImportFolderPreviewView: View {
     let onShowExistingFile: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ImportFolderSummarySection(
-                folderPath: model.folderPathLabel,
-                fileCount: model.rows.count,
-                totalSizeDescription: model.totalSizeDescription,
-                folderCount: model.folderCount,
-                iCloudPlaceholderCount: model.iCloudPlaceholderCount
-            )
-            ImportFolderExclusionSection(skippedRules: model.skippedRules)
-            ImportFolderAdvancedOptionsSection(
-                includeHiddenFiles: includeHiddenFilesBinding,
-                followSymlinks: followSymlinksBinding,
-                isDisabled: model.status.isScanning
-            )
-            ImportFolderDestinationSection(
-                selectedDestination: $model.selectedDestination,
-                destinationOptions: model.destinationOptions,
-                isDisabled: model.status.isScanning || model.rows.contains { $0.status.isImporting }
-            )
-            ImportFolderStorageModeSection(
-                selectedStorageMode: $model.selectedStorageMode,
-                riskMessage: model.storageModeRiskMessage,
-                isDisabled: model.status.isScanning || model.rows.contains { $0.status.isImporting }
-            )
-            ImportFolderPreviewStatusSection(status: model.status)
-            ImportFolderICloudSummarySection(
-                iCloudPlaceholderCount: model.iCloudPlaceholderCount,
-                isDownloading: model.isICloudDownloading,
-                downloadErrorMessage: model.iCloudDownloadErrorMessage,
-                onDownloadAndRetry: {
-                    Task { _ = await model.downloadICloudPlaceholdersAndRetry() }
-                },
-                onSwitchToLocalRepo: onSwitchToLocalRepo
-            )
-            ImportFolderErrorSummary(errors: model.scanErrors)
-            ImportFolderRowsSection(rows: model.rows)
-            if model.duplicateCount > 0
-                || model.nameConflictCount > 0
-                || model.iCloudPlaceholderCount > 0
-                || model.blockedCount > 0
-                || showsConflictReview {
-                ImportFolderConflictSection(
-                    model: model,
-                    isExpanded: $showsConflictReview,
-                    pendingReplaceConfirmation: $pendingReplaceConfirmation,
-                    onRetryScan: {
-                        Task { await model.retryScan() }
-                    },
-                    onSwitchToLocalRepo: onSwitchToLocalRepo,
-                    onShowExistingFile: onShowExistingFile
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                ImportFolderSummarySection(
+                    folderPath: model.folderPathLabel,
+                    fileCount: model.rows.count,
+                    totalSizeDescription: model.totalSizeDescription,
+                    folderCount: model.folderCount,
+                    iCloudPlaceholderCount: model.iCloudPlaceholderCount
                 )
+                .modifier(ImportSectionCardModifier())
+
+                ImportFolderExclusionSection(skippedRules: model.skippedRules)
+                .modifier(ImportSectionCardModifier())
+
+                VStack(alignment: .leading, spacing: 16) {
+                    ImportFolderAdvancedOptionsSection(
+                        includeHiddenFiles: includeHiddenFilesBinding,
+                        followSymlinks: followSymlinksBinding,
+                        isDisabled: model.status.isScanning
+                    )
+                    Divider()
+                    ImportFolderDestinationSection(
+                        selectedDestination: $model.selectedDestination,
+                        destinationOptions: model.destinationOptions,
+                        isDisabled: model.status.isScanning || model.rows.contains { $0.status.isImporting }
+                    )
+                    Divider()
+                    ImportFolderStorageModeSection(
+                        selectedStorageMode: $model.selectedStorageMode,
+                        riskMessage: model.storageModeRiskMessage,
+                        isDisabled: model.status.isScanning || model.rows.contains { $0.status.isImporting }
+                    )
+                }
+                .modifier(ImportSectionCardModifier())
+
+                ImportFolderPreviewStatusSection(status: model.status)
+                    .padding(.horizontal, 4)
+
+                ImportFolderICloudSummarySection(
+                    iCloudPlaceholderCount: model.iCloudPlaceholderCount,
+                    isDownloading: model.isICloudDownloading,
+                    downloadErrorMessage: model.iCloudDownloadErrorMessage,
+                    onDownloadAndRetry: {
+                        Task { _ = await model.downloadICloudPlaceholdersAndRetry() }
+                    },
+                    onSwitchToLocalRepo: onSwitchToLocalRepo
+                )
+                .modifier(ImportSectionCardModifier())
+
+                ImportFolderErrorSummary(errors: model.scanErrors)
+
+                ImportFolderRowsSection(rows: model.rows)
+                    .modifier(ImportSectionCardModifier())
+
+                if model.duplicateCount > 0
+                    || model.nameConflictCount > 0
+                    || model.iCloudPlaceholderCount > 0
+                    || model.blockedCount > 0
+                    || showsConflictReview {
+                    ImportFolderConflictSection(
+                        model: model,
+                        isExpanded: $showsConflictReview,
+                        pendingReplaceConfirmation: $pendingReplaceConfirmation,
+                        onRetryScan: {
+                            Task { await model.retryScan() }
+                        },
+                        onSwitchToLocalRepo: onSwitchToLocalRepo,
+                        onShowExistingFile: onShowExistingFile
+                    )
+                    .modifier(ImportSectionCardModifier())
+                }
+                
+                Text(L10n.format("import.folder.destination", model.selectedDestination.title))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
             }
-            Text(L10n.format("import.folder.destination", model.selectedDestination.title))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            .padding()
         }
     }
 
     private var includeHiddenFilesBinding: Binding<Bool> {
         Binding(
             get: { model.includeHiddenFiles },
-            set: { model.updateIncludeHiddenFiles($0) }
+            set: { 
+                AppLogger.shared.logUIAction("User toggled 'Include Hidden Files' to: \($0)")
+                model.updateIncludeHiddenFiles($0) 
+            }
         )
     }
 
     private var followSymlinksBinding: Binding<Bool> {
         Binding(
             get: { model.followSymlinks },
-            set: { model.updateFollowSymlinks($0) }
+            set: { 
+                AppLogger.shared.logUIAction("User toggled 'Follow Symlinks' to: \($0)")
+                model.updateFollowSymlinks($0) 
+            }
         )
+    }
+}
+
+struct ImportSectionCardModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(16)
+            .areaMatrixGlassCard(cornerRadius: 12)
     }
 }
 

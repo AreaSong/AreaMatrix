@@ -2,7 +2,8 @@ namespace area_matrix {
     string get_version();
 
     [Throws=CoreError]
-    void init_logging(string level, string log_dir);
+    void init_logging(string level, CoreLogCallback callback);
+
 
     [Throws=CoreError]
     BindingContractReport inspect_binding_contract(BindingContractRequest request);
@@ -2782,4 +2783,16 @@ interface CoreError {
     StagingRecoveryRequired(string path);
     PermissionDenied(string path);
     Internal(string message);
+};
+
+dictionary CoreLogRecord {
+    string level;
+    string message;
+    string? target;
+    string? thread_name;
+    string? repo_path;
+};
+
+callback interface CoreLogCallback {
+    void on_log(CoreLogRecord record);
 };

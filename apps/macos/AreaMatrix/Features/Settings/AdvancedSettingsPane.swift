@@ -57,6 +57,7 @@ extension AdvancedSettingsPane {
         ) {
             Button(L10n.string("Cancel"), role: .cancel, action: model.cancelDiagnosticsExport)
             Button(L10n.string("Export diagnostics")) {
+                AppLogger.shared.logUIAction("User confirmed Export Diagnostics in Advanced Settings")
                 Task {
                     await model.collectDiagnostics()
                 }
@@ -81,6 +82,7 @@ extension AdvancedSettingsPane {
         ) {
             Button(L10n.string("Cancel"), role: .cancel, action: model.cancelAllowReplaceDuringImport)
             Button(L10n.string("Enable Replace")) {
+                AppLogger.shared.logUIAction("User enabled dangerous option: Allow Replace During Import", level: .warn)
                 Task {
                     await model.confirmAllowReplaceDuringImport()
                 }
@@ -153,13 +155,22 @@ extension AdvancedSettingsPane {
 
     private var loadedContent: some View {
         SettingsPageScrollContent {
-            saveErrorBanner
-            versionErrorBanner
-            diagnosticsStatusBanner
-            actionFeedbackBanner
-            diagnosticsSection
-            logsSection
-            dangerZoneSection
+            VStack(spacing: 20) {
+                saveErrorBanner
+                versionErrorBanner
+                diagnosticsStatusBanner
+                actionFeedbackBanner
+                
+                diagnosticsSection
+                    .modifier(SettingsSectionCardModifier())
+                
+                logsSection
+                    .modifier(SettingsSectionCardModifier())
+                
+                dangerZoneSection
+                    .modifier(SettingsSectionCardModifier())
+            }
+            .padding()
         }
     }
 
@@ -344,5 +355,13 @@ extension AdvancedSettingsPane {
         model.diagnosticsState.isCollecting
             ? L10n.string("Exporting diagnostics...")
             : L10n.string("Export diagnostics...")
+    }
+}
+
+struct SettingsSectionCardModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(16)
+            .areaMatrixGlassCard(cornerRadius: 12)
     }
 }

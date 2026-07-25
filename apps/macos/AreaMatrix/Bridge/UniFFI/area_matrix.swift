@@ -9086,6 +9086,96 @@ public func FfiConverterTypeCommandTarget_lower(_ value: CommandTarget) -> RustB
 }
 
 
+public struct CoreLogRecord {
+    public var level: String
+    public var message: String
+    public var target: String?
+    public var threadName: String?
+    public var repoPath: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(level: String, message: String, target: String?, threadName: String?, repoPath: String?) {
+        self.level = level
+        self.message = message
+        self.target = target
+        self.threadName = threadName
+        self.repoPath = repoPath
+    }
+}
+
+
+
+extension CoreLogRecord: Equatable, Hashable {
+    public static func ==(lhs: CoreLogRecord, rhs: CoreLogRecord) -> Bool {
+        if lhs.level != rhs.level {
+            return false
+        }
+        if lhs.message != rhs.message {
+            return false
+        }
+        if lhs.target != rhs.target {
+            return false
+        }
+        if lhs.threadName != rhs.threadName {
+            return false
+        }
+        if lhs.repoPath != rhs.repoPath {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(level)
+        hasher.combine(message)
+        hasher.combine(target)
+        hasher.combine(threadName)
+        hasher.combine(repoPath)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCoreLogRecord: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CoreLogRecord {
+        return
+            try CoreLogRecord(
+                level: FfiConverterString.read(from: &buf), 
+                message: FfiConverterString.read(from: &buf), 
+                target: FfiConverterOptionString.read(from: &buf), 
+                threadName: FfiConverterOptionString.read(from: &buf), 
+                repoPath: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CoreLogRecord, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.level, into: &buf)
+        FfiConverterString.write(value.message, into: &buf)
+        FfiConverterOptionString.write(value.target, into: &buf)
+        FfiConverterOptionString.write(value.threadName, into: &buf)
+        FfiConverterOptionString.write(value.repoPath, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCoreLogRecord_lift(_ buf: RustBuffer) throws -> CoreLogRecord {
+    return try FfiConverterTypeCoreLogRecord.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCoreLogRecord_lower(_ value: CoreLogRecord) -> RustBuffer {
+    return FfiConverterTypeCoreLogRecord.lower(value)
+}
+
+
 public struct CreateSavedSearchRequest {
     public var name: String
     public var query: SavedSearchQuery
@@ -31833,6 +31923,111 @@ extension UndoActionStatus: Equatable, Hashable {}
 
 
 
+
+
+
+public protocol CoreLogCallback : AnyObject {
+    
+    func onLog(record: CoreLogRecord) 
+    
+}
+
+// Magic number for the Rust proxy to call using the same mechanism as every other method,
+// to free the callback once it's dropped by Rust.
+private let IDX_CALLBACK_FREE: Int32 = 0
+// Callback return codes
+private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
+private let UNIFFI_CALLBACK_ERROR: Int32 = 1
+private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceCoreLogCallback {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceCoreLogCallback = UniffiVTableCallbackInterfaceCoreLogCallback(
+        onLog: { (
+            uniffiHandle: UInt64,
+            record: RustBuffer,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterCallbackInterfaceCoreLogCallback.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.onLog(
+                     record: try FfiConverterTypeCoreLogRecord.lift(record)
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            let result = try? FfiConverterCallbackInterfaceCoreLogCallback.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface CoreLogCallback: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitCoreLogCallback() {
+    uniffi_area_matrix_core_fn_init_callback_vtable_corelogcallback(&UniffiCallbackInterfaceCoreLogCallback.vtable)
+}
+
+// FfiConverter protocol for callback interfaces
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterCallbackInterfaceCoreLogCallback {
+    fileprivate static var handleMap = UniffiHandleMap<CoreLogCallback>()
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+extension FfiConverterCallbackInterfaceCoreLogCallback : FfiConverter {
+    typealias SwiftType = CoreLogCallback
+    typealias FfiType = UInt64
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func lift(_ handle: UInt64) throws -> SwiftType {
+        try handleMap.get(handle: handle)
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func lower(_ v: SwiftType) -> UInt64 {
+        return handleMap.insert(obj: v)
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public static func write(_ v: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(v))
+    }
+}
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -34880,10 +35075,10 @@ public func importFileWithResult(repoPath: String, sourcePath: String, options: 
     )
 })
 }
-public func initLogging(level: String, logDir: String)throws  {try rustCallWithError(FfiConverterTypeCoreError.lift) {
+public func initLogging(level: String, callback: CoreLogCallback)throws  {try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_init_logging(
         FfiConverterString.lower(level),
-        FfiConverterString.lower(logDir),$0
+        FfiConverterCallbackInterfaceCoreLogCallback.lower(callback),$0
     )
 }
 }
@@ -35628,7 +35823,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_area_matrix_core_checksum_func_import_file_with_result() != 52959) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_area_matrix_core_checksum_func_init_logging() != 21342) {
+    if (uniffi_area_matrix_core_checksum_func_init_logging() != 19359) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_init_repo() != 29414) {
@@ -35856,7 +36051,11 @@ private var initializationResult: InitializationResult = {
     if (uniffi_area_matrix_core_checksum_func_write_note() != 2891) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_area_matrix_core_checksum_method_corelogcallback_on_log() != 59379) {
+        return InitializationResult.apiChecksumMismatch
+    }
 
+    uniffiCallbackInitCoreLogCallback()
     return InitializationResult.ok
 }()
 

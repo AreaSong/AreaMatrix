@@ -50,6 +50,16 @@ struct AdvancedSettingsLogFolderOpener: AdvancedSettingsLogFolderOpening {
     @MainActor
     func openLogsFolder(repoPath: String) throws -> String {
         let logsURL = RepositoryMetadataPath.logsURL(repoPath: repoPath)
+        
+        let fileManager = FileManager.default
+        if !fileManager.fileExists(atPath: logsURL.path) {
+            do {
+                try fileManager.createDirectory(at: logsURL, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                throw AdvancedSettingsLogFolderError.missing(logsURL.path)
+            }
+        }
+        
         do {
             try localURLOpener.openExisting(logsURL, requiresDirectory: true)
         } catch LocalFileURLOpenError.openRejected(_) {

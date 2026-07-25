@@ -27,6 +27,7 @@ struct ImportFolderFooterSection: View {
                 .keyboardShortcut(.cancelAction)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button(L10n.string("Import Folder")) {
+                AppLogger.shared.logUIAction("User confirmed Import Folder: \(request.sheetTitle) with \(model.importableRows.count) files")
                 Task { await importFolder() }
             }
             .keyboardShortcut(.defaultAction)

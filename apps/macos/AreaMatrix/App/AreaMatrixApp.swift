@@ -32,19 +32,23 @@ struct AreaMatrixApp: App {
         .commands {
             CommandGroup(after: .sidebar) {
                 Button(localizer.string("app.command.import")) {
+                    AppLogger.shared.logUIAction("Triggered 'Import' via Menu / Shortcut")
                     AreaMatrixImportCommandRelay.publish()
                 }
                 .keyboardShortcut("i", modifiers: [.command])
                 Button(localizer.string("app.command.settings")) {
+                    AppLogger.shared.logUIAction("Triggered 'Settings' via Menu / Shortcut")
                     AreaMatrixSettingsCommandRelay.publish()
                 }
                 .keyboardShortcut(",", modifiers: [.command])
                 Divider()
                 Button(localizer.string("app.command.commandPalette")) {
+                    AppLogger.shared.logUIAction("Triggered 'Command Palette' via Menu / Shortcut")
                     AreaMatrixCommandPaletteCommandRelay.publish()
                 }
                 .keyboardShortcut("k", modifiers: [.command])
                 Button(localizer.string("app.command.undoHistory")) {
+                    AppLogger.shared.logUIAction("Triggered 'Undo History' via Menu / Shortcut")
                     AreaMatrixUndoHistoryCommandRelay.publish()
                 }
                 .keyboardShortcut("z", modifiers: [.command, .option])
@@ -250,18 +254,58 @@ public final class AppLogger {
     }
 
     public func setupCoreLogging() {
-        let fileManager = FileManager.default
-        let homeDir = fileManager.homeDirectoryForCurrentUser
-        let logsDir = homeDir.appendingPathComponent(".areamatrix/logs")
-
         do {
-            if !fileManager.fileExists(atPath: logsDir.path) {
-                try fileManager.createDirectory(at: logsDir, withIntermediateDirectories: true, attributes: nil)
-            }
-            try initLogging(level: "info", logDir: logsDir.path)
-            coreLog.info("Core logging initialized at \(logsDir.path, privacy: .private)")
+            let handler = AppCoreLogHandler()
+            try initLogging(level: "info", callback: handler)
+            coreLog.info("Core logging successfully intercepted via UniFFI Callback.")
         } catch {
             coreLog.error("Failed to initialize core logging: \(error.localizedDescription)")
         }
     }
+    
+    public func logUIAction(_ message: String, level: MemoryLogLevel = .info) {
+        switch level {
+        case .error: uiLog.error("\(message, privacy: .public)")
+        case .warn: uiLog.warning("\(message, privacy: .public)")
+        case .debug: uiLog.debug("\(message, privacy: .public)")
+        default: uiLog.info("\(message, privacy: .public)")
+        }
+        
+        Task { @MainActor in
+            MemoryLogStore.shared.append(level: level, category: "UI", message: message)
+        }
+    }
 }
+
+
+final class AppCoreLogHandler: CoreLogCallback {
+    private let coreLog = Logger(subsystem: "com.areamatrix.mac", category: "Core")
+    
+    func onLog(record: CoreLogRecord) {
+        let module = record.target ?? "unknown"
+        let msg = "[\(module)] \(record.message)"
+        
+        let level: MemoryLogLevel
+        
+        switch record.level.lowercased() {
+        case "error":
+            coreLog.error("\(msg, privacy: .public)")
+            level = .error
+        case "warn":
+            coreLog.warning("\(msg, privacy: .public)")
+            level = .warn
+        case "debug", "trace":
+            coreLog.debug("\(msg, privacy: .public)")
+            level = .debug
+        default:
+            coreLog.info("\(msg, privacy: .public)")
+            level = .info
+        }
+        
+        Task { @MainActor in
+            MemoryLogStore.shared.append(level: level, category: "Core", message: msg)
+        }
+    }
+}
+
+

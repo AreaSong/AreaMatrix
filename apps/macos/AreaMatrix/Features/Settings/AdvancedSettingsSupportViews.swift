@@ -192,98 +192,173 @@ struct AdvancedRootOverviewConfirmationSheet: View {
     }
 }
 import SwiftUI
+import OSLog
+import UniformTypeIdentifiers
+
+public enum MemoryLogLevel {
+    case debug, info, warn, error
+}
+
+public struct LiveLogEntry: Identifiable {
+    public let id = UUID()
+    public let date: Date
+    public let level: MemoryLogLevel
+    public let category: String
+    public let message: String
+}
+
+@MainActor
+public final class MemoryLogStore: ObservableObject {
+    public static let shared = MemoryLogStore()
+    @Published public private(set) var logs: [LiveLogEntry] = []
+    
+    public func append(level: MemoryLogLevel, category: String, message: String) {
+        let entry = LiveLogEntry(date: Date(), level: level, category: category, message: message)
+        if logs.count > 1000 {
+            logs.removeLast()
+        }
+        logs.insert(entry, at: 0)
+    }
+    
+    public func clear() {
+        logs.removeAll()
+    }
+}
+
+enum LogViewMode: String, CaseIterable {
+    case card = "Card"
+    case terminal = "Terminal"
+}
+
+enum LogCategoryFilter: String, CaseIterable {
+    case all = "All"
+    case core = "Core"
+    case ui = "UI"
+    case sync = "Sync"
+}
 
 struct LiveLogsViewerSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var logContent: String = ""
-    @State private var isLoading: Bool = true
-    @State private var resolvedPath: String = ""
+    @ObservedObject private var store = MemoryLogStore.shared
+    @State private var viewMode: LogViewMode = .card
+    @State private var categoryFilter: LogCategoryFilter = .all
     
-    private let logsPath: URL = {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        return home.appendingPathComponent(".areamatrix/logs/core.log")
-    }()
+    var filteredLogs: [LiveLogEntry] {
+        if categoryFilter == .all { return store.logs }
+        return store.logs.filter { $0.category.lowercased() == categoryFilter.rawValue.lowercased() }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text(L10n.string("Core Action Logs"))
-                    .font(.headline)
-                Spacer()
-                Button {
-                    loadLogs()
-                } label: {
-                    Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
-                }
-                .keyboardShortcut("r", modifiers: [.command])
-            }
-            .padding()
-            .background(Color(NSColor.windowBackgroundColor))
-            
+            header
             Divider()
-            
-            if isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if store.logs.isEmpty {
+                Text("Waiting for incoming logs...").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    Text(logContent)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                        .padding()
+                if viewMode == .terminal {
+                    terminalView
+                } else {
+                    cardView
                 }
-                .background(Color(NSColor.textBackgroundColor))
             }
-            
             Divider()
-            
-            HStack {
-                Text(resolvedPath)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button(L10n.string("Close")) {
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-            .padding()
-            .background(Color(NSColor.windowBackgroundColor))
+            footer
         }
         .frame(width: 800, height: 600)
-        .onAppear {
-            loadLogs()
+    }
+    
+    private var header: some View {
+        HStack(spacing: 16) {
+            Text(L10n.string("Activity Monitor"))
+                .font(.headline)
+            
+            Picker("", selection: $viewMode) {
+                ForEach(LogViewMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }.pickerStyle(.segmented).frame(width: 150)
+            
+            Picker("Category:", selection: $categoryFilter) {
+                ForEach(LogCategoryFilter.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }.frame(width: 150)
+            
+            Spacer()
+            
+            Button(action: { store.clear() }) {
+                Label("Clear", systemImage: "trash")
+            }
+            Button(action: exportSanitized) {
+                Label("Export Sanitized", systemImage: "lock.shield")
+            }
+        }
+        .padding()
+        .background(Color(NSColor.windowBackgroundColor))
+    }
+    
+    private var terminalView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(filteredLogs) { log in
+                    Text("[\(log.date.formatted(date: .omitted, time: .standard))] [\(log.category)] \(log.message)")
+                        .font(.system(.footnote, design: .monospaced))
+                        .foregroundColor(.green)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .background(Color.black)
+    }
+    
+    private var cardView: some View {
+        ScrollView {
+            LazyVStack(spacing: 8) {
+                ForEach(filteredLogs) { log in
+                    HStack(alignment: .top) {
+                        icon(for: log.level)
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(log.category).font(.caption).bold().foregroundStyle(.secondary)
+                                Spacer()
+                                Text(log.date.formatted()).font(.caption2).foregroundStyle(.tertiary)
+                            }
+                            Text(log.message).font(.callout).textSelection(.enabled)
+                        }
+                    }
+                    .padding(12)
+                    .background(Material.ultraThin, in: RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            .padding()
+        }
+        .background(Color(NSColor.controlBackgroundColor))
+    }
+    
+    private func icon(for level: MemoryLogLevel) -> some View {
+        switch level {
+        case .error: return Image(systemName: "xmark.circle.fill").foregroundColor(.red)
+        case .info: return Image(systemName: "info.circle.fill").foregroundColor(.blue)
+        case .warn: return Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.yellow)
+        case .debug: return Image(systemName: "ladybug.fill").foregroundColor(.orange)
         }
     }
     
-    private func loadLogs() {
-        isLoading = true
-        DispatchQueue.global(qos: .userInitiated).async {
-            var content: String = ""
-            var resolvedPath: String = self.logsPath.path
-            
-            let logsDir = self.logsPath.deletingLastPathComponent()
-            do {
-                let files = try FileManager.default.contentsOfDirectory(atPath: logsDir.path)
-                let coreLogFiles = files.filter { $0.hasPrefix("core.log") }.sorted(by: >)
-                
-                if let latestLog = coreLogFiles.first {
-                    let latestPath = logsDir.appendingPathComponent(latestLog)
-                    resolvedPath = latestPath.path
-                    content = try String(contentsOf: latestPath, encoding: .utf8)
-                } else {
-                    content = "No logs found in \(logsDir.path)"
-                }
-            } catch {
-                content = "Failed to read logs directory: \(error.localizedDescription)"
-            }
-            
-            DispatchQueue.main.async {
-                self.logContent = content
-                self.resolvedPath = resolvedPath
-                self.isLoading = false
-            }
+    private var footer: some View {
+        HStack {
+            Text("\(filteredLogs.count) events found").font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Button("Close") { dismiss() }.keyboardShortcut(.defaultAction)
         }
+        .padding()
+        .background(Color(NSColor.windowBackgroundColor))
+    }
+    
+    private func exportSanitized() {
+        let content = filteredLogs.map { "[\($0.date)] [\($0.category)] \($0.message)" }.joined(separator: "\n")
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
+        let sanitized = content.replacingOccurrences(of: homeDir, with: "[REDACTED_HOME]")
+        
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(sanitized, forType: .string)
     }
 }
+

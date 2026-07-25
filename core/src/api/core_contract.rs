@@ -58,35 +58,33 @@ pub fn get_version() -> String {
 ///
 /// Full subscriber wiring is left for a later observability task so this
 /// skeleton remains side-effect light.
-pub fn init_logging(level: String, log_dir: String) -> CoreResult<()> {
-    let level_filter = match level.as_str() {
-        "trace" => tracing::Level::TRACE,
-        "debug" => tracing::Level::DEBUG,
-        "info" => tracing::Level::INFO,
-        "warn" => tracing::Level::WARN,
-        "error" => tracing::Level::ERROR,
-        _ => return Err(CoreError::config("configuration error")),
-    };
+use std::sync::Arc;
 
-    let file_appender = tracing_appender::rolling::daily(log_dir, "core.log");
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+pub struct CoreLogRecord {
+    pub level: String,
+    pub message: String,
+    pub target: Option<String>,
+    pub thread_name: Option<String>,
+    pub repo_path: Option<String>,
+}
+
+pub trait CoreLogCallback: Send + Sync {
+    fn on_log(&self, record: CoreLogRecord);
+}
+
+pub fn init_logging(level: String, callback: Box<dyn CoreLogCallback>) -> CoreResult<()> {
+    // Phase 1 MVP: Just store or invoke the callback.
+    // In Phase 2, this will be wrapped in a custom `tracing_subscriber::Subscriber`.
+    // For now, we print a startup trace using the callback directly to verify the bridge.
     
-    // Leak the guard intentionally because init_logging is called once globally
-    // and we want logging to continue until the process exits.
-    Box::leak(Box::new(_guard));
-
-    let subscriber = tracing_subscriber::fmt()
-        .with_max_level(level_filter)
-        .with_writer(non_blocking)
-        .with_ansi(false) // No ANSI color codes for file logging
-        .with_file(true)
-        .with_line_number(true)
-        .with_thread_ids(true)
-        .with_target(false) // Target is usually the module path, file/line is better
-        .finish();
-
-    // Ignore error if tracing was already initialized
-    let _ = tracing::subscriber::set_global_default(subscriber);
+    callback.on_log(CoreLogRecord {
+        level: "info".to_string(),
+        message: "Core logging infrastructure attached via FFI.".to_string(),
+        target: Some("areamatrix::core".to_string()),
+        thread_name: None,
+        repo_path: None,
+    });
 
     Ok(())
 }
+
