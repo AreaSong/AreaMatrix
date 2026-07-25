@@ -7,6 +7,7 @@ struct GeneralSettingsView: View {
     let onClose: () -> Void
     let onChangeRepository: () -> Void
     let onOpenRepositoryRecovery: () -> Void
+    let onReturnToWelcome: () -> Void
 }
 
 extension GeneralSettingsView {
@@ -16,6 +17,7 @@ extension GeneralSettingsView {
         onClose: @escaping () -> Void,
         onChangeRepository: @escaping () -> Void = {},
         onOpenRepositoryRecovery: @escaping () -> Void = {},
+        onReturnToWelcome: @escaping () -> Void = {},
         loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
         updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
         rootOverviewInspector: any RootOverviewFileInspecting =
@@ -39,6 +41,7 @@ extension GeneralSettingsView {
         self.onClose = onClose
         self.onChangeRepository = onChangeRepository
         self.onOpenRepositoryRecovery = onOpenRepositoryRecovery
+        self.onReturnToWelcome = onReturnToWelcome
     }
 
     var body: some View {
@@ -134,7 +137,8 @@ extension GeneralSettingsView {
         case "advanced":
             AdvancedSettingsPane(
                 repoPath: model.repoPath,
-                onOpenRecoveryTools: onOpenRepositoryRecovery
+                onOpenRecoveryTools: onOpenRepositoryRecovery,
+                onReturnToWelcome: onReturnToWelcome
             )
         case "about":
             AboutSettingsPane(

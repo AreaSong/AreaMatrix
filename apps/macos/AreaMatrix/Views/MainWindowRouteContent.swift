@@ -271,6 +271,10 @@ private extension MainWindowRouteContent {
             },
             onOpenRepositoryRecovery: {
                 model.openMainRepositoryRepair(repoPath: opening.config.repoPath)
+            },
+            onReturnToWelcome: {
+                model.updateRepositoryPath("")
+                model.showWelcome()
             }
         )
     }

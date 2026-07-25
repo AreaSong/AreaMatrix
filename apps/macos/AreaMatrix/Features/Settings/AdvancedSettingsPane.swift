@@ -6,12 +6,14 @@ struct AdvancedSettingsPane: View {
     @State private var isDangerZoneExpanded = false
     @State private var isLogsViewerPresented = false
     private let onOpenRecoveryTools: () -> Void
+    private let onReturnToWelcome: () -> Void
 }
 
 extension AdvancedSettingsPane {
     init(
         repoPath: String,
         onOpenRecoveryTools: @escaping () -> Void = {},
+        onReturnToWelcome: @escaping () -> Void = {},
         loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
         updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
         rootOverviewInspector: any RootOverviewFileInspecting =
@@ -39,6 +41,7 @@ extension AdvancedSettingsPane {
             errorMapper: errorMapper
         ))
         self.onOpenRecoveryTools = onOpenRecoveryTools
+        self.onReturnToWelcome = onReturnToWelcome
     }
 
     var body: some View {
@@ -276,6 +279,24 @@ extension AdvancedSettingsPane {
                 overviewOutputSection
                 allowReplaceSection
                 AdvancedSettingsRecoveryToolsSection(onOpenRecoveryTools: onOpenRecoveryTools)
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(L10n.string("返回欢迎页"))
+                        .font(.headline)
+                        .foregroundColor(.red)
+                    Button {
+                        onReturnToWelcome()
+                    } label: {
+                        Label(L10n.string("Disconnect and return to Welcome screen"), systemImage: "arrow.uturn.backward")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                    .accessibilityIdentifier("advanced-settings-danger-zone-return-to-welcome")
+                    Text(L10n.string("关闭当前窗口上下文，彻底退回初始启动欢迎页。"))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.top, 10)
         }
