@@ -223,7 +223,7 @@ struct AreaMatrixWorkflowDiorama: View {
             Image(systemName: "externaldrive.fill")
                 .font(.system(size: 24))
                 .foregroundColor(databaseAccent)
-            Text("Local DB")
+            Text(L10n.string("Local DB"))
                 .font(.system(size: 9, design: .monospaced))
                 .foregroundColor(databaseAccent)
         }

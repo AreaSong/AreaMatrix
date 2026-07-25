@@ -24,7 +24,7 @@ extension MainRepositoryContentView {
             Label(mainRepositorySearchBannerText(request), systemImage: mainRepositorySearchBannerSystemImage)
                 .font(.callout)
             Spacer()
-            Button("Retry") {
+            Button(L10n.string("Retry")) {
                 Task { await fileListModel.retrySearch() }
             }
             .opacity(mainRepositorySearchRetryOpacity)
@@ -32,10 +32,10 @@ extension MainRepositoryContentView {
             Button(searchFiltersButtonTitle) {
                 searchRoutingState.isToolbarFiltersPresented.toggle()
             }
-            Button("Save...", action: fileListModel.openSavedSearchSheet)
+            Button(L10n.string("Save..."), action: fileListModel.openSavedSearchSheet)
                 .disabled(!fileListModel.canSaveCurrentSearch)
             smartListBannerEditButton
-            Button("Clear") {
+            Button(L10n.string("Clear")) {
                 clearSearch()
             }
         }
@@ -109,8 +109,8 @@ extension MainRepositoryContentView {
     private var searchFallbackBannerDetail: some View {
         if fileListModel.searchState.indexStatus == .unavailable {
             HStack(spacing: 10) {
-                Text("Search index unavailable")
-                Button("Open indexing status") {
+                Text(L10n.string("Search index unavailable"))
+                Button(L10n.string("Open indexing status")) {
                     fileListModel.openIndexingStatus()
                 }
             }

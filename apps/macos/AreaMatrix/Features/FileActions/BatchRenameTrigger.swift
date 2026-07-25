@@ -14,7 +14,7 @@ struct UndoPreviewPane: View {
             } else {
                 redoSection
                 if redoAction == nil {
-                    Text("Select an action")
+                    Text(L10n.string("Select an action"))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -36,7 +36,7 @@ struct UndoPreviewPane: View {
                 .foregroundStyle(.secondary)
             fileSamples(action.affectedFileNames)
             if !isLatest {
-                Text("Undo newer actions first.")
+                Text(L10n.string("Undo newer actions first."))
                     .foregroundStyle(.secondary)
             }
             if let reason = disabledReason(action) {
@@ -72,7 +72,7 @@ struct UndoPreviewPane: View {
             .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-row")
             .accessibilityLabel(source.accessibilityText)
         } else {
-            Text("No redoable actions")
+            Text(L10n.string("No redoable actions"))
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-empty")
         }
@@ -82,7 +82,7 @@ struct UndoPreviewPane: View {
     private func fileSamples(_ names: [String]) -> some View {
         if !names.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Files")
+                Text(L10n.string("Files"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 ForEach(names.prefix(5), id: \.self) { name in
@@ -189,7 +189,7 @@ struct BatchRenameTrigger: View {
     @State private var isPresented = false
 
     var body: some View {
-        Button("Rename...") { isPresented = true }
+        Button(L10n.string("Rename...")) { isPresented = true }
             .help(BatchRenameEntryPolicy.openHelp(disabledReason: disabledReason))
             .accessibilityIdentifier("batch-rename-batch-rename-open")
             .sheet(isPresented: $isPresented) {
@@ -222,7 +222,7 @@ struct BatchAITagSuggestionTrigger: View {
     @State private var isPresented = false
 
     var body: some View {
-        Button("AI tag suggestions...") {
+        Button(L10n.string("AI tag suggestions...")) {
             isPresented = true
             actions.load(selectedFiles)
         }
@@ -262,7 +262,7 @@ struct BatchAITagSuggestionSheet: View {
             Text(L10n.plural("file-actions.ai-tag-suggestion.review-files", count: selectedFiles.count))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
-            Text("Review before adding tags. AI suggestions are not applied until you accept them.")
+            Text(L10n.string("Review before adding tags. AI suggestions are not applied until you accept them."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             content
@@ -278,8 +278,8 @@ struct BatchAITagSuggestionSheet: View {
             ),
             titleVisibility: .visible
         ) {
-            Button("Apply tags", action: actions.apply)
-            Button("Cancel", role: .cancel, action: actions.cancelConfirmation)
+            Button(L10n.string("Apply tags"), action: actions.apply)
+            Button(L10n.string("Cancel"), role: .cancel, action: actions.cancelConfirmation)
         } message: {
             Text(confirmationMessage)
         }
@@ -302,20 +302,20 @@ struct BatchAITagSuggestionSheet: View {
 
     var actionBar: some View {
         HStack {
-            Button("Accept high confidence") {
+            Button(L10n.string("Accept high confidence")) {
                 actions.selectHighConfidence()
                 actions.confirm()
             }
             .disabled(!state.hasHighConfidenceApplyCandidates || state.isApplying || state.isLoading || isAIBlocked)
-            Button("Accept selected", action: actions.confirm)
+            Button(L10n.string("Accept selected"), action: actions.confirm)
                 .disabled(!state.canApplySelectedSuggestions || isAIBlocked)
-            Button("Reject selected", action: actions.clearSelection)
+            Button(L10n.string("Reject selected"), action: actions.clearSelection)
                 .disabled(state.review?.selectedTagCount == 0 || state.isApplying || state.isLoading || isAIBlocked)
             if case .applied = state {
-                Button("Retry apply", action: actions.confirm)
+                Button(L10n.string("Retry apply"), action: actions.confirm)
                     .disabled(!state.canApplySelectedSuggestions)
             }
-            Button("Cancel") {
+            Button(L10n.string("Cancel")) {
                 actions.cancel()
                 onClose()
             }

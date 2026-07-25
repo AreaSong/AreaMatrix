@@ -38,7 +38,7 @@ struct SemanticSearchFallbackStatusRegion: View {
         case .none:
             EmptyView()
         case .resolving:
-            Text("Resolving AI status...")
+            Text(L10n.string("Resolving AI status..."))
                 .accessibilityIdentifier("ai-fallback-semantic-search-core-resolving-fallback-status")
         case let .status(status):
             statusContent(status)

@@ -89,7 +89,7 @@ struct MainRepoErrorView: View {
             Text(localizer.resolve(presentation.message))
                 .font(.body)
                 .foregroundStyle(.secondary)
-            Text("This error does not mean your files were deleted.")
+            Text(L10n.string("This error does not mean your files were deleted."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -97,7 +97,7 @@ struct MainRepoErrorView: View {
 
     private var repositoryDetails: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Repository")
+            Text(L10n.string("Repository"))
                 .font(.headline)
             AreaMatrixPathBox(
                 path: repoPath,
@@ -132,7 +132,7 @@ struct MainRepoErrorView: View {
     @ViewBuilder
     private func technicalDetails(_ mapping: CoreErrorMappingSnapshot) -> some View {
         if presentation.showsTechnicalDetails {
-            DisclosureGroup("Technical Details") {
+            DisclosureGroup(L10n.string("Technical Details")) {
                 Text(mapping.rawContext)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
@@ -172,16 +172,16 @@ struct MainRepoErrorView: View {
                 .buttonStyle(AreaMatrixPrimaryButtonStyle())
                 .disabled(isRetrying)
             if case .idle = externalRemoval {
-                Button("Confirm external removal", action: onConfirmExternalRemoval)
+                Button(L10n.string("Confirm external removal"), action: onConfirmExternalRemoval)
                     .buttonStyle(AreaMatrixSecondaryButtonStyle())
                     .disabled(isRetrying)
             }
-            Button("Choose another repository", action: onChooseAnotherFolder)
+            Button(L10n.string("Choose another repository"), action: onChooseAnotherFolder)
                 .disabled(isRetrying)
-            Button("Export diagnostics", action: onRequestDiagnostics)
+            Button(L10n.string("Export diagnostics"), action: onRequestDiagnostics)
                 .disabled(isRetrying || diagnosticsIsBusy)
             if shouldShowRevealFolder {
-                Button("Reveal last known folder", action: onRevealFolder)
+                Button(L10n.string("Reveal last known folder"), action: onRevealFolder)
                     .disabled(isRetrying)
             }
             if isRetrying {
@@ -203,20 +203,20 @@ struct MainRepoErrorView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 HStack(spacing: 10) {
-                    Button("Create diagnostics", action: onConfirmDiagnostics)
+                    Button(L10n.string("Create diagnostics"), action: onConfirmDiagnostics)
                         .buttonStyle(.borderedProminent)
-                    Button("Cancel", action: onCancelDiagnostics)
+                    Button(L10n.string("Cancel"), action: onCancelDiagnostics)
                 }
             }
             .padding(12)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
         case .collecting:
-            Label("Preparing repository diagnostics...", systemImage: "arrow.clockwise")
+            Label(L10n.string("Preparing repository diagnostics..."), systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):
             VStack(alignment: .leading, spacing: 4) {
-                Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
+                Label(L10n.string("Diagnostics collected"), systemImage: "doc.badge.gearshape")
                 Text(snapshot.snapshotPath)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)

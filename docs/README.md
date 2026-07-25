@@ -35,6 +35,7 @@
 
 - [产品概览](product/overview.md)
 - [产品能力](product/capabilities.md)
+- [当前实现清单](product/current-implementation-inventory.md)
 - [产品界面地图](product/product-surfaces.md)
 - [用户工作流](product/workflows.md)
 - [隐私与数据处理](product/privacy.md)

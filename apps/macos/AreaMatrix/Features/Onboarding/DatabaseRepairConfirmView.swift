@@ -61,8 +61,8 @@ struct DBRepairConfirmView: View {
         .areaMatrixGlassContentPanel(width: 780, padding: 0)
         .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
         .confirmationDialog("Export diagnostics?", isPresented: diagnosticsConfirmationBinding) {
-            Button("Cancel", role: .cancel, action: model.cancelDiagnosticsExport)
-            Button("Export diagnostics") {
+            Button(L10n.string("Cancel"), role: .cancel, action: model.cancelDiagnosticsExport)
+            Button(L10n.string("Export diagnostics")) {
                 Task { await model.collectDiagnostics() }
             }
         } message: {
@@ -94,7 +94,7 @@ private extension DBRepairConfirmView {
 
     private var repositoryContext: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Repository").font(.headline)
+            Text(L10n.string("Repository")).font(.headline)
             AreaMatrixPathBox(path: model.repoPath, style: .glass, lineLimit: 3, alignment: .leading)
             if let mapping = model.initialMapping {
                 Text(L10n.format("onboarding.databaseRepair.errorKind", mapping.kind.displayName))
@@ -103,7 +103,7 @@ private extension DBRepairConfirmView {
                 Text(mapping.userMessage)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                DisclosureGroup("Technical Details") {
+                DisclosureGroup(L10n.string("Technical Details")) {
                     Text(mapping.rawContext)
                         .font(.system(.caption, design: .monospaced))
                         .textSelection(.enabled)
@@ -127,12 +127,12 @@ private extension DBRepairConfirmView {
     private var preflightStatus: some View {
         switch model.preflightState {
         case .idle, .loading:
-            Label("Inspecting metadata...", systemImage: "magnifyingglass")
+            Label(L10n.string("Inspecting metadata..."), systemImage: "magnifyingglass")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .ready(preflight):
             VStack(alignment: .leading, spacing: 10) {
-                Label("Metadata inspection complete", systemImage: "checkmark.circle")
+                Label(L10n.string("Metadata inspection complete"), systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
                 Text(L10n.format("metadataRepair.preflight.state", preflight.localeState.rawValue))
                     .font(.callout)
@@ -143,8 +143,8 @@ private extension DBRepairConfirmView {
                         .foregroundStyle(.orange)
                 }
                 if preflight.requiresExplicitLocaleSelection {
-                    Picker("Repository content language", selection: $model.selectedRecoveryLanguage) {
-                        Text("Choose a language").tag(RepositoryContentLanguage?.none)
+                    Picker(L10n.string("Repository content language"), selection: $model.selectedRecoveryLanguage) {
+                        Text(L10n.string("Choose a language")).tag(RepositoryContentLanguage?.none)
                         ForEach(RepositoryContentLanguage.allCases) { language in
                             Text(localizer.resolve(language.displayMessage)).tag(Optional(language))
                         }
@@ -158,10 +158,10 @@ private extension DBRepairConfirmView {
             }
         case let .failed(mapping):
             VStack(alignment: .leading, spacing: 8) {
-                Label("Metadata inspection failed", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Metadata inspection failed"), systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
                 Text(mapping.userMessage).font(.callout)
-                Button("Retry inspection") { Task { await model.retryRepairPreflight() } }
+                Button(L10n.string("Retry inspection")) { Task { await model.retryRepairPreflight() } }
             }
         }
     }
@@ -186,7 +186,7 @@ private extension DBRepairConfirmView {
                 ]
             )
             Toggle(
-                "I understand that repair changes AreaMatrix metadata only.",
+                L10n.string("I understand that repair changes AreaMatrix metadata only."),
                 isOn: $model.isMetadataSafetyConfirmed
             )
             .toggleStyle(.checkbox)
@@ -201,12 +201,12 @@ private extension DBRepairConfirmView {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            Label("Preparing repository diagnostics...", systemImage: "arrow.clockwise")
+            Label(L10n.string("Preparing repository diagnostics..."), systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):
             VStack(alignment: .leading, spacing: 6) {
-                Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
+                Label(L10n.string("Diagnostics collected"), systemImage: "doc.badge.gearshape")
                     .foregroundStyle(.green)
                 Text(snapshot.snapshotPath)
                     .font(.system(.caption, design: .monospaced))
@@ -214,7 +214,7 @@ private extension DBRepairConfirmView {
             }
         case let .failed(mapping):
             VStack(alignment: .leading, spacing: 6) {
-                Label("Diagnostics could not be created", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Diagnostics could not be created"), systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
                 Text(mapping.userMessage).font(.callout)
             }
@@ -230,7 +230,7 @@ private extension DBRepairConfirmView {
             RepairProgressView(currentStep: step)
         case let .succeeded(report):
             VStack(alignment: .leading, spacing: 8) {
-                Label("Metadata repair completed", systemImage: "checkmark.circle")
+                Label(L10n.string("Metadata repair completed"), systemImage: "checkmark.circle")
                     .foregroundStyle(.green)
                 Text(report.summaryText).font(.callout)
                 if let path = report.diagnosticsSnapshotPath {
@@ -241,7 +241,7 @@ private extension DBRepairConfirmView {
             }
         case let .failed(mapping):
             VStack(alignment: .leading, spacing: 8) {
-                Label("Metadata repair failed", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Metadata repair failed"), systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
                 Text(mapping.userMessage).font(.callout)
                 Text(mapping.suggestedAction)
@@ -256,11 +256,11 @@ private extension DBRepairConfirmView {
         if model.repairState.isSucceeded {
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
-                Text("Rescan Repository Files").font(.headline)
+                Text(L10n.string("Rescan Repository Files")).font(.headline)
                 Text(L10n.string("metadataRepair.rescanLimitations"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Toggle("I want to scan the repository now.", isOn: $model.isRescanConfirmed)
+                Toggle(L10n.string("I want to scan the repository now."), isOn: $model.isRescanConfirmed)
                     .toggleStyle(.checkbox)
                     .disabled(model.rescanState.isRunning)
                     .accessibilityIdentifier("database-repair-confirm-rescan")
@@ -275,7 +275,7 @@ private extension DBRepairConfirmView {
         case .idle:
             EmptyView()
         case .running:
-            Label("Scanning files...", systemImage: "arrow.clockwise")
+            Label(L10n.string("Scanning files..."), systemImage: "arrow.clockwise")
                 .foregroundStyle(.secondary)
         case let .succeeded(report):
             Label(
@@ -285,7 +285,7 @@ private extension DBRepairConfirmView {
             .foregroundStyle(.green)
         case let .failed(mapping):
             VStack(alignment: .leading, spacing: 6) {
-                Label("Rescan failed", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Rescan failed"), systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.red)
                 Text(mapping.userMessage).font(.callout)
             }
@@ -294,14 +294,14 @@ private extension DBRepairConfirmView {
 
     private var footer: some View {
         HStack(spacing: 12) {
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .disabled(model.repairState.isRunning || model.rescanState.isRunning)
-            Button("Export diagnostics...", action: model.requestDiagnosticsExport)
+            Button(L10n.string("Export diagnostics..."), action: model.requestDiagnosticsExport)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 .disabled(!model.canExportDiagnostics)
             if model.repairState.failure != nil {
-                Button("Open repository in Finder", action: onOpenRepositoryInFinder)
+                Button(L10n.string("Open repository in Finder"), action: onOpenRepositoryInFinder)
                     .buttonStyle(AreaMatrixSecondaryButtonStyle())
             }
             Spacer()

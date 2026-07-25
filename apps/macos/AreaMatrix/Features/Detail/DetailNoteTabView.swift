@@ -28,7 +28,7 @@ struct DetailNoteTabView: View {
 
     private var toolbar: some View {
         HStack(spacing: 10) {
-            Text("Note")
+            Text(L10n.string("Note"))
                 .font(.headline)
             Spacer()
             if let saveStatus = model.state.saveStatus {
@@ -39,7 +39,7 @@ struct DetailNoteTabView: View {
                     onOpenNoteFile(notePath)
                 }
             } label: {
-                Label("Open note file", systemImage: "doc.text")
+                Label(L10n.string("Open note file"), systemImage: "doc.text")
             }
             .disabled(!model.canOpenNoteFile)
         }
@@ -63,7 +63,7 @@ struct DetailNoteTabView: View {
         HStack(spacing: 8) {
             ProgressView()
                 .controlSize(.small)
-            Text("Loading note...")
+            Text(L10n.string("Loading note..."))
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
@@ -71,16 +71,16 @@ struct DetailNoteTabView: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("还没有笔记")
+            Text(L10n.string("还没有笔记"))
                 .font(.headline)
-            Text("为这个文件添加上下文、处理状态或关联信息。")
+            Text(L10n.string("为这个文件添加上下文、处理状态或关联信息。"))
                 .foregroundStyle(.secondary)
             if let message = model.state.writeBlock?.message {
                 Text(message)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            Button("Create Note", action: model.createNote)
+            Button(L10n.string("Create Note"), action: model.createNote)
                 .disabled(model.state.writeBlock != nil)
         }
         .accessibilityElement(children: .contain)
@@ -106,7 +106,7 @@ struct DetailNoteTabView: View {
                 saveErrorView(error)
             }
             if !model.canOpenNoteFile {
-                Text("Save the note before opening the sidecar file.")
+                Text(L10n.string("Save the note before opening the sidecar file."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -122,11 +122,11 @@ struct DetailNoteTabView: View {
             backgroundOpacity: 0.12
         ) {
             VStack(alignment: .leading, spacing: 8) {
-                Label("无法加载笔记", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("无法加载笔记"), systemImage: "exclamationmark.triangle")
                     .font(.callout.weight(.semibold))
                 Text(error.userMessage)
                     .foregroundStyle(.secondary)
-                Button("Retry") {
+                Button(L10n.string("Retry")) {
                     Task { await model.retryLoad() }
                 }
             }
@@ -142,11 +142,11 @@ struct DetailNoteTabView: View {
             contentPadding: 10
         ) {
             VStack(alignment: .leading, spacing: 8) {
-                Label("无法保存笔记", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("无法保存笔记"), systemImage: "exclamationmark.triangle")
                     .font(.callout.weight(.semibold))
                 Text(error.userMessage)
                     .foregroundStyle(.secondary)
-                Button("Retry") {
+                Button(L10n.string("Retry")) {
                     Task { await model.retrySave() }
                 }
             }

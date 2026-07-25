@@ -94,11 +94,11 @@ private extension AISettingsPane {
         if let error = model.saveError {
             AISettingsInlineBanner(error: error, tint: .red) {
                 if model.hasRetryablePause {
-                    Button("Retry pause", action: retryPause)
+                    Button(L10n.string("Retry pause"), action: retryPause)
                 }
                 if model.hasRetryableSave {
-                    Button("Retry save", action: retrySave)
-                    Button("Revert changes", action: model.revertChanges)
+                    Button(L10n.string("Retry save"), action: retrySave)
+                    Button(L10n.string("Revert changes"), action: model.revertChanges)
                 }
             }
         } else if let feedback = model.actionFeedback {
@@ -109,7 +109,7 @@ private extension AISettingsPane {
                     .foregroundStyle(.secondary)
             case let .failed(error):
                 AISettingsInlineBanner(error: error, tint: .orange) {
-                    Button("Configure remote AI", action: openRemoteConfig)
+                    Button(L10n.string("Configure remote AI"), action: openRemoteConfig)
                 }
             }
         }
@@ -119,7 +119,7 @@ private extension AISettingsPane {
 private extension AISettingsPane {
     var statusSection: some View {
         AdvancedSettingsSection(title: L10n.string("AI features")) {
-            Toggle("Enable AI features", isOn: aiEnabledBinding)
+            Toggle(L10n.string("Enable AI features"), isOn: aiEnabledBinding)
                 .disabled(writesDisabled)
             Text(statusText)
                 .font(.callout)
@@ -132,7 +132,7 @@ private extension AISettingsPane {
         AdvancedSettingsSection(title: L10n.string("Providers")) {
             AdvancedSettingsKeyValueRow(label: L10n.string("Local model"), value: localModelLabel)
             AdvancedSettingsKeyValueRow(label: L10n.string("Remote model"), value: remoteModelLabel)
-            Picker("Provider preference", selection: providerPreferenceBinding) {
+            Picker(L10n.string("Provider preference"), selection: providerPreferenceBinding) {
                 ForEach(AISettingsProviderPreference.allCases) { preference in
                     Text(preference.label).tag(preference)
                 }
@@ -141,9 +141,9 @@ private extension AISettingsPane {
             .disabled(writesDisabled)
             .frame(maxWidth: 360)
             HStack {
-                Button("Local model status", action: openLocalModelStatus)
+                Button(L10n.string("Local model status"), action: openLocalModelStatus)
                     .accessibilityIdentifier("local-model-status-local-model-status-core-open-local-model-status")
-                Button("Configure remote AI", action: openRemoteConfig)
+                Button(L10n.string("Configure remote AI"), action: openRemoteConfig)
                     .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-configure-remote-ai")
             }
         }
@@ -162,16 +162,16 @@ private extension AISettingsPane {
         AdvancedSettingsSection(title: L10n.string("Privacy")) {
             AdvancedSettingsKeyValueRow(label: L10n.string("Privacy rules"), value: privacyRulesLabel)
             AdvancedSettingsKeyValueRow(label: L10n.string("Remote AI"), value: remoteScopeLabel)
-            Button("Manage privacy rules", action: openPrivacyRules)
+            Button(L10n.string("Manage privacy rules"), action: openPrivacyRules)
                 .accessibilityIdentifier("ai-privacy-rules-ai-settings-config-manage-privacy-rules")
         }
     }
 
     var logSection: some View {
         AdvancedSettingsSection(title: L10n.string("Log")) {
-            Button("View AI call log") { model.openCallLogEntry(); isCallLogPresented = true }
+            Button(L10n.string("View AI call log")) { model.openCallLogEntry(); isCallLogPresented = true }
                 .accessibilityIdentifier("ai-call-log-ai-call-log-core-open-ai-call-log")
-            Text("See when AI was used and whether it was local or remote.")
+            Text(L10n.string("See when AI was used and whether it was local or remote."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -179,11 +179,11 @@ private extension AISettingsPane {
 
     var safetySection: some View {
         AdvancedSettingsSection(title: L10n.string("Safety")) {
-            Button("Pause all AI", action: pauseAllAI)
+            Button(L10n.string("Pause all AI"), action: pauseAllAI)
                 .disabled(writesDisabled || !(model.snapshot?.config.aiEnabled ?? false))
-            Button("Clear AI generated suggestions...", action: model.openCallLogEntry)
+            Button(L10n.string("Clear AI generated suggestions..."), action: model.openCallLogEntry)
                 .disabled(true)
-            Text("Clear generated suggestions from the AI call log after reviewing recent activity.")
+            Text(L10n.string("Clear generated suggestions from the AI call log after reviewing recent activity."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -329,7 +329,7 @@ private struct AISettingsLoadingView: View {
     var body: some View {
         AdvancedSettingsSection(title: L10n.string("AI features")) {
             ProgressView("Loading AI settings...")
-            Text("AI controls are disabled until settings finish loading.")
+            Text(L10n.string("AI controls are disabled until settings finish loading."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -343,8 +343,8 @@ private struct AISettingsLoadFailureView: View {
 
     var body: some View {
         AISettingsInlineBanner(error: error, tint: .red) {
-            Button("Retry", action: retry)
-            Button("View AI call log", action: openLog)
+            Button(L10n.string("Retry"), action: retry)
+            Button(L10n.string("View AI call log"), action: openLog)
         }
     }
 }

@@ -36,7 +36,7 @@ struct BatchTagUndoToastView: View {
         case .idle:
             EmptyView()
         case .loading:
-            Label("Loading undo action...", systemImage: "arrow.uturn.backward.circle")
+            Label(L10n.string("Loading undo action..."), systemImage: "arrow.uturn.backward.circle")
         case let .ready(action):
             undoSummary(action, status: L10n.string("Undo available"))
         case let .disabled(action, reason):
@@ -65,23 +65,23 @@ struct BatchTagUndoToastView: View {
     @ViewBuilder
     private var toastActions: some View {
         if case let .ready(action) = state {
-            Button("Undo") { onUndo(action) }
+            Button(L10n.string("Undo")) { onUndo(action) }
                 .accessibilityIdentifier("undo-toast-undo-action-log-undo-action")
         } else if case .disabled = state {
-            Button("Undo") {}
+            Button(L10n.string("Undo")) {}
                 .disabled(true)
                 .accessibilityIdentifier("undo-toast-undo-action-log-undo-action-disabled")
         }
         if case .failed = state {
-            Button("View details") { onOpenHistory(.viewDetails) }
-                .help("Open Undo History details for this failed undo.")
+            Button(L10n.string("View details")) { onOpenHistory(.viewDetails) }
+                .help(L10n.string("Open Undo History details for this failed undo."))
                 .accessibilityIdentifier("undo-toast-undo-action-log-view-details")
         } else {
-            Button("View history") { onOpenHistory(.viewHistory) }
-                .help("Open Undo History for this action.")
+            Button(L10n.string("View history")) { onOpenHistory(.viewHistory) }
+                .help(L10n.string("Open Undo History for this action."))
                 .accessibilityIdentifier("undo-toast-undo-action-log-view-history")
         }
-        Button("Dismiss", action: onDismiss)
+        Button(L10n.string("Dismiss"), action: onDismiss)
     }
 
     private func undoSummary(_ action: UndoActionRecordSnapshot, status: String) -> some View {

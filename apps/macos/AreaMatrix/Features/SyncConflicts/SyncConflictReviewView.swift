@@ -172,7 +172,7 @@ private extension SyncConflictReviewView {
         ContentUnavailableView {
             Label(SyncConflictReviewCopy.emptyTitle, systemImage: "checkmark.circle")
         } description: {
-            Text("Refresh the conflict entry list and choose another item.")
+            Text(L10n.string("Refresh the conflict entry list and choose another item."))
         } actions: {
             Button(SyncConflictReviewCopy.backAction, action: onBackToNeedsReview)
                 .accessibilityIdentifier(SyncConflictReviewAccessibilityID.back)
@@ -199,7 +199,7 @@ private extension SyncConflictReviewView {
                 }
             }
         } actions: {
-            Button("Retry") {
+            Button(L10n.string("Retry")) {
                 Task { await model.refresh() }
             }
             .accessibilityIdentifier(SyncConflictReviewAccessibilityID.retry)
@@ -255,7 +255,7 @@ private extension SyncConflictReviewView {
     private var previewContent: some View {
         switch model.previewState {
         case .idle:
-            Text("Resolution impact is required before applying.")
+            Text(L10n.string("Resolution impact is required before applying."))
                 .foregroundStyle(.secondary)
         case let .loading(strategy):
             HStack(spacing: 8) {
@@ -291,7 +291,7 @@ private extension SyncConflictReviewView {
             ])
             if preview.requiresReplaceConfirmation {
                 Label(
-                    "Use incoming version requires replace-resolution replace confirmation.",
+                    L10n.string("Use incoming version requires replace-resolution replace confirmation."),
                     systemImage: "lock.shield"
                 )
                 .foregroundStyle(.orange)

@@ -64,7 +64,7 @@ struct ChangeCategorySheet: View {
                     metadataRow("Current category", file.categoryPathDisplay)
                     metadataRow("Storage mode", file.storageMode)
                     classifierReasonRow
-                    Picker("Target category", selection: $targetCategory) {
+                    Picker(L10n.string("Target category"), selection: $targetCategory) {
                         ForEach(availableCategories, id: \.self) { category in
                             Text(category).tag(category)
                         }
@@ -309,7 +309,7 @@ struct ClassifierRuleEditorRouteView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Spacer()
-            Button("Cancel") { onCancelFromBatchCategory(context) }
+            Button(L10n.string("Cancel")) { onCancelFromBatchCategory(context) }
                 .keyboardShortcut(.cancelAction)
         }
         .padding(.horizontal, 34).padding(.vertical, 12)

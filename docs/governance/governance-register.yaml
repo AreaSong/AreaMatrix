@@ -2,7 +2,7 @@ schema_version: 1
 id: AM-GOV-REGISTER-001
 status: active
 owner: "@AreaSong"
-updated: "2026-07-15"
+updated: "2026-07-25"
 upstream:
   spec_id: ASW-EWF-001
   version: 1.0.0
@@ -876,6 +876,17 @@ documents:
     review_cycle: quarterly
     review_triggers:
       - core-module-behavior-changed
+  - id: AM-DOC-090
+    path: docs/product/current-implementation-inventory.md
+    authority: product
+    owner: "@AreaSong"
+    status: accepted
+    last_verified: "2026-07-25"
+    review_cycle: quarterly
+    review_triggers:
+      - product-scope-or-privacy-changed
+      - interaction-or-surface-changed
+      - core-api-or-udl-changed
 
 document_domains:
   - domain: docs/adr

@@ -17,33 +17,33 @@ struct MainRepositoryDetailFileActionMenu: View {
         HStack(spacing: 10) {
             Spacer()
             Menu {
-                Button("Rename...") {
+                Button(L10n.string("Rename...")) {
                     onBeginRenameFile(detail.id)
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("file-detail-rename-file")
-                Button("Change Category...") {
+                Button(L10n.string("Change Category...")) {
                     onBeginChangeCategoryFile(detail.id)
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("file-detail-change-category")
-                Button("Correct Classification...") {
+                Button(L10n.string("Correct Classification...")) {
                     onBeginClassifierCorrectionFile(detail.id)
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("classifier-correction-correct-classification")
-                Button("Review AI Suggestion...") {
+                Button(L10n.string("Review AI Suggestion...")) {
                     onBeginAIClassificationSuggestionFile(detail.id)
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("ai-category-suggestion-review-ai-suggestion")
-                Button("Review Sync Conflict...") {
+                Button(L10n.string("Review Sync Conflict...")) {
                     onBeginSyncConflictReview(detail)
                 }
                 .disabled(disabledReason != nil)
                 .accessibilityIdentifier("sync-conflict-review-sync-conflict-detect-review-sync-conflict")
                 if detail.hasICloudConflictCopySignal {
-                    Button("Resolve iCloud Conflict...") {
+                    Button(L10n.string("Resolve iCloud Conflict...")) {
                         onBeginICloudConflictResolution(detail.id)
                     }
                     .disabled(disabledReason != nil)
@@ -61,14 +61,14 @@ struct MainRepositoryDetailFileActionMenu: View {
                     .accessibilityIdentifier("file-detail-locate-missing-file")
                 }
                 if MainRepositoryDetailFileActionPolicy.shouldShowRemoveFromIndex(for: detail) {
-                    Button("Remove from Index", role: .destructive) {
+                    Button(L10n.string("Remove from Index"), role: .destructive) {
                         onBeginDeleteFile(detail.id)
                     }
                     .disabled(disabledReason != nil)
                     .accessibilityIdentifier("file-detail-remove-from-index")
                 }
             } label: {
-                Label("More", systemImage: "ellipsis.circle")
+                Label(L10n.string("More"), systemImage: "ellipsis.circle")
             }
             .help(disabledReason?.message ?? L10n.string("File actions"))
             .accessibilityIdentifier("file-detail-file-action-menu")

@@ -33,14 +33,14 @@ struct StartupRecoveryErrorRecoveryView: View {
     private var statusContent: some View {
         switch state {
         case .checking:
-            Text("AreaMatrix is checking startup recovery before opening the repository.")
+            Text(L10n.string("AreaMatrix is checking startup recovery before opening the repository."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .completed(report):
             if let report, report.hasVisibleDetails {
                 recoveryReportContent(report)
             } else {
-                Text("Startup recovery check completed.")
+                Text(L10n.string("Startup recovery check completed."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -149,7 +149,7 @@ struct ErrorRecoveryMappedErrorView: View {
     }
 
     private var technicalDetails: some View {
-        DisclosureGroup("Technical Details") {
+        DisclosureGroup(L10n.string("Technical Details")) {
             Text(rawContextText)
                 .font(.system(.caption, design: .monospaced))
                 .textSelection(.enabled)

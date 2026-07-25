@@ -137,9 +137,9 @@ extension MainRepositoryContentView {
     private var smartListErrorRow: some View {
         if let smartListLoadError {
             HStack(spacing: 8) {
-                Label("Could not load Smart Lists", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Could not load Smart Lists"), systemImage: "exclamationmark.triangle")
                 Spacer()
-                Button("Retry") {
+                Button(L10n.string("Retry")) {
                     Task { await loadSmartLists() }
                 }
             }
@@ -153,19 +153,19 @@ extension MainRepositoryContentView {
     @ViewBuilder
     private func smartListContextMenu(for row: RepositorySidebarRowSnapshot) -> some View {
         if let saved = savedSearchesBySidebarID[row.id] {
-            Button("Open") {
+            Button(L10n.string("Open")) {
                 selectedSidebarID = row.id
             }
-            Button("Rename...") {
+            Button(L10n.string("Rename...")) {
                 openSmartListManagement(.rename, saved: saved)
             }
-            Button("Duplicate...") {
+            Button(L10n.string("Duplicate...")) {
                 openSmartListManagement(.duplicate, saved: saved)
             }
-            Button("Edit query...") {
+            Button(L10n.string("Edit query...")) {
                 openSmartListManagement(.editQuery, saved: saved)
             }
-            Button("Delete...", role: .destructive) {
+            Button(L10n.string("Delete..."), role: .destructive) {
                 openSmartListManagement(.delete, saved: saved)
             }
         }

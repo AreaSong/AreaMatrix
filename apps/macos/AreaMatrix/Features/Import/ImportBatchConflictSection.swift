@@ -33,11 +33,11 @@ struct ImportBatchConflictSection: View {
             isPresented: $showsBatchReplaceConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Move existing files to Trash and Replace", role: .destructive) {
+            Button(L10n.string("Move existing files to Trash and Replace"), role: .destructive) {
                 batchImportModel.confirmConflictBatchReplace()
                 Task { await batchImportModel.applyImportConflictBatch(replaceConfirmed: true) }
             }
-            Button("Cancel", role: .cancel) {
+            Button(L10n.string("Cancel"), role: .cancel) {
                 batchImportModel.cancelConflictBatchReplace()
             }
         } message: {
@@ -48,7 +48,7 @@ struct ImportBatchConflictSection: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Review conflicts")
+                Text(L10n.string("Review conflicts"))
                     .font(.headline)
                 Text(conflictSummary)
                     .font(.callout)
@@ -63,7 +63,7 @@ struct ImportBatchConflictSection: View {
 
     private var iCloudActions: some View {
         HStack(spacing: 10) {
-            Button("Download all & retry preview") {
+            Button(L10n.string("Download all & retry preview")) {
                 Task {
                     let didDownload = await batchImportModel.downloadAllICloudPlaceholdersAndRetry()
                     if didDownload {
@@ -72,7 +72,7 @@ struct ImportBatchConflictSection: View {
                 }
             }
             .disabled(batchImportModel.isICloudDownloading || batchImportModel.status.isImporting)
-            Button("Switch to local repo...", action: onSwitchToLocalRepo)
+            Button(L10n.string("Switch to local repo..."), action: onSwitchToLocalRepo)
                 .disabled(batchImportModel.status.isImporting)
             if batchImportModel.isICloudDownloading {
                 ProgressView()
@@ -84,10 +84,10 @@ struct ImportBatchConflictSection: View {
     private var coreConflictBatchReview: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Resolve import conflicts")
+                Text(L10n.string("Resolve import conflicts"))
                     .font(.headline)
                 Spacer()
-                Button("Retry") {
+                Button(L10n.string("Retry")) {
                     Task { await batchImportModel.refreshImportConflictBatchPreview() }
                 }
                 .disabled(batchImportModel.conflictBatchPreviewState.isLoading)
@@ -122,7 +122,7 @@ private extension ImportBatchConflictSection {
             HStack(spacing: 8) {
                 ProgressView()
                     .controlSize(.small)
-                Text("Checking conflicts...")
+                Text(L10n.string("Checking conflicts..."))
                     .foregroundStyle(.secondary)
             }
         } else if let failure = batchImportModel.conflictBatchFailure {
@@ -145,19 +145,19 @@ private extension ImportBatchConflictSection {
                 ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                Text("Existing files will not be replaced unless you explicitly choose Replace.")
+                Text(L10n.string("Existing files will not be replaced unless you explicitly choose Replace."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         } else {
-            Text("No conflicts remain")
+            Text(L10n.string("No conflicts remain"))
                 .foregroundStyle(.secondary)
         }
     }
 
     private var coreConflictBatchStrategyControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle("Apply this strategy to all similar conflicts", isOn: Binding(
+            Toggle(L10n.string("Apply this strategy to all similar conflicts"), isOn: Binding(
                 get: { batchImportModel.appliesConflictBatchToAll },
                 set: { newValue in
                     batchImportModel.updateConflictBatchScope(appliesToAll: newValue)
@@ -195,7 +195,7 @@ private extension ImportBatchConflictSection {
 
     private var coreConflictBatchRows: some View {
         Table(batchImportModel.coreConflictBatchRows) {
-            TableColumn("Use") { item in
+            TableColumn(L10n.string("Use")) { item in
                 Toggle("", isOn: Binding(
                     get: { batchImportModel.selectedConflictBatchIDs.contains(item.id) },
                     set: { isSelected in
@@ -206,22 +206,22 @@ private extension ImportBatchConflictSection {
                 .labelsHidden()
                 .disabled(batchImportModel.appliesConflictBatchToAll)
             }
-            TableColumn("File") { item in
+            TableColumn(L10n.string("File")) { item in
                 Text((item.targetPath ?? item.incomingPath).lastPathComponentFallback)
             }
-            TableColumn("Conflict") { item in
+            TableColumn(L10n.string("Conflict")) { item in
                 Text(localizer.resolve(item.conflictType.titleMessage))
             }
-            TableColumn("Existing") { item in
+            TableColumn(L10n.string("Existing")) { item in
                 Text(item.existingPath ?? "-")
             }
-            TableColumn("Selected action") { item in
+            TableColumn(L10n.string("Selected action")) { item in
                 Text(localizer.resolve(item.selectedStrategy.titleMessage))
             }
-            TableColumn("Status") { item in
+            TableColumn(L10n.string("Status")) { item in
                 Text(localizer.resolve(item.status.titleMessage))
             }
-            TableColumn("Reason") { item in
+            TableColumn(L10n.string("Reason")) { item in
                 Text(localizer.resolve(ImportConflictBatchDisplayText.fromCore(item.reason ?? item.riskSummary)))
             }
         }
@@ -263,7 +263,7 @@ private extension ImportBatchConflictSection {
 
     private var coreConflictBatchActions: some View {
         HStack(spacing: 10) {
-            Button("Ask per item") {
+            Button(L10n.string("Ask per item")) {
                 Task { await batchImportModel.askConflictBatchPerItem() }
             }
             .disabled(batchImportModel.conflictBatchAskPerItemDisabledReason != nil)
@@ -273,7 +273,7 @@ private extension ImportBatchConflictSection {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Apply strategy") {
+            Button(L10n.string("Apply strategy")) {
                 if batchImportModel.conflictBatchPreviewReport?.replaceConfirmationRequired == true,
                    !batchImportModel.isConflictBatchReplaceConfirmed {
                     showsBatchReplaceConfirmation = true
@@ -293,25 +293,25 @@ private extension ImportBatchConflictSection {
 
     private var conflictsTable: some View {
         Table(batchImportModel.rows.filter(\.isConflictReviewRow)) {
-            TableColumn("File") { row in
+            TableColumn(L10n.string("File")) { row in
                 Text(row.originalName)
             }
-            TableColumn("Conflict") { row in
+            TableColumn(L10n.string("Conflict")) { row in
                 Text(row.conflictLabel)
             }
-            TableColumn("Existing item") { row in
+            TableColumn(L10n.string("Existing item")) { row in
                 Text(row.existingConflictPath ?? "-")
             }
-            TableColumn("Incoming resolution") { row in
+            TableColumn(L10n.string("Incoming resolution")) { row in
                 incomingResolutionView(for: row)
             }
-            TableColumn("Strategy") { row in
+            TableColumn(L10n.string("Strategy")) { row in
                 strategyView(for: row)
             }
-            TableColumn("Status") { row in
+            TableColumn(L10n.string("Status")) { row in
                 Text(row.status.detail ?? localizer.resolve(row.status.tagMessage))
             }
-            TableColumn("Action") { row in
+            TableColumn(L10n.string("Action")) { row in
                 actionView(for: row)
             }
         }

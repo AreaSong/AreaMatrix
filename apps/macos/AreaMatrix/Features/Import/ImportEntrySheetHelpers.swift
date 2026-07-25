@@ -53,11 +53,11 @@ struct MissingFileActionContext: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("The selected file context is no longer available.")
+            Text(L10n.string("The selected file context is no longer available."))
                 .foregroundStyle(.secondary)
             HStack {
                 Spacer()
-                Button("Cancel", action: onCancel)
+                Button(L10n.string("Cancel"), action: onCancel)
                     .keyboardShortcut(.cancelAction)
             }
         }
@@ -76,7 +76,7 @@ struct ImportBatchDestinationSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Picker("导入到", selection: $selectedDestination) {
+            Picker(L10n.string("导入到"), selection: $selectedDestination) {
                 ForEach(destinationOptions, id: \.self) { option in
                     Text(option.title).tag(option)
                 }
@@ -102,7 +102,7 @@ struct ImportBatchDestinationSection: View {
 
     private var storageModePicker: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Picker("存储模式", selection: $selectedStorageMode) {
+            Picker(L10n.string("存储模式"), selection: $selectedStorageMode) {
                 ForEach(ImportSingleFileStorageMode.allCases) { mode in
                     Text(mode.displayName).tag(mode)
                 }
@@ -137,16 +137,16 @@ struct ImportBatchRowsSection: View {
         VStack(alignment: .leading, spacing: 8) {
             DisclosureGroup(L10n.plural("import.batch.view-items", count: itemCount)) {
                 Table(rows) {
-                    TableColumn("原文件名") { row in
+                    TableColumn(L10n.string("原文件名")) { row in
                         sourceCell(for: row)
                     }
-                    TableColumn("建议分类") { row in
+                    TableColumn(L10n.string("建议分类")) { row in
                         categoryPicker(for: row)
                     }
-                    TableColumn("建议新名称") { row in
+                    TableColumn(L10n.string("建议新名称")) { row in
                         Text(row.suggestedName)
                     }
-                    TableColumn("状态") { row in
+                    TableColumn(L10n.string("状态")) { row in
                         statusCell(for: row)
                     }
                 }
@@ -167,7 +167,7 @@ struct ImportBatchRowsSection: View {
     }
 
     private func categoryPicker(for row: ImportBatchCopyImportRow) -> some View {
-        Picker("建议分类", selection: categoryBinding(for: row)) {
+        Picker(L10n.string("建议分类"), selection: categoryBinding(for: row)) {
             ForEach(categoryOptions(row, selectedDestination), id: \.self) {
                 Text($0 == "repo root" ? L10n.string("repo root") : $0).tag($0)
             }

@@ -85,14 +85,14 @@ struct ClassifierRuleHandoffRouteView: View {
     private var actionButtons: some View {
         HStack {
             if mode == .saveRule {
-                Button("Preview impact") { onPreviewImpact(model.previewHandoff) }
+                Button(L10n.string("Preview impact")) { onPreviewImpact(model.previewHandoff) }
                     .disabled(model.isSaving || model.hasNoCandidates)
                     .accessibilityIdentifier("classifier-rule-save-preview-impact")
             } else {
-                Button("Back") { onBack(handoff) }
+                Button(L10n.string("Back")) { onBack(handoff) }
             }
             Spacer()
-            Button("Cancel", action: onCancel).keyboardShortcut(.cancelAction)
+            Button(L10n.string("Cancel"), action: onCancel).keyboardShortcut(.cancelAction)
                 .disabled(model.isSaving)
             if mode == .saveRule {
                 Button(model.primaryActionTitle) {
@@ -108,7 +108,7 @@ struct ClassifierRuleHandoffRouteView: View {
     @ViewBuilder
     private var saveRuleContent: some View {
         if model.hasNoCandidates {
-            Label("No safe rule suggestion", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("No safe rule suggestion"), systemImage: "exclamationmark.triangle")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
@@ -203,7 +203,7 @@ private struct RuleBasisPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Rule basis")
+            Text(L10n.string("Rule basis"))
                 .font(.callout.weight(.semibold))
             ForEach(model.keywordCandidates, id: \.self) { keyword in
                 Toggle(isOn: keywordBinding(keyword)) {
@@ -242,7 +242,7 @@ private struct RulePreviewCard: View {
     var body: some View {
         NeutralSummaryPanel {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Rule preview")
+                Text(L10n.string("Rule preview"))
                     .font(.callout.weight(.semibold))
                 ForEach(lines, id: \.self) { line in
                     Text(line).font(.caption)

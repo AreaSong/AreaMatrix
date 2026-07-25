@@ -68,7 +68,7 @@ extension AIClassificationSuggestionPanel {
             titleVisibility: .visible,
             presenting: applyConfirmationContext(for: suggestion)
         ) { context in
-            Button("Apply category") {
+            Button(L10n.string("Apply category")) {
                 onApply(AIClassificationSuggestionPanelApplyRequest(
                     targetCategory: context.targetCategory,
                     moveFile: context.moveFile,
@@ -77,7 +77,7 @@ extension AIClassificationSuggestionPanel {
                     preview: context.preview
                 ))
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.string("Cancel"), role: .cancel) {}
         } message: { context in
             Text(applyConfirmationMessage(context))
         }
@@ -92,7 +92,7 @@ extension AIClassificationSuggestionPanel {
             .foregroundStyle(.secondary)
             .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-reject-feedback")
         if let callLogID = suggestion.callLogID {
-            Button("View AI call") {
+            Button(L10n.string("View AI call")) {
                 onViewCall(callLogID)
             }
             .buttonStyle(.link)
@@ -129,12 +129,12 @@ extension AIClassificationSuggestionPanel {
                 suggestion.suggestedCategory ?? L10n.string("Unknown")
             ))
             applyPreviewContent(for: suggestion)
-            Toggle("Create rule from this correction", isOn: $rememberRule)
+            Toggle(L10n.string("Create rule from this correction"), isOn: $rememberRule)
                 .disabled(model.state.isLoading || moveState.isMoving(fileID: suggestion.fileID))
             applyButtons(for: suggestion)
             applyFailureRecovery(for: suggestion)
             if let callLogID = suggestion.callLogID {
-                Button("View AI call") {
+                Button(L10n.string("View AI call")) {
                     onViewCall(callLogID)
                 }
                 .buttonStyle(.link)
@@ -147,9 +147,9 @@ extension AIClassificationSuggestionPanel {
             HStack {
                 Button(primaryApplyTitle(for: suggestion), action: acceptSuggestion)
                     .disabled(acceptDisabledReason(for: suggestion) != nil)
-                Button("Change...", action: onChange)
+                Button(L10n.string("Change..."), action: onChange)
                     .disabled(model.state.isLoading)
-                Button("Reject") {
+                Button(L10n.string("Reject")) {
                     rejectSuggestion(suggestion)
                 }
                 .disabled(model.state.isLoading)
@@ -170,14 +170,14 @@ extension AIClassificationSuggestionPanel {
             if let ruleID = privacyRuleID(for: suggestion) {
                 Text("Privacy rule: \(ruleID)")
                     .foregroundStyle(.secondary)
-                Button("View privacy rule") {
+                Button(L10n.string("View privacy rule")) {
                     privacyRuleRoute = aiPrivacyRulesPrivacyRuleRoute(ruleID: ruleID)
                 }
                 .buttonStyle(.link)
                 .accessibilityIdentifier("ai-category-suggestion-ai-privacy-rules-core-view-privacy-rule")
             }
             if let callLogID = suggestion.callLogID {
-                Button("View AI call") {
+                Button(L10n.string("View AI call")) {
                     onViewCall(callLogID)
                 }
                 .buttonStyle(.link)
@@ -200,11 +200,11 @@ extension AIClassificationSuggestionPanel {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else if moveState.isChecking(request) {
-                    Text("Target path: Checking destination...")
+                    Text(L10n.string("Target path: Checking destination..."))
                 } else {
                     applyPreviewPendingOrFailure(for: suggestion, targetCategory: category)
                 }
-                Text("No files will be moved until you confirm.")
+                Text(L10n.string("No files will be moved until you confirm."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -221,7 +221,7 @@ extension AIClassificationSuggestionPanel {
            moveState.failureOperation(for: suggestion.fileID, targetCategory: targetCategory) == .preview {
             applyFailureView(failure, title: L10n.string("Target path preview failed."))
         } else {
-            Text("Target path: Waiting for Core preview...")
+            Text(L10n.string("Target path: Waiting for Core preview..."))
         }
     }
 
@@ -232,13 +232,13 @@ extension AIClassificationSuggestionPanel {
            moveState.failureOperation(for: suggestion.fileID, targetCategory: category) == .correction {
             applyFailureView(failure, title: L10n.string("Apply failed."))
             HStack {
-                Button("Retry apply") {
+                Button(L10n.string("Retry apply")) {
                     showApplyConfirmation = true
                 }
                 .disabled(applyConfirmationContext(for: suggestion) == nil)
-                Button("Classify manually", action: onClassifyManually)
+                Button(L10n.string("Classify manually"), action: onClassifyManually)
                 if let callLogID = suggestion.callLogID {
-                    Button("View call log") {
+                    Button(L10n.string("View call log")) {
                         onViewCall(callLogID)
                     }
                 }

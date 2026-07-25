@@ -44,11 +44,11 @@ struct SearchDateFilterSection: View {
                 Text(title)
                 Spacer()
                 Menu(dateSummary) {
-                    Button("Any") { applyPreset(.any) }
-                    Button("Last 7 days") { applyPreset(.last7Days) }
-                    Button("Last 30 days") { applyPreset(.last30Days) }
-                    Button("This year") { applyPreset(.thisYear) }
-                    Button("Custom...") {
+                    Button(L10n.string("Any")) { applyPreset(.any) }
+                    Button(L10n.string("Last 7 days")) { applyPreset(.last7Days) }
+                    Button(L10n.string("Last 30 days")) { applyPreset(.last30Days) }
+                    Button(L10n.string("This year")) { applyPreset(.thisYear) }
+                    Button(L10n.string("Custom...")) {
                         applyCustomRange(from: customFromDate, until: customToDate)
                     }
                 }
@@ -132,11 +132,11 @@ struct SearchStorageFacetPicker: View {
     var options: [SearchStorageModeFacetCountSnapshot]
 
     var body: some View {
-        Picker("Storage", selection: Binding(
+        Picker(L10n.string("Storage"), selection: Binding(
             get: { filters.storageMode?.rawValue ?? "" },
             set: { filters = SearchFilterEditing.settingStorage($0, in: filters) }
         )) {
-            Text("All storage modes").tag("")
+            Text(L10n.string("All storage modes")).tag("")
             ForEach(storageOptions) { option in
                 Text(option.displayTitle).tag(option.value.rawValue)
             }
@@ -162,9 +162,9 @@ struct SearchTagFacetPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Filter by tags")
+            Text(L10n.string("Filter by tags"))
                 .font(.callout.weight(.semibold))
-            TextField("Search tags", text: $query)
+            TextField(L10n.string("Search tags"), text: $query)
                 .textFieldStyle(.roundedBorder)
                 .focused($isSearchFocused)
                 .accessibilityIdentifier("tag-filters-tag-search")
@@ -187,13 +187,13 @@ struct SearchTagFacetPicker: View {
         } else if let error = facetsState.errorMapping, tagOptions.isEmpty {
             tagLoadingFailure(error: error, retry: onRetry)
         } else if isLoadingTags, tagOptions.isEmpty {
-            Text("Loading tags...")
+            Text(L10n.string("Loading tags..."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else if tagOptions.isEmpty {
             tagEmptyState
         } else if visibleTagOptions.isEmpty {
-            Text("No matching tags")
+            Text(L10n.string("No matching tags"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else {
@@ -218,7 +218,7 @@ struct SearchTagFacetPicker: View {
 
     private var tagFooter: some View {
         HStack {
-            Button("Clear all") {
+            Button(L10n.string("Clear all")) {
                 filters = SearchFilterEditing.removing(.tags, from: filters)
             }
             .disabled(filters.tags.isEmpty)
@@ -230,13 +230,13 @@ struct SearchTagFacetPicker: View {
     @ViewBuilder
     private var tagFooterStatus: some View {
         if tagRegistryState.errorMapping != nil, !tagOptions.isEmpty {
-            Button("Retry tags", action: onRetryTagRegistry)
+            Button(L10n.string("Retry tags"), action: onRetryTagRegistry)
                 .font(.caption)
         } else if facetsState.errorMapping != nil, !tagOptions.isEmpty {
-            Button("Retry counts", action: onRetry)
+            Button(L10n.string("Retry counts"), action: onRetry)
                 .font(.caption)
         } else if isLoadingTags, !tagOptions.isEmpty {
-            Text("Loading tags...")
+            Text(L10n.string("Loading tags..."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -244,8 +244,8 @@ struct SearchTagFacetPicker: View {
 
     private func tagLoadingFailure(error: CoreErrorMappingSnapshot, retry: @escaping () -> Void) -> some View {
         HStack(spacing: 8) {
-            Text("Could not load tags")
-            Button("Retry", action: retry)
+            Text(L10n.string("Could not load tags"))
+            Button(L10n.string("Retry"), action: retry)
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -254,8 +254,8 @@ struct SearchTagFacetPicker: View {
 
     private var tagEmptyState: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("No tags yet")
-            Text("Add tags from file detail or batch actions.")
+            Text(L10n.string("No tags yet"))
+            Text(L10n.string("Add tags from file detail or batch actions."))
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -296,18 +296,18 @@ private struct TagMatchModeControl: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Picker("Tag match mode", selection: Binding(
+            Picker(L10n.string("Tag match mode"), selection: Binding(
                 get: { filters.tagMatchMode },
                 set: { filters = SearchFilterEditing.settingTagMatchMode($0, in: filters) }
             )) {
-                Text("Any").tag(SearchTagMatchModeSnapshot.any)
-                Text("All").tag(SearchTagMatchModeSnapshot.all)
+                Text(L10n.string("Any")).tag(SearchTagMatchModeSnapshot.any)
+                Text(L10n.string("All")).tag(SearchTagMatchModeSnapshot.all)
             }
             .pickerStyle(.segmented)
             .accessibilityLabel(L10n.string("Tag match mode"))
             .accessibilityValue(filters.tagMatchMode.accessibilityText)
             if filters.tags.count == 1 {
-                Text("Any and All match the same single selected tag.")
+                Text(L10n.string("Any and All match the same single selected tag."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

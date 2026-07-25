@@ -27,14 +27,14 @@ extension ChangeCategorySheet {
     @ViewBuilder
     func classifierOptions(for file: FileEntrySnapshot) -> some View {
         if mode == .classifierCorrection {
-            Toggle("Move file to the new category folder", isOn: $moveFile)
+            Toggle(L10n.string("Move file to the new category folder"), isOn: $moveFile)
                 .disabled(!canToggleMoveFile(for: file) || state.isMoving(fileID: file.id))
             if !canToggleMoveFile(for: file) {
                 Text(moveDisabledReason(for: file))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Toggle("Remember this correction as a rule", isOn: $rememberCorrection)
+            Toggle(L10n.string("Remember this correction as a rule"), isOn: $rememberCorrection)
                 .disabled(state.isMoving(fileID: file.id))
             if rememberCorrection {
                 ruleSuggestionPanel(for: file)
@@ -45,12 +45,12 @@ extension ChangeCategorySheet {
     func ruleSuggestionPanel(for file: FileEntrySnapshot) -> some View {
         NeutralSummaryPanel {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Rule suggestions")
+                Text(L10n.string("Rule suggestions"))
                     .font(.callout.weight(.semibold))
                 Text(ruleSuggestionText(for: file))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Apply correction changes only this file. Save a rule from Edit rule or Preview impact.")
+                Text(L10n.string("Apply correction changes only this file. Save a rule from Edit rule or Preview impact."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack {
@@ -101,7 +101,7 @@ extension ChangeCategorySheet {
                 ruleHandoffSubmitButton("Preview impact", file: file, destination: .impactPreview)
             }
             Spacer()
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .disabled(state.isMoving(fileID: file.id))
             Button(primaryActionTitle(for: file)) {
@@ -138,19 +138,19 @@ extension ChangeCategorySheet {
     func failureActions(_ failure: CoreErrorMappingSnapshot, file: FileEntrySnapshot) -> some View {
         HStack {
             if hasUnresolvedNameConflict(for: file) {
-                Button("Rename first") {
+                Button(L10n.string("Rename first")) {
                     onRenameFirst(file.id, targetCategory)
                 }
             }
             if failure.kind == .permissionDenied {
-                Button("Open folder permissions", action: onOpenPermissionRecovery)
+                Button(L10n.string("Open folder permissions"), action: onOpenPermissionRecovery)
             }
             if state.failureOperation(for: file.id, targetCategory: targetCategory) == .preview {
-                Button("Retry preview") {
+                Button(L10n.string("Retry preview")) {
                     onPreview(file.id, targetCategory)
                 }
             }
-            Button("Collect Diagnostics...", action: onCollectDiagnostics)
+            Button(L10n.string("Collect Diagnostics..."), action: onCollectDiagnostics)
         }
     }
 

@@ -97,7 +97,7 @@ extension ImportEntrySheetView {
     private var classifyControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Picker("建议分类", selection: $previewModel.selectedCategory) {
+                Picker(L10n.string("建议分类"), selection: $previewModel.selectedCategory) {
                     ForEach(categoryOptions, id: \.self) { category in
                         Text(category).tag(category)
                     }
@@ -107,7 +107,7 @@ extension ImportEntrySheetView {
                 reasonButton
             }
 
-            TextField("建议命名", text: $previewModel.suggestedName)
+            TextField(L10n.string("建议命名"), text: $previewModel.suggestedName)
                 .textFieldStyle(.roundedBorder)
             if let filenameValidationMessage = previewModel.filenameValidationMessage {
                 Text(filenameValidationMessage)
@@ -118,7 +118,7 @@ extension ImportEntrySheetView {
     }
 
     private var reasonButton: some View {
-        Button("为什么？") {
+        Button(L10n.string("为什么？")) {
             isReasonPopoverPresented.toggle()
         }
         .disabled(previewModel.prediction == nil)

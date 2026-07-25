@@ -45,10 +45,10 @@ struct CommandPaletteView: View {
     private var commandSearchField: some View {
         HStack {
             Image(systemName: "magnifyingglass")
-            TextField("Type a command or search...", text: $query)
+            TextField(L10n.string("Type a command or search..."), text: $query)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("command-palette-command-index-search-field")
-            Text("Esc")
+            Text(L10n.string("Esc"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -58,7 +58,7 @@ struct CommandPaletteView: View {
     @ViewBuilder
     private var commandStatus: some View {
         if state.isLoading {
-            Text("Loading commands...")
+            Text(L10n.string("Loading commands..."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("command-palette-command-index-loading")
@@ -102,7 +102,7 @@ struct CommandPaletteView: View {
 
     private var commandPaletteSmartListSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Smart Lists")
+            Text(L10n.string("Smart Lists"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             smartListButtons
@@ -131,7 +131,7 @@ struct CommandPaletteView: View {
     private var footer: some View {
         HStack {
             Spacer()
-            Button("Close", action: onClose)
+            Button(L10n.string("Close"), action: onClose)
                 .keyboardShortcut(.cancelAction)
         }
     }
@@ -247,7 +247,7 @@ private struct CommandPaletteResultRow: View {
                     .foregroundStyle(.secondary)
             }
             if target.requiresConfirmation {
-                Text("Requires confirmation")
+                Text(L10n.string("Requires confirmation"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -6,14 +6,14 @@ struct AIPrivacyEmptyRulesView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("No AI privacy rules yet")
+            Text(L10n.string("No AI privacy rules yet"))
                 .font(.headline)
             Text(L10n.string("ai.privacy.emptyRulesDetail"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
-                Button("Add rule", action: onAddRule)
-                Button("Use recommended templates...", action: onTemplates)
+                Button(L10n.string("Add rule"), action: onAddRule)
+                Button(L10n.string("Use recommended templates..."), action: onTemplates)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -30,25 +30,25 @@ struct AIPrivacyRuleEditorView: View {
 
     var body: some View {
         AdvancedSettingsSection(title: title) {
-            Picker("Type", selection: $draft.kind) {
+            Picker(L10n.string("Type"), selection: $draft.kind) {
                 ForEach(AiPrivacyRuleKind.aiPrivacyRulesCases, id: \.self) { Text($0.aiPrivacyRulesLabel).tag($0) }
             }
             .pickerStyle(.segmented)
-            TextField("Pattern", text: $draft.pattern)
+            TextField(L10n.string("Pattern"), text: $draft.pattern)
                 .textFieldStyle(.roundedBorder)
-            Picker("Applies to", selection: $draft.appliesTo) {
-                Text("Remote AI").tag(AiPrivacyRuleAppliesTo.remoteAi)
-                Text("Local and remote AI").tag(AiPrivacyRuleAppliesTo.localAndRemoteAi)
+            Picker(L10n.string("Applies to"), selection: $draft.appliesTo) {
+                Text(L10n.string("Remote AI")).tag(AiPrivacyRuleAppliesTo.remoteAi)
+                Text(L10n.string("Local and remote AI")).tag(AiPrivacyRuleAppliesTo.localAndRemoteAi)
             }
             .pickerStyle(.segmented)
-            TextField("Description", text: $draft.description)
+            TextField(L10n.string("Description"), text: $draft.description)
                 .textFieldStyle(.roundedBorder)
-            Toggle("Enabled", isOn: $draft.enabled)
+            Toggle(L10n.string("Enabled"), isOn: $draft.enabled)
             HStack(spacing: 10) {
-                Button("Save rule", action: onSave)
+                Button(L10n.string("Save rule"), action: onSave)
                     .disabled(!draft.canSave(registry: registry) || isSaving)
                     .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-save-rule")
-                Button("Cancel", action: onCancel)
+                Button(L10n.string("Cancel"), action: onCancel)
                 Text(draft.validationMessage(registry: registry))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -65,11 +65,11 @@ struct AIPrivacyRuleTemplatesSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Use recommended templates...")
+            Text(L10n.string("Use recommended templates..."))
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
             Text(
-                "Templates never auto-create rules. Select the ones you want and add them explicitly."
+                L10n.string("Templates never auto-create rules. Select the ones you want and add them explicitly.")
             )
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -78,8 +78,8 @@ struct AIPrivacyRuleTemplatesSheet: View {
             }
             HStack {
                 Spacer()
-                Button("Cancel", action: onCancel)
-                Button("Add selected rules", action: onAdd)
+                Button(L10n.string("Cancel"), action: onCancel)
+                Button(L10n.string("Add selected rules"), action: onAdd)
                     .buttonStyle(.borderedProminent)
                     .disabled(selectedTemplates.isEmpty || isSaving)
             }

@@ -44,7 +44,7 @@ extension MainRepositoryContentView {
     @ViewBuilder
     var smartListBannerEditButton: some View {
         if selectedSmartList != nil {
-            Button("Edit", action: openSelectedSmartListEditor)
+            Button(L10n.string("Edit"), action: openSelectedSmartListEditor)
         }
     }
 

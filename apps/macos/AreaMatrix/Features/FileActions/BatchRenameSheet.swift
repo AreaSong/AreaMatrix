@@ -28,8 +28,8 @@ struct BatchRenameSheet: View {
 
     private var emptyContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("No files selected").foregroundStyle(.secondary)
-            HStack { Spacer(); Button("Close", action: onClose) }
+            Text(L10n.string("No files selected")).foregroundStyle(.secondary)
+            HStack { Spacer(); Button(L10n.string("Close"), action: onClose) }
         }
     }
 
@@ -50,10 +50,10 @@ struct BatchRenameSheet: View {
 
     private var actionButtons: some View {
         HStack {
-            Button("Refresh preview") { Task { await refreshPreview() } }
+            Button(L10n.string("Refresh preview")) { Task { await refreshPreview() } }
                 .disabled(previewRefreshDisabled)
             Spacer()
-            Button("Cancel", action: onClose).keyboardShortcut(.cancelAction).disabled(isApplying)
+            Button(L10n.string("Cancel"), action: onClose).keyboardShortcut(.cancelAction).disabled(isApplying)
             Button(isApplying ? L10n.string("Renaming...") : L10n.string("Apply")) { Task { await apply() } }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canApplyPreview)

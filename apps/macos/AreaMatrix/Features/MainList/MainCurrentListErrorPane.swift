@@ -36,7 +36,7 @@ struct MainExternalSyncErrorBanner: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("External changes are paused", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("External changes are paused"), systemImage: "exclamationmark.triangle")
                 .font(.headline)
             if let relativePath = fileListModel.failedExternalSyncRelativePath {
                 Text(relativePath)
@@ -63,7 +63,7 @@ struct MainExternalSyncErrorBanner: View {
     private var recoveryButtons: some View {
         HStack {
             if fileListModel.canDownloadExternalSyncPlaceholder {
-                Button("Download & Retry") {
+                Button(L10n.string("Download & Retry")) {
                     Task {
                         await fileListModel.downloadExternalSyncPlaceholder(
                             using: recoveryActions.downloadExternalSyncPlaceholder
@@ -73,19 +73,19 @@ struct MainExternalSyncErrorBanner: View {
                 .disabled(fileListModel.isExternalSyncPlaceholderDownloading)
                 .accessibilityIdentifier("external-sync-download-retry")
             }
-            Button("Retry", action: fileListModel.retryExternalSync)
+            Button(L10n.string("Retry"), action: fileListModel.retryExternalSync)
                 .disabled(fileListModel.isExternalSyncPlaceholderDownloading)
                 .accessibilityIdentifier("external-sync-global-retry")
             if canOfferRepair {
-                Button("Open Repair...") { recoveryActions.openRepairWithMapping(error) }
+                Button(L10n.string("Open Repair...")) { recoveryActions.openRepairWithMapping(error) }
                     .accessibilityIdentifier("external-sync-open-repair")
             }
-            Button("Collect Diagnostics...") {
+            Button(L10n.string("Collect Diagnostics...")) {
                 fileListModel.requestCurrentListDiagnostics()
             }
             .disabled(isCollectingDiagnostics)
             .accessibilityIdentifier("external-sync-collect-diagnostics")
-            DisclosureGroup("Technical Details") {
+            DisclosureGroup(L10n.string("Technical Details")) {
                 Text(error.rawContext)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
@@ -105,7 +105,7 @@ struct MainExternalSyncErrorBanner: View {
     @ViewBuilder
     private var recoveryStatus: some View {
         if fileListModel.isExternalSyncPlaceholderDownloading {
-            Label("Requesting iCloud download...", systemImage: "icloud.and.arrow.down")
+            Label(L10n.string("Requesting iCloud download..."), systemImage: "icloud.and.arrow.down")
                 .foregroundStyle(.secondary)
         } else if let message = fileListModel.externalSyncRecoveryMessage {
             Label(localizer.resolve(message), systemImage: "exclamationmark.triangle")
@@ -119,7 +119,7 @@ struct MainExternalSyncErrorBanner: View {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            Label("Preparing diagnostics...", systemImage: "arrow.clockwise")
+            Label(L10n.string("Preparing diagnostics..."), systemImage: "arrow.clockwise")
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):
             Label("Diagnostics collected at \(snapshot.snapshotPath)", systemImage: "doc.badge.gearshape")
@@ -140,7 +140,7 @@ struct MainCurrentListErrorPane: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Current list cannot be loaded", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("Current list cannot be loaded"), systemImage: "exclamationmark.triangle")
                 .font(.headline)
             Text(error.userMessage)
                 .foregroundStyle(.secondary)
@@ -157,12 +157,12 @@ struct MainCurrentListErrorPane: View {
 
     private var actions: some View {
         HStack {
-            Button("Retry", action: retry)
-            Button("Collect Diagnostics...") {
+            Button(L10n.string("Retry"), action: retry)
+            Button(L10n.string("Collect Diagnostics...")) {
                 fileListModel.requestCurrentListDiagnostics()
             }
             .disabled(isCollectingDiagnostics)
-            DisclosureGroup("Technical Details") {
+            DisclosureGroup(L10n.string("Technical Details")) {
                 Text(error.rawContext)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
@@ -183,12 +183,12 @@ struct MainCurrentListErrorPane: View {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            Label("Preparing diagnostics...", systemImage: "arrow.clockwise")
+            Label(L10n.string("Preparing diagnostics..."), systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):
             VStack(alignment: .leading, spacing: 4) {
-                Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
+                Label(L10n.string("Diagnostics collected"), systemImage: "doc.badge.gearshape")
                 Text(snapshot.snapshotPath)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
@@ -196,7 +196,7 @@ struct MainCurrentListErrorPane: View {
             .font(.callout)
         case let .failed(mapping):
             VStack(alignment: .leading, spacing: 4) {
-                Label("Diagnostics could not be collected", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Diagnostics could not be collected"), systemImage: "exclamationmark.triangle")
                 Text(mapping.userMessage)
                 Text(mapping.suggestedAction)
                     .foregroundStyle(.secondary)

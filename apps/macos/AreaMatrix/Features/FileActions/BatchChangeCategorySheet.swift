@@ -18,7 +18,7 @@ struct BatchChangeCategoryTrigger: View {
     @State private var isPresented = false
 
     var body: some View {
-        Button("Change category...") { isPresented = true }
+        Button(L10n.string("Change category...")) { isPresented = true }
             .help(BatchChangeCategoryEntryPolicy.openHelp(disabledReason: disabledReason))
             .accessibilityIdentifier("batch-change-category-batch-change-category-open")
             .sheet(isPresented: $isPresented) {
@@ -121,9 +121,9 @@ struct BatchChangeCategorySheet: View {
             pageID: "batch-change-category"
         ) {
             if selectedCount == 0 {
-                Text("No files selected")
+                Text(L10n.string("No files selected"))
                     .foregroundStyle(.secondary)
-                HStack { Spacer(); Button("Close", action: onClose) }
+                HStack { Spacer(); Button(L10n.string("Close"), action: onClose) }
             } else {
                 content
             }
@@ -249,10 +249,10 @@ struct BatchChangeCategoryPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("New category")
+            Text(L10n.string("New category"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            TextField("Search categories", text: $searchText)
+            TextField(L10n.string("Search categories"), text: $searchText)
                 .textFieldStyle(.roundedBorder)
                 .disabled(isDisabled)
                 .accessibilityIdentifier("batch-change-category-new-category-search")
@@ -268,7 +268,7 @@ struct BatchChangeCategoryPicker: View {
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("batch-change-category-new-category-empty-search")
         } else {
-            Picker("New category", selection: $selection) {
+            Picker(L10n.string("New category"), selection: $selection) {
                 ForEach(filteredCategories, id: \.self) { category in
                     Text(category).tag(category)
                 }

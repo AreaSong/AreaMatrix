@@ -91,14 +91,14 @@ struct AboutSettingsPane: View {
             "Collect diagnostics?",
             isPresented: diagnosticsConfirmationBinding
         ) {
-            Button("Cancel", role: .cancel, action: model.cancelDiagnosticsExport)
-            Button("Collect diagnostics") {
+            Button(L10n.string("Cancel"), role: .cancel, action: model.cancelDiagnosticsExport)
+            Button(L10n.string("Collect diagnostics")) {
                 Task {
                     await model.collectDiagnostics()
                 }
             }
         } message: {
-            Text("Diagnostics do not include your original file contents and are not uploaded automatically.")
+            Text(L10n.string("Diagnostics do not include your original file contents and are not uploaded automatically."))
         }
     }
 
@@ -106,7 +106,7 @@ struct AboutSettingsPane: View {
     private var versionErrorBanner: some View {
         if let error = model.versionError {
             AboutSettingsBanner(error: error, tint: .orange) {
-                Button("Copy error") {
+                Button(L10n.string("Copy error")) {
                     model.copyActionDetail(error)
                 }
             }
@@ -121,7 +121,7 @@ struct AboutSettingsPane: View {
                 SettingsStatusBanner(title: localizer.resolve(message), systemImage: "checkmark.circle", tint: .green)
             case let .failed(error):
                 AboutSettingsBanner(error: error, tint: .red) {
-                    Button("Copy detail") {
+                    Button(L10n.string("Copy detail")) {
                         model.copyActionDetail(error)
                     }
                 }

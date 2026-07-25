@@ -245,7 +245,7 @@ struct UndoToastHistoryRouteSheet: View {
                 }
                 HStack {
                     Spacer()
-                    Button("Close", action: onClose)
+                    Button(L10n.string("Close"), action: onClose)
                         .keyboardShortcut(.cancelAction)
                 }
             }

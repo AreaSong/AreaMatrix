@@ -4,9 +4,9 @@ import UniformTypeIdentifiers
 struct SettingsRepositoryReturnView: View {
     var body: some View {
         ContentUnavailableView {
-            Label("Repository settings", systemImage: "gearshape")
+            Label(L10n.string("Repository settings"), systemImage: "gearshape")
         } description: {
-            Text("Repository change was cancelled before opening a new repository.")
+            Text(L10n.string("Repository change was cancelled before opening a new repository."))
         }
     }
 }
@@ -85,7 +85,7 @@ struct ChoosePathStepView: View {
     private var pathSelection: some View {
         VStack(alignment: .center, spacing: 16) {
             HStack(spacing: 12) {
-                TextField("Repository path", text: $pathText)
+                TextField(L10n.string("Repository path"), text: $pathText)
                     .textFieldStyle(.plain)
                     .focused($isInputFocused)
                     .padding(.horizontal, 16)
@@ -111,14 +111,14 @@ struct ChoosePathStepView: View {
             } else if pathText.trimmingCharacters(in: .whitespacesAndNewlines) != "~/AreaMatrix/",
                       pathText.trimmingCharacters(in: .whitespacesAndNewlines) != (NSHomeDirectory() + "/AreaMatrix/") {
                 Button(action: onUseDefault) {
-                    Text("恢复推荐默认路径: ~/AreaMatrix/")
+                    Text(L10n.string("恢复推荐默认路径: ~/AreaMatrix/"))
                 }
                 .buttonStyle(.plain)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .disabled(isValidating)
             } else {
-                Label("系统推荐路径", systemImage: "checkmark.circle.fill")
+                Label(L10n.string("系统推荐路径"), systemImage: "checkmark.circle.fill")
                     .font(.callout)
                     .foregroundStyle(.green)
             }
@@ -132,7 +132,7 @@ struct ChoosePathStepView: View {
                     Image(systemName: "escape")
                         .font(.system(size: 10, weight: .medium))
                         .opacity(0.6)
-                    Text("返回")
+                    Text(L10n.string("返回"))
                 }
             }
             .buttonStyle(AreaMatrixSecondaryButtonStyle())
@@ -148,7 +148,7 @@ struct ChoosePathStepView: View {
 
             Button(action: onContinue) {
                 HStack(spacing: 4) {
-                    Text("继续")
+                    Text(L10n.string("继续"))
                     Image(systemName: "return")
                         .font(.system(size: 12, weight: .bold))
                         .opacity(0.6)
@@ -172,7 +172,7 @@ struct LoadingConfigurationView: View {
             ProgressView()
                 .controlSize(.large)
                 .tint(AreaMatrixTheme.Colors.tealBright)
-            Text("Loading repository settings...")
+            Text(L10n.string("Loading repository settings..."))
                 .font(.headline)
         }
         .areaMatrixGlassContentPanel(width: 420, padding: 36)
@@ -198,9 +198,9 @@ struct ConfigurationErrorView: View {
             Text(localizer.resolve(failure.recoveryAction))
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Start setup", action: onStartSetup)
+                Button(L10n.string("Start setup"), action: onStartSetup)
                     .buttonStyle(AreaMatrixSecondaryButtonStyle())
-                Button("Retry", action: onRetry)
+                Button(L10n.string("Retry"), action: onRetry)
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(AreaMatrixPrimaryButtonStyle())
             }

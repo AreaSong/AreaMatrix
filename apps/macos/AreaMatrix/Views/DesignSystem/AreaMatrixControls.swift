@@ -22,7 +22,7 @@ struct AreaMatrixThemeToggleButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("切换明暗模式")
+        .help(L10n.string("切换明暗模式"))
         .animation(.areaMatrixQuickFade, value: isHovered)
         .onHover { hovering in
             isHovered = hovering

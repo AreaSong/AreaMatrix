@@ -34,11 +34,11 @@ extension MainRepositoryContentView {
         HStack(spacing: 14) {
             Menu {
                 Text(opening.config.repoPath)
-                Button("Settings", action: onOpenSettings)
+                Button(L10n.string("Settings"), action: onOpenSettings)
             } label: {
                 HStack(spacing: 5) {
                     MainRepositoryToolbarLogo()
-                    Text("AreaMatrix")
+                    Text(L10n.string("AreaMatrix"))
                     Image(systemName: "chevron.down")
                         .font(.caption)
                 }
@@ -46,7 +46,7 @@ extension MainRepositoryContentView {
             }
             .accessibilityLabel(L10n.string("Repository AreaMatrix"))
             Spacer()
-            TextField("Search files", text: $filterText)
+            TextField(L10n.string("Search files"), text: $filterText)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 220)
                 .focused($isSearchFieldFocused)
@@ -57,7 +57,7 @@ extension MainRepositoryContentView {
                     fileListModel.enterSearch(context: .toolbar)
                 }
                 .accessibilityIdentifier("search-index-status-search-field")
-            Picker("Mode", selection: $searchMode) {
+            Picker(L10n.string("Mode"), selection: $searchMode) {
                 ForEach(SearchModeSnapshot.allCases) { mode in
                     Text(mode.displayName).tag(mode)
                 }
@@ -65,14 +65,14 @@ extension MainRepositoryContentView {
             .pickerStyle(.segmented)
             .frame(width: 170)
             .accessibilityIdentifier("semantic-search-semantic-search-core-search-mode")
-            Picker("Scope", selection: $searchScope) {
+            Picker(L10n.string("Scope"), selection: $searchScope) {
                 ForEach(SearchScopeSnapshot.allCases) { scope in
                     Text(scope.displayName).tag(scope)
                 }
             }
             .pickerStyle(.segmented)
             .frame(width: 150)
-            Picker("Sort", selection: $searchSort) {
+            Picker(L10n.string("Sort"), selection: $searchSort) {
                 ForEach(SearchSortSnapshot.allCases) { sort in
                     Text(sort.displayName).tag(sort)
                 }
@@ -83,10 +83,10 @@ extension MainRepositoryContentView {
                 Image(systemName: "clock.arrow.circlepath")
             }
             .buttonStyle(.borderless)
-            .help("Undo History")
+            .help(L10n.string("Undo History"))
             .accessibilityLabel(L10n.string("Undo History"))
             .accessibilityIdentifier("undo-history-undo-action-log-toolbar-open-history")
-            Button("Import...", action: onImport)
+            Button(L10n.string("Import..."), action: onImport)
                 .disabled(opening.isReadOnly)
             Button(action: onOpenSettings) {
                 Image(systemName: "gearshape")

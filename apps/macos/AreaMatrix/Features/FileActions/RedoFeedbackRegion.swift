@@ -10,15 +10,15 @@ struct RedoFeedbackRegion: View {
         case .idle:
             EmptyView()
         case .checking:
-            Label("Checking redo...", systemImage: "arrow.uturn.forward.circle")
+            Label(L10n.string("Checking redo..."), systemImage: "arrow.uturn.forward.circle")
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-checking")
         case let .available(action):
             redoSummary(action, status: L10n.string("Available"))
-            Button("Redo") { onRedo(action) }
+            Button(L10n.string("Redo")) { onRedo(action) }
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-action")
         case let .disabled(action, reason):
             redoSummary(action, status: reason)
-            Button("Redo") {}
+            Button(L10n.string("Redo")) {}
                 .disabled(true)
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-action-disabled")
         case let .unavailable(reason):
@@ -27,7 +27,7 @@ struct RedoFeedbackRegion: View {
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-unavailable")
         case let .redoing(action):
             redoSummary(action, status: L10n.string("Redoing..."))
-            Button("Redoing...") {}
+            Button(L10n.string("Redoing...")) {}
                 .disabled(true)
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-action-busy")
         case let .redone(result):
@@ -35,7 +35,7 @@ struct RedoFeedbackRegion: View {
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-completed")
         case let .failed(mapping, action):
             VStack(alignment: .leading, spacing: 3) {
-                Label("Could not redo action", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Could not redo action"), systemImage: "exclamationmark.triangle")
                 Text(mapping.userMessage)
                     .foregroundStyle(.secondary)
                 if let action {

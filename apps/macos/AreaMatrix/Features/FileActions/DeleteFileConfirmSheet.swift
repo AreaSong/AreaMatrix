@@ -39,9 +39,9 @@ struct DeleteFileConfirmSheet: View {
 
     private var deleteImpactText: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("The file is recoverable from system Trash while Trash retains it.")
-            Text("AreaMatrix keeps a deleted metadata record for at least 30 days for traceability.")
-            Text("Permanent delete is not available from AreaMatrix.")
+            Text(L10n.string("The file is recoverable from system Trash while Trash retains it."))
+            Text(L10n.string("AreaMatrix keeps a deleted metadata record for at least 30 days for traceability."))
+            Text(L10n.string("Permanent delete is not available from AreaMatrix."))
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -57,7 +57,7 @@ struct DeleteFileConfirmSheet: View {
             failureView(failure, operation: operation)
         } else if operation == .moveToTrash, !isTrashAvailable {
             Label(
-                "Trash is not available. Handle the file in Finder or collect diagnostics.",
+                L10n.string("Trash is not available. Handle the file in Finder or collect diagnostics."),
                 systemImage: "trash.slash"
             )
             .font(.caption)
@@ -86,7 +86,7 @@ struct DeleteFileConfirmSheet: View {
                 Text(failure.rawContext)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
-                Button("Collect Diagnostics...", action: onCollectDiagnostics)
+                Button(L10n.string("Collect Diagnostics..."), action: onCollectDiagnostics)
             }
             .foregroundStyle(.secondary)
         }
@@ -95,7 +95,7 @@ struct DeleteFileConfirmSheet: View {
     private func actionButtons(file: FileEntrySnapshot, operation: MainFileDeleteOperation) -> some View {
         HStack {
             Spacer()
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .disabled(state.isDeleting(fileID: file.id))
             Button(actionTitle(file: file, operation: operation), role: .destructive) {

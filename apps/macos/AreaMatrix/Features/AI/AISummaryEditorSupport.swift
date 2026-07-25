@@ -422,11 +422,11 @@ struct AISummaryGateNoticeView: View {
     @ViewBuilder
     private var action: some View {
         if notice.opensAISettings {
-            Button("Open AI settings", action: onOpenAISettings)
+            Button(L10n.string("Open AI settings"), action: onOpenAISettings)
                 .accessibilityIdentifier("ai-summary-\(notice.capability)-open-ai-settings")
         } else if let route = notice.aiPrivacyRulesPrivacyRulesRoute(repoPath: repoPath),
                   let suffix = notice.aiPrivacyRulesRouteAccessibilitySuffix {
-            Button("View privacy rule") {
+            Button(L10n.string("View privacy rule")) {
                 onOpenPrivacyRule(route)
             }
             .accessibilityIdentifier("ai-summary-\(notice.capability)-view-\(suffix)")

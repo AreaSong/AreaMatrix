@@ -119,7 +119,7 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
             bodyContent
             HStack {
                 Spacer()
-                Button("Close", action: onClose)
+                Button(L10n.string("Close"), action: onClose)
                     .keyboardShortcut(.cancelAction)
             }
         }
@@ -131,7 +131,7 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("AI Privacy Rule")
+            Text(L10n.string("AI Privacy Rule"))
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
             Text(model.ruleID)
@@ -181,12 +181,12 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
 
     private func notFoundContent(_ ruleID: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Privacy rule could not be found.", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("Privacy rule could not be found."), systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
             Text(L10n.format("ai.privacy.rule.missing", ruleID))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Button("Retry") { Task { await model.load() } }
+            Button(L10n.string("Retry")) { Task { await model.load() } }
         }
         .accessibilityIdentifier("ai-category-suggestion-ai-privacy-rules-core-privacy-rule-not-found")
     }
@@ -201,7 +201,7 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
             Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Button("Retry") { Task { await model.load() } }
+            Button(L10n.string("Retry")) { Task { await model.load() } }
         }
         .accessibilityIdentifier("ai-category-suggestion-ai-privacy-rules-core-privacy-rule-error")
     }

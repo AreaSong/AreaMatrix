@@ -33,7 +33,7 @@ extension ICloudConflictMinimalSheet {
             HStack(spacing: 8) {
                 ProgressView()
                     .controlSize(.small)
-                Text("Loading conflict details...")
+                Text(L10n.string("Loading conflict details..."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -63,7 +63,7 @@ extension ICloudConflictMinimalSheet {
         case .empty:
             VStack(alignment: .leading, spacing: 8) {
                 statusLabel("Conflict no longer exists", systemImage: "exclamationmark.triangle", color: .orange)
-                Button("Refresh") {
+                Button(L10n.string("Refresh")) {
                     Task { await model.loadPreview() }
                 }
             }
@@ -97,7 +97,7 @@ extension ICloudConflictMinimalSheet {
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
             }
-            Button("Retry") {
+            Button(L10n.string("Retry")) {
                 Task { await model.loadPreview() }
             }
         }
@@ -114,7 +114,7 @@ extension ICloudConflictMinimalSheet {
             HStack(spacing: 8) {
                 ProgressView()
                     .controlSize(.small)
-                Text("Checking repository path...")
+                Text(L10n.string("Checking repository path..."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -135,7 +135,7 @@ extension ICloudConflictMinimalSheet {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Button("Retry repository check") {
+                Button(L10n.string("Retry repository check")) {
                     Task { await model.validateRepositoryPath() }
                 }
             }
@@ -168,7 +168,7 @@ extension ICloudConflictMinimalSheet {
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
             }
-            Button("Retry repository check") {
+            Button(L10n.string("Retry repository check")) {
                 Task { await model.validateRepositoryPath() }
             }
             .accessibilityIdentifier("icloud-conflict-minimal-error-mapping-retry-repository-check")
@@ -197,7 +197,7 @@ extension ICloudConflictMinimalSheet {
     }
 
     var strategyOptions: some View {
-        Picker("Resolution", selection: $selectedStrategy) {
+        Picker(L10n.string("Resolution"), selection: $selectedStrategy) {
             ForEach(ICloudConflictResolutionStrategy.allCases) { strategy in
                 Text(strategy.title).tag(strategy)
             }

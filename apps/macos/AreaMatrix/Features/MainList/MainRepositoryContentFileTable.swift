@@ -15,27 +15,27 @@ extension MainRepositoryContentView {
     private func singleFileContextMenu(for file: FileEntrySnapshot) -> some View {
         let isWriteActionDisabled = !fileListModel.canPerformWriteAction(fileID: file.id)
 
-        Button("Show in Finder") {
+        Button(L10n.string("Show in Finder")) {
             onShowInFinder(file.path)
         }
-        Button("Rename...") {
+        Button(L10n.string("Rename...")) {
             fileListModel.beginRename(fileID: file.id)
         }
         .disabled(isWriteActionDisabled)
-        Button("Change Category...") {
+        Button(L10n.string("Change Category...")) {
             fileListModel.beginChangeCategory(fileID: file.id)
         }
         .disabled(isWriteActionDisabled)
-        Button("Correct Classification...") {
+        Button(L10n.string("Correct Classification...")) {
             fileListModel.beginClassifierCorrection(fileID: file.id)
         }
         .disabled(isWriteActionDisabled)
-        Button("Delete...", role: .destructive) {
+        Button(L10n.string("Delete..."), role: .destructive) {
             fileListModel.beginDelete(fileID: file.id)
         }
         .disabled(isWriteActionDisabled)
         Divider()
-        Button("Copy Path") {
+        Button(L10n.string("Copy Path")) {
             onCopyPath(file.path)
         }
     }
@@ -43,20 +43,20 @@ extension MainRepositoryContentView {
     @ViewBuilder
     private func multiFileContextMenu(for selection: Set<Int64>, selectedFiles: [FileEntrySnapshot]) -> some View {
         if selectedFiles.count > 1 {
-            Button("Add tags...") {
+            Button(L10n.string("Add tags...")) {
                 openBatchAddTagsRoute(selection, source: .listContextMenu)
             }
-            Button("Change category...") {
+            Button(L10n.string("Change category...")) {
                 openBatchChangeCategoryRoute(selection, source: .listContextMenu)
             }
-            Button("Rename...") {
+            Button(L10n.string("Rename...")) {
                 openBatchRenameRoute(selection, source: .listContextMenu)
             }
-            Button("Delete...", role: .destructive) {
+            Button(L10n.string("Delete..."), role: .destructive) {
                 openBatchDeleteRoute(selection, source: .listContextMenu)
             }
         }
-        Button("Copy Paths") {
+        Button(L10n.string("Copy Paths")) {
             onCopyPaths(selectedFiles.map(\.path))
         }
         .disabled(selectedFiles.isEmpty)
@@ -114,33 +114,33 @@ extension MainRepositoryContentView {
 
     private var normalFileTable: some View {
         Table(visibleFiles, selection: $selectedFileIDs, sortOrder: $tableSortOrder) {
-            TableColumn("Name", sortUsing: KeyPathComparator(\FileEntrySnapshot.currentName)) { file in
+            TableColumn(L10n.string("Name"), sortUsing: KeyPathComparator(\FileEntrySnapshot.currentName)) { file in
                 Text(file.currentName)
                     .lineLimit(1)
             }
-            TableColumn("Category / Path", sortUsing: KeyPathComparator(\FileEntrySnapshot.path)) { file in
+            TableColumn(L10n.string("Category / Path"), sortUsing: KeyPathComparator(\FileEntrySnapshot.path)) { file in
                 Text(file.categoryPathDisplay)
                     .lineLimit(1)
                     .foregroundStyle(.secondary)
             }
-            TableColumn("Match") { file in
+            TableColumn(L10n.string("Match")) { file in
                 Text(searchMatchText(for: file.id))
                     .lineLimit(1)
                     .foregroundStyle(.secondary)
             }
-            TableColumn("Size", sortUsing: KeyPathComparator(\FileEntrySnapshot.sizeBytes)) { file in
+            TableColumn(L10n.string("Size"), sortUsing: KeyPathComparator(\FileEntrySnapshot.sizeBytes)) { file in
                 Text(file.sizeDisplay)
                     .monospacedDigit()
             }
-            TableColumn("Modified", sortUsing: KeyPathComparator(\FileEntrySnapshot.updatedAt)) { file in
+            TableColumn(L10n.string("Modified"), sortUsing: KeyPathComparator(\FileEntrySnapshot.updatedAt)) { file in
                 Text(file.updatedAtDisplay)
                     .monospacedDigit()
             }
-            TableColumn("Imported", sortUsing: KeyPathComparator(\FileEntrySnapshot.importedAt)) { file in
+            TableColumn(L10n.string("Imported"), sortUsing: KeyPathComparator(\FileEntrySnapshot.importedAt)) { file in
                 Text(file.importedAtDisplay)
                     .monospacedDigit()
             }
-            TableColumn("Status", sortUsing: KeyPathComparator(\FileEntrySnapshot.statusDisplay)) { file in
+            TableColumn(L10n.string("Status"), sortUsing: KeyPathComparator(\FileEntrySnapshot.statusDisplay)) { file in
                 Text(file.statusDisplay)
             }
         }
@@ -163,7 +163,7 @@ extension MainRepositoryContentView {
                     Button {
                         Task { await fileListModel.loadMoreCurrentCategory() }
                     } label: {
-                        Label("Retry", systemImage: "arrow.clockwise")
+                        Label(L10n.string("Retry"), systemImage: "arrow.clockwise")
                     }
                     .accessibilityIdentifier("main-list-retry-load-more")
                 }
@@ -171,7 +171,7 @@ extension MainRepositoryContentView {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Loading more files...")
+                    Text(L10n.string("Loading more files..."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -179,7 +179,7 @@ extension MainRepositoryContentView {
                 Button {
                     Task { await fileListModel.loadMoreCurrentCategory() }
                 } label: {
-                    Label("Load More", systemImage: "arrow.down.circle")
+                    Label(L10n.string("Load More"), systemImage: "arrow.down.circle")
                 }
                 .accessibilityIdentifier("main-list-load-more")
             }

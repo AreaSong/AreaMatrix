@@ -87,14 +87,14 @@ extension RepositorySettingsPane {
             "Export diagnostics?",
             isPresented: diagnosticsConfirmationBinding
         ) {
-            Button("Cancel", role: .cancel, action: model.cancelDiagnosticsExport)
-            Button("Export diagnostics") {
+            Button(L10n.string("Cancel"), role: .cancel, action: model.cancelDiagnosticsExport)
+            Button(L10n.string("Export diagnostics")) {
                 Task {
                     await model.collectDiagnostics()
                 }
             }
         } message: {
-            Text("Diagnostics do not include your original file contents and are not uploaded automatically.")
+            Text(L10n.string("Diagnostics do not include your original file contents and are not uploaded automatically."))
         }
     }
 
@@ -112,11 +112,11 @@ extension RepositorySettingsPane {
 
     private var emptyRepositoryBody: some View {
         ContentUnavailableView {
-            Label("No repository connected.", systemImage: "folder.badge.questionmark")
+            Label(L10n.string("No repository connected."), systemImage: "folder.badge.questionmark")
         } description: {
-            Text("Connect a repository to view cross-platform repository settings.")
+            Text(L10n.string("Connect a repository to view cross-platform repository settings."))
         } actions: {
-            Button("Connect Repository", action: onChangeRepository)
+            Button(L10n.string("Connect Repository"), action: onChangeRepository)
                 .accessibilityIdentifier("repository-settings-connect-repository")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -127,7 +127,7 @@ extension RepositorySettingsPane {
             if model.isLoading {
                 SettingsHeaderProgressIndicator(label: L10n.string("Checking repository configuration"))
             } else {
-                Button("Retry status") {
+                Button(L10n.string("Retry status")) {
                     Task {
                         await reload()
                     }
@@ -158,12 +158,12 @@ extension RepositorySettingsPane {
             message: localizer.resolve(error.message),
             recovery: localizer.resolve(error.recovery)
         ) {
-            Button("Try again") {
+            Button(L10n.string("Try again")) {
                 Task {
                     await model.load()
                 }
             }
-            Button("Change repository...", action: onChangeRepository)
+            Button(L10n.string("Change repository..."), action: onChangeRepository)
         }
     }
 
@@ -297,7 +297,7 @@ extension RepositorySettingsPane {
                 Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Button("Retry path sync") {
+                Button(L10n.string("Retry path sync")) {
                     Task {
                         await model.retryRepositoryPathSync()
                     }

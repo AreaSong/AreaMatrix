@@ -68,7 +68,7 @@ struct RemoteModelConfigSheet: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Configure remote AI")
+                Text(L10n.string("Configure remote AI"))
                     .font(.title2.weight(.semibold))
                     .accessibilityAddTraits(.isHeader)
                 Text(model.repoPath)
@@ -79,7 +79,7 @@ struct RemoteModelConfigSheet: View {
                     .textSelection(.enabled)
             }
             Spacer()
-            Button("Cancel", action: closeWithoutSaving)
+            Button(L10n.string("Cancel"), action: closeWithoutSaving)
         }
         .padding(.horizontal, 34)
         .padding(.vertical, 18)
@@ -98,15 +98,15 @@ struct RemoteModelConfigSheet: View {
             AISettingsInlineBanner(error: error, tint: .red) {
                 if model.unusedCredentialReference != nil {
                     if model.canRetryEnable {
-                        Button("Retry save") { Task { await model.retryEnable() } }
+                        Button(L10n.string("Retry save")) { Task { await model.retryEnable() } }
                     }
-                    Button("Remove unused key", action: model.removeUnusedCredential)
+                    Button(L10n.string("Remove unused key"), action: model.removeUnusedCredential)
                 }
             }
         case nil:
             if case let .failed(error) = model.loadState {
                 AISettingsInlineBanner(error: error, tint: .red) {
-                    Button("Retry") { Task { await model.load() } }
+                    Button(L10n.string("Retry")) { Task { await model.load() } }
                 }
             }
         }
@@ -114,18 +114,18 @@ struct RemoteModelConfigSheet: View {
 
     private var providerSection: some View {
         AdvancedSettingsSection(title: L10n.string("Provider")) {
-            Picker("Provider", selection: $model.provider) {
+            Picker(L10n.string("Provider"), selection: $model.provider) {
                 ForEach(RemoteProviderKindState.allCases) { provider in
                     Text(provider.label).tag(provider)
                 }
             }
             .pickerStyle(.segmented)
             .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-provider-picker")
-            TextField("Model", text: $model.modelID)
+            TextField(L10n.string("Model"), text: $model.modelID)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-model")
             if model.provider == .other {
-                TextField("Endpoint URL", text: $model.endpointURL)
+                TextField(L10n.string("Endpoint URL"), text: $model.endpointURL)
                     .textFieldStyle(.roundedBorder)
                     .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-endpoint-url")
             }
@@ -134,10 +134,10 @@ struct RemoteModelConfigSheet: View {
 
     private var credentialSection: some View {
         AdvancedSettingsSection(title: L10n.string("Credential")) {
-            SecureField("API key", text: $model.apiKey)
+            SecureField(L10n.string("API key"), text: $model.apiKey)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-api-key")
-            Text("Stored in Keychain. Never written to logs or diagnostics.")
+            Text(L10n.string("Stored in Keychain. Never written to logs or diagnostics."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
@@ -175,7 +175,7 @@ struct RemoteModelConfigSheet: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Toggle(
-                "I understand remote AI sends allowed content to a third-party provider.",
+                L10n.string("I understand remote AI sends allowed content to a third-party provider."),
                 isOn: $model.dataFlowConfirmed
             )
             .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-data-flow-confirmed")
@@ -185,15 +185,15 @@ struct RemoteModelConfigSheet: View {
     private var footerActions: some View {
         HStack(spacing: 10) {
             if model.snapshot?.remoteProviderEnabled == true {
-                Button("Disable remote AI", role: .destructive) {
+                Button(L10n.string("Disable remote AI"), role: .destructive) {
                     removeCredentialOnDisable = false
                     isDisableConfirmationPresented = true
                 }
                 .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-disable-remote-ai")
             }
             Spacer()
-            Button("Cancel", action: closeWithoutSaving)
-            Button("Enable remote AI") {
+            Button(L10n.string("Cancel"), action: closeWithoutSaving)
+            Button(L10n.string("Enable remote AI")) {
                 Task {
                     let didEnable = await model.enableRemoteAI()
                     guard didEnable else { return }
@@ -229,10 +229,10 @@ struct RemoteModelConfigSheet: View {
                     Button(retryPrivacyGateTitle, action: retryPrivacyGate)
                         .accessibilityIdentifier("remote-provider-config-ai-privacy-rules-core-retry-privacy-gate")
                 }
-                Button("Open privacy rules", action: onOpenPrivacyRules)
+                Button(L10n.string("Open privacy rules"), action: onOpenPrivacyRules)
                     .accessibilityIdentifier("remote-provider-config-ai-privacy-rules-core-open-privacy-rules")
                 if privacyModel.pendingAction == .enable {
-                    Button("Disable remote AI", role: .destructive) {
+                    Button(L10n.string("Disable remote AI"), role: .destructive) {
                         removeCredentialOnDisable = false
                         isDisableConfirmationPresented = true
                     }
@@ -308,17 +308,17 @@ private struct DisableRemoteAIConfirmationSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Disable remote AI?")
+            Text(L10n.string("Disable remote AI?"))
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
             Text(L10n.string("ai.remote.disableDetail"))
                 .fixedSize(horizontal: false, vertical: true)
-            Toggle("Also remove stored API key", isOn: $removeStoredCredential)
+            Toggle(L10n.string("Also remove stored API key"), isOn: $removeStoredCredential)
                 .accessibilityIdentifier("remote-provider-config-remote-provider-config-core-disable-remove-stored-key")
             HStack {
                 Spacer()
-                Button("Cancel", action: onCancel)
-                Button("Disable remote AI", role: .destructive, action: onDisable)
+                Button(L10n.string("Cancel"), action: onCancel)
+                Button(L10n.string("Disable remote AI"), role: .destructive, action: onDisable)
                     .accessibilityIdentifier(
                         "remote-provider-config-remote-provider-config-core-confirm-disable-remote-ai"
                     )

@@ -8,7 +8,7 @@ extension ImportBatchConflictSection {
         case let .nameConflict(_, resolution):
             switch resolution {
             case let .renameIncoming(name):
-                TextField("Incoming filename", text: Binding(
+                TextField(L10n.string("Incoming filename"), text: Binding(
                     get: { name },
                     set: { batchImportModel.renameIncomingFile(for: row.id, to: $0) }
                 ))
@@ -30,16 +30,16 @@ extension ImportBatchConflictSection {
         case .nameConflict:
             nameConflictStrategyPicker(for: row)
         case .iCloudPlaceholder, .skippedICloud:
-            Text("Download required")
+            Text(L10n.string("Download required"))
         case .blocked:
-            Text("Resolve required")
+            Text(L10n.string("Resolve required"))
         case .loading, .ready, .importing, .skippedDuplicate, .imported, .error:
-            Text("-")
+            Text(L10n.string("-"))
         }
     }
 
     func duplicateStrategyPicker(for row: ImportBatchCopyImportRow) -> some View {
-        Picker("Strategy", selection: Binding(
+        Picker(L10n.string("Strategy"), selection: Binding(
             get: { row.duplicateResolution ?? .skip },
             set: { batchImportModel.updateDuplicateStrategy(for: row.id, strategy: $0) }
         )) {
@@ -47,7 +47,7 @@ extension ImportBatchConflictSection {
                 Text(strategy.title).tag(strategy)
             }
             if batchImportModel.replaceOptionVisibility == .disabled {
-                Text("Replace requires system Trash").tag(ImportBatchDuplicateResolutionStrategy.replace)
+                Text(L10n.string("Replace requires system Trash")).tag(ImportBatchDuplicateResolutionStrategy.replace)
             }
         }
         .labelsHidden()
@@ -70,16 +70,16 @@ extension ImportBatchConflictSection {
     }
 
     func nameConflictStrategyPicker(for row: ImportBatchCopyImportRow) -> some View {
-        Picker("Strategy", selection: Binding(
+        Picker(L10n.string("Strategy"), selection: Binding(
             get: { row.nameConflictResolution ?? .keepBoth },
             set: { batchImportModel.updateNameConflictResolution(for: row.id, resolution: $0) }
         )) {
-            Text("Keep both (auto-number)").tag(ImportBatchNameConflictResolution.keepBoth)
-            Text("Rename incoming").tag(ImportBatchNameConflictResolution.renameIncoming(row.resolvedIncomingName))
+            Text(L10n.string("Keep both (auto-number)")).tag(ImportBatchNameConflictResolution.keepBoth)
+            Text(L10n.string("Rename incoming")).tag(ImportBatchNameConflictResolution.renameIncoming(row.resolvedIncomingName))
             if showsReplaceOption {
-                Text("Replace").tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
+                Text(L10n.string("Replace")).tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
             } else if batchImportModel.replaceOptionVisibility == .disabled {
-                Text("Replace requires system Trash").tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
+                Text(L10n.string("Replace requires system Trash")).tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
             }
         }
         .labelsHidden()
@@ -94,7 +94,7 @@ extension ImportBatchConflictSection {
             if strategy == .replace {
                 replaceButton(row: row, isConfirmed: isReplaceConfirmed)
             } else {
-                Button("Show existing file") {
+                Button(L10n.string("Show existing file")) {
                     onShowExistingFile(existingPath)
                 }
                 .disabled(batchImportModel.status.isImporting)
@@ -105,22 +105,22 @@ extension ImportBatchConflictSection {
             case let .replace(isConfirmed):
                 replaceButton(row: row, isConfirmed: isConfirmed)
             case .renameIncoming:
-                Text("Rename incoming...")
+                Text(L10n.string("Rename incoming..."))
             case .keepBoth:
-                Text("Auto-number incoming")
+                Text(L10n.string("Auto-number incoming"))
             }
         case .iCloudPlaceholder:
             iCloudActionButtons(for: row)
         case .blocked:
-            Text("Resolve required")
+            Text(L10n.string("Resolve required"))
         case .loading, .ready, .importing, .skippedDuplicate, .skippedICloud, .imported, .error:
-            Text("-")
+            Text(L10n.string("-"))
         }
     }
 
     func iCloudActionButtons(for row: ImportBatchCopyImportRow) -> some View {
         HStack(spacing: 6) {
-            Button("Download & retry") {
+            Button(L10n.string("Download & retry")) {
                 Task {
                     let didDownload = await batchImportModel.downloadICloudPlaceholderAndRetry(rowID: row.id)
                     if didDownload {
@@ -129,7 +129,7 @@ extension ImportBatchConflictSection {
                 }
             }
             .disabled(batchImportModel.isICloudDownloading || batchImportModel.status.isImporting)
-            Button("Import ready only") {
+            Button(L10n.string("Import ready only")) {
                 batchImportModel.markICloudPlaceholderPending(rowID: row.id)
             }
             .disabled(batchImportModel.status.isImporting)

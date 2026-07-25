@@ -7,7 +7,7 @@ struct StartupRecoveryCheckStatusView: View {
     var body: some View {
         switch state {
         case .idle, .checking:
-            Label("Checking startup recovery state...", systemImage: "arrow.clockwise.circle")
+            Label(L10n.string("Checking startup recovery state..."), systemImage: "arrow.clockwise.circle")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("database-repair-startup-recovery-core-startup-recovery-checking")
@@ -22,7 +22,7 @@ struct StartupRecoveryCheckStatusView: View {
 
     private func completedContent(_ report: RecoveryReportSnapshot?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("Startup recovery checked", systemImage: "checkmark.circle")
+            Label(L10n.string("Startup recovery checked"), systemImage: "checkmark.circle")
                 .font(.headline)
                 .foregroundStyle(.green)
             if let report {
@@ -34,7 +34,7 @@ struct StartupRecoveryCheckStatusView: View {
                         .foregroundStyle(.orange)
                 }
             } else {
-                Text("No leftover staging files or staging DB rows required recovery.")
+                Text(L10n.string("No leftover staging files or staging DB rows required recovery."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -43,7 +43,7 @@ struct StartupRecoveryCheckStatusView: View {
 
     private func failedContent(_ mapping: CoreErrorMappingSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Startup recovery failed", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("Startup recovery failed"), systemImage: "exclamationmark.triangle")
                 .font(.headline)
                 .foregroundStyle(.red)
             Text(mapping.userMessage)
@@ -51,13 +51,13 @@ struct StartupRecoveryCheckStatusView: View {
             Text(mapping.suggestedAction)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            DisclosureGroup("Technical Details") {
+            DisclosureGroup(L10n.string("Technical Details")) {
                 Text(mapping.rawContext)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
             }
             .font(.callout)
-            Button("Retry startup recovery", action: onRetry)
+            Button(L10n.string("Retry startup recovery"), action: onRetry)
                 .accessibilityIdentifier("database-repair-startup-recovery-core-retry-startup-recovery")
         }
     }
@@ -87,7 +87,7 @@ struct RepairProgressView: View {
     var body: some View {
         TintedStatusBanner(tint: .blue, fillsWidth: false) {
             VStack(alignment: .leading, spacing: 10) {
-                Label("Repair in progress", systemImage: "arrow.clockwise.circle")
+                Label(L10n.string("Repair in progress"), systemImage: "arrow.clockwise.circle")
                     .font(.headline)
                 ForEach(DatabaseRepairProgressStep.allCases, id: \.self) { step in
                     HStack(spacing: 8) {

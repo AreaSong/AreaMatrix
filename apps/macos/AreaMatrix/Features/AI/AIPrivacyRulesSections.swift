@@ -4,7 +4,7 @@ extension AIPrivacyRulesView {
     var fieldSection: some View {
         AdvancedSettingsSection(title: L10n.string("Remote allowed fields")) {
             if !privacyModel.canEditRemoteFields {
-                Text("Remote AI is blocked.").font(.callout).foregroundStyle(.secondary)
+                Text(L10n.string("Remote AI is blocked.")).font(.callout).foregroundStyle(.secondary)
             }
             ForEach(privacyModel.fields, id: \.field, content: fieldRow)
         }
@@ -24,7 +24,7 @@ extension AIPrivacyRulesView {
             .font(.caption)
             .foregroundStyle(field.allowRemote ? Color.secondary : Color.orange)
             if field.field == .noteSummary {
-                Text("Derived from your note. Full note text is never sent.")
+                Text(L10n.string("Derived from your note. Full note text is never sent."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -42,8 +42,8 @@ extension AIPrivacyRulesView {
                 )
             } else {
                 HStack(spacing: 10) {
-                    Button("Add rule", action: beginAddRule)
-                    Button("Use recommended templates...", action: openTemplates)
+                    Button(L10n.string("Add rule"), action: beginAddRule)
+                    Button(L10n.string("Use recommended templates..."), action: openTemplates)
                 }
                 ForEach(privacyModel.rules, id: \.ruleId, content: ruleRow)
             }
@@ -70,9 +70,9 @@ extension AIPrivacyRulesView {
                 }
             }
             Spacer()
-            Button("Edit") { beginEditRule(rule) }
+            Button(L10n.string("Edit")) { beginEditRule(rule) }
             Button(rule.enabled ? L10n.string("Disable") : L10n.string("Enable")) { toggleRule(rule) }
-            Button("Delete...") { deletionCandidate = rule }
+            Button(L10n.string("Delete...")) { deletionCandidate = rule }
         }
         .font(.callout)
         .id(AIPrivacyRulesRouteFocus.rule(ruleID: rule.ruleId).targetID)
@@ -97,13 +97,13 @@ extension AIPrivacyRulesView {
 
     var testRulesSection: some View {
         AdvancedSettingsSection(title: L10n.string("Test rules")) {
-            TextField("Test repo-relative path", text: testPath)
+            TextField(L10n.string("Test repo-relative path"), text: testPath)
                 .textFieldStyle(.roundedBorder)
-            TextField("Current category", text: testCategoryBinding)
+            TextField(L10n.string("Current category"), text: testCategoryBinding)
                 .textFieldStyle(.roundedBorder)
-            TextField("Current tags, comma separated", text: testTagsBinding)
+            TextField(L10n.string("Current tags, comma separated"), text: testTagsBinding)
                 .textFieldStyle(.roundedBorder)
-            Button("Test rules", action: testRules)
+            Button(L10n.string("Test rules"), action: testRules)
                 .disabled(privacyModel.isEvaluating || testFileContext.isEmpty)
                 .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-test-rules")
             if !privacyModel.featureEvaluations.isEmpty {

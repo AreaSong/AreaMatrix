@@ -6,11 +6,11 @@ struct RepoPlatformCapabilitySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Platform capabilities")
+            Text(L10n.string("Platform capabilities"))
                 .font(.headline)
             content
             Button(action: onOpenPlatformCapabilities) {
-                Label("Platform capabilities", systemImage: "rectangle.3.group")
+                Label(L10n.string("Platform capabilities"), systemImage: "rectangle.3.group")
             }
             .accessibilityIdentifier("repository-settings-platform-capabilities-open-platform-capabilities")
         }

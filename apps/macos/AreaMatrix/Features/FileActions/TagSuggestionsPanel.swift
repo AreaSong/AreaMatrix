@@ -32,9 +32,9 @@ struct TagSuggestionsPanel: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Tag suggestions")
+            Text(L10n.string("Tag suggestions"))
                 .font(.headline)
-            Text("Suggestions come from file name and path keywords. File contents are not read.")
+            Text(L10n.string("Suggestions come from file name and path keywords. File contents are not read."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Text(L10n.format("file-actions.tag-suggestion.reviewing-file", file.currentName))
@@ -46,27 +46,27 @@ struct TagSuggestionsPanel: View {
     @ViewBuilder
     private var stateContent: some View {
         if state.isLoading {
-            Label("Finding tag suggestions...", systemImage: "clock.arrow.circlepath")
+            Label(L10n.string("Finding tag suggestions..."), systemImage: "clock.arrow.circlepath")
                 .foregroundStyle(.secondary)
         } else if let failure = state.failure {
             failureView(failure)
         } else if let report = state.report {
             reportContent(report)
         } else {
-            Label("Open suggestions to review deterministic candidates.", systemImage: "tag")
+            Label(L10n.string("Open suggestions to review deterministic candidates."), systemImage: "tag")
                 .foregroundStyle(.secondary)
         }
     }
 
     private func failureView(_ failure: CoreErrorMappingSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Could not generate suggestions", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("Could not generate suggestions"), systemImage: "exclamationmark.triangle")
                 .font(.callout.weight(.semibold))
             Text(failure.userMessage)
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Retry", action: onRetry)
-                Button("Add tag manually", action: onAddManually)
+                Button(L10n.string("Retry"), action: onRetry)
+                Button(L10n.string("Add tag manually"), action: onAddManually)
                     .accessibilityIdentifier("tag-suggestions-tag-crud-core-add-tag-manually")
             }
         }
@@ -99,9 +99,9 @@ struct TagSuggestionsPanel: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("No tag suggestions")
+            Text(L10n.string("No tag suggestions"))
                 .font(.callout.weight(.semibold))
-            Button("Add tag manually", action: onAddManually)
+            Button(L10n.string("Add tag manually"), action: onAddManually)
                 .accessibilityIdentifier("tag-suggestions-tag-crud-core-add-tag-manually")
         }
     }
@@ -109,8 +109,8 @@ struct TagSuggestionsPanel: View {
     private func suggestionList(_ report: TagSuggestionReportSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Button("Select all", action: onSelectAll)
-                Button("Clear selection", action: onClearSelection)
+                Button(L10n.string("Select all"), action: onSelectAll)
+                Button(L10n.string("Clear selection"), action: onClearSelection)
                 Spacer()
                 Text(L10n.plural("file-actions.tag-suggestion.selected-count", count: state.selectedIDs.count))
                     .font(.caption)
@@ -129,9 +129,9 @@ struct TagSuggestionsPanel: View {
 
     private func editMode(_ session: TagSuggestionEditSession) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Edit selected tags")
+            Text(L10n.string("Edit selected tags"))
                 .font(.headline)
-            Text("Editing changes pending tag names only. Nothing is written until Apply edited.")
+            Text(L10n.string("Editing changes pending tag names only. Nothing is written until Apply edited."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if session.attentionCount > 0 {
@@ -170,9 +170,9 @@ struct TagSuggestionsPanel: View {
             }
             if report.failedCount > 0 {
                 HStack {
-                    Button("Retry failed", action: onRetryFailed)
+                    Button(L10n.string("Retry failed"), action: onRetryFailed)
                         .disabled(!canRetryFailed)
-                    Button("Add tag manually", action: onAddManually)
+                    Button(L10n.string("Add tag manually"), action: onAddManually)
                         .accessibilityIdentifier("tag-suggestions-tag-crud-core-add-tag-manually-after-failure")
                 }
             }
@@ -182,18 +182,18 @@ struct TagSuggestionsPanel: View {
 
     private var actionBar: some View {
         HStack {
-            Button("Ignore", action: onClose)
+            Button(L10n.string("Ignore"), action: onClose)
             Spacer()
             if let session = state.editSession {
-                Button("Cancel edit", action: onCancelEditing)
+                Button(L10n.string("Cancel edit"), action: onCancelEditing)
                     .disabled(state.isApplying)
-                Button("Apply edited", action: onApplyEdited)
+                Button(L10n.string("Apply edited"), action: onApplyEdited)
                     .disabled(!canApplyEdited(session))
                     .keyboardShortcut(.defaultAction)
             } else {
-                Button("Edit selected...", action: onStartEditing)
+                Button(L10n.string("Edit selected..."), action: onStartEditing)
                     .disabled(!canStartEdit)
-                Button("Apply selected", action: onApplySelected)
+                Button(L10n.string("Apply selected"), action: onApplySelected)
                     .disabled(!canApply)
                     .keyboardShortcut(.defaultAction)
             }
@@ -290,17 +290,17 @@ private struct SuggestedTagEditRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            TextField("displayName", text: Binding(
+            TextField(L10n.string("displayName"), text: Binding(
                 get: { draft.displayName },
                 set: onDisplayNameChange
             ))
             .textFieldStyle(.roundedBorder)
             .disabled(fieldsDisabled)
             HStack {
-                TextField("slug", text: Binding(get: { draft.slug }, set: onSlugChange))
+                TextField(L10n.string("slug"), text: Binding(get: { draft.slug }, set: onSlugChange))
                     .textFieldStyle(.roundedBorder)
                     .disabled(fieldsDisabled)
-                Button("Regenerate slug", action: onRegenerateSlug)
+                Button(L10n.string("Regenerate slug"), action: onRegenerateSlug)
                     .disabled(fieldsDisabled)
             }
             Text(draft.reason)

@@ -14,7 +14,7 @@ struct AboutSettingsHeader: View {
                     .frame(width: 36, height: 36)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("AreaMatrix")
+                    Text(L10n.string("AreaMatrix"))
                         .font(.title2.weight(.semibold))
                         .accessibilityAddTraits(.isHeader)
                     Text(repoPath)
@@ -32,7 +32,7 @@ struct AboutSettingsHeader: View {
                 Button {
                     onRetryVersionCheck()
                 } label: {
-                    Label("Retry version check", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Retry version check"), systemImage: "arrow.clockwise")
                 }
                 .accessibilityIdentifier("about-settings-retry-version-check")
             }
@@ -57,7 +57,7 @@ struct AboutSettingsVersionsSection: View {
             Button {
                 onCopyVersions()
             } label: {
-                Label("Copy versions", systemImage: "doc.on.doc")
+                Label(L10n.string("Copy versions"), systemImage: "doc.on.doc")
             }
             .accessibilityIdentifier("about-settings-copy-versions")
         }
@@ -67,7 +67,7 @@ struct AboutSettingsVersionsSection: View {
 struct AboutSettingsLicenseSection: View {
     var body: some View {
         AboutSettingsSection(title: L10n.string("License")) {
-            Text("PolyForm Noncommercial")
+            Text(L10n.string("PolyForm Noncommercial"))
                 .font(.callout)
                 .textSelection(.enabled)
                 .accessibilityIdentifier("about-settings-license")
@@ -94,7 +94,7 @@ struct AboutSettingsLinksSection: View {
                         Button {
                             onCopyLink(link)
                         } label: {
-                            Label("Copy URL", systemImage: "doc.on.doc")
+                            Label(L10n.string("Copy URL"), systemImage: "doc.on.doc")
                         }
                         .accessibilityIdentifier("about-settings-copy-\(link.rawValue)")
                     }
@@ -129,7 +129,7 @@ struct AboutSettingsDiagnosticsSection: View {
             .disabled(diagnosticsState.isCollecting)
             .accessibilityIdentifier("about-settings-collect-diagnostics")
 
-            Text("Diagnostics are redacted, exclude original file contents, and are not uploaded automatically.")
+            Text(L10n.string("Diagnostics are redacted, exclude original file contents, and are not uploaded automatically."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -158,20 +158,20 @@ struct AboutSettingsDiagnosticsSection: View {
                     .lineLimit(2)
                     .truncationMode(.middle)
                 HStack(spacing: 10) {
-                    Button("Reveal in Finder") {
+                    Button(L10n.string("Reveal in Finder")) {
                         onRevealDiagnostics(snapshot)
                     }
-                    Button("Copy diagnostics path") {
+                    Button(L10n.string("Copy diagnostics path")) {
                         onCopyDiagnosticsPath(snapshot)
                     }
                 }
             }
         case let .failed(error):
             AboutSettingsBanner(error: error, tint: .red) {
-                Button("Copy error") {
+                Button(L10n.string("Copy error")) {
                     onCopyError(error)
                 }
-                Button("Retry") {
+                Button(L10n.string("Retry")) {
                     onRequestDiagnostics()
                 }
             }
@@ -191,7 +191,7 @@ struct AboutSettingsLogsSection: View {
                 Button {
                     onOpenLogs()
                 } label: {
-                    Label("Open logs in Console", systemImage: "terminal")
+                    Label(L10n.string("Open logs in Console"), systemImage: "terminal")
                 }
                 .disabled(isDisabled)
                 .accessibilityIdentifier("about-settings-open-logs")
@@ -199,7 +199,7 @@ struct AboutSettingsLogsSection: View {
                 Button {
                     onCopyLogsPath()
                 } label: {
-                    Label("Copy logs path", systemImage: "doc.on.doc")
+                    Label(L10n.string("Copy logs path"), systemImage: "doc.on.doc")
                 }
                 .accessibilityIdentifier("about-settings-copy-logs-path")
             }

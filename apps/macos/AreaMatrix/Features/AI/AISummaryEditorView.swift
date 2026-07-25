@@ -52,7 +52,7 @@ struct AISummaryEditor: View {
             isPresented: Binding(get: { confirmation != nil }, set: { if !$0 { confirmation = nil } }),
             titleVisibility: .visible
         ) {
-            Button("Cancel", role: .cancel) { confirmation = nil }
+            Button(L10n.string("Cancel"), role: .cancel) { confirmation = nil }
             Button(confirmation?.actionTitle ?? "", role: confirmation?.isDestructive == true ? .destructive : nil) {
                 performConfirmedAction()
             }
@@ -93,7 +93,7 @@ struct AISummaryEditor: View {
 private extension AISummaryEditor {
     private var header: some View {
         HStack {
-            Text("AI Summary").font(.headline).accessibilityAddTraits(.isHeader)
+            Text(L10n.string("AI Summary")).font(.headline).accessibilityAddTraits(.isHeader)
             Text(model.status.label).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Spacer()
             Text(model.characterCountText).font(.caption).foregroundStyle(.secondary)
@@ -106,7 +106,7 @@ private extension AISummaryEditor {
         case .unknown:
             EmptyView()
         case .checking:
-            Label("Checking AI summary gate...", systemImage: "arrow.triangle.2.circlepath")
+            Label(L10n.string("Checking AI summary gate..."), systemImage: "arrow.triangle.2.circlepath")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("ai-summary-ai-summary-core-generate-gate-checking")
@@ -156,19 +156,19 @@ private extension AISummaryEditor {
                     Text(privacySkip.message)
                     Text("Sent fields: \(privacySentFields(privacySkip.sentFields))")
                     if let ruleID = privacySkip.ruleID {
-                        Button("View privacy rule") {
+                        Button(L10n.string("View privacy rule")) {
                             privacyRuleRoute = AIPrivacyRulesRoute(repoPath: repoPath, focus: .rule(ruleID: ruleID))
                         }
                         .accessibilityIdentifier("ai-summary-ai-privacy-rules-core-view-privacy-rule-\(ruleID)")
                     } else if let field = privacySkip.matchedField {
-                        Button("View privacy rule") {
+                        Button(L10n.string("View privacy rule")) {
                             privacyRuleRoute = AIPrivacyRulesRoute(repoPath: repoPath, focus: .field(field))
                         }
                         .accessibilityIdentifier("ai-summary-ai-privacy-rules-core-view-privacy-field-\(field)")
                     }
                 }
                 if let callLogID = provenance.callLogID {
-                    Button("View AI call") {
+                    Button(L10n.string("View AI call")) {
                         callLogRoute = AISummaryCallLogRoute(callLogID: callLogID)
                     }
                     .buttonStyle(.link)
@@ -202,7 +202,7 @@ private extension AISummaryEditor {
             .frame(minHeight: 150)
             .overlay(alignment: .topLeading) {
                 if model.draftText.isEmpty {
-                    Text("No AI summary yet.").foregroundStyle(.secondary).padding(.top, 8).padding(.leading, 5)
+                    Text(L10n.string("No AI summary yet.")).foregroundStyle(.secondary).padding(.top, 8).padding(.leading, 5)
                 }
             }
             .disabled(model.operation.isBusy)
@@ -214,14 +214,14 @@ private extension AISummaryEditor {
     private var clearConflictNoticeView: some View {
         if let notice = model.clearConflictNotice {
             VStack(alignment: .leading, spacing: 6) {
-                Label("The summary changed before it could be cleared", systemImage: "arrow.clockwise")
+                Label(L10n.string("The summary changed before it could be cleared"), systemImage: "arrow.clockwise")
                     .font(.headline)
                 Text(L10n.format(
                     "ai.summary.clearConflict.revisions",
                     notice.expectedRevision,
                     notice.currentRevision
                 ))
-                Text("The latest summary has been loaded. Review it and choose Clear summary again if needed.")
+                Text(L10n.string("The latest summary has been loaded. Review it and choose Clear summary again if needed."))
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -235,7 +235,7 @@ private extension AISummaryEditor {
     private var saveConflictReviewView: some View {
         if let review = model.saveConflictReview {
             VStack(alignment: .leading, spacing: 10) {
-                Label("Summary changed in another window", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Summary changed in another window"), systemImage: "exclamationmark.triangle")
                     .font(.headline)
                 Text(L10n.format(
                     "ai.summary.conflict.revisions",
@@ -254,13 +254,13 @@ private extension AISummaryEditor {
                         text: review.localText
                     )
                 }
-                Text("Reviewing updates the baseline only. You must Save again to apply your draft.")
+                Text(L10n.string("Reviewing updates the baseline only. You must Save again to apply your draft."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack {
-                    Button("Reload latest", action: model.reloadLatestAfterSaveConflict)
+                    Button(L10n.string("Reload latest"), action: model.reloadLatestAfterSaveConflict)
                     Spacer()
-                    Button("Review changes", action: model.reviewLatestAfterSaveConflict)
+                    Button(L10n.string("Review changes"), action: model.reviewLatestAfterSaveConflict)
                         .buttonStyle(.borderedProminent)
                 }
             }
@@ -284,9 +284,9 @@ private extension AISummaryEditor {
     private var replacementReviewView: some View {
         if let review = model.replacementReview {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Review summary replacement")
+                Text(L10n.string("Review summary replacement"))
                     .font(.headline)
-                Text("The saved user-owned summary will remain unchanged until you explicitly replace it.")
+                Text(L10n.string("The saved user-owned summary will remain unchanged until you explicitly replace it."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack(alignment: .top, spacing: 12) {
@@ -302,10 +302,10 @@ private extension AISummaryEditor {
                     )
                 }
                 HStack {
-                    Button("Keep existing", action: model.keepExistingSummary)
-                    Button("Continue editing", action: model.continueEditingReplacement)
+                    Button(L10n.string("Keep existing"), action: model.keepExistingSummary)
+                    Button(L10n.string("Continue editing"), action: model.continueEditingReplacement)
                     Spacer()
-                    Button("Replace") { Task { await model.replaceReviewedSummary() } }
+                    Button(L10n.string("Replace")) { Task { await model.replaceReviewedSummary() } }
                         .buttonStyle(.borderedProminent)
                 }
             }
@@ -362,24 +362,24 @@ private extension AISummaryEditor {
         switch model.failedAction {
         case .load:
             HStack {
-                Button("Retry load") { Task { await model.loadEntryState() } }
-                Button("Back to detail", action: onBackToDetail)
+                Button(L10n.string("Retry load")) { Task { await model.loadEntryState() } }
+                Button(L10n.string("Back to detail"), action: onBackToDetail)
             }
         case .generate:
             HStack {
-                Button("Retry generate") { Task { await model.retryGeneration() } }
-                Button("Cancel", action: model.cancelFailedAction)
+                Button(L10n.string("Retry generate")) { Task { await model.retryGeneration() } }
+                Button(L10n.string("Cancel"), action: model.cancelFailedAction)
             }
         case .save:
             HStack {
-                Button("Retry save") { Task { await model.save() } }
-                Button("Discard changes", action: model.discardChanges)
-                Button("Back to detail", action: onBackToDetail)
+                Button(L10n.string("Retry save")) { Task { await model.save() } }
+                Button(L10n.string("Discard changes"), action: model.discardChanges)
+                Button(L10n.string("Back to detail"), action: onBackToDetail)
             }
         case .clear:
             HStack {
-                Button("Retry clear") { Task { await model.clear() } }
-                Button("Cancel", action: model.cancelFailedAction)
+                Button(L10n.string("Retry clear")) { Task { await model.clear() } }
+                Button(L10n.string("Cancel"), action: model.cancelFailedAction)
             }
         case nil:
             EmptyView()
@@ -388,16 +388,16 @@ private extension AISummaryEditor {
 
     private var controls: some View {
         HStack {
-            Button("Generate summary") { Task { await model.generate(regenerate: false) } }
+            Button(L10n.string("Generate summary")) { Task { await model.generate(regenerate: false) } }
                 .disabled(!model.canGenerate)
-            Button("Regenerate...") { confirmation = .regenerate }
+            Button(L10n.string("Regenerate...")) { confirmation = .regenerate }
                 .disabled(!model.canRegenerate)
             if model.canCancelGeneration {
-                Button("Cancel generation", action: model.cancelGeneration)
+                Button(L10n.string("Cancel generation"), action: model.cancelGeneration)
             }
             Spacer()
-            Button("Discard changes", action: model.discardChanges).disabled(!model.canDiscard)
-            Button("Clear summary...") { confirmation = .clear }.disabled(!model.canClear)
+            Button(L10n.string("Discard changes"), action: model.discardChanges).disabled(!model.canDiscard)
+            Button(L10n.string("Clear summary...")) { confirmation = .clear }.disabled(!model.canClear)
             Button(saveTitle) { Task { await model.save() } }.disabled(!model.canSave)
         }
     }

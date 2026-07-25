@@ -4,7 +4,7 @@ extension ImportEntrySheetView {
     var singleFileFooter: some View {
         HStack {
             Spacer()
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button(previewModel.singleFilePrimaryActionTitle) {

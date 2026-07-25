@@ -24,7 +24,7 @@ extension MainRepositoryDetailPane {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if multiSelectionSummary.isUpdating {
-                Label("Updating selection...", systemImage: "arrow.triangle.2.circlepath")
+                Label(L10n.string("Updating selection..."), systemImage: "arrow.triangle.2.circlepath")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -69,7 +69,7 @@ extension MainRepositoryDetailPane {
     private var multiSelectionFileTypes: some View {
         if !multiSelectionSummary.fileTypeRows.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("File types")
+                Text(L10n.string("File types"))
                     .font(.callout.weight(.semibold))
                 ForEach(multiSelectionSummary.fileTypeRows) { row in
                     multiSelectionMetadataRow(row.label, row.value)

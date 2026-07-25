@@ -11,15 +11,15 @@ struct SyncConflictReplaceConfirmationPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Divider()
-            Label("Confirm Replace", systemImage: "lock.shield")
+            Label(L10n.string("Confirm Replace"), systemImage: "lock.shield")
                 .font(.headline)
             if let replacePlan = preview.replacePlan {
                 replacePlanSummary(replacePlan)
             } else {
-                Text("Core did not return a replace plan.")
+                Text(L10n.string("Core did not return a replace plan."))
                     .foregroundStyle(.orange)
             }
-            Toggle("I understand this will replace the existing file.", isOn: $understandsReplace)
+            Toggle(L10n.string("I understand this will replace the existing file."), isOn: $understandsReplace)
                 .disabled(disabledReason != nil || isConfirmed)
                 .accessibilityHint(L10n.string("Required before the replace plan can be confirmed."))
             confirmationStatus
@@ -48,7 +48,7 @@ struct SyncConflictReplaceConfirmationPanel: View {
                 ("Recovery note", plan.recoveryNote)
             ])
             if !preview.hasRecoverableOldVersion {
-                Label("Replace requires Trash or a Core safety backup.", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Replace requires Trash or a Core safety backup."), systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
             }
         }
@@ -57,13 +57,13 @@ struct SyncConflictReplaceConfirmationPanel: View {
     @ViewBuilder
     private var confirmationStatus: some View {
         if isConfirmed {
-            Label("Replace plan confirmed for this preview token.", systemImage: "checkmark.circle")
+            Label(L10n.string("Replace plan confirmed for this preview token."), systemImage: "checkmark.circle")
                 .foregroundStyle(.green)
         } else if let disabledReason {
             Label(disabledReason, systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
         } else {
-            Text("Review the file, DB, backup and change log impact before applying.")
+            Text(L10n.string("Review the file, DB, backup and change log impact before applying."))
                 .foregroundStyle(.secondary)
         }
     }

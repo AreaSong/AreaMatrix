@@ -61,13 +61,13 @@ extension AITagSuggestionsPanel {
 
     func editRow(_ draft: AITagSuggestionEditDraft) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            TextField("Display name", text: Binding(
+            TextField(L10n.string("Display name"), text: Binding(
                 get: { draft.displayName },
                 set: { onEditDisplayName(draft.suggestionID, $0) }
             ))
             HStack {
-                TextField("Slug", text: Binding(get: { draft.slug }, set: { onEditSlug(draft.suggestionID, $0) }))
-                Button("Regenerate") { onRegenerateSlug(draft.suggestionID) }
+                TextField(L10n.string("Slug"), text: Binding(get: { draft.slug }, set: { onEditSlug(draft.suggestionID, $0) }))
+                Button(L10n.string("Regenerate")) { onRegenerateSlug(draft.suggestionID) }
             }
             if draft.status.preventsApply {
                 Text(draft.status.message ?? draft.status.label)
@@ -80,7 +80,7 @@ extension AITagSuggestionsPanel {
     func applySummary(_ report: AiTagSuggestionApplyReport) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Applied \(report.appliedCount), skipped \(report.skippedCount), failed \(report.failedCount).")
-            if report.failedCount > 0 { Button("Retry apply", action: onRetryFailed) }
+            if report.failedCount > 0 { Button(L10n.string("Retry apply"), action: onRetryFailed) }
         }
         .font(.caption)
     }

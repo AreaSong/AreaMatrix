@@ -5,7 +5,7 @@ struct ImportSingleFileStorageModeSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Picker("存储模式", selection: $selectedMode) {
+            Picker(L10n.string("存储模式"), selection: $selectedMode) {
                 ForEach(ImportSingleFileStorageMode.allCases) { mode in
                     Text(mode.displayName).tag(mode)
                 }
@@ -57,10 +57,10 @@ struct ImportSingleFileICloudActionsSection: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Button("Download & retry", action: onDownloadAndRetry)
+            Button(L10n.string("Download & retry"), action: onDownloadAndRetry)
                 .disabled(isDownloading)
 
-            Button("Switch to local repo...", action: onSwitchToLocalRepo)
+            Button(L10n.string("Switch to local repo..."), action: onSwitchToLocalRepo)
         }
     }
 }
@@ -70,7 +70,7 @@ struct ImportSingleFileRetryPreviewSection: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Button("Retry preview", action: onRetryPreview)
+            Button(L10n.string("Retry preview"), action: onRetryPreview)
         }
     }
 }
@@ -85,7 +85,7 @@ struct ImportSingleFileImportStatusSection: View {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
-                    Text(status.message ?? "正在导入...")
+                    Text(status.message ?? L10n.string("正在导入..."))
                 }
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -147,7 +147,7 @@ struct ImportSingleFileConflictSection: View {
                     .foregroundStyle(.secondary)
                 conflictDetails
             } else {
-                Text("冲突状态")
+                Text(L10n.string("冲突状态"))
                     .font(.headline)
             }
 
@@ -167,7 +167,7 @@ struct ImportSingleFileConflictSection: View {
 
     private var duplicateResolutionOptions: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Picker("重复处理策略", selection: $duplicateResolution) {
+            Picker(L10n.string("重复处理策略"), selection: $duplicateResolution) {
                 ForEach(duplicateStrategies) { strategy in
                     Text(strategy.title).tag(strategy)
                 }
@@ -184,7 +184,7 @@ struct ImportSingleFileConflictSection: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("无法生成可用文件名")
+                    Text(L10n.string("无法生成可用文件名"))
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
@@ -194,7 +194,7 @@ struct ImportSingleFileConflictSection: View {
             }
 
             if case let .duplicate(existingPath) = result.conflict {
-                Button("Show existing file") {
+                Button(L10n.string("Show existing file")) {
                     onShowExistingFile(existingPath)
                 }
                 .help(existingPath)
@@ -204,7 +204,7 @@ struct ImportSingleFileConflictSection: View {
 
     private var nameConflictResolutionOptions: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Picker("处理选项", selection: $nameConflictResolution) {
+            Picker(L10n.string("处理选项"), selection: $nameConflictResolution) {
                 Text(ImportSingleFileNameConflictResolution.keepBoth.title)
                     .tag(ImportSingleFileNameConflictResolution.keepBoth)
                 Text(ImportSingleFileNameConflictResolution.renameIncoming(resolvedNameConflictFilename).title)
@@ -213,7 +213,7 @@ struct ImportSingleFileConflictSection: View {
                     Text(ImportSingleFileNameConflictResolution.replace.title)
                         .tag(ImportSingleFileNameConflictResolution.replace)
                 } else if replaceOptionVisibility == .disabled {
-                    Text("Replace requires system Trash")
+                    Text(L10n.string("Replace requires system Trash"))
                         .tag(ImportSingleFileNameConflictResolution.replace)
                 }
             }
@@ -226,7 +226,7 @@ struct ImportSingleFileConflictSection: View {
             nameConflictResolutionDetails
 
             if case let .name(existingPath) = result.conflict {
-                Button("Show existing file") {
+                Button(L10n.string("Show existing file")) {
                     onShowExistingFile(existingPath)
                 }
                 .help(existingPath)
@@ -243,12 +243,12 @@ struct ImportSingleFileConflictSection: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                Text("无法生成可用文件名")
+                Text(L10n.string("无法生成可用文件名"))
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
         case let .renameIncoming(name):
-            TextField("新文件名", text: Binding(
+            TextField(L10n.string("新文件名"), text: Binding(
                 get: { name },
                 set: onRenameNameConflictFile
             ))
@@ -283,15 +283,15 @@ struct ImportSingleFileConflictSection: View {
             EmptyView()
         case .enabled:
             VStack(alignment: .leading, spacing: 6) {
-                Text("替换操作需要二次确认。旧文件不会直接删除，会移到废纸篓。")
+                Text(L10n.string("替换操作需要二次确认。旧文件不会直接删除，会移到废纸篓。"))
                     .font(.caption)
                     .foregroundStyle(.orange)
                 Button(duplicateReplaceActionTitle, action: onBeginReplaceConfirmation)
                     .disabled(isReplaceConfirmed)
-                    .help("Replace 每次必须先二次确认")
+                    .help(L10n.string("Replace 每次必须先二次确认"))
             }
         case .disabled:
-            Text("Replace requires system Trash")
+            Text(L10n.string("Replace requires system Trash"))
                 .font(.caption)
                 .foregroundStyle(.orange)
         }
@@ -304,15 +304,15 @@ struct ImportSingleFileConflictSection: View {
             EmptyView()
         case .enabled:
             VStack(alignment: .leading, spacing: 6) {
-                Text("替换操作需要二次确认。旧文件不会直接删除，会移到废纸篓。")
+                Text(L10n.string("替换操作需要二次确认。旧文件不会直接删除，会移到废纸篓。"))
                     .font(.caption)
                     .foregroundStyle(.orange)
                 Button(duplicateReplaceActionTitle, action: onBeginReplaceConfirmation)
                     .disabled(isReplaceConfirmed)
-                    .help("Replace 每次必须先二次确认")
+                    .help(L10n.string("Replace 每次必须先二次确认"))
             }
         case .disabled:
-            Text("Replace requires system Trash")
+            Text(L10n.string("Replace requires system Trash"))
                 .font(.caption)
                 .foregroundStyle(.orange)
         }
@@ -323,44 +323,44 @@ struct ImportSingleFileConflictSection: View {
         switch result.conflict {
         case let .duplicate(existingPath):
             VStack(alignment: .leading, spacing: 4) {
-                LabeledContent("已有文件", value: existingPath)
+                LabeledContent(L10n.string("已有文件"), value: existingPath)
                 if let sourceFilename {
-                    LabeledContent("当前文件", value: sourceFilename)
+                    LabeledContent(L10n.string("当前文件"), value: sourceFilename)
                 }
                 if let sourcePath {
-                    LabeledContent("来源", value: sourcePath)
+                    LabeledContent(L10n.string("来源"), value: sourcePath)
                 }
             }
             .font(.caption)
         case let .name(path):
             VStack(alignment: .leading, spacing: 4) {
-                LabeledContent("已存在", value: path)
+                LabeledContent(L10n.string("已存在"), value: path)
                 if let size = existingFile?.sizeBytes {
-                    LabeledContent("已有文件大小", value: ByteCountFormatter.string(
+                    LabeledContent(L10n.string("已有文件大小"), value: ByteCountFormatter.string(
                         fromByteCount: size,
                         countStyle: .file
                     ))
                 }
                 if let updatedAt = existingFile?.updatedAt {
-                    LabeledContent("已有文件修改时间", value: DateFormatter.localizedString(
+                    LabeledContent(L10n.string("已有文件修改时间"), value: DateFormatter.localizedString(
                         from: Date(timeIntervalSince1970: TimeInterval(updatedAt)),
                         dateStyle: .medium,
                         timeStyle: .short
                     ))
                 }
                 if let sourceFilename {
-                    LabeledContent("当前文件", value: sourceFilename)
+                    LabeledContent(L10n.string("当前文件"), value: sourceFilename)
                 }
                 if let sourcePath {
-                    LabeledContent("来源", value: sourcePath)
+                    LabeledContent(L10n.string("来源"), value: sourcePath)
                 }
                 if let sourceSize = result.sourceSizeBytes {
-                    LabeledContent("当前文件大小", value: ByteCountFormatter.string(
+                    LabeledContent(L10n.string("当前文件大小"), value: ByteCountFormatter.string(
                         fromByteCount: sourceSize,
                         countStyle: .file
                     ))
                 }
-                LabeledContent("hash 结论", value: L10n.string("import.conflict.sameNameDifferentContent"))
+                LabeledContent(L10n.string("hash 结论"), value: L10n.string("import.conflict.sameNameDifferentContent"))
             }
             .font(.caption)
         case .none, .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,

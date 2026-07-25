@@ -19,7 +19,7 @@ struct DetailTagSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             tagHeader
-            Text("分类决定“放哪儿”，标签决定“怎么横向组织”。")
+            Text(L10n.string("分类决定“放哪儿”，标签决定“怎么横向组织”。"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if let failure = state.failure {
@@ -87,7 +87,7 @@ struct DetailTagSection: View {
 
     private var tagHeader: some View {
         HStack(spacing: 8) {
-            Text("Tags")
+            Text(L10n.string("Tags"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             tagChips
@@ -104,11 +104,11 @@ struct DetailTagSection: View {
                     }
                 }
             } else if state.isLoading {
-                Text("Loading tags...")
+                Text(L10n.string("Loading tags..."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
-                Text("No tags yet")
+                Text(L10n.string("No tags yet"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -116,7 +116,7 @@ struct DetailTagSection: View {
     }
 
     private var addButton: some View {
-        Button("+ Add...") {
+        Button(L10n.string("+ Add...")) {
             isPopoverPresented = true
             if state.tagSet == nil { tagActions.onLoadTags() }
         }
@@ -163,7 +163,7 @@ struct DetailTagSection: View {
         HStack(spacing: 8) {
             Label(mapping.userMessage, systemImage: "exclamationmark.triangle")
                 .font(.callout)
-            Button("Retry", action: tagActions.onRetryTags)
+            Button(L10n.string("Retry"), action: tagActions.onRetryTags)
         }
         .foregroundStyle(.secondary)
     }
@@ -179,8 +179,8 @@ struct DetailTagSection: View {
             ) {
                 HStack(spacing: 8) {
                     Label(undoToast.message, systemImage: "arrow.uturn.backward.circle")
-                    Button("Undo", action: tagActions.onUndoTagChange)
-                    Button("Dismiss", action: tagActions.onDismissTagUndoToast)
+                    Button(L10n.string("Undo"), action: tagActions.onUndoTagChange)
+                    Button(L10n.string("Dismiss"), action: tagActions.onDismissTagUndoToast)
                 }
                 .font(.caption)
             }

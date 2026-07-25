@@ -43,10 +43,10 @@ struct PlatformDifferencesView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Platform capabilities")
+            Text(L10n.string("Platform capabilities"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
-            Text("Capability matrix and binding contract")
+            Text(L10n.string("Capability matrix and binding contract"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -58,7 +58,7 @@ struct PlatformDifferencesView: View {
             PlatformDifferencesKeyValueRow(label: L10n.string("Repository"), value: model.repositoryText)
             PlatformDifferencesKeyValueRow(label: L10n.string("App version"), value: model.appVersion)
             PlatformDifferencesKeyValueRow(label: L10n.string("Core version"), value: coreVersionText)
-            Text("Capability matrix does not replace operation-time permission checks.")
+            Text(L10n.string("Capability matrix does not replace operation-time permission checks."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -66,7 +66,7 @@ struct PlatformDifferencesView: View {
 
     private var targetControls: some View {
         HStack(alignment: .center, spacing: 12) {
-            Picker("Binding target", selection: selectedTargetBinding) {
+            Picker(L10n.string("Binding target"), selection: selectedTargetBinding) {
                 ForEach(BindingTargetPlatformSnapshot.allCases, id: \.self) { targetPlatform in
                     Text(targetPlatform.displayName).tag(targetPlatform)
                 }
@@ -114,7 +114,7 @@ struct PlatformDifferencesView: View {
 
     private func capabilityMatrix(_ capabilities: PlatformCapabilitiesSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Capability matrix")
+            Text(L10n.string("Capability matrix"))
                 .font(.subheadline.weight(.semibold))
             ForEach(capabilities.pageSpecRows) { row in
                 PlatformDifferencesCapabilityRow(row: row)
@@ -144,7 +144,7 @@ struct PlatformDifferencesView: View {
                 )
             })
             missingCapabilityRows(report.missingCapabilities)
-            Text("Read-only contract check. No repository files are opened or modified.")
+            Text(L10n.string("Read-only contract check. No repository files are opened or modified."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -163,7 +163,7 @@ struct PlatformDifferencesView: View {
     @ViewBuilder
     private func missingCapabilityRows(_ rows: [BindingMissingCapabilitySnapshot]) -> some View {
         if rows.isEmpty {
-            Label("No missing binding capabilities for this target.", systemImage: "checkmark.circle")
+            Label(L10n.string("No missing binding capabilities for this target."), systemImage: "checkmark.circle")
                 .font(.callout)
                 .foregroundStyle(.green)
         } else {
@@ -181,16 +181,16 @@ struct PlatformDifferencesView: View {
     private var actions: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Button("Open repository settings", action: onOpenRepositorySettings)
+                Button(L10n.string("Open repository settings"), action: onOpenRepositorySettings)
                     .accessibilityIdentifier("platform-differences-open-repository-settings")
-                Button("Export diagnostics") {}
+                Button(L10n.string("Export diagnostics")) {}
                     .disabled(true)
-                    .help("Diagnostics are not available on this platform yet.")
+                    .help(L10n.string("Diagnostics are not available on this platform yet."))
                     .accessibilityIdentifier("platform-differences-export-diagnostics")
-                Button("Close", action: onClose)
+                Button(L10n.string("Close"), action: onClose)
                     .accessibilityIdentifier("platform-differences-close")
             }
-            Text("Diagnostics are not available on this platform yet.")
+            Text(L10n.string("Diagnostics are not available on this platform yet."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

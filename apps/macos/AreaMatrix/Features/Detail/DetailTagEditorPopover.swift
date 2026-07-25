@@ -14,7 +14,7 @@ struct TagEditorPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TextField("Search or create tag...", text: $query)
+            TextField(L10n.string("Search or create tag..."), text: $query)
                 .textFieldStyle(.roundedBorder)
                 .focused($isInputFocused)
                 .disabled(disabledReason != nil)
@@ -28,12 +28,12 @@ struct TagEditorPopover: View {
             popoverStatus
             tagList
             HStack {
-                Button("Suggestions...", action: onOpenSuggestions)
+                Button(L10n.string("Suggestions..."), action: onOpenSuggestions)
                     .accessibilityIdentifier("tag-suggestions-tag-suggestions-core-open-tag-suggestions")
-                Button("AI suggestions...", action: onOpenAISuggestions)
+                Button(L10n.string("AI suggestions..."), action: onOpenAISuggestions)
                     .accessibilityIdentifier("ai-tag-suggestions-ai-tags-suggestion-open-ai-tag-suggestions")
                 Spacer()
-                Button("Close", action: onClose)
+                Button(L10n.string("Close"), action: onClose)
             }
         }
         .padding(12)
@@ -44,13 +44,13 @@ struct TagEditorPopover: View {
     @ViewBuilder
     private var popoverStatus: some View {
         if state.isLoading {
-            Text("Loading tags...")
+            Text(L10n.string("Loading tags..."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else if let failure = state.failure {
             HStack(spacing: 8) {
                 Text(failure.mapping.userMessage)
-                Button("Retry", action: onRetry)
+                Button(L10n.string("Retry"), action: onRetry)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -138,7 +138,7 @@ private struct TagSuggestionRow: View {
                 Text(tag.displayName)
                 Spacer()
                 if tag.selected {
-                    Text("已添加")
+                    Text(L10n.string("已添加"))
                         .foregroundStyle(.secondary)
                 } else {
                     Text("\(tag.fileCount)")

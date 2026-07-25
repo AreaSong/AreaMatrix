@@ -57,28 +57,28 @@ struct SavedSearchSheetRouteView: View {
 
     var body: some View {
         MainFileActionSheetContainer(title: L10n.string("Save Search"), pageID: "saved-search") {
-            Text("Save the current query as a Smart List. Files are not moved or duplicated.")
+            Text(L10n.string("Save the current query as a Smart List. Files are not moved or duplicated."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             savedSearchErrorView
-            TextField("Name", text: $model.name)
+            TextField(L10n.string("Name"), text: $model.name)
                 .textFieldStyle(.roundedBorder)
                 .disabled(model.isSaving)
                 .accessibilityIdentifier("saved-search-saved-search-name")
-            Picker("Icon", selection: $model.icon) {
+            Picker(L10n.string("Icon"), selection: $model.icon) {
                 ForEach(SavedSearchSheetModel.icons, id: \.self) { icon in
                     Label(icon, systemImage: icon).tag(icon)
                 }
             }
             .disabled(model.isSaving)
-            Toggle("Pin to sidebar", isOn: $model.pinned)
+            Toggle(L10n.string("Pin to sidebar"), isOn: $model.pinned)
                 .disabled(model.isSaving)
             SavedSearchPreview(model: model)
             HStack {
-                Button("Edit filters", action: onEditFilters)
+                Button(L10n.string("Edit filters"), action: onEditFilters)
                     .disabled(model.isSaving)
                 Spacer()
-                Button("Cancel") {
+                Button(L10n.string("Cancel")) {
                     if model.isSaving {
                         showSavingCancelPrompt = true
                     } else {
@@ -98,7 +98,7 @@ struct SavedSearchSheetRouteView: View {
             isPresented: $showSavingCancelPrompt,
             titleVisibility: .visible
         ) {
-            Button("Continue Saving", role: .cancel) {}
+            Button(L10n.string("Continue Saving"), role: .cancel) {}
         }
         .task {
             await loadExistingSavedSearches()
@@ -119,7 +119,7 @@ struct SavedSearchSheetRouteView: View {
                     .foregroundStyle(.red)
                     .accessibilityIdentifier("saved-search-save-error")
                 Spacer()
-                Button("Retry") {
+                Button(L10n.string("Retry")) {
                     Task { await save() }
                 }
                 .disabled(!model.showsRetry || model.validationMessage != nil)

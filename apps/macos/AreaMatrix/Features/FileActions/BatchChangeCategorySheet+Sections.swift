@@ -33,7 +33,7 @@ extension BatchChangeCategorySheet {
                 searchText: $categorySearchText,
                 isDisabled: isApplying || disabledReason != nil
             )
-            Button("Create new category...") {
+            Button(L10n.string("Create new category...")) {
                 onCreateNewCategory(BatchChangeCategoryNewCategoryHandoff(
                     selectedFileIDs: fileIDs,
                     currentTargetCategory: targetCategory
@@ -41,9 +41,9 @@ extension BatchChangeCategorySheet {
             }
             .disabled(isApplying || disabledReason != nil)
             .accessibilityIdentifier("batch-change-category-create-new-category")
-            Toggle("Move files into the category folder", isOn: $moveRepoOwnedFiles)
+            Toggle(L10n.string("Move files into the category folder"), isOn: $moveRepoOwnedFiles)
                 .disabled(isApplying || disabledReason != nil)
-            Text("When off, only AreaMatrix metadata changes. Files stay in their current locations.")
+            Text(L10n.string("When off, only AreaMatrix metadata changes. Files stay in their current locations."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -52,14 +52,14 @@ extension BatchChangeCategorySheet {
     @ViewBuilder
     var previewSection: some View {
         if previewState.isLoading {
-            Label("Previewing changes...", systemImage: "arrow.triangle.2.circlepath")
+            Label(L10n.string("Previewing changes..."), systemImage: "arrow.triangle.2.circlepath")
                 .foregroundStyle(.secondary)
         }
         if let failure = previewState.failure {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Label(failure.userMessage, systemImage: "exclamationmark.triangle")
                 Spacer()
-                Button("Retry") { Task { await refreshPreview() } }
+                Button(L10n.string("Retry")) { Task { await refreshPreview() } }
             }
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -120,7 +120,7 @@ extension BatchChangeCategorySheet {
 
     @ViewBuilder
     func failureResultDetails(for report: BatchCategoryChangeReportSnapshot) -> some View {
-        Button("View details") { showsDetails.toggle() }
+        Button(L10n.string("View details")) { showsDetails.toggle() }
         if showsDetails {
             ForEach(report.itemResults.filter { $0.status == .failed }) { item in
                 Text(
@@ -138,10 +138,10 @@ extension BatchChangeCategorySheet {
 
     var actionButtons: some View {
         HStack {
-            Button("Preview") { Task { await refreshPreview(expandDetails: true) } }
+            Button(L10n.string("Preview")) { Task { await refreshPreview(expandDetails: true) } }
                 .disabled(isApplying || targetCategory.isEmpty || disabledReason != nil)
             Spacer()
-            Button("Cancel", action: onClose)
+            Button(L10n.string("Cancel"), action: onClose)
                 .keyboardShortcut(.cancelAction)
                 .disabled(isApplying)
             Button(isApplying ? L10n.string("Applying...") : L10n.string("Apply")) {

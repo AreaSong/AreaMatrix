@@ -25,7 +25,7 @@ struct ImportFolderConflictSection: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Review folder conflicts")
+                Text(L10n.string("Review folder conflicts"))
                     .font(.headline)
                 Text(conflictSummary)
                     .font(.callout)
@@ -40,7 +40,7 @@ struct ImportFolderConflictSection: View {
 
     private var iCloudActions: some View {
         HStack(spacing: 10) {
-            Button("Download & retry scan") {
+            Button(L10n.string("Download & retry scan")) {
                 Task {
                     let didRetry = await model.downloadICloudPlaceholdersAndRetry()
                     if didRetry {
@@ -49,7 +49,7 @@ struct ImportFolderConflictSection: View {
                 }
             }
             .disabled(model.isICloudDownloading || model.rows.contains { $0.status.isImporting })
-            Button("Switch to local repo...", action: onSwitchToLocalRepo)
+            Button(L10n.string("Switch to local repo..."), action: onSwitchToLocalRepo)
                 .disabled(model.rows.contains { $0.status.isImporting })
             if model.isICloudDownloading {
                 ProgressView()
@@ -60,25 +60,25 @@ struct ImportFolderConflictSection: View {
 
     private var conflictsTable: some View {
         Table(model.rows.filter(\.isConflictReviewRow)) {
-            TableColumn("File") { row in
+            TableColumn(L10n.string("File")) { row in
                 Text(row.originalName)
             }
-            TableColumn("Conflict") { row in
+            TableColumn(L10n.string("Conflict")) { row in
                 Text(row.conflictLabel)
             }
-            TableColumn("Existing item") { row in
+            TableColumn(L10n.string("Existing item")) { row in
                 Text(row.existingConflictPath ?? "-")
             }
-            TableColumn("Incoming resolution") { row in
+            TableColumn(L10n.string("Incoming resolution")) { row in
                 incomingResolutionView(for: row)
             }
-            TableColumn("Strategy") { row in
+            TableColumn(L10n.string("Strategy")) { row in
                 strategyView(for: row)
             }
-            TableColumn("Status") { row in
+            TableColumn(L10n.string("Status")) { row in
                 Text(row.status.detail ?? localizer.resolve(row.status.tagMessage))
             }
-            TableColumn("Action") { row in
+            TableColumn(L10n.string("Action")) { row in
                 actionView(for: row)
             }
         }
@@ -100,7 +100,7 @@ struct ImportFolderConflictSection: View {
         case let .nameConflict(_, resolution):
             switch resolution {
             case let .renameIncoming(name):
-                TextField("Incoming filename", text: Binding(
+                TextField(L10n.string("Incoming filename"), text: Binding(
                     get: { name },
                     set: { model.renameIncomingFile(for: row.id, to: $0) }
                 ))
@@ -122,16 +122,16 @@ struct ImportFolderConflictSection: View {
         case .nameConflict:
             nameConflictStrategyPicker(for: row)
         case .iCloudPlaceholder, .skippedICloud:
-            Text("Download required")
+            Text(L10n.string("Download required"))
         case .blocked:
-            Text("Resolve required")
+            Text(L10n.string("Resolve required"))
         case .loading, .ready, .importing, .skippedDuplicate, .imported, .error:
-            Text("-")
+            Text(L10n.string("-"))
         }
     }
 
     private func duplicateStrategyPicker(for row: ImportFolderPreviewRow) -> some View {
-        Picker("Strategy", selection: Binding(
+        Picker(L10n.string("Strategy"), selection: Binding(
             get: { row.duplicateResolution ?? .skip },
             set: { model.updateDuplicateStrategy(for: row.id, strategy: $0) }
         )) {
@@ -139,7 +139,7 @@ struct ImportFolderConflictSection: View {
                 Text(strategy.title).tag(strategy)
             }
             if model.replaceOptionVisibility == .disabled {
-                Text("Replace requires system Trash").tag(ImportBatchDuplicateResolutionStrategy.replace)
+                Text(L10n.string("Replace requires system Trash")).tag(ImportBatchDuplicateResolutionStrategy.replace)
             }
         }
         .labelsHidden()
@@ -148,16 +148,16 @@ struct ImportFolderConflictSection: View {
     }
 
     private func nameConflictStrategyPicker(for row: ImportFolderPreviewRow) -> some View {
-        Picker("Strategy", selection: Binding(
+        Picker(L10n.string("Strategy"), selection: Binding(
             get: { row.nameConflictResolution ?? .keepBoth },
             set: { model.updateNameConflictResolution(for: row.id, resolution: $0) }
         )) {
-            Text("Keep both (auto-number)").tag(ImportBatchNameConflictResolution.keepBoth)
-            Text("Rename incoming").tag(ImportBatchNameConflictResolution.renameIncoming(row.resolvedIncomingName))
+            Text(L10n.string("Keep both (auto-number)")).tag(ImportBatchNameConflictResolution.keepBoth)
+            Text(L10n.string("Rename incoming")).tag(ImportBatchNameConflictResolution.renameIncoming(row.resolvedIncomingName))
             if showsReplaceOption {
-                Text("Replace").tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
+                Text(L10n.string("Replace")).tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
             } else if model.replaceOptionVisibility == .disabled {
-                Text("Replace requires system Trash").tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
+                Text(L10n.string("Replace requires system Trash")).tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
             }
         }
         .labelsHidden()
@@ -172,7 +172,7 @@ struct ImportFolderConflictSection: View {
             if strategy == .replace {
                 replaceButton(row: row, isConfirmed: isReplaceConfirmed)
             } else {
-                Button("Show existing file") {
+                Button(L10n.string("Show existing file")) {
                     onShowExistingFile(existingPath)
                 }
                 .disabled(model.rows.contains { $0.status.isImporting })
@@ -183,19 +183,19 @@ struct ImportFolderConflictSection: View {
             case let .replace(isConfirmed):
                 replaceButton(row: row, isConfirmed: isConfirmed)
             case .renameIncoming:
-                Text("Rename incoming...")
+                Text(L10n.string("Rename incoming..."))
             case .keepBoth:
-                Text("Auto-number incoming")
+                Text(L10n.string("Auto-number incoming"))
             }
         case .iCloudPlaceholder:
-            Button("Import ready only") {
+            Button(L10n.string("Import ready only")) {
                 model.markICloudPlaceholderPending(rowID: row.id)
             }
             .disabled(model.rows.contains { $0.status.isImporting })
         case .blocked:
-            Text("Resolve required")
+            Text(L10n.string("Resolve required"))
         case .loading, .ready, .importing, .skippedDuplicate, .skippedICloud, .imported, .error:
-            Text("-")
+            Text(L10n.string("-"))
         }
     }
 

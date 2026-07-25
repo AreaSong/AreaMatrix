@@ -146,8 +146,8 @@ extension MainRepositoryContentView {
             ),
             titleVisibility: .visible
         ) {
-            Button("Cancel", role: .cancel, action: fileListModel.cancelCurrentListDiagnostics)
-            Button("Collect diagnostics") {
+            Button(L10n.string("Cancel"), role: .cancel, action: fileListModel.cancelCurrentListDiagnostics)
+            Button(L10n.string("Collect diagnostics")) {
                 Task { await fileListModel.collectCurrentListDiagnostics() }
             }
         } message: {
@@ -165,16 +165,16 @@ extension MainRepositoryContentView {
                 ),
                 titleVisibility: .visible
             ) {
-                Button("Cancel", role: .cancel, action: cancelPendingSummarySelectionExit)
-                Button("Discard changes", role: .destructive) {
+                Button(L10n.string("Cancel"), role: .cancel, action: cancelPendingSummarySelectionExit)
+                Button(L10n.string("Discard changes"), role: .destructive) {
                     summaryExitController.discardChanges()
                     finishPendingSummarySelectionExit()
                 }
-                Button("Save changes") {
+                Button(L10n.string("Save changes")) {
                     Task { await saveAndFinishPendingSummarySelectionExit() }
                 }
             } message: {
-                Text("Save or discard the AI summary draft before switching files.")
+                Text(L10n.string("Save or discard the AI summary draft before switching files."))
             }
     }
 

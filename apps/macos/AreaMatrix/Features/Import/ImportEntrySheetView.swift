@@ -256,7 +256,7 @@ extension ImportEntrySheetView {
             }
             if batchPreviewModel.showsRetryPreview {
                 HStack(spacing: 10) {
-                    Button("Retry preview") {
+                    Button(L10n.string("Retry preview")) {
                         Task { await batchPreviewModel.retryPreview() }
                     }
                 }

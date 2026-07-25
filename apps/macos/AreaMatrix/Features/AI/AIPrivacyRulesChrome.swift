@@ -5,7 +5,7 @@ struct AIPrivacyRulesHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("AI Privacy Rules")
+            Text(L10n.string("AI Privacy Rules"))
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
             Text(repoPath)
@@ -45,16 +45,16 @@ struct AIPrivacyRulesRemoteGateSection: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {
-                Button("Allow remote AI after provider consent", action: onAllowRemoteGate)
+                Button(L10n.string("Allow remote AI after provider consent"), action: onAllowRemoteGate)
                     .disabled(allowRemoteGateDisabled)
                     .accessibilityIdentifier(
                         "ai-privacy-rules-ai-privacy-rules-core-allow-remote-ai-after-provider-consent"
                     )
-                Button("Block remote AI with privacy gate", action: onBlockRemoteGate)
+                Button(L10n.string("Block remote AI with privacy gate"), action: onBlockRemoteGate)
                     .disabled(blockRemoteGateDisabled)
                     .accessibilityIdentifier("ai-privacy-rules-ai-privacy-rules-core-block-remote-ai-privacy-gate")
             }
-            Button("Configure remote AI", action: onConfigureRemoteAI)
+            Button(L10n.string("Configure remote AI"), action: onConfigureRemoteAI)
                 .accessibilityIdentifier("ai-privacy-rules-remote-provider-config-core-configure-remote-ai")
         }
     }
@@ -72,7 +72,7 @@ struct AIPrivacyRulesFooter: View {
                     .accessibilityLabel(L10n.string("Saving AI privacy rules"))
             }
             Spacer()
-            Button("Close", action: onClose)
+            Button(L10n.string("Close"), action: onClose)
         }
         .padding(16)
     }

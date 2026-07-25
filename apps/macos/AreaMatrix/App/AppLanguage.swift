@@ -257,8 +257,9 @@ final class AppLanguageRuntime: @unchecked Sendable {
               let localizedBundle = Bundle(path: path)
         else { return nil }
 
-        let value = localizedBundle.localizedString(forKey: key, value: nil, table: table)
-        return value == key ? nil : value
+        let missingMarker = "___AREAMATRIX_MISSING_L10N_MARKER___"
+        let value = localizedBundle.localizedString(forKey: key, value: missingMarker, table: table)
+        return value == missingMarker ? nil : value
     }
 }
 

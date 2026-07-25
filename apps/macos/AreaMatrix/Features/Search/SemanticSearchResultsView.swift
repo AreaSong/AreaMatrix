@@ -104,47 +104,47 @@ private struct SemanticSearchGroupView: View {
 
     private var table: some View {
         Table(rows, selection: selectedFileIDs) {
-            TableColumn("Name") { row in
+            TableColumn(L10n.string("Name")) { row in
                 Text(row.file.currentName)
                     .lineLimit(1)
             }
-            TableColumn("Path") { row in
+            TableColumn(L10n.string("Path")) { row in
                 Text(row.categoryPath)
                     .lineLimit(1)
                     .foregroundStyle(.secondary)
             }
-            TableColumn("Category") { row in
+            TableColumn(L10n.string("Category")) { row in
                 Text(row.file.category)
                     .lineLimit(1)
             }
-            TableColumn("Match source") { row in
+            TableColumn(L10n.string("Match source")) { row in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(localizer.resolve(row.matchSource))
                     if row.alsoMatchedNormalSearch {
-                        Text("Also matched normal search")
+                        Text(L10n.string("Also matched normal search"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     if row.isFoldedDuplicate {
-                        Text("Duplicate normal match")
+                        Text(L10n.string("Duplicate normal match"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            TableColumn("Relevance") { row in
+            TableColumn(L10n.string("Relevance")) { row in
                 Text(row.relevance)
                     .monospacedDigit()
             }
-            TableColumn("Matched reason") { row in
-                DisclosureGroup("Why this matched") {
+            TableColumn(L10n.string("Matched reason")) { row in
+                DisclosureGroup(L10n.string("Why this matched")) {
                     Text(row.whyThisMatched.resolve(using: localizer))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
                 }
             }
-            TableColumn("Modified") { row in
+            TableColumn(L10n.string("Modified")) { row in
                 Text(row.modified)
                     .monospacedDigit()
             }
@@ -163,7 +163,7 @@ private struct SemanticSearchGroupView: View {
             HStack(spacing: 10) {
                 Text(pageError.userMessage)
                     .foregroundStyle(.red)
-                Button("Retry page", action: onRetryPage)
+                Button(L10n.string("Retry page"), action: onRetryPage)
             }
             .font(.callout)
         } else if loadingMore {

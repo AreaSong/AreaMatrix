@@ -105,13 +105,13 @@ extension MainRepositoryDetailPane {
             ),
             titleVisibility: .visible
         ) {
-            Button("Cancel", role: .cancel) { pendingSummaryExitTab = nil }
-            Button("Discard changes", role: .destructive) {
+            Button(L10n.string("Cancel"), role: .cancel) { pendingSummaryExitTab = nil }
+            Button(L10n.string("Discard changes"), role: .destructive) {
                 summaryExitController.discardChanges()
                 finishPendingSummaryExit()
             }
-            Button("Save changes") { Task { await saveAndFinishPendingSummaryExit() } }
-        } message: { Text("Save or discard the AI summary draft before leaving this file summary.") }
+            Button(L10n.string("Save changes")) { Task { await saveAndFinishPendingSummaryExit() } }
+        } message: { Text(L10n.string("Save or discard the AI summary draft before leaving this file summary.")) }
     }
 
     private func selectedFileDetailPane(_ detail: FileEntrySnapshot) -> some View {

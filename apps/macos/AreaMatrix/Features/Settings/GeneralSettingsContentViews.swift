@@ -93,7 +93,7 @@ struct GeneralSettingsLoadedContent: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 if model.hasRetryableSave {
-                    Button("Retry save") {
+                    Button(L10n.string("Retry save")) {
                         Task {
                             await model.retrySave()
                         }
@@ -105,14 +105,14 @@ struct GeneralSettingsLoadedContent: View {
 
     private var storageSection: some View {
         SettingsFormSection(title: L10n.string("settings.general.section.storage")) {
-            Picker("Default storage mode", selection: storageSelection) {
+            Picker(L10n.string("Default storage mode"), selection: storageSelection) {
                 ForEach(GeneralSettingsStorageMode.allCases) { mode in
                     Text(mode.label).tag(mode)
                 }
             }
             .pickerStyle(.radioGroup)
             .disabled(writesDisabled)
-            Text("导入时仍可在 ImportSheet 临时更改。")
+            Text(L10n.string("导入时仍可在 ImportSheet 临时更改。"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -120,13 +120,13 @@ struct GeneralSettingsLoadedContent: View {
 
     private var overviewSection: some View {
         SettingsFormSection(title: L10n.string("settings.general.section.overview")) {
-            Picker("Repository overview output", selection: overviewSelection) {
-                Text("仅保存在 .areamatrix/generated/").tag(GeneralSettingsOverviewOutput.generatedOnly)
-                Text("同时在根目录生成 AREAMATRIX.md").tag(GeneralSettingsOverviewOutput.rootAreaMatrixFile)
+            Picker(L10n.string("Repository overview output"), selection: overviewSelection) {
+                Text(L10n.string("仅保存在 .areamatrix/generated/")).tag(GeneralSettingsOverviewOutput.generatedOnly)
+                Text(L10n.string("同时在根目录生成 AREAMATRIX.md")).tag(GeneralSettingsOverviewOutput.rootAreaMatrixFile)
             }
             .pickerStyle(.radioGroup)
             .disabled(writesDisabled)
-            Text("AreaMatrix 永远不会覆盖已有 README.md。")
+            Text(L10n.string("AreaMatrix 永远不会覆盖已有 README.md。"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -134,9 +134,9 @@ struct GeneralSettingsLoadedContent: View {
 
     private var ignoreRulesSection: some View {
         SettingsFormSection(title: L10n.string("settings.general.section.ignoreRules")) {
-            Button("Open ignore.yaml", action: model.openIgnoreRules)
+            Button(L10n.string("Open ignore.yaml"), action: model.openIgnoreRules)
                 .disabled(writesDisabled)
-            Text("Missing ignore.yaml can be recreated only inside .areamatrix/.")
+            Text(L10n.string("Missing ignore.yaml can be recreated only inside .areamatrix/."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -161,7 +161,7 @@ struct GeneralSettingsLoadedContent: View {
 
     private var appearanceSection: some View {
         SettingsFormSection(title: L10n.string("settings.general.section.appearance")) {
-            Picker("Appearance", selection: .constant(GeneralSettingsAppearance.system)) {
+            Picker(L10n.string("Appearance"), selection: .constant(GeneralSettingsAppearance.system)) {
                 ForEach(GeneralSettingsAppearance.allCases) { appearance in
                     Text(appearance.label).tag(appearance)
                 }
@@ -174,7 +174,7 @@ struct GeneralSettingsLoadedContent: View {
 
     private var footer: some View {
         HStack {
-            Button("Reset this tab") {
+            Button(L10n.string("Reset this tab")) {
                 Task {
                     await model.resetThisTab()
                 }
@@ -246,7 +246,7 @@ struct RootOverviewConfirmationSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Enable root AREAMATRIX.md?")
+            Text(L10n.string("Enable root AREAMATRIX.md?"))
                 .font(.title2.weight(.semibold))
             Text(
                 """
@@ -261,11 +261,11 @@ struct RootOverviewConfirmationSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
                 if status.requiresFinderRecovery {
-                    Button("Reveal in Finder", action: onRevealInFinder)
+                    Button(L10n.string("Reveal in Finder"), action: onRevealInFinder)
                 }
                 Spacer()
-                Button("Cancel", action: onCancel)
-                Button("Enable root overview", action: onEnable)
+                Button(L10n.string("Cancel"), action: onCancel)
+                Button(L10n.string("Enable root overview"), action: onEnable)
                     .buttonStyle(.borderedProminent)
                     .disabled(!status.canEnableRootOverview)
             }

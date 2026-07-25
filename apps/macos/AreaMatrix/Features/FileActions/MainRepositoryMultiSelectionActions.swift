@@ -39,13 +39,13 @@ struct MainRepositoryMultiSelectionActions: View {
         )
 
         VStack(alignment: .leading, spacing: 10) {
-            Button("Show in Finder") {}
+            Button(L10n.string("Show in Finder")) {}
                 .disabled(true)
-                .help("Open one file at a time")
-            Text("Open one file at a time")
+                .help(L10n.string("Open one file at a time"))
+            Text(L10n.string("Open one file at a time"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Button("Copy Paths") {
+            Button(L10n.string("Copy Paths")) {
                 onCopyPaths(summary.paths)
             }
             .disabled(summary.paths.isEmpty)
@@ -109,7 +109,7 @@ struct MainRepositoryMultiSelectionActions: View {
                 onUndoStateChange: tagActions.onBatchTagUndoStateChange
             )
             if detailErrorMapping != nil {
-                Button("Retry Metadata", action: onRetrySelectedFileDetail)
+                Button(L10n.string("Retry Metadata"), action: onRetrySelectedFileDetail)
             }
         }
     }

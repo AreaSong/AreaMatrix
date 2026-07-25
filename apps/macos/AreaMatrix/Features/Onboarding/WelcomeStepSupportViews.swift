@@ -6,7 +6,7 @@ struct WelcomeTitlebar: View {
     var body: some View {
         ZStack {
             HStack(spacing: 0) {
-                Text("AreaMatrix")
+                Text(L10n.string("AreaMatrix"))
             }
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.tertiary)

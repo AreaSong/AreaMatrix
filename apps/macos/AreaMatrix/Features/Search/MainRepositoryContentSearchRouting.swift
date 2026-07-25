@@ -129,13 +129,13 @@ extension MainRepositoryContentView {
                 isPresented: $searchRoutingState.isSemanticIndexConfirmationPresented,
                 titleVisibility: .visible
             ) {
-                Button("Start index build") {
+                Button(L10n.string("Start index build")) {
                     Task { await fileListModel.buildSemanticIndexForCurrentSearch() }
                 }
                 .disabled(!fileListModel.semanticPrivacyGateState.allowsIndexBuild)
                 semanticIndexRecoveryActions
-                Button("Back") {}
-                Button("Cancel", role: .cancel) {}
+                Button(L10n.string("Back")) {}
+                Button(L10n.string("Cancel"), role: .cancel) {}
             } message: {
                 Text(semanticIndexConfirmationMessage)
             }
@@ -150,10 +150,10 @@ extension MainRepositoryContentView {
                 ),
                 titleVisibility: .visible
             ) {
-                Button("Cancel index build", role: .destructive) {
+                Button(L10n.string("Cancel index build"), role: .destructive) {
                     Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
                 }
-                Button("Keep building", role: .cancel) {
+                Button(L10n.string("Keep building"), role: .cancel) {
                     fileListModel.keepBuildingSemanticIndexForCurrentSearch()
                 }
             } message: {

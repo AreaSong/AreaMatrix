@@ -83,7 +83,7 @@ extension MainWindow {
                     windowCloser.closeKeyWindow()
                 }
             }
-            Button("Cancel", role: .cancel, action: model.cancelSetupQuit)
+            Button(L10n.string("Cancel"), role: .cancel, action: model.cancelSetupQuit)
         } message: {
             Text(setupQuitConfirmationMessage)
         }

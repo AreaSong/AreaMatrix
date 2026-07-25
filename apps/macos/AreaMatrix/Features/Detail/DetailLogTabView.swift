@@ -29,15 +29,15 @@ struct DetailLogTabView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Change Log")
+                Text(L10n.string("Change Log"))
                     .font(.headline)
-                Text("该文件的导入、移动、重命名和外部修改都会记录在这里。")
+                Text(L10n.string("该文件的导入、移动、重命名和外部修改都会记录在这里。"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            Button("Refresh", action: onRefreshChangeLog)
+            Button(L10n.string("Refresh"), action: onRefreshChangeLog)
                 .disabled(
                     detailLogState.isLoading ||
                         externalCreateSyncState.isolated(to: selection.singleFileID).isSyncing
@@ -65,7 +65,7 @@ struct DetailLogTabView: View {
         HStack(spacing: 8) {
             ProgressView()
                 .controlSize(.small)
-            Text("Loading change log")
+            Text(L10n.string("Loading change log"))
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
@@ -74,7 +74,7 @@ struct DetailLogTabView: View {
     @ViewBuilder
     private func loadedState(_ entries: [ChangeLogEntrySnapshot]) -> some View {
         if entries.isEmpty {
-            Text("暂无改动记录")
+            Text(L10n.string("暂无改动记录"))
                 .foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 10) {
@@ -94,7 +94,7 @@ struct DetailLogTabView: View {
             backgroundOpacity: 0.12
         ) {
             VStack(alignment: .leading, spacing: 8) {
-                Label("无法加载改动记录", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("无法加载改动记录"), systemImage: "exclamationmark.triangle")
                     .font(.callout.weight(.semibold))
                 Text(mapping.userMessage)
                     .foregroundStyle(.secondary)
@@ -102,8 +102,8 @@ struct DetailLogTabView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack {
-                    Button("Retry", action: onRefreshChangeLog)
-                    Button("Collect Diagnostics...", action: onRequestDiagnostics)
+                    Button(L10n.string("Retry"), action: onRefreshChangeLog)
+                    Button(L10n.string("Collect Diagnostics..."), action: onRequestDiagnostics)
                         .disabled(isCollectingDiagnostics)
                 }
                 Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
@@ -111,7 +111,7 @@ struct DetailLogTabView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 diagnosticsStatus(fileID: fileID)
-                DisclosureGroup("Technical Details") {
+                DisclosureGroup(L10n.string("Technical Details")) {
                     Text(mapping.rawContext)
                         .font(.system(.caption, design: .monospaced))
                         .textSelection(.enabled)
@@ -131,17 +131,17 @@ struct DetailLogTabView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack {
-                    Button("Create diagnostics", action: onConfirmDiagnostics)
-                    Button("Cancel", action: onCancelDiagnostics)
+                    Button(L10n.string("Create diagnostics"), action: onConfirmDiagnostics)
+                    Button(L10n.string("Cancel"), action: onCancelDiagnostics)
                 }
             }
         case let .collecting(stateFileID) where stateFileID == fileID:
-            Label("Preparing repository diagnostics...", systemImage: "arrow.clockwise")
+            Label(L10n.string("Preparing repository diagnostics..."), systemImage: "arrow.clockwise")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case let .collected(stateFileID, snapshot) where stateFileID == fileID:
             VStack(alignment: .leading, spacing: 4) {
-                Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
+                Label(L10n.string("Diagnostics collected"), systemImage: "doc.badge.gearshape")
                 Text(snapshot.snapshotPath)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)
@@ -149,7 +149,7 @@ struct DetailLogTabView: View {
             .font(.caption)
         case let .failed(stateFileID, mapping) where stateFileID == fileID:
             VStack(alignment: .leading, spacing: 4) {
-                Label("Diagnostics could not be collected", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Diagnostics could not be collected"), systemImage: "exclamationmark.triangle")
                 Text(mapping.userMessage)
                 Text(mapping.suggestedAction)
                     .foregroundStyle(.secondary)

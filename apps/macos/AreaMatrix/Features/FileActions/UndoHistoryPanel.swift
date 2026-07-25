@@ -65,14 +65,14 @@ struct UndoHistoryPanel: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Undo History")
+                Text(L10n.string("Undo History"))
                     .font(.title3.weight(.semibold))
                 Text(statusText)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Retry") { Task { await loadActions() } }
+            Button(L10n.string("Retry")) { Task { await loadActions() } }
                 .disabled(state.isBusy)
                 .accessibilityIdentifier("undo-history-undo-action-log-retry")
         }
@@ -89,7 +89,7 @@ struct UndoHistoryPanel: View {
             UndoHistoryErrorPane(mapping: mapping)
         default:
             if state.actions.isEmpty, state.snapshot.redoActions.isEmpty {
-                Text("No undoable or redoable actions")
+                Text(L10n.string("No undoable or redoable actions"))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -115,14 +115,14 @@ struct UndoHistoryPanel: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Undo latest") { Task { await undoLatest() } }
+            Button(L10n.string("Undo latest")) { Task { await undoLatest() } }
                 .disabled(!canUndoLatest)
                 .accessibilityIdentifier("undo-history-undo-action-log-undo-latest")
-            Button("Redo latest") { Task { await redoLatest() } }
+            Button(L10n.string("Redo latest")) { Task { await redoLatest() } }
                 .disabled(!canRedoLatest)
-                .help("Redo latest action")
+                .help(L10n.string("Redo latest action"))
                 .accessibilityIdentifier("redo-action-log-redo-action-log-core-redo-latest")
-            Button("Close", action: onClose)
+            Button(L10n.string("Close"), action: onClose)
                 .keyboardShortcut(.cancelAction)
         }
         .padding(18)
@@ -215,7 +215,7 @@ private struct UndoHistoryErrorPane: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Could not load undo history", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("Could not load undo history"), systemImage: "exclamationmark.triangle")
                 .font(.headline)
             Text(mapping.userMessage)
             Text(mapping.suggestedAction)

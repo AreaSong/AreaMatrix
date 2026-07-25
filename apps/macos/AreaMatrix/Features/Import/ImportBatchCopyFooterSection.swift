@@ -15,10 +15,10 @@ struct ImportBatchCopyFooterSection: View {
     var body: some View {
         HStack {
             Spacer()
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
-            Button("Import") {
+            Button(L10n.string("Import")) {
                 Task { await importBatch() }
             }
             .keyboardShortcut(.defaultAction)
@@ -130,20 +130,20 @@ struct ImportBatchSummarySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("批量导入摘要")
+            Text(L10n.string("批量导入摘要"))
                 .font(.headline)
             HStack(spacing: 16) {
                 if let totalSizeDescription {
-                    LabeledContent("总大小", value: totalSizeDescription)
+                    LabeledContent(L10n.string("总大小"), value: totalSizeDescription)
                 }
-                LabeledContent("来源", value: sourceLabel)
-                LabeledContent("预计重复", value: L10n.plural("import.batch.duplicate-count", count: duplicateCount))
+                LabeledContent(L10n.string("来源"), value: sourceLabel)
+                LabeledContent(L10n.string("预计重复"), value: L10n.plural("import.batch.duplicate-count", count: duplicateCount))
                 LabeledContent(
-                    "重名冲突",
+                    L10n.string("重名冲突"),
                     value: L10n.plural("import.batch.name-conflict-count", count: nameConflictCount)
                 )
                 LabeledContent(
-                    "iCloud",
+                    L10n.string("iCloud"),
                     value: L10n.plural("import.batch.icloud-placeholder-count", count: iCloudPlaceholderCount)
                 )
             }
@@ -167,7 +167,7 @@ struct ImportConflictBatchUndoStateView: View {
         case let .ready(action):
             HStack(spacing: 8) {
                 undoStatus(action.summary)
-                Button("Undo", action: onUndo)
+                Button(L10n.string("Undo"), action: onUndo)
                     .keyboardShortcut("z", modifiers: [.command])
             }
             .accessibilityLabel(L10n.format("import.undo.available", action.summary))
@@ -184,7 +184,7 @@ struct ImportConflictBatchUndoStateView: View {
         case let .undone(result):
             HStack(spacing: 8) {
                 undoStatus(result.summary)
-                Button("Dismiss", action: onDismiss)
+                Button(L10n.string("Dismiss"), action: onDismiss)
             }
             .accessibilityLabel(L10n.format("import.undo.completed", result.summary))
         case let .failed(mapping, previous):
@@ -192,7 +192,7 @@ struct ImportConflictBatchUndoStateView: View {
                 undoStatus(mapping.userMessage)
                     .foregroundStyle(.red)
                 if previous != nil {
-                    Button("Dismiss", action: onDismiss)
+                    Button(L10n.string("Dismiss"), action: onDismiss)
                 }
             }
             .accessibilityLabel(L10n.format("import.undo.failed", mapping.userMessage))

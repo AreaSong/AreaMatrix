@@ -141,10 +141,10 @@ struct AreaMatrixTimelineDiorama: View {
     private var markdownWindow: some View {
         AreaMatrixMiniWindow(title: L10n.string("AREAMATRIX.md"), width: 220, height: 150, useDarkBackground: true) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("# Index Graph")
+                Text(L10n.string("# Index Graph"))
                     .foregroundColor(Color(red: 0.337, green: 0.612, blue: 0.839))
                 HStack(spacing: 4) {
-                    Text("- [x]")
+                    Text(L10n.string("- [x]"))
                         .foregroundColor(Color(red: 0.808, green: 0.569, blue: 0.471))
                     renamedTextPair(primaryColor: markdownRenameColor, highlighted: true)
                 }

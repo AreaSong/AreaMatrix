@@ -26,8 +26,8 @@ struct AITagSuggestionsPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Review suggested tags").font(.headline).accessibilityAddTraits(.isHeader)
-            Text("Review before adding tags. AI suggestions are not applied until you accept them.")
+            Text(L10n.string("Review suggested tags")).font(.headline).accessibilityAddTraits(.isHeader)
+            Text(L10n.string("Review before adding tags. AI suggestions are not applied until you accept them."))
                 .font(.caption).foregroundStyle(.secondary)
             Text("File: \(file.currentName)")
             Text("Current path: \(file.path)").foregroundStyle(.secondary)
@@ -56,42 +56,42 @@ struct AITagSuggestionsPanel: View {
         if state.isLoading {
             ProgressView("Loading suggested tags...")
         } else if let failure = state.failure {
-            Label("Tags could not be applied.", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("Tags could not be applied."), systemImage: "exclamationmark.triangle")
             Text(failure.userMessage).foregroundStyle(.secondary)
-            Button("Retry", action: onRetry)
+            Button(L10n.string("Retry"), action: onRetry)
         } else if let session = state.editSession {
             ForEach(session.drafts) { draft in editRow(draft) }
         } else if let report = state.report {
             reportView(report)
         } else {
-            Text("No AI tag suggestions loaded.").foregroundStyle(.secondary)
+            Text(L10n.string("No AI tag suggestions loaded.")).foregroundStyle(.secondary)
         }
     }
 
     private var actions: some View {
         HStack {
-            Button("Accept high confidence") { onSelectHighConfidence(); onApplySelected() }
+            Button(L10n.string("Accept high confidence")) { onSelectHighConfidence(); onApplySelected() }
                 .disabled(state.isApplying || disabledReason != nil || !state.hasHighConfidenceApplyCandidates)
-            Button("Accept selected") { state.editSession == nil ? onApplySelected() : onApplyEdited() }
+            Button(L10n.string("Accept selected")) { state.editSession == nil ? onApplySelected() : onApplyEdited() }
                 .disabled(!state.canApplySelectedSuggestions || state.isApplying || disabledReason != nil)
-            Button("Edit selected", action: onStartEditing)
+            Button(L10n.string("Edit selected"), action: onStartEditing)
                 .disabled(!state.canEditSelectedSuggestions || state.isApplying || disabledReason != nil)
-            Button("Reject selected", action: onClearSelection).disabled(state.selectedIDs.isEmpty || state.isApplying)
-            Button("Cancel", action: onClose)
+            Button(L10n.string("Reject selected"), action: onClearSelection).disabled(state.selectedIDs.isEmpty || state.isApplying)
+            Button(L10n.string("Cancel"), action: onClose)
         }
     }
 
     func traceLinks(_ report: AiTagSuggestionReport) -> some View {
         HStack {
             if report.skippedReason == .aiDisabled || report.skippedReason == .featureDisabled {
-                Button("Open AI settings", action: onOpenAISettings)
+                Button(L10n.string("Open AI settings"), action: onOpenAISettings)
             }
             if let ruleID = privacyRuleID(for: report) {
-                Button("View privacy rule") { privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID) }
+                Button(L10n.string("View privacy rule")) { privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID) }
                     .accessibilityIdentifier("ai-tag-suggestions-ai-privacy-rules-core-view-privacy-rule")
             }
             if let callLogID = report.callLogId {
-                Button("View AI call") { callLogRoute = AITagCallLogRoute(callLogID: callLogID) }
+                Button(L10n.string("View AI call")) { callLogRoute = AITagCallLogRoute(callLogID: callLogID) }
             }
         }
     }

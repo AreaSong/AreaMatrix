@@ -246,7 +246,7 @@ struct ICloudConflictListView: View {
         ContentUnavailableView {
             Label(ICloudConflictListCopy.emptyTitle, systemImage: "checkmark.circle")
         } description: {
-            Text("AreaMatrix did not find conflicted copies in this repository.")
+            Text(L10n.string("AreaMatrix did not find conflicted copies in this repository."))
         } actions: {
             Button(ICloudConflictListCopy.refreshAction) {
                 Task { await model.refresh() }
@@ -274,7 +274,7 @@ struct ICloudConflictListView: View {
                 }
             }
         } actions: {
-            Button("Retry") {
+            Button(L10n.string("Retry")) {
                 Task { await model.refresh() }
             }
             .accessibilityIdentifier(ICloudConflictListAccessibilityID.retry)
@@ -296,27 +296,27 @@ struct ICloudConflictListView: View {
             .padding(.top, 16)
 
             Table(conflicts) {
-                TableColumn("File") { conflict in
+                TableColumn(L10n.string("File")) { conflict in
                     Text(conflict.fileDisplayName)
                         .lineLimit(1)
                 }
-                TableColumn("Original version") { conflict in
+                TableColumn(L10n.string("Original version")) { conflict in
                     Text(conflict.originalVersionDisplay)
                         .lineLimit(1)
                         .foregroundStyle(conflict.originalPath == nil ? .secondary : .primary)
                 }
-                TableColumn("Conflict copy") { conflict in
+                TableColumn(L10n.string("Conflict copy")) { conflict in
                     Text(conflict.conflictedCopyDisplay)
                         .lineLimit(1)
                 }
-                TableColumn("Modified") { conflict in
+                TableColumn(L10n.string("Modified")) { conflict in
                     Text(conflict.modifiedDisplay)
                         .monospacedDigit()
                 }
-                TableColumn("Status") { conflict in
+                TableColumn(L10n.string("Status")) { conflict in
                     Text(conflict.statusDisplay)
                 }
-                TableColumn("Action") { conflict in
+                TableColumn(L10n.string("Action")) { conflict in
                     rowActions(conflict)
                 }
             }

@@ -113,8 +113,8 @@ struct AIPrivacyRulesRouteView: View {
                     .frame(width: 560, height: 260)
             case let .failed(error):
                 AISettingsInlineBanner(error: error, tint: .red) {
-                    Button("Retry registry", action: retry)
-                    Button("Back to AI settings", action: onClose)
+                    Button(L10n.string("Retry registry"), action: retry)
+                    Button(L10n.string("Back to AI settings"), action: onClose)
                 }
                 .padding(24)
                 .frame(width: 560)

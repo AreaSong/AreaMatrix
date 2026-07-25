@@ -59,7 +59,7 @@ struct IntegrationsSettingsPane: View {
                         await model.load()
                     }
                 } label: {
-                    Label("Retry status", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Retry status"), systemImage: "arrow.clockwise")
                 }
                 .accessibilityIdentifier("integrations-settings-retry-status")
             }
@@ -88,7 +88,7 @@ struct IntegrationsSettingsPane: View {
             message: localizer.resolve(error.message),
             recovery: localizer.resolve(error.recovery)
         ) {
-            Button("Retry status") {
+            Button(L10n.string("Retry status")) {
                 Task {
                     await model.load()
                 }
@@ -145,7 +145,7 @@ struct IntegrationsSettingsPane: View {
     }
 
     private var iCloudWarningsToggle: some View {
-        Toggle("Show iCloud warnings", isOn: iCloudWarningsSelection)
+        Toggle(L10n.string("Show iCloud warnings"), isOn: iCloudWarningsSelection)
             .disabled(writesDisabled)
             .accessibilityIdentifier("integrations-settings-repository-config-icloud-warnings")
     }
@@ -165,7 +165,7 @@ struct IntegrationsSettingsPane: View {
         Button {
             model.openICloudHelp()
         } label: {
-            Label("Open iCloud help", systemImage: "questionmark.circle")
+            Label(L10n.string("Open iCloud help"), systemImage: "questionmark.circle")
         }
         .accessibilityIdentifier("integrations-settings-open-icloud-help")
     }
@@ -183,7 +183,7 @@ struct IntegrationsSettingsPane: View {
         Button {
             model.revealRepositoryInFinder()
         } label: {
-            Label("Reveal repository in Finder", systemImage: "folder")
+            Label(L10n.string("Reveal repository in Finder"), systemImage: "folder")
         }
         .accessibilityIdentifier("integrations-settings-reveal-repository")
     }
@@ -192,7 +192,7 @@ struct IntegrationsSettingsPane: View {
         Button {
             Task { await model.load() }
         } label: {
-            Label("Retry status", systemImage: "arrow.clockwise")
+            Label(L10n.string("Retry status"), systemImage: "arrow.clockwise")
         }
         .disabled(model.loadState == .loading)
         .accessibilityIdentifier("integrations-settings-card-retry-status")
@@ -212,7 +212,7 @@ struct IntegrationsSettingsPane: View {
     private var externalToolsSection: some View {
         IntegrationsSettingsSection(title: L10n.string("Finder and other apps")) {
             Text(
-                "You can open files directly in Finder. External changes are picked up by file watching when available."
+                L10n.string("You can open files directly in Finder. External changes are picked up by file watching when available.")
             )
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -237,11 +237,11 @@ struct IntegrationsSettingsPane: View {
         if let error = model.saveError {
             VStack(alignment: .leading, spacing: 8) {
                 IntegrationsSettingsErrorBanner(error: error, tint: .red)
-                Text("The UI has been restored to the last saved integration setting.")
+                Text(L10n.string("The UI has been restored to the last saved integration setting."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 if model.hasRetryableSave {
-                    Button("Retry save") {
+                    Button(L10n.string("Retry save")) {
                         Task {
                             await model.retrySave()
                         }

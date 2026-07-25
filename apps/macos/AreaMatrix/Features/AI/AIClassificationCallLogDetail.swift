@@ -51,7 +51,7 @@ struct AICallLogView: View {
         .frame(width: 1080, height: 680, alignment: .topLeading)
         .task { await model.load() }
         .confirmationDialog(confirmationTitle, isPresented: confirmationBinding, titleVisibility: .visible) {
-            Button("Cancel", role: .cancel) { confirmation = nil }
+            Button(L10n.string("Cancel"), role: .cancel) { confirmation = nil }
             Button(confirmationButtonTitle, role: .destructive) { Task { await confirmDestructiveAction() } }
         } message: { Text(confirmationMessage) }
         .accessibilityIdentifier("ai-call-log-ai-call-log-core-ai-call-log")
@@ -60,12 +60,12 @@ struct AICallLogView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text("AI Call Log").font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                Text(L10n.string("AI Call Log")).font(.title2.weight(.semibold)).accessibilityAddTraits(.isHeader)
                 Text("Logs older than \(model.page?.retentionDays ?? 90) days are automatically removed.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Close", action: onClose).keyboardShortcut(.cancelAction)
+            Button(L10n.string("Close"), action: onClose).keyboardShortcut(.cancelAction)
         }
     }
 
@@ -73,29 +73,29 @@ struct AICallLogView: View {
         HStack(alignment: .lastTextBaseline) {
             filterPickers
             dateRangeFilter
-            TextField("Search file, provider, or error", text: $model.searchQuery)
+            TextField(L10n.string("Search file, provider, or error"), text: $model.searchQuery)
                 .textFieldStyle(.roundedBorder)
                 .frame(minWidth: 190)
                 .onSubmit { Task { await model.load() } }
-            Button("Clear filters") { Task { await model.clearFilters() } }
+            Button(L10n.string("Clear filters")) { Task { await model.clearFilters() } }
         }
     }
 
     private var filterPickers: some View {
         Group {
-            Picker("Feature", selection: $model.featureFilter) {
-                Text("All").tag(AiCallLogFeature?.none)
+            Picker(L10n.string("Feature"), selection: $model.featureFilter) {
+                Text(L10n.string("All")).tag(AiCallLogFeature?.none)
                 ForEach(AICallLogView.featureOptions, id: \.self) {
                     Text(aiCallLogFeatureLabel($0)).tag(Optional($0))
                 }
             }.frame(width: 166).onChange(of: model.featureFilter) { _, _ in Task { await model.load() } }
-            Picker("Provider", selection: $model.routeFilter) {
-                Text("All").tag(AiCallLogRoute?.none)
-                Text("Local").tag(Optional(AiCallLogRoute.local))
-                Text("Remote").tag(Optional(AiCallLogRoute.remote))
+            Picker(L10n.string("Provider"), selection: $model.routeFilter) {
+                Text(L10n.string("All")).tag(AiCallLogRoute?.none)
+                Text(L10n.string("Local")).tag(Optional(AiCallLogRoute.local))
+                Text(L10n.string("Remote")).tag(Optional(AiCallLogRoute.remote))
             }.frame(width: 128).onChange(of: model.routeFilter) { _, _ in Task { await model.load() } }
-            Picker("Status", selection: $model.statusFilter) {
-                Text("All").tag(AiCallLogStatus?.none)
+            Picker(L10n.string("Status"), selection: $model.statusFilter) {
+                Text(L10n.string("All")).tag(AiCallLogStatus?.none)
                 ForEach(AICallLogView.statusOptions, id: \.self) {
                     Text(aiCallLogStatusLabel($0)).tag(Optional($0))
                 }
@@ -105,10 +105,10 @@ struct AICallLogView: View {
 
     private var dateRangeFilter: some View {
         Menu(model.dateRangeSummary) {
-            Button("Any") { Task { await model.applyDatePreset(.any) } }
-            Button("Last 7 days") { Task { await model.applyDatePreset(.last7Days) } }
-            Button("Last 30 days") { Task { await model.applyDatePreset(.last30Days) } }
-            Button("This year") { Task { await model.applyDatePreset(.thisYear) } }
+            Button(L10n.string("Any")) { Task { await model.applyDatePreset(.any) } }
+            Button(L10n.string("Last 7 days")) { Task { await model.applyDatePreset(.last7Days) } }
+            Button(L10n.string("Last 30 days")) { Task { await model.applyDatePreset(.last30Days) } }
+            Button(L10n.string("This year")) { Task { await model.applyDatePreset(.thisYear) } }
         }
         .accessibilityLabel(L10n.format("Date range, %@", model.dateRangeSummary))
     }
@@ -147,7 +147,7 @@ struct AICallLogView: View {
             Text(model.emptyStateDescription)
         } actions: {
             if model.emptyStateActionTitle != nil {
-                Button("Clear filters") { Task { await model.clearFilters() } }
+                Button(L10n.string("Clear filters")) { Task { await model.clearFilters() } }
             }
         }
     }
@@ -155,11 +155,11 @@ struct AICallLogView: View {
     private func failureContent(_ error: AISettingsError) -> some View {
         VStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle").font(.largeTitle)
-            Text("AI call log could not be loaded.").font(.headline)
+            Text(L10n.string("AI call log could not be loaded.")).font(.headline)
             Text(error.detail).foregroundStyle(.secondary).multilineTextAlignment(.center)
             HStack {
-                Button("Retry") { Task { await model.load() } }
-                Button("Open diagnostics") { diagnosticsMessage = error.detail }
+                Button(L10n.string("Retry")) { Task { await model.load() } }
+                Button(L10n.string("Open diagnostics")) { diagnosticsMessage = error.detail }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -194,7 +194,7 @@ struct AICallLogView: View {
                 detailRow(L10n.string("Result summary"), record.resultSummary)
                 if let code = record.errorCode { detailRow(L10n.string("Error"), code) }
             } else {
-                Text("Select an AI call to inspect its redacted details.").foregroundStyle(.secondary)
+                Text(L10n.string("Select an AI call to inspect its redacted details.")).foregroundStyle(.secondary)
             }
         }
         .padding(.leading, 14)
@@ -202,11 +202,11 @@ struct AICallLogView: View {
 
     private var actions: some View {
         HStack {
-            Button("Export redacted log...") {}
+            Button(L10n.string("Export redacted log...")) {}
                 .disabled(model.exportDisabledReason != nil)
                 .accessibilityHint(model.exportDisabledReason ?? "")
-            Button("Clear log...") { confirmation = .clearAll }.disabled(!model.canMutate)
-            Button("Delete selected") { confirmation = .deleteSelected }
+            Button(L10n.string("Clear log...")) { confirmation = .clearAll }.disabled(!model.canMutate)
+            Button(L10n.string("Delete selected")) { confirmation = .deleteSelected }
                 .disabled(!model.canMutate || model.deleteDisabledReason != nil)
                 .accessibilityHint(model.deleteDisabledReason ?? "")
             Spacer()
@@ -251,14 +251,14 @@ private enum AICallLogConfirmation: String, Identifiable {
 private struct AICallLogHeaderRow: View {
     var body: some View {
         HStack(spacing: 8) {
-            Text("Time").frame(width: 92, alignment: .leading)
-            Text("Feature").frame(width: 112, alignment: .leading)
-            Text("Provider").frame(width: 118, alignment: .leading)
-            Text("Remote").frame(width: 64, alignment: .leading)
-            Text("Scope").frame(width: 116, alignment: .leading)
-            Text("Status").frame(width: 78, alignment: .leading)
-            Text("Duration").frame(width: 70, alignment: .trailing)
-            Text("Result").frame(maxWidth: .infinity, alignment: .leading)
+            Text(L10n.string("Time")).frame(width: 92, alignment: .leading)
+            Text(L10n.string("Feature")).frame(width: 112, alignment: .leading)
+            Text(L10n.string("Provider")).frame(width: 118, alignment: .leading)
+            Text(L10n.string("Remote")).frame(width: 64, alignment: .leading)
+            Text(L10n.string("Scope")).frame(width: 116, alignment: .leading)
+            Text(L10n.string("Status")).frame(width: 78, alignment: .leading)
+            Text(L10n.string("Duration")).frame(width: 70, alignment: .trailing)
+            Text(L10n.string("Result")).frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(.secondary)

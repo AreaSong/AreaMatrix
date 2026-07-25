@@ -162,7 +162,7 @@ struct AIClassificationSuggestionPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("AI suggested a category")
+            Text(L10n.string("AI suggested a category"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
             fileSummary
@@ -201,7 +201,7 @@ struct AIClassificationSuggestionPanel: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("File: \(fileName)")
             Text("Current path: \(currentPath)")
-            Text("No files will be moved until you confirm.")
+            Text(L10n.string("No files will be moved until you confirm."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -209,12 +209,12 @@ struct AIClassificationSuggestionPanel: View {
 
     private var requestControls: some View {
         HStack {
-            Button("Ask AI for suggestion...") {
+            Button(L10n.string("Ask AI for suggestion...")) {
                 Task { await model.askForSuggestion() }
             }
             .disabled(!model.canAskForSuggestion)
             .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-ask-ai-suggestion")
-            Button("Classify manually", action: onClassifyManually)
+            Button(L10n.string("Classify manually"), action: onClassifyManually)
                 .disabled(model.isResolvingFallbackStatus)
             Spacer()
         }

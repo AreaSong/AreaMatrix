@@ -15,7 +15,7 @@ struct BatchAddTagsTrigger: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button("Add tag...") { isPresented = true }
+            Button(L10n.string("Add tag...")) { isPresented = true }
                 .help(BatchAddTagsEntryPolicy.openHelp(disabledReason: disabledReason))
                 .accessibilityIdentifier("batch-add-tags-batch-add-tags-open")
         }
@@ -55,9 +55,9 @@ struct BatchAddTagsSheet: View {
     var body: some View {
         MainFileActionSheetContainer(title: L10n.string("fileActions.batchTags.title"), pageID: "batch-add-tags") {
             if selectedCount == 0 {
-                Text("No files selected")
+                Text(L10n.string("No files selected"))
                     .foregroundStyle(.secondary)
-                HStack { Spacer(); Button("Close", action: onClose) }
+                HStack { Spacer(); Button(L10n.string("Close"), action: onClose) }
             } else {
                 BatchAddTagsSheetContent(
                     selectedCount: selectedCount,
@@ -205,7 +205,7 @@ private struct BatchAddTagsSheetContent: View {
 
     private var tagInput: some View {
         VStack(alignment: .leading, spacing: 5) {
-            TextField("Search or create tag...", text: $draft.input)
+            TextField(L10n.string("Search or create tag..."), text: $draft.input)
                 .textFieldStyle(.roundedBorder)
                 .disabled(isApplying || disabledReason != nil)
                 .onSubmit(onAddPendingTag)
@@ -220,17 +220,17 @@ private struct BatchAddTagsSheetContent: View {
     @ViewBuilder
     private var tagCandidates: some View {
         if catalogState.isLoading {
-            Text("Loading tags...").font(.caption).foregroundStyle(.secondary)
+            Text(L10n.string("Loading tags...")).font(.caption).foregroundStyle(.secondary)
         } else if let failure = catalogState.failure {
             HStack(spacing: 8) {
                 Label(failure.userMessage, systemImage: "exclamationmark.triangle")
-                Button("Retry", action: onRetryCatalog)
+                Button(L10n.string("Retry"), action: onRetryCatalog)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
         } else if !candidateTags.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Text("候选标签").font(.caption).foregroundStyle(.secondary)
+                Text(L10n.string("候选标签")).font(.caption).foregroundStyle(.secondary)
                 ForEach(candidateTags) { tag in
                     candidateButton(tag)
                 }
@@ -258,7 +258,7 @@ private struct BatchAddTagsSheetContent: View {
     private var pendingTagChips: some View {
         if !draft.pendingTags.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
-                Text("将添加的标签").font(.caption).foregroundStyle(.secondary)
+                Text(L10n.string("将添加的标签")).font(.caption).foregroundStyle(.secondary)
                 ForEach(pendingChips, id: \.value) { chip in
                     pendingChip(chip)
                 }
@@ -315,7 +315,7 @@ private struct BatchAddTagsSheetContent: View {
     @ViewBuilder
     private func failureDetails(for report: BatchMutationReportSnapshot) -> some View {
         if report.failedCount > 0 {
-            Button("View details") { showsDetails.toggle() }
+            Button(L10n.string("View details")) { showsDetails.toggle() }
             if showsDetails {
                 ForEach(report.itemResults.filter { $0.status == .failed }) { item in
                     Text(
@@ -334,13 +334,13 @@ private struct BatchAddTagsSheetContent: View {
 
     private var actionButtons: some View {
         HStack {
-            Button("Add pending tag", action: onAddPendingTag)
+            Button(L10n.string("Add pending tag"), action: onAddPendingTag)
                 .disabled(
                     isApplying || disabledReason != nil ||
                         draft.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 )
             Spacer()
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .disabled(isApplying)
             Button(isApplying ? L10n.string("Applying...") : L10n.string("Apply"), action: onApply)

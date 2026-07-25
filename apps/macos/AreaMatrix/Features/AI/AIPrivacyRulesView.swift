@@ -65,8 +65,8 @@ struct AIPrivacyRulesView: View {
             )
         }
         .alert("Delete privacy rule?", isPresented: deleteConfirmation) {
-            Button("Cancel", role: .cancel) { deletionCandidate = nil }
-            Button("Delete rule", role: .destructive) { confirmDeleteRule() }
+            Button(L10n.string("Cancel"), role: .cancel) { deletionCandidate = nil }
+            Button(L10n.string("Delete rule"), role: .destructive) { confirmDeleteRule() }
         } message: {
             Text(L10n.string("ai.privacy.deleteRuleDetail"))
         }
@@ -75,12 +75,12 @@ struct AIPrivacyRulesView: View {
             isPresented: unsavedExitConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Cancel", role: .cancel) { pendingExitAction = nil }
-            Button("Discard changes", role: .destructive, action: discardPendingExit)
-            Button("Save changes") { Task { await saveDraftAndContinuePendingExit() } }
+            Button(L10n.string("Cancel"), role: .cancel) { pendingExitAction = nil }
+            Button(L10n.string("Discard changes"), role: .destructive, action: discardPendingExit)
+            Button(L10n.string("Save changes")) { Task { await saveDraftAndContinuePendingExit() } }
                 .disabled(!editorDraft.canSave(registry: registry) || privacyModel.isSaving)
         } message: {
-            Text("Save or discard the privacy rule edit before leaving.")
+            Text(L10n.string("Save or discard the privacy rule edit before leaving."))
         }
     }
 
@@ -95,8 +95,8 @@ struct AIPrivacyRulesView: View {
             ProgressView("Loading privacy rules...")
         case let .failed(error):
             AISettingsInlineBanner(error: error, tint: .red) {
-                Button("Retry", action: retryLoad)
-                Button("Back to AI settings", action: requestClose)
+                Button(L10n.string("Retry"), action: retryLoad)
+                Button(L10n.string("Back to AI settings"), action: requestClose)
             }
         case .loaded:
             loadedContent
@@ -134,8 +134,8 @@ struct AIPrivacyRulesView: View {
             ProgressView("Loading privacy rules...")
         case let .failed(error):
             AISettingsInlineBanner(error: error, tint: .red) {
-                Button("Retry", action: retryPrivacyRules)
-                Button("Back to AI settings", action: requestClose)
+                Button(L10n.string("Retry"), action: retryPrivacyRules)
+                Button(L10n.string("Back to AI settings"), action: requestClose)
             }
         case .loaded:
             privacyRulesLoadedContent
@@ -155,8 +155,8 @@ struct AIPrivacyRulesView: View {
     private var feedbackBanner: some View {
         if let error = privacyModel.saveError {
             AISettingsInlineBanner(error: error, tint: .red) {
-                Button("Retry save") { Task { await privacyModel.retrySave() } }
-                Button("Revert changes", action: privacyModel.revertPendingSave)
+                Button(L10n.string("Retry save")) { Task { await privacyModel.retrySave() } }
+                Button(L10n.string("Revert changes"), action: privacyModel.revertPendingSave)
             }
         } else if let feedback = privacyModel.feedback {
             Label(localizer.resolve(feedback), systemImage: "checkmark.circle").foregroundStyle(.green)
@@ -167,8 +167,8 @@ struct AIPrivacyRulesView: View {
     private var providerLoadFailureBanner: some View {
         if case let .failed(error) = providerModel.loadState {
             AISettingsInlineBanner(error: error, tint: .red) {
-                Button("Retry", action: retryProviderLoad)
-                Button("Configure remote AI", action: onConfigureRemoteAI)
+                Button(L10n.string("Retry"), action: retryProviderLoad)
+                Button(L10n.string("Configure remote AI"), action: onConfigureRemoteAI)
             }
         }
     }

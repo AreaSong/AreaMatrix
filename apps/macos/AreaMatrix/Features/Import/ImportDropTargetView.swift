@@ -93,7 +93,7 @@ struct DropZoneOverlay: View {
             Text(presentation.headline)
                 .font(.title3.weight(.semibold))
             Text(L10n.format("import.drop.destination", presentation.destinationLabel))
-            Text("拖到左侧分类可改变目标")
+            Text(L10n.string("拖到左侧分类可改变目标"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
             statusLine
@@ -114,7 +114,7 @@ struct DropZoneOverlay: View {
     @ViewBuilder
     private var statusLine: some View {
         if presentation.isPredicting {
-            Label("Previewing category...", systemImage: "sparkle.magnifyingglass")
+            Label(L10n.string("Previewing category..."), systemImage: "sparkle.magnifyingglass")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else if let warning = presentation.warning {

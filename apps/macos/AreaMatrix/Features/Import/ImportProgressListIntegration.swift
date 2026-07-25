@@ -60,16 +60,16 @@ struct ImportProgressTableView: View {
     var body: some View {
         if !rows.isEmpty {
             Table(rows, selection: $selection) {
-                TableColumn("Importing") { row in
+                TableColumn(L10n.string("Importing")) { row in
                     Text(row.displayName)
                         .lineLimit(1)
                 }
-                TableColumn("Target") { row in
+                TableColumn(L10n.string("Target")) { row in
                     Text(row.categoryPathDisplay)
                         .lineLimit(1)
                         .foregroundStyle(.secondary)
                 }
-                TableColumn("Status") { row in
+                TableColumn(L10n.string("Status")) { row in
                     Text(row.statusText)
                         .monospacedDigit()
                 }
@@ -89,7 +89,7 @@ struct ImportProgressDetailPane: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Label("Import details", systemImage: row.systemImage)
+                Label(L10n.string("Import details"), systemImage: row.systemImage)
                     .font(.headline)
                 metadataRows
             }

@@ -17,9 +17,9 @@ struct SearchIndexingStatusRouteView: View {
             metadataRow("Scope", request.scope.displayName)
             HStack {
                 Spacer()
-                Button("Close", action: onClose)
+                Button(L10n.string("Close"), action: onClose)
                     .keyboardShortcut(.cancelAction)
-                Button("Retry", action: onRetry)
+                Button(L10n.string("Retry"), action: onRetry)
             }
         }
         .accessibilityIdentifier("search-index-status-indexing-status-search-route")

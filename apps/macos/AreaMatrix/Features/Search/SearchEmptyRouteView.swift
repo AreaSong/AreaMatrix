@@ -10,7 +10,7 @@ struct SearchEmptyRouteView: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 14) {
-            Label("No files found", systemImage: "magnifyingglass")
+            Label(L10n.string("No files found"), systemImage: "magnifyingglass")
                 .font(.title3.weight(.semibold))
             Text(reasonText)
                 .font(.callout)
@@ -34,7 +34,7 @@ struct SearchEmptyRouteView: View {
             Text("Filters: \(filterSummary)")
             Text(searchContextText(request))
             if indexStatus == .indexing {
-                Text("Indexing...")
+                Text(L10n.string("Indexing..."))
             }
         }
         .font(.caption)
@@ -51,12 +51,12 @@ struct SearchEmptyRouteView: View {
     private var actionButtons: some View {
         HStack(spacing: 10) {
             if request.filters.isEmpty {
-                Button("Clear search", action: onClearSearch)
+                Button(L10n.string("Clear search"), action: onClearSearch)
                     .keyboardShortcut(.cancelAction)
             } else {
-                Button("Clear filters", action: onClearFilters)
+                Button(L10n.string("Clear filters"), action: onClearFilters)
                     .keyboardShortcut(.defaultAction)
-                Button("Clear search", action: onClearSearch)
+                Button(L10n.string("Clear search"), action: onClearSearch)
             }
         }
     }
@@ -64,7 +64,7 @@ struct SearchEmptyRouteView: View {
     private var filterShortcutButtons: some View {
         VStack(alignment: .center, spacing: 8) {
             if request.filters.fileKind != nil {
-                Button("Search all file types", action: onSearchAllFileTypes)
+                Button(L10n.string("Search all file types"), action: onSearchAllFileTypes)
             }
             ForEach(SearchFilterChips.items(for: request.filters)) { chip in
                 Button(L10n.format("search.filter.remove", chip.label)) {

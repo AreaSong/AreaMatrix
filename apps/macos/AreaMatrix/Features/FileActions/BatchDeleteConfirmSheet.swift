@@ -14,7 +14,7 @@ struct BatchDeleteTrigger: View {
     @State private var isPresented = false
 
     var body: some View {
-        Button("Delete...") { isPresented = true }
+        Button(L10n.string("Delete...")) { isPresented = true }
             .help(BatchDeleteEntryPolicy.openHelp(disabledReason: disabledReason))
             .accessibilityIdentifier("batch-delete-batch-delete-open")
             .sheet(isPresented: $isPresented) {
@@ -58,9 +58,9 @@ struct BatchDeleteConfirmSheet: View {
     var body: some View {
         MainFileActionSheetContainer(title: title, pageID: "batch-delete") {
             if selectedCount == 0 {
-                Text("No items selected")
+                Text(L10n.string("No items selected"))
                     .foregroundStyle(.secondary)
-                HStack { Spacer(); Button("Close", action: onClose) }
+                HStack { Spacer(); Button(L10n.string("Close"), action: onClose) }
             } else {
                 content
             }
@@ -90,9 +90,9 @@ struct BatchDeleteConfirmSheet: View {
     }
 
     private var modePicker: some View {
-        Picker("Deletion mode", selection: $deleteMode) {
-            Text("Move to Trash").tag(BatchDeleteModeSnapshot.moveToTrash)
-            Text("Remove from index").tag(BatchDeleteModeSnapshot.removeFromIndex)
+        Picker(L10n.string("Deletion mode"), selection: $deleteMode) {
+            Text(L10n.string("Move to Trash")).tag(BatchDeleteModeSnapshot.moveToTrash)
+            Text(L10n.string("Remove from index")).tag(BatchDeleteModeSnapshot.removeFromIndex)
         }
         .pickerStyle(.segmented)
         .disabled(isApplying || disabledReason != nil)
@@ -102,14 +102,14 @@ struct BatchDeleteConfirmSheet: View {
     @ViewBuilder
     private var previewSection: some View {
         if previewState.isLoading {
-            Label("Checking delete impact...", systemImage: "arrow.triangle.2.circlepath")
+            Label(L10n.string("Checking delete impact..."), systemImage: "arrow.triangle.2.circlepath")
                 .foregroundStyle(.secondary)
         }
         if let failure = previewState.failure {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Label(failure.userMessage, systemImage: "exclamationmark.triangle")
                 Spacer()
-                Button("Retry") { Task { await refreshPreview() } }
+                Button(L10n.string("Retry")) { Task { await refreshPreview() } }
             }
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -134,10 +134,10 @@ struct BatchDeleteConfirmSheet: View {
             TintedStatusBanner(tint: .yellow, fillsWidth: false, contentPadding: 10, backgroundOpacity: 0.12) {
                 VStack(alignment: .leading, spacing: 8) {
                     Label(
-                        "Undo will not be available for these items. Review the list before continuing.",
+                        L10n.string("Undo will not be available for these items. Review the list before continuing."),
                         systemImage: "exclamationmark.triangle"
                     )
-                    Toggle("I understand undo will not be available for these items.", isOn: $undoConfirmationAccepted)
+                    Toggle(L10n.string("I understand undo will not be available for these items."), isOn: $undoConfirmationAccepted)
                         .accessibilityLabel(
                             L10n.string(
                                 "Required confirmation. Undo will not be available for this deletion or index removal."
@@ -167,10 +167,10 @@ struct BatchDeleteConfirmSheet: View {
 
     private var actionButtons: some View {
         HStack {
-            Button("Retry failed") { Task { await retryFailed() } }
+            Button(L10n.string("Retry failed")) { Task { await retryFailed() } }
                 .disabled(!BatchDeleteValidation.canRetryFailed(report: result, isApplying: isApplying))
             Spacer()
-            Button("Cancel", action: onClose)
+            Button(L10n.string("Cancel"), action: onClose)
                 .keyboardShortcut(.cancelAction)
                 .disabled(isApplying)
             if shouldShowRemoveFromIndex {

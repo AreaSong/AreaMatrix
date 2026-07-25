@@ -219,6 +219,6 @@ struct AreaMatrixNoiseOverlay: View {
             bitmapInfo: CGImageAlphaInfo.none.rawValue
         ) else { return nil }
         guard let cgImage = context.makeImage() else { return nil }
-        return Image(cgImage, scale: 1, label: Text("Noise"))
+        return Image(cgImage, scale: 1, label: Text(L10n.string("Noise")))
     }
 }

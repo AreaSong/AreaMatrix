@@ -5,12 +5,12 @@ struct AdvancedSettingsRecoveryToolsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Recovery tools")
+            Text(L10n.string("Recovery tools"))
                 .font(.headline)
             Button {
                 onOpenRecoveryTools()
             } label: {
-                Label("Open recovery tools...", systemImage: "arrow.clockwise.circle")
+                Label(L10n.string("Open recovery tools..."), systemImage: "arrow.clockwise.circle")
             }
             .accessibilityIdentifier("advanced-settings-startup-recovery-core-open-recovery-tools")
             Text(L10n.string("settings.advanced.startupRecoveryDetail"))
@@ -64,7 +64,7 @@ struct AdvancedSettingsLogsSection: View {
                 Button {
                     onOpenLogsFolder()
                 } label: {
-                    Label("Open logs folder", systemImage: "folder")
+                    Label(L10n.string("Open logs folder"), systemImage: "folder")
                 }
                 .disabled(isCollecting)
                 .accessibilityIdentifier("advanced-settings-open-logs-folder")
@@ -72,12 +72,12 @@ struct AdvancedSettingsLogsSection: View {
                 Button {
                     onCopyDiagnosticSummary()
                 } label: {
-                    Label("Copy diagnostic summary", systemImage: "doc.on.doc")
+                    Label(L10n.string("Copy diagnostic summary"), systemImage: "doc.on.doc")
                 }
                 .accessibilityIdentifier("advanced-settings-copy-diagnostic-summary")
             }
 
-            Text("Diagnostics do not include your original file contents.")
+            Text(L10n.string("Diagnostics do not include your original file contents."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -90,7 +90,7 @@ struct AdvancedSettingsOverviewOutputSection: View {
 
     var body: some View {
         AdvancedSettingsSection(title: L10n.string("Generated overview output")) {
-            Picker("Generated overview output", selection: selection) {
+            Picker(L10n.string("Generated overview output"), selection: selection) {
                 ForEach(AdvancedSettingsOverviewOutput.allCases) { output in
                     Text(output.label).tag(output)
                 }
@@ -100,13 +100,13 @@ struct AdvancedSettingsOverviewOutputSection: View {
             .frame(maxWidth: 320)
             .accessibilityIdentifier(AdvancedSettingsAccessibilityID.overviewOutput)
 
-            Text("Generated only writes under .areamatrix/generated/.")
+            Text(L10n.string("Generated only writes under .areamatrix/generated/."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Text("Root AREAMATRIX.md adds a managed marker block to the repository root file.")
+            Text(L10n.string("Root AREAMATRIX.md adds a managed marker block to the repository root file."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Text("README.md is never managed.")
+            Text(L10n.string("README.md is never managed."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -119,7 +119,7 @@ struct AdvancedSettingsAllowReplaceSection: View {
 
     var body: some View {
         AdvancedSettingsSection(title: L10n.string("Dangerous import option")) {
-            Toggle("Allow replace during import", isOn: isOn)
+            Toggle(L10n.string("Allow replace during import"), isOn: isOn)
                 .disabled(writesDisabled)
                 .accessibilityIdentifier("advanced-settings-repository-config-allow-replace")
 
@@ -163,7 +163,7 @@ struct AdvancedRootOverviewConfirmationSheet: View {
     let onEnable: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Enable root AREAMATRIX.md?")
+            Text(L10n.string("Enable root AREAMATRIX.md?"))
                 .font(.title2.weight(.semibold))
             Text(L10n.string("settings.advanced.rootOverviewEnableDetail"))
                 .fixedSize(horizontal: false, vertical: true)
@@ -172,8 +172,8 @@ struct AdvancedRootOverviewConfirmationSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()
-                Button("Cancel", action: onCancel)
-                Button("Enable root file", action: onEnable)
+                Button(L10n.string("Cancel"), action: onCancel)
+                Button(L10n.string("Enable root file"), action: onEnable)
                     .buttonStyle(.borderedProminent)
                     .disabled(!status.canEnableRootOverview)
             }

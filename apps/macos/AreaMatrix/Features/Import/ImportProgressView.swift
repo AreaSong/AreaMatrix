@@ -57,26 +57,26 @@ struct ImportProgressView: View {
         .padding(28)
         .areaMatrixGlassContentPanel(width: nil, padding: 0)
         .areaMatrixPageContentEntrance(delay: AreaMatrixMotionTokens.EntranceDelay.body)
-        .alert("停止剩余导入？", isPresented: $isStopConfirmationPresented) {
-            Button("Cancel", role: .cancel) {}
-            Button("Stop", role: .destructive, action: onStopAfterCurrentFile)
+        .alert(L10n.string("停止剩余导入？"), isPresented: $isStopConfirmationPresented) {
+            Button(L10n.string("Cancel"), role: .cancel) {}
+            Button(L10n.string("Stop"), role: .destructive, action: onStopAfterCurrentFile)
         } message: {
-            Text("已完成的文件会保留，未开始的文件会取消，当前文件会处理到安全点后停止。")
+            Text(L10n.string("已完成的文件会保留，未开始的文件会取消，当前文件会处理到安全点后停止。"))
         }
         .alert("Collect Diagnostics?", isPresented: diagnosticsConfirmationBinding) {
-            Button("Cancel", role: .cancel, action: onCancelDiagnostics)
-            Button("Collect Diagnostics...", action: onConfirmDiagnostics)
+            Button(L10n.string("Cancel"), role: .cancel, action: onCancelDiagnostics)
+            Button(L10n.string("Collect Diagnostics..."), action: onConfirmDiagnostics)
         } message: {
-            Text("Diagnostics do not include user file contents, are not uploaded, and paths/usernames are redacted.")
+            Text(L10n.string("Diagnostics do not include user file contents, are not uploaded, and paths/usernames are redacted."))
         }
     }
 
     private var fatalErrorPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("导入已暂停", systemImage: "exclamationmark.triangle.fill")
+            Label(L10n.string("导入已暂停"), systemImage: "exclamationmark.triangle.fill")
                 .font(.headline)
                 .foregroundStyle(.red)
-            Text("已完成 \(state.completed)，失败 \(state.failed)，未开始 \(state.remaining + state.pending)")
+            Text(L10n.format("已完成 %lld，失败 %lld，未开始 %lld", state.completed, state.failed, state.remaining + state.pending))
             Text(L10n.format("import.progress.current-failure", state.currentPath))
                 .textSelection(.enabled)
             if let errorMapping = state.errorMapping {
@@ -84,22 +84,22 @@ struct ImportProgressView: View {
                 Text(errorMapping.suggestedAction)
                     .foregroundStyle(.secondary)
             }
-            Text("已完成的文件会保留。未开始的文件不会自动导入。")
-            Text("AreaMatrix 会先确认 staging 状态，再允许重试当前项。")
+            Text(L10n.string("已完成的文件会保留。未开始的文件不会自动导入。"))
+            Text(L10n.string("AreaMatrix 会先确认 staging 状态，再允许重试当前项。"))
                 .foregroundStyle(.secondary)
             Text(state.retryStatusText)
                 .font(.caption)
                 .foregroundStyle(state.canRetryCurrentItem ? .green : .secondary)
             diagnosticsStatus
             HStack {
-                Button("Retry current item", action: onRetryCurrentItem)
+                Button(L10n.string("Retry current item"), action: onRetryCurrentItem)
                     .disabled(!state.canRetryCurrentItem)
-                Button("Stop and view results", action: onStopAndViewResults)
+                Button(L10n.string("Stop and view results"), action: onStopAndViewResults)
                     .keyboardShortcut(.defaultAction)
-                Button("Collect Diagnostics...", action: onRequestDiagnostics)
+                Button(L10n.string("Collect Diagnostics..."), action: onRequestDiagnostics)
                     .disabled(diagnosticsIsCollecting)
                 if state.isRepositoryFinderAvailable {
-                    Button("Open repository in Finder", action: onOpenRepositoryInFinder)
+                    Button(L10n.string("Open repository in Finder"), action: onOpenRepositoryInFinder)
                 }
             }
         }
@@ -114,7 +114,7 @@ struct ImportProgressView: View {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            Label("Collecting diagnostics...", systemImage: "doc.badge.gearshape")
+            Label(L10n.string("Collecting diagnostics..."), systemImage: "doc.badge.gearshape")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):

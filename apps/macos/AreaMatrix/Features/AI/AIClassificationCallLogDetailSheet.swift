@@ -108,7 +108,7 @@ struct AIClassificationCallLogDetailSheet: View {
             bodyContent
             HStack {
                 Spacer()
-                Button("Close", action: onClose)
+                Button(L10n.string("Close"), action: onClose)
                     .keyboardShortcut(.cancelAction)
             }
         }
@@ -120,7 +120,7 @@ struct AIClassificationCallLogDetailSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("AI Call Detail")
+            Text(L10n.string("AI Call Detail"))
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
             Text(L10n.format("ai.classification.callLog.title", model.callLogID))
@@ -165,12 +165,12 @@ struct AIClassificationCallLogDetailSheet: View {
 
     private func notFoundContent(_ callLogID: Int64) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("AI call log entry could not be found.", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("AI call log entry could not be found."), systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
             Text(L10n.format("ai.classification.callLog.entryMissing", callLogID))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Button("Retry") { Task { await model.load() } }
+            Button(L10n.string("Retry")) { Task { await model.load() } }
         }
         .accessibilityIdentifier("ai-category-suggestion-ai-fallback-core-ai-call-log-not-found")
     }
@@ -185,7 +185,7 @@ struct AIClassificationCallLogDetailSheet: View {
             Text(localizer.resolve(error.recovery))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Button("Retry") { Task { await model.load() } }
+            Button(L10n.string("Retry")) { Task { await model.load() } }
         }
         .accessibilityIdentifier("ai-category-suggestion-ai-fallback-core-ai-call-log-error")
     }

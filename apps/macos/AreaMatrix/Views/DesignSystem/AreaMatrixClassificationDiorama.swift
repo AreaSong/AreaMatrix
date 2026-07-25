@@ -87,7 +87,7 @@ struct AreaMatrixClassificationDiorama: View {
                 .shadow(color: .black.opacity(0.3), radius: 15, y: 10)
                 .overlay(fileCardContent)
 
-            Text("Finance")
+            Text(L10n.string("Finance"))
                 .font(.system(size: 9))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
@@ -131,7 +131,7 @@ struct AreaMatrixClassificationDiorama: View {
                     phase == 1 ? AreaMatrixTheme.Colors.teal.opacity(0.15) : Color.clear,
                     in: RoundedRectangle(cornerRadius: 8)
                 )
-            Text("Drop files here")
+            Text(L10n.string("Drop files here"))
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
             if phase == 2 {
@@ -157,9 +157,9 @@ struct AreaMatrixClassificationDiorama: View {
 
     private var folderTree: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("2026", systemImage: "folder.fill")
+            Label(L10n.string("2026"), systemImage: "folder.fill")
                 .font(.system(size: 10))
-            Label("Invoices", systemImage: "folder.fill")
+            Label(L10n.string("Invoices"), systemImage: "folder.fill")
                 .font(.system(size: 10))
                 .padding(.leading, 12)
             indexedFileRow

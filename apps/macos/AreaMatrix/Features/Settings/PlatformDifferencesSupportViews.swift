@@ -21,7 +21,7 @@ struct PlatformDifferencesCapabilityRow: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             if row.support.requiresPermission {
-                Text("Requires platform permission before use.")
+                Text(L10n.string("Requires platform permission before use."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

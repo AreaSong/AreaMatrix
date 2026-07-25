@@ -55,7 +55,7 @@ struct InitFailedStepView: View {
             Text(L10n.string("onboarding.failed.errorSummary"))
                 .font(.headline)
             Text(mapping?.userMessage ?? L10n.string("Unknown initialization error"))
-            Text("路径：\(repoPath)")
+            Text(L10n.format("路径：%@ ", repoPath))
                 .font(.system(.callout, design: .monospaced))
                 .textSelection(.enabled)
             Text(L10n.format(
@@ -66,7 +66,7 @@ struct InitFailedStepView: View {
                 "onboarding.failed.severity",
                 mapping?.severity.rawValue ?? L10n.string("Unknown")
             ))
-            DisclosureGroup("Show details", isExpanded: $isDetailsExpanded) {
+            DisclosureGroup(L10n.string("Show details"), isExpanded: $isDetailsExpanded) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(L10n.format(
                         "onboarding.failed.recoverability",
@@ -102,7 +102,7 @@ struct InitFailedStepView: View {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
-            Label("Preparing repository diagnostics...", systemImage: "arrow.clockwise")
+            Label(L10n.string("Preparing repository diagnostics..."), systemImage: "arrow.clockwise")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case let .collected(snapshot):
@@ -114,7 +114,7 @@ struct InitFailedStepView: View {
 
     private func collectedDiagnostics(_ snapshot: DiagnosticsSnapshotSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("Diagnostics collected", systemImage: "doc.badge.gearshape")
+            Label(L10n.string("Diagnostics collected"), systemImage: "doc.badge.gearshape")
                 .font(.headline)
             Text(snapshot.snapshotPath)
                 .font(.system(.callout, design: .monospaced))
@@ -133,7 +133,7 @@ struct InitFailedStepView: View {
     private func failedDiagnostics(_ mapping: CoreErrorMappingSnapshot) -> some View {
         TintedOutlinedStatusBanner(tint: .red) {
             VStack(alignment: .leading, spacing: 6) {
-                Label("Diagnostics could not be collected", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Diagnostics could not be collected"), systemImage: "exclamationmark.triangle")
                     .font(.headline)
                 Text(mapping.userMessage)
                 Text(mapping.suggestedAction)

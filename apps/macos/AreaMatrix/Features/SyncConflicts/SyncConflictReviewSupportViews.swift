@@ -52,7 +52,7 @@ struct SyncConflictReviewVersionsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Versions")
+            Text(L10n.string("Versions"))
                 .font(.headline)
             ForEach(files) { file in
                 SyncConflictReviewVersionCard(file: file)
@@ -119,7 +119,7 @@ struct SyncConflictReviewApplySuccess: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Resolution applied.", systemImage: "checkmark.circle")
+            Label(L10n.string("Resolution applied."), systemImage: "checkmark.circle")
                 .foregroundStyle(.green)
             SyncConflictReviewMetadataGrid(rows: [
                 ("Conflict ID", report.conflictID),

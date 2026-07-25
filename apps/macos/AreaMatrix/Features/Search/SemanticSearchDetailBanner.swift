@@ -17,12 +17,12 @@ struct SemanticSearchDetailBanner: View {
                 Text("Relevance \(detail.relevance)  \(detail.routeLabel)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                DisclosureGroup("Why this matched") {
+                DisclosureGroup(L10n.string("Why this matched")) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(detail.matchedReason)
                         Text(detail.whyThisMatched.resolve(using: localizer))
                         if detail.alsoMatchedNormalSearch {
-                            Text("Also matched normal search")
+                            Text(L10n.string("Also matched normal search"))
                         }
                     }
                     .font(.caption)

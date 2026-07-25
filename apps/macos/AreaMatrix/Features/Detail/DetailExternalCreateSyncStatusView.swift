@@ -53,7 +53,7 @@ struct DetailExternalCreateSyncStatusView: View {
                 Text(mapping.userMessage)
                 Text(mapping.suggestedAction)
                     .foregroundStyle(.secondary)
-                Button("Retry", action: onRetry)
+                Button(L10n.string("Retry"), action: onRetry)
                     .accessibilityIdentifier("external-sync-retry")
             }
             .font(.caption)

@@ -19,13 +19,13 @@ struct RepositorySettingsPathSection: View {
 
     private var repositoryPathActions: some View {
         HStack(spacing: 10) {
-            Button("Reveal in Finder", action: onRevealInFinder)
+            Button(L10n.string("Reveal in Finder"), action: onRevealInFinder)
                 .accessibilityIdentifier("repository-settings-reveal-repository")
 
-            Button("Copy path", action: onCopyPath)
+            Button(L10n.string("Copy path"), action: onCopyPath)
                 .accessibilityIdentifier("repository-settings-copy-repository-path")
 
-            Button("Change repository...", action: onChangeRepository)
+            Button(L10n.string("Change repository..."), action: onChangeRepository)
                 .accessibilityIdentifier("repository-settings-change-repository")
         }
     }
@@ -105,10 +105,10 @@ struct RepositorySettingsSafeActionsSection: View {
 
     var body: some View {
         RepositorySettingsSection(title: L10n.string("Actions")) {
-            Button("Reconnect Repository", action: onReconnectRepository)
+            Button(L10n.string("Reconnect Repository"), action: onReconnectRepository)
                 .accessibilityIdentifier("repository-settings-reconnect-repository")
 
-            Button("Choose Another Folder", action: onChooseAnotherFolder)
+            Button(L10n.string("Choose Another Folder"), action: onChooseAnotherFolder)
                 .accessibilityIdentifier("repository-settings-choose-another-folder")
 
             Button(diagnosticsButtonTitle, action: onExportDiagnostics)
@@ -116,7 +116,7 @@ struct RepositorySettingsSafeActionsSection: View {
                 .help(diagnosticsDisabledReason ?? L10n.string("Diagnostics export is available."))
                 .accessibilityIdentifier("repository-settings-export-diagnostics")
 
-            Text("Diagnostics do not include your original file contents and are not uploaded automatically.")
+            Text(L10n.string("Diagnostics do not include your original file contents and are not uploaded automatically."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }

@@ -68,7 +68,7 @@ struct ICloudConflictMinimalSheet: View {
             pageID: "icloud-conflict-review"
         ) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("This is an iCloud conflicted copy. AreaMatrix will not delete any version automatically.")
+                Text(L10n.string("This is an iCloud conflicted copy. AreaMatrix will not delete any version automatically."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 previewStatus
@@ -92,10 +92,10 @@ struct ICloudConflictMinimalSheet: View {
     private var singleVersionConfirmation: some View {
         if selectedStrategy.requiresSecondConfirmation {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Move the other version to Trash?")
+                Text(L10n.string("Move the other version to Trash?"))
                     .font(.caption)
                     .fontWeight(.semibold)
-                Text("AreaMatrix will move the other version to system Trash and keep a change-log record.")
+                Text(L10n.string("AreaMatrix will move the other version to system Trash and keep a change-log record."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let disabledReason = selectedOption?.disabledReason, !disabledReason.isEmpty {
@@ -109,7 +109,7 @@ struct ICloudConflictMinimalSheet: View {
                     )
                 } else {
                     Toggle(
-                        "我理解另一份冲突副本会被移到系统废纸篓",
+                        L10n.string("我理解另一份冲突副本会被移到系统废纸篓"),
                         isOn: $didConfirmSingleVersion
                     )
                     .disabled(currentResolutionState.isApplying)
@@ -164,12 +164,12 @@ struct ICloudConflictMinimalSheet: View {
                 .font(.system(.caption, design: .monospaced))
                 .textSelection(.enabled)
             HStack {
-                Button("Retry") {
+                Button(L10n.string("Retry")) {
                     Task { await submit() }
                 }
                 .disabled(!canApplySelectedStrategy)
-                Button("Cancel", action: onCancel)
-                Button("Collect Diagnostics...", action: onCollectDiagnostics)
+                Button(L10n.string("Cancel"), action: onCancel)
+                Button(L10n.string("Collect Diagnostics..."), action: onCollectDiagnostics)
             }
         }
         .accessibilityIdentifier("icloud-conflict-minimal-error-mapping-apply-failure")
@@ -178,7 +178,7 @@ struct ICloudConflictMinimalSheet: View {
     var actionButtons: some View {
         HStack {
             Spacer()
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .disabled(currentResolutionState.isApplying)
             Button(primaryActionTitle, role: selectedStrategy.requiresSecondConfirmation ? .destructive : nil) {

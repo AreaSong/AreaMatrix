@@ -25,9 +25,9 @@ struct QueryErrorRouteView: View {
         VStack(alignment: .leading, spacing: 16) {
             inlineDiagnostic
             VStack(alignment: .leading, spacing: 10) {
-                Text("Query could not be parsed")
+                Text(L10n.string("Query could not be parsed"))
                     .font(.title3.weight(.semibold))
-                Text("Fix the highlighted part of your query to continue searching.")
+                Text(L10n.string("Fix the highlighted part of your query to continue searching."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 diagnosticDetails
@@ -72,14 +72,14 @@ struct QueryErrorRouteView: View {
     private var actions: some View {
         HStack(spacing: 10) {
             if let suggestion = diagnostic.safeSuggestion {
-                Button("Apply suggestion") {
+                Button(L10n.string("Apply suggestion")) {
                     applySuggestion(suggestion)
                 }
                 .keyboardShortcut(.defaultAction)
             }
-            Button("Clear query", action: onClear)
+            Button(L10n.string("Clear query"), action: onClear)
                 .keyboardShortcut(.cancelAction)
-            Button("Open query help") {
+            Button(L10n.string("Open query help")) {
                 isHelpPresented.toggle()
             }
             .popover(isPresented: $isHelpPresented) {
@@ -116,11 +116,11 @@ struct QueryErrorRouteView: View {
 struct QuerySyntaxHintPopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Query help")
+            Text(L10n.string("Query help"))
                 .font(.headline)
-            Text("Supported fields: kind:, cat:, after:, before:, tag:, note:")
+            Text(L10n.string("Supported fields: kind:, cat:, after:, before:, tag:, note:"))
             Text("Use quotes or escape literal colons, such as \"foo:bar\" or foo\\:bar.")
-            Text("Loading help...")
+            Text(L10n.string("Loading help..."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -137,7 +137,7 @@ struct QueryDiagnosticSummary: View {
     var body: some View {
         TintedStatusBanner(tint: .red, fillsWidth: false) {
             VStack(alignment: .leading, spacing: 8) {
-                Label("Query could not be parsed", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Query could not be parsed"), systemImage: "exclamationmark.triangle")
                     .font(.callout.weight(.semibold))
                 metadataRow("Query", QueryTokenHighlighter.highlighted(query: query, diagnostic: diagnostic))
                 metadataRow("Problem", diagnostic.problemText)

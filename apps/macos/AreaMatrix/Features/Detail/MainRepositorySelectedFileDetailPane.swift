@@ -51,7 +51,7 @@ struct MainRepositorySelectedFileDetailPane: View {
                     onBeginSyncConflictReview(detail)
                 }
                 semanticSearchDetailBanner
-                Picker("Detail tab", selection: Binding(get: { selectedTab }, set: onRequestTabChange)) {
+                Picker(L10n.string("Detail tab"), selection: Binding(get: { selectedTab }, set: onRequestTabChange)) {
                     ForEach(DetailPaneTab.allCases) { tab in
                         Text(tab.title).tag(tab)
                     }

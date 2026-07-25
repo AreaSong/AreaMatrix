@@ -15,7 +15,7 @@ extension MainRepositoryContentView {
         case let .completed(_, report):
             Text(semanticCompletedIndexText(report))
         case .canceled:
-            Text("Semantic index build canceled.")
+            Text(L10n.string("Semantic index build canceled."))
         case let .failed(_, error):
             Text(L10n.format("search.semanticIndex.buildFailed", error.userMessage))
         }
@@ -114,17 +114,17 @@ extension MainRepositoryContentView {
     @ViewBuilder
     var semanticIndexRecoveryActions: some View {
         if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
-            Button("View privacy rule") {
+            Button(L10n.string("View privacy rule")) {
                 searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
             }
             .accessibilityIdentifier("semantic-search-ai-privacy-rules-core-view-privacy-rule")
         }
         switch fileListModel.semanticPrivacyGateState {
         case .blocked, .failed:
-            Button("Retry privacy check") {
+            Button(L10n.string("Retry privacy check")) {
                 Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
             }
-            Button("Use normal search") {
+            Button(L10n.string("Use normal search")) {
                 searchRoutingState.isSemanticIndexConfirmationPresented = false
                 searchMode = .normal
                 Task { await rerunCurrentSearch(mode: .normal) }
@@ -138,7 +138,7 @@ extension MainRepositoryContentView {
     @ViewBuilder
     private var semanticCallLogRecoveryButton: some View {
         if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
-            Button("View call log") {
+            Button(L10n.string("View call log")) {
                 searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
             }
         }
@@ -187,7 +187,7 @@ extension MainRepositoryContentView {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
                 Text(semanticStatusText(page))
-                Button("Use normal search") {
+                Button(L10n.string("Use normal search")) {
                     searchMode = .normal
                     Task { await rerunCurrentSearch(mode: .normal) }
                 }
@@ -253,7 +253,7 @@ extension MainRepositoryContentView {
         case .idle:
             EmptyView()
         case .checking:
-            Text("Checking privacy rules before semantic indexing...")
+            Text(L10n.string("Checking privacy rules before semantic indexing..."))
         case let .allowed(_, report):
             Text(L10n.format(
                 "search.semanticIndex.privacyGateAllowed",
@@ -263,18 +263,18 @@ extension MainRepositoryContentView {
             HStack(spacing: 10) {
                 Text(L10n.format("search.semanticIndex.privacyGateBlocked", report.message))
                 if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
-                    Button("View privacy rule") {
+                    Button(L10n.string("View privacy rule")) {
                         searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
                     }
                 }
-                Button("Retry privacy check") {
+                Button(L10n.string("Retry privacy check")) {
                     Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
                 }
             }
         case let .failed(_, error):
             HStack(spacing: 10) {
                 Text(L10n.format("search.semanticIndex.privacyGateCheckFailed", error.userMessage))
-                Button("Retry privacy check") {
+                Button(L10n.string("Retry privacy check")) {
                     Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
                 }
             }
@@ -284,27 +284,27 @@ extension MainRepositoryContentView {
     @ViewBuilder
     private var semanticBuildLifecycleControls: some View {
         if fileListModel.semanticIndexBuildState.canPause {
-            Button("Pause index build") {
+            Button(L10n.string("Pause index build")) {
                 Task { await fileListModel.pauseSemanticIndexBuildForCurrentSearch() }
             }
             .disabled(fileListModel.semanticIndexControlState.isCanceling)
             .accessibilityIdentifier("semantic-search-pause-index-build")
         }
         if fileListModel.semanticIndexBuildState.canCancel {
-            Button("Cancel index build") {
+            Button(L10n.string("Cancel index build")) {
                 fileListModel.requestCancelSemanticIndexBuildForCurrentSearch()
             }
             .disabled(fileListModel.semanticIndexControlState.isCanceling)
             .accessibilityIdentifier("semantic-search-cancel-index-build")
         }
         if fileListModel.semanticIndexBuildState.canResume {
-            Button("Resume index build") {
+            Button(L10n.string("Resume index build")) {
                 Task { await fileListModel.resumeSemanticIndexBuildForCurrentSearch() }
             }
             .accessibilityIdentifier("semantic-search-resume-index-build")
         }
         if fileListModel.semanticIndexBuildState.canRetryFailedItems {
-            Button("Retry failed items") {
+            Button(L10n.string("Retry failed items")) {
                 Task { await fileListModel.retryFailedSemanticIndexItemsForCurrentSearch() }
             }
             .disabled(fileListModel.semanticIndexControlState.isCanceling)
@@ -316,14 +316,14 @@ extension MainRepositoryContentView {
     private var semanticCancelStatusText: some View {
         switch fileListModel.semanticIndexControlState {
         case .canceling:
-            Text("Canceling semantic index build...")
+            Text(L10n.string("Canceling semantic index build..."))
         case .canceled:
-            Text("Semantic index build canceled.")
+            Text(L10n.string("Semantic index build canceled."))
             HStack(spacing: 10) {
-                Button("Retry index build") {
+                Button(L10n.string("Retry index build")) {
                     Task { await fileListModel.retryFailedSemanticIndexItemsForCurrentSearch() }
                 }
-                Button("View call log") {
+                Button(L10n.string("View call log")) {
                     if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
                         searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
                     }
@@ -332,10 +332,10 @@ extension MainRepositoryContentView {
         case let .cancelFailed(_, error):
             HStack(spacing: 10) {
                 Text(L10n.format("search.semanticIndex.cancelFailed", error.userMessage))
-                Button("Retry cancel") {
+                Button(L10n.string("Retry cancel")) {
                     Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
                 }
-                Button("View call log") {
+                Button(L10n.string("View call log")) {
                     if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
                         searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
                     }
@@ -344,7 +344,7 @@ extension MainRepositoryContentView {
         case let .pauseFailed(_, error):
             HStack(spacing: 10) {
                 Text(L10n.format("search.semanticIndex.pauseFailed", error.userMessage))
-                Button("Use normal search") {
+                Button(L10n.string("Use normal search")) {
                     searchMode = .normal
                     Task { await rerunCurrentSearch(mode: .normal) }
                 }
@@ -357,7 +357,7 @@ extension MainRepositoryContentView {
     @ViewBuilder
     private func semanticBuildIndexButton(_ page: SemanticSearchResultPageSnapshot) -> some View {
         if page.canBuildIndex {
-            Button("Build semantic index") {
+            Button(L10n.string("Build semantic index")) {
                 Task {
                     await fileListModel.refreshSemanticPrivacyGateForCurrentSearch()
                     searchRoutingState.isSemanticIndexConfirmationPresented = true

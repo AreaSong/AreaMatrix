@@ -14,9 +14,9 @@ struct ReplaceConfirmSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("确认替换？")
+            Text(L10n.string("确认替换？"))
                 .font(.title2.weight(.semibold))
-            Text("你将用新文件替换资料库中的已有文件。")
+            Text(L10n.string("你将用新文件替换资料库中的已有文件。"))
                 .font(.callout)
 
             replaceSummary
@@ -24,7 +24,7 @@ struct ReplaceConfirmSheet: View {
             if errorMessage != nil {
                 recoveryActions
             } else {
-                Toggle("我理解这是替换操作", isOn: $understandsReplace)
+                Toggle(L10n.string("我理解这是替换操作"), isOn: $understandsReplace)
                 actions
             }
         }
@@ -40,18 +40,18 @@ struct ReplaceConfirmSheet: View {
             Divider()
             fileSummary(title: L10n.string("import.replace.incomingFile"), path: context.incomingPath,
                         sizeBytes: context.incomingSizeBytes, modifiedAt: context.incomingModifiedAt)
-            LabeledContent("目标位置", value: context.targetRelativePath)
+            LabeledContent(L10n.string("目标位置"), value: context.targetRelativePath)
         }
     }
 
     private var impactSummary: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("旧文件将移到系统废纸篓。")
-            Text("新文件将写入原目标位置。")
-            Text("这次操作会记录到改动日志。")
-            Text("如果导入失败，AreaMatrix 会保持原文件不变或恢复到安全状态。")
+            Text(L10n.string("旧文件将移到系统废纸篓。"))
+            Text(L10n.string("新文件将写入原目标位置。"))
+            Text(L10n.string("这次操作会记录到改动日志。"))
+            Text(L10n.string("如果导入失败，AreaMatrix 会保持原文件不变或恢复到安全状态。"))
             if !context.isTrashAvailable {
-                Text("Replace requires system Trash")
+                Text(L10n.string("Replace requires system Trash"))
                     .foregroundStyle(.orange)
             }
         }
@@ -71,15 +71,15 @@ struct ReplaceConfirmSheet: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text("Diagnostics do not include user file contents.")
+            Text(L10n.string("Diagnostics do not include user file contents."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack {
                 Spacer()
-                Button("Cancel", action: onCancel)
+                Button(L10n.string("Cancel"), action: onCancel)
                     .keyboardShortcut(.cancelAction)
-                Button("Collect Diagnostics...", action: onCollectDiagnostics)
-                Button("Retry", action: onRetry)
+                Button(L10n.string("Collect Diagnostics..."), action: onCollectDiagnostics)
+                Button(L10n.string("Retry"), action: onRetry)
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -88,9 +88,9 @@ struct ReplaceConfirmSheet: View {
     private var actions: some View {
         HStack {
             Spacer()
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .keyboardShortcut(.cancelAction)
-            Button("Replace", role: .destructive) {
+            Button(L10n.string("Replace"), role: .destructive) {
                 onConfirm(context.decision(understandsReplace: understandsReplace))
             }
             .keyboardShortcut(.defaultAction)
@@ -122,13 +122,13 @@ struct ReplaceConfirmSheet: View {
         VStack(alignment: .leading, spacing: 4) {
             LabeledContent(title, value: path)
             if let sizeBytes {
-                LabeledContent("大小", value: ByteCountFormatter.string(
+                LabeledContent(L10n.string("大小"), value: ByteCountFormatter.string(
                     fromByteCount: sizeBytes,
                     countStyle: .file
                 ))
             }
             if let modifiedAt {
-                LabeledContent("修改时间", value: DateFormatter.localizedString(
+                LabeledContent(L10n.string("修改时间"), value: DateFormatter.localizedString(
                     from: Date(timeIntervalSince1970: TimeInterval(modifiedAt)),
                     dateStyle: .medium,
                     timeStyle: .short

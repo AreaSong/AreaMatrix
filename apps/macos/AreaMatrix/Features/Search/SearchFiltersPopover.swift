@@ -30,7 +30,7 @@ struct SearchFiltersPopover: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Filters")
+            Text(L10n.string("Filters"))
                 .font(.headline)
             Text(activeSummary)
                 .font(.callout)
@@ -45,7 +45,7 @@ struct SearchFiltersPopover: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if facetsState.isLoading {
-            Label("Loading filter counts...", systemImage: "clock.arrow.circlepath")
+            Label(L10n.string("Loading filter counts..."), systemImage: "clock.arrow.circlepath")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if let facets = facetsState.facets {
@@ -53,7 +53,7 @@ struct SearchFiltersPopover: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else {
-            Label("Filter counts load after entering a query", systemImage: "line.3.horizontal.decrease.circle")
+            Label(L10n.string("Filter counts load after entering a query"), systemImage: "line.3.horizontal.decrease.circle")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -100,7 +100,7 @@ struct SearchFiltersPopover: View {
             )
             SearchStorageFacetPicker(filters: $filters, options: facetsState.facets?.storageModes ?? [])
             Toggle(
-                "Include deleted files",
+                L10n.string("Include deleted files"),
                 isOn: Binding(
                     get: { filters.includeDeleted },
                     set: { filters = SearchFilterEditing.settingIncludeDeleted($0, in: filters) }
@@ -112,11 +112,11 @@ struct SearchFiltersPopover: View {
 
     private var footer: some View {
         HStack {
-            Button("Reset filters", action: onReset)
+            Button(L10n.string("Reset filters"), action: onReset)
                 .disabled(filters.isEmpty)
             Spacer()
             if isEditingSmartListDraft {
-                Text("Draft changes")
+                Text(L10n.string("Draft changes"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else if let saveDisabledReason, !canSaveAsSmartList {
@@ -124,14 +124,14 @@ struct SearchFiltersPopover: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Button("Retry", action: onRetry)
+            Button(L10n.string("Retry"), action: onRetry)
                 .disabled(facetsState.errorMapping == nil)
             if !isEditingSmartListDraft {
-                Button("Save as Smart List", action: onSaveAsSmartList)
+                Button(L10n.string("Save as Smart List"), action: onSaveAsSmartList)
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canSaveAsSmartList)
             }
-            Button("Close") { dismiss() }
+            Button(L10n.string("Close")) { dismiss() }
         }
     }
 

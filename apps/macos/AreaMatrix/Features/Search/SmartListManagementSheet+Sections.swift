@@ -12,7 +12,7 @@ extension SmartListManagementSheet {
             footer
         case .duplicate:
             nameEditor
-            Toggle("Pin to sidebar", isOn: $model.pinned)
+            Toggle(L10n.string("Pin to sidebar"), isOn: $model.pinned)
                 .disabled(model.isSaving)
             preview
             footer
@@ -36,7 +36,7 @@ extension SmartListManagementSheet {
                 Label(failure.userMessage, systemImage: "exclamationmark.triangle")
                 Spacer()
                 if model.showsRetry {
-                    Button("Retry") { Task { await submit() } }
+                    Button(L10n.string("Retry")) { Task { await submit() } }
                         .accessibilityIdentifier("smart-list-management-save-retry")
                 }
             }
@@ -49,7 +49,7 @@ extension SmartListManagementSheet {
     }
 
     var nameEditor: some View {
-        TextField("Name", text: $model.name)
+        TextField(L10n.string("Name"), text: $model.name)
             .textFieldStyle(.roundedBorder)
             .disabled(model.isSaving)
             .accessibilityIdentifier("smart-list-management-smart-list-name")
@@ -65,15 +65,15 @@ extension SmartListManagementSheet {
 
     var queryEditor: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TextField("Query", text: $model.query)
+            TextField(L10n.string("Query"), text: $model.query)
                 .textFieldStyle(.roundedBorder)
                 .disabled(model.isSaving)
-            Picker("Scope", selection: $model.scope) {
+            Picker(L10n.string("Scope"), selection: $model.scope) {
                 ForEach(SearchScopeSnapshot.allCases) { scope in
                     Text(scope.displayName).tag(scope)
                 }
             }
-            Picker("Sort", selection: $model.sort) {
+            Picker(L10n.string("Sort"), selection: $model.sort) {
                 ForEach(SearchSortSnapshot.allCases) { sort in
                     Text(sort.displayName).tag(sort)
                 }
@@ -103,13 +103,13 @@ extension SmartListManagementSheet {
     var footer: some View {
         HStack {
             if model.mode == .editQuery {
-                Button("Reset changes", action: resetChanges)
+                Button(L10n.string("Reset changes"), action: resetChanges)
                     .disabled(model.isSaving)
-                Button("Edit filters") { onEditFilters(model.original, model.filters) }
+                Button(L10n.string("Edit filters")) { onEditFilters(model.original, model.filters) }
                     .disabled(model.isSaving)
             }
             Spacer()
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .disabled(model.isSaving)
             Button(model.primaryActionTitle, role: model.mode == .delete ? .destructive : nil) {

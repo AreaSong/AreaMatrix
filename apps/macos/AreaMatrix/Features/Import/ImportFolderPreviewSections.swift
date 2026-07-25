@@ -89,7 +89,7 @@ struct ImportFolderDestinationSection: View {
     let isDisabled: Bool
 
     var body: some View {
-        Picker("导入到", selection: $selectedDestination) {
+        Picker(L10n.string("导入到"), selection: $selectedDestination) {
             ForEach(destinationOptions, id: \.self) { destination in
                 Text(destination.title).tag(destination)
             }
@@ -108,15 +108,15 @@ struct ImportFolderSummarySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("文件夹信息")
+            Text(L10n.string("文件夹信息"))
                 .font(.headline)
-            LabeledContent("文件夹", value: folderPath)
+            LabeledContent(L10n.string("文件夹"), value: folderPath)
             HStack(spacing: 16) {
-                LabeledContent("已发现", value: L10n.plural("import.folder.file-count", count: fileCount))
-                LabeledContent("总大小", value: totalSizeDescription ?? L10n.string("import.folder.calculating"))
-                LabeledContent("子文件夹", value: L10n.plural("import.folder.subfolder-count", count: folderCount))
+                LabeledContent(L10n.string("已发现"), value: L10n.plural("import.folder.file-count", count: fileCount))
+                LabeledContent(L10n.string("总大小"), value: totalSizeDescription ?? L10n.string("import.folder.calculating"))
+                LabeledContent(L10n.string("子文件夹"), value: L10n.plural("import.folder.subfolder-count", count: folderCount))
                 LabeledContent(
-                    "iCloud",
+                    L10n.string("iCloud"),
                     value: L10n.plural("import.folder.icloud-placeholder-count", count: iCloudPlaceholderCount)
                 )
             }
@@ -131,7 +131,7 @@ struct ImportFolderExclusionSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("默认排除")
+            Text(L10n.string("默认排除"))
                 .font(.headline)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], alignment: .leading, spacing: 8) {
                 ForEach(defaultRules, id: \.self) { rule in
@@ -167,11 +167,11 @@ struct ImportFolderAdvancedOptionsSection: View {
     let isDisabled: Bool
 
     var body: some View {
-        DisclosureGroup("高级选项") {
+        DisclosureGroup(L10n.string("高级选项")) {
             VStack(alignment: .leading, spacing: 8) {
-                Toggle("包含隐藏文件", isOn: $includeHiddenFiles)
-                Toggle("跟随符号链接", isOn: $followSymlinks)
-                Text("选项变化后会重新预扫描；确认前不会复制、移动或写入文件。")
+                Toggle(L10n.string("包含隐藏文件"), isOn: $includeHiddenFiles)
+                Toggle(L10n.string("跟随符号链接"), isOn: $followSymlinks)
+                Text(L10n.string("选项变化后会重新预扫描；确认前不会复制、移动或写入文件。"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -188,7 +188,7 @@ struct ImportFolderStorageModeSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Picker("存储模式", selection: $selectedStorageMode) {
+            Picker(L10n.string("存储模式"), selection: $selectedStorageMode) {
                 ForEach(ImportSingleFileStorageMode.allCases) { mode in
                     Text(mode.displayName).tag(mode)
                 }
@@ -241,7 +241,7 @@ struct ImportFolderErrorSummary: View {
     var body: some View {
         if let firstError = errors.first {
             VStack(alignment: .leading, spacing: 4) {
-                Text("预扫描错误")
+                Text(L10n.string("预扫描错误"))
                     .font(.headline)
                 Text(L10n.format("import.folder.scan-error", firstError.path, firstError.message))
                     .font(.caption)
@@ -273,9 +273,9 @@ struct ImportFolderICloudSummarySection: View {
                         .foregroundStyle(.orange)
                 }
                 HStack(spacing: 10) {
-                    Button("Download & retry scan", action: onDownloadAndRetry)
+                    Button(L10n.string("Download & retry scan"), action: onDownloadAndRetry)
                         .disabled(isDownloading)
-                    Button("Switch to local repo...", action: onSwitchToLocalRepo)
+                    Button(L10n.string("Switch to local repo..."), action: onSwitchToLocalRepo)
                         .disabled(isDownloading)
                     if isDownloading {
                         ProgressView()
@@ -292,21 +292,21 @@ struct ImportFolderRowsSection: View {
     let rows: [ImportFolderPreviewRow]
 
     var body: some View {
-        DisclosureGroup("View files...") {
+        DisclosureGroup(L10n.string("View files...")) {
             Table(rows) {
-                TableColumn("File") { row in
+                TableColumn(L10n.string("File")) { row in
                     Text(row.originalName)
                 }
-                TableColumn("Relative path") { row in
+                TableColumn(L10n.string("Relative path")) { row in
                     Text(row.relativePath)
                 }
-                TableColumn("Suggested category") { row in
+                TableColumn(L10n.string("Suggested category")) { row in
                     Text(row.predictedCategory ?? L10n.string("未生成"))
                 }
-                TableColumn("Suggested name") { row in
+                TableColumn(L10n.string("Suggested name")) { row in
                     Text(row.suggestedName)
                 }
-                TableColumn("Status") { row in
+                TableColumn(L10n.string("Status")) { row in
                     statusCell(for: row)
                 }
             }

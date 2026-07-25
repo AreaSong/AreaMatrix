@@ -17,45 +17,45 @@ struct ImportResultView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("导入结果")
+            Text(L10n.string("导入结果"))
                 .font(.title2.weight(.semibold))
             Text(state.summaryText)
                 .font(.headline)
                 .accessibilityLabel(state.summaryText)
 
-            Picker("Filter", selection: $filter) {
-                Text("All").tag(ImportResultRouteState.ItemStatus?.none)
-                Text("Imported").tag(ImportResultRouteState.ItemStatus?.some(.imported))
-                Text("Skipped").tag(ImportResultRouteState.ItemStatus?.some(.skipped))
-                Text("Failed").tag(ImportResultRouteState.ItemStatus?.some(.failed))
+            Picker(L10n.string("Filter"), selection: $filter) {
+                Text(L10n.string("All")).tag(ImportResultRouteState.ItemStatus?.none)
+                Text(L10n.string("Imported")).tag(ImportResultRouteState.ItemStatus?.some(.imported))
+                Text(L10n.string("Skipped")).tag(ImportResultRouteState.ItemStatus?.some(.skipped))
+                Text(L10n.string("Failed")).tag(ImportResultRouteState.ItemStatus?.some(.failed))
             }
             .pickerStyle(.segmented)
             .labelsHidden()
 
             Table(filteredItems, selection: $selectedItemID) {
-                TableColumn("文件名") { item in
+                TableColumn(L10n.string("文件名")) { item in
                     Text(displayName(for: item.targetPath))
                 }
-                TableColumn("目标分类") { item in
+                TableColumn(L10n.string("目标分类")) { item in
                     Text(displayCategory(for: item.targetPath))
                 }
-                TableColumn("状态") { item in
+                TableColumn(L10n.string("状态")) { item in
                     Text(item.status.displayName)
                 }
-                TableColumn("原因") { item in
+                TableColumn(L10n.string("原因")) { item in
                     Text(item.reason)
                 }
-                TableColumn("动作") { item in
+                TableColumn(L10n.string("动作")) { item in
                     if item.canReviewTagSuggestions {
-                        Button("Review tag suggestions") {
+                        Button(L10n.string("Review tag suggestions")) {
                             onReviewTagSuggestions(item.id)
                         }
                     } else if item.canShowExistingFile {
-                        Button("Show existing file") {
+                        Button(L10n.string("Show existing file")) {
                             onShowExistingFile(item.id)
                         }
                     } else {
-                        Text("-")
+                        Text(L10n.string("-"))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -80,12 +80,12 @@ struct ImportResultView: View {
                     ProgressView()
                         .controlSize(.small)
                 }
-                Button("Export Details...", action: onRequestExport)
+                Button(L10n.string("Export Details..."), action: onRequestExport)
                     .buttonStyle(AreaMatrixSecondaryButtonStyle())
                 Button(state.retryButtonTitle, action: onRetryFailed)
                     .buttonStyle(AreaMatrixSecondaryButtonStyle())
                     .disabled(!state.canRetryFailedItems)
-                Button("Done", action: onDone)
+                Button(L10n.string("Done"), action: onDone)
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(AreaMatrixPrimaryButtonStyle(accent: AreaMatrixTheme.Colors.emerald))
             }
@@ -99,8 +99,8 @@ struct ImportResultView: View {
             isPresented: exportConfirmationBinding,
             titleVisibility: .visible
         ) {
-            Button("Export Details...", action: onConfirmExport)
-            Button("Cancel", role: .cancel, action: onCancelExport)
+            Button(L10n.string("Export Details..."), action: onConfirmExport)
+            Button(L10n.string("Cancel"), role: .cancel, action: onCancelExport)
         } message: {
             Text(
                 [
@@ -170,10 +170,10 @@ struct ImportResultView: View {
     private var changeLogSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Core change log")
+                Text(L10n.string("Core change log"))
                     .font(.headline)
                 Spacer()
-                Button("Refresh", action: onLoadChangeLog)
+                Button(L10n.string("Refresh"), action: onLoadChangeLog)
                     .disabled(changeLogIsLoading)
             }
             changeLogContent
@@ -188,28 +188,28 @@ struct ImportResultView: View {
             HStack(spacing: 8) {
                 ProgressView()
                     .controlSize(.small)
-                Text("Loading import log from Core...")
+                Text(L10n.string("Loading import log from Core..."))
                     .foregroundStyle(.secondary)
             }
         case let .loaded(entries):
             if entries.isEmpty {
-                Text("No imported change_log rows returned for this repository.")
+                Text(L10n.string("No imported change_log rows returned for this repository."))
                     .foregroundStyle(.secondary)
             } else {
                 Table(entries) {
-                    TableColumn("时间") { entry in
+                    TableColumn(L10n.string("时间")) { entry in
                         Text(entry.occurredAtDisplay)
                     }
-                    TableColumn("文件") { entry in
+                    TableColumn(L10n.string("文件")) { entry in
                         Text(entry.filename)
                     }
-                    TableColumn("分类") { entry in
+                    TableColumn(L10n.string("分类")) { entry in
                         Text(entry.category.isEmpty ? L10n.string("repo root") : entry.category)
                     }
-                    TableColumn("动作") { entry in
+                    TableColumn(L10n.string("动作")) { entry in
                         Text(entry.actionDisplayName)
                     }
-                    TableColumn("详情") { entry in
+                    TableColumn(L10n.string("详情")) { entry in
                         Text(entry.detailSummary)
                             .lineLimit(1)
                     }
@@ -238,7 +238,7 @@ private struct ImportErrorDetailView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Result details", systemImage: item.status.detailSystemImage)
+            Label(L10n.string("Result details"), systemImage: item.status.detailSystemImage)
                 .font(.headline)
             detailRow(L10n.string("Status"), item.status.displayName)
             detailRow("Source", item.sanitizedSourcePath)

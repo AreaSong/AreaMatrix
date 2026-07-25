@@ -75,12 +75,12 @@ extension MainRepositoryContentView {
                     Label(banner.message, systemImage: banner.systemImage)
                         .font(.callout)
                     Spacer()
-                    Button("Retry") {
+                    Button(L10n.string("Retry")) {
                         Task {
                             await fileListModel.retryCurrentCategory()
                         }
                     }
-                    Button("Dismiss") {
+                    Button(L10n.string("Dismiss")) {
                         fileListModel.clearStatusBanner()
                     }
                 }

@@ -39,7 +39,7 @@ struct BatchDeletePreviewSummary: View {
             )
         }
         if preview.blockedCount > 0 {
-            Label("Blocked items will be left unchanged.", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("Blocked items will be left unchanged."), systemImage: "exclamationmark.triangle")
         }
     }
 
@@ -80,7 +80,7 @@ struct BatchDeleteResultSummary: View {
     @ViewBuilder
     private var failedDetails: some View {
         if result.failedCount > 0 {
-            Button("View details", action: onToggleDetails)
+            Button(L10n.string("View details"), action: onToggleDetails)
             if showsDetails {
                 ForEach(result.itemResults.filter { $0.status == .failed }) { item in
                     Text(
@@ -126,7 +126,7 @@ extension BatchAITagSuggestionSheet {
         } else if let review = state.review {
             reviewContent(review)
         } else {
-            Text("No AI tag suggestions loaded.")
+            Text(L10n.string("No AI tag suggestions loaded."))
                 .foregroundStyle(.secondary)
         }
     }
@@ -193,7 +193,7 @@ extension BatchAITagSuggestionSheet {
 
     func fileList(_ review: AITagBatchSuggestionReview) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Files").font(.caption).foregroundStyle(.secondary)
+            Text(L10n.string("Files")).font(.caption).foregroundStyle(.secondary)
             ForEach(review.files) { file in
                 Text(
                     L10n.format(
@@ -268,7 +268,7 @@ extension BatchAITagSuggestionSheet {
                     actions.toggle(fileID, suggestion.suggestionId)
                 }
                 .disabled(state.isApplying || (!selected && !canAdd))
-                Button("Edit") {
+                Button(L10n.string("Edit")) {
                     actions.startEditing(fileID, suggestion.suggestionId)
                 }
                 .disabled(state.isApplying || suggestion.status == .alreadyApplied)
@@ -295,19 +295,19 @@ extension BatchAITagSuggestionSheet {
 
     func editRow(_ draft: AITagSuggestionEditDraft, fileID: Int64) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            TextField("Display name", text: Binding(
+            TextField(L10n.string("Display name"), text: Binding(
                 get: { draft.displayName },
                 set: { actions.editDisplayName(fileID, draft.suggestionID, $0) }
             ))
             HStack {
-                TextField("Slug", text: Binding(
+                TextField(L10n.string("Slug"), text: Binding(
                     get: { draft.slug },
                     set: { actions.editSlug(fileID, draft.suggestionID, $0) }
                 ))
-                Button("Regenerate") {
+                Button(L10n.string("Regenerate")) {
                     actions.regenerateSlug(fileID, draft.suggestionID)
                 }
-                Button("Cancel edit") {
+                Button(L10n.string("Cancel edit")) {
                     actions.cancelEditing(fileID)
                 }
             }
@@ -325,12 +325,12 @@ extension BatchAITagSuggestionSheet {
             VStack(alignment: .leading, spacing: 6) {
                 Text(skipReasonText(reason))
                     .font(.subheadline.weight(.semibold))
-                Text("AI tag suggestions are not generated while this setting is off.")
+                Text(L10n.string("AI tag suggestions are not generated while this setting is off."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack {
-                    Button("Open AI settings", action: onOpenAISettings)
-                    Button("Close") {
+                    Button(L10n.string("Open AI settings"), action: onOpenAISettings)
+                    Button(L10n.string("Close")) {
                         actions.cancel()
                         onClose()
                     }
@@ -342,14 +342,14 @@ extension BatchAITagSuggestionSheet {
     func reportTraceLinks(_ report: AiTagSuggestionReport) -> some View {
         HStack {
             if let ruleID = privacyRuleID(for: report) {
-                Button("View privacy rule") {
+                Button(L10n.string("View privacy rule")) {
                     privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
                 }
                 .buttonStyle(.link)
                 .accessibilityIdentifier("ai-tag-suggestions-ai-privacy-rules-core-view-batch-privacy-rule")
             }
             if let callLogID = report.callLogId {
-                Button("View AI call") {
+                Button(L10n.string("View AI call")) {
                     callLogRoute = BatchAITagCallLogRoute(callLogID: callLogID)
                 }
                 .buttonStyle(.link)

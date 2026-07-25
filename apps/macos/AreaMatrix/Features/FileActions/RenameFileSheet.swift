@@ -72,7 +72,7 @@ struct RenameFileSheet: View {
     @ViewBuilder
     private func validationStatus(for file: FileEntrySnapshot) -> some View {
         if state.isRenaming {
-            Label("Renaming...", systemImage: "arrow.triangle.2.circlepath")
+            Label(L10n.string("Renaming..."), systemImage: "arrow.triangle.2.circlepath")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } else if let failure = state.failure(for: file.id) {
@@ -80,7 +80,7 @@ struct RenameFileSheet: View {
         } else if let validationMessage = draft.validationMessage {
             FilenameValidationMessage(message: validationMessage)
             if let conflict = draft.conflictingFile {
-                Button("Show existing file") {
+                Button(L10n.string("Show existing file")) {
                     onShowExistingFile(conflict.id)
                 }
                 .keyboardShortcut("e", modifiers: [.command])
@@ -101,7 +101,7 @@ struct RenameFileSheet: View {
     private func actionButtons(for file: FileEntrySnapshot) -> some View {
         HStack {
             Spacer()
-            Button("Cancel", action: onCancel)
+            Button(L10n.string("Cancel"), action: onCancel)
                 .keyboardShortcut(.cancelAction)
                 .disabled(state.isRenaming)
             Button(primaryActionTitle(for: file)) {

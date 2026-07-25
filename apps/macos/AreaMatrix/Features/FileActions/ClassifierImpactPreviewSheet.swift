@@ -61,7 +61,7 @@ struct ClassifierImpactPreviewSheet: View {
                 L10n.string("Move preference"),
                 model.moveFiles ? L10n.string("Move files to new category folders") : L10n.string("Metadata only")
             )
-            Toggle("Move files to new category folders", isOn: moveFilesBinding)
+            Toggle(L10n.string("Move files to new category folders"), isOn: moveFilesBinding)
                 .disabled(model.loadState.isLoading)
                 .accessibilityIdentifier("classifier-impact-preview-move-files")
         }
@@ -70,7 +70,7 @@ struct ClassifierImpactPreviewSheet: View {
     @ViewBuilder
     private var previewState: some View {
         if model.loadState.isLoading {
-            Label("Previewing impact...", systemImage: "arrow.triangle.2.circlepath")
+            Label(L10n.string("Previewing impact..."), systemImage: "arrow.triangle.2.circlepath")
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("classifier-impact-preview-loading")
         }
@@ -79,7 +79,7 @@ struct ClassifierImpactPreviewSheet: View {
                 Label(failure.userMessage, systemImage: "exclamationmark.triangle")
                     .font(.caption.weight(.semibold))
                 Text(failure.suggestedAction).font(.caption)
-                Button("Retry preview") { Task { await refreshPreview() } }
+                Button(L10n.string("Retry preview")) { Task { await refreshPreview() } }
                     .accessibilityIdentifier("classifier-impact-preview-retry-preview")
             }
             .foregroundStyle(.red)
@@ -118,7 +118,7 @@ struct ClassifierImpactPreviewSheet: View {
 
     private var impactTable: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Picker("Rows", selection: $model.filter) {
+            Picker(L10n.string("Rows"), selection: $model.filter) {
                 ForEach(ClassifierImpactPreviewFilter.allCases) { filter in
                     Text(filter.displayName).tag(filter)
                 }
@@ -127,19 +127,19 @@ struct ClassifierImpactPreviewSheet: View {
             .accessibilityIdentifier("classifier-impact-preview-filter")
 
             Table(model.filteredSamples) {
-                TableColumn("File") { sample in
+                TableColumn(L10n.string("File")) { sample in
                     Text(sample.path).lineLimit(1)
                 }
-                TableColumn("Current category") { sample in
+                TableColumn(L10n.string("Current category")) { sample in
                     Text(sample.currentCategory)
                 }
-                TableColumn("New category") { sample in
+                TableColumn(L10n.string("New category")) { sample in
                     Text(sample.newCategory)
                 }
-                TableColumn("Action") { sample in
+                TableColumn(L10n.string("Action")) { sample in
                     Text(actionText(for: sample))
                 }
-                TableColumn("Status") { sample in
+                TableColumn(L10n.string("Status")) { sample in
                     statusCell(sample)
                 }
             }
@@ -150,14 +150,14 @@ struct ClassifierImpactPreviewSheet: View {
 
     private var actionButtons: some View {
         HStack {
-            Button("Back") { onBack(model.handoff) }
+            Button(L10n.string("Back")) { onBack(model.handoff) }
                 .disabled(model.loadState.isLoading)
             Spacer()
-            Button("Cancel", action: onCancel).keyboardShortcut(.cancelAction)
-            Button("Save rule only") {}
+            Button(L10n.string("Cancel"), action: onCancel).keyboardShortcut(.cancelAction)
+            Button(L10n.string("Save rule only")) {}
                 .disabled(true)
-                .help("Save the rule before applying it to existing files.")
-            Button("Save and apply to existing files") {}
+                .help(L10n.string("Save the rule before applying it to existing files."))
+            Button(L10n.string("Save and apply to existing files")) {}
                 .keyboardShortcut(.defaultAction)
                 .disabled(true)
                 .help(

@@ -25,7 +25,7 @@ struct RepositorySettingsConfigSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Repository config")
+            Text(L10n.string("Repository config"))
                 .font(.headline)
             content
         }
@@ -57,7 +57,7 @@ struct RepositorySettingsConfigSection: View {
             controls
             saveFeedback
         } else {
-            Text("Repository config is not available.")
+            Text(L10n.string("Repository config is not available."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -65,7 +65,7 @@ struct RepositorySettingsConfigSection: View {
 
     private var controls: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Picker("Overview output", selection: $draft.overviewOutput) {
+            Picker(L10n.string("Overview output"), selection: $draft.overviewOutput) {
                 ForEach(RepositorySettingsConfigOverviewOutput.allCases) { output in
                     Text(output.label).tag(output)
                 }
@@ -87,8 +87,8 @@ struct RepositorySettingsConfigSection: View {
                     .font(.callout)
                     .foregroundStyle(.orange)
             }
-            Toggle("Show cloud location warnings", isOn: $draft.iCloudWarn)
-            Toggle("Fallback uncategorized files to inbox", isOn: $draft.fallbackToInbox)
+            Toggle(L10n.string("Show cloud location warnings"), isOn: $draft.iCloudWarn)
+            Toggle(L10n.string("Fallback uncategorized files to inbox"), isOn: $draft.fallbackToInbox)
             saveActions
         }
         .disabled(editingDisabledReason != nil)
@@ -117,7 +117,7 @@ struct RepositorySettingsConfigSection: View {
             .disabled(!canSave)
             .accessibilityIdentifier("repository-settings-repository-settings-core-save-repository-config")
 
-            Button("Reset changes") {
+            Button(L10n.string("Reset changes")) {
                 draft = baseline.map(RepositorySettingsConfigDraft.init(config:)) ?? .empty
                 model.resetFeedback()
             }
@@ -137,7 +137,7 @@ struct RepositorySettingsConfigSection: View {
         case .idle:
             EmptyView()
         case .saving:
-            Label("Saving repository settings...", systemImage: "arrow.triangle.2.circlepath")
+            Label(L10n.string("Saving repository settings..."), systemImage: "arrow.triangle.2.circlepath")
                 .foregroundStyle(.secondary)
         case let .saved(message):
             SettingsStatusBanner(title: localizer.resolve(message), systemImage: "checkmark.circle", tint: .green)

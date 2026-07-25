@@ -7,7 +7,7 @@ struct ImportBatchNamingOptionsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Picker("命名策略", selection: $selectedStrategy) {
+            Picker(L10n.string("命名策略"), selection: $selectedStrategy) {
                 ForEach(ImportBatchNamingStrategy.allCases) { strategy in
                     Text(strategy.title).tag(strategy)
                 }
@@ -16,7 +16,7 @@ struct ImportBatchNamingOptionsSection: View {
             .disabled(isDisabled)
 
             if selectedStrategy == .uniformPrefix {
-                TextField("统一前缀", text: $prefix)
+                TextField(L10n.string("统一前缀"), text: $prefix)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: 260)
                     .disabled(isDisabled)
@@ -31,7 +31,7 @@ struct RenameRuleEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Picker("Strategy", selection: $draft.mode) {
+            Picker(L10n.string("Strategy"), selection: $draft.mode) {
                 ForEach(BatchRenameModeSnapshot.allCases) { mode in
                     Text(mode.displayName).tag(mode)
                 }
@@ -47,7 +47,7 @@ struct RenameRuleEditor: View {
     private var fields: some View {
         switch draft.mode {
         case .prefix:
-            TextField("Prefix", text: $draft.prefix).textFieldStyle(.roundedBorder)
+            TextField(L10n.string("Prefix"), text: $draft.prefix).textFieldStyle(.roundedBorder)
         case .datePrefix:
             DatePrefixFields(draft: $draft, isDisabled: isDisabled)
         case .keepBaseSequence:
@@ -64,11 +64,11 @@ private struct DatePrefixFields: View {
 
     var body: some View {
         HStack {
-            Picker("Date source", selection: $draft.dateSource) {
+            Picker(L10n.string("Date source"), selection: $draft.dateSource) {
                 ForEach(BatchRenameDateSourceSnapshot.allCases) { Text($0.displayName).tag($0) }
             }
-            TextField("Date format", text: $draft.dateFormat).textFieldStyle(.roundedBorder)
-            TextField("Separator", text: $draft.separator).textFieldStyle(.roundedBorder).frame(width: 90)
+            TextField(L10n.string("Date format"), text: $draft.dateFormat).textFieldStyle(.roundedBorder)
+            TextField(L10n.string("Separator"), text: $draft.separator).textFieldStyle(.roundedBorder).frame(width: 90)
         }
         .disabled(isDisabled)
     }
@@ -80,7 +80,7 @@ private struct SequenceFields: View {
 
     var body: some View {
         HStack {
-            TextField("Separator", text: $draft.separator).textFieldStyle(.roundedBorder).frame(width: 120)
+            TextField(L10n.string("Separator"), text: $draft.separator).textFieldStyle(.roundedBorder).frame(width: 120)
             Stepper(
                 L10n.format("import.batch-naming.start-number", Int64(draft.startNumber)),
                 value: $draft.startNumber,
@@ -103,10 +103,10 @@ private struct ReplaceTextFields: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                TextField("Find", text: $draft.find).textFieldStyle(.roundedBorder)
-                TextField("Replace with", text: $draft.replacement).textFieldStyle(.roundedBorder)
+                TextField(L10n.string("Find"), text: $draft.find).textFieldStyle(.roundedBorder)
+                TextField(L10n.string("Replace with"), text: $draft.replacement).textFieldStyle(.roundedBorder)
             }
-            Toggle("Case sensitive", isOn: $draft.caseSensitive)
+            Toggle(L10n.string("Case sensitive"), isOn: $draft.caseSensitive)
         }
         .disabled(isDisabled)
     }
@@ -121,7 +121,7 @@ struct BatchRenamePreviewSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if previewState.isLoading {
-                Label("Refreshing preview...", systemImage: "arrow.triangle.2.circlepath")
+                Label(L10n.string("Refreshing preview..."), systemImage: "arrow.triangle.2.circlepath")
             }
             if let previewFailure = previewState.failure {
                 Label(
@@ -174,7 +174,7 @@ private struct BatchRenamePreviewTable: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Original -> New | Status").font(.caption.weight(.semibold))
+            Text(L10n.string("Original -> New | Status")).font(.caption.weight(.semibold))
             ForEach(items) { item in
                 Text(rowText(item)).font(.caption)
             }

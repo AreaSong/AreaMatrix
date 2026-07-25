@@ -54,8 +54,8 @@ extension AdvancedSettingsPane {
             "Export diagnostics?",
             isPresented: diagnosticsConfirmationBinding
         ) {
-            Button("Cancel", role: .cancel, action: model.cancelDiagnosticsExport)
-            Button("Export diagnostics") {
+            Button(L10n.string("Cancel"), role: .cancel, action: model.cancelDiagnosticsExport)
+            Button(L10n.string("Export diagnostics")) {
                 Task {
                     await model.collectDiagnostics()
                 }
@@ -78,8 +78,8 @@ extension AdvancedSettingsPane {
             "Enable Replace during import?",
             isPresented: replaceConfirmationBinding
         ) {
-            Button("Cancel", role: .cancel, action: model.cancelAllowReplaceDuringImport)
-            Button("Enable Replace") {
+            Button(L10n.string("Cancel"), role: .cancel, action: model.cancelAllowReplaceDuringImport)
+            Button(L10n.string("Enable Replace")) {
                 Task {
                     await model.confirmAllowReplaceDuringImport()
                 }
@@ -103,7 +103,7 @@ extension AdvancedSettingsPane {
                         await model.load()
                     }
                 } label: {
-                    Label("Retry status", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Retry status"), systemImage: "arrow.clockwise")
                 }
                 .accessibilityIdentifier("advanced-settings-retry-status")
             }
@@ -132,7 +132,7 @@ extension AdvancedSettingsPane {
             message: localizer.resolve(error.message),
             recovery: localizer.resolve(error.recovery)
         ) {
-            Button("Retry status") {
+            Button(L10n.string("Retry status")) {
                 Task {
                     await model.load()
                 }
@@ -141,7 +141,7 @@ extension AdvancedSettingsPane {
             Button {
                 onOpenRecoveryTools()
             } label: {
-                Label("Open recovery tools...", systemImage: "arrow.clockwise.circle")
+                Label(L10n.string("Open recovery tools..."), systemImage: "arrow.clockwise.circle")
             }
             .accessibilityIdentifier("advanced-settings-startup-recovery-core-open-recovery-tools")
         }
@@ -234,11 +234,11 @@ extension AdvancedSettingsPane {
                 Text(localizer.resolve(error.recovery))
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text("The UI has been restored to the last saved advanced settings.")
+                Text(L10n.string("The UI has been restored to the last saved advanced settings."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 if model.hasRetryableSave {
-                    Button("Retry save") {
+                    Button(L10n.string("Retry save")) {
                         Task {
                             await model.retrySave()
                         }
@@ -250,7 +250,7 @@ extension AdvancedSettingsPane {
     }
 
     private var dangerZoneSection: some View {
-        DisclosureGroup("Danger zone", isExpanded: $isDangerZoneExpanded) {
+        DisclosureGroup(L10n.string("Danger zone"), isExpanded: $isDangerZoneExpanded) {
             VStack(alignment: .leading, spacing: 18) {
                 Text(L10n.string("settings.advanced.dangerZoneDetail"))
                     .font(.callout)

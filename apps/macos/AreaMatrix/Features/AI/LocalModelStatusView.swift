@@ -84,7 +84,7 @@ struct LocalModelStatusView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Local model status")
+                Text(L10n.string("Local model status"))
                     .font(.title2.weight(.semibold))
                     .accessibilityAddTraits(.isHeader)
                 Text(model.repoPath)
@@ -95,7 +95,7 @@ struct LocalModelStatusView: View {
                     .textSelection(.enabled)
             }
             Spacer()
-            Button("Close", action: onClose)
+            Button(L10n.string("Close"), action: onClose)
         }
         .padding(.horizontal, 34)
         .padding(.vertical, 18)
@@ -134,7 +134,7 @@ struct LocalModelStatusView: View {
     private var supportSection: some View {
         AdvancedSettingsSection(title: L10n.string("Feature support")) {
             if model.snapshot?.featureStatuses.isEmpty != false {
-                Text("Local feature support will appear after Check status returns a Core snapshot.")
+                Text(L10n.string("Local feature support will appear after Check status returns a Core snapshot."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
@@ -154,23 +154,23 @@ struct LocalModelStatusView: View {
                 .disabled(model.isChecking)
                 .accessibilityIdentifier("local-model-status-local-model-status-core-check-status")
 
-                Button("Open install help", action: model.openInstallHelp)
+                Button(L10n.string("Open install help"), action: model.openInstallHelp)
                     .disabled(model.isChecking)
                     .accessibilityIdentifier("local-model-status-local-model-status-core-open-install-help")
-                Button("Open model location") {
+                Button(L10n.string("Open model location")) {
                     Task { await model.openModelLocation() }
                 }
                 .disabled(!model.canOpenModelLocation)
                 .accessibilityIdentifier("local-model-status-local-model-status-core-open-model-location")
             }
             HStack(spacing: 10) {
-                Button("Run health check") {
+                Button(L10n.string("Run health check")) {
                     Task { await model.checkStatus() }
                 }
                 .disabled(!model.canRunHealthCheck)
-                Button("Repair", action: {})
+                Button(L10n.string("Repair"), action: {})
                     .disabled(true)
-                Button("Open diagnostics", action: model.showDiagnostics)
+                Button(L10n.string("Open diagnostics"), action: model.showDiagnostics)
                     .accessibilityIdentifier("local-model-status-local-model-status-core-open-diagnostics")
             }
             Text(L10n.string(
@@ -228,16 +228,16 @@ struct LocalModelDiagnosticsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Local model diagnostics")
+            Text(L10n.string("Local model diagnostics"))
                 .font(.title2.weight(.semibold))
             Text(summary)
                 .font(.callout)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack {
-                Button("Copy diagnostics summary", action: onCopy)
+                Button(L10n.string("Copy diagnostics summary"), action: onCopy)
                 Spacer()
-                Button("Back to local model status", action: onBack)
+                Button(L10n.string("Back to local model status"), action: onBack)
             }
         }
         .padding(24)
