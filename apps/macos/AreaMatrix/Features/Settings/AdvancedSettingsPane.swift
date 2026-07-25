@@ -4,6 +4,7 @@ struct AdvancedSettingsPane: View {
     @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: AdvancedSettingsModel
     @State private var isDangerZoneExpanded = false
+    @State private var isLogsViewerPresented = false
     private let onOpenRecoveryTools: () -> Void
 }
 
@@ -86,6 +87,9 @@ extension AdvancedSettingsPane {
             }
         } message: {
             Text(L10n.string("settings.advanced.replaceConfirmationDetail"))
+        }
+        .sheet(isPresented: $isLogsViewerPresented) {
+            LiveLogsViewerSheet()
         }
     }
 
@@ -219,6 +223,7 @@ extension AdvancedSettingsPane {
         AdvancedSettingsLogsSection(
             isCollecting: model.diagnosticsState.isCollecting,
             onOpenLogsFolder: model.openLogsFolder,
+            onShowLogs: { isLogsViewerPresented = true },
             onCopyDiagnosticSummary: model.copyDiagnosticSummary
         )
     }

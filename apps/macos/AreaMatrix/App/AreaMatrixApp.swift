@@ -8,6 +8,7 @@ struct AreaMatrixApp: App {
     @StateObject private var languageStore: AppLanguageStore
 
     init() {
+        AppLogger.shared.setupCoreLogging()
         let runtime = AppLanguageRuntime.shared
         let localizer = AppLocalizer(runtime: runtime)
         _localizer = StateObject(wrappedValue: localizer)
@@ -229,6 +230,38 @@ final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
             : "AreaMatrixLogoMarkLight"
         if let image = NSImage(named: imageName) {
             NSApp.applicationIconImage = image
+        }
+    }
+}
+import Foundation
+import os
+import OSLog
+
+public final class AppLogger {
+    public static let shared = AppLogger()
+
+    public let uiLog = Logger(subsystem: "com.areamatrix.mac", category: "UI")
+    public let coreLog = Logger(subsystem: "com.areamatrix.mac", category: "Core")
+    public let syncLog = Logger(subsystem: "com.areamatrix.mac", category: "Sync")
+    public let aiLog = Logger(subsystem: "com.areamatrix.mac", category: "AI")
+
+    private init() {
+        setupCoreLogging()
+    }
+
+    public func setupCoreLogging() {
+        let fileManager = FileManager.default
+        let homeDir = fileManager.homeDirectoryForCurrentUser
+        let logsDir = homeDir.appendingPathComponent(".areamatrix/logs")
+
+        do {
+            if !fileManager.fileExists(atPath: logsDir.path) {
+                try fileManager.createDirectory(at: logsDir, withIntermediateDirectories: true, attributes: nil)
+            }
+            try initLogging(level: "info", logDir: logsDir.path)
+            coreLog.info("Core logging initialized at \(logsDir.path, privacy: .private)")
+        } catch {
+            coreLog.error("Failed to initialize core logging: \(error.localizedDescription)")
         }
     }
 }

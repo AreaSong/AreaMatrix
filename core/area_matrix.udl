@@ -2,7 +2,7 @@ namespace area_matrix {
     string get_version();
 
     [Throws=CoreError]
-    void init_logging(string level);
+    void init_logging(string level, string log_dir);
 
     [Throws=CoreError]
     BindingContractReport inspect_binding_contract(BindingContractRequest request);

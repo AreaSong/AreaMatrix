@@ -444,7 +444,7 @@ RustBuffer uniffi_area_matrix_core_fn_func_get_platform_capabilities(RustBuffer 
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_GET_VERSION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_GET_VERSION
 RustBuffer uniffi_area_matrix_core_fn_func_get_version(RustCallStatus *_Nonnull out_status
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_IMPORT_FILE
@@ -459,7 +459,7 @@ RustBuffer uniffi_area_matrix_core_fn_func_import_file_with_result(RustBuffer re
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_INIT_LOGGING
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_INIT_LOGGING
-void uniffi_area_matrix_core_fn_func_init_logging(RustBuffer level, RustCallStatus *_Nonnull out_status
+void uniffi_area_matrix_core_fn_func_init_logging(RustBuffer level, RustBuffer log_dir, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_FN_FUNC_INIT_REPO
@@ -1120,708 +1120,709 @@ void ffi_area_matrix_core_rust_future_complete_void(uint64_t handle, RustCallSta
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_ACKNOWLEDGE_ONEDRIVE_RISK_NOTICE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_ACKNOWLEDGE_ONEDRIVE_RISK_NOTICE
 uint16_t uniffi_area_matrix_core_checksum_func_acknowledge_onedrive_risk_notice(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_ADD_TAG
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_ADD_TAG
 uint16_t uniffi_area_matrix_core_checksum_func_add_tag(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_APPLY_AI_TAG_SUGGESTIONS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_APPLY_AI_TAG_SUGGESTIONS
 uint16_t uniffi_area_matrix_core_checksum_func_apply_ai_tag_suggestions(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_APPLY_IMPORT_CONFLICT_BATCH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_APPLY_IMPORT_CONFLICT_BATCH
 uint16_t uniffi_area_matrix_core_checksum_func_apply_import_conflict_batch(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_APPLY_TAG_SUGGESTIONS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_APPLY_TAG_SUGGESTIONS
 uint16_t uniffi_area_matrix_core_checksum_func_apply_tag_suggestions(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BATCH_ADD_TAGS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BATCH_ADD_TAGS
 uint16_t uniffi_area_matrix_core_checksum_func_batch_add_tags(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BATCH_DELETE_TO_TRASH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BATCH_DELETE_TO_TRASH
 uint16_t uniffi_area_matrix_core_checksum_func_batch_delete_to_trash(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BATCH_MOVE_TO_CATEGORY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BATCH_MOVE_TO_CATEGORY
 uint16_t uniffi_area_matrix_core_checksum_func_batch_move_to_category(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BATCH_RENAME
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BATCH_RENAME
 uint16_t uniffi_area_matrix_core_checksum_func_batch_rename(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BUILD_EMBEDDING_INDEX
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_BUILD_EMBEDDING_INDEX
 uint16_t uniffi_area_matrix_core_checksum_func_build_embedding_index(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CANCEL_OVERVIEW_REGENERATION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CANCEL_OVERVIEW_REGENERATION
 uint16_t uniffi_area_matrix_core_checksum_func_cancel_overview_regeneration(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CLEAR_AI_CALL_LOG
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CLEAR_AI_CALL_LOG
 uint16_t uniffi_area_matrix_core_checksum_func_clear_ai_call_log(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CLEAR_AI_SUMMARY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CLEAR_AI_SUMMARY
 uint16_t uniffi_area_matrix_core_checksum_func_clear_ai_summary(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_COMMIT_OVERVIEW_REGENERATION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_COMMIT_OVERVIEW_REGENERATION
 uint16_t uniffi_area_matrix_core_checksum_func_commit_overview_regeneration(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_COMPLETE_REMOTE_AI_PROVIDER_PROBE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_COMPLETE_REMOTE_AI_PROVIDER_PROBE
 uint16_t uniffi_area_matrix_core_checksum_func_complete_remote_ai_provider_probe(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CORRECT_FILE_CATEGORY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CORRECT_FILE_CATEGORY
 uint16_t uniffi_area_matrix_core_checksum_func_correct_file_category(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CREATE_CLASSIFIER_RULE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CREATE_CLASSIFIER_RULE
 uint16_t uniffi_area_matrix_core_checksum_func_create_classifier_rule(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CREATE_DEFAULT_CLASSIFIER
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CREATE_DEFAULT_CLASSIFIER
 uint16_t uniffi_area_matrix_core_checksum_func_create_default_classifier(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CREATE_DIAGNOSTICS_SNAPSHOT
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CREATE_DIAGNOSTICS_SNAPSHOT
 uint16_t uniffi_area_matrix_core_checksum_func_create_diagnostics_snapshot(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CREATE_SAVED_SEARCH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_CREATE_SAVED_SEARCH
 uint16_t uniffi_area_matrix_core_checksum_func_create_saved_search(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DELETE_CLASSIFIER_RULE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DELETE_CLASSIFIER_RULE
 uint16_t uniffi_area_matrix_core_checksum_func_delete_classifier_rule(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DELETE_FILE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DELETE_FILE
 uint16_t uniffi_area_matrix_core_checksum_func_delete_file(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DELETE_SAVED_SEARCH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DELETE_SAVED_SEARCH
 uint16_t uniffi_area_matrix_core_checksum_func_delete_saved_search(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DETECT_CLOUD_STORAGE_STATE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DETECT_CLOUD_STORAGE_STATE
 uint16_t uniffi_area_matrix_core_checksum_func_detect_cloud_storage_state(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DETECT_SYNC_CONFLICTS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DETECT_SYNC_CONFLICTS
 uint16_t uniffi_area_matrix_core_checksum_func_detect_sync_conflicts(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DISABLE_REMOTE_AI_PROVIDER
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_DISABLE_REMOTE_AI_PROVIDER
 uint16_t uniffi_area_matrix_core_checksum_func_disable_remote_ai_provider(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_ENABLE_REMOTE_AI_PROVIDER
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_ENABLE_REMOTE_AI_PROVIDER
 uint16_t uniffi_area_matrix_core_checksum_func_enable_remote_ai_provider(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_EVALUATE_AI_PRIVACY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_EVALUATE_AI_PRIVACY
 uint16_t uniffi_area_matrix_core_checksum_func_evaluate_ai_privacy(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GENERATE_AI_SUMMARY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GENERATE_AI_SUMMARY
 uint16_t uniffi_area_matrix_core_checksum_func_generate_ai_summary(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_AI_FALLBACK_STATUS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_AI_FALLBACK_STATUS
 uint16_t uniffi_area_matrix_core_checksum_func_get_ai_fallback_status(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_FILE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_FILE
 uint16_t uniffi_area_matrix_core_checksum_func_get_file(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_FS_EVENT_CURSOR
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_FS_EVENT_CURSOR
 uint16_t uniffi_area_matrix_core_checksum_func_get_fs_event_cursor(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_LATEST_SCAN_SESSION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_LATEST_SCAN_SESSION
 uint16_t uniffi_area_matrix_core_checksum_func_get_latest_scan_session(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_LOCAL_MODEL_STATUS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_LOCAL_MODEL_STATUS
 uint16_t uniffi_area_matrix_core_checksum_func_get_local_model_status(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_MISSING_FILE_STATE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_MISSING_FILE_STATE
 uint16_t uniffi_area_matrix_core_checksum_func_get_missing_file_state(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_OVERVIEW_LANGUAGE_STATUS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_OVERVIEW_LANGUAGE_STATUS
 uint16_t uniffi_area_matrix_core_checksum_func_get_overview_language_status(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_OVERVIEW_REGENERATION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_OVERVIEW_REGENERATION
 uint16_t uniffi_area_matrix_core_checksum_func_get_overview_regeneration(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_PLATFORM_CAPABILITIES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_PLATFORM_CAPABILITIES
 uint16_t uniffi_area_matrix_core_checksum_func_get_platform_capabilities(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_VERSION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_GET_VERSION
 uint16_t uniffi_area_matrix_core_checksum_func_get_version(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_IMPORT_FILE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_IMPORT_FILE
 uint16_t uniffi_area_matrix_core_checksum_func_import_file(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_IMPORT_FILE_WITH_RESULT
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_IMPORT_FILE_WITH_RESULT
 uint16_t uniffi_area_matrix_core_checksum_func_import_file_with_result(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_INIT_LOGGING
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_INIT_LOGGING
 uint16_t uniffi_area_matrix_core_checksum_func_init_logging(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_INIT_REPO
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_INIT_REPO
 uint16_t uniffi_area_matrix_core_checksum_func_init_repo(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_INSPECT_BINDING_CONTRACT
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_INSPECT_BINDING_CONTRACT
 uint16_t uniffi_area_matrix_core_checksum_func_inspect_binding_contract(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_AI_CALLS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_AI_CALLS
 uint16_t uniffi_area_matrix_core_checksum_func_list_ai_calls(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_AI_PRIVACY_RULES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_AI_PRIVACY_RULES
 uint16_t uniffi_area_matrix_core_checksum_func_list_ai_privacy_rules(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_CHANGES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_CHANGES
 uint16_t uniffi_area_matrix_core_checksum_func_list_changes(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_CLASSIFIER_RULES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_CLASSIFIER_RULES
 uint16_t uniffi_area_matrix_core_checksum_func_list_classifier_rules(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_COMMAND_TARGETS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_COMMAND_TARGETS
 uint16_t uniffi_area_matrix_core_checksum_func_list_command_targets(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_FILES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_FILES
 uint16_t uniffi_area_matrix_core_checksum_func_list_files(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_FILTER_FACETS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_FILTER_FACETS
 uint16_t uniffi_area_matrix_core_checksum_func_list_filter_facets(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_ICLOUD_CONFLICTS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_ICLOUD_CONFLICTS
 uint16_t uniffi_area_matrix_core_checksum_func_list_icloud_conflicts(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_REDO_ACTIONS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_REDO_ACTIONS
 uint16_t uniffi_area_matrix_core_checksum_func_list_redo_actions(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_SAVED_SEARCHES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_SAVED_SEARCHES
 uint16_t uniffi_area_matrix_core_checksum_func_list_saved_searches(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_TAGS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_TAGS
 uint16_t uniffi_area_matrix_core_checksum_func_list_tags(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_TREE_JSON
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_TREE_JSON
 uint16_t uniffi_area_matrix_core_checksum_func_list_tree_json(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_UNDO_ACTIONS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LIST_UNDO_ACTIONS
 uint16_t uniffi_area_matrix_core_checksum_func_list_undo_actions(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LOAD_AI_CONFIG
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LOAD_AI_CONFIG
 uint16_t uniffi_area_matrix_core_checksum_func_load_ai_config(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LOAD_REMOTE_AI_PROVIDER_CONFIG
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LOAD_REMOTE_AI_PROVIDER_CONFIG
 uint16_t uniffi_area_matrix_core_checksum_func_load_remote_ai_provider_config(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LOAD_REPO_CONFIG
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LOAD_REPO_CONFIG
 uint16_t uniffi_area_matrix_core_checksum_func_load_repo_config(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LOCATE_LOCAL_MODEL_FOLDER
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_LOCATE_LOCAL_MODEL_FOLDER
 uint16_t uniffi_area_matrix_core_checksum_func_locate_local_model_folder(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_MAP_CORE_ERROR
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_MAP_CORE_ERROR
 uint16_t uniffi_area_matrix_core_checksum_func_map_core_error(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_MOVE_TO_CATEGORY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_MOVE_TO_CATEGORY
 uint16_t uniffi_area_matrix_core_checksum_func_move_to_category(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREDICT_CATEGORY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREDICT_CATEGORY
 uint16_t uniffi_area_matrix_core_checksum_func_predict_category(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREFLIGHT_REPAIR_METADATA
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREFLIGHT_REPAIR_METADATA
 uint16_t uniffi_area_matrix_core_checksum_func_preflight_repair_metadata(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREPARE_EXTERNAL_SYNC_LOCALE_RECOVERY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREPARE_EXTERNAL_SYNC_LOCALE_RECOVERY
 uint16_t uniffi_area_matrix_core_checksum_func_prepare_external_sync_locale_recovery(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREPARE_OVERVIEW_REGENERATION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREPARE_OVERVIEW_REGENERATION
 uint16_t uniffi_area_matrix_core_checksum_func_prepare_overview_regeneration(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREPARE_REMOTE_AI_PROVIDER_PROBE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREPARE_REMOTE_AI_PROVIDER_PROBE
 uint16_t uniffi_area_matrix_core_checksum_func_prepare_remote_ai_provider_probe(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_BATCH_DELETE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_BATCH_DELETE
 uint16_t uniffi_area_matrix_core_checksum_func_preview_batch_delete(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_BATCH_MOVE_TO_CATEGORY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_BATCH_MOVE_TO_CATEGORY
 uint16_t uniffi_area_matrix_core_checksum_func_preview_batch_move_to_category(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_BATCH_RENAME
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_BATCH_RENAME
 uint16_t uniffi_area_matrix_core_checksum_func_preview_batch_rename(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_CLASSIFIER_RULE_IMPACT
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_CLASSIFIER_RULE_IMPACT
 uint16_t uniffi_area_matrix_core_checksum_func_preview_classifier_rule_impact(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_CONFLICT_VERSIONS
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_CONFLICT_VERSIONS
 uint16_t uniffi_area_matrix_core_checksum_func_preview_conflict_versions(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_IMPORT_CONFLICT_BATCH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_IMPORT_CONFLICT_BATCH
 uint16_t uniffi_area_matrix_core_checksum_func_preview_import_conflict_batch(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_MANUAL_RESCAN
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_MANUAL_RESCAN
 uint16_t uniffi_area_matrix_core_checksum_func_preview_manual_rescan(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_MOVE_TO_CATEGORY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_MOVE_TO_CATEGORY
 uint16_t uniffi_area_matrix_core_checksum_func_preview_move_to_category(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_SYNC_CONFLICT_RESOLUTION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_PREVIEW_SYNC_CONFLICT_RESOLUTION
 uint16_t uniffi_area_matrix_core_checksum_func_preview_sync_conflict_resolution(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_READ_NOTE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_READ_NOTE
 uint16_t uniffi_area_matrix_core_checksum_func_read_note(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RECORD_WATCHER_HEALTH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RECORD_WATCHER_HEALTH
 uint16_t uniffi_area_matrix_core_checksum_func_record_watcher_health(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RECOVER_ON_STARTUP
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RECOVER_ON_STARTUP
 uint16_t uniffi_area_matrix_core_checksum_func_recover_on_startup(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RECOVER_OVERVIEW_REGENERATION_ON_STARTUP
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RECOVER_OVERVIEW_REGENERATION_ON_STARTUP
 uint16_t uniffi_area_matrix_core_checksum_func_recover_overview_regeneration_on_startup(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REDO_ACTION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REDO_ACTION
 uint16_t uniffi_area_matrix_core_checksum_func_redo_action(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REINDEX_FROM_FILESYSTEM
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REINDEX_FROM_FILESYSTEM
 uint16_t uniffi_area_matrix_core_checksum_func_reindex_from_filesystem(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RELINK_MISSING_FILE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RELINK_MISSING_FILE
 uint16_t uniffi_area_matrix_core_checksum_func_relink_missing_file(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REMOVE_INDEX_ENTRY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REMOVE_INDEX_ENTRY
 uint16_t uniffi_area_matrix_core_checksum_func_remove_index_entry(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REMOVE_MISSING_FILE_RECORD
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REMOVE_MISSING_FILE_RECORD
 uint16_t uniffi_area_matrix_core_checksum_func_remove_missing_file_record(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REMOVE_TAG
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REMOVE_TAG
 uint16_t uniffi_area_matrix_core_checksum_func_remove_tag(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RENAME_FILE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RENAME_FILE
 uint16_t uniffi_area_matrix_core_checksum_func_rename_file(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REPAIR_METADATA
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_REPAIR_METADATA
 uint16_t uniffi_area_matrix_core_checksum_func_repair_metadata(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESOLVE_EXTERNAL_SYNC_LOCALE_RECOVERY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESOLVE_EXTERNAL_SYNC_LOCALE_RECOVERY
 uint16_t uniffi_area_matrix_core_checksum_func_resolve_external_sync_locale_recovery(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESOLVE_ICLOUD_CONFLICT
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESOLVE_ICLOUD_CONFLICT
 uint16_t uniffi_area_matrix_core_checksum_func_resolve_icloud_conflict(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESOLVE_SYNC_CONFLICT
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESOLVE_SYNC_CONFLICT
 uint16_t uniffi_area_matrix_core_checksum_func_resolve_sync_conflict(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESTORE_DEFAULT_CLASSIFIER
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESTORE_DEFAULT_CLASSIFIER
 uint16_t uniffi_area_matrix_core_checksum_func_restore_default_classifier(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESTORE_LAST_VALID_CLASSIFIER
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESTORE_LAST_VALID_CLASSIFIER
 uint16_t uniffi_area_matrix_core_checksum_func_restore_last_valid_classifier(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESUME_OVERVIEW_REGENERATION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESUME_OVERVIEW_REGENERATION
 uint16_t uniffi_area_matrix_core_checksum_func_resume_overview_regeneration(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESUME_SCAN_SESSION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RESUME_SCAN_SESSION
 uint16_t uniffi_area_matrix_core_checksum_func_resume_scan_session(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_ROLLBACK_OVERVIEW_REGENERATION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_ROLLBACK_OVERVIEW_REGENERATION
 uint16_t uniffi_area_matrix_core_checksum_func_rollback_overview_regeneration(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RUN_SMART_LIST
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_RUN_SMART_LIST
 uint16_t uniffi_area_matrix_core_checksum_func_run_smart_list(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SAVE_AI_SUMMARY
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SAVE_AI_SUMMARY
 uint16_t uniffi_area_matrix_core_checksum_func_save_ai_summary(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SAVE_CLASSIFIER_RULE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SAVE_CLASSIFIER_RULE
 uint16_t uniffi_area_matrix_core_checksum_func_save_classifier_rule(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SEARCH_FILES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SEARCH_FILES
 uint16_t uniffi_area_matrix_core_checksum_func_search_files(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SEMANTIC_SEARCH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SEMANTIC_SEARCH
 uint16_t uniffi_area_matrix_core_checksum_func_semantic_search(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SET_FS_EVENT_CURSOR
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SET_FS_EVENT_CURSOR
 uint16_t uniffi_area_matrix_core_checksum_func_set_fs_event_cursor(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_START_OVERVIEW_REGENERATION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_START_OVERVIEW_REGENERATION
 uint16_t uniffi_area_matrix_core_checksum_func_start_overview_regeneration(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SUGGEST_CATEGORY_WITH_AI
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SUGGEST_CATEGORY_WITH_AI
 uint16_t uniffi_area_matrix_core_checksum_func_suggest_category_with_ai(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SUGGEST_TAGS_FOR_FILE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SUGGEST_TAGS_FOR_FILE
 uint16_t uniffi_area_matrix_core_checksum_func_suggest_tags_for_file(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SUGGEST_TAGS_WITH_AI
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SUGGEST_TAGS_WITH_AI
 uint16_t uniffi_area_matrix_core_checksum_func_suggest_tags_with_ai(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SYNC_EXTERNAL_CHANGES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_SYNC_EXTERNAL_CHANGES
 uint16_t uniffi_area_matrix_core_checksum_func_sync_external_changes(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UNDO_ACTION
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UNDO_ACTION
 uint16_t uniffi_area_matrix_core_checksum_func_undo_action(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_AI_CONFIG
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_AI_CONFIG
 uint16_t uniffi_area_matrix_core_checksum_func_update_ai_config(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_AI_PRIVACY_RULES
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_AI_PRIVACY_RULES
 uint16_t uniffi_area_matrix_core_checksum_func_update_ai_privacy_rules(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_CLASSIFIER_RULE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_CLASSIFIER_RULE
 uint16_t uniffi_area_matrix_core_checksum_func_update_classifier_rule(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_REPO_CONFIG
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_REPO_CONFIG
 uint16_t uniffi_area_matrix_core_checksum_func_update_repo_config(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_SAVED_SEARCH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_UPDATE_SAVED_SEARCH
 uint16_t uniffi_area_matrix_core_checksum_func_update_saved_search(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_VALIDATE_INITIALIZED_REPO_PATH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_VALIDATE_INITIALIZED_REPO_PATH
 uint16_t uniffi_area_matrix_core_checksum_func_validate_initialized_repo_path(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_VALIDATE_REPO_PATH
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_VALIDATE_REPO_PATH
 uint16_t uniffi_area_matrix_core_checksum_func_validate_repo_path(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_WRITE_NOTE
 #define UNIFFI_FFIDEF_UNIFFI_AREA_MATRIX_CORE_CHECKSUM_FUNC_WRITE_NOTE
 uint16_t uniffi_area_matrix_core_checksum_func_write_note(void
-
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_AREA_MATRIX_CORE_UNIFFI_CONTRACT_VERSION
 #define UNIFFI_FFIDEF_FFI_AREA_MATRIX_CORE_UNIFFI_CONTRACT_VERSION
 uint32_t ffi_area_matrix_core_uniffi_contract_version(void
-
+    
 );
 #endif
+

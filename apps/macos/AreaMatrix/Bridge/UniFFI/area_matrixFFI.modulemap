@@ -1,0 +1,4 @@
+module area_matrixFFI {
+    header "area_matrixFFI.h"
+    export *
+}

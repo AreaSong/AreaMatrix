@@ -58,9 +58,35 @@ pub fn get_version() -> String {
 ///
 /// Full subscriber wiring is left for a later observability task so this
 /// skeleton remains side-effect light.
-pub fn init_logging(level: String) -> CoreResult<()> {
-    match level.as_str() {
-        "trace" | "debug" | "info" | "warn" | "error" => Ok(()),
-        _ => Err(CoreError::config("configuration error")),
-    }
+pub fn init_logging(level: String, log_dir: String) -> CoreResult<()> {
+    let level_filter = match level.as_str() {
+        "trace" => tracing::Level::TRACE,
+        "debug" => tracing::Level::DEBUG,
+        "info" => tracing::Level::INFO,
+        "warn" => tracing::Level::WARN,
+        "error" => tracing::Level::ERROR,
+        _ => return Err(CoreError::config("configuration error")),
+    };
+
+    let file_appender = tracing_appender::rolling::daily(log_dir, "core.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    
+    // Leak the guard intentionally because init_logging is called once globally
+    // and we want logging to continue until the process exits.
+    Box::leak(Box::new(_guard));
+
+    let subscriber = tracing_subscriber::fmt()
+        .with_max_level(level_filter)
+        .with_writer(non_blocking)
+        .with_ansi(false) // No ANSI color codes for file logging
+        .with_file(true)
+        .with_line_number(true)
+        .with_thread_ids(true)
+        .with_target(false) // Target is usually the module path, file/line is better
+        .finish();
+
+    // Ignore error if tracing was already initialized
+    let _ = tracing::subscriber::set_global_default(subscriber);
+
+    Ok(())
 }

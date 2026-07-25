@@ -56,6 +56,7 @@ struct AdvancedSettingsDiagnosticsSection: View {
 struct AdvancedSettingsLogsSection: View {
     let isCollecting: Bool
     let onOpenLogsFolder: () -> Void
+    let onShowLogs: () -> Void
     let onCopyDiagnosticSummary: () -> Void
 
     var body: some View {
@@ -68,6 +69,14 @@ struct AdvancedSettingsLogsSection: View {
                 }
                 .disabled(isCollecting)
                 .accessibilityIdentifier("advanced-settings-open-logs-folder")
+
+                Button {
+                    onShowLogs()
+                } label: {
+                    Label(L10n.string("View Logs..."), systemImage: "text.alignleft")
+                }
+                .disabled(isCollecting)
+                .accessibilityIdentifier("advanced-settings-show-logs")
 
                 Button {
                     onCopyDiagnosticSummary()
@@ -180,5 +189,101 @@ struct AdvancedRootOverviewConfirmationSheet: View {
         }
         .padding(24)
         .frame(width: 520)
+    }
+}
+import SwiftUI
+
+struct LiveLogsViewerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var logContent: String = ""
+    @State private var isLoading: Bool = true
+    @State private var resolvedPath: String = ""
+    
+    private let logsPath: URL = {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        return home.appendingPathComponent(".areamatrix/logs/core.log")
+    }()
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(L10n.string("Core Action Logs"))
+                    .font(.headline)
+                Spacer()
+                Button {
+                    loadLogs()
+                } label: {
+                    Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
+                }
+                .keyboardShortcut("r", modifiers: [.command])
+            }
+            .padding()
+            .background(Color(NSColor.windowBackgroundColor))
+            
+            Divider()
+            
+            if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    Text(logContent)
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .padding()
+                }
+                .background(Color(NSColor.textBackgroundColor))
+            }
+            
+            Divider()
+            
+            HStack {
+                Text(resolvedPath)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button(L10n.string("Close")) {
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding()
+            .background(Color(NSColor.windowBackgroundColor))
+        }
+        .frame(width: 800, height: 600)
+        .onAppear {
+            loadLogs()
+        }
+    }
+    
+    private func loadLogs() {
+        isLoading = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            var content: String = ""
+            var resolvedPath: String = self.logsPath.path
+            
+            let logsDir = self.logsPath.deletingLastPathComponent()
+            do {
+                let files = try FileManager.default.contentsOfDirectory(atPath: logsDir.path)
+                let coreLogFiles = files.filter { $0.hasPrefix("core.log") }.sorted(by: >)
+                
+                if let latestLog = coreLogFiles.first {
+                    let latestPath = logsDir.appendingPathComponent(latestLog)
+                    resolvedPath = latestPath.path
+                    content = try String(contentsOf: latestPath, encoding: .utf8)
+                } else {
+                    content = "No logs found in \(logsDir.path)"
+                }
+            } catch {
+                content = "Failed to read logs directory: \(error.localizedDescription)"
+            }
+            
+            DispatchQueue.main.async {
+                self.logContent = content
+                self.resolvedPath = resolvedPath
+                self.isLoading = false
+            }
+        }
     }
 }

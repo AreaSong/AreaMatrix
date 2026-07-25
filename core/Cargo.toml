@@ -29,6 +29,7 @@ unicode-normalization = "0.1"
 regex = "1"
 trash = "5"
 uuid = { version = "1", features = ["v4"] }
+tracing-appender = "0.2.5"
 
 [build-dependencies]
 uniffi = { version = "0.28", features = ["build"] }

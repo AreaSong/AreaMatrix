@@ -571,8 +571,8 @@ public struct FfiConverterTypeAiCallLogClearReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogClearReport {
         return
             try AiCallLogClearReport(
-                deletedCount: FfiConverterInt64.read(from: &buf),
-                remainingCount: FfiConverterInt64.read(from: &buf),
+                deletedCount: FfiConverterInt64.read(from: &buf), 
+                remainingCount: FfiConverterInt64.read(from: &buf), 
                 clearedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -645,8 +645,8 @@ public struct FfiConverterTypeAiCallLogClearRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogClearRequest {
         return
             try AiCallLogClearRequest(
-                scope: FfiConverterTypeAiCallLogClearScope.read(from: &buf),
-                entryIds: FfiConverterSequenceInt64.read(from: &buf),
+                scope: FfiConverterTypeAiCallLogClearScope.read(from: &buf), 
+                entryIds: FfiConverterSequenceInt64.read(from: &buf), 
                 olderThan: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -737,11 +737,11 @@ public struct FfiConverterTypeAiCallLogFilter: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogFilter {
         return
             try AiCallLogFilter(
-                feature: FfiConverterOptionTypeAiCallLogFeature.read(from: &buf),
-                route: FfiConverterOptionTypeAiCallLogRoute.read(from: &buf),
-                status: FfiConverterOptionTypeAiCallLogStatus.read(from: &buf),
-                occurredAfter: FfiConverterOptionInt64.read(from: &buf),
-                occurredBefore: FfiConverterOptionInt64.read(from: &buf),
+                feature: FfiConverterOptionTypeAiCallLogFeature.read(from: &buf), 
+                route: FfiConverterOptionTypeAiCallLogRoute.read(from: &buf), 
+                status: FfiConverterOptionTypeAiCallLogStatus.read(from: &buf), 
+                occurredAfter: FfiConverterOptionInt64.read(from: &buf), 
+                occurredBefore: FfiConverterOptionInt64.read(from: &buf), 
                 searchQuery: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -841,12 +841,12 @@ public struct FfiConverterTypeAiCallLogPage: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogPage {
         return
             try AiCallLogPage(
-                totalCount: FfiConverterInt64.read(from: &buf),
-                records: FfiConverterSequenceTypeAiCallLogRecord.read(from: &buf),
-                limit: FfiConverterInt64.read(from: &buf),
-                offset: FfiConverterInt64.read(from: &buf),
-                hasMore: FfiConverterBool.read(from: &buf),
-                retentionDays: FfiConverterInt64.read(from: &buf),
+                totalCount: FfiConverterInt64.read(from: &buf), 
+                records: FfiConverterSequenceTypeAiCallLogRecord.read(from: &buf), 
+                limit: FfiConverterInt64.read(from: &buf), 
+                offset: FfiConverterInt64.read(from: &buf), 
+                hasMore: FfiConverterBool.read(from: &buf), 
+                retentionDays: FfiConverterInt64.read(from: &buf), 
                 redactionPolicy: FfiConverterString.read(from: &buf)
         )
     }
@@ -917,7 +917,7 @@ public struct FfiConverterTypeAiCallLogPagination: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogPagination {
         return
             try AiCallLogPagination(
-                limit: FfiConverterInt64.read(from: &buf),
+                limit: FfiConverterInt64.read(from: &buf), 
                 offset: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -1085,24 +1085,24 @@ public struct FfiConverterTypeAiCallLogRecord: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogRecord {
         return
             try AiCallLogRecord(
-                id: FfiConverterInt64.read(from: &buf),
-                occurredAt: FfiConverterInt64.read(from: &buf),
-                feature: FfiConverterTypeAiCallLogFeature.read(from: &buf),
-                fileId: FfiConverterOptionInt64.read(from: &buf),
-                fileDisplayName: FfiConverterOptionString.read(from: &buf),
-                batchId: FfiConverterOptionString.read(from: &buf),
-                scope: FfiConverterOptionString.read(from: &buf),
-                route: FfiConverterOptionTypeAiCallLogRoute.read(from: &buf),
-                providerName: FfiConverterOptionString.read(from: &buf),
-                modelName: FfiConverterOptionString.read(from: &buf),
-                status: FfiConverterTypeAiCallLogStatus.read(from: &buf),
-                durationMs: FfiConverterOptionInt64.read(from: &buf),
-                sentFields: FfiConverterSequenceTypeAiCallLogSentField.read(from: &buf),
-                privacyRulesChecked: FfiConverterBool.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
-                privacyRuleName: FfiConverterOptionString.read(from: &buf),
-                matchedFieldType: FfiConverterOptionTypeAiCallLogSentField.read(from: &buf),
-                resultSummary: FfiConverterString.read(from: &buf),
+                id: FfiConverterInt64.read(from: &buf), 
+                occurredAt: FfiConverterInt64.read(from: &buf), 
+                feature: FfiConverterTypeAiCallLogFeature.read(from: &buf), 
+                fileId: FfiConverterOptionInt64.read(from: &buf), 
+                fileDisplayName: FfiConverterOptionString.read(from: &buf), 
+                batchId: FfiConverterOptionString.read(from: &buf), 
+                scope: FfiConverterOptionString.read(from: &buf), 
+                route: FfiConverterOptionTypeAiCallLogRoute.read(from: &buf), 
+                providerName: FfiConverterOptionString.read(from: &buf), 
+                modelName: FfiConverterOptionString.read(from: &buf), 
+                status: FfiConverterTypeAiCallLogStatus.read(from: &buf), 
+                durationMs: FfiConverterOptionInt64.read(from: &buf), 
+                sentFields: FfiConverterSequenceTypeAiCallLogSentField.read(from: &buf), 
+                privacyRulesChecked: FfiConverterBool.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
+                privacyRuleName: FfiConverterOptionString.read(from: &buf), 
+                matchedFieldType: FfiConverterOptionTypeAiCallLogSentField.read(from: &buf), 
+                resultSummary: FfiConverterString.read(from: &buf), 
                 errorCode: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -1203,10 +1203,10 @@ public struct FfiConverterTypeAiCapabilityState: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCapabilityState {
         return
             try AiCapabilityState(
-                feature: FfiConverterTypeAiFeatureKind.read(from: &buf),
-                enabled: FfiConverterBool.read(from: &buf),
-                localAllowed: FfiConverterBool.read(from: &buf),
-                remoteAllowed: FfiConverterBool.read(from: &buf),
+                feature: FfiConverterTypeAiFeatureKind.read(from: &buf), 
+                enabled: FfiConverterBool.read(from: &buf), 
+                localAllowed: FfiConverterBool.read(from: &buf), 
+                remoteAllowed: FfiConverterBool.read(from: &buf), 
                 disabledReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -1335,17 +1335,17 @@ public struct FfiConverterTypeAiCategorySuggestion: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCategorySuggestion {
         return
             try AiCategorySuggestion(
-                fileId: FfiConverterInt64.read(from: &buf),
-                status: FfiConverterTypeAiCategorySuggestionStatus.read(from: &buf),
-                currentCategory: FfiConverterOptionString.read(from: &buf),
-                suggestedCategory: FfiConverterOptionString.read(from: &buf),
-                confidence: FfiConverterFloat.read(from: &buf),
-                reason: FfiConverterOptionString.read(from: &buf),
-                route: FfiConverterOptionTypeAiCategorySuggestionRoute.read(from: &buf),
-                usedContext: FfiConverterSequenceTypeAiCategorySuggestionContextField.read(from: &buf),
-                skippedReason: FfiConverterOptionTypeAiCategorySuggestionSkipReason.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                status: FfiConverterTypeAiCategorySuggestionStatus.read(from: &buf), 
+                currentCategory: FfiConverterOptionString.read(from: &buf), 
+                suggestedCategory: FfiConverterOptionString.read(from: &buf), 
+                confidence: FfiConverterFloat.read(from: &buf), 
+                reason: FfiConverterOptionString.read(from: &buf), 
+                route: FfiConverterOptionTypeAiCategorySuggestionRoute.read(from: &buf), 
+                usedContext: FfiConverterSequenceTypeAiCategorySuggestionContextField.read(from: &buf), 
+                skippedReason: FfiConverterOptionTypeAiCategorySuggestionSkipReason.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
                 requiresUserConfirmation: FfiConverterBool.read(from: &buf)
         )
     }
@@ -1433,9 +1433,9 @@ public struct FfiConverterTypeAiCategorySuggestionRequest: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCategorySuggestionRequest {
         return
             try AiCategorySuggestionRequest(
-                fileId: FfiConverterInt64.read(from: &buf),
-                contextPolicy: FfiConverterTypeAiCategorySuggestionContextPolicy.read(from: &buf),
-                privacyPolicyRef: FfiConverterOptionString.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                contextPolicy: FfiConverterTypeAiCategorySuggestionContextPolicy.read(from: &buf), 
+                privacyPolicyRef: FfiConverterOptionString.read(from: &buf), 
                 contentLocale: FfiConverterTypeContentLocale.read(from: &buf)
         )
     }
@@ -1539,13 +1539,13 @@ public struct FfiConverterTypeAiConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiConfig {
         return
             try AiConfig(
-                repoPath: FfiConverterString.read(from: &buf),
-                aiEnabled: FfiConverterBool.read(from: &buf),
-                providerPreference: FfiConverterTypeAiProviderPreference.read(from: &buf),
-                localAiEnabled: FfiConverterBool.read(from: &buf),
-                remoteAiAllowed: FfiConverterBool.read(from: &buf),
-                privacyGateEnabled: FfiConverterBool.read(from: &buf),
-                privacyPolicyRef: FfiConverterOptionString.read(from: &buf),
+                repoPath: FfiConverterString.read(from: &buf), 
+                aiEnabled: FfiConverterBool.read(from: &buf), 
+                providerPreference: FfiConverterTypeAiProviderPreference.read(from: &buf), 
+                localAiEnabled: FfiConverterBool.read(from: &buf), 
+                remoteAiAllowed: FfiConverterBool.read(from: &buf), 
+                privacyGateEnabled: FfiConverterBool.read(from: &buf), 
+                privacyPolicyRef: FfiConverterOptionString.read(from: &buf), 
                 featureToggles: FfiConverterSequenceTypeAiFeatureConfig.read(from: &buf)
         )
     }
@@ -1623,8 +1623,8 @@ public struct FfiConverterTypeAiConfigSnapshot: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiConfigSnapshot {
         return
             try AiConfigSnapshot(
-                config: FfiConverterTypeAiConfig.read(from: &buf),
-                capabilities: FfiConverterSequenceTypeAiCapabilityState.read(from: &buf),
+                config: FfiConverterTypeAiConfig.read(from: &buf), 
+                capabilities: FfiConverterSequenceTypeAiCapabilityState.read(from: &buf), 
                 updatedAt: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -1763,19 +1763,19 @@ public struct FfiConverterTypeAiFallbackStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiFallbackStatus {
         return
             try AiFallbackStatus(
-                operation: FfiConverterTypeAiFallbackOperation.read(from: &buf),
-                kind: FfiConverterTypeAiFallbackKind.read(from: &buf),
-                category: FfiConverterTypeAiFallbackCategory.read(from: &buf),
-                title: FfiConverterString.read(from: &buf),
-                message: FfiConverterString.read(from: &buf),
-                retryable: FfiConverterBool.read(from: &buf),
-                retryDisabledReason: FfiConverterOptionString.read(from: &buf),
-                primaryAction: FfiConverterOptionTypeAiFallbackAction.read(from: &buf),
-                secondaryAction: FfiConverterOptionTypeAiFallbackAction.read(from: &buf),
-                nonAiFallbackAction: FfiConverterTypeAiFallbackAction.read(from: &buf),
-                route: FfiConverterOptionTypeAiCallLogRoute.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
+                operation: FfiConverterTypeAiFallbackOperation.read(from: &buf), 
+                kind: FfiConverterTypeAiFallbackKind.read(from: &buf), 
+                category: FfiConverterTypeAiFallbackCategory.read(from: &buf), 
+                title: FfiConverterString.read(from: &buf), 
+                message: FfiConverterString.read(from: &buf), 
+                retryable: FfiConverterBool.read(from: &buf), 
+                retryDisabledReason: FfiConverterOptionString.read(from: &buf), 
+                primaryAction: FfiConverterOptionTypeAiFallbackAction.read(from: &buf), 
+                secondaryAction: FfiConverterOptionTypeAiFallbackAction.read(from: &buf), 
+                nonAiFallbackAction: FfiConverterTypeAiFallbackAction.read(from: &buf), 
+                route: FfiConverterOptionTypeAiCallLogRoute.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
                 retryAfter: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -1913,17 +1913,17 @@ public struct FfiConverterTypeAiFallbackStatusRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiFallbackStatusRequest {
         return
             try AiFallbackStatusRequest(
-                operation: FfiConverterTypeAiFallbackOperation.read(from: &buf),
-                route: FfiConverterOptionTypeAiCallLogRoute.read(from: &buf),
-                providerError: FfiConverterOptionTypeAiFallbackProviderErrorKind.read(from: &buf),
-                providerErrorCode: FfiConverterOptionString.read(from: &buf),
-                privacyDecision: FfiConverterOptionTypeAiPrivacyDecision.read(from: &buf),
-                privacySkippedReason: FfiConverterOptionTypeAiPrivacySkippedReason.read(from: &buf),
-                categorySkippedReason: FfiConverterOptionTypeAiCategorySuggestionSkipReason.read(from: &buf),
-                semanticFallbackReason: FfiConverterOptionTypeSemanticSearchFallbackReason.read(from: &buf),
-                callLogStatus: FfiConverterOptionTypeAiCallLogStatus.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
+                operation: FfiConverterTypeAiFallbackOperation.read(from: &buf), 
+                route: FfiConverterOptionTypeAiCallLogRoute.read(from: &buf), 
+                providerError: FfiConverterOptionTypeAiFallbackProviderErrorKind.read(from: &buf), 
+                providerErrorCode: FfiConverterOptionString.read(from: &buf), 
+                privacyDecision: FfiConverterOptionTypeAiPrivacyDecision.read(from: &buf), 
+                privacySkippedReason: FfiConverterOptionTypeAiPrivacySkippedReason.read(from: &buf), 
+                categorySkippedReason: FfiConverterOptionTypeAiCategorySuggestionSkipReason.read(from: &buf), 
+                semanticFallbackReason: FfiConverterOptionTypeSemanticSearchFallbackReason.read(from: &buf), 
+                callLogStatus: FfiConverterOptionTypeAiCallLogStatus.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
                 retryAfter: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -2005,8 +2005,8 @@ public struct FfiConverterTypeAiFeatureConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiFeatureConfig {
         return
             try AiFeatureConfig(
-                feature: FfiConverterTypeAiFeatureKind.read(from: &buf),
-                enabled: FfiConverterBool.read(from: &buf),
+                feature: FfiConverterTypeAiFeatureKind.read(from: &buf), 
+                enabled: FfiConverterBool.read(from: &buf), 
                 allowRemote: FfiConverterBool.read(from: &buf)
         )
     }
@@ -2097,11 +2097,11 @@ public struct FfiConverterTypeAiPrivacyEvaluationContext: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyEvaluationContext {
         return
             try AiPrivacyEvaluationContext(
-                fileId: FfiConverterOptionInt64.read(from: &buf),
-                repoRelativePath: FfiConverterOptionString.read(from: &buf),
-                fileName: FfiConverterOptionString.read(from: &buf),
-                category: FfiConverterOptionString.read(from: &buf),
-                extension: FfiConverterOptionString.read(from: &buf),
+                fileId: FfiConverterOptionInt64.read(from: &buf), 
+                repoRelativePath: FfiConverterOptionString.read(from: &buf), 
+                fileName: FfiConverterOptionString.read(from: &buf), 
+                category: FfiConverterOptionString.read(from: &buf), 
+                extension: FfiConverterOptionString.read(from: &buf), 
                 tags: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -2213,14 +2213,14 @@ public struct FfiConverterTypeAiPrivacyEvaluationReport: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyEvaluationReport {
         return
             try AiPrivacyEvaluationReport(
-                decision: FfiConverterTypeAiPrivacyDecision.read(from: &buf),
-                skippedReason: FfiConverterOptionTypeAiPrivacySkippedReason.read(from: &buf),
-                providerGateReason: FfiConverterOptionTypeAiPrivacyProviderGateReason.read(from: &buf),
-                matchedRules: FfiConverterSequenceTypeAiPrivacyRuleMatch.read(from: &buf),
-                matchedFieldType: FfiConverterOptionTypeAiPrivacyInputField.read(from: &buf),
-                allowedFields: FfiConverterSequenceTypeAiPrivacyInputField.read(from: &buf),
-                blockedFields: FfiConverterSequenceTypeAiPrivacyInputField.read(from: &buf),
-                sentFields: FfiConverterSequenceTypeAiPrivacyInputField.read(from: &buf),
+                decision: FfiConverterTypeAiPrivacyDecision.read(from: &buf), 
+                skippedReason: FfiConverterOptionTypeAiPrivacySkippedReason.read(from: &buf), 
+                providerGateReason: FfiConverterOptionTypeAiPrivacyProviderGateReason.read(from: &buf), 
+                matchedRules: FfiConverterSequenceTypeAiPrivacyRuleMatch.read(from: &buf), 
+                matchedFieldType: FfiConverterOptionTypeAiPrivacyInputField.read(from: &buf), 
+                allowedFields: FfiConverterSequenceTypeAiPrivacyInputField.read(from: &buf), 
+                blockedFields: FfiConverterSequenceTypeAiPrivacyInputField.read(from: &buf), 
+                sentFields: FfiConverterSequenceTypeAiPrivacyInputField.read(from: &buf), 
                 message: FfiConverterString.read(from: &buf)
         )
     }
@@ -2329,13 +2329,13 @@ public struct FfiConverterTypeAiPrivacyEvaluationRequest: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyEvaluationRequest {
         return
             try AiPrivacyEvaluationRequest(
-                feature: FfiConverterTypeAiFeatureKind.read(from: &buf),
-                route: FfiConverterTypeAiPrivacyEvaluationRoute.read(from: &buf),
-                requestedFields: FfiConverterSequenceTypeAiPrivacyInputField.read(from: &buf),
-                privacyGateEnabled: FfiConverterBool.read(from: &buf),
-                providerScope: FfiConverterTypeAiPrivacyProviderScopeSnapshot.read(from: &buf),
-                rules: FfiConverterSequenceTypeAiPrivacyRuleInput.read(from: &buf),
-                remoteAllowedFields: FfiConverterSequenceTypeAiPrivacyFieldRule.read(from: &buf),
+                feature: FfiConverterTypeAiFeatureKind.read(from: &buf), 
+                route: FfiConverterTypeAiPrivacyEvaluationRoute.read(from: &buf), 
+                requestedFields: FfiConverterSequenceTypeAiPrivacyInputField.read(from: &buf), 
+                privacyGateEnabled: FfiConverterBool.read(from: &buf), 
+                providerScope: FfiConverterTypeAiPrivacyProviderScopeSnapshot.read(from: &buf), 
+                rules: FfiConverterSequenceTypeAiPrivacyRuleInput.read(from: &buf), 
+                remoteAllowedFields: FfiConverterSequenceTypeAiPrivacyFieldRule.read(from: &buf), 
                 context: FfiConverterTypeAiPrivacyEvaluationContext.read(from: &buf)
         )
     }
@@ -2407,7 +2407,7 @@ public struct FfiConverterTypeAiPrivacyFieldRule: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyFieldRule {
         return
             try AiPrivacyFieldRule(
-                field: FfiConverterTypeAiPrivacyInputField.read(from: &buf),
+                field: FfiConverterTypeAiPrivacyInputField.read(from: &buf), 
                 allowRemote: FfiConverterBool.read(from: &buf)
         )
     }
@@ -2479,8 +2479,8 @@ public struct FfiConverterTypeAiPrivacyFieldState: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyFieldState {
         return
             try AiPrivacyFieldState(
-                field: FfiConverterTypeAiPrivacyInputField.read(from: &buf),
-                allowRemote: FfiConverterBool.read(from: &buf),
+                field: FfiConverterTypeAiPrivacyInputField.read(from: &buf), 
+                allowRemote: FfiConverterBool.read(from: &buf), 
                 lastMatchedCount: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -2559,9 +2559,9 @@ public struct FfiConverterTypeAiPrivacyProviderScopeSnapshot: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyProviderScopeSnapshot {
         return
             try AiPrivacyProviderScopeSnapshot(
-                providerConfigured: FfiConverterBool.read(from: &buf),
-                providerVerified: FfiConverterBool.read(from: &buf),
-                remoteProviderEnabled: FfiConverterBool.read(from: &buf),
+                providerConfigured: FfiConverterBool.read(from: &buf), 
+                providerVerified: FfiConverterBool.read(from: &buf), 
+                remoteProviderEnabled: FfiConverterBool.read(from: &buf), 
                 featureScope: FfiConverterSequenceTypeAiFeatureKind.read(from: &buf)
         )
     }
@@ -2659,12 +2659,12 @@ public struct FfiConverterTypeAiPrivacyRuleInput: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyRuleInput {
         return
             try AiPrivacyRuleInput(
-                ruleId: FfiConverterOptionString.read(from: &buf),
-                name: FfiConverterString.read(from: &buf),
-                kind: FfiConverterTypeAiPrivacyRuleKind.read(from: &buf),
-                pattern: FfiConverterString.read(from: &buf),
-                appliesTo: FfiConverterTypeAiPrivacyRuleAppliesTo.read(from: &buf),
-                enabled: FfiConverterBool.read(from: &buf),
+                ruleId: FfiConverterOptionString.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                kind: FfiConverterTypeAiPrivacyRuleKind.read(from: &buf), 
+                pattern: FfiConverterString.read(from: &buf), 
+                appliesTo: FfiConverterTypeAiPrivacyRuleAppliesTo.read(from: &buf), 
+                enabled: FfiConverterBool.read(from: &buf), 
                 description: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -2759,11 +2759,11 @@ public struct FfiConverterTypeAiPrivacyRuleMatch: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyRuleMatch {
         return
             try AiPrivacyRuleMatch(
-                ruleId: FfiConverterString.read(from: &buf),
-                name: FfiConverterString.read(from: &buf),
-                kind: FfiConverterTypeAiPrivacyRuleKind.read(from: &buf),
-                pattern: FfiConverterString.read(from: &buf),
-                appliesTo: FfiConverterTypeAiPrivacyRuleAppliesTo.read(from: &buf),
+                ruleId: FfiConverterString.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                kind: FfiConverterTypeAiPrivacyRuleKind.read(from: &buf), 
+                pattern: FfiConverterString.read(from: &buf), 
+                appliesTo: FfiConverterTypeAiPrivacyRuleAppliesTo.read(from: &buf), 
                 matchedField: FfiConverterOptionTypeAiPrivacyInputField.read(from: &buf)
         )
     }
@@ -2875,14 +2875,14 @@ public struct FfiConverterTypeAiPrivacyRuleRecord: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyRuleRecord {
         return
             try AiPrivacyRuleRecord(
-                ruleId: FfiConverterString.read(from: &buf),
-                name: FfiConverterString.read(from: &buf),
-                kind: FfiConverterTypeAiPrivacyRuleKind.read(from: &buf),
-                pattern: FfiConverterString.read(from: &buf),
-                appliesTo: FfiConverterTypeAiPrivacyRuleAppliesTo.read(from: &buf),
-                enabled: FfiConverterBool.read(from: &buf),
-                description: FfiConverterOptionString.read(from: &buf),
-                matchCount: FfiConverterInt64.read(from: &buf),
+                ruleId: FfiConverterString.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                kind: FfiConverterTypeAiPrivacyRuleKind.read(from: &buf), 
+                pattern: FfiConverterString.read(from: &buf), 
+                appliesTo: FfiConverterTypeAiPrivacyRuleAppliesTo.read(from: &buf), 
+                enabled: FfiConverterBool.read(from: &buf), 
+                description: FfiConverterOptionString.read(from: &buf), 
+                matchCount: FfiConverterInt64.read(from: &buf), 
                 lastMatchedAt: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -2979,11 +2979,11 @@ public struct FfiConverterTypeAiPrivacyRulesSnapshot: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyRulesSnapshot {
         return
             try AiPrivacyRulesSnapshot(
-                privacyGateEnabled: FfiConverterBool.read(from: &buf),
-                rules: FfiConverterSequenceTypeAiPrivacyRuleRecord.read(from: &buf),
-                remoteAllowedFields: FfiConverterSequenceTypeAiPrivacyFieldState.read(from: &buf),
-                providerScope: FfiConverterTypeAiPrivacyProviderScopeSnapshot.read(from: &buf),
-                updatedAt: FfiConverterOptionInt64.read(from: &buf),
+                privacyGateEnabled: FfiConverterBool.read(from: &buf), 
+                rules: FfiConverterSequenceTypeAiPrivacyRuleRecord.read(from: &buf), 
+                remoteAllowedFields: FfiConverterSequenceTypeAiPrivacyFieldState.read(from: &buf), 
+                providerScope: FfiConverterTypeAiPrivacyProviderScopeSnapshot.read(from: &buf), 
+                updatedAt: FfiConverterOptionInt64.read(from: &buf), 
                 remoteBlockedByDefault: FfiConverterBool.read(from: &buf)
         )
     }
@@ -3071,10 +3071,10 @@ public struct FfiConverterTypeAiPrivacyRulesUpdateRequest: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyRulesUpdateRequest {
         return
             try AiPrivacyRulesUpdateRequest(
-                privacyGateEnabled: FfiConverterBool.read(from: &buf),
-                rules: FfiConverterSequenceTypeAiPrivacyRuleInput.read(from: &buf),
-                remoteAllowedFields: FfiConverterSequenceTypeAiPrivacyFieldRule.read(from: &buf),
-                providerScope: FfiConverterTypeAiPrivacyProviderScopeSnapshot.read(from: &buf),
+                privacyGateEnabled: FfiConverterBool.read(from: &buf), 
+                rules: FfiConverterSequenceTypeAiPrivacyRuleInput.read(from: &buf), 
+                remoteAllowedFields: FfiConverterSequenceTypeAiPrivacyFieldRule.read(from: &buf), 
+                providerScope: FfiConverterTypeAiPrivacyProviderScopeSnapshot.read(from: &buf), 
                 confirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -3155,9 +3155,9 @@ public struct FfiConverterTypeAiSummaryClearReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummaryClearReport {
         return
             try AiSummaryClearReport(
-                fileId: FfiConverterInt64.read(from: &buf),
-                cleared: FfiConverterBool.read(from: &buf),
-                contentRevision: FfiConverterInt64.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                cleared: FfiConverterBool.read(from: &buf), 
+                contentRevision: FfiConverterInt64.read(from: &buf), 
                 clearedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -3231,8 +3231,8 @@ public struct FfiConverterTypeAiSummaryClearRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummaryClearRequest {
         return
             try AiSummaryClearRequest(
-                fileId: FfiConverterInt64.read(from: &buf),
-                expectedContentRevision: FfiConverterInt64.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                expectedContentRevision: FfiConverterInt64.read(from: &buf), 
                 confirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -3383,21 +3383,21 @@ public struct FfiConverterTypeAiSummaryDraft: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummaryDraft {
         return
             try AiSummaryDraft(
-                operationId: FfiConverterString.read(from: &buf),
-                contentLocale: FfiConverterTypeContentLocale.read(from: &buf),
-                formatContractVersion: FfiConverterInt64.read(from: &buf),
-                fileId: FfiConverterInt64.read(from: &buf),
-                draftId: FfiConverterOptionString.read(from: &buf),
-                status: FfiConverterTypeAiSummaryDraftStatus.read(from: &buf),
-                summaryText: FfiConverterOptionString.read(from: &buf),
-                route: FfiConverterOptionTypeAiSummaryRoute.read(from: &buf),
-                modelName: FfiConverterOptionString.read(from: &buf),
-                generatedAt: FfiConverterOptionInt64.read(from: &buf),
-                usedContext: FfiConverterSequenceTypeAiSummaryInputField.read(from: &buf),
-                skippedReason: FfiConverterOptionTypeAiSummarySkipReason.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
-                requiresUserSave: FfiConverterBool.read(from: &buf),
+                operationId: FfiConverterString.read(from: &buf), 
+                contentLocale: FfiConverterTypeContentLocale.read(from: &buf), 
+                formatContractVersion: FfiConverterInt64.read(from: &buf), 
+                fileId: FfiConverterInt64.read(from: &buf), 
+                draftId: FfiConverterOptionString.read(from: &buf), 
+                status: FfiConverterTypeAiSummaryDraftStatus.read(from: &buf), 
+                summaryText: FfiConverterOptionString.read(from: &buf), 
+                route: FfiConverterOptionTypeAiSummaryRoute.read(from: &buf), 
+                modelName: FfiConverterOptionString.read(from: &buf), 
+                generatedAt: FfiConverterOptionInt64.read(from: &buf), 
+                usedContext: FfiConverterSequenceTypeAiSummaryInputField.read(from: &buf), 
+                skippedReason: FfiConverterOptionTypeAiSummarySkipReason.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
+                requiresUserSave: FfiConverterBool.read(from: &buf), 
                 characterCount: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -3513,13 +3513,13 @@ public struct FfiConverterTypeAiSummaryGenerationRequest: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummaryGenerationRequest {
         return
             try AiSummaryGenerationRequest(
-                operationId: FfiConverterString.read(from: &buf),
-                retryOfOperationId: FfiConverterOptionString.read(from: &buf),
-                fileId: FfiConverterInt64.read(from: &buf),
-                providerScope: FfiConverterTypeAiSummaryProviderScope.read(from: &buf),
-                contextPolicy: FfiConverterTypeAiSummaryContextPolicy.read(from: &buf),
-                privacyPolicyRef: FfiConverterOptionString.read(from: &buf),
-                regenerateExisting: FfiConverterBool.read(from: &buf),
+                operationId: FfiConverterString.read(from: &buf), 
+                retryOfOperationId: FfiConverterOptionString.read(from: &buf), 
+                fileId: FfiConverterInt64.read(from: &buf), 
+                providerScope: FfiConverterTypeAiSummaryProviderScope.read(from: &buf), 
+                contextPolicy: FfiConverterTypeAiSummaryContextPolicy.read(from: &buf), 
+                privacyPolicyRef: FfiConverterOptionString.read(from: &buf), 
+                regenerateExisting: FfiConverterBool.read(from: &buf), 
                 contentLocale: FfiConverterTypeContentLocale.read(from: &buf)
         )
     }
@@ -3669,20 +3669,20 @@ public struct FfiConverterTypeAiSummarySaveReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummarySaveReport {
         return
             try AiSummarySaveReport(
-                fileId: FfiConverterInt64.read(from: &buf),
-                contentRevision: FfiConverterInt64.read(from: &buf),
-                ownership: FfiConverterTypeAiContentOwnership.read(from: &buf),
-                savedSummary: FfiConverterString.read(from: &buf),
-                savedAt: FfiConverterInt64.read(from: &buf),
-                route: FfiConverterOptionTypeAiSummaryRoute.read(from: &buf),
-                modelName: FfiConverterOptionString.read(from: &buf),
-                generatedAt: FfiConverterOptionInt64.read(from: &buf),
-                usedContext: FfiConverterSequenceTypeAiSummaryInputField.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
-                operationId: FfiConverterString.read(from: &buf),
-                contentLocale: FfiConverterTypeContentLocale.read(from: &buf),
-                formatContractVersion: FfiConverterInt64.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                contentRevision: FfiConverterInt64.read(from: &buf), 
+                ownership: FfiConverterTypeAiContentOwnership.read(from: &buf), 
+                savedSummary: FfiConverterString.read(from: &buf), 
+                savedAt: FfiConverterInt64.read(from: &buf), 
+                route: FfiConverterOptionTypeAiSummaryRoute.read(from: &buf), 
+                modelName: FfiConverterOptionString.read(from: &buf), 
+                generatedAt: FfiConverterOptionInt64.read(from: &buf), 
+                usedContext: FfiConverterSequenceTypeAiSummaryInputField.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
+                operationId: FfiConverterString.read(from: &buf), 
+                contentLocale: FfiConverterTypeContentLocale.read(from: &buf), 
+                formatContractVersion: FfiConverterInt64.read(from: &buf), 
                 characterCount: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -3839,20 +3839,20 @@ public struct FfiConverterTypeAiSummarySaveRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummarySaveRequest {
         return
             try AiSummarySaveRequest(
-                fileId: FfiConverterInt64.read(from: &buf),
-                expectedContentRevision: FfiConverterInt64.read(from: &buf),
-                confirmReplaceUserOwned: FfiConverterBool.read(from: &buf),
-                summaryText: FfiConverterString.read(from: &buf),
-                draftId: FfiConverterOptionString.read(from: &buf),
-                route: FfiConverterOptionTypeAiSummaryRoute.read(from: &buf),
-                modelName: FfiConverterOptionString.read(from: &buf),
-                generatedAt: FfiConverterOptionInt64.read(from: &buf),
-                usedContext: FfiConverterSequenceTypeAiSummaryInputField.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
-                ownership: FfiConverterTypeAiContentOwnership.read(from: &buf),
-                operationId: FfiConverterString.read(from: &buf),
-                contentLocale: FfiConverterTypeContentLocale.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                expectedContentRevision: FfiConverterInt64.read(from: &buf), 
+                confirmReplaceUserOwned: FfiConverterBool.read(from: &buf), 
+                summaryText: FfiConverterString.read(from: &buf), 
+                draftId: FfiConverterOptionString.read(from: &buf), 
+                route: FfiConverterOptionTypeAiSummaryRoute.read(from: &buf), 
+                modelName: FfiConverterOptionString.read(from: &buf), 
+                generatedAt: FfiConverterOptionInt64.read(from: &buf), 
+                usedContext: FfiConverterSequenceTypeAiSummaryInputField.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
+                ownership: FfiConverterTypeAiContentOwnership.read(from: &buf), 
+                operationId: FfiConverterString.read(from: &buf), 
+                contentLocale: FfiConverterTypeContentLocale.read(from: &buf), 
                 formatContractVersion: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -3979,15 +3979,15 @@ public struct FfiConverterTypeAiTagSuggestion: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestion {
         return
             try AiTagSuggestion(
-                suggestionId: FfiConverterString.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
-                displayName: FfiConverterString.read(from: &buf),
-                confidence: FfiConverterFloat.read(from: &buf),
-                reason: FfiConverterString.read(from: &buf),
-                status: FfiConverterTypeAiTagSuggestionCandidateStatus.read(from: &buf),
-                mergeAction: FfiConverterTypeAiTagSuggestionMergeAction.read(from: &buf),
-                matchedExistingSlug: FfiConverterOptionString.read(from: &buf),
-                selectedByDefault: FfiConverterBool.read(from: &buf),
+                suggestionId: FfiConverterString.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
+                displayName: FfiConverterString.read(from: &buf), 
+                confidence: FfiConverterFloat.read(from: &buf), 
+                reason: FfiConverterString.read(from: &buf), 
+                status: FfiConverterTypeAiTagSuggestionCandidateStatus.read(from: &buf), 
+                mergeAction: FfiConverterTypeAiTagSuggestionMergeAction.read(from: &buf), 
+                matchedExistingSlug: FfiConverterOptionString.read(from: &buf), 
+                selectedByDefault: FfiConverterBool.read(from: &buf), 
                 disabledReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -4073,9 +4073,9 @@ public struct FfiConverterTypeAiTagSuggestionApplyItemResult: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionApplyItemResult {
         return
             try AiTagSuggestionApplyItemResult(
-                suggestionId: FfiConverterString.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
-                status: FfiConverterTypeAiTagSuggestionApplyStatus.read(from: &buf),
+                suggestionId: FfiConverterString.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
+                status: FfiConverterTypeAiTagSuggestionApplyStatus.read(from: &buf), 
                 error: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -4191,15 +4191,15 @@ public struct FfiConverterTypeAiTagSuggestionApplyReport: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionApplyReport {
         return
             try AiTagSuggestionApplyReport(
-                fileId: FfiConverterInt64.read(from: &buf),
-                requestedCount: FfiConverterInt64.read(from: &buf),
-                appliedCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                failedCount: FfiConverterInt64.read(from: &buf),
-                itemResults: FfiConverterSequenceTypeAiTagSuggestionApplyItemResult.read(from: &buf),
-                tagSet: FfiConverterTypeTagSet.read(from: &buf),
-                undoToken: FfiConverterOptionString.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                requestedCount: FfiConverterInt64.read(from: &buf), 
+                appliedCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                failedCount: FfiConverterInt64.read(from: &buf), 
+                itemResults: FfiConverterSequenceTypeAiTagSuggestionApplyItemResult.read(from: &buf), 
+                tagSet: FfiConverterTypeTagSet.read(from: &buf), 
+                undoToken: FfiConverterOptionString.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
                 refreshTargets: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -4351,20 +4351,20 @@ public struct FfiConverterTypeAiTagSuggestionReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionReport {
         return
             try AiTagSuggestionReport(
-                fileId: FfiConverterInt64.read(from: &buf),
-                status: FfiConverterTypeAiTagSuggestionReportStatus.read(from: &buf),
-                suggestions: FfiConverterSequenceTypeAiTagSuggestion.read(from: &buf),
-                route: FfiConverterOptionTypeAiTagSuggestionRoute.read(from: &buf),
-                modelName: FfiConverterOptionString.read(from: &buf),
-                generatedAt: FfiConverterOptionInt64.read(from: &buf),
-                usedContext: FfiConverterSequenceTypeAiTagSuggestionInputField.read(from: &buf),
-                skippedReason: FfiConverterOptionTypeAiTagSuggestionSkipReason.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
-                requiresUserConfirmation: FfiConverterBool.read(from: &buf),
-                confidenceThreshold: FfiConverterFloat.read(from: &buf),
-                contentsRead: FfiConverterBool.read(from: &buf),
-                aiUsed: FfiConverterBool.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                status: FfiConverterTypeAiTagSuggestionReportStatus.read(from: &buf), 
+                suggestions: FfiConverterSequenceTypeAiTagSuggestion.read(from: &buf), 
+                route: FfiConverterOptionTypeAiTagSuggestionRoute.read(from: &buf), 
+                modelName: FfiConverterOptionString.read(from: &buf), 
+                generatedAt: FfiConverterOptionInt64.read(from: &buf), 
+                usedContext: FfiConverterSequenceTypeAiTagSuggestionInputField.read(from: &buf), 
+                skippedReason: FfiConverterOptionTypeAiTagSuggestionSkipReason.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
+                requiresUserConfirmation: FfiConverterBool.read(from: &buf), 
+                confidenceThreshold: FfiConverterFloat.read(from: &buf), 
+                contentsRead: FfiConverterBool.read(from: &buf), 
+                aiUsed: FfiConverterBool.read(from: &buf), 
                 networkUsed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -4455,9 +4455,9 @@ public struct FfiConverterTypeAiTagSuggestionRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionRequest {
         return
             try AiTagSuggestionRequest(
-                fileId: FfiConverterInt64.read(from: &buf),
-                candidateTags: FfiConverterSequenceString.read(from: &buf),
-                privacyPolicyRef: FfiConverterOptionString.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                candidateTags: FfiConverterSequenceString.read(from: &buf), 
+                privacyPolicyRef: FfiConverterOptionString.read(from: &buf), 
                 contentLocale: FfiConverterTypeContentLocale.read(from: &buf)
         )
     }
@@ -4549,11 +4549,11 @@ public struct FfiConverterTypeApplyAiTagSuggestionItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ApplyAiTagSuggestionItem {
         return
             try ApplyAiTagSuggestionItem(
-                suggestionId: FfiConverterString.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
-                displayName: FfiConverterString.read(from: &buf),
-                confidence: FfiConverterFloat.read(from: &buf),
-                editedByUser: FfiConverterBool.read(from: &buf),
+                suggestionId: FfiConverterString.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
+                displayName: FfiConverterString.read(from: &buf), 
+                confidence: FfiConverterFloat.read(from: &buf), 
+                editedByUser: FfiConverterBool.read(from: &buf), 
                 mergeTargetSlug: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -4641,10 +4641,10 @@ public struct FfiConverterTypeApplyAiTagSuggestionsRequest: FfiConverterRustBuff
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ApplyAiTagSuggestionsRequest {
         return
             try ApplyAiTagSuggestionsRequest(
-                fileId: FfiConverterInt64.read(from: &buf),
-                suggestions: FfiConverterSequenceTypeApplyAiTagSuggestionItem.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                suggestions: FfiConverterSequenceTypeApplyAiTagSuggestionItem.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
                 confirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -4719,8 +4719,8 @@ public struct FfiConverterTypeApplyTagSuggestionItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ApplyTagSuggestionItem {
         return
             try ApplyTagSuggestionItem(
-                suggestionId: FfiConverterString.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
+                suggestionId: FfiConverterString.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
                 displayName: FfiConverterString.read(from: &buf)
         )
     }
@@ -4787,7 +4787,7 @@ public struct FfiConverterTypeApplyTagSuggestionsRequest: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ApplyTagSuggestionsRequest {
         return
             try ApplyTagSuggestionsRequest(
-                fileId: FfiConverterInt64.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
                 suggestions: FfiConverterSequenceTypeApplyTagSuggestionItem.read(from: &buf)
         )
     }
@@ -4877,11 +4877,11 @@ public struct FfiConverterTypeBatchCategoryChangeItemResult: FfiConverterRustBuf
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchCategoryChangeItemResult {
         return
             try BatchCategoryChangeItemResult(
-                fileId: FfiConverterInt64.read(from: &buf),
-                fromCategory: FfiConverterOptionString.read(from: &buf),
-                toCategory: FfiConverterString.read(from: &buf),
-                finalPath: FfiConverterOptionString.read(from: &buf),
-                status: FfiConverterTypeBatchCategoryResultStatus.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                fromCategory: FfiConverterOptionString.read(from: &buf), 
+                toCategory: FfiConverterString.read(from: &buf), 
+                finalPath: FfiConverterOptionString.read(from: &buf), 
+                status: FfiConverterTypeBatchCategoryResultStatus.read(from: &buf), 
                 error: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -4999,15 +4999,15 @@ public struct FfiConverterTypeBatchCategoryChangeReport: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchCategoryChangeReport {
         return
             try BatchCategoryChangeReport(
-                requestedFileCount: FfiConverterInt64.read(from: &buf),
-                targetCategory: FfiConverterString.read(from: &buf),
-                movedCount: FfiConverterInt64.read(from: &buf),
-                metadataOnlyCount: FfiConverterInt64.read(from: &buf),
-                unchangedCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                failedCount: FfiConverterInt64.read(from: &buf),
-                itemResults: FfiConverterSequenceTypeBatchCategoryChangeItemResult.read(from: &buf),
-                updatedFiles: FfiConverterSequenceTypeFileEntry.read(from: &buf),
+                requestedFileCount: FfiConverterInt64.read(from: &buf), 
+                targetCategory: FfiConverterString.read(from: &buf), 
+                movedCount: FfiConverterInt64.read(from: &buf), 
+                metadataOnlyCount: FfiConverterInt64.read(from: &buf), 
+                unchangedCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                failedCount: FfiConverterInt64.read(from: &buf), 
+                itemResults: FfiConverterSequenceTypeBatchCategoryChangeItemResult.read(from: &buf), 
+                updatedFiles: FfiConverterSequenceTypeFileEntry.read(from: &buf), 
                 undoToken: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -5135,16 +5135,16 @@ public struct FfiConverterTypeBatchCategoryPreviewItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchCategoryPreviewItem {
         return
             try BatchCategoryPreviewItem(
-                fileId: FfiConverterInt64.read(from: &buf),
-                fromCategory: FfiConverterOptionString.read(from: &buf),
-                toCategory: FfiConverterString.read(from: &buf),
-                currentPath: FfiConverterOptionString.read(from: &buf),
-                targetPath: FfiConverterOptionString.read(from: &buf),
-                targetName: FfiConverterOptionString.read(from: &buf),
-                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf),
-                indexOnly: FfiConverterBool.read(from: &buf),
-                willMoveFile: FfiConverterBool.read(from: &buf),
-                status: FfiConverterTypeBatchCategoryPreviewStatus.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                fromCategory: FfiConverterOptionString.read(from: &buf), 
+                toCategory: FfiConverterString.read(from: &buf), 
+                currentPath: FfiConverterOptionString.read(from: &buf), 
+                targetPath: FfiConverterOptionString.read(from: &buf), 
+                targetName: FfiConverterOptionString.read(from: &buf), 
+                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf), 
+                indexOnly: FfiConverterBool.read(from: &buf), 
+                willMoveFile: FfiConverterBool.read(from: &buf), 
+                status: FfiConverterTypeBatchCategoryPreviewStatus.read(from: &buf), 
                 reason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -5285,18 +5285,18 @@ public struct FfiConverterTypeBatchCategoryPreviewReport: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchCategoryPreviewReport {
         return
             try BatchCategoryPreviewReport(
-                requestedFileCount: FfiConverterInt64.read(from: &buf),
-                targetCategory: FfiConverterString.read(from: &buf),
-                moveRepoOwnedFiles: FfiConverterBool.read(from: &buf),
-                previewToken: FfiConverterString.read(from: &buf),
-                categoryDistribution: FfiConverterSequenceTypeCategoryDistributionItem.read(from: &buf),
-                willMoveCount: FfiConverterInt64.read(from: &buf),
-                metadataOnlyCount: FfiConverterInt64.read(from: &buf),
-                unchangedCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                blockedCount: FfiConverterInt64.read(from: &buf),
-                items: FfiConverterSequenceTypeBatchCategoryPreviewItem.read(from: &buf),
-                canApply: FfiConverterBool.read(from: &buf),
+                requestedFileCount: FfiConverterInt64.read(from: &buf), 
+                targetCategory: FfiConverterString.read(from: &buf), 
+                moveRepoOwnedFiles: FfiConverterBool.read(from: &buf), 
+                previewToken: FfiConverterString.read(from: &buf), 
+                categoryDistribution: FfiConverterSequenceTypeCategoryDistributionItem.read(from: &buf), 
+                willMoveCount: FfiConverterInt64.read(from: &buf), 
+                metadataOnlyCount: FfiConverterInt64.read(from: &buf), 
+                unchangedCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                blockedCount: FfiConverterInt64.read(from: &buf), 
+                items: FfiConverterSequenceTypeBatchCategoryPreviewItem.read(from: &buf), 
+                canApply: FfiConverterBool.read(from: &buf), 
                 applyBlockedReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -5385,9 +5385,9 @@ public struct FfiConverterTypeBatchDeleteItemResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchDeleteItemResult {
         return
             try BatchDeleteItemResult(
-                fileId: FfiConverterInt64.read(from: &buf),
-                finalPath: FfiConverterOptionString.read(from: &buf),
-                status: FfiConverterTypeBatchDeleteResultStatus.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                finalPath: FfiConverterOptionString.read(from: &buf), 
+                status: FfiConverterTypeBatchDeleteResultStatus.read(from: &buf), 
                 error: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -5497,14 +5497,14 @@ public struct FfiConverterTypeBatchDeletePreviewItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchDeletePreviewItem {
         return
             try BatchDeletePreviewItem(
-                fileId: FfiConverterInt64.read(from: &buf),
-                currentPath: FfiConverterOptionString.read(from: &buf),
-                currentName: FfiConverterOptionString.read(from: &buf),
-                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf),
-                deleteMode: FfiConverterTypeBatchDeleteMode.read(from: &buf),
-                willMoveToTrash: FfiConverterBool.read(from: &buf),
-                willRemoveIndex: FfiConverterBool.read(from: &buf),
-                status: FfiConverterTypeBatchDeletePreviewStatus.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                currentPath: FfiConverterOptionString.read(from: &buf), 
+                currentName: FfiConverterOptionString.read(from: &buf), 
+                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf), 
+                deleteMode: FfiConverterTypeBatchDeleteMode.read(from: &buf), 
+                willMoveToTrash: FfiConverterBool.read(from: &buf), 
+                willRemoveIndex: FfiConverterBool.read(from: &buf), 
+                status: FfiConverterTypeBatchDeletePreviewStatus.read(from: &buf), 
                 reason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -5643,18 +5643,18 @@ public struct FfiConverterTypeBatchDeletePreviewReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchDeletePreviewReport {
         return
             try BatchDeletePreviewReport(
-                requestedFileCount: FfiConverterInt64.read(from: &buf),
-                deleteMode: FfiConverterTypeBatchDeleteMode.read(from: &buf),
-                previewToken: FfiConverterString.read(from: &buf),
-                trashAvailable: FfiConverterBool.read(from: &buf),
-                undoAvailable: FfiConverterBool.read(from: &buf),
-                willTrashCount: FfiConverterInt64.read(from: &buf),
-                indexOnlyCount: FfiConverterInt64.read(from: &buf),
-                missingCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                blockedCount: FfiConverterInt64.read(from: &buf),
-                items: FfiConverterSequenceTypeBatchDeletePreviewItem.read(from: &buf),
-                canApply: FfiConverterBool.read(from: &buf),
+                requestedFileCount: FfiConverterInt64.read(from: &buf), 
+                deleteMode: FfiConverterTypeBatchDeleteMode.read(from: &buf), 
+                previewToken: FfiConverterString.read(from: &buf), 
+                trashAvailable: FfiConverterBool.read(from: &buf), 
+                undoAvailable: FfiConverterBool.read(from: &buf), 
+                willTrashCount: FfiConverterInt64.read(from: &buf), 
+                indexOnlyCount: FfiConverterInt64.read(from: &buf), 
+                missingCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                blockedCount: FfiConverterInt64.read(from: &buf), 
+                items: FfiConverterSequenceTypeBatchDeletePreviewItem.read(from: &buf), 
+                canApply: FfiConverterBool.read(from: &buf), 
                 applyBlockedReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -5773,14 +5773,14 @@ public struct FfiConverterTypeBatchDeleteReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchDeleteReport {
         return
             try BatchDeleteReport(
-                requestedFileCount: FfiConverterInt64.read(from: &buf),
-                deleteMode: FfiConverterTypeBatchDeleteMode.read(from: &buf),
-                movedToTrashCount: FfiConverterInt64.read(from: &buf),
-                removedFromIndexCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                failedCount: FfiConverterInt64.read(from: &buf),
-                itemResults: FfiConverterSequenceTypeBatchDeleteItemResult.read(from: &buf),
-                affectedFileIds: FfiConverterSequenceInt64.read(from: &buf),
+                requestedFileCount: FfiConverterInt64.read(from: &buf), 
+                deleteMode: FfiConverterTypeBatchDeleteMode.read(from: &buf), 
+                movedToTrashCount: FfiConverterInt64.read(from: &buf), 
+                removedFromIndexCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                failedCount: FfiConverterInt64.read(from: &buf), 
+                itemResults: FfiConverterSequenceTypeBatchDeleteItemResult.read(from: &buf), 
+                affectedFileIds: FfiConverterSequenceInt64.read(from: &buf), 
                 undoToken: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -5865,9 +5865,9 @@ public struct FfiConverterTypeBatchMutationItemResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchMutationItemResult {
         return
             try BatchMutationItemResult(
-                fileId: FfiConverterInt64.read(from: &buf),
-                tag: FfiConverterString.read(from: &buf),
-                status: FfiConverterTypeBatchMutationStatus.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                tag: FfiConverterString.read(from: &buf), 
+                status: FfiConverterTypeBatchMutationStatus.read(from: &buf), 
                 error: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -5965,12 +5965,12 @@ public struct FfiConverterTypeBatchMutationReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchMutationReport {
         return
             try BatchMutationReport(
-                requestedFileCount: FfiConverterInt64.read(from: &buf),
-                requestedTagCount: FfiConverterInt64.read(from: &buf),
-                addedCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                failedCount: FfiConverterInt64.read(from: &buf),
-                itemResults: FfiConverterSequenceTypeBatchMutationItemResult.read(from: &buf),
+                requestedFileCount: FfiConverterInt64.read(from: &buf), 
+                requestedTagCount: FfiConverterInt64.read(from: &buf), 
+                addedCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                failedCount: FfiConverterInt64.read(from: &buf), 
+                itemResults: FfiConverterSequenceTypeBatchMutationItemResult.read(from: &buf), 
                 undoToken: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -6053,9 +6053,9 @@ public struct FfiConverterTypeBatchRenameConflict: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenameConflict {
         return
             try BatchRenameConflict(
-                fileId: FfiConverterInt64.read(from: &buf),
-                conflictingFileId: FfiConverterOptionInt64.read(from: &buf),
-                conflictPath: FfiConverterOptionString.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                conflictingFileId: FfiConverterOptionInt64.read(from: &buf), 
+                conflictPath: FfiConverterOptionString.read(from: &buf), 
                 reason: FfiConverterString.read(from: &buf)
         )
     }
@@ -6147,11 +6147,11 @@ public struct FfiConverterTypeBatchRenameItemResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenameItemResult {
         return
             try BatchRenameItemResult(
-                fileId: FfiConverterInt64.read(from: &buf),
-                originalName: FfiConverterOptionString.read(from: &buf),
-                finalName: FfiConverterOptionString.read(from: &buf),
-                finalPath: FfiConverterOptionString.read(from: &buf),
-                status: FfiConverterTypeBatchRenameResultStatus.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                originalName: FfiConverterOptionString.read(from: &buf), 
+                finalName: FfiConverterOptionString.read(from: &buf), 
+                finalPath: FfiConverterOptionString.read(from: &buf), 
+                status: FfiConverterTypeBatchRenameResultStatus.read(from: &buf), 
                 error: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -6269,15 +6269,15 @@ public struct FfiConverterTypeBatchRenamePreviewItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenamePreviewItem {
         return
             try BatchRenamePreviewItem(
-                fileId: FfiConverterInt64.read(from: &buf),
-                currentPath: FfiConverterOptionString.read(from: &buf),
-                originalName: FfiConverterOptionString.read(from: &buf),
-                newName: FfiConverterOptionString.read(from: &buf),
-                targetPath: FfiConverterOptionString.read(from: &buf),
-                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf),
-                indexOnly: FfiConverterBool.read(from: &buf),
-                willRenameFile: FfiConverterBool.read(from: &buf),
-                status: FfiConverterTypeBatchRenamePreviewStatus.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                currentPath: FfiConverterOptionString.read(from: &buf), 
+                originalName: FfiConverterOptionString.read(from: &buf), 
+                newName: FfiConverterOptionString.read(from: &buf), 
+                targetPath: FfiConverterOptionString.read(from: &buf), 
+                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf), 
+                indexOnly: FfiConverterBool.read(from: &buf), 
+                willRenameFile: FfiConverterBool.read(from: &buf), 
+                status: FfiConverterTypeBatchRenamePreviewStatus.read(from: &buf), 
                 reason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -6411,17 +6411,17 @@ public struct FfiConverterTypeBatchRenamePreviewReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenamePreviewReport {
         return
             try BatchRenamePreviewReport(
-                requestedFileCount: FfiConverterInt64.read(from: &buf),
-                rule: FfiConverterTypeBatchRenameRule.read(from: &buf),
-                previewToken: FfiConverterString.read(from: &buf),
-                willRenameCount: FfiConverterInt64.read(from: &buf),
-                displayOnlyCount: FfiConverterInt64.read(from: &buf),
-                unchangedCount: FfiConverterInt64.read(from: &buf),
-                blockedCount: FfiConverterInt64.read(from: &buf),
-                conflictCount: FfiConverterInt64.read(from: &buf),
-                items: FfiConverterSequenceTypeBatchRenamePreviewItem.read(from: &buf),
-                conflicts: FfiConverterSequenceTypeBatchRenameConflict.read(from: &buf),
-                canApply: FfiConverterBool.read(from: &buf),
+                requestedFileCount: FfiConverterInt64.read(from: &buf), 
+                rule: FfiConverterTypeBatchRenameRule.read(from: &buf), 
+                previewToken: FfiConverterString.read(from: &buf), 
+                willRenameCount: FfiConverterInt64.read(from: &buf), 
+                displayOnlyCount: FfiConverterInt64.read(from: &buf), 
+                unchangedCount: FfiConverterInt64.read(from: &buf), 
+                blockedCount: FfiConverterInt64.read(from: &buf), 
+                conflictCount: FfiConverterInt64.read(from: &buf), 
+                items: FfiConverterSequenceTypeBatchRenamePreviewItem.read(from: &buf), 
+                conflicts: FfiConverterSequenceTypeBatchRenameConflict.read(from: &buf), 
+                canApply: FfiConverterBool.read(from: &buf), 
                 applyBlockedReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -6539,14 +6539,14 @@ public struct FfiConverterTypeBatchRenameReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenameReport {
         return
             try BatchRenameReport(
-                requestedFileCount: FfiConverterInt64.read(from: &buf),
-                renamedCount: FfiConverterInt64.read(from: &buf),
-                displayNameUpdatedCount: FfiConverterInt64.read(from: &buf),
-                unchangedCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                failedCount: FfiConverterInt64.read(from: &buf),
-                itemResults: FfiConverterSequenceTypeBatchRenameItemResult.read(from: &buf),
-                updatedFiles: FfiConverterSequenceTypeFileEntry.read(from: &buf),
+                requestedFileCount: FfiConverterInt64.read(from: &buf), 
+                renamedCount: FfiConverterInt64.read(from: &buf), 
+                displayNameUpdatedCount: FfiConverterInt64.read(from: &buf), 
+                unchangedCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                failedCount: FfiConverterInt64.read(from: &buf), 
+                itemResults: FfiConverterSequenceTypeBatchRenameItemResult.read(from: &buf), 
+                updatedFiles: FfiConverterSequenceTypeFileEntry.read(from: &buf), 
                 undoToken: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -6667,15 +6667,15 @@ public struct FfiConverterTypeBatchRenameRule: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenameRule {
         return
             try BatchRenameRule(
-                mode: FfiConverterTypeBatchRenameMode.read(from: &buf),
-                prefix: FfiConverterOptionString.read(from: &buf),
-                dateSource: FfiConverterOptionTypeBatchRenameDateSource.read(from: &buf),
-                dateFormat: FfiConverterOptionString.read(from: &buf),
-                separator: FfiConverterOptionString.read(from: &buf),
-                startNumber: FfiConverterOptionInt64.read(from: &buf),
-                padding: FfiConverterOptionInt64.read(from: &buf),
-                find: FfiConverterOptionString.read(from: &buf),
-                replacement: FfiConverterOptionString.read(from: &buf),
+                mode: FfiConverterTypeBatchRenameMode.read(from: &buf), 
+                prefix: FfiConverterOptionString.read(from: &buf), 
+                dateSource: FfiConverterOptionTypeBatchRenameDateSource.read(from: &buf), 
+                dateFormat: FfiConverterOptionString.read(from: &buf), 
+                separator: FfiConverterOptionString.read(from: &buf), 
+                startNumber: FfiConverterOptionInt64.read(from: &buf), 
+                padding: FfiConverterOptionInt64.read(from: &buf), 
+                find: FfiConverterOptionString.read(from: &buf), 
+                replacement: FfiConverterOptionString.read(from: &buf), 
                 caseSensitive: FfiConverterBool.read(from: &buf)
         )
     }
@@ -6761,9 +6761,9 @@ public struct FfiConverterTypeBindingApiContract: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BindingApiContract {
         return
             try BindingApiContract(
-                name: FfiConverterString.read(from: &buf),
-                capability: FfiConverterString.read(from: &buf),
-                status: FfiConverterTypeBindingSupportStatus.read(from: &buf),
+                name: FfiConverterString.read(from: &buf), 
+                capability: FfiConverterString.read(from: &buf), 
+                status: FfiConverterTypeBindingSupportStatus.read(from: &buf), 
                 reason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -6855,11 +6855,11 @@ public struct FfiConverterTypeBindingContractReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BindingContractReport {
         return
             try BindingContractReport(
-                targetPlatform: FfiConverterTypeBindingTargetPlatform.read(from: &buf),
-                bindingVersion: FfiConverterInt64.read(from: &buf),
-                coreVersion: FfiConverterString.read(from: &buf),
-                supportedApis: FfiConverterSequenceTypeBindingApiContract.read(from: &buf),
-                typeMappings: FfiConverterSequenceTypeBindingTypeMapping.read(from: &buf),
+                targetPlatform: FfiConverterTypeBindingTargetPlatform.read(from: &buf), 
+                bindingVersion: FfiConverterInt64.read(from: &buf), 
+                coreVersion: FfiConverterString.read(from: &buf), 
+                supportedApis: FfiConverterSequenceTypeBindingApiContract.read(from: &buf), 
+                typeMappings: FfiConverterSequenceTypeBindingTypeMapping.read(from: &buf), 
                 missingCapabilities: FfiConverterSequenceTypeBindingMissingCapability.read(from: &buf)
         )
     }
@@ -6929,7 +6929,7 @@ public struct FfiConverterTypeBindingContractRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BindingContractRequest {
         return
             try BindingContractRequest(
-                targetPlatform: FfiConverterTypeBindingTargetPlatform.read(from: &buf),
+                targetPlatform: FfiConverterTypeBindingTargetPlatform.read(from: &buf), 
                 bindingVersion: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -7007,9 +7007,9 @@ public struct FfiConverterTypeBindingMissingCapability: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BindingMissingCapability {
         return
             try BindingMissingCapability(
-                capability: FfiConverterString.read(from: &buf),
-                label: FfiConverterString.read(from: &buf),
-                status: FfiConverterTypeBindingSupportStatus.read(from: &buf),
+                capability: FfiConverterString.read(from: &buf), 
+                label: FfiConverterString.read(from: &buf), 
+                status: FfiConverterTypeBindingSupportStatus.read(from: &buf), 
                 reason: FfiConverterString.read(from: &buf)
         )
     }
@@ -7095,10 +7095,10 @@ public struct FfiConverterTypeBindingTypeMapping: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BindingTypeMapping {
         return
             try BindingTypeMapping(
-                rustType: FfiConverterString.read(from: &buf),
-                udlType: FfiConverterString.read(from: &buf),
-                targetType: FfiConverterString.read(from: &buf),
-                status: FfiConverterTypeBindingSupportStatus.read(from: &buf),
+                rustType: FfiConverterString.read(from: &buf), 
+                udlType: FfiConverterString.read(from: &buf), 
+                targetType: FfiConverterString.read(from: &buf), 
+                status: FfiConverterTypeBindingSupportStatus.read(from: &buf), 
                 reason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -7167,7 +7167,7 @@ public struct FfiConverterTypeCategoryDistributionItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CategoryDistributionItem {
         return
             try CategoryDistributionItem(
-                category: FfiConverterString.read(from: &buf),
+                category: FfiConverterString.read(from: &buf), 
                 count: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -7263,12 +7263,12 @@ public struct FfiConverterTypeChangeFilter: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ChangeFilter {
         return
             try ChangeFilter(
-                fileId: FfiConverterOptionInt64.read(from: &buf),
-                category: FfiConverterOptionString.read(from: &buf),
-                action: FfiConverterOptionString.read(from: &buf),
-                since: FfiConverterOptionInt64.read(from: &buf),
-                until: FfiConverterOptionInt64.read(from: &buf),
-                limit: FfiConverterInt64.read(from: &buf),
+                fileId: FfiConverterOptionInt64.read(from: &buf), 
+                category: FfiConverterOptionString.read(from: &buf), 
+                action: FfiConverterOptionString.read(from: &buf), 
+                since: FfiConverterOptionInt64.read(from: &buf), 
+                until: FfiConverterOptionInt64.read(from: &buf), 
+                limit: FfiConverterInt64.read(from: &buf), 
                 offset: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -7369,12 +7369,12 @@ public struct FfiConverterTypeChangeLogEntry: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ChangeLogEntry {
         return
             try ChangeLogEntry(
-                id: FfiConverterInt64.read(from: &buf),
-                fileId: FfiConverterOptionInt64.read(from: &buf),
-                filename: FfiConverterString.read(from: &buf),
-                category: FfiConverterString.read(from: &buf),
-                action: FfiConverterString.read(from: &buf),
-                detailJson: FfiConverterString.read(from: &buf),
+                id: FfiConverterInt64.read(from: &buf), 
+                fileId: FfiConverterOptionInt64.read(from: &buf), 
+                filename: FfiConverterString.read(from: &buf), 
+                category: FfiConverterString.read(from: &buf), 
+                action: FfiConverterString.read(from: &buf), 
+                detailJson: FfiConverterString.read(from: &buf), 
                 occurredAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -7463,10 +7463,10 @@ public struct FfiConverterTypeClassifierCorrectionResult: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierCorrectionResult {
         return
             try ClassifierCorrectionResult(
-                updatedFile: FfiConverterTypeFileEntry.read(from: &buf),
-                ruleDraft: FfiConverterOptionTypeClassifierRuleDraft.read(from: &buf),
-                moveFileRequested: FfiConverterBool.read(from: &buf),
-                rememberRequested: FfiConverterBool.read(from: &buf),
+                updatedFile: FfiConverterTypeFileEntry.read(from: &buf), 
+                ruleDraft: FfiConverterOptionTypeClassifierRuleDraft.read(from: &buf), 
+                moveFileRequested: FfiConverterBool.read(from: &buf), 
+                rememberRequested: FfiConverterBool.read(from: &buf), 
                 ruleConfirmationRequired: FfiConverterBool.read(from: &buf)
         )
     }
@@ -7547,9 +7547,9 @@ public struct FfiConverterTypeClassifierImpactPreviewRequest: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierImpactPreviewRequest {
         return
             try ClassifierImpactPreviewRequest(
-                mode: FfiConverterTypeClassifierImpactPreviewMode.read(from: &buf),
-                rule: FfiConverterTypeClassifierRule.read(from: &buf),
-                moveFiles: FfiConverterBool.read(from: &buf),
+                mode: FfiConverterTypeClassifierImpactPreviewMode.read(from: &buf), 
+                rule: FfiConverterTypeClassifierRule.read(from: &buf), 
+                moveFiles: FfiConverterBool.read(from: &buf), 
                 replacementCategory: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -7617,7 +7617,7 @@ public struct FfiConverterTypeClassifierLocaleValue: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierLocaleValue {
         return
             try ClassifierLocaleValue(
-                locale: FfiConverterString.read(from: &buf),
+                locale: FfiConverterString.read(from: &buf), 
                 value: FfiConverterString.read(from: &buf)
         )
     }
@@ -7701,10 +7701,10 @@ public struct FfiConverterTypeClassifierRule: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierRule {
         return
             try ClassifierRule(
-                targetCategory: FfiConverterString.read(from: &buf),
-                keywords: FfiConverterSequenceString.read(from: &buf),
-                extensions: FfiConverterSequenceString.read(from: &buf),
-                priority: FfiConverterInt64.read(from: &buf),
+                targetCategory: FfiConverterString.read(from: &buf), 
+                keywords: FfiConverterSequenceString.read(from: &buf), 
+                extensions: FfiConverterSequenceString.read(from: &buf), 
+                priority: FfiConverterInt64.read(from: &buf), 
                 previewConfirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -7815,14 +7815,14 @@ public struct FfiConverterTypeClassifierRuleCreateRequest: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierRuleCreateRequest {
         return
             try ClassifierRuleCreateRequest(
-                repositoryLocalePolicy: FfiConverterString.read(from: &buf),
-                editingLocale: FfiConverterTypeContentLocale.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
-                displayName: FfiConverterString.read(from: &buf),
-                description: FfiConverterString.read(from: &buf),
-                extensions: FfiConverterSequenceString.read(from: &buf),
-                keywords: FfiConverterSequenceString.read(from: &buf),
-                priority: FfiConverterInt64.read(from: &buf),
+                repositoryLocalePolicy: FfiConverterString.read(from: &buf), 
+                editingLocale: FfiConverterTypeContentLocale.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
+                displayName: FfiConverterString.read(from: &buf), 
+                description: FfiConverterString.read(from: &buf), 
+                extensions: FfiConverterSequenceString.read(from: &buf), 
+                keywords: FfiConverterSequenceString.read(from: &buf), 
+                priority: FfiConverterInt64.read(from: &buf), 
                 namingTemplate: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -7901,8 +7901,8 @@ public struct FfiConverterTypeClassifierRuleDeleteRequest: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierRuleDeleteRequest {
         return
             try ClassifierRuleDeleteRequest(
-                ruleId: FfiConverterString.read(from: &buf),
-                replacementCategory: FfiConverterOptionString.read(from: &buf),
+                ruleId: FfiConverterString.read(from: &buf), 
+                replacementCategory: FfiConverterOptionString.read(from: &buf), 
                 previewConfirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -7987,10 +7987,10 @@ public struct FfiConverterTypeClassifierRuleDraft: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierRuleDraft {
         return
             try ClassifierRuleDraft(
-                sourceFileId: FfiConverterInt64.read(from: &buf),
-                targetCategory: FfiConverterString.read(from: &buf),
-                keywordCandidates: FfiConverterSequenceString.read(from: &buf),
-                extensionCandidates: FfiConverterSequenceString.read(from: &buf),
+                sourceFileId: FfiConverterInt64.read(from: &buf), 
+                targetCategory: FfiConverterString.read(from: &buf), 
+                keywordCandidates: FfiConverterSequenceString.read(from: &buf), 
+                extensionCandidates: FfiConverterSequenceString.read(from: &buf), 
                 priority: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -8095,13 +8095,13 @@ public struct FfiConverterTypeClassifierRuleEditorSnapshot: FfiConverterRustBuff
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierRuleEditorSnapshot {
         return
             try ClassifierRuleEditorSnapshot(
-                rules: FfiConverterSequenceTypeClassifierRuleRecord.read(from: &buf),
-                defaultRuleId: FfiConverterString.read(from: &buf),
-                updatedRuleId: FfiConverterOptionString.read(from: &buf),
-                repositoryLocalePolicy: FfiConverterString.read(from: &buf),
-                editingLocale: FfiConverterOptionTypeContentLocale.read(from: &buf),
-                health: FfiConverterTypeClassifierConfigHealth.read(from: &buf),
-                recoveryActions: FfiConverterSequenceTypeClassifierRecoveryAction.read(from: &buf),
+                rules: FfiConverterSequenceTypeClassifierRuleRecord.read(from: &buf), 
+                defaultRuleId: FfiConverterString.read(from: &buf), 
+                updatedRuleId: FfiConverterOptionString.read(from: &buf), 
+                repositoryLocalePolicy: FfiConverterString.read(from: &buf), 
+                editingLocale: FfiConverterOptionTypeContentLocale.read(from: &buf), 
+                health: FfiConverterTypeClassifierConfigHealth.read(from: &buf), 
+                recoveryActions: FfiConverterSequenceTypeClassifierRecoveryAction.read(from: &buf), 
                 warning: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -8209,13 +8209,13 @@ public struct FfiConverterTypeClassifierRuleObservedState: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierRuleObservedState {
         return
             try ClassifierRuleObservedState(
-                ruleId: FfiConverterString.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
-                displayName: FfiConverterString.read(from: &buf),
-                description: FfiConverterString.read(from: &buf),
-                extensions: FfiConverterSequenceString.read(from: &buf),
-                keywords: FfiConverterSequenceString.read(from: &buf),
-                priority: FfiConverterInt64.read(from: &buf),
+                ruleId: FfiConverterString.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
+                displayName: FfiConverterString.read(from: &buf), 
+                description: FfiConverterString.read(from: &buf), 
+                extensions: FfiConverterSequenceString.read(from: &buf), 
+                keywords: FfiConverterSequenceString.read(from: &buf), 
+                priority: FfiConverterInt64.read(from: &buf), 
                 namingTemplate: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -8329,14 +8329,14 @@ public struct FfiConverterTypeClassifierRuleRecord: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierRuleRecord {
         return
             try ClassifierRuleRecord(
-                ruleId: FfiConverterString.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
-                displayNames: FfiConverterSequenceTypeClassifierLocaleValue.read(from: &buf),
-                descriptions: FfiConverterSequenceTypeClassifierLocaleValue.read(from: &buf),
-                extensions: FfiConverterSequenceString.read(from: &buf),
-                keywords: FfiConverterSequenceString.read(from: &buf),
-                priority: FfiConverterInt64.read(from: &buf),
-                namingTemplate: FfiConverterOptionString.read(from: &buf),
+                ruleId: FfiConverterString.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
+                displayNames: FfiConverterSequenceTypeClassifierLocaleValue.read(from: &buf), 
+                descriptions: FfiConverterSequenceTypeClassifierLocaleValue.read(from: &buf), 
+                extensions: FfiConverterSequenceString.read(from: &buf), 
+                keywords: FfiConverterSequenceString.read(from: &buf), 
+                priority: FfiConverterInt64.read(from: &buf), 
+                namingTemplate: FfiConverterOptionString.read(from: &buf), 
                 isDefault: FfiConverterBool.read(from: &buf)
         )
     }
@@ -8469,17 +8469,17 @@ public struct FfiConverterTypeClassifierRuleUpdate: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierRuleUpdate {
         return
             try ClassifierRuleUpdate(
-                repositoryLocalePolicy: FfiConverterString.read(from: &buf),
-                editingLocale: FfiConverterTypeContentLocale.read(from: &buf),
-                ruleId: FfiConverterString.read(from: &buf),
-                observed: FfiConverterTypeClassifierRuleObservedState.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
-                displayName: FfiConverterString.read(from: &buf),
-                description: FfiConverterString.read(from: &buf),
-                extensions: FfiConverterSequenceString.read(from: &buf),
-                keywords: FfiConverterSequenceString.read(from: &buf),
-                priority: FfiConverterInt64.read(from: &buf),
-                namingTemplate: FfiConverterOptionString.read(from: &buf),
+                repositoryLocalePolicy: FfiConverterString.read(from: &buf), 
+                editingLocale: FfiConverterTypeContentLocale.read(from: &buf), 
+                ruleId: FfiConverterString.read(from: &buf), 
+                observed: FfiConverterTypeClassifierRuleObservedState.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
+                displayName: FfiConverterString.read(from: &buf), 
+                description: FfiConverterString.read(from: &buf), 
+                extensions: FfiConverterSequenceString.read(from: &buf), 
+                keywords: FfiConverterSequenceString.read(from: &buf), 
+                priority: FfiConverterInt64.read(from: &buf), 
+                namingTemplate: FfiConverterOptionString.read(from: &buf), 
                 previewConfirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -8567,9 +8567,9 @@ public struct FfiConverterTypeClassifyResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifyResult {
         return
             try ClassifyResult(
-                category: FfiConverterString.read(from: &buf),
-                suggestedName: FfiConverterString.read(from: &buf),
-                reason: FfiConverterTypeClassifyReason.read(from: &buf),
+                category: FfiConverterString.read(from: &buf), 
+                suggestedName: FfiConverterString.read(from: &buf), 
+                reason: FfiConverterTypeClassifyReason.read(from: &buf), 
                 confidence: FfiConverterFloat.read(from: &buf)
         )
     }
@@ -8697,17 +8697,17 @@ public struct FfiConverterTypeCloudStorageState: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloudStorageState {
         return
             try CloudStorageState(
-                repoPath: FfiConverterString.read(from: &buf),
-                providerKind: FfiConverterTypeCloudStorageProviderKind.read(from: &buf),
-                risk: FfiConverterTypeCloudStorageRiskLevel.read(from: &buf),
-                placeholderState: FfiConverterTypeCloudPlaceholderState.read(from: &buf),
-                permissionState: FfiConverterTypeCloudPermissionState.read(from: &buf),
-                statusSummary: FfiConverterString.read(from: &buf),
-                riskReasons: FfiConverterSequenceString.read(from: &buf),
-                recommendedAction: FfiConverterTypeCloudStorageRecommendedAction.read(from: &buf),
-                requiresNoticeAcknowledgement: FfiConverterBool.read(from: &buf),
-                noticeAcknowledged: FfiConverterBool.read(from: &buf),
-                canRetry: FfiConverterBool.read(from: &buf),
+                repoPath: FfiConverterString.read(from: &buf), 
+                providerKind: FfiConverterTypeCloudStorageProviderKind.read(from: &buf), 
+                risk: FfiConverterTypeCloudStorageRiskLevel.read(from: &buf), 
+                placeholderState: FfiConverterTypeCloudPlaceholderState.read(from: &buf), 
+                permissionState: FfiConverterTypeCloudPermissionState.read(from: &buf), 
+                statusSummary: FfiConverterString.read(from: &buf), 
+                riskReasons: FfiConverterSequenceString.read(from: &buf), 
+                recommendedAction: FfiConverterTypeCloudStorageRecommendedAction.read(from: &buf), 
+                requiresNoticeAcknowledgement: FfiConverterBool.read(from: &buf), 
+                noticeAcknowledged: FfiConverterBool.read(from: &buf), 
+                canRetry: FfiConverterBool.read(from: &buf), 
                 requiresReconnect: FfiConverterBool.read(from: &buf)
         )
     }
@@ -8813,12 +8813,12 @@ public struct FfiConverterTypeCommandIndex: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CommandIndex {
         return
             try CommandIndex(
-                commands: FfiConverterSequenceTypeCommandTarget.read(from: &buf),
-                navigationTargets: FfiConverterSequenceTypeCommandTarget.read(from: &buf),
-                currentSelectionTargets: FfiConverterSequenceTypeCommandTarget.read(from: &buf),
-                recentTargets: FfiConverterSequenceTypeCommandTarget.read(from: &buf),
-                smartLists: FfiConverterSequenceTypeCommandTarget.read(from: &buf),
-                fileCandidates: FfiConverterSequenceTypeCommandTarget.read(from: &buf),
+                commands: FfiConverterSequenceTypeCommandTarget.read(from: &buf), 
+                navigationTargets: FfiConverterSequenceTypeCommandTarget.read(from: &buf), 
+                currentSelectionTargets: FfiConverterSequenceTypeCommandTarget.read(from: &buf), 
+                recentTargets: FfiConverterSequenceTypeCommandTarget.read(from: &buf), 
+                smartLists: FfiConverterSequenceTypeCommandTarget.read(from: &buf), 
+                fileCandidates: FfiConverterSequenceTypeCommandTarget.read(from: &buf), 
                 generatedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -8901,9 +8901,9 @@ public struct FfiConverterTypeCommandIndexContext: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CommandIndexContext {
         return
             try CommandIndexContext(
-                query: FfiConverterOptionString.read(from: &buf),
-                selectedFileIds: FfiConverterSequenceInt64.read(from: &buf),
-                currentPath: FfiConverterOptionString.read(from: &buf),
+                query: FfiConverterOptionString.read(from: &buf), 
+                selectedFileIds: FfiConverterSequenceInt64.read(from: &buf), 
+                currentPath: FfiConverterOptionString.read(from: &buf), 
                 includeFileCandidates: FfiConverterBool.read(from: &buf)
         )
     }
@@ -9037,18 +9037,18 @@ public struct FfiConverterTypeCommandTarget: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CommandTarget {
         return
             try CommandTarget(
-                id: FfiConverterString.read(from: &buf),
-                title: FfiConverterString.read(from: &buf),
-                subtitle: FfiConverterOptionString.read(from: &buf),
-                group: FfiConverterTypeCommandTargetGroup.read(from: &buf),
-                kind: FfiConverterTypeCommandTargetKind.read(from: &buf),
-                action: FfiConverterTypeCommandTargetAction.read(from: &buf),
-                route: FfiConverterOptionString.read(from: &buf),
-                shortcut: FfiConverterOptionString.read(from: &buf),
-                disabled: FfiConverterBool.read(from: &buf),
-                disabledReason: FfiConverterOptionString.read(from: &buf),
-                requiresConfirmation: FfiConverterBool.read(from: &buf),
-                fileId: FfiConverterOptionInt64.read(from: &buf),
+                id: FfiConverterString.read(from: &buf), 
+                title: FfiConverterString.read(from: &buf), 
+                subtitle: FfiConverterOptionString.read(from: &buf), 
+                group: FfiConverterTypeCommandTargetGroup.read(from: &buf), 
+                kind: FfiConverterTypeCommandTargetKind.read(from: &buf), 
+                action: FfiConverterTypeCommandTargetAction.read(from: &buf), 
+                route: FfiConverterOptionString.read(from: &buf), 
+                shortcut: FfiConverterOptionString.read(from: &buf), 
+                disabled: FfiConverterBool.read(from: &buf), 
+                disabledReason: FfiConverterOptionString.read(from: &buf), 
+                requiresConfirmation: FfiConverterBool.read(from: &buf), 
+                fileId: FfiConverterOptionInt64.read(from: &buf), 
                 savedSearchId: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -9143,10 +9143,10 @@ public struct FfiConverterTypeCreateSavedSearchRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CreateSavedSearchRequest {
         return
             try CreateSavedSearchRequest(
-                name: FfiConverterString.read(from: &buf),
-                query: FfiConverterTypeSavedSearchQuery.read(from: &buf),
-                icon: FfiConverterOptionString.read(from: &buf),
-                color: FfiConverterOptionString.read(from: &buf),
+                name: FfiConverterString.read(from: &buf), 
+                query: FfiConverterTypeSavedSearchQuery.read(from: &buf), 
+                icon: FfiConverterOptionString.read(from: &buf), 
+                color: FfiConverterOptionString.read(from: &buf), 
                 pinned: FfiConverterBool.read(from: &buf)
         )
     }
@@ -9221,8 +9221,8 @@ public struct FfiConverterTypeDiagnosticsSnapshot: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DiagnosticsSnapshot {
         return
             try DiagnosticsSnapshot(
-                snapshotPath: FfiConverterString.read(from: &buf),
-                createdAt: FfiConverterInt64.read(from: &buf),
+                snapshotPath: FfiConverterString.read(from: &buf), 
+                createdAt: FfiConverterInt64.read(from: &buf), 
                 warnings: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -9289,7 +9289,7 @@ public struct FfiConverterTypeErrorArgument: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ErrorArgument {
         return
             try ErrorArgument(
-                name: FfiConverterString.read(from: &buf),
+                name: FfiConverterString.read(from: &buf), 
                 value: FfiConverterString.read(from: &buf)
         )
     }
@@ -9391,13 +9391,13 @@ public struct FfiConverterTypeErrorMapping: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ErrorMapping {
         return
             try ErrorMapping(
-                kind: FfiConverterTypeErrorKind.read(from: &buf),
-                code: FfiConverterString.read(from: &buf),
-                field: FfiConverterOptionString.read(from: &buf),
-                arguments: FfiConverterSequenceTypeErrorArgument.read(from: &buf),
-                recoveryActionIds: FfiConverterSequenceString.read(from: &buf),
-                severity: FfiConverterTypeErrorSeverity.read(from: &buf),
-                recoverability: FfiConverterTypeErrorRecoverability.read(from: &buf),
+                kind: FfiConverterTypeErrorKind.read(from: &buf), 
+                code: FfiConverterString.read(from: &buf), 
+                field: FfiConverterOptionString.read(from: &buf), 
+                arguments: FfiConverterSequenceTypeErrorArgument.read(from: &buf), 
+                recoveryActionIds: FfiConverterSequenceString.read(from: &buf), 
+                severity: FfiConverterTypeErrorSeverity.read(from: &buf), 
+                recoverability: FfiConverterTypeErrorRecoverability.read(from: &buf), 
                 technicalDetails: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -9493,11 +9493,11 @@ public struct FfiConverterTypeErrorMappingInput: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ErrorMappingInput {
         return
             try ErrorMappingInput(
-                kind: FfiConverterTypeErrorKind.read(from: &buf),
-                path: FfiConverterOptionString.read(from: &buf),
-                reason: FfiConverterOptionString.read(from: &buf),
-                message: FfiConverterOptionString.read(from: &buf),
-                expectedRevision: FfiConverterOptionInt64.read(from: &buf),
+                kind: FfiConverterTypeErrorKind.read(from: &buf), 
+                path: FfiConverterOptionString.read(from: &buf), 
+                reason: FfiConverterOptionString.read(from: &buf), 
+                message: FfiConverterOptionString.read(from: &buf), 
+                expectedRevision: FfiConverterOptionInt64.read(from: &buf), 
                 currentRevision: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -9573,8 +9573,8 @@ public struct FfiConverterTypeExternalEvent: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ExternalEvent {
         return
             try ExternalEvent(
-                path: FfiConverterString.read(from: &buf),
-                kind: FfiConverterTypeExternalEventKind.read(from: &buf),
+                path: FfiConverterString.read(from: &buf), 
+                kind: FfiConverterTypeExternalEventKind.read(from: &buf), 
                 fsEventId: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -9647,8 +9647,8 @@ public struct FfiConverterTypeExternalSyncLocaleRecoveryPlan: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ExternalSyncLocaleRecoveryPlan {
         return
             try ExternalSyncLocaleRecoveryPlan(
-                recoveryToken: FfiConverterString.read(from: &buf),
-                cursor: FfiConverterOptionInt64.read(from: &buf),
+                recoveryToken: FfiConverterString.read(from: &buf), 
+                cursor: FfiConverterOptionInt64.read(from: &buf), 
                 receipts: FfiConverterSequenceTypeExternalSyncLocaleRecoveryReceipt.read(from: &buf)
         )
     }
@@ -9721,8 +9721,8 @@ public struct FfiConverterTypeExternalSyncLocaleRecoveryReceipt: FfiConverterRus
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ExternalSyncLocaleRecoveryReceipt {
         return
             try ExternalSyncLocaleRecoveryReceipt(
-                eventId: FfiConverterInt64.read(from: &buf),
-                kind: FfiConverterTypeExternalEventKind.read(from: &buf),
+                eventId: FfiConverterInt64.read(from: &buf), 
+                kind: FfiConverterTypeExternalEventKind.read(from: &buf), 
                 path: FfiConverterString.read(from: &buf)
         )
     }
@@ -9789,7 +9789,7 @@ public struct FfiConverterTypeExternalSyncLocaleRecoveryReport: FfiConverterRust
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ExternalSyncLocaleRecoveryReport {
         return
             try ExternalSyncLocaleRecoveryReport(
-                recoveredReceipts: FfiConverterInt64.read(from: &buf),
+                recoveredReceipts: FfiConverterInt64.read(from: &buf), 
                 contentLocale: FfiConverterTypeContentLocale.read(from: &buf)
         )
     }
@@ -9921,18 +9921,18 @@ public struct FfiConverterTypeFileEntry: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FileEntry {
         return
             try FileEntry(
-                id: FfiConverterInt64.read(from: &buf),
-                path: FfiConverterString.read(from: &buf),
-                originalName: FfiConverterString.read(from: &buf),
-                currentName: FfiConverterString.read(from: &buf),
-                category: FfiConverterString.read(from: &buf),
-                sizeBytes: FfiConverterInt64.read(from: &buf),
-                hashSha256: FfiConverterString.read(from: &buf),
-                storageMode: FfiConverterTypeStorageMode.read(from: &buf),
-                origin: FfiConverterTypeFileOrigin.read(from: &buf),
-                sourcePath: FfiConverterOptionString.read(from: &buf),
-                availabilityStatus: FfiConverterTypeFileAvailabilityStatus.read(from: &buf),
-                importedAt: FfiConverterInt64.read(from: &buf),
+                id: FfiConverterInt64.read(from: &buf), 
+                path: FfiConverterString.read(from: &buf), 
+                originalName: FfiConverterString.read(from: &buf), 
+                currentName: FfiConverterString.read(from: &buf), 
+                category: FfiConverterString.read(from: &buf), 
+                sizeBytes: FfiConverterInt64.read(from: &buf), 
+                hashSha256: FfiConverterString.read(from: &buf), 
+                storageMode: FfiConverterTypeStorageMode.read(from: &buf), 
+                origin: FfiConverterTypeFileOrigin.read(from: &buf), 
+                sourcePath: FfiConverterOptionString.read(from: &buf), 
+                availabilityStatus: FfiConverterTypeFileAvailabilityStatus.read(from: &buf), 
+                importedAt: FfiConverterInt64.read(from: &buf), 
                 updatedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -10033,11 +10033,11 @@ public struct FfiConverterTypeFileFilter: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FileFilter {
         return
             try FileFilter(
-                category: FfiConverterOptionString.read(from: &buf),
-                includeDeleted: FfiConverterOptionBool.read(from: &buf),
-                importedAfter: FfiConverterOptionInt64.read(from: &buf),
-                importedBefore: FfiConverterOptionInt64.read(from: &buf),
-                limit: FfiConverterInt64.read(from: &buf),
+                category: FfiConverterOptionString.read(from: &buf), 
+                includeDeleted: FfiConverterOptionBool.read(from: &buf), 
+                importedAfter: FfiConverterOptionInt64.read(from: &buf), 
+                importedBefore: FfiConverterOptionInt64.read(from: &buf), 
+                limit: FfiConverterInt64.read(from: &buf), 
                 offset: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -10137,12 +10137,12 @@ public struct FfiConverterTypeICloudConflictPair: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ICloudConflictPair {
         return
             try ICloudConflictPair(
-                conflictId: FfiConverterString.read(from: &buf),
-                originalPath: FfiConverterOptionString.read(from: &buf),
-                conflictedCopyPath: FfiConverterString.read(from: &buf),
-                originalModifiedAt: FfiConverterOptionInt64.read(from: &buf),
-                conflictedModifiedAt: FfiConverterInt64.read(from: &buf),
-                status: FfiConverterTypeICloudConflictStatus.read(from: &buf),
+                conflictId: FfiConverterString.read(from: &buf), 
+                originalPath: FfiConverterOptionString.read(from: &buf), 
+                conflictedCopyPath: FfiConverterString.read(from: &buf), 
+                originalModifiedAt: FfiConverterOptionInt64.read(from: &buf), 
+                conflictedModifiedAt: FfiConverterInt64.read(from: &buf), 
+                status: FfiConverterTypeICloudConflictStatus.read(from: &buf), 
                 uncertaintyReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -10255,14 +10255,14 @@ public struct FfiConverterTypeICloudConflictPreviewReport: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ICloudConflictPreviewReport {
         return
             try ICloudConflictPreviewReport(
-                conflictId: FfiConverterString.read(from: &buf),
-                versions: FfiConverterSequenceTypeICloudConflictVersionMetadata.read(from: &buf),
-                defaultResolution: FfiConverterTypeICloudConflictResolution.read(from: &buf),
-                resolutionOptions: FfiConverterSequenceTypeICloudConflictResolutionOption.read(from: &buf),
-                metadataComplete: FfiConverterBool.read(from: &buf),
-                trashAvailable: FfiConverterBool.read(from: &buf),
-                canKeepBoth: FfiConverterBool.read(from: &buf),
-                canResolveDestructive: FfiConverterBool.read(from: &buf),
+                conflictId: FfiConverterString.read(from: &buf), 
+                versions: FfiConverterSequenceTypeICloudConflictVersionMetadata.read(from: &buf), 
+                defaultResolution: FfiConverterTypeICloudConflictResolution.read(from: &buf), 
+                resolutionOptions: FfiConverterSequenceTypeICloudConflictResolutionOption.read(from: &buf), 
+                metadataComplete: FfiConverterBool.read(from: &buf), 
+                trashAvailable: FfiConverterBool.read(from: &buf), 
+                canKeepBoth: FfiConverterBool.read(from: &buf), 
+                canResolveDestructive: FfiConverterBool.read(from: &buf), 
                 blockedReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -10353,10 +10353,10 @@ public struct FfiConverterTypeICloudConflictResolutionOption: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ICloudConflictResolutionOption {
         return
             try ICloudConflictResolutionOption(
-                resolution: FfiConverterTypeICloudConflictResolution.read(from: &buf),
-                destructive: FfiConverterBool.read(from: &buf),
-                requiresTrash: FfiConverterBool.read(from: &buf),
-                enabled: FfiConverterBool.read(from: &buf),
+                resolution: FfiConverterTypeICloudConflictResolution.read(from: &buf), 
+                destructive: FfiConverterBool.read(from: &buf), 
+                requiresTrash: FfiConverterBool.read(from: &buf), 
+                enabled: FfiConverterBool.read(from: &buf), 
                 disabledReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -10455,12 +10455,12 @@ public struct FfiConverterTypeICloudConflictResolveReport: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ICloudConflictResolveReport {
         return
             try ICloudConflictResolveReport(
-                conflictId: FfiConverterString.read(from: &buf),
-                resolution: FfiConverterTypeICloudConflictResolution.read(from: &buf),
-                status: FfiConverterTypeICloudConflictStatus.read(from: &buf),
-                keptPaths: FfiConverterSequenceString.read(from: &buf),
-                trashedPaths: FfiConverterSequenceString.read(from: &buf),
-                undoToken: FfiConverterOptionString.read(from: &buf),
+                conflictId: FfiConverterString.read(from: &buf), 
+                resolution: FfiConverterTypeICloudConflictResolution.read(from: &buf), 
+                status: FfiConverterTypeICloudConflictStatus.read(from: &buf), 
+                keptPaths: FfiConverterSequenceString.read(from: &buf), 
+                trashedPaths: FfiConverterSequenceString.read(from: &buf), 
+                undoToken: FfiConverterOptionString.read(from: &buf), 
                 changeLogAction: FfiConverterString.read(from: &buf)
         )
     }
@@ -10567,13 +10567,13 @@ public struct FfiConverterTypeICloudConflictVersionMetadata: FfiConverterRustBuf
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ICloudConflictVersionMetadata {
         return
             try ICloudConflictVersionMetadata(
-                versionId: FfiConverterString.read(from: &buf),
-                role: FfiConverterTypeICloudConflictVersionRole.read(from: &buf),
-                path: FfiConverterString.read(from: &buf),
-                modifiedAt: FfiConverterOptionInt64.read(from: &buf),
-                sizeBytes: FfiConverterOptionInt64.read(from: &buf),
-                hashSha256: FfiConverterOptionString.read(from: &buf),
-                previewSummary: FfiConverterOptionString.read(from: &buf),
+                versionId: FfiConverterString.read(from: &buf), 
+                role: FfiConverterTypeICloudConflictVersionRole.read(from: &buf), 
+                path: FfiConverterString.read(from: &buf), 
+                modifiedAt: FfiConverterOptionInt64.read(from: &buf), 
+                sizeBytes: FfiConverterOptionInt64.read(from: &buf), 
+                hashSha256: FfiConverterOptionString.read(from: &buf), 
+                previewSummary: FfiConverterOptionString.read(from: &buf), 
                 previewStatus: FfiConverterTypeICloudConflictPreviewStatus.read(from: &buf)
         )
     }
@@ -10717,19 +10717,19 @@ public struct FfiConverterTypeImportConflictBatchApplyReport: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchApplyReport {
         return
             try ImportConflictBatchApplyReport(
-                importSessionId: FfiConverterString.read(from: &buf),
-                requestedConflictCount: FfiConverterInt64.read(from: &buf),
-                resolvedCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                keptBothCount: FfiConverterInt64.read(from: &buf),
-                replacedCount: FfiConverterInt64.read(from: &buf),
-                queuedForPerItemCount: FfiConverterInt64.read(from: &buf),
-                pendingCount: FfiConverterInt64.read(from: &buf),
-                failedCount: FfiConverterInt64.read(from: &buf),
-                itemResults: FfiConverterSequenceTypeImportConflictBatchItemResult.read(from: &buf),
-                affectedFileIds: FfiConverterSequenceInt64.read(from: &buf),
-                undoToken: FfiConverterOptionString.read(from: &buf),
-                changeLogActions: FfiConverterSequenceString.read(from: &buf),
+                importSessionId: FfiConverterString.read(from: &buf), 
+                requestedConflictCount: FfiConverterInt64.read(from: &buf), 
+                resolvedCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                keptBothCount: FfiConverterInt64.read(from: &buf), 
+                replacedCount: FfiConverterInt64.read(from: &buf), 
+                queuedForPerItemCount: FfiConverterInt64.read(from: &buf), 
+                pendingCount: FfiConverterInt64.read(from: &buf), 
+                failedCount: FfiConverterInt64.read(from: &buf), 
+                itemResults: FfiConverterSequenceTypeImportConflictBatchItemResult.read(from: &buf), 
+                affectedFileIds: FfiConverterSequenceInt64.read(from: &buf), 
+                undoToken: FfiConverterOptionString.read(from: &buf), 
+                changeLogActions: FfiConverterSequenceString.read(from: &buf), 
                 failureSummary: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -10831,11 +10831,11 @@ public struct FfiConverterTypeImportConflictBatchApplyRequest: FfiConverterRustB
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchApplyRequest {
         return
             try ImportConflictBatchApplyRequest(
-                importSessionId: FfiConverterString.read(from: &buf),
-                conflictIds: FfiConverterSequenceString.read(from: &buf),
-                duplicateStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf),
-                sameNameStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf),
-                applyToAllSimilarConflicts: FfiConverterBool.read(from: &buf),
+                importSessionId: FfiConverterString.read(from: &buf), 
+                conflictIds: FfiConverterSequenceString.read(from: &buf), 
+                duplicateStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf), 
+                sameNameStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf), 
+                applyToAllSimilarConflicts: FfiConverterBool.read(from: &buf), 
                 replaceConfirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -10935,12 +10935,12 @@ public struct FfiConverterTypeImportConflictBatchItemResult: FfiConverterRustBuf
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchItemResult {
         return
             try ImportConflictBatchItemResult(
-                conflictId: FfiConverterString.read(from: &buf),
-                conflictType: FfiConverterTypeImportConflictBatchConflictType.read(from: &buf),
-                appliedStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf),
-                status: FfiConverterTypeImportConflictBatchResultStatus.read(from: &buf),
-                fileId: FfiConverterOptionInt64.read(from: &buf),
-                finalPath: FfiConverterOptionString.read(from: &buf),
+                conflictId: FfiConverterString.read(from: &buf), 
+                conflictType: FfiConverterTypeImportConflictBatchConflictType.read(from: &buf), 
+                appliedStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf), 
+                status: FfiConverterTypeImportConflictBatchResultStatus.read(from: &buf), 
+                fileId: FfiConverterOptionInt64.read(from: &buf), 
+                finalPath: FfiConverterOptionString.read(from: &buf), 
                 error: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -11089,20 +11089,20 @@ public struct FfiConverterTypeImportConflictBatchPreviewItem: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchPreviewItem {
         return
             try ImportConflictBatchPreviewItem(
-                conflictId: FfiConverterString.read(from: &buf),
-                conflictType: FfiConverterTypeImportConflictBatchConflictType.read(from: &buf),
-                existingFileId: FfiConverterOptionInt64.read(from: &buf),
-                existingPath: FfiConverterOptionString.read(from: &buf),
-                incomingPath: FfiConverterString.read(from: &buf),
-                targetPath: FfiConverterOptionString.read(from: &buf),
-                selectedStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf),
-                status: FfiConverterTypeImportConflictBatchPreviewStatus.read(from: &buf),
-                willReplace: FfiConverterBool.read(from: &buf),
-                willKeepBoth: FfiConverterBool.read(from: &buf),
-                willSkip: FfiConverterBool.read(from: &buf),
-                willAskPerItem: FfiConverterBool.read(from: &buf),
-                indexOnly: FfiConverterBool.read(from: &buf),
-                riskSummary: FfiConverterString.read(from: &buf),
+                conflictId: FfiConverterString.read(from: &buf), 
+                conflictType: FfiConverterTypeImportConflictBatchConflictType.read(from: &buf), 
+                existingFileId: FfiConverterOptionInt64.read(from: &buf), 
+                existingPath: FfiConverterOptionString.read(from: &buf), 
+                incomingPath: FfiConverterString.read(from: &buf), 
+                targetPath: FfiConverterOptionString.read(from: &buf), 
+                selectedStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf), 
+                status: FfiConverterTypeImportConflictBatchPreviewStatus.read(from: &buf), 
+                willReplace: FfiConverterBool.read(from: &buf), 
+                willKeepBoth: FfiConverterBool.read(from: &buf), 
+                willSkip: FfiConverterBool.read(from: &buf), 
+                willAskPerItem: FfiConverterBool.read(from: &buf), 
+                indexOnly: FfiConverterBool.read(from: &buf), 
+                riskSummary: FfiConverterString.read(from: &buf), 
                 reason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -11289,25 +11289,25 @@ public struct FfiConverterTypeImportConflictBatchPreviewReport: FfiConverterRust
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchPreviewReport {
         return
             try ImportConflictBatchPreviewReport(
-                importSessionId: FfiConverterString.read(from: &buf),
-                previewToken: FfiConverterString.read(from: &buf),
-                applyToAllSimilarConflicts: FfiConverterBool.read(from: &buf),
-                requestedConflictCount: FfiConverterInt64.read(from: &buf),
-                duplicateConflictCount: FfiConverterInt64.read(from: &buf),
-                sameNameConflictCount: FfiConverterInt64.read(from: &buf),
-                includedCount: FfiConverterInt64.read(from: &buf),
-                pendingCount: FfiConverterInt64.read(from: &buf),
-                blockedCount: FfiConverterInt64.read(from: &buf),
-                replaceCount: FfiConverterInt64.read(from: &buf),
-                skipCount: FfiConverterInt64.read(from: &buf),
-                keepBothCount: FfiConverterInt64.read(from: &buf),
-                askPerItemCount: FfiConverterInt64.read(from: &buf),
-                trashAvailable: FfiConverterBool.read(from: &buf),
-                undoAvailable: FfiConverterBool.read(from: &buf),
-                canApply: FfiConverterBool.read(from: &buf),
-                applyBlockedReason: FfiConverterOptionString.read(from: &buf),
-                replaceConfirmationRequired: FfiConverterBool.read(from: &buf),
-                replaceConfirmationSummary: FfiConverterOptionString.read(from: &buf),
+                importSessionId: FfiConverterString.read(from: &buf), 
+                previewToken: FfiConverterString.read(from: &buf), 
+                applyToAllSimilarConflicts: FfiConverterBool.read(from: &buf), 
+                requestedConflictCount: FfiConverterInt64.read(from: &buf), 
+                duplicateConflictCount: FfiConverterInt64.read(from: &buf), 
+                sameNameConflictCount: FfiConverterInt64.read(from: &buf), 
+                includedCount: FfiConverterInt64.read(from: &buf), 
+                pendingCount: FfiConverterInt64.read(from: &buf), 
+                blockedCount: FfiConverterInt64.read(from: &buf), 
+                replaceCount: FfiConverterInt64.read(from: &buf), 
+                skipCount: FfiConverterInt64.read(from: &buf), 
+                keepBothCount: FfiConverterInt64.read(from: &buf), 
+                askPerItemCount: FfiConverterInt64.read(from: &buf), 
+                trashAvailable: FfiConverterBool.read(from: &buf), 
+                undoAvailable: FfiConverterBool.read(from: &buf), 
+                canApply: FfiConverterBool.read(from: &buf), 
+                applyBlockedReason: FfiConverterOptionString.read(from: &buf), 
+                replaceConfirmationRequired: FfiConverterBool.read(from: &buf), 
+                replaceConfirmationSummary: FfiConverterOptionString.read(from: &buf), 
                 items: FfiConverterSequenceTypeImportConflictBatchPreviewItem.read(from: &buf)
         )
     }
@@ -11409,10 +11409,10 @@ public struct FfiConverterTypeImportConflictBatchPreviewRequest: FfiConverterRus
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchPreviewRequest {
         return
             try ImportConflictBatchPreviewRequest(
-                importSessionId: FfiConverterString.read(from: &buf),
-                conflictIds: FfiConverterSequenceString.read(from: &buf),
-                duplicateStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf),
-                sameNameStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf),
+                importSessionId: FfiConverterString.read(from: &buf), 
+                conflictIds: FfiConverterSequenceString.read(from: &buf), 
+                duplicateStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf), 
+                sameNameStrategy: FfiConverterTypeImportConflictBatchStrategy.read(from: &buf), 
                 applyToAllSimilarConflicts: FfiConverterBool.read(from: &buf)
         )
     }
@@ -11511,12 +11511,12 @@ public struct FfiConverterTypeImportOptions: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportOptions {
         return
             try ImportOptions(
-                mode: FfiConverterTypeStorageMode.read(from: &buf),
-                destination: FfiConverterTypeImportDestination.read(from: &buf),
-                targetDirectory: FfiConverterOptionString.read(from: &buf),
-                overrideCategory: FfiConverterOptionString.read(from: &buf),
-                overrideFilename: FfiConverterOptionString.read(from: &buf),
-                duplicateStrategy: FfiConverterTypeDuplicateStrategy.read(from: &buf),
+                mode: FfiConverterTypeStorageMode.read(from: &buf), 
+                destination: FfiConverterTypeImportDestination.read(from: &buf), 
+                targetDirectory: FfiConverterOptionString.read(from: &buf), 
+                overrideCategory: FfiConverterOptionString.read(from: &buf), 
+                overrideFilename: FfiConverterOptionString.read(from: &buf), 
+                duplicateStrategy: FfiConverterTypeDuplicateStrategy.read(from: &buf), 
                 contentLocale: FfiConverterTypeContentLocale.read(from: &buf)
         )
     }
@@ -11593,8 +11593,8 @@ public struct FfiConverterTypeImportResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportResult {
         return
             try ImportResult(
-                entry: FfiConverterTypeFileEntry.read(from: &buf),
-                sourceRemovalStatus: FfiConverterTypeImportSourceRemovalStatus.read(from: &buf),
+                entry: FfiConverterTypeFileEntry.read(from: &buf), 
+                sourceRemovalStatus: FfiConverterTypeImportSourceRemovalStatus.read(from: &buf), 
                 sourceRemovalFailure: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -11703,14 +11703,14 @@ public struct FfiConverterTypeLocalModelCachedStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalModelCachedStatus {
         return
             try LocalModelCachedStatus(
-                modelId: FfiConverterString.read(from: &buf),
-                storageLocation: FfiConverterString.read(from: &buf),
-                availability: FfiConverterTypeLocalModelAvailability.read(from: &buf),
-                version: FfiConverterOptionString.read(from: &buf),
-                sizeBytes: FfiConverterOptionInt64.read(from: &buf),
-                lastError: FfiConverterOptionString.read(from: &buf),
-                recommendedAction: FfiConverterTypeLocalModelRecommendedAction.read(from: &buf),
-                lastCheckedAt: FfiConverterOptionInt64.read(from: &buf),
+                modelId: FfiConverterString.read(from: &buf), 
+                storageLocation: FfiConverterString.read(from: &buf), 
+                availability: FfiConverterTypeLocalModelAvailability.read(from: &buf), 
+                version: FfiConverterOptionString.read(from: &buf), 
+                sizeBytes: FfiConverterOptionInt64.read(from: &buf), 
+                lastError: FfiConverterOptionString.read(from: &buf), 
+                recommendedAction: FfiConverterTypeLocalModelRecommendedAction.read(from: &buf), 
+                lastCheckedAt: FfiConverterOptionInt64.read(from: &buf), 
                 diagnosticsSummary: FfiConverterString.read(from: &buf)
         )
     }
@@ -11789,8 +11789,8 @@ public struct FfiConverterTypeLocalModelFeatureStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalModelFeatureStatus {
         return
             try LocalModelFeatureStatus(
-                feature: FfiConverterTypeAiFeatureKind.read(from: &buf),
-                available: FfiConverterBool.read(from: &buf),
+                feature: FfiConverterTypeAiFeatureKind.read(from: &buf), 
+                available: FfiConverterBool.read(from: &buf), 
                 unavailableReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -11881,11 +11881,11 @@ public struct FfiConverterTypeLocalModelFolderLocation: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalModelFolderLocation {
         return
             try LocalModelFolderLocation(
-                modelId: FfiConverterString.read(from: &buf),
-                folderPath: FfiConverterString.read(from: &buf),
-                exists: FfiConverterBool.read(from: &buf),
-                readable: FfiConverterBool.read(from: &buf),
-                openable: FfiConverterBool.read(from: &buf),
+                modelId: FfiConverterString.read(from: &buf), 
+                folderPath: FfiConverterString.read(from: &buf), 
+                exists: FfiConverterBool.read(from: &buf), 
+                readable: FfiConverterBool.read(from: &buf), 
+                openable: FfiConverterBool.read(from: &buf), 
                 unavailableReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -11955,7 +11955,7 @@ public struct FfiConverterTypeLocalModelFolderRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalModelFolderRequest {
         return
             try LocalModelFolderRequest(
-                modelId: FfiConverterString.read(from: &buf),
+                modelId: FfiConverterString.read(from: &buf), 
                 storageLocation: FfiConverterString.read(from: &buf)
         )
     }
@@ -12027,8 +12027,8 @@ public struct FfiConverterTypeLocalModelStatusRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalModelStatusRequest {
         return
             try LocalModelStatusRequest(
-                modelId: FfiConverterString.read(from: &buf),
-                storageLocation: FfiConverterString.read(from: &buf),
+                modelId: FfiConverterString.read(from: &buf), 
+                storageLocation: FfiConverterString.read(from: &buf), 
                 cachedStatus: FfiConverterOptionTypeLocalModelCachedStatus.read(from: &buf)
         )
     }
@@ -12143,15 +12143,15 @@ public struct FfiConverterTypeLocalModelStatusSnapshot: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalModelStatusSnapshot {
         return
             try LocalModelStatusSnapshot(
-                modelId: FfiConverterString.read(from: &buf),
-                storageLocation: FfiConverterString.read(from: &buf),
-                availability: FfiConverterTypeLocalModelAvailability.read(from: &buf),
-                version: FfiConverterOptionString.read(from: &buf),
-                sizeBytes: FfiConverterOptionInt64.read(from: &buf),
-                lastError: FfiConverterOptionString.read(from: &buf),
-                recommendedAction: FfiConverterTypeLocalModelRecommendedAction.read(from: &buf),
-                lastCheckedAt: FfiConverterOptionInt64.read(from: &buf),
-                diagnosticsSummary: FfiConverterString.read(from: &buf),
+                modelId: FfiConverterString.read(from: &buf), 
+                storageLocation: FfiConverterString.read(from: &buf), 
+                availability: FfiConverterTypeLocalModelAvailability.read(from: &buf), 
+                version: FfiConverterOptionString.read(from: &buf), 
+                sizeBytes: FfiConverterOptionInt64.read(from: &buf), 
+                lastError: FfiConverterOptionString.read(from: &buf), 
+                recommendedAction: FfiConverterTypeLocalModelRecommendedAction.read(from: &buf), 
+                lastCheckedAt: FfiConverterOptionInt64.read(from: &buf), 
+                diagnosticsSummary: FfiConverterString.read(from: &buf), 
                 featureStatuses: FfiConverterSequenceTypeLocalModelFeatureStatus.read(from: &buf)
         )
     }
@@ -12237,9 +12237,9 @@ public struct FfiConverterTypeManualRescanPreviewItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ManualRescanPreviewItem {
         return
             try ManualRescanPreviewItem(
-                kind: FfiConverterTypeManualRescanPreviewItemKind.read(from: &buf),
-                relativePath: FfiConverterString.read(from: &buf),
-                reason: FfiConverterString.read(from: &buf),
+                kind: FfiConverterTypeManualRescanPreviewItemKind.read(from: &buf), 
+                relativePath: FfiConverterString.read(from: &buf), 
+                reason: FfiConverterString.read(from: &buf), 
                 suggestedAction: FfiConverterString.read(from: &buf)
         )
     }
@@ -12367,17 +12367,17 @@ public struct FfiConverterTypeManualRescanPreviewReport: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ManualRescanPreviewReport {
         return
             try ManualRescanPreviewReport(
-                added: FfiConverterInt64.read(from: &buf),
-                updated: FfiConverterInt64.read(from: &buf),
-                missingOrDeletedFromFs: FfiConverterInt64.read(from: &buf),
-                renamedCandidates: FfiConverterInt64.read(from: &buf),
-                conflicts: FfiConverterInt64.read(from: &buf),
-                unreadable: FfiConverterInt64.read(from: &buf),
-                unknown: FfiConverterInt64.read(from: &buf),
-                skipped: FfiConverterInt64.read(from: &buf),
-                snapshotId: FfiConverterString.read(from: &buf),
-                createdAt: FfiConverterInt64.read(from: &buf),
-                isStale: FfiConverterBool.read(from: &buf),
+                added: FfiConverterInt64.read(from: &buf), 
+                updated: FfiConverterInt64.read(from: &buf), 
+                missingOrDeletedFromFs: FfiConverterInt64.read(from: &buf), 
+                renamedCandidates: FfiConverterInt64.read(from: &buf), 
+                conflicts: FfiConverterInt64.read(from: &buf), 
+                unreadable: FfiConverterInt64.read(from: &buf), 
+                unknown: FfiConverterInt64.read(from: &buf), 
+                skipped: FfiConverterInt64.read(from: &buf), 
+                snapshotId: FfiConverterString.read(from: &buf), 
+                createdAt: FfiConverterInt64.read(from: &buf), 
+                isStale: FfiConverterBool.read(from: &buf), 
                 items: FfiConverterSequenceTypeManualRescanPreviewItem.read(from: &buf)
         )
     }
@@ -12495,14 +12495,14 @@ public struct FfiConverterTypeMissingFileRecoveryReport: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MissingFileRecoveryReport {
         return
             try MissingFileRecoveryReport(
-                fileId: FfiConverterInt64.read(from: &buf),
-                status: FfiConverterTypeMissingFileRecoveryStatus.read(from: &buf),
-                previousPath: FfiConverterOptionString.read(from: &buf),
-                currentPath: FfiConverterOptionString.read(from: &buf),
-                hashMatched: FfiConverterBool.read(from: &buf),
-                recordRemoved: FfiConverterBool.read(from: &buf),
-                fileDeleted: FfiConverterBool.read(from: &buf),
-                changeLogAction: FfiConverterOptionString.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                status: FfiConverterTypeMissingFileRecoveryStatus.read(from: &buf), 
+                previousPath: FfiConverterOptionString.read(from: &buf), 
+                currentPath: FfiConverterOptionString.read(from: &buf), 
+                hashMatched: FfiConverterBool.read(from: &buf), 
+                recordRemoved: FfiConverterBool.read(from: &buf), 
+                fileDeleted: FfiConverterBool.read(from: &buf), 
+                changeLogAction: FfiConverterOptionString.read(from: &buf), 
                 message: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -12581,8 +12581,8 @@ public struct FfiConverterTypeMissingFileRelinkRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MissingFileRelinkRequest {
         return
             try MissingFileRelinkRequest(
-                fileId: FfiConverterInt64.read(from: &buf),
-                newPath: FfiConverterString.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                newPath: FfiConverterString.read(from: &buf), 
                 confirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -12649,7 +12649,7 @@ public struct FfiConverterTypeMissingFileRemoveRecordRequest: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MissingFileRemoveRecordRequest {
         return
             try MissingFileRemoveRecordRequest(
-                fileId: FfiConverterInt64.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
                 confirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -12775,17 +12775,17 @@ public struct FfiConverterTypeMissingFileState: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MissingFileState {
         return
             try MissingFileState(
-                fileId: FfiConverterInt64.read(from: &buf),
-                relativePath: FfiConverterString.read(from: &buf),
-                lastKnownPath: FfiConverterOptionString.read(from: &buf),
-                lastSeenAt: FfiConverterOptionInt64.read(from: &buf),
-                reason: FfiConverterTypeMissingFileReason.read(from: &buf),
-                expectedHashSha256: FfiConverterOptionString.read(from: &buf),
-                canLocate: FfiConverterBool.read(from: &buf),
-                canTryAgain: FfiConverterBool.read(from: &buf),
-                canRemoveRecord: FfiConverterBool.read(from: &buf),
-                removeRecordRequiresConfirmation: FfiConverterBool.read(from: &buf),
-                canRunRescan: FfiConverterBool.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                relativePath: FfiConverterString.read(from: &buf), 
+                lastKnownPath: FfiConverterOptionString.read(from: &buf), 
+                lastSeenAt: FfiConverterOptionInt64.read(from: &buf), 
+                reason: FfiConverterTypeMissingFileReason.read(from: &buf), 
+                expectedHashSha256: FfiConverterOptionString.read(from: &buf), 
+                canLocate: FfiConverterBool.read(from: &buf), 
+                canTryAgain: FfiConverterBool.read(from: &buf), 
+                canRemoveRecord: FfiConverterBool.read(from: &buf), 
+                removeRecordRequiresConfirmation: FfiConverterBool.read(from: &buf), 
+                canRunRescan: FfiConverterBool.read(from: &buf), 
                 rescanDisabledReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -12909,15 +12909,15 @@ public struct FfiConverterTypeMoveToCategoryPreview: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MoveToCategoryPreview {
         return
             try MoveToCategoryPreview(
-                fileId: FfiConverterInt64.read(from: &buf),
-                fromCategory: FfiConverterString.read(from: &buf),
-                toCategory: FfiConverterString.read(from: &buf),
-                currentPath: FfiConverterString.read(from: &buf),
-                targetPath: FfiConverterString.read(from: &buf),
-                targetName: FfiConverterString.read(from: &buf),
-                storageMode: FfiConverterTypeStorageMode.read(from: &buf),
-                indexOnly: FfiConverterBool.read(from: &buf),
-                nameConflictResolved: FfiConverterBool.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                fromCategory: FfiConverterString.read(from: &buf), 
+                toCategory: FfiConverterString.read(from: &buf), 
+                currentPath: FfiConverterString.read(from: &buf), 
+                targetPath: FfiConverterString.read(from: &buf), 
+                targetName: FfiConverterString.read(from: &buf), 
+                storageMode: FfiConverterTypeStorageMode.read(from: &buf), 
+                indexOnly: FfiConverterBool.read(from: &buf), 
+                nameConflictResolved: FfiConverterBool.read(from: &buf), 
                 willMoveFile: FfiConverterBool.read(from: &buf)
         )
     }
@@ -13033,14 +13033,14 @@ public struct FfiConverterTypeOverviewLanguageStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OverviewLanguageStatus {
         return
             try OverviewLanguageStatus(
-                state: FfiConverterTypeOverviewLanguageState.read(from: &buf),
-                contentLocale: FfiConverterTypeContentLocale.read(from: &buf),
-                targetCount: FfiConverterInt64.read(from: &buf),
-                knownTargetCount: FfiConverterInt64.read(from: &buf),
-                missingTargetCount: FfiConverterInt64.read(from: &buf),
-                obsoleteTargetCount: FfiConverterInt64.read(from: &buf),
-                knownLocales: FfiConverterSequenceTypeContentLocale.read(from: &buf),
-                knownFormatVersions: FfiConverterSequenceInt64.read(from: &buf),
+                state: FfiConverterTypeOverviewLanguageState.read(from: &buf), 
+                contentLocale: FfiConverterTypeContentLocale.read(from: &buf), 
+                targetCount: FfiConverterInt64.read(from: &buf), 
+                knownTargetCount: FfiConverterInt64.read(from: &buf), 
+                missingTargetCount: FfiConverterInt64.read(from: &buf), 
+                obsoleteTargetCount: FfiConverterInt64.read(from: &buf), 
+                knownLocales: FfiConverterSequenceTypeContentLocale.read(from: &buf), 
+                knownFormatVersions: FfiConverterSequenceInt64.read(from: &buf), 
                 reasons: FfiConverterSequenceTypeOverviewRegenerationReason.read(from: &buf)
         )
     }
@@ -13173,17 +13173,17 @@ public struct FfiConverterTypeOverviewRegenerationPlan: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OverviewRegenerationPlan {
         return
             try OverviewRegenerationPlan(
-                operationId: FfiConverterString.read(from: &buf),
-                planToken: FfiConverterString.read(from: &buf),
-                repositoryRevision: FfiConverterInt64.read(from: &buf),
-                contentLocale: FfiConverterTypeContentLocale.read(from: &buf),
-                formatContractVersion: FfiConverterInt64.read(from: &buf),
-                targetSetHash: FfiConverterString.read(from: &buf),
-                targetCount: FfiConverterInt64.read(from: &buf),
-                createCount: FfiConverterInt64.read(from: &buf),
-                replaceCount: FfiConverterInt64.read(from: &buf),
-                deleteCount: FfiConverterInt64.read(from: &buf),
-                includesRootAreamatrixFile: FfiConverterBool.read(from: &buf),
+                operationId: FfiConverterString.read(from: &buf), 
+                planToken: FfiConverterString.read(from: &buf), 
+                repositoryRevision: FfiConverterInt64.read(from: &buf), 
+                contentLocale: FfiConverterTypeContentLocale.read(from: &buf), 
+                formatContractVersion: FfiConverterInt64.read(from: &buf), 
+                targetSetHash: FfiConverterString.read(from: &buf), 
+                targetCount: FfiConverterInt64.read(from: &buf), 
+                createCount: FfiConverterInt64.read(from: &buf), 
+                replaceCount: FfiConverterInt64.read(from: &buf), 
+                deleteCount: FfiConverterInt64.read(from: &buf), 
+                includesRootAreamatrixFile: FfiConverterBool.read(from: &buf), 
                 warnings: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -13313,16 +13313,16 @@ public struct FfiConverterTypeOverviewRegenerationSession: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OverviewRegenerationSession {
         return
             try OverviewRegenerationSession(
-                context: FfiConverterTypeRecoverableOperationContext.read(from: &buf),
-                status: FfiConverterTypeOverviewRegenerationStatus.read(from: &buf),
-                targetCount: FfiConverterInt64.read(from: &buf),
-                stagedCount: FfiConverterInt64.read(from: &buf),
-                appliedCount: FfiConverterInt64.read(from: &buf),
-                restoredCount: FfiConverterInt64.read(from: &buf),
-                cancellationAllowed: FfiConverterBool.read(from: &buf),
-                errorCode: FfiConverterOptionString.read(from: &buf),
-                createdAt: FfiConverterInt64.read(from: &buf),
-                updatedAt: FfiConverterInt64.read(from: &buf),
+                context: FfiConverterTypeRecoverableOperationContext.read(from: &buf), 
+                status: FfiConverterTypeOverviewRegenerationStatus.read(from: &buf), 
+                targetCount: FfiConverterInt64.read(from: &buf), 
+                stagedCount: FfiConverterInt64.read(from: &buf), 
+                appliedCount: FfiConverterInt64.read(from: &buf), 
+                restoredCount: FfiConverterInt64.read(from: &buf), 
+                cancellationAllowed: FfiConverterBool.read(from: &buf), 
+                errorCode: FfiConverterOptionString.read(from: &buf), 
+                createdAt: FfiConverterInt64.read(from: &buf), 
+                updatedAt: FfiConverterInt64.read(from: &buf), 
                 finishedAt: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -13409,9 +13409,9 @@ public struct FfiConverterTypeOverviewRegenerationStartRequest: FfiConverterRust
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OverviewRegenerationStartRequest {
         return
             try OverviewRegenerationStartRequest(
-                operationId: FfiConverterString.read(from: &buf),
-                planToken: FfiConverterString.read(from: &buf),
-                expectedRepositoryRevision: FfiConverterInt64.read(from: &buf),
+                operationId: FfiConverterString.read(from: &buf), 
+                planToken: FfiConverterString.read(from: &buf), 
+                expectedRepositoryRevision: FfiConverterInt64.read(from: &buf), 
                 confirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -13509,12 +13509,12 @@ public struct FfiConverterTypePlatformCapabilities: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformCapabilities {
         return
             try PlatformCapabilities(
-                platform: FfiConverterTypePlatformId.read(from: &buf),
-                appVersion: FfiConverterString.read(from: &buf),
-                watcher: FfiConverterTypePlatformCapabilitySupport.read(from: &buf),
-                trash: FfiConverterTypePlatformCapabilitySupport.read(from: &buf),
-                shareExtension: FfiConverterTypePlatformCapabilitySupport.read(from: &buf),
-                cloudPlaceholder: FfiConverterTypePlatformCapabilitySupport.read(from: &buf),
+                platform: FfiConverterTypePlatformId.read(from: &buf), 
+                appVersion: FfiConverterString.read(from: &buf), 
+                watcher: FfiConverterTypePlatformCapabilitySupport.read(from: &buf), 
+                trash: FfiConverterTypePlatformCapabilitySupport.read(from: &buf), 
+                shareExtension: FfiConverterTypePlatformCapabilitySupport.read(from: &buf), 
+                cloudPlaceholder: FfiConverterTypePlatformCapabilitySupport.read(from: &buf), 
                 securityBookmark: FfiConverterTypePlatformCapabilitySupport.read(from: &buf)
         )
     }
@@ -13597,9 +13597,9 @@ public struct FfiConverterTypePlatformCapabilitySupport: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformCapabilitySupport {
         return
             try PlatformCapabilitySupport(
-                status: FfiConverterTypePlatformCapabilityStatus.read(from: &buf),
-                uiEnabled: FfiConverterBool.read(from: &buf),
-                requiresPermission: FfiConverterBool.read(from: &buf),
+                status: FfiConverterTypePlatformCapabilityStatus.read(from: &buf), 
+                uiEnabled: FfiConverterBool.read(from: &buf), 
+                requiresPermission: FfiConverterBool.read(from: &buf), 
                 reason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -13679,9 +13679,9 @@ public struct FfiConverterTypePlatformWatcherEventSample: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformWatcherEventSample {
         return
             try PlatformWatcherEventSample(
-                path: FfiConverterString.read(from: &buf),
-                kind: FfiConverterTypeExternalEventKind.read(from: &buf),
-                fsEventId: FfiConverterInt64.read(from: &buf),
+                path: FfiConverterString.read(from: &buf), 
+                kind: FfiConverterTypeExternalEventKind.read(from: &buf), 
+                fsEventId: FfiConverterInt64.read(from: &buf), 
                 occurredAt: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -13821,19 +13821,19 @@ public struct FfiConverterTypePlatformWatcherHealthSignal: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformWatcherHealthSignal {
         return
             try PlatformWatcherHealthSignal(
-                backend: FfiConverterTypePlatformWatcherBackend.read(from: &buf),
-                status: FfiConverterTypePlatformWatcherStatus.read(from: &buf),
-                watchedPath: FfiConverterString.read(from: &buf),
-                lastEventId: FfiConverterOptionInt64.read(from: &buf),
-                lastEventAt: FfiConverterOptionInt64.read(from: &buf),
-                lastSyncEventId: FfiConverterOptionInt64.read(from: &buf),
-                lastSyncAt: FfiConverterOptionInt64.read(from: &buf),
-                lastRescanAt: FfiConverterOptionInt64.read(from: &buf),
-                pendingEventCount: FfiConverterInt64.read(from: &buf),
-                watchCount: FfiConverterOptionInt64.read(from: &buf),
-                errorSummary: FfiConverterOptionString.read(from: &buf),
-                healthReasons: FfiConverterSequenceTypePlatformWatcherHealthReason.read(from: &buf),
-                recentEvents: FfiConverterSequenceTypePlatformWatcherEventSample.read(from: &buf),
+                backend: FfiConverterTypePlatformWatcherBackend.read(from: &buf), 
+                status: FfiConverterTypePlatformWatcherStatus.read(from: &buf), 
+                watchedPath: FfiConverterString.read(from: &buf), 
+                lastEventId: FfiConverterOptionInt64.read(from: &buf), 
+                lastEventAt: FfiConverterOptionInt64.read(from: &buf), 
+                lastSyncEventId: FfiConverterOptionInt64.read(from: &buf), 
+                lastSyncAt: FfiConverterOptionInt64.read(from: &buf), 
+                lastRescanAt: FfiConverterOptionInt64.read(from: &buf), 
+                pendingEventCount: FfiConverterInt64.read(from: &buf), 
+                watchCount: FfiConverterOptionInt64.read(from: &buf), 
+                errorSummary: FfiConverterOptionString.read(from: &buf), 
+                healthReasons: FfiConverterSequenceTypePlatformWatcherHealthReason.read(from: &buf), 
+                recentEvents: FfiConverterSequenceTypePlatformWatcherEventSample.read(from: &buf), 
                 reportedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -13989,20 +13989,20 @@ public struct FfiConverterTypePlatformWatcherSnapshot: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformWatcherSnapshot {
         return
             try PlatformWatcherSnapshot(
-                repoPath: FfiConverterString.read(from: &buf),
-                backend: FfiConverterTypePlatformWatcherBackend.read(from: &buf),
-                status: FfiConverterTypePlatformWatcherStatus.read(from: &buf),
-                watchedPath: FfiConverterString.read(from: &buf),
-                lastEventId: FfiConverterOptionInt64.read(from: &buf),
-                lastEventAt: FfiConverterOptionInt64.read(from: &buf),
-                lastSyncEventId: FfiConverterOptionInt64.read(from: &buf),
-                lastSyncAt: FfiConverterOptionInt64.read(from: &buf),
-                lastRescanAt: FfiConverterOptionInt64.read(from: &buf),
-                pendingEventCount: FfiConverterInt64.read(from: &buf),
-                watchCount: FfiConverterOptionInt64.read(from: &buf),
-                errorSummary: FfiConverterOptionString.read(from: &buf),
-                healthReasons: FfiConverterSequenceTypePlatformWatcherHealthReason.read(from: &buf),
-                recentEvents: FfiConverterSequenceTypePlatformWatcherEventSample.read(from: &buf),
+                repoPath: FfiConverterString.read(from: &buf), 
+                backend: FfiConverterTypePlatformWatcherBackend.read(from: &buf), 
+                status: FfiConverterTypePlatformWatcherStatus.read(from: &buf), 
+                watchedPath: FfiConverterString.read(from: &buf), 
+                lastEventId: FfiConverterOptionInt64.read(from: &buf), 
+                lastEventAt: FfiConverterOptionInt64.read(from: &buf), 
+                lastSyncEventId: FfiConverterOptionInt64.read(from: &buf), 
+                lastSyncAt: FfiConverterOptionInt64.read(from: &buf), 
+                lastRescanAt: FfiConverterOptionInt64.read(from: &buf), 
+                pendingEventCount: FfiConverterInt64.read(from: &buf), 
+                watchCount: FfiConverterOptionInt64.read(from: &buf), 
+                errorSummary: FfiConverterOptionString.read(from: &buf), 
+                healthReasons: FfiConverterSequenceTypePlatformWatcherHealthReason.read(from: &buf), 
+                recentEvents: FfiConverterSequenceTypePlatformWatcherEventSample.read(from: &buf), 
                 reportedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -14123,14 +14123,14 @@ public struct FfiConverterTypeRecoverableOperationContext: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RecoverableOperationContext {
         return
             try RecoverableOperationContext(
-                operationId: FfiConverterString.read(from: &buf),
-                retryOfOperationId: FfiConverterOptionString.read(from: &buf),
-                operationCode: FfiConverterString.read(from: &buf),
-                operationPayloadJson: FfiConverterString.read(from: &buf),
-                contentLocale: FfiConverterOptionTypeContentLocale.read(from: &buf),
-                repositoryRevision: FfiConverterInt64.read(from: &buf),
-                formatContractVersion: FfiConverterInt64.read(from: &buf),
-                targetSetHash: FfiConverterOptionString.read(from: &buf),
+                operationId: FfiConverterString.read(from: &buf), 
+                retryOfOperationId: FfiConverterOptionString.read(from: &buf), 
+                operationCode: FfiConverterString.read(from: &buf), 
+                operationPayloadJson: FfiConverterString.read(from: &buf), 
+                contentLocale: FfiConverterOptionTypeContentLocale.read(from: &buf), 
+                repositoryRevision: FfiConverterInt64.read(from: &buf), 
+                formatContractVersion: FfiConverterInt64.read(from: &buf), 
+                targetSetHash: FfiConverterOptionString.read(from: &buf), 
                 runSequence: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -14209,8 +14209,8 @@ public struct FfiConverterTypeRecoveryReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RecoveryReport {
         return
             try RecoveryReport(
-                cleanedStagingFiles: FfiConverterInt64.read(from: &buf),
-                revertedStagingDbRows: FfiConverterInt64.read(from: &buf),
+                cleanedStagingFiles: FfiConverterInt64.read(from: &buf), 
+                revertedStagingDbRows: FfiConverterInt64.read(from: &buf), 
                 warnings: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -14331,16 +14331,16 @@ public struct FfiConverterTypeRedoActionRecord: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RedoActionRecord {
         return
             try RedoActionRecord(
-                actionId: FfiConverterString.read(from: &buf),
-                kind: FfiConverterString.read(from: &buf),
-                summary: FfiConverterString.read(from: &buf),
-                affectedCount: FfiConverterInt64.read(from: &buf),
-                affectedFileNames: FfiConverterSequenceString.read(from: &buf),
-                status: FfiConverterTypeRedoActionStatus.read(from: &buf),
-                canRedo: FfiConverterBool.read(from: &buf),
-                disabledReason: FfiConverterOptionString.read(from: &buf),
-                sourceUndoActionId: FfiConverterString.read(from: &buf),
-                createdAt: FfiConverterInt64.read(from: &buf),
+                actionId: FfiConverterString.read(from: &buf), 
+                kind: FfiConverterString.read(from: &buf), 
+                summary: FfiConverterString.read(from: &buf), 
+                affectedCount: FfiConverterInt64.read(from: &buf), 
+                affectedFileNames: FfiConverterSequenceString.read(from: &buf), 
+                status: FfiConverterTypeRedoActionStatus.read(from: &buf), 
+                canRedo: FfiConverterBool.read(from: &buf), 
+                disabledReason: FfiConverterOptionString.read(from: &buf), 
+                sourceUndoActionId: FfiConverterString.read(from: &buf), 
+                createdAt: FfiConverterInt64.read(from: &buf), 
                 updatedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -14445,12 +14445,12 @@ public struct FfiConverterTypeRedoActionResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RedoActionResult {
         return
             try RedoActionResult(
-                actionId: FfiConverterString.read(from: &buf),
-                status: FfiConverterTypeRedoActionStatus.read(from: &buf),
-                summary: FfiConverterString.read(from: &buf),
-                affectedCount: FfiConverterInt64.read(from: &buf),
-                refreshTargets: FfiConverterSequenceString.read(from: &buf),
-                undoToken: FfiConverterOptionString.read(from: &buf),
+                actionId: FfiConverterString.read(from: &buf), 
+                status: FfiConverterTypeRedoActionStatus.read(from: &buf), 
+                summary: FfiConverterString.read(from: &buf), 
+                affectedCount: FfiConverterInt64.read(from: &buf), 
+                refreshTargets: FfiConverterSequenceString.read(from: &buf), 
+                undoToken: FfiConverterOptionString.read(from: &buf), 
                 completedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -14563,14 +14563,14 @@ public struct FfiConverterTypeReindexReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ReindexReport {
         return
             try ReindexReport(
-                scanSessionId: FfiConverterOptionInt64.read(from: &buf),
-                inserted: FfiConverterInt64.read(from: &buf),
-                updated: FfiConverterInt64.read(from: &buf),
-                missing: FfiConverterInt64.read(from: &buf),
-                conflicts: FfiConverterInt64.read(from: &buf),
-                unreadable: FfiConverterInt64.read(from: &buf),
-                unknown: FfiConverterInt64.read(from: &buf),
-                skipped: FfiConverterInt64.read(from: &buf),
+                scanSessionId: FfiConverterOptionInt64.read(from: &buf), 
+                inserted: FfiConverterInt64.read(from: &buf), 
+                updated: FfiConverterInt64.read(from: &buf), 
+                missing: FfiConverterInt64.read(from: &buf), 
+                conflicts: FfiConverterInt64.read(from: &buf), 
+                unreadable: FfiConverterInt64.read(from: &buf), 
+                unknown: FfiConverterInt64.read(from: &buf), 
+                skipped: FfiConverterInt64.read(from: &buf), 
                 errors: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -14691,15 +14691,15 @@ public struct FfiConverterTypeRemoteProviderConfigSnapshot: FfiConverterRustBuff
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderConfigSnapshot {
         return
             try RemoteProviderConfigSnapshot(
-                providerConfigured: FfiConverterBool.read(from: &buf),
-                providerVerified: FfiConverterBool.read(from: &buf),
-                remoteProviderEnabled: FfiConverterBool.read(from: &buf),
-                provider: FfiConverterOptionTypeRemoteAiProviderKind.read(from: &buf),
-                modelId: FfiConverterOptionString.read(from: &buf),
-                endpointUrl: FfiConverterOptionString.read(from: &buf),
-                credentialConfigured: FfiConverterBool.read(from: &buf),
-                featureScope: FfiConverterSequenceTypeAiFeatureKind.read(from: &buf),
-                updatedAt: FfiConverterOptionInt64.read(from: &buf),
+                providerConfigured: FfiConverterBool.read(from: &buf), 
+                providerVerified: FfiConverterBool.read(from: &buf), 
+                remoteProviderEnabled: FfiConverterBool.read(from: &buf), 
+                provider: FfiConverterOptionTypeRemoteAiProviderKind.read(from: &buf), 
+                modelId: FfiConverterOptionString.read(from: &buf), 
+                endpointUrl: FfiConverterOptionString.read(from: &buf), 
+                credentialConfigured: FfiConverterBool.read(from: &buf), 
+                featureScope: FfiConverterSequenceTypeAiFeatureKind.read(from: &buf), 
+                updatedAt: FfiConverterOptionInt64.read(from: &buf), 
                 disabledReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -14861,12 +14861,12 @@ public struct FfiConverterTypeRemoteProviderEnableRequest: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderEnableRequest {
         return
             try RemoteProviderEnableRequest(
-                provider: FfiConverterTypeRemoteAiProviderKind.read(from: &buf),
-                modelId: FfiConverterString.read(from: &buf),
-                endpointUrl: FfiConverterOptionString.read(from: &buf),
-                keyReference: FfiConverterString.read(from: &buf),
-                featureScope: FfiConverterSequenceTypeAiFeatureKind.read(from: &buf),
-                verificationToken: FfiConverterString.read(from: &buf),
+                provider: FfiConverterTypeRemoteAiProviderKind.read(from: &buf), 
+                modelId: FfiConverterString.read(from: &buf), 
+                endpointUrl: FfiConverterOptionString.read(from: &buf), 
+                keyReference: FfiConverterString.read(from: &buf), 
+                featureScope: FfiConverterSequenceTypeAiFeatureKind.read(from: &buf), 
+                verificationToken: FfiConverterString.read(from: &buf), 
                 dataFlowConfirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -14937,7 +14937,7 @@ public struct FfiConverterTypeRemoteProviderProbeHeader: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeHeader {
         return
             try RemoteProviderProbeHeader(
-                name: FfiConverterString.read(from: &buf),
+                name: FfiConverterString.read(from: &buf), 
                 value: FfiConverterString.read(from: &buf)
         )
     }
@@ -15009,8 +15009,8 @@ public struct FfiConverterTypeRemoteProviderProbeObservation: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeObservation {
         return
             try RemoteProviderProbeObservation(
-                probeToken: FfiConverterString.read(from: &buf),
-                outcome: FfiConverterTypeRemoteProviderProbeOutcome.read(from: &buf),
+                probeToken: FfiConverterString.read(from: &buf), 
+                outcome: FfiConverterTypeRemoteProviderProbeOutcome.read(from: &buf), 
                 httpStatus: FfiConverterOptionUInt32.read(from: &buf)
         )
     }
@@ -15137,17 +15137,17 @@ public struct FfiConverterTypeRemoteProviderProbePlan: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbePlan {
         return
             try RemoteProviderProbePlan(
-                provider: FfiConverterTypeRemoteAiProviderKind.read(from: &buf),
-                modelId: FfiConverterString.read(from: &buf),
-                endpointUrl: FfiConverterOptionString.read(from: &buf),
-                keyReference: FfiConverterString.read(from: &buf),
-                probeToken: FfiConverterString.read(from: &buf),
-                method: FfiConverterTypeRemoteProviderProbeMethod.read(from: &buf),
-                url: FfiConverterString.read(from: &buf),
-                headers: FfiConverterSequenceTypeRemoteProviderProbeHeader.read(from: &buf),
-                authorization: FfiConverterTypeRemoteProviderProbeAuthorization.read(from: &buf),
-                timeoutMillis: FfiConverterUInt32.read(from: &buf),
-                maximumResponseBodyBytes: FfiConverterUInt64.read(from: &buf),
+                provider: FfiConverterTypeRemoteAiProviderKind.read(from: &buf), 
+                modelId: FfiConverterString.read(from: &buf), 
+                endpointUrl: FfiConverterOptionString.read(from: &buf), 
+                keyReference: FfiConverterString.read(from: &buf), 
+                probeToken: FfiConverterString.read(from: &buf), 
+                method: FfiConverterTypeRemoteProviderProbeMethod.read(from: &buf), 
+                url: FfiConverterString.read(from: &buf), 
+                headers: FfiConverterSequenceTypeRemoteProviderProbeHeader.read(from: &buf), 
+                authorization: FfiConverterTypeRemoteProviderProbeAuthorization.read(from: &buf), 
+                timeoutMillis: FfiConverterUInt32.read(from: &buf), 
+                maximumResponseBodyBytes: FfiConverterUInt64.read(from: &buf), 
                 followRedirects: FfiConverterBool.read(from: &buf)
         )
     }
@@ -15235,9 +15235,9 @@ public struct FfiConverterTypeRemoteProviderTestRequest: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderTestRequest {
         return
             try RemoteProviderTestRequest(
-                provider: FfiConverterTypeRemoteAiProviderKind.read(from: &buf),
-                modelId: FfiConverterString.read(from: &buf),
-                endpointUrl: FfiConverterOptionString.read(from: &buf),
+                provider: FfiConverterTypeRemoteAiProviderKind.read(from: &buf), 
+                modelId: FfiConverterString.read(from: &buf), 
+                endpointUrl: FfiConverterOptionString.read(from: &buf), 
                 keyReference: FfiConverterString.read(from: &buf)
         )
     }
@@ -15335,12 +15335,12 @@ public struct FfiConverterTypeRemoteProviderTestResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderTestResult {
         return
             try RemoteProviderTestResult(
-                provider: FfiConverterTypeRemoteAiProviderKind.read(from: &buf),
-                modelId: FfiConverterString.read(from: &buf),
-                endpointUrl: FfiConverterOptionString.read(from: &buf),
-                status: FfiConverterTypeRemoteProviderTestStatus.read(from: &buf),
-                providerVerified: FfiConverterBool.read(from: &buf),
-                verificationToken: FfiConverterOptionString.read(from: &buf),
+                provider: FfiConverterTypeRemoteAiProviderKind.read(from: &buf), 
+                modelId: FfiConverterString.read(from: &buf), 
+                endpointUrl: FfiConverterOptionString.read(from: &buf), 
+                status: FfiConverterTypeRemoteProviderTestStatus.read(from: &buf), 
+                providerVerified: FfiConverterBool.read(from: &buf), 
+                verificationToken: FfiConverterOptionString.read(from: &buf), 
                 sanitizedMessage: FfiConverterString.read(from: &buf)
         )
     }
@@ -15429,10 +15429,10 @@ public struct FfiConverterTypeRepairMetadataPreflight: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepairMetadataPreflight {
         return
             try RepairMetadataPreflight(
-                localeState: FfiConverterTypeRepairMetadataLocaleState.read(from: &buf),
-                repositoryLocalePolicy: FfiConverterOptionString.read(from: &buf),
-                unsupportedLocale: FfiConverterOptionString.read(from: &buf),
-                requiresExplicitLocaleSelection: FfiConverterBool.read(from: &buf),
+                localeState: FfiConverterTypeRepairMetadataLocaleState.read(from: &buf), 
+                repositoryLocalePolicy: FfiConverterOptionString.read(from: &buf), 
+                unsupportedLocale: FfiConverterOptionString.read(from: &buf), 
+                requiresExplicitLocaleSelection: FfiConverterBool.read(from: &buf), 
                 preflightToken: FfiConverterString.read(from: &buf)
         )
     }
@@ -15507,8 +15507,8 @@ public struct FfiConverterTypeRepairOptions: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepairOptions {
         return
             try RepairOptions(
-                preserveDiagnosticsSnapshot: FfiConverterBool.read(from: &buf),
-                preflightToken: FfiConverterString.read(from: &buf),
+                preserveDiagnosticsSnapshot: FfiConverterBool.read(from: &buf), 
+                preflightToken: FfiConverterString.read(from: &buf), 
                 repositoryLocalePolicy: FfiConverterString.read(from: &buf)
         )
     }
@@ -15575,7 +15575,7 @@ public struct FfiConverterTypeRepairReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepairReport {
         return
             try RepairReport(
-                diagnosticsSnapshotPath: FfiConverterOptionString.read(from: &buf),
+                diagnosticsSnapshotPath: FfiConverterOptionString.read(from: &buf), 
                 outcome: FfiConverterTypeRepairMetadataOutcome.read(from: &buf)
         )
     }
@@ -15695,16 +15695,16 @@ public struct FfiConverterTypeRepoConfigPatch: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepoConfigPatch {
         return
             try RepoConfigPatch(
-                expectedRevision: FfiConverterInt64.read(from: &buf),
-                repoPath: FfiConverterOptionString.read(from: &buf),
-                defaultMode: FfiConverterOptionTypeStorageMode.read(from: &buf),
-                overviewOutput: FfiConverterOptionTypeOverviewOutput.read(from: &buf),
-                aiEnabled: FfiConverterOptionBool.read(from: &buf),
-                localePolicy: FfiConverterOptionTypeRepositoryLocalePolicy.read(from: &buf),
-                icloudWarn: FfiConverterOptionBool.read(from: &buf),
-                enableExtensionRules: FfiConverterOptionBool.read(from: &buf),
-                enableKeywordRules: FfiConverterOptionBool.read(from: &buf),
-                fallbackToInbox: FfiConverterOptionBool.read(from: &buf),
+                expectedRevision: FfiConverterInt64.read(from: &buf), 
+                repoPath: FfiConverterOptionString.read(from: &buf), 
+                defaultMode: FfiConverterOptionTypeStorageMode.read(from: &buf), 
+                overviewOutput: FfiConverterOptionTypeOverviewOutput.read(from: &buf), 
+                aiEnabled: FfiConverterOptionBool.read(from: &buf), 
+                localePolicy: FfiConverterOptionTypeRepositoryLocalePolicy.read(from: &buf), 
+                icloudWarn: FfiConverterOptionBool.read(from: &buf), 
+                enableExtensionRules: FfiConverterOptionBool.read(from: &buf), 
+                enableKeywordRules: FfiConverterOptionBool.read(from: &buf), 
+                fallbackToInbox: FfiConverterOptionBool.read(from: &buf), 
                 allowReplaceDuringImport: FfiConverterOptionBool.read(from: &buf)
         )
     }
@@ -15833,16 +15833,16 @@ public struct FfiConverterTypeRepoConfigSnapshot: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepoConfigSnapshot {
         return
             try RepoConfigSnapshot(
-                repoPath: FfiConverterString.read(from: &buf),
-                revision: FfiConverterInt64.read(from: &buf),
-                defaultMode: FfiConverterTypeStorageMode.read(from: &buf),
-                overviewOutput: FfiConverterTypeOverviewOutput.read(from: &buf),
-                aiEnabled: FfiConverterBool.read(from: &buf),
-                localePolicy: FfiConverterTypeRepositoryLocalePolicySnapshot.read(from: &buf),
-                icloudWarn: FfiConverterBool.read(from: &buf),
-                enableExtensionRules: FfiConverterBool.read(from: &buf),
-                enableKeywordRules: FfiConverterBool.read(from: &buf),
-                fallbackToInbox: FfiConverterBool.read(from: &buf),
+                repoPath: FfiConverterString.read(from: &buf), 
+                revision: FfiConverterInt64.read(from: &buf), 
+                defaultMode: FfiConverterTypeStorageMode.read(from: &buf), 
+                overviewOutput: FfiConverterTypeOverviewOutput.read(from: &buf), 
+                aiEnabled: FfiConverterBool.read(from: &buf), 
+                localePolicy: FfiConverterTypeRepositoryLocalePolicySnapshot.read(from: &buf), 
+                icloudWarn: FfiConverterBool.read(from: &buf), 
+                enableExtensionRules: FfiConverterBool.read(from: &buf), 
+                enableKeywordRules: FfiConverterBool.read(from: &buf), 
+                fallbackToInbox: FfiConverterBool.read(from: &buf), 
                 allowReplaceDuringImport: FfiConverterBool.read(from: &buf)
         )
     }
@@ -15935,10 +15935,10 @@ public struct FfiConverterTypeRepoInitOptions: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepoInitOptions {
         return
             try RepoInitOptions(
-                mode: FfiConverterTypeRepoInitMode.read(from: &buf),
-                createDefaultCategories: FfiConverterBool.read(from: &buf),
-                overviewOutput: FfiConverterTypeOverviewOutput.read(from: &buf),
-                localePolicy: FfiConverterTypeRepositoryLocalePolicy.read(from: &buf),
+                mode: FfiConverterTypeRepoInitMode.read(from: &buf), 
+                createDefaultCategories: FfiConverterBool.read(from: &buf), 
+                overviewOutput: FfiConverterTypeOverviewOutput.read(from: &buf), 
+                localePolicy: FfiConverterTypeRepositoryLocalePolicy.read(from: &buf), 
                 contentLocale: FfiConverterTypeContentLocale.read(from: &buf)
         )
     }
@@ -16085,20 +16085,20 @@ public struct FfiConverterTypeRepoPathValidation: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepoPathValidation {
         return
             try RepoPathValidation(
-                repoPath: FfiConverterString.read(from: &buf),
-                exists: FfiConverterBool.read(from: &buf),
-                isDirectory: FfiConverterBool.read(from: &buf),
-                isReadable: FfiConverterBool.read(from: &buf),
-                isWritable: FfiConverterBool.read(from: &buf),
-                isEmpty: FfiConverterBool.read(from: &buf),
-                isInitialized: FfiConverterBool.read(from: &buf),
-                isInsideAreaMatrix: FfiConverterBool.read(from: &buf),
-                isIcloudPath: FfiConverterBool.read(from: &buf),
-                isOnedrivePath: FfiConverterBool.read(from: &buf),
-                platformPathKind: FfiConverterTypePlatformPathKind.read(from: &buf),
-                isCaseSensitivePath: FfiConverterBool.read(from: &buf),
-                hasUnfinishedScanSession: FfiConverterBool.read(from: &buf),
-                recommendedMode: FfiConverterOptionTypeRepoInitMode.read(from: &buf),
+                repoPath: FfiConverterString.read(from: &buf), 
+                exists: FfiConverterBool.read(from: &buf), 
+                isDirectory: FfiConverterBool.read(from: &buf), 
+                isReadable: FfiConverterBool.read(from: &buf), 
+                isWritable: FfiConverterBool.read(from: &buf), 
+                isEmpty: FfiConverterBool.read(from: &buf), 
+                isInitialized: FfiConverterBool.read(from: &buf), 
+                isInsideAreaMatrix: FfiConverterBool.read(from: &buf), 
+                isIcloudPath: FfiConverterBool.read(from: &buf), 
+                isOnedrivePath: FfiConverterBool.read(from: &buf), 
+                platformPathKind: FfiConverterTypePlatformPathKind.read(from: &buf), 
+                isCaseSensitivePath: FfiConverterBool.read(from: &buf), 
+                hasUnfinishedScanSession: FfiConverterBool.read(from: &buf), 
+                recommendedMode: FfiConverterOptionTypeRepoInitMode.read(from: &buf), 
                 issues: FfiConverterSequenceTypeRepoPathIssue.read(from: &buf)
         )
     }
@@ -16177,7 +16177,7 @@ public struct FfiConverterTypeRepositoryLocalePolicySnapshot: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepositoryLocalePolicySnapshot {
         return
             try RepositoryLocalePolicySnapshot(
-                state: FfiConverterTypeRepositoryLocalePolicyState.read(from: &buf),
+                state: FfiConverterTypeRepositoryLocalePolicyState.read(from: &buf), 
                 rawValue: FfiConverterString.read(from: &buf)
         )
     }
@@ -16261,10 +16261,10 @@ public struct FfiConverterTypeRuleImpactConflict: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RuleImpactConflict {
         return
             try RuleImpactConflict(
-                fileId: FfiConverterInt64.read(from: &buf),
-                path: FfiConverterOptionString.read(from: &buf),
-                conflictingPath: FfiConverterOptionString.read(from: &buf),
-                kind: FfiConverterTypeRuleImpactConflictKind.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                path: FfiConverterOptionString.read(from: &buf), 
+                conflictingPath: FfiConverterOptionString.read(from: &buf), 
+                kind: FfiConverterTypeRuleImpactConflictKind.read(from: &buf), 
                 reason: FfiConverterString.read(from: &buf)
         )
     }
@@ -16405,19 +16405,19 @@ public struct FfiConverterTypeRuleImpactReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RuleImpactReport {
         return
             try RuleImpactReport(
-                request: FfiConverterTypeClassifierImpactPreviewRequest.read(from: &buf),
-                affectedFileCount: FfiConverterInt64.read(from: &buf),
-                willUpdateCount: FfiConverterInt64.read(from: &buf),
-                alreadyCorrectCount: FfiConverterInt64.read(from: &buf),
-                needsReviewCount: FfiConverterInt64.read(from: &buf),
-                conflictCount: FfiConverterInt64.read(from: &buf),
-                sampleLimit: FfiConverterInt64.read(from: &buf),
-                samples: FfiConverterSequenceTypeRuleImpactSample.read(from: &buf),
-                conflicts: FfiConverterSequenceTypeRuleImpactConflict.read(from: &buf),
-                needsReview: FfiConverterBool.read(from: &buf),
-                warningRequired: FfiConverterBool.read(from: &buf),
-                warning: FfiConverterOptionString.read(from: &buf),
-                canApply: FfiConverterBool.read(from: &buf),
+                request: FfiConverterTypeClassifierImpactPreviewRequest.read(from: &buf), 
+                affectedFileCount: FfiConverterInt64.read(from: &buf), 
+                willUpdateCount: FfiConverterInt64.read(from: &buf), 
+                alreadyCorrectCount: FfiConverterInt64.read(from: &buf), 
+                needsReviewCount: FfiConverterInt64.read(from: &buf), 
+                conflictCount: FfiConverterInt64.read(from: &buf), 
+                sampleLimit: FfiConverterInt64.read(from: &buf), 
+                samples: FfiConverterSequenceTypeRuleImpactSample.read(from: &buf), 
+                conflicts: FfiConverterSequenceTypeRuleImpactConflict.read(from: &buf), 
+                needsReview: FfiConverterBool.read(from: &buf), 
+                warningRequired: FfiConverterBool.read(from: &buf), 
+                warning: FfiConverterOptionString.read(from: &buf), 
+                canApply: FfiConverterBool.read(from: &buf), 
                 applyBlockedReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -16525,12 +16525,12 @@ public struct FfiConverterTypeRuleImpactSample: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RuleImpactSample {
         return
             try RuleImpactSample(
-                fileId: FfiConverterInt64.read(from: &buf),
-                path: FfiConverterString.read(from: &buf),
-                currentCategory: FfiConverterString.read(from: &buf),
-                newCategory: FfiConverterString.read(from: &buf),
-                matchReasons: FfiConverterSequenceTypeRuleImpactMatchReason.read(from: &buf),
-                status: FfiConverterTypeRuleImpactStatus.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                path: FfiConverterString.read(from: &buf), 
+                currentCategory: FfiConverterString.read(from: &buf), 
+                newCategory: FfiConverterString.read(from: &buf), 
+                matchReasons: FfiConverterSequenceTypeRuleImpactMatchReason.read(from: &buf), 
+                status: FfiConverterTypeRuleImpactStatus.read(from: &buf), 
                 reason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -16637,13 +16637,13 @@ public struct FfiConverterTypeSavedSearch: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SavedSearch {
         return
             try SavedSearch(
-                id: FfiConverterInt64.read(from: &buf),
-                name: FfiConverterString.read(from: &buf),
-                query: FfiConverterTypeSavedSearchQuery.read(from: &buf),
-                icon: FfiConverterOptionString.read(from: &buf),
-                color: FfiConverterOptionString.read(from: &buf),
-                pinned: FfiConverterBool.read(from: &buf),
-                createdAt: FfiConverterInt64.read(from: &buf),
+                id: FfiConverterInt64.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                query: FfiConverterTypeSavedSearchQuery.read(from: &buf), 
+                icon: FfiConverterOptionString.read(from: &buf), 
+                color: FfiConverterOptionString.read(from: &buf), 
+                pinned: FfiConverterBool.read(from: &buf), 
+                createdAt: FfiConverterInt64.read(from: &buf), 
                 updatedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -16721,8 +16721,8 @@ public struct FfiConverterTypeSavedSearchQuery: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SavedSearchQuery {
         return
             try SavedSearchQuery(
-                query: FfiConverterString.read(from: &buf),
-                filter: FfiConverterTypeSearchFilter.read(from: &buf),
+                query: FfiConverterString.read(from: &buf), 
+                filter: FfiConverterTypeSearchFilter.read(from: &buf), 
                 sort: FfiConverterTypeSearchSort.read(from: &buf)
         )
     }
@@ -16867,20 +16867,20 @@ public struct FfiConverterTypeScanSession: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ScanSession {
         return
             try ScanSession(
-                id: FfiConverterInt64.read(from: &buf),
-                kind: FfiConverterTypeScanSessionKind.read(from: &buf),
-                status: FfiConverterTypeScanSessionStatus.read(from: &buf),
-                lastPath: FfiConverterOptionString.read(from: &buf),
-                inserted: FfiConverterInt64.read(from: &buf),
-                updated: FfiConverterInt64.read(from: &buf),
-                missing: FfiConverterInt64.read(from: &buf),
-                conflicts: FfiConverterInt64.read(from: &buf),
-                unreadable: FfiConverterInt64.read(from: &buf),
-                unknown: FfiConverterInt64.read(from: &buf),
-                skipped: FfiConverterInt64.read(from: &buf),
-                startedAt: FfiConverterInt64.read(from: &buf),
-                updatedAt: FfiConverterInt64.read(from: &buf),
-                finishedAt: FfiConverterOptionInt64.read(from: &buf),
+                id: FfiConverterInt64.read(from: &buf), 
+                kind: FfiConverterTypeScanSessionKind.read(from: &buf), 
+                status: FfiConverterTypeScanSessionStatus.read(from: &buf), 
+                lastPath: FfiConverterOptionString.read(from: &buf), 
+                inserted: FfiConverterInt64.read(from: &buf), 
+                updated: FfiConverterInt64.read(from: &buf), 
+                missing: FfiConverterInt64.read(from: &buf), 
+                conflicts: FfiConverterInt64.read(from: &buf), 
+                unreadable: FfiConverterInt64.read(from: &buf), 
+                unknown: FfiConverterInt64.read(from: &buf), 
+                skipped: FfiConverterInt64.read(from: &buf), 
+                startedAt: FfiConverterInt64.read(from: &buf), 
+                updatedAt: FfiConverterInt64.read(from: &buf), 
+                finishedAt: FfiConverterOptionInt64.read(from: &buf), 
                 errors: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -16971,9 +16971,9 @@ public struct FfiConverterTypeSearchDateFacetBounds: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchDateFacetBounds {
         return
             try SearchDateFacetBounds(
-                oldestImportedAt: FfiConverterOptionInt64.read(from: &buf),
-                newestImportedAt: FfiConverterOptionInt64.read(from: &buf),
-                oldestModifiedAt: FfiConverterOptionInt64.read(from: &buf),
+                oldestImportedAt: FfiConverterOptionInt64.read(from: &buf), 
+                newestImportedAt: FfiConverterOptionInt64.read(from: &buf), 
+                oldestModifiedAt: FfiConverterOptionInt64.read(from: &buf), 
                 newestModifiedAt: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -17059,10 +17059,10 @@ public struct FfiConverterTypeSearchFacetCount: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchFacetCount {
         return
             try SearchFacetCount(
-                value: FfiConverterString.read(from: &buf),
-                label: FfiConverterString.read(from: &buf),
-                count: FfiConverterInt64.read(from: &buf),
-                selected: FfiConverterBool.read(from: &buf),
+                value: FfiConverterString.read(from: &buf), 
+                label: FfiConverterString.read(from: &buf), 
+                count: FfiConverterInt64.read(from: &buf), 
+                selected: FfiConverterBool.read(from: &buf), 
                 disabled: FfiConverterBool.read(from: &buf)
         )
     }
@@ -17197,18 +17197,18 @@ public struct FfiConverterTypeSearchFacetQuery: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchFacetQuery {
         return
             try SearchFacetQuery(
-                query: FfiConverterString.read(from: &buf),
-                scope: FfiConverterTypeSearchScope.read(from: &buf),
-                currentPath: FfiConverterOptionString.read(from: &buf),
-                category: FfiConverterOptionString.read(from: &buf),
-                fileKind: FfiConverterOptionString.read(from: &buf),
-                tags: FfiConverterSequenceString.read(from: &buf),
-                tagMatchMode: FfiConverterTypeSearchTagMatchMode.read(from: &buf),
-                importedAfter: FfiConverterOptionInt64.read(from: &buf),
-                importedBefore: FfiConverterOptionInt64.read(from: &buf),
-                modifiedAfter: FfiConverterOptionInt64.read(from: &buf),
-                modifiedBefore: FfiConverterOptionInt64.read(from: &buf),
-                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf),
+                query: FfiConverterString.read(from: &buf), 
+                scope: FfiConverterTypeSearchScope.read(from: &buf), 
+                currentPath: FfiConverterOptionString.read(from: &buf), 
+                category: FfiConverterOptionString.read(from: &buf), 
+                fileKind: FfiConverterOptionString.read(from: &buf), 
+                tags: FfiConverterSequenceString.read(from: &buf), 
+                tagMatchMode: FfiConverterTypeSearchTagMatchMode.read(from: &buf), 
+                importedAfter: FfiConverterOptionInt64.read(from: &buf), 
+                importedBefore: FfiConverterOptionInt64.read(from: &buf), 
+                modifiedAfter: FfiConverterOptionInt64.read(from: &buf), 
+                modifiedBefore: FfiConverterOptionInt64.read(from: &buf), 
+                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf), 
                 includeDeleted: FfiConverterOptionBool.read(from: &buf)
         )
     }
@@ -17321,13 +17321,13 @@ public struct FfiConverterTypeSearchFacets: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchFacets {
         return
             try SearchFacets(
-                query: FfiConverterString.read(from: &buf),
-                totalCount: FfiConverterInt64.read(from: &buf),
-                categories: FfiConverterSequenceTypeSearchFacetCount.read(from: &buf),
-                fileKinds: FfiConverterSequenceTypeSearchFacetCount.read(from: &buf),
-                tags: FfiConverterSequenceTypeSearchFacetCount.read(from: &buf),
-                storageModes: FfiConverterSequenceTypeSearchStorageModeFacetCount.read(from: &buf),
-                dateBounds: FfiConverterTypeSearchDateFacetBounds.read(from: &buf),
+                query: FfiConverterString.read(from: &buf), 
+                totalCount: FfiConverterInt64.read(from: &buf), 
+                categories: FfiConverterSequenceTypeSearchFacetCount.read(from: &buf), 
+                fileKinds: FfiConverterSequenceTypeSearchFacetCount.read(from: &buf), 
+                tags: FfiConverterSequenceTypeSearchFacetCount.read(from: &buf), 
+                storageModes: FfiConverterSequenceTypeSearchStorageModeFacetCount.read(from: &buf), 
+                dateBounds: FfiConverterTypeSearchDateFacetBounds.read(from: &buf), 
                 activeFilterCount: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -17411,9 +17411,9 @@ public struct FfiConverterTypeSearchFileResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchFileResult {
         return
             try SearchFileResult(
-                entry: FfiConverterTypeFileEntry.read(from: &buf),
-                score: FfiConverterFloat.read(from: &buf),
-                matches: FfiConverterSequenceTypeSearchMatch.read(from: &buf),
+                entry: FfiConverterTypeFileEntry.read(from: &buf), 
+                score: FfiConverterFloat.read(from: &buf), 
+                matches: FfiConverterSequenceTypeSearchMatch.read(from: &buf), 
                 noteSnippet: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -17541,17 +17541,17 @@ public struct FfiConverterTypeSearchFilter: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchFilter {
         return
             try SearchFilter(
-                scope: FfiConverterTypeSearchScope.read(from: &buf),
-                currentPath: FfiConverterOptionString.read(from: &buf),
-                category: FfiConverterOptionString.read(from: &buf),
-                fileKind: FfiConverterOptionString.read(from: &buf),
-                tags: FfiConverterSequenceString.read(from: &buf),
-                tagMatchMode: FfiConverterTypeSearchTagMatchMode.read(from: &buf),
-                importedAfter: FfiConverterOptionInt64.read(from: &buf),
-                importedBefore: FfiConverterOptionInt64.read(from: &buf),
-                modifiedAfter: FfiConverterOptionInt64.read(from: &buf),
-                modifiedBefore: FfiConverterOptionInt64.read(from: &buf),
-                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf),
+                scope: FfiConverterTypeSearchScope.read(from: &buf), 
+                currentPath: FfiConverterOptionString.read(from: &buf), 
+                category: FfiConverterOptionString.read(from: &buf), 
+                fileKind: FfiConverterOptionString.read(from: &buf), 
+                tags: FfiConverterSequenceString.read(from: &buf), 
+                tagMatchMode: FfiConverterTypeSearchTagMatchMode.read(from: &buf), 
+                importedAfter: FfiConverterOptionInt64.read(from: &buf), 
+                importedBefore: FfiConverterOptionInt64.read(from: &buf), 
+                modifiedAfter: FfiConverterOptionInt64.read(from: &buf), 
+                modifiedBefore: FfiConverterOptionInt64.read(from: &buf), 
+                storageMode: FfiConverterOptionTypeStorageMode.read(from: &buf), 
                 includeDeleted: FfiConverterOptionBool.read(from: &buf)
         )
     }
@@ -17645,10 +17645,10 @@ public struct FfiConverterTypeSearchMatch: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchMatch {
         return
             try SearchMatch(
-                field: FfiConverterTypeSearchMatchField.read(from: &buf),
-                kind: FfiConverterTypeSearchMatchKind.read(from: &buf),
-                snippet: FfiConverterString.read(from: &buf),
-                start: FfiConverterOptionInt64.read(from: &buf),
+                field: FfiConverterTypeSearchMatchField.read(from: &buf), 
+                kind: FfiConverterTypeSearchMatchKind.read(from: &buf), 
+                snippet: FfiConverterString.read(from: &buf), 
+                start: FfiConverterOptionInt64.read(from: &buf), 
                 end: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -17717,7 +17717,7 @@ public struct FfiConverterTypeSearchPagination: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchPagination {
         return
             try SearchPagination(
-                limit: FfiConverterInt64.read(from: &buf),
+                limit: FfiConverterInt64.read(from: &buf), 
                 offset: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -17813,12 +17813,12 @@ public struct FfiConverterTypeSearchQueryDiagnostic: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchQueryDiagnostic {
         return
             try SearchQueryDiagnostic(
-                kind: FfiConverterTypeSearchDiagnosticKind.read(from: &buf),
-                severity: FfiConverterTypeSearchDiagnosticSeverity.read(from: &buf),
-                message: FfiConverterString.read(from: &buf),
-                token: FfiConverterOptionString.read(from: &buf),
-                start: FfiConverterOptionInt64.read(from: &buf),
-                end: FfiConverterOptionInt64.read(from: &buf),
+                kind: FfiConverterTypeSearchDiagnosticKind.read(from: &buf), 
+                severity: FfiConverterTypeSearchDiagnosticSeverity.read(from: &buf), 
+                message: FfiConverterString.read(from: &buf), 
+                token: FfiConverterOptionString.read(from: &buf), 
+                start: FfiConverterOptionInt64.read(from: &buf), 
+                end: FfiConverterOptionInt64.read(from: &buf), 
                 suggestion: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -17907,10 +17907,10 @@ public struct FfiConverterTypeSearchResultPage: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchResultPage {
         return
             try SearchResultPage(
-                query: FfiConverterString.read(from: &buf),
-                totalCount: FfiConverterInt64.read(from: &buf),
-                results: FfiConverterSequenceTypeSearchFileResult.read(from: &buf),
-                diagnostics: FfiConverterSequenceTypeSearchQueryDiagnostic.read(from: &buf),
+                query: FfiConverterString.read(from: &buf), 
+                totalCount: FfiConverterInt64.read(from: &buf), 
+                results: FfiConverterSequenceTypeSearchFileResult.read(from: &buf), 
+                diagnostics: FfiConverterSequenceTypeSearchQueryDiagnostic.read(from: &buf), 
                 indexStatus: FfiConverterTypeSearchIndexStatus.read(from: &buf)
         )
     }
@@ -17997,10 +17997,10 @@ public struct FfiConverterTypeSearchStorageModeFacetCount: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchStorageModeFacetCount {
         return
             try SearchStorageModeFacetCount(
-                value: FfiConverterTypeStorageMode.read(from: &buf),
-                label: FfiConverterString.read(from: &buf),
-                count: FfiConverterInt64.read(from: &buf),
-                selected: FfiConverterBool.read(from: &buf),
+                value: FfiConverterTypeStorageMode.read(from: &buf), 
+                label: FfiConverterString.read(from: &buf), 
+                count: FfiConverterInt64.read(from: &buf), 
+                selected: FfiConverterBool.read(from: &buf), 
                 disabled: FfiConverterBool.read(from: &buf)
         )
     }
@@ -18123,16 +18123,16 @@ public struct FfiConverterTypeSemanticIndexBuildReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SemanticIndexBuildReport {
         return
             try SemanticIndexBuildReport(
-                status: FfiConverterTypeSemanticIndexStatus.read(from: &buf),
-                route: FfiConverterOptionTypeSemanticSearchRoute.read(from: &buf),
-                totalCount: FfiConverterInt64.read(from: &buf),
-                processedCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                failedCount: FfiConverterInt64.read(from: &buf),
-                privacySkippedCount: FfiConverterInt64.read(from: &buf),
-                providerName: FfiConverterOptionString.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
-                fallbackReason: FfiConverterOptionTypeSemanticSearchFallbackReason.read(from: &buf),
+                status: FfiConverterTypeSemanticIndexStatus.read(from: &buf), 
+                route: FfiConverterOptionTypeSemanticSearchRoute.read(from: &buf), 
+                totalCount: FfiConverterInt64.read(from: &buf), 
+                processedCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                failedCount: FfiConverterInt64.read(from: &buf), 
+                privacySkippedCount: FfiConverterInt64.read(from: &buf), 
+                providerName: FfiConverterOptionString.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
+                fallbackReason: FfiConverterOptionTypeSemanticSearchFallbackReason.read(from: &buf), 
                 message: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -18219,9 +18219,9 @@ public struct FfiConverterTypeSemanticIndexScope: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SemanticIndexScope {
         return
             try SemanticIndexScope(
-                filter: FfiConverterTypeSearchFilter.read(from: &buf),
-                route: FfiConverterOptionTypeSemanticSearchRoute.read(from: &buf),
-                privacyPolicyRef: FfiConverterOptionString.read(from: &buf),
+                filter: FfiConverterTypeSearchFilter.read(from: &buf), 
+                route: FfiConverterOptionTypeSemanticSearchRoute.read(from: &buf), 
+                privacyPolicyRef: FfiConverterOptionString.read(from: &buf), 
                 confirmed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -18289,7 +18289,7 @@ public struct FfiConverterTypeSemanticNormalSearchMatch: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SemanticNormalSearchMatch {
         return
             try SemanticNormalSearchMatch(
-                result: FfiConverterTypeSearchFileResult.read(from: &buf),
+                result: FfiConverterTypeSearchFileResult.read(from: &buf), 
                 dedupedBySemantic: FfiConverterBool.read(from: &buf)
         )
     }
@@ -18391,13 +18391,13 @@ public struct FfiConverterTypeSemanticSearchMatch: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SemanticSearchMatch {
         return
             try SemanticSearchMatch(
-                result: FfiConverterTypeSearchFileResult.read(from: &buf),
-                relevance: FfiConverterFloat.read(from: &buf),
-                matchedReason: FfiConverterString.read(from: &buf),
-                usedFields: FfiConverterSequenceTypeSemanticSearchInputField.read(from: &buf),
-                route: FfiConverterTypeSemanticSearchRoute.read(from: &buf),
-                alsoMatchedNormalSearch: FfiConverterBool.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
+                result: FfiConverterTypeSearchFileResult.read(from: &buf), 
+                relevance: FfiConverterFloat.read(from: &buf), 
+                matchedReason: FfiConverterString.read(from: &buf), 
+                usedFields: FfiConverterSequenceTypeSemanticSearchInputField.read(from: &buf), 
+                route: FfiConverterTypeSemanticSearchRoute.read(from: &buf), 
+                alsoMatchedNormalSearch: FfiConverterBool.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
                 privacyRuleId: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -18535,18 +18535,18 @@ public struct FfiConverterTypeSemanticSearchResultPage: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SemanticSearchResultPage {
         return
             try SemanticSearchResultPage(
-                query: FfiConverterString.read(from: &buf),
-                semanticTotalCount: FfiConverterInt64.read(from: &buf),
-                normalTotalCount: FfiConverterInt64.read(from: &buf),
-                semanticMatches: FfiConverterSequenceTypeSemanticSearchMatch.read(from: &buf),
-                normalMatches: FfiConverterSequenceTypeSemanticNormalSearchMatch.read(from: &buf),
-                dedupedNormalCount: FfiConverterInt64.read(from: &buf),
-                indexStatus: FfiConverterTypeSemanticIndexStatus.read(from: &buf),
-                route: FfiConverterOptionTypeSemanticSearchRoute.read(from: &buf),
-                fallbackReason: FfiConverterOptionTypeSemanticSearchFallbackReason.read(from: &buf),
-                fallbackMessage: FfiConverterOptionString.read(from: &buf),
-                callLogId: FfiConverterOptionInt64.read(from: &buf),
-                privacyRuleId: FfiConverterOptionString.read(from: &buf),
+                query: FfiConverterString.read(from: &buf), 
+                semanticTotalCount: FfiConverterInt64.read(from: &buf), 
+                normalTotalCount: FfiConverterInt64.read(from: &buf), 
+                semanticMatches: FfiConverterSequenceTypeSemanticSearchMatch.read(from: &buf), 
+                normalMatches: FfiConverterSequenceTypeSemanticNormalSearchMatch.read(from: &buf), 
+                dedupedNormalCount: FfiConverterInt64.read(from: &buf), 
+                indexStatus: FfiConverterTypeSemanticIndexStatus.read(from: &buf), 
+                route: FfiConverterOptionTypeSemanticSearchRoute.read(from: &buf), 
+                fallbackReason: FfiConverterOptionTypeSemanticSearchFallbackReason.read(from: &buf), 
+                fallbackMessage: FfiConverterOptionString.read(from: &buf), 
+                callLogId: FfiConverterOptionInt64.read(from: &buf), 
+                privacyRuleId: FfiConverterOptionString.read(from: &buf), 
                 lowConfidence: FfiConverterBool.read(from: &buf)
         )
     }
@@ -18671,15 +18671,15 @@ public struct FfiConverterTypeSyncConflict: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflict {
         return
             try SyncConflict(
-                conflictId: FfiConverterString.read(from: &buf),
-                conflictType: FfiConverterTypeSyncConflictType.read(from: &buf),
-                severity: FfiConverterTypeSyncConflictSeverity.read(from: &buf),
-                status: FfiConverterTypeSyncConflictStatus.read(from: &buf),
-                primaryPath: FfiConverterString.read(from: &buf),
-                affectedFiles: FfiConverterSequenceTypeSyncConflictAffectedFile.read(from: &buf),
-                versionCount: FfiConverterInt64.read(from: &buf),
-                sourceProvider: FfiConverterOptionString.read(from: &buf),
-                detectedAt: FfiConverterOptionInt64.read(from: &buf),
+                conflictId: FfiConverterString.read(from: &buf), 
+                conflictType: FfiConverterTypeSyncConflictType.read(from: &buf), 
+                severity: FfiConverterTypeSyncConflictSeverity.read(from: &buf), 
+                status: FfiConverterTypeSyncConflictStatus.read(from: &buf), 
+                primaryPath: FfiConverterString.read(from: &buf), 
+                affectedFiles: FfiConverterSequenceTypeSyncConflictAffectedFile.read(from: &buf), 
+                versionCount: FfiConverterInt64.read(from: &buf), 
+                sourceProvider: FfiConverterOptionString.read(from: &buf), 
+                detectedAt: FfiConverterOptionInt64.read(from: &buf), 
                 summary: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -18783,12 +18783,12 @@ public struct FfiConverterTypeSyncConflictAffectedFile: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictAffectedFile {
         return
             try SyncConflictAffectedFile(
-                path: FfiConverterString.read(from: &buf),
-                fileId: FfiConverterOptionInt64.read(from: &buf),
-                role: FfiConverterTypeSyncConflictFileRole.read(from: &buf),
-                sizeBytes: FfiConverterOptionInt64.read(from: &buf),
-                modifiedAt: FfiConverterOptionInt64.read(from: &buf),
-                hashSha256: FfiConverterOptionString.read(from: &buf),
+                path: FfiConverterString.read(from: &buf), 
+                fileId: FfiConverterOptionInt64.read(from: &buf), 
+                role: FfiConverterTypeSyncConflictFileRole.read(from: &buf), 
+                sizeBytes: FfiConverterOptionInt64.read(from: &buf), 
+                modifiedAt: FfiConverterOptionInt64.read(from: &buf), 
+                hashSha256: FfiConverterOptionString.read(from: &buf), 
                 sourcePlatform: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -18901,14 +18901,14 @@ public struct FfiConverterTypeSyncConflictReplacePlan: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictReplacePlan {
         return
             try SyncConflictReplacePlan(
-                oldPath: FfiConverterString.read(from: &buf),
-                newPath: FfiConverterString.read(from: &buf),
-                oldHashSha256: FfiConverterOptionString.read(from: &buf),
-                newHashSha256: FfiConverterOptionString.read(from: &buf),
-                affectedFileId: FfiConverterOptionInt64.read(from: &buf),
-                backupTarget: FfiConverterOptionString.read(from: &buf),
-                databaseUpdate: FfiConverterString.read(from: &buf),
-                changeLogAction: FfiConverterString.read(from: &buf),
+                oldPath: FfiConverterString.read(from: &buf), 
+                newPath: FfiConverterString.read(from: &buf), 
+                oldHashSha256: FfiConverterOptionString.read(from: &buf), 
+                newHashSha256: FfiConverterOptionString.read(from: &buf), 
+                affectedFileId: FfiConverterOptionInt64.read(from: &buf), 
+                backupTarget: FfiConverterOptionString.read(from: &buf), 
+                databaseUpdate: FfiConverterString.read(from: &buf), 
+                changeLogAction: FfiConverterString.read(from: &buf), 
                 recoveryNote: FfiConverterString.read(from: &buf)
         )
     }
@@ -19083,24 +19083,24 @@ public struct FfiConverterTypeSyncConflictResolutionPreviewReport: FfiConverterR
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictResolutionPreviewReport {
         return
             try SyncConflictResolutionPreviewReport(
-                conflictId: FfiConverterString.read(from: &buf),
-                resolution: FfiConverterTypeSyncConflictResolutionStrategy.read(from: &buf),
-                defaultResolution: FfiConverterTypeSyncConflictResolutionStrategy.read(from: &buf),
-                statusAfter: FfiConverterTypeSyncConflictStatus.read(from: &buf),
-                versionImpacts: FfiConverterSequenceTypeSyncConflictVersionImpact.read(from: &buf),
-                keptPaths: FfiConverterSequenceString.read(from: &buf),
-                retainedPaths: FfiConverterSequenceString.read(from: &buf),
-                plannedTrashPaths: FfiConverterSequenceString.read(from: &buf),
-                affectedFileIds: FfiConverterSequenceInt64.read(from: &buf),
-                canonicalPath: FfiConverterOptionString.read(from: &buf),
-                changeLogAction: FfiConverterString.read(from: &buf),
-                destructive: FfiConverterBool.read(from: &buf),
-                requiresReplaceConfirmation: FfiConverterBool.read(from: &buf),
-                trashRequired: FfiConverterBool.read(from: &buf),
-                trashAvailable: FfiConverterBool.read(from: &buf),
-                canApply: FfiConverterBool.read(from: &buf),
-                blockedReason: FfiConverterOptionString.read(from: &buf),
-                previewToken: FfiConverterOptionString.read(from: &buf),
+                conflictId: FfiConverterString.read(from: &buf), 
+                resolution: FfiConverterTypeSyncConflictResolutionStrategy.read(from: &buf), 
+                defaultResolution: FfiConverterTypeSyncConflictResolutionStrategy.read(from: &buf), 
+                statusAfter: FfiConverterTypeSyncConflictStatus.read(from: &buf), 
+                versionImpacts: FfiConverterSequenceTypeSyncConflictVersionImpact.read(from: &buf), 
+                keptPaths: FfiConverterSequenceString.read(from: &buf), 
+                retainedPaths: FfiConverterSequenceString.read(from: &buf), 
+                plannedTrashPaths: FfiConverterSequenceString.read(from: &buf), 
+                affectedFileIds: FfiConverterSequenceInt64.read(from: &buf), 
+                canonicalPath: FfiConverterOptionString.read(from: &buf), 
+                changeLogAction: FfiConverterString.read(from: &buf), 
+                destructive: FfiConverterBool.read(from: &buf), 
+                requiresReplaceConfirmation: FfiConverterBool.read(from: &buf), 
+                trashRequired: FfiConverterBool.read(from: &buf), 
+                trashAvailable: FfiConverterBool.read(from: &buf), 
+                canApply: FfiConverterBool.read(from: &buf), 
+                blockedReason: FfiConverterOptionString.read(from: &buf), 
+                previewToken: FfiConverterOptionString.read(from: &buf), 
                 replacePlan: FfiConverterOptionTypeSyncConflictReplacePlan.read(from: &buf)
         )
     }
@@ -19195,9 +19195,9 @@ public struct FfiConverterTypeSyncConflictResolutionRequest: FfiConverterRustBuf
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictResolutionRequest {
         return
             try SyncConflictResolutionRequest(
-                strategy: FfiConverterTypeSyncConflictResolutionStrategy.read(from: &buf),
-                previewToken: FfiConverterString.read(from: &buf),
-                replaceConfirmed: FfiConverterBool.read(from: &buf),
+                strategy: FfiConverterTypeSyncConflictResolutionStrategy.read(from: &buf), 
+                previewToken: FfiConverterString.read(from: &buf), 
+                replaceConfirmed: FfiConverterBool.read(from: &buf), 
                 replaceConfirmationId: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -19313,15 +19313,15 @@ public struct FfiConverterTypeSyncConflictResolveReport: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictResolveReport {
         return
             try SyncConflictResolveReport(
-                conflictId: FfiConverterString.read(from: &buf),
-                resolution: FfiConverterTypeSyncConflictResolutionStrategy.read(from: &buf),
-                status: FfiConverterTypeSyncConflictStatus.read(from: &buf),
-                keptPaths: FfiConverterSequenceString.read(from: &buf),
-                retainedPaths: FfiConverterSequenceString.read(from: &buf),
-                trashedPaths: FfiConverterSequenceString.read(from: &buf),
-                affectedFileIds: FfiConverterSequenceInt64.read(from: &buf),
-                changeLogAction: FfiConverterString.read(from: &buf),
-                undoToken: FfiConverterOptionString.read(from: &buf),
+                conflictId: FfiConverterString.read(from: &buf), 
+                resolution: FfiConverterTypeSyncConflictResolutionStrategy.read(from: &buf), 
+                status: FfiConverterTypeSyncConflictStatus.read(from: &buf), 
+                keptPaths: FfiConverterSequenceString.read(from: &buf), 
+                retainedPaths: FfiConverterSequenceString.read(from: &buf), 
+                trashedPaths: FfiConverterSequenceString.read(from: &buf), 
+                affectedFileIds: FfiConverterSequenceInt64.read(from: &buf), 
+                changeLogAction: FfiConverterString.read(from: &buf), 
+                undoToken: FfiConverterOptionString.read(from: &buf), 
                 resolvedAt: FfiConverterOptionInt64.read(from: &buf)
         )
     }
@@ -19437,14 +19437,14 @@ public struct FfiConverterTypeSyncConflictVersionImpact: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictVersionImpact {
         return
             try SyncConflictVersionImpact(
-                path: FfiConverterString.read(from: &buf),
-                fileId: FfiConverterOptionInt64.read(from: &buf),
-                role: FfiConverterTypeSyncConflictFileRole.read(from: &buf),
-                willKeep: FfiConverterBool.read(from: &buf),
-                willBeCanonical: FfiConverterBool.read(from: &buf),
-                willRemainUserVisible: FfiConverterBool.read(from: &buf),
-                willMoveToTrash: FfiConverterBool.read(from: &buf),
-                recoveryTarget: FfiConverterOptionString.read(from: &buf),
+                path: FfiConverterString.read(from: &buf), 
+                fileId: FfiConverterOptionInt64.read(from: &buf), 
+                role: FfiConverterTypeSyncConflictFileRole.read(from: &buf), 
+                willKeep: FfiConverterBool.read(from: &buf), 
+                willBeCanonical: FfiConverterBool.read(from: &buf), 
+                willRemainUserVisible: FfiConverterBool.read(from: &buf), 
+                willMoveToTrash: FfiConverterBool.read(from: &buf), 
+                recoveryTarget: FfiConverterOptionString.read(from: &buf), 
                 reason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -19535,10 +19535,10 @@ public struct FfiConverterTypeSyncResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncResult {
         return
             try SyncResult(
-                detectedCreates: FfiConverterInt64.read(from: &buf),
-                detectedRenames: FfiConverterInt64.read(from: &buf),
-                detectedDeletes: FfiConverterInt64.read(from: &buf),
-                detectedModifies: FfiConverterInt64.read(from: &buf),
+                detectedCreates: FfiConverterInt64.read(from: &buf), 
+                detectedRenames: FfiConverterInt64.read(from: &buf), 
+                detectedDeletes: FfiConverterInt64.read(from: &buf), 
+                detectedModifies: FfiConverterInt64.read(from: &buf), 
                 errors: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -19631,11 +19631,11 @@ public struct FfiConverterTypeTagRecord: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagRecord {
         return
             try TagRecord(
-                value: FfiConverterString.read(from: &buf),
-                label: FfiConverterString.read(from: &buf),
-                fileCount: FfiConverterInt64.read(from: &buf),
-                selected: FfiConverterBool.read(from: &buf),
-                disabled: FfiConverterBool.read(from: &buf),
+                value: FfiConverterString.read(from: &buf), 
+                label: FfiConverterString.read(from: &buf), 
+                fileCount: FfiConverterInt64.read(from: &buf), 
+                selected: FfiConverterBool.read(from: &buf), 
+                disabled: FfiConverterBool.read(from: &buf), 
                 updatedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -19723,10 +19723,10 @@ public struct FfiConverterTypeTagSet: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSet {
         return
             try TagSet(
-                fileId: FfiConverterInt64.read(from: &buf),
-                fileTags: FfiConverterSequenceTypeTagRecord.read(from: &buf),
-                availableTags: FfiConverterSequenceTypeTagRecord.read(from: &buf),
-                recentTags: FfiConverterSequenceTypeTagRecord.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                fileTags: FfiConverterSequenceTypeTagRecord.read(from: &buf), 
+                availableTags: FfiConverterSequenceTypeTagRecord.read(from: &buf), 
+                recentTags: FfiConverterSequenceTypeTagRecord.read(from: &buf), 
                 updatedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -19849,16 +19849,16 @@ public struct FfiConverterTypeTagSuggestion: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestion {
         return
             try TagSuggestion(
-                suggestionId: FfiConverterString.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
-                displayName: FfiConverterString.read(from: &buf),
-                reason: FfiConverterString.read(from: &buf),
-                source: FfiConverterTypeTagSuggestionSource.read(from: &buf),
-                matchStrength: FfiConverterTypeTagSuggestionMatch.read(from: &buf),
-                alreadyExists: FfiConverterBool.read(from: &buf),
-                needsCreate: FfiConverterBool.read(from: &buf),
-                status: FfiConverterTypeTagSuggestionStatus.read(from: &buf),
-                selectedByDefault: FfiConverterBool.read(from: &buf),
+                suggestionId: FfiConverterString.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
+                displayName: FfiConverterString.read(from: &buf), 
+                reason: FfiConverterString.read(from: &buf), 
+                source: FfiConverterTypeTagSuggestionSource.read(from: &buf), 
+                matchStrength: FfiConverterTypeTagSuggestionMatch.read(from: &buf), 
+                alreadyExists: FfiConverterBool.read(from: &buf), 
+                needsCreate: FfiConverterBool.read(from: &buf), 
+                status: FfiConverterTypeTagSuggestionStatus.read(from: &buf), 
+                selectedByDefault: FfiConverterBool.read(from: &buf), 
                 disabledReason: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -19945,9 +19945,9 @@ public struct FfiConverterTypeTagSuggestionApplyItemResult: FfiConverterRustBuff
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestionApplyItemResult {
         return
             try TagSuggestionApplyItemResult(
-                suggestionId: FfiConverterString.read(from: &buf),
-                slug: FfiConverterString.read(from: &buf),
-                status: FfiConverterTypeTagSuggestionApplyStatus.read(from: &buf),
+                suggestionId: FfiConverterString.read(from: &buf), 
+                slug: FfiConverterString.read(from: &buf), 
+                status: FfiConverterTypeTagSuggestionApplyStatus.read(from: &buf), 
                 error: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -20057,14 +20057,14 @@ public struct FfiConverterTypeTagSuggestionApplyReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestionApplyReport {
         return
             try TagSuggestionApplyReport(
-                fileId: FfiConverterInt64.read(from: &buf),
-                requestedCount: FfiConverterInt64.read(from: &buf),
-                appliedCount: FfiConverterInt64.read(from: &buf),
-                skippedCount: FfiConverterInt64.read(from: &buf),
-                failedCount: FfiConverterInt64.read(from: &buf),
-                itemResults: FfiConverterSequenceTypeTagSuggestionApplyItemResult.read(from: &buf),
-                tagSet: FfiConverterTypeTagSet.read(from: &buf),
-                undoToken: FfiConverterOptionString.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                requestedCount: FfiConverterInt64.read(from: &buf), 
+                appliedCount: FfiConverterInt64.read(from: &buf), 
+                skippedCount: FfiConverterInt64.read(from: &buf), 
+                failedCount: FfiConverterInt64.read(from: &buf), 
+                itemResults: FfiConverterSequenceTypeTagSuggestionApplyItemResult.read(from: &buf), 
+                tagSet: FfiConverterTypeTagSet.read(from: &buf), 
+                undoToken: FfiConverterOptionString.read(from: &buf), 
                 refreshTargets: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -20137,7 +20137,7 @@ public struct FfiConverterTypeTagSuggestionContext: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestionContext {
         return
             try TagSuggestionContext(
-                sourceFolder: FfiConverterOptionString.read(from: &buf),
+                sourceFolder: FfiConverterOptionString.read(from: &buf), 
                 sourceKeywords: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -20227,11 +20227,11 @@ public struct FfiConverterTypeTagSuggestionReport: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestionReport {
         return
             try TagSuggestionReport(
-                fileId: FfiConverterInt64.read(from: &buf),
-                suggestions: FfiConverterSequenceTypeTagSuggestion.read(from: &buf),
-                tagSet: FfiConverterTypeTagSet.read(from: &buf),
-                contentsRead: FfiConverterBool.read(from: &buf),
-                aiUsed: FfiConverterBool.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                suggestions: FfiConverterSequenceTypeTagSuggestion.read(from: &buf), 
+                tagSet: FfiConverterTypeTagSet.read(from: &buf), 
+                contentsRead: FfiConverterBool.read(from: &buf), 
+                aiUsed: FfiConverterBool.read(from: &buf), 
                 networkUsed: FfiConverterBool.read(from: &buf)
         )
     }
@@ -20307,8 +20307,8 @@ public struct FfiConverterTypeTagSuggestionRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestionRequest {
         return
             try TagSuggestionRequest(
-                fileId: FfiConverterInt64.read(from: &buf),
-                context: FfiConverterOptionTypeTagSuggestionContext.read(from: &buf),
+                fileId: FfiConverterInt64.read(from: &buf), 
+                context: FfiConverterOptionTypeTagSuggestionContext.read(from: &buf), 
                 limit: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -20423,15 +20423,15 @@ public struct FfiConverterTypeUndoActionRecord: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UndoActionRecord {
         return
             try UndoActionRecord(
-                actionId: FfiConverterString.read(from: &buf),
-                kind: FfiConverterString.read(from: &buf),
-                summary: FfiConverterString.read(from: &buf),
-                affectedCount: FfiConverterInt64.read(from: &buf),
-                affectedFileNames: FfiConverterSequenceString.read(from: &buf),
-                status: FfiConverterTypeUndoActionStatus.read(from: &buf),
-                canUndo: FfiConverterBool.read(from: &buf),
-                disabledReason: FfiConverterOptionString.read(from: &buf),
-                createdAt: FfiConverterInt64.read(from: &buf),
+                actionId: FfiConverterString.read(from: &buf), 
+                kind: FfiConverterString.read(from: &buf), 
+                summary: FfiConverterString.read(from: &buf), 
+                affectedCount: FfiConverterInt64.read(from: &buf), 
+                affectedFileNames: FfiConverterSequenceString.read(from: &buf), 
+                status: FfiConverterTypeUndoActionStatus.read(from: &buf), 
+                canUndo: FfiConverterBool.read(from: &buf), 
+                disabledReason: FfiConverterOptionString.read(from: &buf), 
+                createdAt: FfiConverterInt64.read(from: &buf), 
                 updatedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -20529,11 +20529,11 @@ public struct FfiConverterTypeUndoActionResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UndoActionResult {
         return
             try UndoActionResult(
-                actionId: FfiConverterString.read(from: &buf),
-                status: FfiConverterTypeUndoActionStatus.read(from: &buf),
-                summary: FfiConverterString.read(from: &buf),
-                affectedCount: FfiConverterInt64.read(from: &buf),
-                refreshTargets: FfiConverterSequenceString.read(from: &buf),
+                actionId: FfiConverterString.read(from: &buf), 
+                status: FfiConverterTypeUndoActionStatus.read(from: &buf), 
+                summary: FfiConverterString.read(from: &buf), 
+                affectedCount: FfiConverterInt64.read(from: &buf), 
+                refreshTargets: FfiConverterSequenceString.read(from: &buf), 
                 completedAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -20627,11 +20627,11 @@ public struct FfiConverterTypeUpdateSavedSearchRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UpdateSavedSearchRequest {
         return
             try UpdateSavedSearchRequest(
-                id: FfiConverterInt64.read(from: &buf),
-                name: FfiConverterString.read(from: &buf),
-                query: FfiConverterTypeSavedSearchQuery.read(from: &buf),
-                icon: FfiConverterOptionString.read(from: &buf),
-                color: FfiConverterOptionString.read(from: &buf),
+                id: FfiConverterInt64.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                query: FfiConverterTypeSavedSearchQuery.read(from: &buf), 
+                icon: FfiConverterOptionString.read(from: &buf), 
+                color: FfiConverterOptionString.read(from: &buf), 
                 pinned: FfiConverterBool.read(from: &buf)
         )
     }
@@ -20665,7 +20665,7 @@ public func FfiConverterTypeUpdateSavedSearchRequest_lower(_ value: UpdateSavedS
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCallLogClearScope {
-
+    
     case all
     case selectedEntries
     case olderThan
@@ -20681,32 +20681,32 @@ public struct FfiConverterTypeAiCallLogClearScope: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogClearScope {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .all
-
+        
         case 2: return .selectedEntries
-
+        
         case 3: return .olderThan
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCallLogClearScope, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .all:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .selectedEntries:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .olderThan:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -20736,7 +20736,7 @@ extension AiCallLogClearScope: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCallLogFeature {
-
+    
     case classification
     case summary
     case tags
@@ -20754,44 +20754,44 @@ public struct FfiConverterTypeAiCallLogFeature: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogFeature {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .classification
-
+        
         case 2: return .summary
-
+        
         case 3: return .tags
-
+        
         case 4: return .semanticSearch
-
+        
         case 5: return .providerTest
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCallLogFeature, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .classification:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .summary:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .tags:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .semanticSearch:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .providerTest:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -20821,7 +20821,7 @@ extension AiCallLogFeature: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCallLogRoute {
-
+    
     case local
     case remote
 }
@@ -20836,26 +20836,26 @@ public struct FfiConverterTypeAiCallLogRoute: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogRoute {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .local
-
+        
         case 2: return .remote
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCallLogRoute, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .local:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .remote:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -20885,7 +20885,7 @@ extension AiCallLogRoute: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCallLogSentField {
-
+    
     case fileName
     case repoRelativePath
     case `extension`
@@ -20905,56 +20905,56 @@ public struct FfiConverterTypeAiCallLogSentField: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogSentField {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .fileName
-
+        
         case 2: return .repoRelativePath
-
+        
         case 3: return .`extension`
-
+        
         case 4: return .extractedTextExcerpt
-
+        
         case 5: return .aiSummary
-
+        
         case 6: return .noteSummary
-
+        
         case 7: return .tagCategoryContext
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCallLogSentField, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .fileName:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .repoRelativePath:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .`extension`:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .extractedTextExcerpt:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .aiSummary:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .noteSummary:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .tagCategoryContext:
             writeInt(&buf, Int32(7))
-
+        
         }
     }
 }
@@ -20984,7 +20984,7 @@ extension AiCallLogSentField: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCallLogStatus {
-
+    
     case success
     case failed
     case skipped
@@ -21001,38 +21001,38 @@ public struct FfiConverterTypeAiCallLogStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCallLogStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .success
-
+        
         case 2: return .failed
-
+        
         case 3: return .skipped
-
+        
         case 4: return .unavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCallLogStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .success:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .unavailable:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -21062,7 +21062,7 @@ extension AiCallLogStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCategorySuggestionContextField {
-
+    
     case fileName
     case `extension`
     case repoRelativePath
@@ -21079,38 +21079,38 @@ public struct FfiConverterTypeAiCategorySuggestionContextField: FfiConverterRust
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCategorySuggestionContextField {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .fileName
-
+        
         case 2: return .`extension`
-
+        
         case 3: return .repoRelativePath
-
+        
         case 4: return .limitedTextSummary
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCategorySuggestionContextField, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .fileName:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .`extension`:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .repoRelativePath:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .limitedTextSummary:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -21140,7 +21140,7 @@ extension AiCategorySuggestionContextField: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCategorySuggestionContextPolicy {
-
+    
     case fileNameOnly
     case fileNameAndPath
     case limitedTextSummary
@@ -21156,32 +21156,32 @@ public struct FfiConverterTypeAiCategorySuggestionContextPolicy: FfiConverterRus
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCategorySuggestionContextPolicy {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .fileNameOnly
-
+        
         case 2: return .fileNameAndPath
-
+        
         case 3: return .limitedTextSummary
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCategorySuggestionContextPolicy, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .fileNameOnly:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .fileNameAndPath:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .limitedTextSummary:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -21211,7 +21211,7 @@ extension AiCategorySuggestionContextPolicy: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCategorySuggestionRoute {
-
+    
     case local
     case remote
 }
@@ -21226,26 +21226,26 @@ public struct FfiConverterTypeAiCategorySuggestionRoute: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCategorySuggestionRoute {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .local
-
+        
         case 2: return .remote
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCategorySuggestionRoute, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .local:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .remote:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -21275,7 +21275,7 @@ extension AiCategorySuggestionRoute: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCategorySuggestionSkipReason {
-
+    
     case aiDisabled
     case featureDisabled
     case ruleResultConfident
@@ -21294,50 +21294,50 @@ public struct FfiConverterTypeAiCategorySuggestionSkipReason: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCategorySuggestionSkipReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .aiDisabled
-
+        
         case 2: return .featureDisabled
-
+        
         case 3: return .ruleResultConfident
-
+        
         case 4: return .noEligibleContext
-
+        
         case 5: return .privacyRule
-
+        
         case 6: return .providerUnavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCategorySuggestionSkipReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .aiDisabled:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .featureDisabled:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .ruleResultConfident:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .noEligibleContext:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .privacyRule:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .providerUnavailable:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -21367,7 +21367,7 @@ extension AiCategorySuggestionSkipReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiCategorySuggestionStatus {
-
+    
     case suggested
     case noSuggestion
     case skipped
@@ -21384,38 +21384,38 @@ public struct FfiConverterTypeAiCategorySuggestionStatus: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiCategorySuggestionStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .suggested
-
+        
         case 2: return .noSuggestion
-
+        
         case 3: return .skipped
-
+        
         case 4: return .unavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiCategorySuggestionStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .suggested:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .noSuggestion:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .unavailable:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -21445,7 +21445,7 @@ extension AiCategorySuggestionStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiContentOwnership {
-
+    
     case generated
     case userOwned
 }
@@ -21460,26 +21460,26 @@ public struct FfiConverterTypeAiContentOwnership: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiContentOwnership {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .generated
-
+        
         case 2: return .userOwned
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiContentOwnership, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .generated:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .userOwned:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -21509,7 +21509,7 @@ extension AiContentOwnership: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiFallbackAction {
-
+    
     case retry
     case retryLater
     case openAiSettings
@@ -21532,74 +21532,74 @@ public struct FfiConverterTypeAiFallbackAction: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiFallbackAction {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .retry
-
+        
         case 2: return .retryLater
-
+        
         case 3: return .openAiSettings
-
+        
         case 4: return .openLocalModelStatus
-
+        
         case 5: return .configureRemoteAi
-
+        
         case 6: return .viewPrivacyRule
-
+        
         case 7: return .viewCallLog
-
+        
         case 8: return .buildSemanticIndex
-
+        
         case 9: return .useNormalSearch
-
+        
         case 10: return .classifyManually
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiFallbackAction, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .retry:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .retryLater:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .openAiSettings:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .openLocalModelStatus:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .configureRemoteAi:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .viewPrivacyRule:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .viewCallLog:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .buildSemanticIndex:
             writeInt(&buf, Int32(8))
-
-
+        
+        
         case .useNormalSearch:
             writeInt(&buf, Int32(9))
-
-
+        
+        
         case .classifyManually:
             writeInt(&buf, Int32(10))
-
+        
         }
     }
 }
@@ -21629,7 +21629,7 @@ extension AiFallbackAction: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiFallbackCategory {
-
+    
     case disabled
     case skipped
     case unavailable
@@ -21646,38 +21646,38 @@ public struct FfiConverterTypeAiFallbackCategory: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiFallbackCategory {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .disabled
-
+        
         case 2: return .skipped
-
+        
         case 3: return .unavailable
-
+        
         case 4: return .error
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiFallbackCategory, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .disabled:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unavailable:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .error:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -21707,7 +21707,7 @@ extension AiFallbackCategory: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiFallbackKind {
-
+    
     case aiDisabled
     case featureDisabled
     case localModelNotReady
@@ -21734,98 +21734,98 @@ public struct FfiConverterTypeAiFallbackKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiFallbackKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .aiDisabled
-
+        
         case 2: return .featureDisabled
-
+        
         case 3: return .localModelNotReady
-
+        
         case 4: return .remoteNotConfigured
-
+        
         case 5: return .remoteFailed
-
+        
         case 6: return .providerUnavailable
-
+        
         case 7: return .privacySkipped
-
+        
         case 8: return .semanticIndexNotReady
-
+        
         case 9: return .noEligibleInput
-
+        
         case 10: return .normalSearchUnavailable
-
+        
         case 11: return .callLogUnavailable
-
+        
         case 12: return .rateLimited
-
+        
         case 13: return .timeout
-
+        
         case 14: return .internalFailure
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiFallbackKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .aiDisabled:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .featureDisabled:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .localModelNotReady:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .remoteNotConfigured:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .remoteFailed:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .providerUnavailable:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .privacySkipped:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .semanticIndexNotReady:
             writeInt(&buf, Int32(8))
-
-
+        
+        
         case .noEligibleInput:
             writeInt(&buf, Int32(9))
-
-
+        
+        
         case .normalSearchUnavailable:
             writeInt(&buf, Int32(10))
-
-
+        
+        
         case .callLogUnavailable:
             writeInt(&buf, Int32(11))
-
-
+        
+        
         case .rateLimited:
             writeInt(&buf, Int32(12))
-
-
+        
+        
         case .timeout:
             writeInt(&buf, Int32(13))
-
-
+        
+        
         case .internalFailure:
             writeInt(&buf, Int32(14))
-
+        
         }
     }
 }
@@ -21855,7 +21855,7 @@ extension AiFallbackKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiFallbackOperation {
-
+    
     case classificationSuggestion
     case semanticSearch
     case embeddingIndexBuild
@@ -21871,32 +21871,32 @@ public struct FfiConverterTypeAiFallbackOperation: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiFallbackOperation {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .classificationSuggestion
-
+        
         case 2: return .semanticSearch
-
+        
         case 3: return .embeddingIndexBuild
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiFallbackOperation, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .classificationSuggestion:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .semanticSearch:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .embeddingIndexBuild:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -21926,7 +21926,7 @@ extension AiFallbackOperation: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiFallbackProviderErrorKind {
-
+    
     case localModelNotReady
     case remoteNotConfigured
     case remoteFailed
@@ -21947,62 +21947,62 @@ public struct FfiConverterTypeAiFallbackProviderErrorKind: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiFallbackProviderErrorKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .localModelNotReady
-
+        
         case 2: return .remoteNotConfigured
-
+        
         case 3: return .remoteFailed
-
+        
         case 4: return .providerUnavailable
-
+        
         case 5: return .rateLimited
-
+        
         case 6: return .timeout
-
+        
         case 7: return .callLogUnavailable
-
+        
         case 8: return .internalFailure
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiFallbackProviderErrorKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .localModelNotReady:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .remoteNotConfigured:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .remoteFailed:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .providerUnavailable:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .rateLimited:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .timeout:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .callLogUnavailable:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .internalFailure:
             writeInt(&buf, Int32(8))
-
+        
         }
     }
 }
@@ -22032,7 +22032,7 @@ extension AiFallbackProviderErrorKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiFeatureKind {
-
+    
     case classificationSuggestions
     case autoSummaries
     case autoTags
@@ -22049,38 +22049,38 @@ public struct FfiConverterTypeAiFeatureKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiFeatureKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .classificationSuggestions
-
+        
         case 2: return .autoSummaries
-
+        
         case 3: return .autoTags
-
+        
         case 4: return .semanticSearch
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiFeatureKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .classificationSuggestions:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .autoSummaries:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .autoTags:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .semanticSearch:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -22110,7 +22110,7 @@ extension AiFeatureKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiPrivacyDecision {
-
+    
     case allowed
     case denied
     case skipped
@@ -22126,32 +22126,32 @@ public struct FfiConverterTypeAiPrivacyDecision: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyDecision {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .allowed
-
+        
         case 2: return .denied
-
+        
         case 3: return .skipped
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiPrivacyDecision, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .allowed:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .denied:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -22181,7 +22181,7 @@ extension AiPrivacyDecision: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiPrivacyEvaluationRoute {
-
+    
     case local
     case remote
 }
@@ -22196,26 +22196,26 @@ public struct FfiConverterTypeAiPrivacyEvaluationRoute: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyEvaluationRoute {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .local
-
+        
         case 2: return .remote
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiPrivacyEvaluationRoute, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .local:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .remote:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -22245,7 +22245,7 @@ extension AiPrivacyEvaluationRoute: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiPrivacyInputField {
-
+    
     case fileName
     case repoRelativePath
     case `extension`
@@ -22265,56 +22265,56 @@ public struct FfiConverterTypeAiPrivacyInputField: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyInputField {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .fileName
-
+        
         case 2: return .repoRelativePath
-
+        
         case 3: return .`extension`
-
+        
         case 4: return .extractedTextExcerpt
-
+        
         case 5: return .aiSummary
-
+        
         case 6: return .noteSummary
-
+        
         case 7: return .tagCategoryContext
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiPrivacyInputField, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .fileName:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .repoRelativePath:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .`extension`:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .extractedTextExcerpt:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .aiSummary:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .noteSummary:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .tagCategoryContext:
             writeInt(&buf, Int32(7))
-
+        
         }
     }
 }
@@ -22344,7 +22344,7 @@ extension AiPrivacyInputField: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiPrivacyProviderGateReason {
-
+    
     case privacyGateDisabled
     case scopeNotAllowed
     case providerNotConfigured
@@ -22362,44 +22362,44 @@ public struct FfiConverterTypeAiPrivacyProviderGateReason: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyProviderGateReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .privacyGateDisabled
-
+        
         case 2: return .scopeNotAllowed
-
+        
         case 3: return .providerNotConfigured
-
+        
         case 4: return .providerNotVerified
-
+        
         case 5: return .providerDisabled
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiPrivacyProviderGateReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .privacyGateDisabled:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .scopeNotAllowed:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .providerNotConfigured:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .providerNotVerified:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .providerDisabled:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -22429,7 +22429,7 @@ extension AiPrivacyProviderGateReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiPrivacyRuleAppliesTo {
-
+    
     case remoteAi
     case localAndRemoteAi
 }
@@ -22444,26 +22444,26 @@ public struct FfiConverterTypeAiPrivacyRuleAppliesTo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyRuleAppliesTo {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .remoteAi
-
+        
         case 2: return .localAndRemoteAi
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiPrivacyRuleAppliesTo, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .remoteAi:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .localAndRemoteAi:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -22493,7 +22493,7 @@ extension AiPrivacyRuleAppliesTo: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiPrivacyRuleKind {
-
+    
     case folder
     case category
     case keyword
@@ -22511,44 +22511,44 @@ public struct FfiConverterTypeAiPrivacyRuleKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacyRuleKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .folder
-
+        
         case 2: return .category
-
+        
         case 3: return .keyword
-
+        
         case 4: return .`extension`
-
+        
         case 5: return .tag
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiPrivacyRuleKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .folder:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .category:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .keyword:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .`extension`:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .tag:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -22578,7 +22578,7 @@ extension AiPrivacyRuleKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiPrivacySkippedReason {
-
+    
     case privacyGateDisabled
     case scopeNotAllowed
     case providerNotConfigured
@@ -22599,62 +22599,62 @@ public struct FfiConverterTypeAiPrivacySkippedReason: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiPrivacySkippedReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .privacyGateDisabled
-
+        
         case 2: return .scopeNotAllowed
-
+        
         case 3: return .providerNotConfigured
-
+        
         case 4: return .providerNotVerified
-
+        
         case 5: return .providerDisabled
-
+        
         case 6: return .privacyRule
-
+        
         case 7: return .fieldRule
-
+        
         case 8: return .noEligibleInput
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiPrivacySkippedReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .privacyGateDisabled:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .scopeNotAllowed:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .providerNotConfigured:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .providerNotVerified:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .providerDisabled:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .privacyRule:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .fieldRule:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .noEligibleInput:
             writeInt(&buf, Int32(8))
-
+        
         }
     }
 }
@@ -22684,7 +22684,7 @@ extension AiPrivacySkippedReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiProviderPreference {
-
+    
     case localFirst
     case localOnly
     case remoteFirst
@@ -22700,32 +22700,32 @@ public struct FfiConverterTypeAiProviderPreference: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiProviderPreference {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .localFirst
-
+        
         case 2: return .localOnly
-
+        
         case 3: return .remoteFirst
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiProviderPreference, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .localFirst:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .localOnly:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .remoteFirst:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -22755,7 +22755,7 @@ extension AiProviderPreference: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiSummaryContextPolicy {
-
+    
     case metadataOnly
     case metadataAndExtractedText
     case metadataTextAndNotes
@@ -22771,32 +22771,32 @@ public struct FfiConverterTypeAiSummaryContextPolicy: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummaryContextPolicy {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .metadataOnly
-
+        
         case 2: return .metadataAndExtractedText
-
+        
         case 3: return .metadataTextAndNotes
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiSummaryContextPolicy, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .metadataOnly:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .metadataAndExtractedText:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .metadataTextAndNotes:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -22826,7 +22826,7 @@ extension AiSummaryContextPolicy: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiSummaryDraftStatus {
-
+    
     case draft
     case skipped
     case unavailable
@@ -22842,32 +22842,32 @@ public struct FfiConverterTypeAiSummaryDraftStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummaryDraftStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .draft
-
+        
         case 2: return .skipped
-
+        
         case 3: return .unavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiSummaryDraftStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .draft:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unavailable:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -22897,7 +22897,7 @@ extension AiSummaryDraftStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiSummaryInputField {
-
+    
     case fileName
     case repoRelativePath
     case extractedTextExcerpt
@@ -22916,50 +22916,50 @@ public struct FfiConverterTypeAiSummaryInputField: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummaryInputField {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .fileName
-
+        
         case 2: return .repoRelativePath
-
+        
         case 3: return .extractedTextExcerpt
-
+        
         case 4: return .existingAiSummary
-
+        
         case 5: return .noteSummary
-
+        
         case 6: return .tagCategoryContext
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiSummaryInputField, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .fileName:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .repoRelativePath:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .extractedTextExcerpt:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .existingAiSummary:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .noteSummary:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .tagCategoryContext:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -22989,7 +22989,7 @@ extension AiSummaryInputField: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiSummaryProviderScope {
-
+    
     case localOnly
     case localPreferred
     case remoteAllowed
@@ -23005,32 +23005,32 @@ public struct FfiConverterTypeAiSummaryProviderScope: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummaryProviderScope {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .localOnly
-
+        
         case 2: return .localPreferred
-
+        
         case 3: return .remoteAllowed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiSummaryProviderScope, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .localOnly:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .localPreferred:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .remoteAllowed:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -23060,7 +23060,7 @@ extension AiSummaryProviderScope: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiSummaryRoute {
-
+    
     case local
     case remote
 }
@@ -23075,26 +23075,26 @@ public struct FfiConverterTypeAiSummaryRoute: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummaryRoute {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .local
-
+        
         case 2: return .remote
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiSummaryRoute, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .local:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .remote:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -23124,7 +23124,7 @@ extension AiSummaryRoute: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiSummarySkipReason {
-
+    
     case aiDisabled
     case featureDisabled
     case providerUnavailable
@@ -23143,50 +23143,50 @@ public struct FfiConverterTypeAiSummarySkipReason: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiSummarySkipReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .aiDisabled
-
+        
         case 2: return .featureDisabled
-
+        
         case 3: return .providerUnavailable
-
+        
         case 4: return .privacyRule
-
+        
         case 5: return .noEligibleInput
-
+        
         case 6: return .callLogUnavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiSummarySkipReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .aiDisabled:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .featureDisabled:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .providerUnavailable:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .privacyRule:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .noEligibleInput:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .callLogUnavailable:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -23216,7 +23216,7 @@ extension AiSummarySkipReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiTagSuggestionApplyStatus {
-
+    
     case applied
     case alreadyAdded
     case failed
@@ -23232,32 +23232,32 @@ public struct FfiConverterTypeAiTagSuggestionApplyStatus: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionApplyStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .applied
-
+        
         case 2: return .alreadyAdded
-
+        
         case 3: return .failed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiTagSuggestionApplyStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .applied:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .alreadyAdded:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -23287,7 +23287,7 @@ extension AiTagSuggestionApplyStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiTagSuggestionCandidateStatus {
-
+    
     case suggested
     case lowConfidence
     case alreadyApplied
@@ -23305,44 +23305,44 @@ public struct FfiConverterTypeAiTagSuggestionCandidateStatus: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionCandidateStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .suggested
-
+        
         case 2: return .lowConfidence
-
+        
         case 3: return .alreadyApplied
-
+        
         case 4: return .invalid
-
+        
         case 5: return .blocked
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiTagSuggestionCandidateStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .suggested:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .lowConfidence:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .alreadyApplied:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .invalid:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .blocked:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -23372,7 +23372,7 @@ extension AiTagSuggestionCandidateStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiTagSuggestionInputField {
-
+    
     case fileName
     case repoRelativePath
     case extractedTextExcerpt
@@ -23392,56 +23392,56 @@ public struct FfiConverterTypeAiTagSuggestionInputField: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionInputField {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .fileName
-
+        
         case 2: return .repoRelativePath
-
+        
         case 3: return .extractedTextExcerpt
-
+        
         case 4: return .aiSummary
-
+        
         case 5: return .noteSummary
-
+        
         case 6: return .existingTags
-
+        
         case 7: return .tagRegistry
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiTagSuggestionInputField, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .fileName:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .repoRelativePath:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .extractedTextExcerpt:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .aiSummary:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .noteSummary:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .existingTags:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .tagRegistry:
             writeInt(&buf, Int32(7))
-
+        
         }
     }
 }
@@ -23471,7 +23471,7 @@ extension AiTagSuggestionInputField: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiTagSuggestionMergeAction {
-
+    
     case createTag
     case useExistingTag
     case mergeWithExistingTag
@@ -23487,32 +23487,32 @@ public struct FfiConverterTypeAiTagSuggestionMergeAction: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionMergeAction {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .createTag
-
+        
         case 2: return .useExistingTag
-
+        
         case 3: return .mergeWithExistingTag
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiTagSuggestionMergeAction, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .createTag:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .useExistingTag:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .mergeWithExistingTag:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -23542,7 +23542,7 @@ extension AiTagSuggestionMergeAction: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiTagSuggestionReportStatus {
-
+    
     case suggested
     case noSuggestion
     case skipped
@@ -23559,38 +23559,38 @@ public struct FfiConverterTypeAiTagSuggestionReportStatus: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionReportStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .suggested
-
+        
         case 2: return .noSuggestion
-
+        
         case 3: return .skipped
-
+        
         case 4: return .unavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiTagSuggestionReportStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .suggested:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .noSuggestion:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .unavailable:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -23620,7 +23620,7 @@ extension AiTagSuggestionReportStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiTagSuggestionRoute {
-
+    
     case local
     case remote
 }
@@ -23635,26 +23635,26 @@ public struct FfiConverterTypeAiTagSuggestionRoute: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionRoute {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .local
-
+        
         case 2: return .remote
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiTagSuggestionRoute, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .local:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .remote:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -23684,7 +23684,7 @@ extension AiTagSuggestionRoute: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum AiTagSuggestionSkipReason {
-
+    
     case aiDisabled
     case featureDisabled
     case providerUnavailable
@@ -23703,50 +23703,50 @@ public struct FfiConverterTypeAiTagSuggestionSkipReason: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AiTagSuggestionSkipReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .aiDisabled
-
+        
         case 2: return .featureDisabled
-
+        
         case 3: return .providerUnavailable
-
+        
         case 4: return .privacyRule
-
+        
         case 5: return .noEligibleInput
-
+        
         case 6: return .callLogUnavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AiTagSuggestionSkipReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .aiDisabled:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .featureDisabled:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .providerUnavailable:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .privacyRule:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .noEligibleInput:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .callLogUnavailable:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -23776,7 +23776,7 @@ extension AiTagSuggestionSkipReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchCategoryPreviewStatus {
-
+    
     case willMove
     case metadataOnly
     case unchanged
@@ -23794,44 +23794,44 @@ public struct FfiConverterTypeBatchCategoryPreviewStatus: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchCategoryPreviewStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .willMove
-
+        
         case 2: return .metadataOnly
-
+        
         case 3: return .unchanged
-
+        
         case 4: return .skipped
-
+        
         case 5: return .blocked
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchCategoryPreviewStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .willMove:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .metadataOnly:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unchanged:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .blocked:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -23861,7 +23861,7 @@ extension BatchCategoryPreviewStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchCategoryResultStatus {
-
+    
     case moved
     case metadataUpdated
     case unchanged
@@ -23879,44 +23879,44 @@ public struct FfiConverterTypeBatchCategoryResultStatus: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchCategoryResultStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .moved
-
+        
         case 2: return .metadataUpdated
-
+        
         case 3: return .unchanged
-
+        
         case 4: return .skipped
-
+        
         case 5: return .failed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchCategoryResultStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .moved:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .metadataUpdated:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unchanged:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -23946,7 +23946,7 @@ extension BatchCategoryResultStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchDeleteMode {
-
+    
     case moveToTrash
     case removeFromIndex
 }
@@ -23961,26 +23961,26 @@ public struct FfiConverterTypeBatchDeleteMode: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchDeleteMode {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .moveToTrash
-
+        
         case 2: return .removeFromIndex
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchDeleteMode, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .moveToTrash:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .removeFromIndex:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -24010,7 +24010,7 @@ extension BatchDeleteMode: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchDeletePreviewStatus {
-
+    
     case willMoveToTrash
     case indexOnly
     case missing
@@ -24028,44 +24028,44 @@ public struct FfiConverterTypeBatchDeletePreviewStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchDeletePreviewStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .willMoveToTrash
-
+        
         case 2: return .indexOnly
-
+        
         case 3: return .missing
-
+        
         case 4: return .skipped
-
+        
         case 5: return .blocked
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchDeletePreviewStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .willMoveToTrash:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .indexOnly:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .missing:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .blocked:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -24095,7 +24095,7 @@ extension BatchDeletePreviewStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchDeleteResultStatus {
-
+    
     case movedToTrash
     case removedFromIndex
     case skipped
@@ -24112,38 +24112,38 @@ public struct FfiConverterTypeBatchDeleteResultStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchDeleteResultStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .movedToTrash
-
+        
         case 2: return .removedFromIndex
-
+        
         case 3: return .skipped
-
+        
         case 4: return .failed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchDeleteResultStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .movedToTrash:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .removedFromIndex:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -24173,7 +24173,7 @@ extension BatchDeleteResultStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchMutationStatus {
-
+    
     case added
     case alreadyHadTag
     case failed
@@ -24189,32 +24189,32 @@ public struct FfiConverterTypeBatchMutationStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchMutationStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .added
-
+        
         case 2: return .alreadyHadTag
-
+        
         case 3: return .failed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchMutationStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .added:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .alreadyHadTag:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -24244,7 +24244,7 @@ extension BatchMutationStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchRenameDateSource {
-
+    
     case imported
     case modified
     case today
@@ -24260,32 +24260,32 @@ public struct FfiConverterTypeBatchRenameDateSource: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenameDateSource {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .imported
-
+        
         case 2: return .modified
-
+        
         case 3: return .today
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchRenameDateSource, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .imported:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .modified:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .today:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -24315,7 +24315,7 @@ extension BatchRenameDateSource: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchRenameMode {
-
+    
     case prefix
     case datePrefix
     case keepBaseSequence
@@ -24332,38 +24332,38 @@ public struct FfiConverterTypeBatchRenameMode: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenameMode {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .prefix
-
+        
         case 2: return .datePrefix
-
+        
         case 3: return .keepBaseSequence
-
+        
         case 4: return .replaceText
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchRenameMode, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .prefix:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .datePrefix:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .keepBaseSequence:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .replaceText:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -24393,7 +24393,7 @@ extension BatchRenameMode: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchRenamePreviewStatus {
-
+    
     case ok
     case error
     case nameConflict
@@ -24414,62 +24414,62 @@ public struct FfiConverterTypeBatchRenamePreviewStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenamePreviewStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .ok
-
+        
         case 2: return .error
-
+        
         case 3: return .nameConflict
-
+        
         case 4: return .missing
-
+        
         case 5: return .readOnly
-
+        
         case 6: return .displayOnly
-
+        
         case 7: return .unchanged
-
+        
         case 8: return .externalChange
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchRenamePreviewStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .ok:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .error:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .nameConflict:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .missing:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .readOnly:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .displayOnly:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .unchanged:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .externalChange:
             writeInt(&buf, Int32(8))
-
+        
         }
     }
 }
@@ -24499,7 +24499,7 @@ extension BatchRenamePreviewStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BatchRenameResultStatus {
-
+    
     case renamed
     case displayNameUpdated
     case unchanged
@@ -24517,44 +24517,44 @@ public struct FfiConverterTypeBatchRenameResultStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BatchRenameResultStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .renamed
-
+        
         case 2: return .displayNameUpdated
-
+        
         case 3: return .unchanged
-
+        
         case 4: return .skipped
-
+        
         case 5: return .failed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BatchRenameResultStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .renamed:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .displayNameUpdated:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unchanged:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -24584,7 +24584,7 @@ extension BatchRenameResultStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BindingSupportStatus {
-
+    
     case supported
     case limited
     case missing
@@ -24600,32 +24600,32 @@ public struct FfiConverterTypeBindingSupportStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BindingSupportStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .supported
-
+        
         case 2: return .limited
-
+        
         case 3: return .missing
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BindingSupportStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .supported:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .limited:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .missing:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -24655,7 +24655,7 @@ extension BindingSupportStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum BindingTargetPlatform {
-
+    
     case swift
     case kotlin
     case python
@@ -24671,32 +24671,32 @@ public struct FfiConverterTypeBindingTargetPlatform: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BindingTargetPlatform {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .swift
-
+        
         case 2: return .kotlin
-
+        
         case 3: return .python
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BindingTargetPlatform, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .swift:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .kotlin:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .python:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -24726,7 +24726,7 @@ extension BindingTargetPlatform: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ClassifierConfigHealth {
-
+    
     case valid
     case missing
     case unreadable
@@ -24743,38 +24743,38 @@ public struct FfiConverterTypeClassifierConfigHealth: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierConfigHealth {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .valid
-
+        
         case 2: return .missing
-
+        
         case 3: return .unreadable
-
+        
         case 4: return .invalid
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ClassifierConfigHealth, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .valid:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .missing:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unreadable:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .invalid:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -24804,7 +24804,7 @@ extension ClassifierConfigHealth: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ClassifierImpactPreviewMode {
-
+    
     case ruleDraft
     case removeKeyword
     case removeExtension
@@ -24821,38 +24821,38 @@ public struct FfiConverterTypeClassifierImpactPreviewMode: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierImpactPreviewMode {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .ruleDraft
-
+        
         case 2: return .removeKeyword
-
+        
         case 3: return .removeExtension
-
+        
         case 4: return .removeCategory
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ClassifierImpactPreviewMode, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .ruleDraft:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .removeKeyword:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .removeExtension:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .removeCategory:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -24882,7 +24882,7 @@ extension ClassifierImpactPreviewMode: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ClassifierRecoveryAction {
-
+    
     case createDefault
     case restoreDefault
     case restoreLastValid
@@ -24898,32 +24898,32 @@ public struct FfiConverterTypeClassifierRecoveryAction: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifierRecoveryAction {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .createDefault
-
+        
         case 2: return .restoreDefault
-
+        
         case 3: return .restoreLastValid
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ClassifierRecoveryAction, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .createDefault:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .restoreDefault:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .restoreLastValid:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -24953,7 +24953,7 @@ extension ClassifierRecoveryAction: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ClassifyReason {
-
+    
     case keyword
     case `extension`
     case aiPredicted
@@ -24970,38 +24970,38 @@ public struct FfiConverterTypeClassifyReason: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClassifyReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .keyword
-
+        
         case 2: return .`extension`
-
+        
         case 3: return .aiPredicted
-
+        
         case 4: return .`default`
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ClassifyReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .keyword:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .`extension`:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .aiPredicted:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .`default`:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -25031,7 +25031,7 @@ extension ClassifyReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum CloudPermissionState {
-
+    
     case accessible
     case permissionDenied
     case accessExpired
@@ -25048,38 +25048,38 @@ public struct FfiConverterTypeCloudPermissionState: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloudPermissionState {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .accessible
-
+        
         case 2: return .permissionDenied
-
+        
         case 3: return .accessExpired
-
+        
         case 4: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CloudPermissionState, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .accessible:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .permissionDenied:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .accessExpired:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -25109,7 +25109,7 @@ extension CloudPermissionState: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum CloudPlaceholderState {
-
+    
     case notPlaceholder
     case placeholder
     case unknown
@@ -25125,32 +25125,32 @@ public struct FfiConverterTypeCloudPlaceholderState: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloudPlaceholderState {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .notPlaceholder
-
+        
         case 2: return .placeholder
-
+        
         case 3: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CloudPlaceholderState, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .notPlaceholder:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .placeholder:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -25180,7 +25180,7 @@ extension CloudPlaceholderState: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum CloudStorageProviderKind {
-
+    
     case local
     case iCloudDrive
     case oneDrive
@@ -25197,38 +25197,38 @@ public struct FfiConverterTypeCloudStorageProviderKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloudStorageProviderKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .local
-
+        
         case 2: return .iCloudDrive
-
+        
         case 3: return .oneDrive
-
+        
         case 4: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CloudStorageProviderKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .local:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .iCloudDrive:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .oneDrive:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -25258,7 +25258,7 @@ extension CloudStorageProviderKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum CloudStorageRecommendedAction {
-
+    
     case none
     case acknowledgeNotice
     case retryStatusCheck
@@ -25276,44 +25276,44 @@ public struct FfiConverterTypeCloudStorageRecommendedAction: FfiConverterRustBuf
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloudStorageRecommendedAction {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .none
-
+        
         case 2: return .acknowledgeNotice
-
+        
         case 3: return .retryStatusCheck
-
+        
         case 4: return .reconnectFolder
-
+        
         case 5: return .chooseLocalFolder
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CloudStorageRecommendedAction, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .none:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .acknowledgeNotice:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .retryStatusCheck:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .reconnectFolder:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .chooseLocalFolder:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -25343,7 +25343,7 @@ extension CloudStorageRecommendedAction: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum CloudStorageRiskLevel {
-
+    
     case noRisk
     case low
     case medium
@@ -25361,44 +25361,44 @@ public struct FfiConverterTypeCloudStorageRiskLevel: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloudStorageRiskLevel {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .noRisk
-
+        
         case 2: return .low
-
+        
         case 3: return .medium
-
+        
         case 4: return .high
-
+        
         case 5: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CloudStorageRiskLevel, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .noRisk:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .low:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .medium:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .high:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -25428,7 +25428,7 @@ extension CloudStorageRiskLevel: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum CommandTargetAction {
-
+    
     case navigate
     case openSheet
     case openConfirmation
@@ -25448,56 +25448,56 @@ public struct FfiConverterTypeCommandTargetAction: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CommandTargetAction {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .navigate
-
+        
         case 2: return .openSheet
-
+        
         case 3: return .openConfirmation
-
+        
         case 4: return .runSmartList
-
+        
         case 5: return .focusFile
-
+        
         case 6: return .openSearch
-
+        
         case 7: return .lowRiskAction
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CommandTargetAction, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .navigate:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .openSheet:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .openConfirmation:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .runSmartList:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .focusFile:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .openSearch:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .lowRiskAction:
             writeInt(&buf, Int32(7))
-
+        
         }
     }
 }
@@ -25527,7 +25527,7 @@ extension CommandTargetAction: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum CommandTargetGroup {
-
+    
     case commands
     case navigation
     case currentSelection
@@ -25546,50 +25546,50 @@ public struct FfiConverterTypeCommandTargetGroup: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CommandTargetGroup {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .commands
-
+        
         case 2: return .navigation
-
+        
         case 3: return .currentSelection
-
+        
         case 4: return .recent
-
+        
         case 5: return .smartLists
-
+        
         case 6: return .fileCandidates
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CommandTargetGroup, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .commands:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .navigation:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .currentSelection:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .recent:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .smartLists:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .fileCandidates:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -25619,7 +25619,7 @@ extension CommandTargetGroup: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum CommandTargetKind {
-
+    
     case command
     case navigation
     case smartList
@@ -25637,44 +25637,44 @@ public struct FfiConverterTypeCommandTargetKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CommandTargetKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .command
-
+        
         case 2: return .navigation
-
+        
         case 3: return .smartList
-
+        
         case 4: return .fileCandidate
-
+        
         case 5: return .recentCommand
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CommandTargetKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .command:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .navigation:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .smartList:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .fileCandidate:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .recentCommand:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -25704,7 +25704,7 @@ extension CommandTargetKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ContentLocale {
-
+    
     case zhHans
     case en
 }
@@ -25719,26 +25719,26 @@ public struct FfiConverterTypeContentLocale: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ContentLocale {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .zhHans
-
+        
         case 2: return .en
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ContentLocale, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .zhHans:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .en:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -25767,8 +25767,8 @@ extension ContentLocale: Equatable, Hashable {}
 
 public enum CoreError {
 
-
-
+    
+    
     case Io(message: String
     )
     case Db(message: String
@@ -25818,9 +25818,9 @@ public struct FfiConverterTypeCoreError: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
 
+        
 
-
-
+        
         case 1: return .Io(
             message: try FfiConverterString.read(from: &buf)
             )
@@ -25846,8 +25846,8 @@ public struct FfiConverterTypeCoreError: FfiConverterRustBuffer {
             path: try FfiConverterString.read(from: &buf)
             )
         case 9: return .RevisionConflict(
-            resource: try FfiConverterString.read(from: &buf),
-            expectedRevision: try FfiConverterInt64.read(from: &buf),
+            resource: try FfiConverterString.read(from: &buf), 
+            expectedRevision: try FfiConverterInt64.read(from: &buf), 
             currentRevision: try FfiConverterInt64.read(from: &buf)
             )
         case 10: return .DuplicateFile(
@@ -25885,101 +25885,101 @@ public struct FfiConverterTypeCoreError: FfiConverterRustBuffer {
     public static func write(_ value: CoreError, into buf: inout [UInt8]) {
         switch value {
 
+        
 
-
-
-
+        
+        
         case let .Io(message):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(message, into: &buf)
-
-
+            
+        
         case let .Db(message):
             writeInt(&buf, Int32(2))
             FfiConverterString.write(message, into: &buf)
-
-
+            
+        
         case let .DbLocked(message):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(message, into: &buf)
-
-
+            
+        
         case let .DbCorrupted(message):
             writeInt(&buf, Int32(4))
             FfiConverterString.write(message, into: &buf)
-
-
+            
+        
         case let .Config(reason):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(reason, into: &buf)
-
-
+            
+        
         case let .Validation(reason):
             writeInt(&buf, Int32(6))
             FfiConverterString.write(reason, into: &buf)
-
-
+            
+        
         case let .Classify(reason):
             writeInt(&buf, Int32(7))
             FfiConverterString.write(reason, into: &buf)
-
-
+            
+        
         case let .Conflict(path):
             writeInt(&buf, Int32(8))
             FfiConverterString.write(path, into: &buf)
-
-
+            
+        
         case let .RevisionConflict(resource,expectedRevision,currentRevision):
             writeInt(&buf, Int32(9))
             FfiConverterString.write(resource, into: &buf)
             FfiConverterInt64.write(expectedRevision, into: &buf)
             FfiConverterInt64.write(currentRevision, into: &buf)
-
-
+            
+        
         case let .DuplicateFile(existingPath):
             writeInt(&buf, Int32(10))
             FfiConverterString.write(existingPath, into: &buf)
-
-
+            
+        
         case let .FileNotFound(path):
             writeInt(&buf, Int32(11))
             FfiConverterString.write(path, into: &buf)
-
-
+            
+        
         case let .ExpiredAction(actionId):
             writeInt(&buf, Int32(12))
             FfiConverterString.write(actionId, into: &buf)
-
-
+            
+        
         case let .RepoNotInitialized(path):
             writeInt(&buf, Int32(13))
             FfiConverterString.write(path, into: &buf)
-
-
+            
+        
         case let .InvalidPath(path):
             writeInt(&buf, Int32(14))
             FfiConverterString.write(path, into: &buf)
-
-
+            
+        
         case let .ICloudPlaceholder(path):
             writeInt(&buf, Int32(15))
             FfiConverterString.write(path, into: &buf)
-
-
+            
+        
         case let .StagingRecoveryRequired(path):
             writeInt(&buf, Int32(16))
             FfiConverterString.write(path, into: &buf)
-
-
+            
+        
         case let .PermissionDenied(path):
             writeInt(&buf, Int32(17))
             FfiConverterString.write(path, into: &buf)
-
-
+            
+        
         case let .Internal(message):
             writeInt(&buf, Int32(18))
             FfiConverterString.write(message, into: &buf)
-
+            
         }
     }
 }
@@ -25997,7 +25997,7 @@ extension CoreError: Foundation.LocalizedError {
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum DuplicateStrategy {
-
+    
     case skip
     case overwrite
     case keepBoth
@@ -26014,38 +26014,38 @@ public struct FfiConverterTypeDuplicateStrategy: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DuplicateStrategy {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .skip
-
+        
         case 2: return .overwrite
-
+        
         case 3: return .keepBoth
-
+        
         case 4: return .ask
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: DuplicateStrategy, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .skip:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .overwrite:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .keepBoth:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .ask:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -26075,7 +26075,7 @@ extension DuplicateStrategy: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ErrorKind {
-
+    
     case io
     case db
     case dbLocked
@@ -26106,122 +26106,122 @@ public struct FfiConverterTypeErrorKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ErrorKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .io
-
+        
         case 2: return .db
-
+        
         case 3: return .dbLocked
-
+        
         case 4: return .dbCorrupted
-
+        
         case 5: return .config
-
+        
         case 6: return .validation
-
+        
         case 7: return .classify
-
+        
         case 8: return .conflict
-
+        
         case 9: return .revisionConflict
-
+        
         case 10: return .duplicateFile
-
+        
         case 11: return .fileNotFound
-
+        
         case 12: return .expiredAction
-
+        
         case 13: return .repoNotInitialized
-
+        
         case 14: return .invalidPath
-
+        
         case 15: return .iCloudPlaceholder
-
+        
         case 16: return .stagingRecoveryRequired
-
+        
         case 17: return .permissionDenied
-
+        
         case 18: return .`internal`
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ErrorKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .io:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .db:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .dbLocked:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .dbCorrupted:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .config:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .validation:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .classify:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .conflict:
             writeInt(&buf, Int32(8))
-
-
+        
+        
         case .revisionConflict:
             writeInt(&buf, Int32(9))
-
-
+        
+        
         case .duplicateFile:
             writeInt(&buf, Int32(10))
-
-
+        
+        
         case .fileNotFound:
             writeInt(&buf, Int32(11))
-
-
+        
+        
         case .expiredAction:
             writeInt(&buf, Int32(12))
-
-
+        
+        
         case .repoNotInitialized:
             writeInt(&buf, Int32(13))
-
-
+        
+        
         case .invalidPath:
             writeInt(&buf, Int32(14))
-
-
+        
+        
         case .iCloudPlaceholder:
             writeInt(&buf, Int32(15))
-
-
+        
+        
         case .stagingRecoveryRequired:
             writeInt(&buf, Int32(16))
-
-
+        
+        
         case .permissionDenied:
             writeInt(&buf, Int32(17))
-
-
+        
+        
         case .`internal`:
             writeInt(&buf, Int32(18))
-
+        
         }
     }
 }
@@ -26251,7 +26251,7 @@ extension ErrorKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ErrorRecoverability {
-
+    
     case retryable
     case userActionRequired
     case refreshRequired
@@ -26268,38 +26268,38 @@ public struct FfiConverterTypeErrorRecoverability: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ErrorRecoverability {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .retryable
-
+        
         case 2: return .userActionRequired
-
+        
         case 3: return .refreshRequired
-
+        
         case 4: return .fatal
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ErrorRecoverability, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .retryable:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .userActionRequired:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .refreshRequired:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .fatal:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -26329,7 +26329,7 @@ extension ErrorRecoverability: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ErrorSeverity {
-
+    
     case low
     case medium
     case high
@@ -26346,38 +26346,38 @@ public struct FfiConverterTypeErrorSeverity: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ErrorSeverity {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .low
-
+        
         case 2: return .medium
-
+        
         case 3: return .high
-
+        
         case 4: return .critical
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ErrorSeverity, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .low:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .medium:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .high:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .critical:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -26407,7 +26407,7 @@ extension ErrorSeverity: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ExternalEventKind {
-
+    
     case created
     case removed
     case modified
@@ -26424,38 +26424,38 @@ public struct FfiConverterTypeExternalEventKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ExternalEventKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .created
-
+        
         case 2: return .removed
-
+        
         case 3: return .modified
-
+        
         case 4: return .renamed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ExternalEventKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .created:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .removed:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .modified:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .renamed:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -26485,7 +26485,7 @@ extension ExternalEventKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum FileAvailabilityStatus {
-
+    
     case available
     case missing
 }
@@ -26500,26 +26500,26 @@ public struct FfiConverterTypeFileAvailabilityStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FileAvailabilityStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .available
-
+        
         case 2: return .missing
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: FileAvailabilityStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .available:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .missing:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -26549,7 +26549,7 @@ extension FileAvailabilityStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum FileOrigin {
-
+    
     case imported
     case adopted
     case external
@@ -26565,32 +26565,32 @@ public struct FfiConverterTypeFileOrigin: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FileOrigin {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .imported
-
+        
         case 2: return .adopted
-
+        
         case 3: return .external
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: FileOrigin, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .imported:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .adopted:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .external:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -26620,7 +26620,7 @@ extension FileOrigin: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ICloudConflictPreviewStatus {
-
+    
     case available
     case metadataOnly
     case unavailable
@@ -26636,32 +26636,32 @@ public struct FfiConverterTypeICloudConflictPreviewStatus: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ICloudConflictPreviewStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .available
-
+        
         case 2: return .metadataOnly
-
+        
         case 3: return .unavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ICloudConflictPreviewStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .available:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .metadataOnly:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unavailable:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -26691,7 +26691,7 @@ extension ICloudConflictPreviewStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ICloudConflictResolution {
-
+    
     case keepBoth
     case keepOriginal
     case keepConflictedCopy
@@ -26707,32 +26707,32 @@ public struct FfiConverterTypeICloudConflictResolution: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ICloudConflictResolution {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .keepBoth
-
+        
         case 2: return .keepOriginal
-
+        
         case 3: return .keepConflictedCopy
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ICloudConflictResolution, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .keepBoth:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .keepOriginal:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .keepConflictedCopy:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -26762,7 +26762,7 @@ extension ICloudConflictResolution: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ICloudConflictStatus {
-
+    
     case needsReview
     case resolved
 }
@@ -26777,26 +26777,26 @@ public struct FfiConverterTypeICloudConflictStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ICloudConflictStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .needsReview
-
+        
         case 2: return .resolved
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ICloudConflictStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .needsReview:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .resolved:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -26826,7 +26826,7 @@ extension ICloudConflictStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ICloudConflictVersionRole {
-
+    
     case original
     case conflictedCopy
 }
@@ -26841,26 +26841,26 @@ public struct FfiConverterTypeICloudConflictVersionRole: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ICloudConflictVersionRole {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .original
-
+        
         case 2: return .conflictedCopy
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ICloudConflictVersionRole, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .original:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .conflictedCopy:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -26890,7 +26890,7 @@ extension ICloudConflictVersionRole: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ImportConflictBatchConflictType {
-
+    
     case duplicateHash
     case sameNameDifferentContent
 }
@@ -26905,26 +26905,26 @@ public struct FfiConverterTypeImportConflictBatchConflictType: FfiConverterRustB
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchConflictType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .duplicateHash
-
+        
         case 2: return .sameNameDifferentContent
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ImportConflictBatchConflictType, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .duplicateHash:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .sameNameDifferentContent:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -26954,7 +26954,7 @@ extension ImportConflictBatchConflictType: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ImportConflictBatchPreviewStatus {
-
+    
     case ready
     case pending
     case needsConfirmation
@@ -26972,44 +26972,44 @@ public struct FfiConverterTypeImportConflictBatchPreviewStatus: FfiConverterRust
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchPreviewStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .ready
-
+        
         case 2: return .pending
-
+        
         case 3: return .needsConfirmation
-
+        
         case 4: return .blocked
-
+        
         case 5: return .failed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ImportConflictBatchPreviewStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .ready:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .pending:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .needsConfirmation:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .blocked:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -27039,7 +27039,7 @@ extension ImportConflictBatchPreviewStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ImportConflictBatchResultStatus {
-
+    
     case skipped
     case keptBoth
     case replaced
@@ -27058,50 +27058,50 @@ public struct FfiConverterTypeImportConflictBatchResultStatus: FfiConverterRustB
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchResultStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .skipped
-
+        
         case 2: return .keptBoth
-
+        
         case 3: return .replaced
-
+        
         case 4: return .queuedForPerItem
-
+        
         case 5: return .pending
-
+        
         case 6: return .failed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ImportConflictBatchResultStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .keptBoth:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .replaced:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .queuedForPerItem:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .pending:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -27131,7 +27131,7 @@ extension ImportConflictBatchResultStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ImportConflictBatchStrategy {
-
+    
     case skip
     case keepBoth
     case replace
@@ -27148,38 +27148,38 @@ public struct FfiConverterTypeImportConflictBatchStrategy: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportConflictBatchStrategy {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .skip
-
+        
         case 2: return .keepBoth
-
+        
         case 3: return .replace
-
+        
         case 4: return .askPerItem
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ImportConflictBatchStrategy, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .skip:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .keepBoth:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .replace:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .askPerItem:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -27209,7 +27209,7 @@ extension ImportConflictBatchStrategy: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ImportDestination {
-
+    
     case autoClassify
     case selectedDirectory
     case category
@@ -27225,32 +27225,32 @@ public struct FfiConverterTypeImportDestination: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportDestination {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .autoClassify
-
+        
         case 2: return .selectedDirectory
-
+        
         case 3: return .category
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ImportDestination, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .autoClassify:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .selectedDirectory:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .category:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -27280,7 +27280,7 @@ extension ImportDestination: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ImportSourceRemovalStatus {
-
+    
     case notRequested
     case removed
     case retained
@@ -27296,32 +27296,32 @@ public struct FfiConverterTypeImportSourceRemovalStatus: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ImportSourceRemovalStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .notRequested
-
+        
         case 2: return .removed
-
+        
         case 3: return .retained
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ImportSourceRemovalStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .notRequested:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .removed:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .retained:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -27351,7 +27351,7 @@ extension ImportSourceRemovalStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum LocalModelAvailability {
-
+    
     case unknown
     case ready
     case notInstalled
@@ -27375,80 +27375,80 @@ public struct FfiConverterTypeLocalModelAvailability: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalModelAvailability {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .unknown
-
+        
         case 2: return .ready
-
+        
         case 3: return .notInstalled
-
+        
         case 4: return .pathUnreadable
-
+        
         case 5: return .versionIncompatible
-
+        
         case 6: return .checking
-
+        
         case 7: return .verifying
-
+        
         case 8: return .loading
-
+        
         case 9: return .corrupted
-
+        
         case 10: return .runtimeFailed
-
+        
         case 11: return .error
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: LocalModelAvailability, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .ready:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .notInstalled:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .pathUnreadable:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .versionIncompatible:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .checking:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .verifying:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .loading:
             writeInt(&buf, Int32(8))
-
-
+        
+        
         case .corrupted:
             writeInt(&buf, Int32(9))
-
-
+        
+        
         case .runtimeFailed:
             writeInt(&buf, Int32(10))
-
-
+        
+        
         case .error:
             writeInt(&buf, Int32(11))
-
+        
         }
     }
 }
@@ -27478,7 +27478,7 @@ extension LocalModelAvailability: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum LocalModelRecommendedAction {
-
+    
     case none
     case checkStatus
     case retryStatusCheck
@@ -27500,68 +27500,68 @@ public struct FfiConverterTypeLocalModelRecommendedAction: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalModelRecommendedAction {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .none
-
+        
         case 2: return .checkStatus
-
+        
         case 3: return .retryStatusCheck
-
+        
         case 4: return .openInstallHelp
-
+        
         case 5: return .openModelLocation
-
+        
         case 6: return .runHealthCheck
-
+        
         case 7: return .repairMetadata
-
+        
         case 8: return .openDiagnostics
-
+        
         case 9: return .useNonAiFallback
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: LocalModelRecommendedAction, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .none:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .checkStatus:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .retryStatusCheck:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .openInstallHelp:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .openModelLocation:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .runHealthCheck:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .repairMetadata:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .openDiagnostics:
             writeInt(&buf, Int32(8))
-
-
+        
+        
         case .useNonAiFallback:
             writeInt(&buf, Int32(9))
-
+        
         }
     }
 }
@@ -27591,7 +27591,7 @@ extension LocalModelRecommendedAction: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ManualRescanPreviewItemKind {
-
+    
     case added
     case updated
     case missing
@@ -27612,62 +27612,62 @@ public struct FfiConverterTypeManualRescanPreviewItemKind: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ManualRescanPreviewItemKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .added
-
+        
         case 2: return .updated
-
+        
         case 3: return .missing
-
+        
         case 4: return .renamedCandidate
-
+        
         case 5: return .conflict
-
+        
         case 6: return .unreadable
-
+        
         case 7: return .unknown
-
+        
         case 8: return .skipped
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ManualRescanPreviewItemKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .added:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .updated:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .missing:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .renamedCandidate:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .conflict:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .unreadable:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .skipped:
             writeInt(&buf, Int32(8))
-
+        
         }
     }
 }
@@ -27697,7 +27697,7 @@ extension ManualRescanPreviewItemKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum MissingFileReason {
-
+    
     case pathMissing
     case permissionDenied
     case cloudPlaceholder
@@ -27715,44 +27715,44 @@ public struct FfiConverterTypeMissingFileReason: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MissingFileReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .pathMissing
-
+        
         case 2: return .permissionDenied
-
+        
         case 3: return .cloudPlaceholder
-
+        
         case 4: return .externalVolumeDisconnected
-
+        
         case 5: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: MissingFileReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .pathMissing:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .permissionDenied:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .cloudPlaceholder:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .externalVolumeDisconnected:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -27782,7 +27782,7 @@ extension MissingFileReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum MissingFileRecoveryStatus {
-
+    
     case missing
     case present
     case relinked
@@ -27801,50 +27801,50 @@ public struct FfiConverterTypeMissingFileRecoveryStatus: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MissingFileRecoveryStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .missing
-
+        
         case 2: return .present
-
+        
         case 3: return .relinked
-
+        
         case 4: return .hashMismatch
-
+        
         case 5: return .recordRemoved
-
+        
         case 6: return .blocked
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: MissingFileRecoveryStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .missing:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .present:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .relinked:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .hashMismatch:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .recordRemoved:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .blocked:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -27874,7 +27874,7 @@ extension MissingFileRecoveryStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum OverviewLanguageState {
-
+    
     case notGenerated
     case synchronized
     case needsRegeneration
@@ -27892,44 +27892,44 @@ public struct FfiConverterTypeOverviewLanguageState: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OverviewLanguageState {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .notGenerated
-
+        
         case 2: return .synchronized
-
+        
         case 3: return .needsRegeneration
-
+        
         case 4: return .mixed
-
+        
         case 5: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: OverviewLanguageState, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .notGenerated:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .synchronized:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .needsRegeneration:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .mixed:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -27959,7 +27959,7 @@ extension OverviewLanguageState: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum OverviewOutput {
-
+    
     case generatedOnly
     case rootAreaMatrixFile
 }
@@ -27974,26 +27974,26 @@ public struct FfiConverterTypeOverviewOutput: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OverviewOutput {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .generatedOnly
-
+        
         case 2: return .rootAreaMatrixFile
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: OverviewOutput, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .generatedOnly:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .rootAreaMatrixFile:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -28023,7 +28023,7 @@ extension OverviewOutput: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum OverviewRegenerationReason {
-
+    
     case localeMismatch
     case formatMismatch
     case missingTargets
@@ -28040,38 +28040,38 @@ public struct FfiConverterTypeOverviewRegenerationReason: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OverviewRegenerationReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .localeMismatch
-
+        
         case 2: return .formatMismatch
-
+        
         case 3: return .missingTargets
-
+        
         case 4: return .obsoleteTargets
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: OverviewRegenerationReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .localeMismatch:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .formatMismatch:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .missingTargets:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .obsoleteTargets:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -28101,7 +28101,7 @@ extension OverviewRegenerationReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum OverviewRegenerationStatus {
-
+    
     case running
     case staging
     case readyToCommit
@@ -28123,68 +28123,68 @@ public struct FfiConverterTypeOverviewRegenerationStatus: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OverviewRegenerationStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .running
-
+        
         case 2: return .staging
-
+        
         case 3: return .readyToCommit
-
+        
         case 4: return .committing
-
+        
         case 5: return .completed
-
+        
         case 6: return .rollbackRequired
-
+        
         case 7: return .rolledBack
-
+        
         case 8: return .failed
-
+        
         case 9: return .canceled
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: OverviewRegenerationStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .running:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .staging:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .readyToCommit:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .committing:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .completed:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .rollbackRequired:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .rolledBack:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(8))
-
-
+        
+        
         case .canceled:
             writeInt(&buf, Int32(9))
-
+        
         }
     }
 }
@@ -28214,7 +28214,7 @@ extension OverviewRegenerationStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum PlatformCapabilityStatus {
-
+    
     case available
     case limited
     case notAvailable
@@ -28231,38 +28231,38 @@ public struct FfiConverterTypePlatformCapabilityStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformCapabilityStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .available
-
+        
         case 2: return .limited
-
+        
         case 3: return .notAvailable
-
+        
         case 4: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: PlatformCapabilityStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .available:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .limited:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .notAvailable:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -28292,7 +28292,7 @@ extension PlatformCapabilityStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum PlatformId {
-
+    
     case macos
     case ios
     case windows
@@ -28310,44 +28310,44 @@ public struct FfiConverterTypePlatformId: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformId {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .macos
-
+        
         case 2: return .ios
-
+        
         case 3: return .windows
-
+        
         case 4: return .linux
-
+        
         case 5: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: PlatformId, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .macos:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .ios:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .windows:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .linux:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -28377,7 +28377,7 @@ extension PlatformId: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum PlatformPathKind {
-
+    
     case local
     case iCloudDrive
     case oneDrive
@@ -28395,44 +28395,44 @@ public struct FfiConverterTypePlatformPathKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformPathKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .local
-
+        
         case 2: return .iCloudDrive
-
+        
         case 3: return .oneDrive
-
+        
         case 4: return .networkShare
-
+        
         case 5: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: PlatformPathKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .local:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .iCloudDrive:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .oneDrive:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .networkShare:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -28462,7 +28462,7 @@ extension PlatformPathKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum PlatformWatcherBackend {
-
+    
     case readDirectoryChangesW
     case inotify
     case unknown
@@ -28478,32 +28478,32 @@ public struct FfiConverterTypePlatformWatcherBackend: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformWatcherBackend {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .readDirectoryChangesW
-
+        
         case 2: return .inotify
-
+        
         case 3: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: PlatformWatcherBackend, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .readDirectoryChangesW:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .inotify:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -28533,7 +28533,7 @@ extension PlatformWatcherBackend: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum PlatformWatcherHealthReason {
-
+    
     case permissionDenied
     case pathMissing
     case backendUnavailable
@@ -28554,62 +28554,62 @@ public struct FfiConverterTypePlatformWatcherHealthReason: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformWatcherHealthReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .permissionDenied
-
+        
         case 2: return .pathMissing
-
+        
         case 3: return .backendUnavailable
-
+        
         case 4: return .databaseLocked
-
+        
         case 5: return .limitExceeded
-
+        
         case 6: return .networkMount
-
+        
         case 7: return .cloudSyncNoise
-
+        
         case 8: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: PlatformWatcherHealthReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .permissionDenied:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .pathMissing:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .backendUnavailable:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .databaseLocked:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .limitExceeded:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .networkMount:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .cloudSyncNoise:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(8))
-
+        
         }
     }
 }
@@ -28639,7 +28639,7 @@ extension PlatformWatcherHealthReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum PlatformWatcherStatus {
-
+    
     case starting
     case running
     case paused
@@ -28657,44 +28657,44 @@ public struct FfiConverterTypePlatformWatcherStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlatformWatcherStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .starting
-
+        
         case 2: return .running
-
+        
         case 3: return .paused
-
+        
         case 4: return .error
-
+        
         case 5: return .unavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: PlatformWatcherStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .starting:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .running:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .paused:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .error:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .unavailable:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -28724,7 +28724,7 @@ extension PlatformWatcherStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RedoActionStatus {
-
+    
     case available
     case cleared
     case blocked
@@ -28742,44 +28742,44 @@ public struct FfiConverterTypeRedoActionStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RedoActionStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .available
-
+        
         case 2: return .cleared
-
+        
         case 3: return .blocked
-
+        
         case 4: return .expired
-
+        
         case 5: return .executed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RedoActionStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .available:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .cleared:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .blocked:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .expired:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .executed:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -28809,7 +28809,7 @@ extension RedoActionStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RemoteAiProviderKind {
-
+    
     case openAi
     case anthropic
     case other
@@ -28825,32 +28825,32 @@ public struct FfiConverterTypeRemoteAiProviderKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteAiProviderKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .openAi
-
+        
         case 2: return .anthropic
-
+        
         case 3: return .other
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RemoteAiProviderKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .openAi:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .anthropic:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .other:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -28880,7 +28880,7 @@ extension RemoteAiProviderKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RemoteProviderProbeAuthorization {
-
+    
     case bearer
     case anthropicApiKey
 }
@@ -28895,26 +28895,26 @@ public struct FfiConverterTypeRemoteProviderProbeAuthorization: FfiConverterRust
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeAuthorization {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .bearer
-
+        
         case 2: return .anthropicApiKey
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RemoteProviderProbeAuthorization, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .bearer:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .anthropicApiKey:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -28944,7 +28944,7 @@ extension RemoteProviderProbeAuthorization: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RemoteProviderProbeMethod {
-
+    
     case get
 }
 
@@ -28958,20 +28958,20 @@ public struct FfiConverterTypeRemoteProviderProbeMethod: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeMethod {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .get
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RemoteProviderProbeMethod, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .get:
             writeInt(&buf, Int32(1))
-
+        
         }
     }
 }
@@ -29001,7 +29001,7 @@ extension RemoteProviderProbeMethod: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RemoteProviderProbeOutcome {
-
+    
     case httpResponse
     case connectionFailed
     case credentialUnavailable
@@ -29017,32 +29017,32 @@ public struct FfiConverterTypeRemoteProviderProbeOutcome: FfiConverterRustBuffer
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderProbeOutcome {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .httpResponse
-
+        
         case 2: return .connectionFailed
-
+        
         case 3: return .credentialUnavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RemoteProviderProbeOutcome, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .httpResponse:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .connectionFailed:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .credentialUnavailable:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -29072,7 +29072,7 @@ extension RemoteProviderProbeOutcome: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RemoteProviderTestStatus {
-
+    
     case succeeded
     case providerRejected
     case connectionFailed
@@ -29089,38 +29089,38 @@ public struct FfiConverterTypeRemoteProviderTestStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteProviderTestStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .succeeded
-
+        
         case 2: return .providerRejected
-
+        
         case 3: return .connectionFailed
-
+        
         case 4: return .unsupportedProvider
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RemoteProviderTestStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .succeeded:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .providerRejected:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .connectionFailed:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .unsupportedProvider:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -29150,7 +29150,7 @@ extension RemoteProviderTestStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RepairMetadataLocaleState {
-
+    
     case healthy
     case metadataAbsent
     case databaseMissing
@@ -29169,50 +29169,50 @@ public struct FfiConverterTypeRepairMetadataLocaleState: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepairMetadataLocaleState {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .healthy
-
+        
         case 2: return .metadataAbsent
-
+        
         case 3: return .databaseMissing
-
+        
         case 4: return .databaseCorrupt
-
+        
         case 5: return .localeMissing
-
+        
         case 6: return .localeUnsupported
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RepairMetadataLocaleState, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .healthy:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .metadataAbsent:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .databaseMissing:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .databaseCorrupt:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .localeMissing:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .localeUnsupported:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -29242,7 +29242,7 @@ extension RepairMetadataLocaleState: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RepairMetadataOutcome {
-
+    
     case verified
     case initialized
     case rebuilt
@@ -29258,32 +29258,32 @@ public struct FfiConverterTypeRepairMetadataOutcome: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepairMetadataOutcome {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .verified
-
+        
         case 2: return .initialized
-
+        
         case 3: return .rebuilt
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RepairMetadataOutcome, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .verified:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .initialized:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .rebuilt:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -29313,7 +29313,7 @@ extension RepairMetadataOutcome: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RepoInitMode {
-
+    
     case createEmpty
     case adoptExisting
 }
@@ -29328,26 +29328,26 @@ public struct FfiConverterTypeRepoInitMode: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepoInitMode {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .createEmpty
-
+        
         case 2: return .adoptExisting
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RepoInitMode, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .createEmpty:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .adoptExisting:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -29377,7 +29377,7 @@ extension RepoInitMode: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RepoPathIssue {
-
+    
     case missingPath
     case notDirectory
     case notReadable
@@ -29402,86 +29402,86 @@ public struct FfiConverterTypeRepoPathIssue: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepoPathIssue {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .missingPath
-
+        
         case 2: return .notDirectory
-
+        
         case 3: return .notReadable
-
+        
         case 4: return .notWritable
-
+        
         case 5: return .nonEmptyDirectory
-
+        
         case 6: return .alreadyInitialized
-
+        
         case 7: return .insideAreaMatrix
-
+        
         case 8: return .iCloudPath
-
+        
         case 9: return .oneDrivePath
-
+        
         case 10: return .windowsReservedName
-
+        
         case 11: return .windowsCaseInsensitive
-
+        
         case 12: return .unfinishedScanSession
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RepoPathIssue, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .missingPath:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .notDirectory:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .notReadable:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .notWritable:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .nonEmptyDirectory:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .alreadyInitialized:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .insideAreaMatrix:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .iCloudPath:
             writeInt(&buf, Int32(8))
-
-
+        
+        
         case .oneDrivePath:
             writeInt(&buf, Int32(9))
-
-
+        
+        
         case .windowsReservedName:
             writeInt(&buf, Int32(10))
-
-
+        
+        
         case .windowsCaseInsensitive:
             writeInt(&buf, Int32(11))
-
-
+        
+        
         case .unfinishedScanSession:
             writeInt(&buf, Int32(12))
-
+        
         }
     }
 }
@@ -29511,7 +29511,7 @@ extension RepoPathIssue: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RepositoryLocalePolicy {
-
+    
     case followInterface
     case zhHans
     case en
@@ -29527,32 +29527,32 @@ public struct FfiConverterTypeRepositoryLocalePolicy: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepositoryLocalePolicy {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .followInterface
-
+        
         case 2: return .zhHans
-
+        
         case 3: return .en
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RepositoryLocalePolicy, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .followInterface:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .zhHans:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .en:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -29582,7 +29582,7 @@ extension RepositoryLocalePolicy: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RepositoryLocalePolicyState {
-
+    
     case unknown
     case followInterface
     case zhHans
@@ -29600,44 +29600,44 @@ public struct FfiConverterTypeRepositoryLocalePolicyState: FfiConverterRustBuffe
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RepositoryLocalePolicyState {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .unknown
-
+        
         case 2: return .followInterface
-
+        
         case 3: return .zhHans
-
+        
         case 4: return .en
-
+        
         case 5: return .unsupported
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RepositoryLocalePolicyState, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .followInterface:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .zhHans:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .en:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .unsupported:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -29667,7 +29667,7 @@ extension RepositoryLocalePolicyState: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RuleImpactConflictKind {
-
+    
     case nameConflict
     case missingFile
     case unsupportedStorage
@@ -29684,38 +29684,38 @@ public struct FfiConverterTypeRuleImpactConflictKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RuleImpactConflictKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .nameConflict
-
+        
         case 2: return .missingFile
-
+        
         case 3: return .unsupportedStorage
-
+        
         case 4: return .ruleConflict
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RuleImpactConflictKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .nameConflict:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .missingFile:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unsupportedStorage:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .ruleConflict:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -29745,7 +29745,7 @@ extension RuleImpactConflictKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RuleImpactMatchReason {
-
+    
     case keyword
     case `extension`
     case category
@@ -29761,32 +29761,32 @@ public struct FfiConverterTypeRuleImpactMatchReason: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RuleImpactMatchReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .keyword
-
+        
         case 2: return .`extension`
-
+        
         case 3: return .category
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RuleImpactMatchReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .keyword:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .`extension`:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .category:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -29816,7 +29816,7 @@ extension RuleImpactMatchReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RuleImpactStatus {
-
+    
     case willUpdate
     case alreadyCorrect
     case needsReview
@@ -29835,50 +29835,50 @@ public struct FfiConverterTypeRuleImpactStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RuleImpactStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .willUpdate
-
+        
         case 2: return .alreadyCorrect
-
+        
         case 3: return .needsReview
-
+        
         case 4: return .conflict
-
+        
         case 5: return .missing
-
+        
         case 6: return .indexOnly
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RuleImpactStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .willUpdate:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .alreadyCorrect:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .needsReview:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .conflict:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .missing:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .indexOnly:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -29908,7 +29908,7 @@ extension RuleImpactStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ScanSessionKind {
-
+    
     case adopt
     case reindex
 }
@@ -29923,26 +29923,26 @@ public struct FfiConverterTypeScanSessionKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ScanSessionKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .adopt
-
+        
         case 2: return .reindex
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ScanSessionKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .adopt:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .reindex:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -29972,7 +29972,7 @@ extension ScanSessionKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum ScanSessionStatus {
-
+    
     case running
     case completed
     case paused
@@ -29990,44 +29990,44 @@ public struct FfiConverterTypeScanSessionStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ScanSessionStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .running
-
+        
         case 2: return .completed
-
+        
         case 3: return .paused
-
+        
         case 4: return .failed
-
+        
         case 5: return .interrupted
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ScanSessionStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .running:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .completed:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .paused:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .interrupted:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -30057,7 +30057,7 @@ extension ScanSessionStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SearchDiagnosticKind {
-
+    
     case unclosedQuote
     case unknownField
     case invalidDate
@@ -30075,44 +30075,44 @@ public struct FfiConverterTypeSearchDiagnosticKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchDiagnosticKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .unclosedQuote
-
+        
         case 2: return .unknownField
-
+        
         case 3: return .invalidDate
-
+        
         case 4: return .unbalancedParentheses
-
+        
         case 5: return .invalidOperator
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SearchDiagnosticKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .unclosedQuote:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .unknownField:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .invalidDate:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .unbalancedParentheses:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .invalidOperator:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -30142,7 +30142,7 @@ extension SearchDiagnosticKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SearchDiagnosticSeverity {
-
+    
     case info
     case warning
     case error
@@ -30158,32 +30158,32 @@ public struct FfiConverterTypeSearchDiagnosticSeverity: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchDiagnosticSeverity {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .info
-
+        
         case 2: return .warning
-
+        
         case 3: return .error
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SearchDiagnosticSeverity, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .info:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .warning:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .error:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -30213,7 +30213,7 @@ extension SearchDiagnosticSeverity: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SearchIndexStatus {
-
+    
     case ready
     case indexing
     case unavailable
@@ -30229,32 +30229,32 @@ public struct FfiConverterTypeSearchIndexStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchIndexStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .ready
-
+        
         case 2: return .indexing
-
+        
         case 3: return .unavailable
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SearchIndexStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .ready:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .indexing:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .unavailable:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -30284,7 +30284,7 @@ extension SearchIndexStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SearchMatchField {
-
+    
     case name
     case path
     case note
@@ -30302,44 +30302,44 @@ public struct FfiConverterTypeSearchMatchField: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchMatchField {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .name
-
+        
         case 2: return .path
-
+        
         case 3: return .note
-
+        
         case 4: return .category
-
+        
         case 5: return .changeLog
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SearchMatchField, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .name:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .path:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .note:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .category:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .changeLog:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -30369,7 +30369,7 @@ extension SearchMatchField: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SearchMatchKind {
-
+    
     case exact
     case fuzzy
     case pinyinInitials
@@ -30385,32 +30385,32 @@ public struct FfiConverterTypeSearchMatchKind: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchMatchKind {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .exact
-
+        
         case 2: return .fuzzy
-
+        
         case 3: return .pinyinInitials
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SearchMatchKind, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .exact:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .fuzzy:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .pinyinInitials:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -30440,7 +30440,7 @@ extension SearchMatchKind: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SearchScope {
-
+    
     case allRepo
     case currentNode
 }
@@ -30455,26 +30455,26 @@ public struct FfiConverterTypeSearchScope: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchScope {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .allRepo
-
+        
         case 2: return .currentNode
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SearchScope, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .allRepo:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .currentNode:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -30504,7 +30504,7 @@ extension SearchScope: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SearchSort {
-
+    
     case relevance
     case newestImported
     case newestModified
@@ -30521,38 +30521,38 @@ public struct FfiConverterTypeSearchSort: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchSort {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .relevance
-
+        
         case 2: return .newestImported
-
+        
         case 3: return .newestModified
-
+        
         case 4: return .nameAsc
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SearchSort, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .relevance:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .newestImported:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .newestModified:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .nameAsc:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -30582,7 +30582,7 @@ extension SearchSort: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SearchTagMatchMode {
-
+    
     case any
     case all
 }
@@ -30597,26 +30597,26 @@ public struct FfiConverterTypeSearchTagMatchMode: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchTagMatchMode {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .any
-
+        
         case 2: return .all
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SearchTagMatchMode, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .any:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .all:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -30646,7 +30646,7 @@ extension SearchTagMatchMode: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SemanticIndexStatus {
-
+    
     case ready
     case notReady
     case building
@@ -30666,56 +30666,56 @@ public struct FfiConverterTypeSemanticIndexStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SemanticIndexStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .ready
-
+        
         case 2: return .notReady
-
+        
         case 3: return .building
-
+        
         case 4: return .paused
-
+        
         case 5: return .canceled
-
+        
         case 6: return .failed
-
+        
         case 7: return .partial
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SemanticIndexStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .ready:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .notReady:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .building:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .paused:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .canceled:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .partial:
             writeInt(&buf, Int32(7))
-
+        
         }
     }
 }
@@ -30745,7 +30745,7 @@ extension SemanticIndexStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SemanticSearchFallbackReason {
-
+    
     case aiDisabled
     case featureDisabled
     case providerUnavailable
@@ -30768,74 +30768,74 @@ public struct FfiConverterTypeSemanticSearchFallbackReason: FfiConverterRustBuff
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SemanticSearchFallbackReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .aiDisabled
-
+        
         case 2: return .featureDisabled
-
+        
         case 3: return .providerUnavailable
-
+        
         case 4: return .privacyRule
-
+        
         case 5: return .semanticIndexNotReady
-
+        
         case 6: return .callLogUnavailable
-
+        
         case 7: return .noEligibleInput
-
+        
         case 8: return .normalSearchUnavailable
-
+        
         case 9: return .rateLimited
-
+        
         case 10: return .timeout
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SemanticSearchFallbackReason, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .aiDisabled:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .featureDisabled:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .providerUnavailable:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .privacyRule:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .semanticIndexNotReady:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .callLogUnavailable:
             writeInt(&buf, Int32(6))
-
-
+        
+        
         case .noEligibleInput:
             writeInt(&buf, Int32(7))
-
-
+        
+        
         case .normalSearchUnavailable:
             writeInt(&buf, Int32(8))
-
-
+        
+        
         case .rateLimited:
             writeInt(&buf, Int32(9))
-
-
+        
+        
         case .timeout:
             writeInt(&buf, Int32(10))
-
+        
         }
     }
 }
@@ -30865,7 +30865,7 @@ extension SemanticSearchFallbackReason: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SemanticSearchInputField {
-
+    
     case fileName
     case repoRelativePath
     case category
@@ -30884,50 +30884,50 @@ public struct FfiConverterTypeSemanticSearchInputField: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SemanticSearchInputField {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .fileName
-
+        
         case 2: return .repoRelativePath
-
+        
         case 3: return .category
-
+        
         case 4: return .noteSummary
-
+        
         case 5: return .aiSummary
-
+        
         case 6: return .extractedTextExcerpt
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SemanticSearchInputField, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .fileName:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .repoRelativePath:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .category:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .noteSummary:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .aiSummary:
             writeInt(&buf, Int32(5))
-
-
+        
+        
         case .extractedTextExcerpt:
             writeInt(&buf, Int32(6))
-
+        
         }
     }
 }
@@ -30957,7 +30957,7 @@ extension SemanticSearchInputField: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SemanticSearchRoute {
-
+    
     case local
     case remote
 }
@@ -30972,26 +30972,26 @@ public struct FfiConverterTypeSemanticSearchRoute: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SemanticSearchRoute {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .local
-
+        
         case 2: return .remote
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SemanticSearchRoute, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .local:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .remote:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -31021,7 +31021,7 @@ extension SemanticSearchRoute: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum StorageMode {
-
+    
     case moved
     case copied
     case indexed
@@ -31037,32 +31037,32 @@ public struct FfiConverterTypeStorageMode: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> StorageMode {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .moved
-
+        
         case 2: return .copied
-
+        
         case 3: return .indexed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: StorageMode, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .moved:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .copied:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .indexed:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -31092,7 +31092,7 @@ extension StorageMode: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SyncConflictFileRole {
-
+    
     case existing
     case incoming
     case conflictCopy
@@ -31110,44 +31110,44 @@ public struct FfiConverterTypeSyncConflictFileRole: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictFileRole {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .existing
-
+        
         case 2: return .incoming
-
+        
         case 3: return .conflictCopy
-
+        
         case 4: return .missing
-
+        
         case 5: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SyncConflictFileRole, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .existing:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .incoming:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .conflictCopy:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .missing:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -31177,7 +31177,7 @@ extension SyncConflictFileRole: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SyncConflictResolutionStrategy {
-
+    
     case keepBoth
     case useExisting
     case useIncoming
@@ -31193,32 +31193,32 @@ public struct FfiConverterTypeSyncConflictResolutionStrategy: FfiConverterRustBu
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictResolutionStrategy {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .keepBoth
-
+        
         case 2: return .useExisting
-
+        
         case 3: return .useIncoming
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SyncConflictResolutionStrategy, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .keepBoth:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .useExisting:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .useIncoming:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -31248,7 +31248,7 @@ extension SyncConflictResolutionStrategy: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SyncConflictSeverity {
-
+    
     case low
     case medium
     case high
@@ -31264,32 +31264,32 @@ public struct FfiConverterTypeSyncConflictSeverity: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictSeverity {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .low
-
+        
         case 2: return .medium
-
+        
         case 3: return .high
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SyncConflictSeverity, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .low:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .medium:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .high:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -31319,7 +31319,7 @@ extension SyncConflictSeverity: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SyncConflictStatus {
-
+    
     case needsReview
     case resolved
 }
@@ -31334,26 +31334,26 @@ public struct FfiConverterTypeSyncConflictStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .needsReview
-
+        
         case 2: return .resolved
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SyncConflictStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .needsReview:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .resolved:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -31383,7 +31383,7 @@ extension SyncConflictStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum SyncConflictType {
-
+    
     case sameNameDifferentContent
     case concurrentModification
     case metadataMismatch
@@ -31401,44 +31401,44 @@ public struct FfiConverterTypeSyncConflictType: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncConflictType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .sameNameDifferentContent
-
+        
         case 2: return .concurrentModification
-
+        
         case 3: return .metadataMismatch
-
+        
         case 4: return .missingVersion
-
+        
         case 5: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SyncConflictType, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .sameNameDifferentContent:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .concurrentModification:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .metadataMismatch:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .missingVersion:
             writeInt(&buf, Int32(4))
-
-
+        
+        
         case .unknown:
             writeInt(&buf, Int32(5))
-
+        
         }
     }
 }
@@ -31468,7 +31468,7 @@ extension SyncConflictType: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum TagSuggestionApplyStatus {
-
+    
     case applied
     case alreadyAdded
     case failed
@@ -31484,32 +31484,32 @@ public struct FfiConverterTypeTagSuggestionApplyStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestionApplyStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .applied
-
+        
         case 2: return .alreadyAdded
-
+        
         case 3: return .failed
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: TagSuggestionApplyStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .applied:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .alreadyAdded:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .failed:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -31539,7 +31539,7 @@ extension TagSuggestionApplyStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum TagSuggestionMatch {
-
+    
     case strong
     case weak
 }
@@ -31554,26 +31554,26 @@ public struct FfiConverterTypeTagSuggestionMatch: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestionMatch {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .strong
-
+        
         case 2: return .weak
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: TagSuggestionMatch, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .strong:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .weak:
             writeInt(&buf, Int32(2))
-
+        
         }
     }
 }
@@ -31603,7 +31603,7 @@ extension TagSuggestionMatch: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum TagSuggestionSource {
-
+    
     case fileName
     case path
     case sourceFolder
@@ -31620,38 +31620,38 @@ public struct FfiConverterTypeTagSuggestionSource: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestionSource {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .fileName
-
+        
         case 2: return .path
-
+        
         case 3: return .sourceFolder
-
+        
         case 4: return .existingTagPattern
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: TagSuggestionSource, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .fileName:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .path:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .sourceFolder:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .existingTagPattern:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -31681,7 +31681,7 @@ extension TagSuggestionSource: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum TagSuggestionStatus {
-
+    
     case newTag
     case alreadyAdded
     case invalid
@@ -31698,38 +31698,38 @@ public struct FfiConverterTypeTagSuggestionStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagSuggestionStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .newTag
-
+        
         case 2: return .alreadyAdded
-
+        
         case 3: return .invalid
-
+        
         case 4: return .blocked
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: TagSuggestionStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .newTag:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .alreadyAdded:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .invalid:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .blocked:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -31759,7 +31759,7 @@ extension TagSuggestionStatus: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum UndoActionStatus {
-
+    
     case pending
     case executed
     case expired
@@ -31776,38 +31776,38 @@ public struct FfiConverterTypeUndoActionStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UndoActionStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
+        
         case 1: return .pending
-
+        
         case 2: return .executed
-
+        
         case 3: return .expired
-
+        
         case 4: return .blocked
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: UndoActionStatus, into buf: inout [UInt8]) {
         switch value {
-
-
+        
+        
         case .pending:
             writeInt(&buf, Int32(1))
-
-
+        
+        
         case .executed:
             writeInt(&buf, Int32(2))
-
-
+        
+        
         case .expired:
             writeInt(&buf, Int32(3))
-
-
+        
+        
         case .blocked:
             writeInt(&buf, Int32(4))
-
+        
         }
     }
 }
@@ -34880,9 +34880,10 @@ public func importFileWithResult(repoPath: String, sourcePath: String, options: 
     )
 })
 }
-public func initLogging(level: String)throws  {try rustCallWithError(FfiConverterTypeCoreError.lift) {
+public func initLogging(level: String, logDir: String)throws  {try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_init_logging(
-        FfiConverterString.lower(level),$0
+        FfiConverterString.lower(level),
+        FfiConverterString.lower(logDir),$0
     )
 }
 }
@@ -35627,7 +35628,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_area_matrix_core_checksum_func_import_file_with_result() != 52959) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_area_matrix_core_checksum_func_init_logging() != 19565) {
+    if (uniffi_area_matrix_core_checksum_func_init_logging() != 21342) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_init_repo() != 29414) {
