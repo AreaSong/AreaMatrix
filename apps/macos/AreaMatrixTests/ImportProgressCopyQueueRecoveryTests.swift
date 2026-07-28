@@ -139,13 +139,15 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
         guard let progress = scenario.model.currentImportProgressState else {
             return XCTFail("Expected failed import-progress progress route")
         }
-        XCTAssertEqual(
+        assertImportProgressRetryContext(
             outcome?.fatalRetryContext,
-            ImportProgressFixtures.copyRetryContext(
+            equals: ImportProgressFixtures.copyRetryContext(
                 sourcePath: importProgressBatchSourcePath("second.pdf"),
                 overrideFilename: "second.pdf"
             )
         )
+        XCTAssertNotNil(outcome?.fatalRetryContext?.traceID)
+        XCTAssertNotNil(outcome?.fatalRetryContext?.operationID)
         XCTAssertFalse(progress.canRetryCurrentItem)
 
         scenario.model.failImportEntry(
@@ -158,6 +160,43 @@ final class ImportProgressCopyQueueRecoveryTests: XCTestCase {
 
         await scenario.model.retryCurrentImportProgressItem()
         await Self.assertFatalCopyRetryCompleted(scenario)
+    }
+
+    @MainActor
+    func testFatalCopyRetrySourceRetainedContinuesQueueAndShowsDegradedResult() async {
+        var sourceRetainedEntry = FileEntrySnapshot.importSingleFileFixture(
+            currentName: "second.pdf",
+            category: "docs"
+        )
+        sourceRetainedEntry.importCommitState = .sourceRetained
+        let scenario = Self.fatalCopyRetryScenario(retryResults: [.success(sourceRetainedEntry)])
+
+        let outcome = await scenario.importModel.importReadyFiles(
+            selectedDestination: .autoClassify,
+            controlState: scenario.controlState
+        ) { progress in
+            scenario.model.updateImportEntryProgress(progress.withItems(scenario.importModel.progressItems()))
+        }
+        guard let progress = scenario.model.currentImportProgressState else {
+            return XCTFail("Expected failed import-progress route")
+        }
+        scenario.model.failImportEntry(
+            progress: progress.progressSnapshot,
+            mapping: .importProgressFatalCopyError,
+            retryContext: outcome?.fatalRetryContext,
+            recoveryCheck: .retryAllowed(nil)
+        )
+        scenario.controlState.registerQueueContinuation(scenario.importModel)
+
+        await scenario.model.retryCurrentImportProgressItem()
+
+        guard let result = requireImportResultRoute(scenario.model) else { return }
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 3, failed 0, stopped 0, pending 0.",
+            statuses: [.imported, .sourceRetained, .imported]
+        )
+        XCTAssertEqual(scenario.importModel.rows[1].importCommitState, .sourceRetained)
     }
 }
 
@@ -209,14 +248,16 @@ extension ImportProgressCopyQueueRecoveryTests {
     static let fatalCopyRetryFilenames = ["first.pdf", "second.pdf", "third.pdf"]
 
     @MainActor
-    static func fatalCopyRetryScenario() -> ImportProgressFatalCopyRetryScenario {
+    static func fatalCopyRetryScenario(
+        retryResults: [Result<FileEntrySnapshot, Error>]? = nil
+    ) -> ImportProgressFatalCopyRetryScenario {
         let controlState = ImportProgressControlState()
         let importer = ImportBatchSequenceBatchImporter(results: [
             .success(.importSingleFileFixture(currentName: "first.pdf", category: "docs")),
             .failure(CoreError.Io(message: "staging write failed")),
             .success(.importSingleFileFixture(currentName: "third.pdf", category: "docs"))
         ])
-        let retryImporter = ImportSingleFileRecordingImporter()
+        let retryImporter = ImportSingleFileRecordingImporter(results: retryResults)
         let fixture = makeImportProgressMainListFixture(
             importProgressImporter: retryImporter,
             startupRecoverer: StaticStartupRecoverer(),

@@ -167,6 +167,7 @@ struct ImportFolderPreviewRow: Identifiable, Equatable {
     var predictedCategory: String?
     var suggestedName: String
     var status: ImportFolderPreviewRowStatus
+    var importCommitState: CoreImportCommitState = .committed
 
     var id: String {
         fileURL.path

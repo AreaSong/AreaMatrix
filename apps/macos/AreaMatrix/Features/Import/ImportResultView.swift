@@ -26,6 +26,8 @@ struct ImportResultView: View {
             Picker(L10n.string("Filter"), selection: $filter) {
                 Text(L10n.string("All")).tag(ImportResultRouteState.ItemStatus?.none)
                 Text(L10n.string("Imported")).tag(ImportResultRouteState.ItemStatus?.some(.imported))
+                Text(L10n.string("import.result.source-retained.status"))
+                    .tag(ImportResultRouteState.ItemStatus?.some(.sourceRetained))
                 Text(L10n.string("Skipped")).tag(ImportResultRouteState.ItemStatus?.some(.skipped))
                 Text(L10n.string("Failed")).tag(ImportResultRouteState.ItemStatus?.some(.failed))
             }
@@ -40,7 +42,8 @@ struct ImportResultView: View {
                     Text(displayCategory(for: item.targetPath))
                 }
                 TableColumn(L10n.string("状态")) { item in
-                    Text(item.status.displayName)
+                    Label(item.status.displayName, systemImage: item.status.detailSystemImage)
+                        .foregroundStyle(item.status.foregroundColor)
                 }
                 TableColumn(L10n.string("原因")) { item in
                     Text(item.reason)
@@ -125,6 +128,7 @@ struct ImportResultView: View {
             return item
         }
         return state.items.first(where: { $0.status == .failed })
+            ?? state.items.first(where: { $0.status == .sourceRetained })
     }
 
     private var exportConfirmationBinding: Binding<Bool> {
@@ -273,10 +277,25 @@ private extension ImportResultRouteState.ItemStatus {
         switch self {
         case .imported:
             "checkmark.circle"
+        case .sourceRetained:
+            "exclamationmark.circle"
         case .skipped, .pending:
             "clock"
         case .failed:
             "exclamationmark.triangle"
+        }
+    }
+
+    var foregroundColor: Color {
+        switch self {
+        case .imported:
+            .green
+        case .sourceRetained:
+            .orange
+        case .failed:
+            .red
+        case .skipped, .pending:
+            .secondary
         }
     }
 }

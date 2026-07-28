@@ -24,8 +24,25 @@
 namespace area_matrix {
     string get_version();
 
+    ObservabilityBuildContext get_observability_build_context();
+
     [Throws=CoreError]
-    void init_logging(string level);
+    void init_logging(string level, CoreLogCallback callback);
+
+    [Throws=CoreError]
+    ObservabilityHealth initialize_observability(
+        ObservabilityConfig config,
+        CoreObservabilitySink sink
+    );
+
+    [Throws=CoreError]
+    ObservabilityHealth update_observability_config(ObservabilityConfig config);
+
+    ObservabilityHealth get_observability_health();
+
+    [Throws=CoreError]
+    ObservabilityHealth flush_observability(u64 deadline_ms);
+
 
     [Throws=CoreError]
     BindingContractReport inspect_binding_contract(BindingContractRequest request);
@@ -270,6 +287,18 @@ namespace area_matrix {
     [Throws=CoreError]
     ImportResult import_file_with_result(
         string repo_path, string source_path, ImportOptions options
+    );
+
+    [Throws=CoreError]
+    FileEntry import_file_observed(
+        string repo_path, string source_path, ImportOptions options,
+        CoreTraceContext trace_context
+    );
+
+    [Throws=CoreError]
+    ImportResult import_file_with_result_observed(
+        string repo_path, string source_path, ImportOptions options,
+        CoreTraceContext trace_context
     );
 
     // replace confirmation may compose this existing deletion contract only for
@@ -2806,6 +2835,160 @@ interface CoreError {
     PermissionDenied(string path);
     Internal(string message);
 };
+
+dictionary CoreLogRecord {
+    string level;
+    string message;
+    string? target;
+    string? thread_name;
+    string? repo_path;
+};
+
+callback interface CoreLogCallback {
+    void on_log(CoreLogRecord record);
+};
+
+enum ObservabilityMode {
+    "Disabled",
+    "Standard",
+    "Diagnostic",
+    "Developer"
+};
+
+enum ObservabilitySeverity {
+    "Trace",
+    "Debug",
+    "Info",
+    "Warn",
+    "Error"
+};
+
+enum ObservabilityLayer {
+    "SwiftUi",
+    "Platform",
+    "Bridge",
+    "Core",
+    "Database",
+    "Filesystem",
+    "Network"
+};
+
+enum ObservabilityOutcome {
+    "None",
+    "Started",
+    "Succeeded",
+    "Failed",
+    "Cancelled",
+    "Skipped",
+    "Degraded"
+};
+
+enum ObservabilityPrivacy {
+    "Public",
+    "Pseudonymous",
+    "Sensitive",
+    "Prohibited"
+};
+
+dictionary ObservabilityConfig {
+    string session_id;
+    ObservabilityMode mode;
+    ObservabilitySeverity minimum_severity;
+    u64 queue_capacity;
+    boolean include_sensitive;
+};
+
+dictionary ObservabilityBuildContext {
+    string producer;
+    string version;
+    string? build;
+    string configuration;
+    string platform;
+    string architecture;
+};
+
+dictionary CoreTraceContext {
+    string session_id;
+    string trace_id;
+    string? parent_span_id;
+    string? incident_id;
+    string? operation_id;
+    string? retry_of_operation_id;
+    string action_id;
+    string component_id;
+    sequence<CoreObservabilityResourceRef> resource_refs;
+    sequence<CoreObservabilityAttribute> attributes;
+};
+
+dictionary CoreObservabilityAttribute {
+    string key;
+    string value;
+    ObservabilityPrivacy privacy;
+};
+
+dictionary CoreObservabilityResourceRef {
+    string resource_id;
+    string alias;
+    string? extension;
+    string? size_bucket;
+    string? storage_mode;
+};
+
+dictionary CoreObservabilityError {
+    string code;
+    string? kind;
+    string? technical_details;
+};
+
+dictionary CoreObservabilityEvent {
+    u64 schema_version;
+    string event_id;
+    i64 wall_timestamp_ms;
+    u64 monotonic_timestamp_ns;
+    u64 sequence_number;
+    string session_id;
+    string? incident_id;
+    string trace_id;
+    string span_id;
+    string? parent_span_id;
+    string? operation_id;
+    string? retry_of_operation_id;
+    string action_id;
+    string component_id;
+    ObservabilityLayer layer;
+    string phase;
+    ObservabilitySeverity severity;
+    ObservabilityOutcome outcome;
+    u64? duration_ms;
+    sequence<CoreObservabilityResourceRef> resource_refs;
+    CoreObservabilityError? error;
+    sequence<CoreObservabilityAttribute> attributes;
+    ObservabilityPrivacy privacy_level;
+    string? message;
+    string? target;
+    string? thread_name;
+    ObservabilityBuildContext build_context;
+};
+
+dictionary ObservabilityHealth {
+    boolean initialized;
+    ObservabilityMode mode;
+    u64 queue_depth;
+    u64 queue_capacity;
+    u64 dropped_trace;
+    u64 dropped_debug;
+    u64 dropped_info;
+    u64 dropped_warn;
+    u64 dropped_error;
+    u64 redaction_rejected;
+    boolean callback_connected;
+    boolean degraded;
+    string? degraded_reason;
+};
+
+callback interface CoreObservabilitySink {
+    void on_event(CoreObservabilityEvent event);
+};
 ```
 
 `RepoConfigSnapshot.locale_policy` 是资料库内容语言 policy，不控制 macOS 应用界面。规范持久化值为
@@ -2902,7 +3085,14 @@ unknown field/code、非法 locale 或缺失必需字段均 fail closed。legacy
 | 函数 | 类别 | Throws | 主要错误 |
 |---|---|---|---|
 | `get_version()` | meta | × | — |
-| `init_logging(level)` | meta | √ | Config |
+| `get_observability_build_context()` | observability | × | — |
+| `init_logging(level, callback)` | compatibility | √ | Config / Internal |
+| `initialize_observability(config, sink)` | observability | √ | Config / Internal |
+| `update_observability_config(config)` | observability | √ | Config / Internal |
+| `get_observability_health()` | observability | × | — |
+| `flush_observability(deadline_ms)` | observability | √ | Validation / Config |
+| `import_file_observed(repo, src, options, trace_context)` | storage / observability | √ | Validation / import errors |
+| `import_file_with_result_observed(repo, src, options, trace_context)` | storage / observability | √ | Validation / import errors |
 | `inspect_binding_contract(request)` | ffi | √ | Config / Internal |
 | `get_platform_capabilities(platform, app_version)` | platform | √ | Config |
 | `validate_repo_path(repo)` | repo | √ | InvalidPath / PermissionDenied / ICloudPlaceholder / Io / Db |
@@ -3047,19 +3237,93 @@ print("AreaMatrix Core \(version)")
 
 返回 `Cargo.toml` 中的版本，形如 `"0.1.0"`。永不抛错。
 
-### `init_logging(level: String) throws`
+### `get_observability_build_context() -> ObservabilityBuildContext`
+
+无副作用返回当前已加载 Core 二进制的权威构建身份，包括固定 producer、Cargo version、可选 CI build ID、
+debug/release configuration、目标平台与 Rust target architecture。macOS 平台层必须在注册
+`CoreObservabilitySink` 前读取一次该值，并只接受 build context 与该值完全相等的 live Core event；不得在 Swift
+复制 Cargo 版本或根据事件首包推断 Core 身份。
+
+该 API 不初始化 observability runtime，不安装 subscriber，不访问用户文件、日志目录、DB 或网络。诊断包中的历史
+schema version 2 事件仍按自身 build context 只读展示，不要求与当前加载 Core 相等。
+
+### `init_logging(level: String, callback: CoreLogCallback) throws`
 
 ```swift
 do {
-    try AreaMatrix.initLogging(level: "info")
+    try AreaMatrix.initLogging(level: "info", callback: legacyCallback)
 } catch let error as CoreError {
     print("logging init failed: \(error)")
 }
 ```
 
-`level`：`"trace" | "debug" | "info" | "warn" | "error"`。
+`level` 只接受 `trace`、`debug`、`info`、`warn` 或 `error`。本函数是兼容入口：它将旧 callback 适配到
+结构化 observability runtime，并只保证 legacy record 投影。新调用方使用 `initialize_observability`。
 
-当前实现只验证日志级别是否合法。完整 subscriber wiring（日志订阅器接线）不属于该函数现有保证，调用方不能据此假设 Core 日志已经持久化或输出到指定目的地。
+重复调用可以更新兼容 sink 与最小级别，但不会安装第二个 global subscriber。若结构化 runtime 已初始化，兼容入口
+保留其 session ID 和首次固定的 queue 容量，避免 legacy reconnect 因默认容量不同而失败。非法 level 返回 `Config`。
+
+### `initialize_observability(config: ObservabilityConfig, sink: CoreObservabilitySink) throws -> ObservabilityHealth`
+
+初始化或重新连接进程级 Core observability runtime。subscriber 全进程只安装一次；sink 由 runtime 持有，函数返回后仍可
+接收后续 Core event。重复调用原子替换 config 和 sink，不创建第二个 worker。
+
+`queue_capacity` 范围为 64–65,536。`include_sensitive` 只允许 sensitive 字段进入已明确授权的本地 sink；
+`Prohibited` 字段始终拒绝。Core 在进入有界 queue 前执行字段校验和 source redaction。
+
+Core 发出的当前事件为 schema version 2，并携带 `ObservabilityBuildContext`：`producer`、`version`、可选
+`build`、`configuration`、`platform` 与 `architecture`。该结构只描述产生事件的二进制；Core 不伪造 macOS
+App build，macOS 也不补猜旧 Core 事件。schema version 1 仅保留为旧 JSONL/诊断包的只读兼容格式。
+
+schema version 2 的事件 JSON 使用 snake_case 规范键；事件总隐私等级固定为 `privacy_level`，生命周期字段固定为
+`phase`。`CoreObservabilityAttribute.privacy` 继续表示单个属性的隐私分类，两者不是同一字段。新 writer 不得生成
+schema version 1 或旧的事件级 `privacy` 键；只读 reader 必须按 schema 版本解码，并拒绝新旧键混用。
+
+`session_id` 必须是非空 UUID。session ID 和 queue 容量在首次初始化时固定；进程运行期间请求不同 session 或容量
+返回 `Config`，模式、最小级别、sink 和 sensitive 授权仍可更新。新的 session 和容量在下次 App 启动生效。
+
+该 API 不创建日志目录、不写 repository、不执行网络请求，也不依赖 AppKit/OSLog。Swift 平台层决定 OSLog、内存、
+滚动 JSONL、界面和诊断包 sink。
+
+### `update_observability_config(config: ObservabilityConfig) throws -> ObservabilityHealth`
+
+更新 mode、minimum severity 和 sensitive 授权。runtime 未初始化时返回 `Config`；首次初始化固定的
+`session_id` 与 `queue_capacity` 在当前进程内不可修改。模式更新不清除已有本地平台日志；retention 和删除由平台配置
+单独负责。
+
+### `get_observability_health() -> ObservabilityHealth`
+
+无副作用返回初始化、mode、queue depth/capacity、按级别 drop count、callback 和 degraded 状态。健康读取不打开 DB、
+不访问用户文件、不写日志，也不重置计数。
+
+### `flush_observability(deadline_ms: UInt64) throws -> ObservabilityHealth`
+
+等待已接受的 Core event 在 deadline 内交给 sink。deadline 范围为 1–5,000 ms，范围外返回 `Validation`；runtime
+尚未初始化返回 `Config`。deadline 内未完成返回 degraded health，不无限阻塞，也不保证平台文件 writer 已
+`fsync`；平台层对自己的 sink 执行独立 flush。
+
+### `CoreTraceContext`
+
+需要跨 Swift/Core 关联的请求 DTO 持有可选 `CoreTraceContext`。Swift 创建 session/trace/parent span，Core 创建本调用
+span；不能用 thread-local 隐式跨越 `Task.detached`。context 的 `session_id` 必须与当前 observability runtime 一致。
+`operation_id`、`retry_of_operation_id` 和 `incident_id` 只在对应业务/诊断生命周期存在时填写；retry 必须同时提供新的
+`operation_id`，且两者不能相同。
+
+`resource_refs` 只接收平台层已经生成的 privacy-safe resource identity。每次业务 operation 使用随机
+`resource_id`；`alias` 使用安装范围随机密钥生成 keyed pseudonym，并固定为 `file.<24 lowercase hex>`，同一安装
+可关联但不能由文件名直接反查。Core 只验证 wire shape，不接收 alias 密钥，也不从路径或文件名自行生成 alias。
+`size_bucket` 只接受 `lt_1mb`、`1mb_10mb`、`10mb_100mb`、`100mb_1gb`、`gte_1gb`；`storage_mode`
+只接受 `copied`、`moved`、`indexed`。根事件、子 span 和终态传播同一组 resource ref。
+
+`attributes` 只包含受限结构化字段：单值最多 4,096 UTF-8 bytes，单个 context 的结构化 payload 总量最多
+65,536 bytes。原文件名等用户识别信息必须显式标记为 `Sensitive`，默认在 Core source redaction 中替换为
+`[REDACTED]`；表达 filename/path/URL/locator 的已知 key 具有不可降级的 Sensitive privacy floor。路径、用户正文、
+翻译句子和 secret 不得作为普通 context identity。resource ref 至少把事件总隐私等级提升为 `Pseudonymous`，
+保留的 sensitive 字段把事件总隐私等级提升为 `Sensitive`。
+
+`action_id` 与 `component_id` 必须精确注册在 `core/resources/observability_catalog.json`。Core 先校验字符与
+payload 边界，再校验 Catalog 成员资格；合法 ASCII 但未注册的 ID 返回 `Validation`，且 observed API 在任何
+staging、用户文件或 DB 副作用前停止。macOS 控制台消费同一只读资源，不以字符串前缀扩展注册范围。
 
 ---
 
@@ -5064,6 +5328,19 @@ final 文件、写 DB、写导入日志、刷新生成概览，再尝试移除�
 如果最后的 source removal 失败，不回滚已安全导入的 repository 文件；
 结果必须标记 `Retained`，UI 显示 `Imported, original retained`，并且不得把
 该项标记为完整 Move。
+
+### observed import variants
+
+`import_file_observed(repoPath, sourcePath, options, traceContext)` 与
+`import_file_with_result_observed(repoPath, sourcePath, options, traceContext)` 分别保持上述两个导入入口的
+返回值和事务语义，仅增加显式 `CoreTraceContext`。macOS 等支持结构化诊断的 shell 使用 observed variant；
+兼容调用方可以继续使用原入口。
+
+Core 在任何 staging、用户文件或 DB 操作前验证 context 中的 UUID、session/retry 关系、action/component catalog ID、
+resource ref 和 typed attribute。无效 context 返回 `Validation` 且零副作用。有效调用为同一 Core span 发出
+`started` 和 terminal `succeeded` / `failed` / `degraded` 事件；Move 已提交但原件保留时使用 `degraded`，不能误记为
+完整成功。失败事件只携带稳定错误码，不携带 `CoreError` 中的原路径、文件名或底层错误字符串。事件队列、callback
+或平台 writer 失败不能改变导入返回值、文件系统提交、DB 事务或 rollback 结果。
 
 Replace 仍属于 replace confirmation / `replace confirmation surface`。Swift 平台/UI 层负责宿主 Trash / Recycle
 Bin availability probe、危险确认、文件夹展开、拖拽入口和多项进度；确认后的实际 Trash mutation、DB/change
@@ -7860,7 +8137,7 @@ public actor CoreBridge {
     }
 
     public func bootstrap() async throws -> RecoveryReport {
-        // init_logging 属于可选 meta API；macOS App 当前不接线日志初始化。
+        // Observability 由应用级装配初始化；repository bootstrap 只执行本资料库恢复。
         return try AreaMatrix.recoverOnStartup(repoPath: repoPath)
     }
 

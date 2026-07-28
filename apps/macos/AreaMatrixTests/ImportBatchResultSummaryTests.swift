@@ -3,6 +3,46 @@ import XCTest
 
 final class ImportBatchResultSummaryTests: XCTestCase {
     @MainActor
+    func testSourceRetainedSuccessTriggersSummaryWithoutBecomingFailure() async {
+        let sourceURL = importBatchInvoiceURL()
+        var sourceRetainedEntry = FileEntrySnapshot.importSingleFileFixture(
+            currentName: "Invoice_2026Q1.pdf",
+            category: "finance",
+            storageMode: "Moved"
+        )
+        sourceRetainedEntry.importCommitState = .sourceRetained
+        let importer = ImportBatchSequenceBatchImporter(results: [.success(sourceRetainedEntry)])
+        let model = importBatchCopyImportModel(importer: importer)
+
+        model.applyPreviewRows(
+            [importBatchReadyBatchRow(url: sourceURL)],
+            request: importBatchResultSummaryRequest(urls: [sourceURL]),
+            selectedDestination: .autoClassify
+        )
+        model.selectedStorageMode = .move
+        let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
+
+        XCTAssertEqual(outcome?.succeededEntries, [sourceRetainedEntry])
+        XCTAssertEqual(outcome?.failedCount, 0)
+        XCTAssertTrue(outcome?.needsResultSummary == true)
+        XCTAssertEqual(outcome?.progressSnapshot(currentPath: "fallback"), importBatchProgress(
+            completed: 1,
+            total: 1,
+            currentPath: "finance/Invoice_2026Q1.pdf",
+            items: [
+                importBatchProgressItem(
+                    fileID: 42,
+                    sourcePath: importSingleFileSourcePath(),
+                    targetPath: "finance/Invoice_2026Q1.pdf",
+                    phase: .done,
+                    importCommitState: .sourceRetained
+                )
+            ]
+        ))
+        XCTAssertEqual(model.rows.first?.importCommitState, .sourceRetained)
+    }
+
+    @MainActor
     func testImportBatchPreviewErrorAndPartialSuccessSurfaceFailedItemInResultSummary() async {
         let readyURL = importBatchInvoiceURL()
         let failedPreviewURL = importBatchUnreadablePreviewURL()

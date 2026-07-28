@@ -4,11 +4,14 @@ struct MainWindow: View {
     @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: OnboardingModel
     @StateObject private var externalCreatedFileWatcher: MainExternalCreatedFileWatcher
+    @ObservedObject private var observabilityRuntime: ObservabilityRuntimeAssembly
     private let importProgressControlState: ImportProgressControlState
     private let windowCloser: any WindowClosing
 
+    @MainActor
     init(
         model: OnboardingModel = OnboardingModel(),
+        observabilityRuntime: ObservabilityRuntimeAssembly? = nil,
         windowCloser: any WindowClosing = AppPlatformServices.windowCloser
     ) {
         _model = StateObject(wrappedValue: model)
@@ -16,6 +19,7 @@ struct MainWindow: View {
             cursorStore: model.externalChangesSyncer
         ))
         importProgressControlState = model.importProgressControlState
+        _observabilityRuntime = ObservedObject(wrappedValue: observabilityRuntime ?? .shared)
         self.windowCloser = windowCloser
     }
 }
@@ -34,6 +38,17 @@ extension MainWindow {
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                     .padding(.top, 18)
                     .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            if let notice = observabilityRuntime.recoveryNotice {
+                ObservabilityRecoveryBanner(
+                    incidentID: notice.incidentID,
+                    onOpen: openRecoveredIncident,
+                    onDismiss: observabilityRuntime.dismissRecoveryNotice
+                )
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .frame(
@@ -250,6 +265,18 @@ extension MainWindow {
                     duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy)
                 )
             )
+        }
+    }
+}
+
+private extension MainWindow {
+    func openRecoveredIncident() {
+        switch model.route {
+        case let .mainEmpty(opening), let .mainList(opening), let .settingsGeneral(opening):
+            model.showGeneralSettings(opening: opening, selectedTab: "diagnostics")
+            observabilityRuntime.dismissRecoveryNotice()
+        default:
+            model.toastMessage = L10n.message("observability.recovery.openAfterRepository")
         }
     }
 }

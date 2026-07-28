@@ -3,6 +3,32 @@ import XCTest
 
 final class ImportResultCopyRetryTests: XCTestCase {
     @MainActor
+    func testRetrySourceRetainedStaysSuccessfulAndPreservesCommitState() async {
+        var sourceRetainedEntry = FileEntrySnapshot.importSingleFileFixture(
+            currentName: importResultFailedFilename(),
+            category: "docs"
+        )
+        sourceRetainedEntry.importCommitState = .sourceRetained
+        let importer = ImportSingleFileRecordingImporter(results: [.success(sourceRetainedEntry)])
+        let model = makeImportResultMainListFixture(importProgressImporter: importer).model
+
+        guard showImportResultRoute(model, progress: ImportResultFixtures.failedCopyProgress) != nil else { return }
+        await model.retryImportResultFailedItems()
+
+        guard let result = requireImportResultRoute(model) else { return }
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 2, failed 0, stopped 0, pending 0.",
+            statuses: [.imported, .sourceRetained]
+        )
+        XCTAssertFalse(result.canRetryFailedItems)
+        XCTAssertEqual(
+            result.items.first(where: { $0.status == .sourceRetained })?.reason,
+            L10n.string("import.result.source-retained.reason")
+        )
+    }
+
+    @MainActor
     func testImportResultImportCopyFileCoreRetryFailedCopyItemUsesCoreBridgeImporterAndUpdatesResult() async {
         let importer = ImportSingleFileRecordingImporter()
         let model = makeImportResultMainListFixture(importProgressImporter: importer).model

@@ -133,6 +133,15 @@ struct LocalFileAvailabilityChecker: FileAvailabilityChecking {
     }
 }
 
+enum CoreImportCommitState: String, Codable, Equatable {
+    case committed
+    case sourceRetained
+
+    var isDegraded: Bool {
+        self == .sourceRetained
+    }
+}
+
 struct FileEntrySnapshot: Equatable, Identifiable {
     var id: Int64
     var path: String
@@ -147,6 +156,7 @@ struct FileEntrySnapshot: Equatable, Identifiable {
     var importedAt: Int64
     var updatedAt: Int64
     var availability: FileAvailabilitySnapshot = .available
+    var importCommitState: CoreImportCommitState = .committed
 }
 
 extension FileEntrySnapshot {

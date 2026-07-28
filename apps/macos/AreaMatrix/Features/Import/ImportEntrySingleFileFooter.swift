@@ -8,7 +8,6 @@ extension ImportEntrySheetView {
                 .keyboardShortcut(.cancelAction)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button(previewModel.singleFilePrimaryActionTitle) {
-                AppLogger.shared.logUIAction("User confirmed Single File Import for: \(request.urls.first?.lastPathComponent ?? "unknown")")
                 Task { await runSingleFileImportAction() }
             }
             .keyboardShortcut(.defaultAction)

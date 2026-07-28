@@ -311,6 +311,11 @@ documents:
             )
             udl = core_dir / "area_matrix.udl"
             udl.write_text("namespace area_matrix {}\n", encoding="utf-8")
+            config = core_dir / "uniffi.toml"
+            config.write_text(
+                "[bindings.swift]\nexperimental_sendable_value_types = true\n",
+                encoding="utf-8",
+            )
             tool_root = Path(tmp) / "uniffi-tool"
 
             with patch.dict("os.environ", {"AREAMATRIX_UNIFFI_BINDGEN_TOOL_ROOT": str(tool_root)}):
@@ -319,6 +324,9 @@ documents:
             self.assertEqual(bindgen_udl, tool_root / "udl-crate/src/area_matrix.udl")
             self.assertTrue(bindgen_udl.is_symlink())
             self.assertEqual(bindgen_udl.readlink(), udl)
+            bindgen_config = tool_root / "udl-crate/uniffi.toml"
+            self.assertTrue(bindgen_config.is_symlink())
+            self.assertEqual(bindgen_config.readlink(), config)
             manifest = (tool_root / "udl-crate/Cargo.toml").read_text(encoding="utf-8")
             self.assertIn('name = "area_matrix_core"', manifest)
 
@@ -360,6 +368,38 @@ documents:
 
             for generated_name, _ in build.BINDING_ARTIFACTS:
                 self.assertEqual((generated_dir / generated_name).read_text(encoding="utf-8"), "first\nsecond\n")
+
+    def test_swift_concurrency_compatibility_rewrites_pinned_uniffi_templates(self) -> None:
+        source = """
+fileprivate class UniffiHandleMap<T> {
+    var count: Int {
+        get {
+            map.count
+        }
+    }
+}
+public protocol CoreLogCallback : AnyObject {
+}
+fileprivate struct Callback {
+    static var vtable: ExampleVTable = makeVTable()
+    fileprivate static var handleMap = UniffiHandleMap<CoreLogCallback>()
+}
+private enum InitializationResult {
+    case ok
+}
+private var initializationResult: InitializationResult = {
+    .ok
+}()
+"""
+
+        rewritten = build._apply_swift_concurrency_compatibility(source)
+
+        self.assertIn("UniffiHandleMap<T: Sendable>: @unchecked Sendable", rewritten)
+        self.assertIn("CoreLogCallback : AnyObject, Sendable", rewritten)
+        self.assertIn("nonisolated(unsafe) static var vtable", rewritten)
+        self.assertIn("fileprivate static let handleMap", rewritten)
+        self.assertIn("private let initializationResult", rewritten)
+        self.assertIn("lock.withLock { map.count }", rewritten)
 
     def test_bindings_verify_passes_when_tracked_artifacts_match(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1547,10 +1587,10 @@ repo_domains:
                     "closes_residual\nrelease_gate\nresidual_evidence_gate\nrelease_evidence_audit\n"
                     "any residual is closed\n"
                 ),
-                ".codex/skills-src/README.md": "areamatrix-residual-ledger\nareamatrix-codex-os\n",
+                ".codex/skills-src/README.md": "areamatrix-residual-ledger\nareamatrix-codex-os\nareamatrix-macos-ui\n",
                 ".codex/references/index.md": "./dev check quality\n./dev check wording\n",
-                ".codex/references/codex-workflow-and-tools.md": "已有 9 个 AreaMatrix skills\n",
-                "tasks/backlog/codex-operating-layer-boundary-regression.md": "现有 9 个 repo-local skills\n",
+                ".codex/references/codex-workflow-and-tools.md": "已有 10 个 AreaMatrix skills\n",
+                "tasks/backlog/codex-operating-layer-boundary-regression.md": "现有 10 个 repo-local skills\n",
                 "docs/development/ci-governance.md": "./dev check quality\n./dev check wording\n",
                 ".github/workflows/governance-ci.yml": "./dev check quality\n./dev check wording\n",
                 ".codex/skills-src/areamatrix-validation-driver/SKILL.md": "macOS app\n",
@@ -1561,6 +1601,7 @@ repo_domains:
                 ".codex/skills-src/areamatrix-workflow-planning/SKILL.md": "v* workflow\n",
                 ".codex/skills-src/areamatrix-git-checkpoint/SKILL.md": "checkpoint\n",
                 ".codex/skills-src/areamatrix-codex-os/SKILL.md": "Codex Operating System\n",
+                ".codex/skills-src/areamatrix-macos-ui/SKILL.md": "L10n String Catalog\n",
             }
             for relative, text in files.items():
                 path = root / relative
@@ -1932,6 +1973,28 @@ repo_domains:
             task.write_text("# 4-1/task-15\n", encoding="utf-8")
 
             self.assertEqual(checks._task_path(root, "4-1/task-15").resolve(), task.resolve())
+
+    def test_page_task_check_runs_localization_before_build(self) -> None:
+        with (
+            patch("scripts.dev_tools.checks.run_localization_check", return_value=0) as localization,
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            run_step.return_value.returncode = 0
+
+            self.assertEqual(checks._run_page_task_checks(Path("/tmp/repo")), 0)
+
+        localization.assert_called_once_with(Path("/tmp/repo"))
+        self.assertEqual(run_step.call_count, 1)
+        self.assertEqual(run_step.call_args.args[0][0], "xcodebuild")
+
+    def test_page_task_check_stops_when_localization_fails(self) -> None:
+        with (
+            patch("scripts.dev_tools.checks.run_localization_check", return_value=9),
+            patch("scripts.dev_tools.checks.run_step") as run_step,
+        ):
+            self.assertEqual(checks._run_page_task_checks(Path("/tmp/repo")), 9)
+
+        run_step.assert_not_called()
 
     def test_task_check_maps_c2_03_to_saved_search_tests(self) -> None:
         text = "Core ability saved-search-core saved-search-crud"

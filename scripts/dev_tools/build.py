@@ -13,6 +13,7 @@ from .common import fail, project_root, require_command, require_file, resolve_p
 
 UNIFFI_BINDGEN_WRAPPER = "areamatrix_uniffi_bindgen_wrapper"
 UNIFFI_BINDGEN_CRATE = "uniffi_bindgen"
+UNIFFI_CONFIG_NAME = "uniffi.toml"
 DEFAULT_BINDINGS_UDL = "core/area_matrix.udl"
 DEFAULT_TRACKED_BINDINGS_DIR = "apps/macos/AreaMatrix/Bridge/UniFFI"
 DEFAULT_IOS_BINDINGS_DIR = "apps/ios/Carea_matrixFFI"
@@ -293,6 +294,7 @@ def _require_core_build_inputs(core_dir: Path) -> None:
         fail(f"core crate not found at {core_dir}.")
     require_file(core_dir / "Cargo.toml", "Core Cargo manifest")
     require_file(core_dir / "area_matrix.udl", "UniFFI definition")
+    require_file(core_dir / UNIFFI_CONFIG_NAME, "UniFFI binding configuration")
     require_file(core_dir / "build.rs", "UniFFI scaffolding build script")
 
 
@@ -340,6 +342,8 @@ def _core_package_name(core_dir: Path) -> str:
 def _prepare_udl_bindgen_crate(core_dir: Path) -> Path:
     udl_file = core_dir / "area_matrix.udl"
     require_file(udl_file, "Core UniFFI UDL")
+    config_file = core_dir / UNIFFI_CONFIG_NAME
+    require_file(config_file, "Core UniFFI binding configuration")
 
     tool_root = Path(os.environ.get("AREAMATRIX_UNIFFI_BINDGEN_TOOL_ROOT", "/private/tmp/areamatrix-uniffi-bindgen"))
     crate_dir = tool_root / "udl-crate"
@@ -359,6 +363,7 @@ def _prepare_udl_bindgen_crate(core_dir: Path) -> Path:
     )
     link = src_dir / "area_matrix.udl"
     _replace_symlink(link, udl_file)
+    _replace_symlink(crate_dir / UNIFFI_CONFIG_NAME, config_file)
     return link
 
 
@@ -436,11 +441,78 @@ def _copy_binding_artifacts(generated_dir: Path, tracked_dir: Path) -> None:
         shutil.copy2(source, tracked_dir / tracked_name)
 
 
+def _replace_generated_swift_template(
+    source: str,
+    old: str,
+    new: str,
+    *,
+    expected_count: int,
+    label: str,
+) -> str:
+    actual_count = source.count(old)
+    if actual_count != expected_count:
+        fail(
+            f"UniFFI Swift concurrency compatibility expected {expected_count} {label} template(s), "
+            f"found {actual_count}. Review the pinned generator templates before updating bindings."
+        )
+    return source.replace(old, new)
+
+
+def _apply_swift_concurrency_compatibility(source: str) -> str:
+    if "private enum InitializationResult" not in source:
+        return source
+
+    callback_protocol = re.compile(r"(public protocol [A-Za-z0-9_]+) : AnyObject \{")
+    callback_count = len(callback_protocol.findall(source))
+    if callback_count == 0:
+        fail("UniFFI Swift concurrency compatibility found no callback protocols in a complete binding.")
+    source = callback_protocol.sub(r"\1 : AnyObject, Sendable {", source)
+    source = _replace_generated_swift_template(
+        source,
+        "fileprivate class UniffiHandleMap<T> {",
+        "fileprivate final class UniffiHandleMap<T: Sendable>: @unchecked Sendable {",
+        expected_count=1,
+        label="handle-map class",
+    )
+    source = _replace_generated_swift_template(
+        source,
+        "    static var vtable: ",
+        "    nonisolated(unsafe) static var vtable: ",
+        expected_count=callback_count,
+        label="callback vtable",
+    )
+    source = _replace_generated_swift_template(
+        source,
+        "    fileprivate static var handleMap = ",
+        "    fileprivate static let handleMap = ",
+        expected_count=callback_count,
+        label="callback handle-map",
+    )
+    source = _replace_generated_swift_template(
+        source,
+        "private var initializationResult: InitializationResult = {",
+        "private let initializationResult: InitializationResult = {",
+        expected_count=1,
+        label="initialization result",
+    )
+    source = _replace_generated_swift_template(
+        source,
+        "    var count: Int {\n        get {\n            map.count\n        }\n    }",
+        "    var count: Int {\n        lock.withLock { map.count }\n    }",
+        expected_count=1,
+        label="handle-map count accessor",
+    )
+    return source
+
+
 def _normalize_binding_artifacts(generated_dir: Path) -> None:
     for generated_name, _ in BINDING_ARTIFACTS:
         path = generated_dir / generated_name
         require_file(path, f"generated Swift binding artifact '{generated_name}'")
-        lines = path.read_text(encoding="utf-8").splitlines()
+        source = path.read_text(encoding="utf-8")
+        if generated_name == "area_matrix.swift":
+            source = _apply_swift_concurrency_compatibility(source)
+        lines = source.splitlines()
         while lines and not lines[-1].strip():
             lines.pop()
         path.write_text("\n".join(line.rstrip() for line in lines) + "\n", encoding="utf-8")

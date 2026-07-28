@@ -336,6 +336,11 @@ extension ImportFolderPreviewModel {
         rows[index].status = status
     }
 
+    func updateRowCommitState(at index: Int, commitState: CoreImportCommitState) {
+        guard rows.indices.contains(index) else { return }
+        rows[index].importCommitState = commitState
+    }
+
     func setRowStatus(_ status: ImportFolderPreviewRowStatus, for rowID: ImportFolderPreviewRow.ID) {
         guard let index = rows.firstIndex(where: { $0.id == rowID }) else { return }
         rows[index].status = status

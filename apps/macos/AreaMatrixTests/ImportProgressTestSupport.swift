@@ -61,9 +61,32 @@ func assertImportProgressRetryReady(
     line: UInt = #line
 ) {
     XCTAssertTrue(state.canRetryCurrentItem, file: file, line: line)
-    XCTAssertEqual(state.retryContext, retryContext, file: file, line: line)
+    assertImportProgressRetryContext(state.retryContext, equals: retryContext, file: file, line: line)
     if let statusText {
         XCTAssertEqual(state.retryStatusText, statusText, file: file, line: line)
+    }
+}
+
+func assertImportProgressRetryContext(
+    _ actual: ImportProgressRetryContext?,
+    equals expected: ImportProgressRetryContext,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) {
+    guard let actual else {
+        return XCTFail("Expected import retry context", file: file, line: line)
+    }
+    XCTAssertEqual(actual.repoPath, expected.repoPath, file: file, line: line)
+    XCTAssertEqual(actual.sourcePath, expected.sourcePath, file: file, line: line)
+    XCTAssertEqual(actual.storageMode, expected.storageMode, file: file, line: line)
+    XCTAssertEqual(actual.overrideCategory, expected.overrideCategory, file: file, line: line)
+    XCTAssertEqual(actual.overrideFilename, expected.overrideFilename, file: file, line: line)
+    XCTAssertEqual(actual.duplicateStrategy, expected.duplicateStrategy, file: file, line: line)
+    if let expectedTraceID = expected.traceID {
+        XCTAssertEqual(actual.traceID, expectedTraceID, file: file, line: line)
+    }
+    if let expectedOperationID = expected.operationID {
+        XCTAssertEqual(actual.operationID, expectedOperationID, file: file, line: line)
     }
 }
 

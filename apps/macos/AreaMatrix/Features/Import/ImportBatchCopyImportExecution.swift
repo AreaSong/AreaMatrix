@@ -84,6 +84,7 @@ struct ImportBatchCopyCycleInput {
     var completed: Int
     var failed: Int
     var total: Int
+    var traceContext: CoreImportTraceContext
 }
 
 struct ImportFolderImportCycleInput {
@@ -93,6 +94,7 @@ struct ImportFolderImportCycleInput {
     var completed: Int
     var failed: Int
     var total: Int
+    var traceContext: CoreImportTraceContext
 }
 
 struct ImportBatchRetryContinuation {
@@ -100,6 +102,7 @@ struct ImportBatchRetryContinuation {
     var retryEntry: FileEntrySnapshot
     var retryRowIndex: Int?
     var retryPath: String
+    var traceID: String
 }
 
 struct ImportBatchCopyRunState {
@@ -117,6 +120,7 @@ struct ImportBatchCopyRunInput {
     var request: ImportEntryRequest
     var selectedDestination: ImportBatchDestinationOption
     var total: Int
+    var traceID: String
 }
 
 struct ImportFolderImportRunState {
@@ -133,13 +137,15 @@ struct ImportFolderImportRunInput {
     var request: ImportEntryRequest
     var storageMode: ImportSingleFileStorageMode
     var total: Int
+    var traceID: String
 }
 
 extension ImportBatchCopyImportModel {
     func importRow(
         _ row: ImportBatchCopyImportRow,
         request: ImportEntryRequest,
-        selectedDestination: ImportBatchDestinationOption
+        selectedDestination: ImportBatchDestinationOption,
+        traceContext: CoreImportTraceContext
     ) async throws -> FileEntrySnapshot {
         try await importer.importBatchFile(request: CoreBatchImportRequest(
             repoPath: request.repoPath,
@@ -148,7 +154,8 @@ extension ImportBatchCopyImportModel {
             destination: entryDestination(for: row, selectedDestination: selectedDestination),
             suggestedCategory: row.categoryOverride ?? row.predictedCategory,
             overrideFilename: row.resolvedIncomingName,
-            duplicateStrategy: duplicateStrategy(for: row)
+            duplicateStrategy: duplicateStrategy(for: row),
+            traceContext: traceContext
         ))
     }
 

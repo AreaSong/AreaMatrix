@@ -117,7 +117,12 @@ extension ImportBatchCopyImportModel {
         let readyRowIDs = Set(importableRows.map(\.id))
         let total = importableRows.count
         let initialPreviewErrorCount = previewErrorCount
+        let actionContext = CoreImportTraceContext.operation(
+            actionID: "repository.import.batch.confirmed",
+            componentID: "macos.import.batch"
+        )
         lastFailureMapping = nil
+        await AppLogger.shared.recordUIAction(traceContext: actionContext)
         await saveImportSession(
             request: request,
             completed: 0,
@@ -130,7 +135,8 @@ extension ImportBatchCopyImportModel {
                 readyRowIDs: readyRowIDs,
                 request: request,
                 selectedDestination: selectedDestination,
-                total: total
+                total: total,
+                traceID: actionContext.traceID
             ),
             controlState: controlState,
             reportProgress: reportProgress
@@ -166,6 +172,11 @@ extension ImportBatchCopyImportModel {
     ) async -> ImportBatchCopyRunState {
         var state = ImportBatchCopyRunState()
         for index in rows.indices where input.readyRowIDs.contains(rows[index].id) {
+            let traceContext = CoreImportTraceContext.operation(
+                traceID: input.traceID,
+                actionID: "repository.import.confirmed",
+                componentID: "macos.import.batch"
+            )
             let cycle = await runImportCycle(
                 input: ImportBatchCopyCycleInput(
                     rowIndex: index,
@@ -173,11 +184,18 @@ extension ImportBatchCopyImportModel {
                     selectedDestination: input.selectedDestination,
                     completed: state.completed,
                     failed: state.failed,
-                    total: input.total
+                    total: input.total,
+                    traceContext: traceContext
                 ),
                 reportProgress: reportProgress
             )
-            updateImportRunState(&state, cycle: cycle, rowIndex: index, request: input.request)
+            updateImportRunState(
+                &state,
+                cycle: cycle,
+                rowIndex: index,
+                request: input.request,
+                traceContext: traceContext
+            )
             reportProgress(cycle.progress)
             if shouldStopImportRun(&state, controlState: controlState, reportProgress: reportProgress) {
                 break
@@ -190,7 +208,8 @@ extension ImportBatchCopyImportModel {
         _ state: inout ImportBatchCopyRunState,
         cycle: ImportBatchCopyCycleResult,
         rowIndex: Int,
-        request: ImportEntryRequest
+        request: ImportEntryRequest,
+        traceContext: CoreImportTraceContext
     ) {
         state.completed = cycle.completed
         state.failed = cycle.failed
@@ -200,7 +219,11 @@ extension ImportBatchCopyImportModel {
             state.succeededEntries.append(entry)
         }
         if cycle.stoppedForQueue {
-            state.fatalRetryContext = retryContext(for: rows[rowIndex], request: request)
+            state.fatalRetryContext = retryContext(
+                for: rows[rowIndex],
+                request: request,
+                traceContext: traceContext
+            )
         }
     }
 
@@ -265,9 +288,11 @@ extension ImportBatchCopyImportModel {
         let entry = try await importRow(
             row,
             request: input.request,
-            selectedDestination: input.selectedDestination
+            selectedDestination: input.selectedDestination,
+            traceContext: input.traceContext
         )
         rows[rowIndex].status = .imported
+        rows[rowIndex].importCommitState = entry.importCommitState
         let result = ImportBatchCopyCycleResult.success(
             entry: entry,
             completed: input.completed + 1,
@@ -326,6 +351,11 @@ extension ImportBatchCopyImportModel {
     func setStatus(_ status: ImportBatchCopyImportRowStatus, for rowID: ImportBatchCopyImportRow.ID) {
         guard let index = rows.firstIndex(where: { $0.id == rowID }) else { return }
         rows[index].status = status
+    }
+
+    func setImportCommitState(_ state: CoreImportCommitState, for rowID: ImportBatchCopyImportRow.ID) {
+        guard let index = rows.firstIndex(where: { $0.id == rowID }) else { return }
+        rows[index].importCommitState = state
     }
 
     func updateNamingStrategy(_ strategy: ImportBatchNamingStrategy) {

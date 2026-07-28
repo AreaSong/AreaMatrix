@@ -40,6 +40,35 @@ struct ImportProgressRetryContext: Equatable {
     var overrideCategory: String
     var overrideFilename: String
     var duplicateStrategy: ImportProgressDuplicateStrategy
+    var traceID: String?
+    var operationID: String?
+
+    init(
+        repoPath: String,
+        sourcePath: String,
+        storageMode: ImportSingleFileStorageMode,
+        overrideCategory: String,
+        overrideFilename: String,
+        duplicateStrategy: ImportProgressDuplicateStrategy,
+        traceID: String? = nil,
+        operationID: String? = nil
+    ) {
+        self.repoPath = repoPath
+        self.sourcePath = sourcePath
+        self.storageMode = storageMode
+        self.overrideCategory = overrideCategory
+        self.overrideFilename = overrideFilename
+        self.duplicateStrategy = duplicateStrategy
+        self.traceID = traceID
+        self.operationID = operationID
+    }
+
+    func replacingTraceContext(_ context: CoreImportTraceContext) -> Self {
+        var updated = self
+        updated.traceID = context.traceID
+        updated.operationID = context.operationID
+        return updated
+    }
 }
 
 enum ImportProgressRecoveryCheckState: Equatable {

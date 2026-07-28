@@ -152,6 +152,7 @@ func importBatchProgressItem(
     sourcePath: String,
     targetPath: String,
     phase: ImportBatchProgressSnapshot.Phase,
+    importCommitState: CoreImportCommitState = .committed,
     errorMessage: String? = nil,
     existingRelativePath: String? = nil,
     importConflictBatch: ImportConflictBatchProgressMetadata? = nil
@@ -161,6 +162,7 @@ func importBatchProgressItem(
         sourcePath: sourcePath,
         targetPath: targetPath,
         phase: phase,
+        importCommitState: importCommitState,
         errorMessage: errorMessage,
         existingRelativePath: existingRelativePath,
         importConflictBatch: importConflictBatch

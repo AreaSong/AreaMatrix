@@ -36,7 +36,7 @@ decisions:
     summary: Keep interface preference, repository policy, operation content locale, region formatting, and verbatim values as separate typed domains.
   - id: interface-selection
     status: accepted
-    summary: App language is device-local system, Simplified Chinese, or English; Welcome cycles without a menu, displays the stored preference rather than only the resolved locale, and General commits immediately.
+    summary: App language is device-local system, Simplified Chinese, or English; Welcome cycles without a menu and the dedicated Language settings page exposes the same stored preference, with either entry committing immediately.
   - id: interface-switcher-presentation
     status: accepted
     summary: The compact Welcome switcher renders follow-system as a globe with an automatic marker, Simplified Chinese as 中, and English as EN; tooltip and accessibility expose the full stored mode and, for follow-system, its current concrete resolution.
@@ -48,7 +48,7 @@ decisions:
     summary: System preference re-resolves on launch, app activation and locale-change notification and broadcasts to all windows; explicit locales ignore OS changes, while unknown stored app values run as system without implicit write-back.
   - id: content-selection
     status: accepted
-    summary: Repository policy is follow-interface, Simplified Chinese, or English; follow-interface displays its current concrete resolution, new repositories choose it before first generation, and the default remains follow-interface.
+    summary: Repository policy is follow-interface, Simplified Chinese, or English; the dedicated Language settings page displays its current concrete resolution, new repositories choose it before first generation, and the default remains follow-interface.
   - id: repository-language-feedback
     status: accepted
     summary: Saving repository content language immediately reports the canonical saved policy and concrete result, states that existing generated content was not rewritten, and offers explicit regeneration only when provenance reports a non-synchronized state.
@@ -126,7 +126,7 @@ decisions:
     summary: Preflight presents the concrete target locale and create/replace/delete counts, identifies managed-root participation, and states that AI results, README and user-authored bytes are excluded; all windows observe one operation while only its initiating window owns interaction.
   - id: overview-regeneration-interaction
     status: accepted
-    summary: Repository owns the regeneration entry and completion summary; pre-commit cancellation is available, commit removes cancellation, non-initiating windows are read-only observers, and crash recovery automatically rolls forward or back from verified evidence instead of asking the user to choose an unsafe direction.
+    summary: The Language settings page owns the regeneration entry and completion summary; pre-commit cancellation is available, commit removes cancellation, non-initiating windows are read-only observers, and crash recovery automatically rolls forward or back from verified evidence instead of asking the user to choose an unsafe direction.
   - id: recoverable-context-privacy
     status: accepted
     summary: Recoverable context stores only stable operation identity, type, concrete locale, revisions, canonical options, target identifiers or hashes, format version and recovery state; it does not duplicate reconstructable user content, full prompts or secrets.
@@ -153,7 +153,7 @@ decisions:
     summary: Legacy explicit values and recognized aliases remain readable without write-back, while a repository with no provable language policy remains unknown and read-only for generation until the user explicitly selects a canonical policy; existing prose is never inspected to infer language.
   - id: legacy-repository-locale-presentation
     status: accepted
-    summary: An unknown legacy repository remains browsable with persistent non-blocking guidance, exposes an unselected three-policy chooser in Repository, displays the concrete result for follow-interface, and unlocks generation only after explicit Save without regenerating existing output.
+    summary: An unknown legacy repository remains browsable with persistent non-blocking guidance, exposes an unselected three-policy chooser on the Language settings page, displays the concrete result for follow-interface, and unlocks generation only after explicit Save without regenerating existing output.
   - id: classifier-recovery-safety
     status: accepted
     summary: A missing classifier enters degraded read-only and may be explicitly created from defaults; readable invalid content may be explicitly restored only after a numbered non-overwriting backup, unreadable content must first regain readable permissions, and no path silently substitutes embedded rules.

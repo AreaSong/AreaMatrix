@@ -1,8 +1,24 @@
 namespace area_matrix {
     string get_version();
 
+    ObservabilityBuildContext get_observability_build_context();
+
     [Throws=CoreError]
     void init_logging(string level, CoreLogCallback callback);
+
+    [Throws=CoreError]
+    ObservabilityHealth initialize_observability(
+        ObservabilityConfig config,
+        CoreObservabilitySink sink
+    );
+
+    [Throws=CoreError]
+    ObservabilityHealth update_observability_config(ObservabilityConfig config);
+
+    ObservabilityHealth get_observability_health();
+
+    [Throws=CoreError]
+    ObservabilityHealth flush_observability(u64 deadline_ms);
 
 
     [Throws=CoreError]
@@ -248,6 +264,18 @@ namespace area_matrix {
     [Throws=CoreError]
     ImportResult import_file_with_result(
         string repo_path, string source_path, ImportOptions options
+    );
+
+    [Throws=CoreError]
+    FileEntry import_file_observed(
+        string repo_path, string source_path, ImportOptions options,
+        CoreTraceContext trace_context
+    );
+
+    [Throws=CoreError]
+    ImportResult import_file_with_result_observed(
+        string repo_path, string source_path, ImportOptions options,
+        CoreTraceContext trace_context
     );
 
     // replace confirmation may compose this existing deletion contract only for
@@ -2795,4 +2823,124 @@ dictionary CoreLogRecord {
 
 callback interface CoreLogCallback {
     void on_log(CoreLogRecord record);
+};
+
+enum ObservabilityMode {
+    "Disabled", "Standard", "Diagnostic", "Developer"
+};
+
+enum ObservabilitySeverity {
+    "Trace", "Debug", "Info", "Warn", "Error"
+};
+
+enum ObservabilityLayer {
+    "SwiftUi", "Platform", "Bridge", "Core", "Database", "Filesystem", "Network"
+};
+
+enum ObservabilityOutcome {
+    "None", "Started", "Succeeded", "Failed", "Cancelled", "Skipped", "Degraded"
+};
+
+enum ObservabilityPrivacy {
+    "Public", "Pseudonymous", "Sensitive", "Prohibited"
+};
+
+dictionary ObservabilityConfig {
+    string session_id;
+    ObservabilityMode mode;
+    ObservabilitySeverity minimum_severity;
+    u64 queue_capacity;
+    boolean include_sensitive;
+};
+
+dictionary CoreTraceContext {
+    string session_id;
+    string trace_id;
+    string? parent_span_id;
+    string? incident_id;
+    string? operation_id;
+    string? retry_of_operation_id;
+    string action_id;
+    string component_id;
+    sequence<CoreObservabilityResourceRef> resource_refs;
+    sequence<CoreObservabilityAttribute> attributes;
+};
+
+dictionary CoreObservabilityAttribute {
+    string key;
+    string value;
+    ObservabilityPrivacy privacy;
+};
+
+dictionary CoreObservabilityResourceRef {
+    string resource_id;
+    string alias;
+    string? extension;
+    string? size_bucket;
+    string? storage_mode;
+};
+
+dictionary CoreObservabilityError {
+    string code;
+    string? kind;
+    string? technical_details;
+};
+
+dictionary ObservabilityBuildContext {
+    string producer;
+    string version;
+    string? build;
+    string configuration;
+    string platform;
+    string architecture;
+};
+
+dictionary CoreObservabilityEvent {
+    u64 schema_version;
+    string event_id;
+    i64 wall_timestamp_ms;
+    u64 monotonic_timestamp_ns;
+    u64 sequence_number;
+    string session_id;
+    string? incident_id;
+    string trace_id;
+    string span_id;
+    string? parent_span_id;
+    string? operation_id;
+    string? retry_of_operation_id;
+    string action_id;
+    string component_id;
+    ObservabilityLayer layer;
+    string phase;
+    ObservabilitySeverity severity;
+    ObservabilityOutcome outcome;
+    u64? duration_ms;
+    sequence<CoreObservabilityResourceRef> resource_refs;
+    CoreObservabilityError? error;
+    sequence<CoreObservabilityAttribute> attributes;
+    ObservabilityPrivacy privacy_level;
+    string? message;
+    string? target;
+    string? thread_name;
+    ObservabilityBuildContext build_context;
+};
+
+dictionary ObservabilityHealth {
+    boolean initialized;
+    ObservabilityMode mode;
+    u64 queue_depth;
+    u64 queue_capacity;
+    u64 dropped_trace;
+    u64 dropped_debug;
+    u64 dropped_info;
+    u64 dropped_warn;
+    u64 dropped_error;
+    u64 redaction_rejected;
+    boolean callback_connected;
+    boolean degraded;
+    string? degraded_reason;
+};
+
+callback interface CoreObservabilitySink {
+    void on_event(CoreObservabilityEvent event);
 };

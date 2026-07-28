@@ -15,7 +15,8 @@ remain separate.
 3. UDL and bindings: remove the process-global locale setter, expose v2 DTOs and recovery tokens, regenerate tracked
    bindings through `./dev bindings update`, and migrate every consumer in one cutover.
 4. macOS presentation: inject one observable `AppLocalizer`, preserve stable state identity, implement the three-state
-   Welcome cycle, General immediate preference, Repository Save/Discard/Cancel draft, multi-window CAS conflict state,
+   Welcome cycle, a dedicated Language settings page with immediate interface preference and repository
+   Save/Discard/Cancel content-language draft, General/Repository read-only summaries, multi-window CAS conflict state,
    classifier two-language editor, and fixture-only UI recovery flows.
 5. Governance and evidence: enforce String Catalog parity, Core Markdown catalog parity, no premature display-string
    persistence, no unknown-policy mutation bypass, operation provenance, file-safety invariants, and the complete UI

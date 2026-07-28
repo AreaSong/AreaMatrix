@@ -95,7 +95,7 @@ struct ImportFolderPreviewView: View {
         Binding(
             get: { model.includeHiddenFiles },
             set: { 
-                AppLogger.shared.logUIAction("User toggled 'Include Hidden Files' to: \($0)")
+                AppLogger.shared.logUIAction("repository.import.folder.include_hidden.changed")
                 model.updateIncludeHiddenFiles($0) 
             }
         )
@@ -105,7 +105,7 @@ struct ImportFolderPreviewView: View {
         Binding(
             get: { model.followSymlinks },
             set: { 
-                AppLogger.shared.logUIAction("User toggled 'Follow Symlinks' to: \($0)")
+                AppLogger.shared.logUIAction("repository.import.folder.follow_symlinks.changed")
                 model.updateFollowSymlinks($0) 
             }
         )

@@ -85,7 +85,7 @@ struct ImportSingleFileImportStatusSection: View {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
-                    Text(status.message ?? L10n.string("正在导入..."))
+                    Text(status.message ?? L10n.string("import.progress.importing"))
                 }
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -108,6 +108,8 @@ struct ImportSingleFileImportStatusSection: View {
         switch status {
         case .failed, .blocked:
             .red
+        case let .imported(entry) where entry.importCommitState.isDegraded:
+            .orange
         case .imported, .skippedDuplicate:
             .green
         case .idle, .importing:

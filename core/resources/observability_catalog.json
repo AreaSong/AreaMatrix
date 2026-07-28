@@ -1,0 +1,338 @@
+{
+  "schema_version": 1,
+  "actions": [
+    { "id": "app.command.command_palette.triggered", "group": "app.command" },
+    { "id": "app.command.import.triggered", "group": "app.command" },
+    { "id": "app.command.settings.triggered", "group": "app.command" },
+    { "id": "app.command.undo_history.triggered", "group": "app.command" },
+    { "id": "core.tracing.event", "group": "observability.runtime" },
+    { "id": "core.tracing.span", "group": "observability.runtime" },
+    { "id": "diagnostics.export.confirmed", "group": "diagnostics.export" },
+    { "id": "observability.events_dropped", "group": "observability.runtime" },
+    { "id": "observability.runtime.initialization", "group": "observability.runtime" },
+    { "id": "repository.file.trash.fallback", "group": "repository.file.trash.fallback" },
+    { "id": "repository.import.batch.confirmed", "group": "repository.import" },
+    { "id": "repository.import.confirmed", "group": "repository.import" },
+    { "id": "repository.import.db_promotion", "group": "repository.import" },
+    { "id": "repository.import.destination", "group": "repository.import" },
+    { "id": "repository.import.duplicate.detected", "group": "repository.import.duplicate.detected" },
+    { "id": "repository.import.duplicate_resolution", "group": "repository.import" },
+    { "id": "repository.import.filesystem_commit", "group": "repository.import" },
+    { "id": "repository.import.fingerprint", "group": "repository.import" },
+    { "id": "repository.import.folder.confirmed", "group": "repository.import" },
+    { "id": "repository.import.folder.follow_symlinks.changed", "group": "repository.import" },
+    { "id": "repository.import.folder.include_hidden.changed", "group": "repository.import" },
+    { "id": "repository.import.overview", "group": "repository.import" },
+    { "id": "repository.import.replace.enabled", "group": "repository.import" },
+    { "id": "repository.import.replacement_trash", "group": "repository.import" },
+    { "id": "repository.import.retry.confirmed", "group": "repository.import" },
+    { "id": "repository.import.single.confirmed", "group": "repository.import" },
+    { "id": "repository.import.source_removal", "group": "repository.import" },
+    { "id": "repository.import.staging", "group": "repository.import" },
+    { "id": "repository.import.staging_db_row", "group": "repository.import" },
+    { "id": "repository.import.validation", "group": "repository.import" }
+  ],
+  "components": [
+    {
+      "id": "core.observability.runtime",
+      "owner": "core",
+      "role": "runtime",
+      "symbol": "observability::ObservabilityRuntime",
+      "authority": "docs/development/observability.md"
+    },
+    {
+      "id": "core.repository.import",
+      "owner": "core",
+      "role": "import",
+      "symbol": "storage::import_file_with_trace",
+      "authority": "docs/architecture/transactional-import.md"
+    },
+    {
+      "id": "core.storage.dedup",
+      "owner": "core",
+      "role": "dedup",
+      "symbol": "storage::dedup",
+      "authority": "docs/architecture/transactional-import.md"
+    },
+    {
+      "id": "core.storage.import",
+      "owner": "core",
+      "role": "import_stage",
+      "symbol": "storage::import",
+      "authority": "docs/architecture/transactional-import.md"
+    },
+    {
+      "id": "core.storage.overview",
+      "owner": "core",
+      "role": "overview",
+      "symbol": "overview::regenerate_after_import",
+      "authority": "docs/architecture/transactional-import.md"
+    },
+    {
+      "id": "core.storage.replacement_trash",
+      "owner": "core",
+      "role": "trash",
+      "symbol": "storage::replacement_trash",
+      "authority": "docs/architecture/source-of-truth.md"
+    },
+    {
+      "id": "macos.import.batch",
+      "owner": "macos",
+      "role": "import_ui",
+      "symbol": "ImportBatchCopyImportModel",
+      "authority": "docs/development/observability.md"
+    },
+    {
+      "id": "macos.import.bridge",
+      "owner": "macos",
+      "role": "bridge",
+      "symbol": "CoreBridge.importFile",
+      "authority": "docs/architecture/ffi-design.md"
+    },
+    {
+      "id": "macos.import.folder",
+      "owner": "macos",
+      "role": "import_ui",
+      "symbol": "ImportFolderPreviewModel.importReadyFiles",
+      "authority": "docs/development/observability.md"
+    },
+    {
+      "id": "macos.import.progress",
+      "owner": "macos",
+      "role": "import_ui",
+      "symbol": "OnboardingModel.retryCurrentImportProgressItem",
+      "authority": "docs/development/observability.md"
+    },
+    {
+      "id": "macos.import.result",
+      "owner": "macos",
+      "role": "import_ui",
+      "symbol": "OnboardingModel.retryImportResultItem",
+      "authority": "docs/development/observability.md"
+    },
+    {
+      "id": "macos.import.single",
+      "owner": "macos",
+      "role": "import_ui",
+      "symbol": "ImportSingleFilePreviewModel",
+      "authority": "docs/development/observability.md"
+    },
+    {
+      "id": "macos.observability.runtime",
+      "owner": "macos",
+      "role": "runtime",
+      "symbol": "ObservabilityRuntimeAssembly",
+      "authority": "docs/development/observability.md"
+    },
+    {
+      "id": "macos.ui",
+      "owner": "macos",
+      "role": "ui",
+      "symbol": "AppLogger",
+      "authority": "docs/development/observability.md"
+    }
+  ],
+  "expected_flows": [
+    {
+      "id": "repository.import",
+      "entry_action_ids": [
+        "repository.import.confirmed",
+        "repository.import.retry.confirmed",
+        "repository.import.single.confirmed"
+      ],
+      "steps": [
+        {
+          "id": "ui.started",
+          "required": false,
+          "match_any": [
+            {
+              "action_id": "repository.import.confirmed",
+              "component_id": "macos.import.batch",
+              "phase": "started"
+            },
+            {
+              "action_id": "repository.import.confirmed",
+              "component_id": "macos.import.folder",
+              "phase": "started"
+            },
+            {
+              "action_id": "repository.import.retry.confirmed",
+              "component_id": "macos.import.progress",
+              "phase": "started"
+            },
+            {
+              "action_id": "repository.import.retry.confirmed",
+              "component_id": "macos.import.result",
+              "phase": "started"
+            },
+            {
+              "action_id": "repository.import.single.confirmed",
+              "component_id": "macos.import.single",
+              "phase": "started"
+            }
+          ]
+        },
+        {
+          "id": "core.started",
+          "required": true,
+          "match_any": [
+            {
+              "action_group": "repository.import",
+              "component_id": "core.repository.import",
+              "phase": "started"
+            }
+          ]
+        },
+        {
+          "id": "validation",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.validation", "component_id": "core.storage.import" }
+          ]
+        },
+        {
+          "id": "staging",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.staging", "component_id": "core.storage.import" }
+          ]
+        },
+        {
+          "id": "fingerprint",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.fingerprint", "component_id": "core.storage.import" }
+          ]
+        },
+        {
+          "id": "duplicate_resolution",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.duplicate_resolution", "component_id": "core.storage.dedup" }
+          ]
+        },
+        {
+          "id": "duplicate_detected",
+          "required": false,
+          "match_any": [
+            {
+              "action_id": "repository.import.duplicate.detected",
+              "component_id": "core.storage.dedup",
+              "phase": "validation"
+            }
+          ]
+        },
+        {
+          "id": "destination",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.destination", "component_id": "core.storage.import" }
+          ]
+        },
+        {
+          "id": "staging_db_row",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.staging_db_row", "component_id": "core.storage.import" }
+          ]
+        },
+        {
+          "id": "filesystem_commit",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.filesystem_commit", "component_id": "core.storage.import" }
+          ]
+        },
+        {
+          "id": "db_promotion",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.db_promotion", "component_id": "core.storage.import" }
+          ]
+        },
+        {
+          "id": "overview",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.overview", "component_id": "core.storage.overview" }
+          ]
+        },
+        {
+          "id": "replacement_trash",
+          "required": true,
+          "match_any": [
+            {
+              "action_id": "repository.import.replacement_trash",
+              "component_id": "core.storage.replacement_trash"
+            }
+          ]
+        },
+        {
+          "id": "trash_fallback",
+          "required": false,
+          "match_any": [
+            {
+              "action_id": "repository.file.trash.fallback",
+              "component_id": "core.storage.replacement_trash",
+              "phase": "system_trash"
+            }
+          ]
+        },
+        {
+          "id": "source_removal",
+          "required": true,
+          "match_any": [
+            { "action_id": "repository.import.source_removal", "component_id": "core.storage.import" }
+          ]
+        },
+        {
+          "id": "core.completed",
+          "required": true,
+          "match_any": [
+            {
+              "action_group": "repository.import",
+              "component_id": "core.repository.import",
+              "phase": "completed"
+            }
+          ]
+        },
+        {
+          "id": "ui.completed",
+          "required": false,
+          "match_any": [
+            {
+              "action_id": "repository.import.confirmed",
+              "component_id": "macos.import.batch",
+              "phase": "completed"
+            },
+            {
+              "action_id": "repository.import.confirmed",
+              "component_id": "macos.import.folder",
+              "phase": "completed"
+            },
+            {
+              "action_id": "repository.import.retry.confirmed",
+              "component_id": "macos.import.progress",
+              "phase": "completed"
+            },
+            {
+              "action_id": "repository.import.retry.confirmed",
+              "component_id": "macos.import.result",
+              "phase": "completed"
+            },
+            {
+              "action_id": "repository.import.single.confirmed",
+              "component_id": "macos.import.single",
+              "phase": "completed"
+            },
+            {
+              "action_id": "repository.import.confirmed",
+              "component_id": "macos.import.bridge",
+              "phase": "completed"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

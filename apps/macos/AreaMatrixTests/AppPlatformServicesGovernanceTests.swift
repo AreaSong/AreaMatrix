@@ -22,7 +22,7 @@ private let expectedAppPlatformServiceSurface = [
     "App/AppPlatformServices.swift:static var settingsReader",
     "App/AppPlatformServices.swift:static var settingsWriter",
     "App/AppPlatformServices.swift:static var systemCapabilityChecker",
-    "App/AppPlatformServices.swift:static var windowCloser"
+    "App/AppPlatformServices.swift:static var windowCloser",
 ]
 
 private let expectedFeaturePlatformServiceFacades = [
@@ -36,22 +36,19 @@ private let expectedFeaturePlatformServiceFacades = [
     "PlatformServices/LocalModelPlatformServices.swift:enum LocalModelStatusPlatformServices",
     "PlatformServices/MainExternalSyncEvents.swift:enum ICloudConflictListPlatformServices",
     "PlatformServices/OnboardingPlatformServices.swift:enum OnboardingPlatformServices",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:enum RepositorySettingsPlatformServices"
+    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:enum RepositorySettingsPlatformServices",
 ]
 
 private let expectedFeaturePlatformServiceSurface = [
     "PlatformServices/AboutSettingsPlatformServices.swift:static var accessibilityAnnouncer",
     "PlatformServices/AboutSettingsPlatformServices.swift:static var appVersionReader",
     "PlatformServices/AboutSettingsPlatformServices.swift:static var appVersionReader",
-    "PlatformServices/AboutSettingsPlatformServices.swift:static var diagnosticsExporter",
-    "PlatformServices/AboutSettingsPlatformServices.swift:static var diagnosticsRevealer",
     "PlatformServices/AboutSettingsPlatformServices.swift:static var externalLinkOpener",
-    "PlatformServices/AboutSettingsPlatformServices.swift:static var logsOpener",
     "PlatformServices/AboutSettingsPlatformServices.swift:static var metadataReader",
     "PlatformServices/AboutSettingsPlatformServices.swift:static var stringCopier",
     "PlatformServices/AdvancedSettingsPlatformServices.swift:static var appVersionReader",
     "PlatformServices/AdvancedSettingsPlatformServices.swift:static var diagnosticSummaryCopier",
-    "PlatformServices/AdvancedSettingsPlatformServices.swift:static var logsOpener",
+    "PlatformServices/AdvancedSettingsPlatformServices.swift:static var diagnosticsPackageHandler",
     "PlatformServices/AdvancedSettingsPlatformServices.swift:static var metadataReader",
     "PlatformServices/AdvancedSettingsPlatformServices.swift:static var rootOverviewInspector",
     "PlatformServices/ClassifierRulesPlatformServices.swift:static var accessibilityAnnouncer",
@@ -81,7 +78,7 @@ private let expectedFeaturePlatformServiceSurface = [
     "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var generatedOverviewRevealer",
     "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var metadataPresenceChecker",
     "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var metadataReader",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var pathCopier"
+    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var pathCopier",
 ]
 
 final class AppPlatformServicesGovernanceTests: MacOSGovernanceTestCase {
@@ -121,7 +118,7 @@ final class AppPlatformServicesGovernanceTests: MacOSGovernanceTestCase {
 
     func testDefaultLocalFileURLOpenerConstructionStaysCentralized() throws {
         let expected = [
-            "App/AppPlatformServices.swift:NSWorkspaceLocalFileURLOpener():1"
+            "App/AppPlatformServices.swift:NSWorkspaceLocalFileURLOpener():1",
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles(),
@@ -138,7 +135,7 @@ final class AppPlatformServicesGovernanceTests: MacOSGovernanceTestCase {
 
     func testDefaultExternalURLStringOpenerConstructionStaysCentralized() throws {
         let expected = [
-            "App/AppPlatformServices.swift:NSWorkspaceExternalURLStringOpener():1"
+            "App/AppPlatformServices.swift:NSWorkspaceExternalURLStringOpener():1",
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles(),
@@ -155,7 +152,7 @@ final class AppPlatformServicesGovernanceTests: MacOSGovernanceTestCase {
 
     func testDefaultAccessibilityAnnouncerConstructionStaysCentralized() throws {
         let expected = [
-            "App/AppPlatformServices.swift:VoiceOverAccessibilityAnnouncer():1"
+            "App/AppPlatformServices.swift:VoiceOverAccessibilityAnnouncer():1",
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles(),

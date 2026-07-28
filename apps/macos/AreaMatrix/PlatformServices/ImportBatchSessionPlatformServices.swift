@@ -87,6 +87,7 @@ private struct CodableImportBatchSessionItem: Codable {
     var fileID: Int64?
     var targetPath: String
     var phase: ImportBatchProgressSnapshot.Phase
+    var importCommitState: CoreImportCommitState
     var failure: ImportBatchSessionFailureDescriptor?
     var existingRelativePath: String?
     var importConflictBatch: ImportConflictBatchProgressMetadata?
@@ -96,6 +97,7 @@ private struct CodableImportBatchSessionItem: Codable {
         fileID = item.fileID
         targetPath = item.targetPath
         phase = item.phase
+        importCommitState = item.importCommitState
         failure = item.errorDisplayText.map(ImportBatchSessionFailureDescriptor.init(displayText:))
         existingRelativePath = item.existingRelativePath
         importConflictBatch = item.importConflictBatch
@@ -107,6 +109,7 @@ private struct CodableImportBatchSessionItem: Codable {
             sourcePath: sourcePath,
             targetPath: targetPath,
             phase: phase,
+            importCommitState: importCommitState,
             errorDisplayText: failure?.displayText,
             existingRelativePath: existingRelativePath,
             importConflictBatch: importConflictBatch
@@ -118,6 +121,7 @@ private struct CodableImportBatchSessionItem: Codable {
         case fileID
         case targetPath
         case phase
+        case importCommitState
         case failure
         case errorDisplayText
         case errorMessage
@@ -131,6 +135,10 @@ private struct CodableImportBatchSessionItem: Codable {
         fileID = try container.decodeIfPresent(Int64.self, forKey: .fileID)
         targetPath = try container.decode(String.self, forKey: .targetPath)
         phase = try container.decode(ImportBatchProgressSnapshot.Phase.self, forKey: .phase)
+        importCommitState = try container.decodeIfPresent(
+            CoreImportCommitState.self,
+            forKey: .importCommitState
+        ) ?? .committed
         failure = try container.decodeIfPresent(ImportBatchSessionFailureDescriptor.self, forKey: .failure)
             ?? Self.legacyFailure(from: container)
         existingRelativePath = try container.decodeIfPresent(String.self, forKey: .existingRelativePath)
@@ -146,6 +154,7 @@ private struct CodableImportBatchSessionItem: Codable {
         try container.encodeIfPresent(fileID, forKey: .fileID)
         try container.encode(targetPath, forKey: .targetPath)
         try container.encode(phase, forKey: .phase)
+        try container.encode(importCommitState, forKey: .importCommitState)
         try container.encodeIfPresent(failure, forKey: .failure)
         try container.encodeIfPresent(existingRelativePath, forKey: .existingRelativePath)
         try container.encodeIfPresent(importConflictBatch, forKey: .importConflictBatch)

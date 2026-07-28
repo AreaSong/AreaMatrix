@@ -32,26 +32,6 @@ final class RecordingAboutExternalLinkOpener: AboutExternalLinkOpening {
 }
 
 @MainActor
-final class RecordingAboutLogsOpener: AboutLogsOpening {
-    private let result: (String, String) throws -> String
-    private var openedRepoPaths: [String] = []
-
-    init(result: @escaping (String, String) throws -> String = { _, path in path }) {
-        self.result = result
-    }
-
-    func logsPath(repoPath: String) -> String {
-        "\(repoPath)/.areamatrix/logs"
-    }
-
-    func openLogs(repoPath: String) throws -> String {
-        openedRepoPaths.append(repoPath)
-        let path = logsPath(repoPath: repoPath)
-        return try result(repoPath, path)
-    }
-}
-
-@MainActor
 final class RecordingAboutStringCopier: AboutStringCopying {
     private let result: Result<Void, Error>
     private var values: [String] = []
@@ -71,53 +51,6 @@ final class RecordingAboutStringCopier: AboutStringCopying {
         line: UInt = #line
     ) {
         XCTAssertEqual(values, expectedValues, file: file, line: line)
-    }
-}
-
-struct NoopAboutDiagnosticsRevealer: AboutDiagnosticsRevealing {
-    @MainActor
-    func revealDiagnostics(at _: String) throws {}
-}
-
-@MainActor
-final class RecordingAboutDiagnosticsRevealer: AboutDiagnosticsRevealing {
-    private let result: Result<Void, Error>
-    private var paths: [String] = []
-
-    init(result: Result<Void, Error> = .success(())) {
-        self.result = result
-    }
-
-    func revealDiagnostics(at path: String) throws {
-        paths.append(path)
-        try result.get()
-    }
-}
-
-@MainActor
-final class RecordingAdvancedSettingsLogsOpener: AdvancedSettingsLogFolderOpening {
-    private let result: Result<String, Error>
-    private var openedRepoPaths: [String] = []
-
-    init(result: Result<String, Error>) {
-        self.result = result
-    }
-
-    convenience init(logsPath: String) {
-        self.init(result: .success(logsPath))
-    }
-
-    func openLogsFolder(repoPath: String) throws -> String {
-        openedRepoPaths.append(repoPath)
-        return try result.get()
-    }
-
-    func assertOpenedRepoPaths(
-        _ expectedRepoPaths: [String],
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(openedRepoPaths, expectedRepoPaths, file: file, line: line)
     }
 }
 

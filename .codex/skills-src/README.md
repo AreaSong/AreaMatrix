@@ -24,6 +24,7 @@
 - `areamatrix-workflow-planning`：v* 版本规划、docs 讨论、中间层讨论和 prompt 生成前门禁。
 - `areamatrix-residual-ledger`：release blocker、accepted exception、historical reference、template-only 和 task-facing residual 索引。
 - `areamatrix-codex-os`：Codex OS start-flow、run-validation、repair-plan、close-flow、ops-flow，以及 intake、registry、preflight、context、resume、subagent plan、evidence、finish、dashboard、weekly review 和 archive recommendations。
+- `areamatrix-macos-ui`：macOS SwiftUI 页面与组件实施、L10n 文案分类、String Catalog、accessibility 和 UI 验收闭环。
 
 ## Owner 边界
 
@@ -38,6 +39,7 @@
 | `areamatrix-enterprise-governance` | review、安全、依赖、CI、CODEOWNERS、PR 模板、治理漂移 | 最小验证集交给 `areamatrix-validation-driver`；Git checkpoint 机制交给 `areamatrix-git-checkpoint` |
 | `areamatrix-residual-ledger` | release / reference / template / backlog / product-marker 遗留项索引 | 产品语义交给 `areamatrix-doc-sync`；可执行任务进入 `tasks/active/**` 前交给 `areamatrix-workflow-planning` 或对应任务 owner；release 证据仍以 `workflow/versions/<version>/evidence/**` 为准 |
 | `areamatrix-codex-os` | Codex 操作层 start-flow、run-validation、repair-plan、close-flow、ops-flow、registry、preflight、context、resume、subagent plan、evidence、finish、dashboard、weekly review、health score 与归档建议 | 最小验证集交给 `areamatrix-validation-driver`；live execution 交给 `areamatrix-task-loop`；产品和治理源事实分别交给 `areamatrix-doc-sync` 与 `areamatrix-enterprise-governance` |
+| `areamatrix-macos-ui` | macOS SwiftUI 页面、组件、交互、application-owned 文案、L10n API 选择、String Catalog 与 accessibility | 验证组合交给 `areamatrix-validation-driver`；UX/docs 漂移交给 `areamatrix-doc-sync`；用户文件和数据写入风险交给 `areamatrix-file-safety` |
 
 交叉引用只用于交接 owner，不把一个 skill 的完整规则复制到另一个 skill。
 

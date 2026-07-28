@@ -90,12 +90,12 @@ enum AreaMatrixTheme {
         static let purpleText = AreaMatrixColorToken(light: purpleDeep, dark: purple)
 
         static let backgroundTop = AreaMatrixColorToken(
-            light: Color(red: 250 / 255, green: 251 / 255, blue: 248 / 255),
-            dark: Color(red: 13 / 255, green: 40 / 255, blue: 35 / 255)
+            light: Color(red: 252 / 255, green: 253 / 255, blue: 255 / 255),
+            dark: Color(red: 15 / 255, green: 20 / 255, blue: 28 / 255)
         )
         static let backgroundBottom = AreaMatrixColorToken(
-            light: Color(red: 242 / 255, green: 245 / 255, blue: 240 / 255),
-            dark: Color(red: 7 / 255, green: 21 / 255, blue: 19 / 255)
+            light: Color(red: 244 / 255, green: 246 / 255, blue: 250 / 255),
+            dark: Color(red: 5 / 255, green: 8 / 255, blue: 12 / 255)
         )
 
         static let sceneSpectrum = [teal, tealBright, gold, coral, purple, emerald]

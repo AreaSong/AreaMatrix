@@ -41,6 +41,7 @@ extension ImportBatchCopyImportModel {
                 sourcePath: row.sourcePath,
                 targetPath: targetRelativePath(for: row, destination: selectedDestination),
                 phase: Self.progressPhase(for: row.status),
+                importCommitState: row.importCommitState,
                 errorDisplayText: Self.progressErrorDisplayText(for: row.status),
                 existingRelativePath: row.existingConflictPath,
                 importConflictBatch: importConflictBatchMetadata(for: row)

@@ -3,6 +3,7 @@ import Foundation
 import XCTest
 
 final class AreaMatrixAppSmokeTests: XCTestCase {
+    @MainActor
     func testMainWindowShellCanBeCreated() {
         let view = MainWindow()
 

@@ -5,6 +5,7 @@ struct RepositorySettingsConfigSection: View {
     let config: AppRepoConfigSnapshot?
     @ObservedObject var model: RepositorySettingsConfigModel
     let capabilityState: RepositorySettingsCapabilityState
+    let onOpenLanguageSettings: () -> Void
     let onSaved: () async -> Void
     @State private var draft: RepositorySettingsConfigDraft
     @State private var baseline: AppRepoConfigSnapshot?
@@ -13,11 +14,13 @@ struct RepositorySettingsConfigSection: View {
         config: AppRepoConfigSnapshot?,
         model: RepositorySettingsConfigModel,
         capabilityState: RepositorySettingsCapabilityState,
+        onOpenLanguageSettings: @escaping () -> Void,
         onSaved: @escaping () async -> Void
     ) {
         self.config = config
         self.model = model
         self.capabilityState = capabilityState
+        self.onOpenLanguageSettings = onOpenLanguageSettings
         self.onSaved = onSaved
         _draft = State(initialValue: config.map(RepositorySettingsConfigDraft.init(config:)) ?? .empty)
         _baseline = State(initialValue: config)
@@ -70,28 +73,23 @@ struct RepositorySettingsConfigSection: View {
                     Text(output.label).tag(output)
                 }
             }
-            Picker(L10n.string("settings.language.content.title"), selection: $draft.contentLanguage) {
-                if draft.contentLanguage.unsupportedIdentifier != nil {
-                    Text(localizer.resolve(draft.contentLanguage.displayMessage)).tag(draft.contentLanguage)
-                }
-                ForEach(RepositoryContentLanguage.allCases) { language in
-                    Text(localizer.resolve(language.displayMessage)).tag(language)
-                }
+            .disabled(editingDisabledReason != nil)
+            LabeledContent(L10n.string("settings.language.content.title")) {
+                Text(localizer.resolve(draft.contentLanguage.displayMessage))
             }
-            .accessibilityIdentifier("repository-settings-content-language-picker")
-            Text(L10n.string("settings.language.content.description"))
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            Button(L10n.string("settings.language.openSettings"), action: onOpenLanguageSettings)
+                .accessibilityIdentifier("repository-settings-open-language-settings")
             if draft.contentLanguage.unsupportedIdentifier != nil {
                 Text(L10n.string("settings.language.unsupportedExplanation"))
                     .font(.callout)
                     .foregroundStyle(.orange)
             }
             Toggle(L10n.string("Show cloud location warnings"), isOn: $draft.iCloudWarn)
+                .disabled(editingDisabledReason != nil)
             Toggle(L10n.string("Fallback uncategorized files to inbox"), isOn: $draft.fallbackToInbox)
+                .disabled(editingDisabledReason != nil)
             saveActions
         }
-        .disabled(editingDisabledReason != nil)
     }
 
     private var saveActions: some View {

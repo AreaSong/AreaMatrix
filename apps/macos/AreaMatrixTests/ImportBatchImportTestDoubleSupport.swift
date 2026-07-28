@@ -21,7 +21,8 @@ actor ImportBatchRecordingBatchImporter: CoreBatchCopyImporting {
             destination: request.destination,
             suggestedCategory: request.suggestedCategory,
             overrideFilename: request.overrideFilename,
-            duplicateStrategy: request.duplicateStrategy
+            duplicateStrategy: request.duplicateStrategy,
+            traceContext: request.traceContext
         ))
     }
 

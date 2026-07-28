@@ -42,6 +42,7 @@ cargo test --manifest-path core/Cargo.toml \
 | reindex 10k files | 30 s |
 | list tree 1k files | 30 ms |
 | list files 200 rows | 5 ms |
+| 100k structured observability submit + delivery | 2 s |
 
 Rust benchmark 会打印 `CORE_HOT_PATH_BENCH ... result=PASS/FAIL`，但当前不会对阈值执行 assertion。因此
 命令 exit 0 只能证明 benchmark 完成，必须同时审查每一行 result。

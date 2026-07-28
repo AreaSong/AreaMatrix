@@ -47,9 +47,4 @@ enum RepositoryMetadataPath {
         URL(fileURLWithPath: repoPath, isDirectory: true)
             .appendingPathComponent(".areamatrix", isDirectory: true)
     }
-
-    static func logsURL(repoPath: String) -> URL {
-        metadataURL(repoPath: repoPath)
-            .appendingPathComponent("logs", isDirectory: true)
-    }
 }

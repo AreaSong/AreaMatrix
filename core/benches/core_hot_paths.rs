@@ -1,12 +1,18 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
     time::{Duration, Instant},
 };
 
 use area_matrix_core::{
-    import_file, init_repo, list_files, list_tree_json, reindex_from_filesystem, DuplicateStrategy,
-    FileFilter, ImportDestination, ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions,
+    flush_observability, import_file, init_repo, initialize_observability, list_files,
+    list_tree_json, reindex_from_filesystem, CoreObservabilityEvent, CoreObservabilitySink,
+    DuplicateStrategy, FileFilter, ImportDestination, ImportOptions, ObservabilityConfig,
+    ObservabilityMode, ObservabilitySeverity, OverviewOutput, RepoInitMode, RepoInitOptions,
     StorageMode,
 };
 
@@ -16,6 +22,7 @@ const IMPORT_100_FILES_THRESHOLD_MS: u128 = 5_000;
 const REINDEX_10K_FILES_THRESHOLD_MS: u128 = 30_000;
 const LIST_FILES_200_THRESHOLD_US: u128 = 5_000;
 const LIST_TREE_1K_THRESHOLD_MS: u128 = 30;
+const OBSERVABILITY_100K_THRESHOLD_MS: u128 = 2_000;
 
 #[test]
 #[ignore = "Core hot path benchmark; run explicitly with --release --bench core_hot_paths"]
@@ -24,6 +31,51 @@ fn core_hot_path_benchmarks_emit_threshold_results() {
     core_import_one_hundred_files_bench();
     core_reindex_ten_thousand_files_bench();
     core_tree_and_list_response_bench();
+    core_observability_one_hundred_thousand_events_bench();
+}
+
+struct CountingSink(Arc<AtomicU64>);
+
+impl CoreObservabilitySink for CountingSink {
+    fn on_event(&self, _event: CoreObservabilityEvent) {
+        self.0.fetch_add(1, Ordering::Relaxed);
+    }
+}
+
+fn core_observability_one_hundred_thousand_events_bench() {
+    const EVENT_COUNT: u64 = 100_000;
+    let delivered = Arc::new(AtomicU64::new(0));
+    initialize_observability(
+        ObservabilityConfig {
+            session_id: uuid::Uuid::new_v4().to_string(),
+            mode: ObservabilityMode::Developer,
+            minimum_severity: ObservabilitySeverity::Trace,
+            queue_capacity: 65_536,
+            include_sensitive: false,
+        },
+        Box::new(CountingSink(Arc::clone(&delivered))),
+    )
+    .expect("initialize observability throughput benchmark");
+
+    let elapsed = measure(|| {
+        for index in 0..EVENT_COUNT {
+            tracing::info!(
+                action_id = "observability.benchmark.event",
+                component_id = "core.observability.benchmark",
+                phase = "delivery",
+                outcome = "succeeded",
+                obs_index = index
+            );
+        }
+        flush_observability(5_000).expect("flush observability throughput benchmark");
+    });
+
+    assert!(delivered.load(Ordering::Relaxed) > 0);
+    report_ms(
+        "observability 100k submit + delivery",
+        elapsed,
+        OBSERVABILITY_100K_THRESHOLD_MS,
+    );
 }
 
 fn core_import_one_mebibyte_copy_bench() {

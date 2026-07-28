@@ -99,6 +99,8 @@ extension GeneralSettingsView {
         List(selection: $selectedTab) {
             Label(L10n.string("settings.tab.general"), systemImage: "gearshape")
                 .tag("general")
+            Label(L10n.string("settings.tab.language"), systemImage: "globe")
+                .tag("language")
             Label(L10n.string("settings.tab.repository"), systemImage: "folder")
                 .tag("repository")
             Label(L10n.string("settings.tab.classifier"), systemImage: "tag")
@@ -107,6 +109,8 @@ extension GeneralSettingsView {
                 .tag("ai")
             Label(L10n.string("settings.tab.integrations"), systemImage: "point.3.connected.trianglepath.dotted")
                 .tag("integrations")
+            Label(L10n.string("settings.tab.diagnostics"), systemImage: "waveform.path.ecg")
+                .tag("diagnostics")
             Label(L10n.string("settings.tab.advanced"), systemImage: "wrench.and.screwdriver")
                 .tag("advanced")
             Label(L10n.string("settings.tab.about"), systemImage: "info.circle")
@@ -119,12 +123,17 @@ extension GeneralSettingsView {
     @ViewBuilder
     private var content: some View {
         switch selectedTab {
+        case "language":
+            LanguageSettingsPane(repoPath: model.repoPath)
         case "repository":
             RepositorySettingsPane(
                 repoPath: model.repoPath,
                 onChangeRepository: onChangeRepository,
                 onOpenPlatformCapabilities: {
                     selectedTab = "about"
+                },
+                onOpenLanguageSettings: {
+                    selectedTab = "language"
                 },
                 onOpenRecoveryTools: onOpenRepositoryRecovery
             )
@@ -134,10 +143,16 @@ extension GeneralSettingsView {
             AISettingsPane(repoPath: model.repoPath)
         case "integrations":
             IntegrationsSettingsPane(repoPath: model.repoPath)
+        case "diagnostics":
+            DiagnosticsSettingsPane(repositoryURL: URL(
+                fileURLWithPath: model.repoPath,
+                isDirectory: true
+            ))
         case "advanced":
             AdvancedSettingsPane(
                 repoPath: model.repoPath,
                 onOpenRecoveryTools: onOpenRepositoryRecovery,
+                onOpenDiagnostics: { selectedTab = "diagnostics" },
                 onReturnToWelcome: onReturnToWelcome
             )
         case "about":
@@ -145,6 +160,9 @@ extension GeneralSettingsView {
                 repoPath: model.repoPath,
                 onOpenRepositorySettings: {
                     selectedTab = "repository"
+                },
+                onOpenDiagnostics: {
+                    selectedTab = "diagnostics"
                 },
                 onClose: onClose
             )
@@ -185,7 +203,11 @@ extension GeneralSettingsView {
     }
 
     private var loadedContent: some View {
-        GeneralSettingsLoadedContent(model: model, onClose: onClose)
+        GeneralSettingsLoadedContent(
+            model: model,
+            onOpenLanguageSettings: { selectedTab = "language" },
+            onClose: onClose
+        )
     }
 
     private var storageConfirmationTitle: String {

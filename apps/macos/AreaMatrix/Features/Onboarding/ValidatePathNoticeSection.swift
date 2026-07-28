@@ -27,30 +27,34 @@ struct ValidatePathNotices: View {
         VStack(alignment: .center, spacing: 16) {
             if isValidating {
                 ProgressView(L10n.string("onboarding.validate.checkingPath"))
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
             if let errorMapping {
                 errorMappingNotice(errorMapping)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
             } else if let errorMessage {
                 ValidatePathNoticeCard(
                     title: L10n.string("onboarding.validate.pathUnavailable"),
                     icon: .alertTriangle,
-                    tint: .red,
+                    tint: AreaMatrixTheme.Colors.coral,
                     lines: [localizer.resolve(errorMessage)]
                 )
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
             if validation?.isInitialized == true {
                 ValidatePathNoticeCard(
                     title: L10n.string("onboarding.validate.repositoryFound"),
                     icon: .hardDrive,
-                    tint: .green,
+                    tint: AreaMatrixTheme.Colors.emerald,
                     lines: existingRepoLines
                 )
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
             if ValidatePathNoticeRules.shouldShowAdoptExistingNotice(for: validation) {
                 ValidatePathNoticeCard(
                     title: L10n.string("onboarding.validate.adoptTitle"),
                     icon: .folderCog,
-                    tint: .orange,
+                    tint: AreaMatrixTheme.Colors.gold,
                     lines: [
                         L10n.string("onboarding.validate.adopt.createMetadata"),
                         L10n.string("onboarding.validate.adopt.scanFiles"),
@@ -58,28 +62,36 @@ struct ValidatePathNotices: View {
                         L10n.string("onboarding.validate.adopt.preserveStructure")
                     ]
                 )
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
             if validation?.isICloudPath == true {
                 ValidatePathICloudNotice(
                     isAccepted: isICloudRiskAccepted,
                     onAcceptedChanged: onICloudRiskAcceptedChanged
                 )
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
             if validation?.isExternalVolume == true {
                 ValidatePathNoticeCard(
                     title: L10n.string("onboarding.validate.externalVolumeTitle"),
                     icon: .hardDrive,
-                    tint: .orange,
+                    tint: AreaMatrixTheme.Colors.gold,
                     lines: [
                         L10n.string("onboarding.validate.externalVolumeUnavailable"),
                         L10n.string("onboarding.validate.externalVolumeConfirm")
                     ]
                 )
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
             if let session = latestAdoptScanSession {
                 scanSessionNotice(session)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isValidating)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: validation)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: errorMapping)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: errorMessage)
     }
 
     private var latestAdoptScanSession: ScanSessionSnapshot? {
@@ -120,7 +132,7 @@ struct ValidatePathNotices: View {
         ValidatePathNoticeCard(
             title: L10n.string("onboarding.validate.unfinishedScanTitle"),
             icon: .refreshCcw,
-            tint: .orange,
+            tint: AreaMatrixTheme.Colors.gold,
             lines: [
                 L10n.format("onboarding.validate.scanStatus", session.status.displayName),
                 L10n.format("onboarding.validate.scanCounts", session.inserted, session.updated, session.skipped),

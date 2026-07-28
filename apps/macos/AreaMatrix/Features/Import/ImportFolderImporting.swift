@@ -12,13 +12,19 @@ extension ImportFolderPreviewModel {
         let total = importableRows.count
         let initialPreviewErrorCount = failedCount
         let storageMode = selectedStorageMode
+        let actionContext = CoreImportTraceContext.operation(
+            actionID: "repository.import.folder.confirmed",
+            componentID: "macos.import.folder"
+        )
         clearLastFailureMapping()
+        await AppLogger.shared.recordUIAction(traceContext: actionContext)
         let state = await importReadyFolderRows(
             input: ImportFolderImportRunInput(
                 readyRowIDs: readyRowIDs,
                 request: request,
                 storageMode: storageMode,
-                total: total
+                total: total,
+                traceID: actionContext.traceID
             ),
             controlState: controlState,
             reportProgress: reportProgress
@@ -45,6 +51,11 @@ extension ImportFolderPreviewModel {
     ) async -> ImportFolderImportRunState {
         var state = ImportFolderImportRunState()
         for index in rows.indices where input.readyRowIDs.contains(rows[index].id) {
+            let traceContext = CoreImportTraceContext.operation(
+                traceID: input.traceID,
+                actionID: "repository.import.confirmed",
+                componentID: "macos.import.folder"
+            )
             let cycle = await runFolderImportCycle(
                 input: ImportFolderImportCycleInput(
                     rowIndex: index,
@@ -52,7 +63,8 @@ extension ImportFolderPreviewModel {
                     storageMode: input.storageMode,
                     completed: state.completed,
                     failed: state.failed,
-                    total: input.total
+                    total: input.total,
+                    traceContext: traceContext
                 )
             )
             updateFolderImportRunState(
@@ -60,7 +72,8 @@ extension ImportFolderPreviewModel {
                 cycle: cycle,
                 rowIndex: index,
                 request: input.request,
-                storageMode: input.storageMode
+                storageMode: input.storageMode,
+                traceContext: traceContext
             )
             reportProgress(cycle.progress.withItems(progressItems()))
             if shouldStopFolderImportRun(&state, controlState: controlState) {
@@ -75,7 +88,8 @@ extension ImportFolderPreviewModel {
         cycle: ImportBatchCopyCycleResult,
         rowIndex: Int,
         request: ImportEntryRequest,
-        storageMode: ImportSingleFileStorageMode
+        storageMode: ImportSingleFileStorageMode,
+        traceContext: CoreImportTraceContext
     ) {
         state.completed = cycle.completed
         state.failed = cycle.failed
@@ -84,7 +98,12 @@ extension ImportFolderPreviewModel {
             state.succeededEntries.append(entry)
         }
         if cycle.stoppedForQueue {
-            state.fatalRetryContext = retryContext(for: rows[rowIndex], request: request, storageMode: storageMode)
+            state.fatalRetryContext = retryContext(
+                for: rows[rowIndex],
+                request: request,
+                storageMode: storageMode,
+                traceContext: traceContext
+            )
         }
     }
 
@@ -113,9 +132,11 @@ extension ImportFolderPreviewModel {
                 destination: modelDestination,
                 suggestedCategory: suggestedCategory(for: row, request: input.request),
                 overrideFilename: row.resolvedIncomingName,
-                duplicateStrategy: duplicateStrategy(for: row)
+                duplicateStrategy: duplicateStrategy(for: row),
+                traceContext: input.traceContext
             ))
             updateRowStatus(at: rowIndex, status: .imported(input.storageMode))
+            updateRowCommitState(at: rowIndex, commitState: entry.importCommitState)
             return .success(
                 entry: entry,
                 completed: input.completed + 1,
@@ -140,7 +161,8 @@ extension ImportFolderPreviewModel {
     func retryContext(
         for row: ImportFolderPreviewRow,
         request: ImportEntryRequest,
-        storageMode: ImportSingleFileStorageMode? = nil
+        storageMode: ImportSingleFileStorageMode? = nil,
+        traceContext: CoreImportTraceContext? = nil
     ) -> ImportProgressRetryContext {
         ImportProgressRetryContext(
             repoPath: request.repoPath,
@@ -148,7 +170,9 @@ extension ImportFolderPreviewModel {
             storageMode: storageMode ?? selectedStorageMode,
             overrideCategory: retryCategory(for: row),
             overrideFilename: row.resolvedIncomingName,
-            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy(for: row))
+            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy(for: row)),
+            traceID: traceContext?.traceID,
+            operationID: traceContext?.operationID
         )
     }
 
@@ -225,6 +249,7 @@ extension ImportFolderPreviewModel {
                 sourcePath: row.fileURL.path,
                 targetPath: targetRelativePath(for: row),
                 phase: progressPhase(for: row.status),
+                importCommitState: row.importCommitState,
                 errorDisplayText: progressErrorDisplayText(for: row.status),
                 existingRelativePath: row.existingConflictPath
             )

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct SettingsDiagnosticsGeneration {
     private var value = 0
@@ -23,11 +24,6 @@ protocol CoreVersionReading: Sendable {
 
 protocol AppVersionReading: Sendable {
     func appVersion() -> String
-}
-
-protocol AdvancedSettingsLogFolderOpening {
-    @MainActor
-    func openLogsFolder(repoPath: String) throws -> String
 }
 
 protocol AdvancedSettingsDiagnosticSummaryCopying {
@@ -74,20 +70,6 @@ enum AdvancedSettingsActionFeedback: Equatable {
     case failed(AdvancedSettingsError)
 }
 
-enum AdvancedSettingsLogFolderError: Error, Equatable, LocalizedError {
-    case missing(String)
-    case openRejected(String)
-
-    var errorDescription: String? {
-        switch self {
-        case let .missing(path):
-            L10n.format("settings.advanced.logsMissing", path)
-        case let .openRejected(path):
-            L10n.format("settings.advanced.logsOpenRejected", path)
-        }
-    }
-}
-
 enum AdvancedSettingsDiagnosticSummaryError: Error, Equatable, LocalizedError {
     case copyRejected
 
@@ -96,5 +78,124 @@ enum AdvancedSettingsDiagnosticSummaryError: Error, Equatable, LocalizedError {
         case .copyRejected:
             L10n.string("settings.advanced.diagnosticsCopyRejected")
         }
+    }
+}
+
+struct DiagnosticsTraceRow: Identifiable {
+    var id: String {
+        "\(event.eventID)-\(depth)"
+    }
+
+    let event: ObservabilityEventSnapshot
+    let depth: Int
+}
+
+enum DiagnosticsTraceProjection {
+    static func rows(_ events: [ObservabilityEventSnapshot]) -> [DiagnosticsTraceRow] {
+        var parentBySpan: [String: String] = [:]
+        for event in events {
+            if let parentSpanID = event.parentSpanID {
+                parentBySpan[event.spanID] = parentSpanID
+            }
+        }
+        return events.sortedForDisplay.map { event in
+            DiagnosticsTraceRow(event: event, depth: depth(for: event, parents: parentBySpan))
+        }
+    }
+
+    private static func depth(
+        for event: ObservabilityEventSnapshot,
+        parents: [String: String]
+    ) -> Int {
+        var visited: Set<String> = [event.spanID]
+        var parent = event.parentSpanID
+        var depth = 0
+        while let value = parent, depth < 8, visited.insert(value).inserted {
+            depth += 1
+            parent = parents[value]
+        }
+        return depth
+    }
+}
+
+enum DiagnosticsEventPresentation {
+    static func outcome(_ value: String) -> LocalizedMessage {
+        switch value {
+        case "started": L10n.message("observability.outcome.started")
+        case "succeeded": L10n.message("observability.outcome.succeeded")
+        case "failed": L10n.message("observability.outcome.failed")
+        case "cancelled": L10n.message("observability.outcome.cancelled")
+        case "skipped": L10n.message("observability.outcome.skipped")
+        case "degraded": L10n.message("observability.outcome.degraded")
+        default: L10n.message("observability.outcome.recorded")
+        }
+    }
+}
+
+struct DiagnosticsPackageOverview: View {
+    let inspection: DiagnosticPackageInspection
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text(L10n.string("observability.package.manifest")).font(.headline)
+                DiagnosticsTechnicalRow(
+                    label: L10n.string("observability.package.id"),
+                    value: inspection.manifest.packageID
+                )
+                DiagnosticsTechnicalRow(
+                    label: L10n.string("observability.package.schema"),
+                    value: String(inspection.manifest.schemaVersion)
+                )
+                DiagnosticsTechnicalRow(
+                    label: L10n.string("observability.package.events"),
+                    value: String(inspection.manifest.eventCount)
+                )
+                Divider()
+                Text(L10n.string("observability.package.privacyReport")).font(.headline)
+                DiagnosticsTechnicalRow(
+                    label: L10n.string("observability.package.redacted"),
+                    value: String(inspection.privacyReport.redactedFieldCount)
+                )
+                DiagnosticsTechnicalRow(
+                    label: L10n.string("observability.package.rejected"),
+                    value: String(inspection.privacyReport.rejectedEventCount)
+                )
+                DiagnosticsTechnicalRow(
+                    label: L10n.string("observability.package.sensitiveEvents"),
+                    value: inspection.privacyReport.includesSensitiveEvents
+                        ? L10n.string("settings.value.yes")
+                        : L10n.string("settings.value.no")
+                )
+                DiagnosticsTechnicalRow(
+                    label: L10n.string("observability.package.metadataSnapshot"),
+                    value: inspection.privacyReport.includesMetadataSnapshot
+                        ? L10n.string("settings.value.yes")
+                        : L10n.string("settings.value.no")
+                )
+                Divider()
+                Text(L10n.string("observability.package.summary")).font(.headline)
+                Text(inspection.summary).textSelection(.enabled)
+            }
+            .padding(24)
+            .frame(maxWidth: 760, alignment: .leading)
+        }
+    }
+}
+
+extension [ObservabilityEventSnapshot] {
+    var sortedForDisplay: [ObservabilityEventSnapshot] {
+        sorted {
+            if $0.sequenceNumber == $1.sequenceNumber {
+                return $0.wallTimestampMilliseconds < $1.wallTimestampMilliseconds
+            }
+            return $0.sequenceNumber < $1.sequenceNumber
+        }
+    }
+}
+
+extension String {
+    var diagnosticsShortTechnicalID: String {
+        count > 18 ? "\(prefix(8))…\(suffix(6))" : self
     }
 }

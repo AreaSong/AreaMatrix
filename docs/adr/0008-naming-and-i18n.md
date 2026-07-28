@@ -17,10 +17,13 @@
 
 ## 当前实施状态
 
-截至 2026-07-25，本 ADR 的双语言合同已在 Core、UDL、生成绑定与 macOS 应用中落地：
+截至 2026-07-26，本 ADR 的双语言合同已在 Core、UDL、生成绑定与 macOS 应用中落地：
 
 - `AppLanguage` 与 `RepositoryContentLanguage` 使用独立持久化和解析链路；界面语言切换会立即重投影全部
   application-owned 文案，资料库内容语言只影响内置分类显示名和之后生成的内容。
+- 设置窗口以独立 `language` 一级页同时呈现两套语言系统：界面语言可立即切换，当前资料库内容语言通过
+  revision/CAS 显式保存。General 与 Repository 只保留当前值摘要和前往 Language 页的入口，不能形成重复
+  编辑面。Welcome 右上角快捷控件仍只切换界面语言。
 - 资料库内容语言通过 revision/CAS 更新，classifier 的 `display_name` / `description` locale map、未知 policy
   只读兼容、结构化冲突与错误映射均由 Core 合同约束。
 - 会生成内容的 operation 冻结 concrete locale、operation provenance 与恢复上下文；路径、文件名、slug、
@@ -28,10 +31,11 @@
 - overview provenance 能区分 synchronized、needs regeneration、mixed 与 unknown。内容语言切换不会自动改写
   既有文件；全库 regeneration 只能由用户显式触发，并经过 preflight、durable journal、staging、backup、commit
   与恢复门禁。
-- 自动门禁覆盖 739 个 String Catalog key 的抽取、locale parity 与 placeholder parity；macOS 全量测试执行
-  1052 项、跳过 5 项、失败 0 项。fixture-only UI 检查覆盖 `en/en`、`en/zh-Hans`、`zh-Hans/en` 与
-  `zh-Hans/zh-Hans` 四种界面/内容组合，并验证即时界面刷新、两套语言状态独立、显式 overview regeneration
-  以及用户路径和文件不被改写。
+- 当前工作树的 Debug build、Language 设置定向测试和本轮 Settings 文件定向 SwiftFormat/SwiftLint 已通过。
+  fixture-only UI 检查覆盖 `en/en`、`en/zh-Hans`、`zh-Hans/en` 与 `zh-Hans/zh-Hans` 四种界面/内容组合，
+  验证了即时界面刷新、两套语言状态独立、显式保存、摘要跳转、SQLite 完整性，以及根目录
+  `README.md` / `AREAMATRIX.md` 不被创建或改写。本轮未执行 overview regeneration commit；全量 macOS
+  测试仍有与本页改动无关的既有治理失败，因此 residual 在完整门禁恢复前保持 open。
 
 ## 上下文
 
@@ -67,7 +71,7 @@ apps/macos/AreaMatrix/Localizations/Localizable.xcstrings
 resolved concrete locale、`en`、slug；`system` 从当前 concrete locale 开始，不查询 `system` map key；未知
 policy 只读浏览时使用 exact raw locale、`en`、slug。custom category 允许 sparse locale map（稀疏语言映射），
 不自动补译。未知非空 policy 仍允许浏览，但持续显示 unsupported 状态，并阻断所有 classifier mutation、generated
-content 或可持久化 AI 自然语言结果，直到用户在 Repository 设置中明确选择支持值。
+content 或可持久化 AI 自然语言结果，直到用户在 Language 设置中明确选择支持值。
 
 Core 不持有可变的进程级界面 locale。每个可能生成内容的 operation（操作）在自己的线性化点解析一次
 concrete `zh-Hans` 或 `en` 并显式传入 Core：设置提交要么完整发生在快照前，要么完整发生在快照后；一个

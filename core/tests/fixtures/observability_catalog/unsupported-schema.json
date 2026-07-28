@@ -1,0 +1,6 @@
+{
+  "schema_version": 999,
+  "future_document": {
+    "shape": "intentionally-not-v1"
+  }
+}

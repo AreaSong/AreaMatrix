@@ -112,104 +112,21 @@ struct AboutSettingsLinksSection: View {
 }
 
 struct AboutSettingsDiagnosticsSection: View {
-    let diagnosticsButtonTitle: String
-    let diagnosticsState: AboutSettingsDiagnosticsState
-    let onRequestDiagnostics: () -> Void
-    let onRevealDiagnostics: (AboutDiagnosticsExportSnapshot) -> Void
-    let onCopyDiagnosticsPath: (AboutDiagnosticsExportSnapshot) -> Void
-    let onCopyError: (AboutSettingsError) -> Void
+    let onOpenDiagnostics: () -> Void
 
     var body: some View {
-        AboutSettingsSection(title: L10n.string("Diagnostics")) {
+        AboutSettingsSection(title: L10n.string("settings.advanced.observability.title")) {
             Button {
-                onRequestDiagnostics()
+                onOpenDiagnostics()
             } label: {
-                Label(diagnosticsButtonTitle, systemImage: "doc.badge.gearshape")
+                Label(L10n.string("settings.advanced.openDiagnostics"), systemImage: "waveform.path.ecg")
             }
-            .disabled(diagnosticsState.isCollecting)
-            .accessibilityIdentifier("about-settings-collect-diagnostics")
+            .accessibilityIdentifier("about-settings-open-diagnostics")
 
-            Text(L10n.string("Diagnostics are redacted, exclude original file contents, and are not uploaded automatically."))
+            Text(L10n.string("settings.advanced.observability.detail"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-
-            diagnosticsStatus
-        }
-    }
-
-    @ViewBuilder
-    private var diagnosticsStatus: some View {
-        switch diagnosticsState {
-        case .idle, .confirmingPrivacy:
-            EmptyView()
-        case .collecting:
-            SettingsProgressBanner(title: L10n.string("Collecting redacted diagnostics..."))
-        case let .collected(snapshot):
-            SettingsStatusBanner(
-                title: L10n.string("Diagnostics exported"),
-                systemImage: "checkmark.circle",
-                tint: .green
-            ) {
-                Text(snapshot.exportPath)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .lineLimit(2)
-                    .truncationMode(.middle)
-                HStack(spacing: 10) {
-                    Button(L10n.string("Reveal in Finder")) {
-                        onRevealDiagnostics(snapshot)
-                    }
-                    Button(L10n.string("Copy diagnostics path")) {
-                        onCopyDiagnosticsPath(snapshot)
-                    }
-                }
-            }
-        case let .failed(error):
-            AboutSettingsBanner(error: error, tint: .red) {
-                Button(L10n.string("Copy error")) {
-                    onCopyError(error)
-                }
-                Button(L10n.string("Retry")) {
-                    onRequestDiagnostics()
-                }
-            }
-        }
-    }
-}
-
-struct AboutSettingsLogsSection: View {
-    let isDisabled: Bool
-    let logsPath: String
-    let onOpenLogs: () -> Void
-    let onCopyLogsPath: () -> Void
-
-    var body: some View {
-        AboutSettingsSection(title: L10n.string("Logs")) {
-            HStack(spacing: 10) {
-                Button {
-                    onOpenLogs()
-                } label: {
-                    Label(L10n.string("Open logs in Console"), systemImage: "terminal")
-                }
-                .disabled(isDisabled)
-                .accessibilityIdentifier("about-settings-open-logs")
-
-                Button {
-                    onCopyLogsPath()
-                } label: {
-                    Label(L10n.string("Copy logs path"), systemImage: "doc.on.doc")
-                }
-                .accessibilityIdentifier("about-settings-copy-logs-path")
-            }
-
-            Text(logsPath)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-                .lineLimit(2)
-                .truncationMode(.middle)
         }
     }
 }

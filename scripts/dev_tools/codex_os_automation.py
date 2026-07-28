@@ -672,6 +672,7 @@ def _append_validation_for_path(path: str, add: Callable[[str, str], None]) -> N
         add("cd core && cargo clippy --all-targets --all-features -- -D warnings", "Rust lint gate.")
         add("cd core && cargo test --workspace", "Rust workspace tests.")
     if path.startswith("apps/macos/"):
+        add("./dev check localization", "macOS String Catalog and runtime L10n contract.")
         add("xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO", "macOS build gate.")
         add("./dev test macos", "macOS XCTest gate.")
     if path.startswith(".github/") or path in {"CODE_REVIEW.md", "SECURITY.md", "CONTRIBUTING.md"} or path.startswith("docs/development/"):

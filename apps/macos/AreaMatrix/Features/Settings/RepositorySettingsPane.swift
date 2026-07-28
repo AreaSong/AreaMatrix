@@ -5,9 +5,9 @@ struct RepositorySettingsPane: View {
     @StateObject private var model: RepositorySettingsModel
     @StateObject private var capabilityModel: RepoPlatformCapabilitiesModel
     @StateObject private var configModel: RepositorySettingsConfigModel
-    @StateObject private var overviewRegenerationModel: RepositoryOverviewRegenerationModel
     let onChangeRepository: () -> Void
     let onOpenPlatformCapabilities: () -> Void
+    let onOpenLanguageSettings: () -> Void
     let onOpenRecoveryTools: () -> Void
 }
 
@@ -29,11 +29,10 @@ extension RepositorySettingsPane {
         appVersion: String? = nil,
         appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
-        overviewRegenerator: any CoreOverviewRegenerating = AppCoreServices.overviewRegenerator,
-        overviewRegenerationCoordinator: OverviewRegenerationCoordinator? = nil,
         accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer,
         onChangeRepository: @escaping () -> Void = {},
         onOpenPlatformCapabilities: @escaping () -> Void = {},
+        onOpenLanguageSettings: @escaping () -> Void = {},
         onOpenRecoveryTools: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: RepositorySettingsModel(
@@ -64,14 +63,9 @@ extension RepositorySettingsPane {
             errorMapper: errorMapper,
             accessibilityAnnouncer: accessibilityAnnouncer
         ))
-        _overviewRegenerationModel = StateObject(wrappedValue: RepositoryOverviewRegenerationModel(
-            repoPath: repoPath,
-            bridge: overviewRegenerator,
-            coordinator: overviewRegenerationCoordinator,
-            errorMapper: errorMapper
-        ))
         self.onChangeRepository = onChangeRepository
         self.onOpenPlatformCapabilities = onOpenPlatformCapabilities
+        self.onOpenLanguageSettings = onOpenLanguageSettings
         self.onOpenRecoveryTools = onOpenRecoveryTools
     }
 
@@ -94,7 +88,8 @@ extension RepositorySettingsPane {
                 }
             }
         } message: {
-            Text(L10n.string("Diagnostics do not include your original file contents and are not uploaded automatically."))
+            Text(L10n
+                .string("Diagnostics do not include your original file contents and are not uploaded automatically."))
         }
     }
 
@@ -183,7 +178,6 @@ extension RepositorySettingsPane {
             RepositorySettingsHealthSection(summary: model.healthSummary)
             platformCapabilitySection
             repositoryConfigSection
-            RepositoryOverviewRegenerationSection(model: overviewRegenerationModel)
             RepositorySettingsSafeActionsSection(
                 diagnosticsButtonTitle: diagnosticsButtonTitle,
                 isDiagnosticsDisabled: model.diagnosticsState.isCollecting || !capabilityModel.allowsDiagnosticsExport,
@@ -207,6 +201,7 @@ extension RepositorySettingsPane {
             config: model.loadedConfig,
             model: configModel,
             capabilityState: capabilityModel.state,
+            onOpenLanguageSettings: onOpenLanguageSettings,
             onSaved: {
                 await reload()
             }
@@ -281,9 +276,6 @@ extension RepositorySettingsPane {
     private func reload() async {
         await model.load()
         await capabilityModel.load()
-        if let concreteLocale = resolvedContentLocale {
-            await overviewRegenerationModel.load(contentLocale: concreteLocale)
-        }
     }
 
     @ViewBuilder
@@ -305,12 +297,6 @@ extension RepositorySettingsPane {
                 .accessibilityIdentifier("repository-settings-retry-path-sync")
             }
         }
-    }
-
-    private var resolvedContentLocale: String? {
-        guard let config = model.loadedConfig else { return nil }
-        return try? RepositoryContentLanguage(snapshotValue: config.locale)
-            .resolvedIdentifier(interfaceLocaleIdentifier: AppLanguageRuntime.shared.resolvedIdentifier())
     }
 
     @ViewBuilder

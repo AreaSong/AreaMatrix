@@ -148,7 +148,6 @@ private func makeSettingsRecoveryAdvancedModel(_ context: SettingsRecoveryIntegr
         appVersionReader: StaticAppVersionReader(version: "2.3.0"),
         coreVersionReader: context.bridge,
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
-        logsOpener: RecordingAdvancedSettingsLogsOpener(logsPath: "\(context.repoURL.path)/.areamatrix/logs"),
         summaryCopier: RecordingAdvancedDiagnosticCopier(),
         errorMapper: context.bridge
     )
@@ -167,28 +166,15 @@ private func verifySettingsRecoveryAboutAndRepairRoute(_ context: SettingsRecove
         appVersionReader: StaticAppVersionReader(version: "2.3.0"),
         coreVersionReader: context.bridge,
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
-        diagnosticsExporter: LocalAboutDiagnosticsExporter(baseDirectory: context.diagnosticsURL),
         externalLinkOpener: NoopAboutExternalLinkOpener(),
-        logsOpener: RecordingAboutLogsOpener(),
         stringCopier: RecordingAboutStringCopier(),
-        diagnosticsRevealer: NoopAboutDiagnosticsRevealer(),
         errorMapper: context.bridge,
         accessibilityAnnouncer: NoopAccessibilityAnnouncer()
     )
     await about.load()
-    about.requestDiagnosticsExport()
-    await about.collectDiagnostics()
 
     XCTAssertEqual(about.versionInfo.schemaVersion, "v3")
     XCTAssertNotEqual(about.versionInfo.coreVersion, "Unknown")
-    if case let .collected(snapshot) = about.diagnosticsState {
-        let report = try String(contentsOf: URL(fileURLWithPath: snapshot.exportPath)
-            .appendingPathComponent("about-diagnostics.txt"))
-        XCTAssertTrue(report.contains("User file contents: excluded"))
-        XCTAssertFalse(report.contains(context.repoURL.path))
-    } else {
-        XCTFail("Expected About diagnostics export to complete")
-    }
 
     let mapping = await context.bridge.mapCoreError(CoreError.Db(message: "database corrupted"))
     let shell = OnboardingModel(helpOpener: NoopWelcomeHelpOpener())
@@ -212,22 +198,16 @@ private struct SettingsRecoveryIntegrationContext {
     let readmeURL: URL
     let rootOverviewURL: URL
     let generatedOverviewURL: URL
-    let diagnosticsURL: URL
     let bridge: CoreBridge
 
     static func make() async throws -> SettingsRecoveryIntegrationContext {
         let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixSettingsRecoveryRepo")
         let sourceRootURL = try makeTestTemporaryDirectory(named: "AreaMatrixSettingsRecoverySource")
-        let diagnosticsURL = try makeTestTemporaryDirectory(named: "AreaMatrixSettingsRecoveryDiagnostics")
         let sourceURL = sourceRootURL.appendingPathComponent("Invoice_2026Q1.pdf")
         try Data("settings recovery invoice bytes".utf8).write(to: sourceURL)
 
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        try FileManager.default.createDirectory(
-            at: repoURL.appendingPathComponent(".areamatrix/logs", isDirectory: true),
-            withIntermediateDirectories: true
-        )
         let readmeURL = repoURL.appendingPathComponent("README.md")
         try "user readme\n".write(to: readmeURL, atomically: true, encoding: .utf8)
 
@@ -238,12 +218,11 @@ private struct SettingsRecoveryIntegrationContext {
             readmeURL: readmeURL,
             rootOverviewURL: repoURL.appendingPathComponent("AREAMATRIX.md"),
             generatedOverviewURL: repoURL.appendingPathComponent(".areamatrix/generated/root.md"),
-            diagnosticsURL: diagnosticsURL,
             bridge: bridge
         )
     }
 
     func cleanup() {
-        removeTestTemporaryItems(repoURL, sourceRootURL, diagnosticsURL)
+        removeTestTemporaryItems(repoURL, sourceRootURL)
     }
 }

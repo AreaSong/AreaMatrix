@@ -101,33 +101,7 @@ final class LocalFileURLOpenerTests: XCTestCase {
     }
 
     @MainActor
-    func testFeatureOpenersUseSharedLocalFileURLOpenerAndPreserveErrors() throws {
-        let repoPath = "/tmp/repo"
-        let logsPath = "/tmp/repo/.areamatrix/logs"
-
-        let aboutLogsOpener = RecordingLocalFileURLOpener()
-        let openedAboutLogsPath = try NSWorkspaceAboutLogsOpener(localURLOpener: aboutLogsOpener)
-            .openLogs(repoPath: repoPath)
-        XCTAssertEqual(openedAboutLogsPath, logsPath)
-        aboutLogsOpener.assertOpenExistingRequests([(path: logsPath, requiresDirectory: true)])
-
-        XCTAssertThrowsError(try NSWorkspaceAboutLogsOpener(
-            localURLOpener: RecordingLocalFileURLOpener(result: .failure(LocalFileURLOpenError.openRejected(logsPath)))
-        ).openLogs(repoPath: repoPath)) { error in
-            XCTAssertEqual(error as? AboutSettingsPlatformError, .openRejected(logsPath))
-        }
-
-        XCTAssertThrowsError(try AdvancedSettingsLogFolderOpener(
-            localURLOpener: RecordingLocalFileURLOpener(result: .failure(LocalFileURLOpenError.missing(logsPath)))
-        ).openLogsFolder(repoPath: repoPath)) { error in
-            XCTAssertEqual(error as? AdvancedSettingsLogFolderError, .missing(logsPath))
-        }
-
-        let diagnosticsRevealer = RecordingLocalFileURLOpener()
-        try NSWorkspaceAboutDiagnosticsRevealer(localURLOpener: diagnosticsRevealer)
-            .revealDiagnostics(at: "/tmp/diagnostics")
-        diagnosticsRevealer.assertRevealExistingPaths(["/tmp/diagnostics"])
-
+    func testLocalModelFolderOpenerUsesSharedLocalFileURLOpenerAndPreservesErrors() throws {
         XCTAssertThrowsError(try NSWorkspaceLocalModelFolderOpener(
             localURLOpener: RecordingLocalFileURLOpener(result: .failure(LocalFileURLOpenError.missing("/tmp/models")))
         ).openLocalModelFolder(localModelFolderLocation(folderPath: "/tmp/models"))) { error in
@@ -174,9 +148,10 @@ final class LocalFileURLOpenerTests: XCTestCase {
         )
 
         XCTAssertThrowsError(try NSWorkspaceRepositoryIgnoreRulesManager(localURLOpener: localURLOpener)
-            .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
-                XCTAssertEqual(error as? RepositoryIgnoreRulesError, .openRejected)
-            }
+            .openIgnoreRules(repoPath: fixture.repoURL.path))
+        { error in
+            XCTAssertEqual(error as? RepositoryIgnoreRulesError, .openRejected)
+        }
         localURLOpener.assertOpenedPaths([fixture.ignoreRulesURL.path])
     }
 
@@ -188,9 +163,10 @@ final class LocalFileURLOpenerTests: XCTestCase {
         let localURLOpener = RecordingLocalFileURLOpener()
 
         XCTAssertThrowsError(try NSWorkspaceRepositoryIgnoreRulesManager(localURLOpener: localURLOpener)
-            .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
-                XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesMissing)
-            }
+            .openIgnoreRules(repoPath: fixture.repoURL.path))
+        { error in
+            XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesMissing)
+        }
         localURLOpener.assertNoOpenedURLs()
     }
 
@@ -203,9 +179,10 @@ final class LocalFileURLOpenerTests: XCTestCase {
         let localURLOpener = RecordingLocalFileURLOpener()
 
         XCTAssertThrowsError(try NSWorkspaceRepositoryIgnoreRulesManager(localURLOpener: localURLOpener)
-            .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
-                XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesNotRegularFile)
-            }
+            .openIgnoreRules(repoPath: fixture.repoURL.path))
+        { error in
+            XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesNotRegularFile)
+        }
         localURLOpener.assertNoOpenedURLs()
     }
 }

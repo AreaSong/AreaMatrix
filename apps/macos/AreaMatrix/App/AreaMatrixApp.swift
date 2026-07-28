@@ -8,7 +8,7 @@ struct AreaMatrixApp: App {
     @StateObject private var languageStore: AppLanguageStore
 
     init() {
-        AppLogger.shared.setupCoreLogging()
+        ObservabilityRuntimeAssembly.shared.start()
         let runtime = AppLanguageRuntime.shared
         let localizer = AppLocalizer(runtime: runtime)
         _localizer = StateObject(wrappedValue: localizer)
@@ -32,23 +32,23 @@ struct AreaMatrixApp: App {
         .commands {
             CommandGroup(after: .sidebar) {
                 Button(localizer.string("app.command.import")) {
-                    AppLogger.shared.logUIAction("Triggered 'Import' via Menu / Shortcut")
+                    AppLogger.shared.logUIAction("app.command.import.triggered")
                     AreaMatrixImportCommandRelay.publish()
                 }
                 .keyboardShortcut("i", modifiers: [.command])
                 Button(localizer.string("app.command.settings")) {
-                    AppLogger.shared.logUIAction("Triggered 'Settings' via Menu / Shortcut")
+                    AppLogger.shared.logUIAction("app.command.settings.triggered")
                     AreaMatrixSettingsCommandRelay.publish()
                 }
                 .keyboardShortcut(",", modifiers: [.command])
                 Divider()
                 Button(localizer.string("app.command.commandPalette")) {
-                    AppLogger.shared.logUIAction("Triggered 'Command Palette' via Menu / Shortcut")
+                    AppLogger.shared.logUIAction("app.command.command_palette.triggered")
                     AreaMatrixCommandPaletteCommandRelay.publish()
                 }
                 .keyboardShortcut("k", modifiers: [.command])
                 Button(localizer.string("app.command.undoHistory")) {
-                    AppLogger.shared.logUIAction("Triggered 'Undo History' via Menu / Shortcut")
+                    AppLogger.shared.logUIAction("app.command.undo_history.triggered")
                     AreaMatrixUndoHistoryCommandRelay.publish()
                 }
                 .keyboardShortcut("z", modifiers: [.command, .option])
@@ -201,9 +201,11 @@ private extension MainExternalSyncWindow {
     }
 }
 
+@MainActor
 final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
     /// 监听系统外观变化，动态切换 Dock 图标
     private var appearanceObservation: NSKeyValueObservation?
+    private let observabilityLifecycle = ObservabilityApplicationLifecycle()
 
     func applicationDidFinishLaunching(_: Notification) {
         updateDockIcon()
@@ -225,6 +227,13 @@ final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
         sender.reply(toOpenOrPrint: .success)
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        observabilityLifecycle.beginTermination(
+            stop: { await ObservabilityRuntimeAssembly.shared.stop() },
+            reply: { sender.reply(toApplicationShouldTerminate: true) }
+        )
+    }
+
     /// 根据系统深浅色切换 Dock / Finder 图标
     private func updateDockIcon() {
         let isDark = NSApp.effectiveAppearance
@@ -237,75 +246,69 @@ final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 }
+
 import Foundation
-import os
-import OSLog
 
-public final class AppLogger {
-    public static let shared = AppLogger()
+final class AppLogger: Sendable {
+    static let shared = AppLogger()
 
-    public let uiLog = Logger(subsystem: "com.areamatrix.mac", category: "UI")
-    public let coreLog = Logger(subsystem: "com.areamatrix.mac", category: "Core")
-    public let syncLog = Logger(subsystem: "com.areamatrix.mac", category: "Sync")
-    public let aiLog = Logger(subsystem: "com.areamatrix.mac", category: "AI")
+    private let hub: ObservabilityHub
 
-    private init() {
-        setupCoreLogging()
+    init(hub: ObservabilityHub = .shared) {
+        self.hub = hub
     }
 
-    public func setupCoreLogging() {
-        do {
-            let handler = AppCoreLogHandler()
-            try initLogging(level: "info", callback: handler)
-            coreLog.info("Core logging successfully intercepted via UniFFI Callback.")
-        } catch {
-            coreLog.error("Failed to initialize core logging: \(error.localizedDescription)")
+    func logUIAction(
+        _ actionID: String,
+        severity: AppObservabilitySeverity = .info,
+        traceID: String = UUID().uuidString.lowercased(),
+        operationID: String = UUID().uuidString.lowercased(),
+        retryOfOperationID: String? = nil,
+        componentID: String = "macos.ui"
+    ) {
+        Task {
+            await recordUIAction(
+                actionID: actionID,
+                severity: severity,
+                componentID: componentID,
+                traceID: traceID,
+                operationID: operationID,
+                retryOfOperationID: retryOfOperationID
+            )
         }
     }
-    
-    public func logUIAction(_ message: String, level: MemoryLogLevel = .info) {
-        switch level {
-        case .error: uiLog.error("\(message, privacy: .public)")
-        case .warn: uiLog.warning("\(message, privacy: .public)")
-        case .debug: uiLog.debug("\(message, privacy: .public)")
-        default: uiLog.info("\(message, privacy: .public)")
-        }
-        
-        Task { @MainActor in
-            MemoryLogStore.shared.append(level: level, category: "UI", message: message)
-        }
+
+    func recordUIAction(
+        actionID: String,
+        severity: AppObservabilitySeverity = .info,
+        componentID: String = "macos.ui",
+        traceID: String = UUID().uuidString.lowercased(),
+        operationID: String = UUID().uuidString.lowercased(),
+        retryOfOperationID: String? = nil
+    ) async {
+        var event = ObservabilitySemanticEventInput(actionID: actionID, componentID: componentID)
+        event.traceID = traceID
+        event.operationID = operationID
+        event.retryOfOperationID = retryOfOperationID
+        event.severity = severity
+        await record(event)
     }
-}
 
+    func recordUIAction(traceContext: CoreImportTraceContext) async {
+        var event = ObservabilitySemanticEventInput(
+            actionID: traceContext.actionID,
+            componentID: traceContext.componentID
+        )
+        event.traceID = traceContext.traceID
+        event.spanID = traceContext.spanID
+        event.operationID = traceContext.operationID
+        event.retryOfOperationID = traceContext.retryOfOperationID
+        event.phase = "started"
+        event.outcome = "started"
+        await record(event)
+    }
 
-final class AppCoreLogHandler: CoreLogCallback {
-    private let coreLog = Logger(subsystem: "com.areamatrix.mac", category: "Core")
-    
-    func onLog(record: CoreLogRecord) {
-        let module = record.target ?? "unknown"
-        let msg = "[\(module)] \(record.message)"
-        
-        let level: MemoryLogLevel
-        
-        switch record.level.lowercased() {
-        case "error":
-            coreLog.error("\(msg, privacy: .public)")
-            level = .error
-        case "warn":
-            coreLog.warning("\(msg, privacy: .public)")
-            level = .warn
-        case "debug", "trace":
-            coreLog.debug("\(msg, privacy: .public)")
-            level = .debug
-        default:
-            coreLog.info("\(msg, privacy: .public)")
-            level = .info
-        }
-        
-        Task { @MainActor in
-            MemoryLogStore.shared.append(level: level, category: "Core", message: msg)
-        }
+    func record(_ event: ObservabilitySemanticEventInput) async {
+        await hub.recordSemanticAction(event)
     }
 }
-
-

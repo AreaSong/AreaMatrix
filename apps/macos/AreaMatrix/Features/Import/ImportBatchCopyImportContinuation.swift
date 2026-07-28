@@ -12,6 +12,7 @@ extension ImportBatchCopyImportModel {
         let retryRowIndex = rows.firstIndex { $0.sourcePath == context.sourcePath }
         if let retryRowIndex {
             setStatus(.imported, for: rows[retryRowIndex].id)
+            setImportCommitState(entry.importCommitState, for: rows[retryRowIndex].id)
         }
         let retryPath = retryRowIndex.map { targetRelativePath(for: rows[$0], destination: selectedDestination) }
             ?? entry.path
@@ -21,7 +22,8 @@ extension ImportBatchCopyImportModel {
                 request: request,
                 retryEntry: entry,
                 retryRowIndex: retryRowIndex,
-                retryPath: retryPath
+                retryPath: retryPath,
+                traceID: context.traceID ?? UUID().uuidString.lowercased()
             ),
             controlState: controlState,
             reportProgress: reportProgress
@@ -46,7 +48,8 @@ extension ImportBatchCopyImportModel {
 
     func retryContext(
         for row: ImportBatchCopyImportRow,
-        request: ImportEntryRequest
+        request: ImportEntryRequest,
+        traceContext: CoreImportTraceContext? = nil
     ) -> ImportProgressRetryContext {
         ImportProgressRetryContext(
             repoPath: request.repoPath,
@@ -54,7 +57,9 @@ extension ImportBatchCopyImportModel {
             storageMode: selectedStorageMode,
             overrideCategory: row.resolvedCategory(for: selectedDestination) ?? "inbox",
             overrideFilename: row.resolvedIncomingName,
-            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy(for: row))
+            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: duplicateStrategy(for: row)),
+            traceID: traceContext?.traceID,
+            operationID: traceContext?.operationID
         )
     }
 
@@ -106,6 +111,11 @@ extension ImportBatchCopyImportModel {
         clearLastFailureMapping()
 
         for index in rows.indices where rows[index].status.isReady {
+            let traceContext = CoreImportTraceContext.operation(
+                traceID: continuation.traceID,
+                actionID: "repository.import.confirmed",
+                componentID: "macos.import.batch"
+            )
             let cycle = await runImportCycle(
                 input: ImportBatchCopyCycleInput(
                     rowIndex: index,
@@ -113,13 +123,20 @@ extension ImportBatchCopyImportModel {
                     selectedDestination: selectedDestination,
                     completed: state.completed,
                     failed: state.failed,
-                    total: total
+                    total: total,
+                    traceContext: traceContext
                 ),
                 reportProgress: reportProgress
             )
-            updateContinuationRunState(&state, cycle: cycle)
+            updateContinuationRunState(
+                &state,
+                cycle: cycle,
+                rowIndex: index,
+                request: continuation.request,
+                traceContext: traceContext
+            )
             reportProgress(cycle.progress.withItems(progressItems()))
-            if cycle.stoppedForDuplicate {
+            if cycle.stoppedForDuplicate || cycle.stoppedForQueue {
                 return continuedImportResult(from: state, total: total)
             }
             if controlState.isStopAfterCurrentFileRequested {
@@ -137,13 +154,23 @@ extension ImportBatchCopyImportModel {
 
     private func updateContinuationRunState(
         _ state: inout ImportBatchCopyRunState,
-        cycle: ImportBatchCopyCycleResult
+        cycle: ImportBatchCopyCycleResult,
+        rowIndex: Int,
+        request: ImportEntryRequest,
+        traceContext: CoreImportTraceContext
     ) {
         state.completed = cycle.completed
         state.failed = cycle.failed
         state.lastImportedPath = cycle.lastImportedPath ?? state.lastImportedPath
         if let entry = cycle.entry {
             state.succeededEntries.append(entry)
+        }
+        if cycle.stoppedForQueue {
+            state.fatalRetryContext = retryContext(
+                for: rows[rowIndex],
+                request: request,
+                traceContext: traceContext
+            )
         }
     }
 
@@ -167,7 +194,8 @@ extension ImportBatchCopyImportModel {
         failed: Int,
         total: Int,
         lastImportedPath: String,
-        didStopAfterCurrentFile: Bool
+        didStopAfterCurrentFile: Bool,
+        fatalRetryContext: ImportProgressRetryContext? = nil
     ) -> ImportBatchImportResult {
         ImportBatchImportResult(
             succeededEntries: entries,
@@ -178,7 +206,8 @@ extension ImportBatchCopyImportModel {
             pendingDuplicateCount: unresolvedDuplicateCount,
             skippedDuplicateCount: skippedDuplicateCount,
             pendingICloudCount: pendingICloudCount,
-            didStopAfterCurrentFile: didStopAfterCurrentFile
+            didStopAfterCurrentFile: didStopAfterCurrentFile,
+            fatalRetryContext: fatalRetryContext
         )
     }
 
@@ -191,7 +220,8 @@ extension ImportBatchCopyImportModel {
             failed: state.failed,
             total: total,
             lastImportedPath: state.lastImportedPath,
-            didStopAfterCurrentFile: state.didStopAfterCurrentFile
+            didStopAfterCurrentFile: state.didStopAfterCurrentFile,
+            fatalRetryContext: state.fatalRetryContext
         )
     }
 
@@ -228,7 +258,8 @@ extension ImportBatchCopyImportModel {
     }
 
     func currentDuplicateStrategiesByRowID()
-        -> [ImportBatchCopyImportRow.ID: ImportBatchDuplicateResolutionStrategy] {
+        -> [ImportBatchCopyImportRow.ID: ImportBatchDuplicateResolutionStrategy]
+    {
         rows.reduce(into: [:]) { strategies, row in
             guard let strategy = row.duplicateResolution else { return }
             strategies[row.id] = strategy
@@ -243,7 +274,8 @@ extension ImportBatchCopyImportModel {
     }
 
     func currentNameConflictResolutionsByRowID()
-        -> [ImportBatchCopyImportRow.ID: ImportBatchNameConflictResolution] {
+        -> [ImportBatchCopyImportRow.ID: ImportBatchNameConflictResolution]
+    {
         rows.reduce(into: [:]) { resolutions, row in
             guard case let .nameConflict(_, resolution) = row.status else { return }
             resolutions[row.id] = resolution

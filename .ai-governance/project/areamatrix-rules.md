@@ -97,6 +97,19 @@ exclude 隐藏，不纳入源码目录语义。
 - Swift 平台层处理 AppKit、FSEvents、iCloud、OSLog。
 - SwiftUI 层只做状态与视图，不直接做文件 IO。
 
+## macOS 本地化闭环
+
+- application-owned 用户可见文案必须进入
+  `apps/macos/AreaMatrix/Localizations/Localizable.xcstrings`，并完整维护 `en` 与 `zh-Hans`。
+- 新增或修改页面时，立即显示且无需跨状态保存的文案使用 `L10n.string` / `format` / `plural`；
+  存入 model、错误、toast、异步结果或延迟展示的文案使用 `L10n.message` / `pluralMessage` / `display`，
+  在展示边界通过 `AppLocalizer.resolve` 解析。
+- 用户内容、路径、文件名、品牌或技术标识只有在语义确实不可翻译时才使用 `L10n.verbatim`，并提供明确
+  `VerbatimReason`；可编辑默认值只在草稿创建时用 `L10n.editableDefault` 物化一次。
+- L10n key 必须是静态字符串；不得使用插值或运行时拼接 key，也不得绕过 `AppLocalizer` 直接查询 bundle。
+- 页面完成证据必须包含 `./dev check localization`；涉及可见文案或语言交互时，还要验证 `en` 与 `zh-Hans`
+  切换后的同一状态，不能只凭编译通过宣称完成。
+
 ## 验证基线
 
 - Workflow 结构：`./dev workflow doctor`

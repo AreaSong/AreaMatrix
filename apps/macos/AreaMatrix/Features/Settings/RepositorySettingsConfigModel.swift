@@ -181,6 +181,9 @@ struct RepositorySettingsConfigConflict: Equatable {
 
 @MainActor
 final class RepositorySettingsConfigModel: ObservableObject {
+    @Published private(set) var loadedConfig: AppRepoConfigSnapshot?
+    @Published private(set) var loadError: RepositorySettingsConfigError?
+    @Published private(set) var isLoading = false
     @Published private(set) var saveState: RepositorySettingsConfigSaveState = .idle
     @Published private(set) var lastSavedConfig: AppRepoConfigSnapshot?
 
@@ -209,6 +212,19 @@ final class RepositorySettingsConfigModel: ObservableObject {
         saveState = .idle
     }
 
+    func load() async {
+        guard !repoPath.isEmpty, !isLoading else { return }
+        isLoading = true
+        loadError = nil
+        defer { isLoading = false }
+        do {
+            loadedConfig = try await loader.loadConfig(repoPath: repoPath)
+        } catch {
+            loadedConfig = nil
+            loadError = await configError(for: error)
+        }
+    }
+
     func save(
         draft: RepositorySettingsConfigDraft,
         currentConfig: AppRepoConfigSnapshot,
@@ -225,6 +241,7 @@ final class RepositorySettingsConfigModel: ObservableObject {
         do {
             let savedConfig = try await updater.updateConfig(repoPath: repoPath, from: currentConfig, to: newConfig)
             lastSavedConfig = savedConfig
+            loadedConfig = savedConfig
             let savedMessage = L10n.message("Repository settings saved.")
             saveState = .saved(savedMessage)
             accessibilityAnnouncer.announce(savedMessage)
@@ -249,6 +266,19 @@ final class RepositorySettingsConfigModel: ObservableObject {
             accessibilityAnnouncer.announce(L10n.message("Repository settings could not be saved."))
             return false
         }
+    }
+
+    func saveContentLanguage(
+        _ contentLanguage: RepositoryContentLanguage,
+        currentConfig: AppRepoConfigSnapshot
+    ) async -> Bool {
+        var draft = RepositorySettingsConfigDraft(config: currentConfig)
+        draft.contentLanguage = contentLanguage
+        return await save(
+            draft: draft,
+            currentConfig: currentConfig,
+            dirtyFields: [.contentLanguage]
+        )
     }
 
     private func configError(for error: Error) async -> RepositorySettingsConfigError {

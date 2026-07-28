@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "actions": [
+    { "id": "example.动作", "group": "example" }
+  ],
+  "components": [
+    {
+      "id": "example.component",
+      "owner": "example",
+      "role": "runtime",
+      "symbol": "Example.run",
+      "authority": "docs/development/observability.md"
+    }
+  ],
+  "expected_flows": [
+    {
+      "id": "example.flow",
+      "entry_action_ids": ["example.动作"],
+      "steps": [
+        {
+          "id": "entry",
+          "required": true,
+          "match_any": [
+            { "action_id": "example.动作", "component_id": "example.component" }
+          ]
+        }
+      ]
+    }
+  ]
+}

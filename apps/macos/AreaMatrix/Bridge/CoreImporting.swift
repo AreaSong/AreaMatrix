@@ -40,6 +40,7 @@ struct CoreBatchImportRequest {
     var suggestedCategory: String?
     var overrideFilename: String
     var duplicateStrategy: DuplicateStrategy
+    var traceContext: CoreImportTraceContext?
 }
 
 extension CoreFileImporting {
@@ -109,7 +110,7 @@ extension CoreBatchCopyImporting {
     }
 }
 
-extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
+extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCopyImporting {
     func importCopiedFile(
         repoPath: String,
         sourceURL: URL,
@@ -129,8 +130,13 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 overrideFilename: overrideFilename,
                 duplicateStrategy: duplicateStrategy,
                 contentLocale: ContentLocale(snapshotValue: contentLocale)
-            )
+            ),
+            traceContext: nil
         )
+    }
+
+    func importCopiedFile(request: CoreObservedImportRequest) async throws -> FileEntrySnapshot {
+        try await importObservedFile(request, mode: .copied)
     }
 
     func importCopiedFile(request: CoreBatchImportRequest) async throws -> FileEntrySnapshot {
@@ -149,7 +155,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 overrideFilename: request.overrideFilename,
                 duplicateStrategy: request.duplicateStrategy,
                 contentLocale: ContentLocale(snapshotValue: contentLocale)
-            )
+            ),
+            traceContext: request.traceContext
         )
     }
 
@@ -173,7 +180,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                     overrideFilename: request.overrideFilename,
                     duplicateStrategy: request.duplicateStrategy,
                     contentLocale: ContentLocale(snapshotValue: contentLocale)
-                )
+                ),
+                traceContext: request.traceContext
             )
         case .move:
             let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: request.repoPath)
@@ -191,7 +199,8 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                     overrideFilename: request.overrideFilename,
                     duplicateStrategy: request.duplicateStrategy,
                     contentLocale: ContentLocale(snapshotValue: contentLocale)
-                )
+                ),
+                traceContext: request.traceContext
             )
         }
     }
@@ -215,8 +224,13 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 overrideFilename: overrideFilename,
                 duplicateStrategy: duplicateStrategy,
                 contentLocale: ContentLocale(snapshotValue: contentLocale)
-            )
+            ),
+            traceContext: nil
         )
+    }
+
+    func importMovedFile(request: CoreObservedImportRequest) async throws -> FileEntrySnapshot {
+        try await importObservedFile(request, mode: .moved)
     }
 
     func importIndexedFile(
@@ -238,19 +252,92 @@ extension CoreBridge: CoreFileImporting, CoreBatchCopyImporting {
                 overrideFilename: overrideFilename,
                 duplicateStrategy: duplicateStrategy,
                 contentLocale: ContentLocale(snapshotValue: contentLocale)
-            )
+            ),
+            traceContext: nil
+        )
+    }
+
+    func importIndexedFile(request: CoreObservedImportRequest) async throws -> FileEntrySnapshot {
+        try await importObservedFile(request, mode: .indexed)
+    }
+
+    private func importObservedFile(
+        _ request: CoreObservedImportRequest,
+        mode: StorageMode
+    ) async throws -> FileEntrySnapshot {
+        let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: request.repoPath)
+        return try await importFile(
+            repoPath: request.repoPath,
+            sourceURL: request.sourceURL,
+            options: ImportOptions(
+                mode: mode,
+                destination: .autoClassify,
+                targetDirectory: nil,
+                overrideCategory: request.overrideCategory,
+                overrideFilename: request.overrideFilename,
+                duplicateStrategy: request.duplicateStrategy,
+                contentLocale: ContentLocale(snapshotValue: contentLocale)
+            ),
+            traceContext: request.traceContext
         )
     }
 
     private func importFile(
         repoPath: String,
         sourceURL: URL,
-        options: ImportOptions
+        options: ImportOptions,
+        traceContext: CoreImportTraceContext? = nil
     ) async throws -> FileEntrySnapshot {
-        let entry = try await Task.detached(priority: .userInitiated) {
-            try AreaMatrix.importFile(repoPath: repoPath, sourcePath: sourceURL.path, options: options)
-        }.value
-        return FileEntrySnapshot(coreEntry: entry) { _, _ in .available }
+        let appTraceContext = traceContext ?? CoreImportTraceContext(
+            traceID: UUID().uuidString.lowercased(),
+            spanID: UUID().uuidString.lowercased(),
+            operationID: UUID().uuidString.lowercased(),
+            retryOfOperationID: nil,
+            actionID: "repository.import.confirmed",
+            componentID: "macos.import.bridge"
+        )
+        let coreTraceContext = await ObservabilityRuntimeAssembly.shared.makeCoreTraceContext(
+            traceID: appTraceContext.traceID,
+            parentSpanID: appTraceContext.spanID,
+            operationID: appTraceContext.operationID,
+            actionID: appTraceContext.actionID,
+            componentID: "core.repository.import",
+            retryOfOperationID: appTraceContext.retryOfOperationID,
+            sourceURL: sourceURL,
+            storageMode: options.mode
+        )
+        do {
+            let result = try await Task.detached(priority: .userInitiated) {
+                try AreaMatrix.importFileWithResultObserved(
+                    repoPath: repoPath,
+                    sourcePath: sourceURL.path,
+                    options: options,
+                    traceContext: coreTraceContext
+                )
+            }.value
+            var entry = FileEntrySnapshot(coreEntry: result.entry) { _, _ in .available }
+            entry.importCommitState = CoreImportCommitState(result.sourceRemovalStatus)
+            await recordImportTerminal(
+                appTraceContext,
+                coreTraceContext: coreTraceContext,
+                outcome: entry.importCommitState.isDegraded ? "degraded" : "succeeded"
+            )
+            return entry
+        } catch {
+            await recordImportTerminal(
+                appTraceContext,
+                coreTraceContext: coreTraceContext,
+                outcome: "failed",
+                error: error
+            )
+            throw error
+        }
+    }
+}
+
+private extension CoreImportCommitState {
+    init(_ status: ImportSourceRemovalStatus) {
+        self = status == .retained ? .sourceRetained : .committed
     }
 }
 

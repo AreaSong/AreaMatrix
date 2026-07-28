@@ -7,11 +7,19 @@ extension OnboardingModel {
         guard state.canRetryCurrentItem, let context = state.retryContext else { return }
 
         route = .importProgress(state.withRecoveryCheck(.checking))
+        let traceContext = CoreImportTraceContext.operation(
+            traceID: context.traceID ?? UUID().uuidString.lowercased(),
+            retryOfOperationID: context.operationID,
+            actionID: "repository.import.retry.confirmed",
+            componentID: "macos.import.progress"
+        )
+        let retryContext = context.replacingTraceContext(traceContext)
+        await AppLogger.shared.recordUIAction(traceContext: traceContext)
         do {
-            let entry = try await importCurrentProgressItem(context)
-            await finishRetriedImportProgressItem(entry, from: state)
+            let entry = try await importCurrentProgressItem(retryContext, traceContext: traceContext)
+            await finishRetriedImportProgressItem(entry, from: state, context: retryContext)
         } catch {
-            await failRetriedImportProgressItem(error, context: context)
+            await failRetriedImportProgressItem(error, context: retryContext)
         }
     }
 
@@ -105,11 +113,52 @@ extension OnboardingModel {
         }
     }
 
-    private func importCurrentProgressItem(_ context: ImportProgressRetryContext) async throws -> FileEntrySnapshot {
+    private func importCurrentProgressItem(
+        _ context: ImportProgressRetryContext,
+        traceContext: CoreImportTraceContext
+    ) async throws -> FileEntrySnapshot {
         let sourceURL = URL(fileURLWithPath: context.sourcePath)
+        guard let importer = importProgressImporter as? any CoreObservedFileImporting else {
+            return try await importCurrentProgressItemWithoutTrace(context, sourceURL: sourceURL)
+        }
         switch context.storageMode {
         case .copy:
-            return try await importProgressImporter.importCopiedFile(
+            return try await importer.importCopiedFile(request: CoreObservedImportRequest(
+                repoPath: context.repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: context.overrideCategory,
+                overrideFilename: context.overrideFilename,
+                duplicateStrategy: context.duplicateStrategy.coreStrategy,
+                traceContext: traceContext
+            ))
+        case .move:
+            return try await importer.importMovedFile(request: CoreObservedImportRequest(
+                repoPath: context.repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: context.overrideCategory,
+                overrideFilename: context.overrideFilename,
+                duplicateStrategy: context.duplicateStrategy.coreStrategy,
+                traceContext: traceContext
+            ))
+        case .indexOnly:
+            return try await importer.importIndexedFile(request: CoreObservedImportRequest(
+                repoPath: context.repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: context.overrideCategory,
+                overrideFilename: context.overrideFilename,
+                duplicateStrategy: context.duplicateStrategy.coreStrategy,
+                traceContext: traceContext
+            ))
+        }
+    }
+
+    private func importCurrentProgressItemWithoutTrace(
+        _ context: ImportProgressRetryContext,
+        sourceURL: URL
+    ) async throws -> FileEntrySnapshot {
+        switch context.storageMode {
+        case .copy:
+            try await importProgressImporter.importCopiedFile(
                 repoPath: context.repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: context.overrideCategory,
@@ -117,7 +166,7 @@ extension OnboardingModel {
                 duplicateStrategy: context.duplicateStrategy.coreStrategy
             )
         case .move:
-            return try await importProgressImporter.importMovedFile(
+            try await importProgressImporter.importMovedFile(
                 repoPath: context.repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: context.overrideCategory,
@@ -125,7 +174,7 @@ extension OnboardingModel {
                 duplicateStrategy: context.duplicateStrategy.coreStrategy
             )
         case .indexOnly:
-            return try await importProgressImporter.importIndexedFile(
+            try await importProgressImporter.importIndexedFile(
                 repoPath: context.repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: context.overrideCategory,
@@ -138,9 +187,9 @@ extension OnboardingModel {
     @MainActor
     private func finishRetriedImportProgressItem(
         _ entry: FileEntrySnapshot,
-        from state: ImportProgressRouteState
+        from state: ImportProgressRouteState,
+        context: ImportProgressRetryContext
     ) async {
-        guard let context = state.retryContext else { return }
         if let continuation = importProgressControlState.queueContinuation {
             await continueQueueAfterRetriedImport(
                 continuation,
@@ -194,11 +243,8 @@ extension OnboardingModel {
     ) {
         importProgressControlState.clearQueueContinuation()
         route = Self.mainRoute(for: state.sourceOpening)
-        toastMessage = L10n.message("import.single.imported-file", arguments: [.string(entry.currentName)])
-        accessibilityAnnouncer.announce(L10n.message(
-            "import.single.imported-file",
-            arguments: [.string(entry.currentName)]
-        ))
+        toastMessage = entry.importCompletionMessage
+        accessibilityAnnouncer.announce(entry.importCompletionMessage)
         consumeQueuedDockImportIfPossible()
     }
 
@@ -217,7 +263,12 @@ extension OnboardingModel {
             self.updateImportEntryProgress(progress)
         }
         importProgressControlState.clearQueueContinuation()
-        finishContinuedImportProgressOutcome(outcome, retriedEntry: entry, fallbackState: fallbackState)
+        let latestState: ImportProgressRouteState = if case let .importProgress(state) = route {
+            state
+        } else {
+            fallbackState
+        }
+        finishContinuedImportProgressOutcome(outcome, retriedEntry: entry, fallbackState: latestState)
     }
 
     @MainActor
@@ -234,7 +285,14 @@ extension OnboardingModel {
             finishStandaloneRetriedImport(importedEntry, from: fallbackState)
             return
         }
-        let summary = outcome.progressSnapshot(currentPath: fallbackState.currentPath)
+        var summary = outcome.progressSnapshot(currentPath: fallbackState.currentPath)
+        if !fallbackState.items.isEmpty {
+            summary.items = fallbackState.items
+            summary.completed = fallbackState.items.filter { $0.phase == .done }.count
+            summary.failed = fallbackState.items.filter { $0.phase == .failed }.count
+            summary.total = max(summary.total, fallbackState.items.count)
+            summary.remaining = 0
+        }
         showImportEntryResults(summary)
     }
 }

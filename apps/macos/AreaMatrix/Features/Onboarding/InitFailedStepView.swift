@@ -80,7 +80,7 @@ struct InitFailedStepView: View {
             Text(L10n.string("onboarding.failed.errorSummary"))
                 .font(.headline)
             Text(mapping?.userMessage ?? L10n.string("Unknown initialization error"))
-            Text(L10n.format("路径：%@ ", repoPath))
+            Text(L10n.format("路径：%@", repoPath))
                 .font(.system(.callout, design: .monospaced))
                 .textSelection(.enabled)
             Text(L10n.format(
@@ -179,7 +179,7 @@ struct InitFailedStepView: View {
             HoverableGhostButton(
                 action: onChangePath,
                 icon: .folder,
-                title: L10n.string("onboarding.failed.changePath")
+                title: L10n.string("onboarding.failed.changeLocation")
             )
 
             Spacer()

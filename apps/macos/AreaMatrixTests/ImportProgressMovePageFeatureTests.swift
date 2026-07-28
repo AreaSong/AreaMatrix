@@ -90,4 +90,41 @@ final class ImportProgressMovePageFeatureTests: XCTestCase {
         )
         announcer.assertAnnouncements(["Imported: moved.pdf"])
     }
+
+    @MainActor
+    func testMoveRetrySourceRetainedUsesDegradedCompletionMessage() async {
+        var sourceRetainedEntry = FileEntrySnapshot.importSingleFileFixture(
+            currentName: "moved.pdf",
+            category: "docs",
+            storageMode: "Moved"
+        )
+        sourceRetainedEntry.importCommitState = .sourceRetained
+        let importer = ImportSingleFileRecordingImporter(results: [.success(sourceRetainedEntry)])
+        let announcer = RecordingAccessibilityAnnouncer()
+        let model = makeImportProgressMainListFixture(
+            importProgressImporter: importer,
+            accessibilityAnnouncer: announcer
+        ).model
+
+        model.beginImportEntryProgress(
+            currentPath: "docs/moved.pdf",
+            retryContext: ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath())
+        )
+        model.failImportEntry(
+            progress: ImportProgressFixtures.moveFailedProgress,
+            mapping: CoreErrorMappingSnapshot.importProgressFatalImportError(kind: .io),
+            retryContext: ImportProgressFixtures.moveRetryContext(sourcePath: importProgressSourcePath()),
+            recoveryCheck: .retryAllowed(nil)
+        )
+
+        await model.retryCurrentImportProgressItem()
+
+        XCTAssertEqual(
+            model.toastMessage,
+            L10n.message("import.single.source-retained", arguments: [.string("moved.pdf")])
+        )
+        announcer.assertAnnouncements([
+            "Imported: moved.pdf. The original source file remains in its previous location."
+        ])
+    }
 }

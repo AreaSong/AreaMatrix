@@ -25,7 +25,7 @@ accepted exceptions 记录；Xcode derived-data dirty state 已单独处置。
 | Source-of-truth 污染 | PASS | `.ai-governance/README.md`、`tasks/backlog/README.md`、`.codex/references/codex-operating-layer-playbook.md` | 产品语义仍以 `docs/**` 为准，治理语义仍以 `.ai-governance/**` 为准；`.codex/**` 只做 Codex 操作投影。 |
 | Execution 污染 | PASS | `tasks/backlog/README.md`、`.ai-governance/workflows/prompt-task-runtime.md` | live execution 仍是 `workflow/versions/<version>/execution/**` + `./dev` + `./task-loop`；backlog 不执行 prompt，不启动第二 runner。 |
 | State 污染 | PASS | `tasks/backlog/README.md`、`.ai-governance/workflows/external-capability-admission.md` | backlog、workflow preview、references 和 skills 不写 progress、logs、run summaries、lock、checkpoint 或 promotion state。 |
-| Skill owner 污染 | PASS | `.codex/skills-src/README.md`、`.codex/references/index.md`、`./dev check quality` | 现有 9 个 repo-local skills 仍有明确 owner；外部能力需 admission gate，不隐式接入。 |
+| Skill owner 污染 | PASS | `.codex/skills-src/README.md`、`.codex/references/index.md`、`./dev check quality` | 现有 10 个 repo-local skills 仍有明确 owner；外部能力需 admission gate，不隐式接入。 |
 | v1 产品收口 | BLOCKED | `workflow/versions/v1-mvp/closeout/closeout.yaml` | 这是产品/发布收口 blocker，不是工作层污染。 |
 
 ## 当前 Dirty State

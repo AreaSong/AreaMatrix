@@ -16,6 +16,52 @@ final class ImportProgressInterruptedSessionTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: importSessionURL(repoURL: repoURL).path))
     }
 
+    func testFileSessionStoreRoundTripsSourceRetainedCommitState() async throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixImportSessionStore")
+        defer { removeTestTemporaryItems(repoURL) }
+        let store = FileImportBatchSessionStore()
+        var session = importSessionFixture(repoURL: repoURL)
+        session.items[0].importCommitState = .sourceRetained
+
+        await store.saveSession(session)
+        let loaded = await store.loadSession(repoPath: repoURL.path)
+
+        XCTAssertEqual(loaded, session)
+        XCTAssertEqual(loaded?.items.first?.importCommitState, .sourceRetained)
+    }
+
+    func testFileSessionStoreDefaultsLegacyItemsToCommitted() async throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixImportSessionStore")
+        defer { removeTestTemporaryItems(repoURL) }
+        let sessionURL = importSessionURL(repoURL: repoURL)
+        try FileManager.default.createDirectory(
+            at: sessionURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let legacyJSON = """
+        {
+          "repoPath": "\(repoURL.path)",
+          "storageMode": "Copy",
+          "completed": 1,
+          "failed": 0,
+          "total": 1,
+          "currentPath": "docs/source.pdf",
+          "items": [
+            {
+              "sourcePath": "/tmp/source.pdf",
+              "targetPath": "docs/source.pdf",
+              "phase": "Done"
+            }
+          ]
+        }
+        """
+        try Data(legacyJSON.utf8).write(to: sessionURL)
+
+        let loaded = await FileImportBatchSessionStore().loadSession(repoPath: repoURL.path)
+
+        XCTAssertEqual(loaded?.items.first?.importCommitState, .committed)
+    }
+
     func testFileSessionStoreReturnsNilForMissingOrCorruptedMetadata() async throws {
         let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixImportSessionStore")
         defer { removeTestTemporaryItems(repoURL) }

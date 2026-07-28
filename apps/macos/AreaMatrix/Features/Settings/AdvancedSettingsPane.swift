@@ -4,8 +4,8 @@ struct AdvancedSettingsPane: View {
     @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: AdvancedSettingsModel
     @State private var isDangerZoneExpanded = false
-    @State private var isLogsViewerPresented = false
     private let onOpenRecoveryTools: () -> Void
+    private let onOpenDiagnostics: () -> Void
     private let onReturnToWelcome: () -> Void
 }
 
@@ -13,6 +13,7 @@ extension AdvancedSettingsPane {
     init(
         repoPath: String,
         onOpenRecoveryTools: @escaping () -> Void = {},
+        onOpenDiagnostics: @escaping () -> Void = {},
         onReturnToWelcome: @escaping () -> Void = {},
         loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
         updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
@@ -22,7 +23,6 @@ extension AdvancedSettingsPane {
         appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
         coreVersionReader: any CoreVersionReading = AppCoreServices.coreVersionReader,
         metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
-        logsOpener: any AdvancedSettingsLogFolderOpening = AdvancedSettingsPlatformServices.logsOpener,
         summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
             AdvancedSettingsPlatformServices.diagnosticSummaryCopier,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
@@ -36,11 +36,11 @@ extension AdvancedSettingsPane {
             appVersionReader: appVersionReader,
             coreVersionReader: coreVersionReader,
             metadataReader: metadataReader,
-            logsOpener: logsOpener,
             summaryCopier: summaryCopier,
             errorMapper: errorMapper
         ))
         self.onOpenRecoveryTools = onOpenRecoveryTools
+        self.onOpenDiagnostics = onOpenDiagnostics
         self.onReturnToWelcome = onReturnToWelcome
     }
 
@@ -60,7 +60,7 @@ extension AdvancedSettingsPane {
         ) {
             Button(L10n.string("Cancel"), role: .cancel, action: model.cancelDiagnosticsExport)
             Button(L10n.string("Export diagnostics")) {
-                AppLogger.shared.logUIAction("User confirmed Export Diagnostics in Advanced Settings")
+                AppLogger.shared.logUIAction("diagnostics.export.confirmed")
                 Task {
                     await model.collectDiagnostics()
                 }
@@ -85,16 +85,16 @@ extension AdvancedSettingsPane {
         ) {
             Button(L10n.string("Cancel"), role: .cancel, action: model.cancelAllowReplaceDuringImport)
             Button(L10n.string("Enable Replace")) {
-                AppLogger.shared.logUIAction("User enabled dangerous option: Allow Replace During Import", level: .warn)
+                AppLogger.shared.logUIAction(
+                    "repository.import.replace.enabled",
+                    severity: .warn
+                )
                 Task {
                     await model.confirmAllowReplaceDuringImport()
                 }
             }
         } message: {
             Text(L10n.string("settings.advanced.replaceConfirmationDetail"))
-        }
-        .sheet(isPresented: $isLogsViewerPresented) {
-            LiveLogsViewerSheet()
         }
     }
 
@@ -163,13 +163,13 @@ extension AdvancedSettingsPane {
                 versionErrorBanner
                 diagnosticsStatusBanner
                 actionFeedbackBanner
-                
+
                 diagnosticsSection
                     .modifier(SettingsSectionCardModifier())
-                
-                logsSection
+
+                observabilitySection
                     .modifier(SettingsSectionCardModifier())
-                
+
                 dangerZoneSection
                     .modifier(SettingsSectionCardModifier())
             }
@@ -233,11 +233,10 @@ extension AdvancedSettingsPane {
         )
     }
 
-    private var logsSection: some View {
-        AdvancedSettingsLogsSection(
+    private var observabilitySection: some View {
+        AdvancedSettingsObservabilitySection(
             isCollecting: model.diagnosticsState.isCollecting,
-            onOpenLogsFolder: model.openLogsFolder,
-            onShowLogs: { isLogsViewerPresented = true },
+            onOpenDiagnostics: onOpenDiagnostics,
             onCopyDiagnosticSummary: model.copyDiagnosticSummary
         )
     }
@@ -279,7 +278,7 @@ extension AdvancedSettingsPane {
                 overviewOutputSection
                 allowReplaceSection
                 AdvancedSettingsRecoveryToolsSection(onOpenRecoveryTools: onOpenRecoveryTools)
-                
+
                 VStack(alignment: .leading, spacing: 10) {
                     Text(L10n.string("返回欢迎页"))
                         .font(.headline)
@@ -287,7 +286,10 @@ extension AdvancedSettingsPane {
                     Button {
                         onReturnToWelcome()
                     } label: {
-                        Label(L10n.string("Disconnect and return to Welcome screen"), systemImage: "arrow.uturn.backward")
+                        Label(
+                            L10n.string("Disconnect and return to Welcome screen"),
+                            systemImage: "arrow.uturn.backward"
+                        )
                     }
                     .buttonStyle(.bordered)
                     .tint(.red)

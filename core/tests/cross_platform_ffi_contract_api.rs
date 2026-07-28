@@ -43,6 +43,25 @@ fn cross_platform_ffi_contract_exposes_signature_inputs_outputs_and_errors() {
         .any(|api| api.name == "inspect_binding_contract"
             && api.capability == "cross-platform-ffi"
             && api.status == BindingSupportStatus::Supported));
+    let supported_names: std::collections::BTreeSet<_> = swift_report
+        .supported_apis
+        .iter()
+        .map(|api| api.name.as_str())
+        .collect();
+    for required in [
+        "get_observability_build_context",
+        "initialize_observability",
+        "update_observability_config",
+        "get_observability_health",
+        "flush_observability",
+        "import_file_observed",
+        "import_file_with_result_observed",
+    ] {
+        assert!(
+            supported_names.contains(required),
+            "missing structured observability API {required}"
+        );
+    }
     assert!(swift_report.type_mappings.iter().any(|mapping| {
         mapping.rust_type == "Result<T, CoreError>"
             && mapping.udl_type == "[Throws=CoreError] T"

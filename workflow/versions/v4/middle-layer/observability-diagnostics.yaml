@@ -1,0 +1,131 @@
+id: v4-observability-diagnostics-middle-layer
+version: v4
+feature_id: v4-observability-diagnostics
+module: observability
+status: ready
+docs_refs:
+  - file: docs/development/observability.md
+    line_start: 1
+    line_end: 1
+    heading: 可观测性与诊断
+    excerpt: "# 可观测性与诊断"
+  - file: docs/product/privacy.md
+    line_start: 1
+    line_end: 1
+    heading: 隐私与数据处理
+    excerpt: "# 隐私与数据处理"
+  - file: docs/api/core-api.md
+    line_start: 1
+    line_end: 1
+    heading: Core API（UDL 接口规范）
+    excerpt: "# Core API（UDL 接口规范）"
+  - file: docs/ux/error-messages.md
+    line_start: 1
+    line_end: 1
+    heading: 错误文案与恢复路径（Error Messages & Recovery）
+    excerpt: "# 错误文案与恢复路径（Error Messages & Recovery）"
+insertions:
+  - target: Runtime observability and user support diagnostics
+    reason: Unknown failures need a privacy-safe causal record shared by users, testers, support, and developers.
+    before: Swift has a partial OSLog and memory-viewer prototype while Rust emits only a synthetic startup callback and unconnected tracing events.
+    after: One versioned event contract connects semantic actions, Bridge calls, Core spans, storage outcomes, incidents, local UI, and portable diagnostics.
+links:
+  - feature: v3-bilingual-architecture
+    relationship: consumes-operation-identity-and-localized-presentation
+    reason: Observability links to the existing operation identity contract and resolves user presentation without persisting translated sentences.
+  - feature: v4-observability-diagnostics
+    relationship: preserves-file-safety
+    reason: Observation does not change import, staging, recovery, watcher, iCloud, DB, overview, or user-file mutation semantics.
+code_impacts:
+  existing:
+    - core/src/api/core_contract.rs
+    - core/src/storage/**
+    - core/area_matrix.udl
+    - apps/macos/AreaMatrix/App/AreaMatrixApp.swift
+    - apps/macos/AreaMatrix/Bridge/**
+    - apps/macos/AreaMatrix/Features/Import/**
+    - apps/macos/AreaMatrix/Features/Settings/**
+    - apps/macos/AreaMatrix/PlatformServices/**
+    - apps/macos/AreaMatrix/Localizations/Localizable.xcstrings
+  expected:
+    - core/src/observability/**
+    - apps/macos/AreaMatrix/PlatformServices/Observability/**
+    - apps/macos/AreaMatrix/Features/Diagnostics/**
+    - apps/macos/AreaMatrixTests/Observability/**
+    - core/tests/observability_*.rs
+  tests:
+    - core/tests/**
+    - apps/macos/AreaMatrixTests/**
+    - scripts/dev_tools/**
+dependencies:
+  features: []
+  docs:
+    - docs/development/observability.md
+    - docs/product/privacy.md
+    - docs/api/core-api.md
+    - docs/ux/error-messages.md
+  code:
+    - core/area_matrix.udl
+    - apps/macos/AreaMatrix/Bridge/CoreBridge.swift
+  tasks: []
+slice_plan:
+  - id: product-and-security-contract
+    purpose: Align product, privacy, UX, architecture, API, threat, retention, and compatibility contracts.
+    inputs:
+      - approved v4 discussion decisions
+    outputs:
+      - synchronized Exact Docs
+      - structured event, mode, privacy, storage, package, and remote-boundary contracts
+    acceptance:
+      - ./dev check docs
+      - ./dev check wording
+      - ./dev workflow discuss --version v4 doctor
+  - id: core-and-platform-foundation
+    purpose: Implement the Rust subscriber and macOS observability hub without blocking business work.
+    inputs:
+      - approved event and privacy contract
+    outputs:
+      - bounded Core event sink
+      - OSLog, ring buffer, rolling JSONL, health, retention, and signpost sinks
+      - generated bindings and hand-written Bridge ownership
+    acceptance:
+      - cargo test --all-features --workspace
+      - ./dev bindings verify
+      - ./dev test macos
+  - id: causal-import-and-user-experience
+    purpose: Prove the complete causal model on import and expose audience-specific diagnostics.
+    inputs:
+      - working Core and platform foundation
+    outputs:
+      - end-to-end import trace
+      - activity/problem center, incident capture, developer console, catalogs, and trace comparison
+    acceptance:
+      - import file-safety acceptance tests
+      - macOS observability and diagnostics feature tests
+      - en and zh-Hans UI evidence
+  - id: portable-diagnostics
+    purpose: Generate, preview, validate, and open privacy-preserving untrusted diagnostic packages.
+    inputs:
+      - stable event schema and local stores
+    outputs:
+      - .amdiagnostic exporter, manifest, checksums, privacy report, bounded parser, and offline viewer
+    acceptance:
+      - hostile package and redaction tests
+      - no automatic network activity
+      - preview and exported-content parity
+  - id: completion-and-governance
+    purpose: Prove failure isolation, performance, privacy, compatibility, documentation, and review readiness.
+    inputs:
+      - complete product implementation
+    outputs:
+      - fresh full validation evidence and documented residual risk
+    acceptance:
+      - ./dev check governance
+      - ./dev check quality
+      - ./dev workflow doctor
+risk_boundaries:
+  - Do not write workflow/versions/v4/execution or historical v1 execution artifacts from planning.
+  - Do not read or record user-file bodies, note bodies, secrets, tokens, or complete AI payloads.
+  - Do not mutate user files, import transactions, metadata, watcher state, iCloud state, or generated output while observing them.
+  - Keep network upload disabled until separately approved service and security contracts exist.
+  - Use fixture and temporary repositories for automated and UI evidence.

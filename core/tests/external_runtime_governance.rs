@@ -17,9 +17,8 @@ fn external_process_management_stays_inside_shared_executor() {
         .flat_map(|path| {
             let source =
                 fs::read_to_string(&path).expect("read Core source for runtime governance");
-            [".spawn(", ".wait_with_output(", ".output("]
+            external_process_patterns(&source)
                 .into_iter()
-                .filter(move |pattern| source.contains(pattern))
                 .map(move |pattern| (path.clone(), pattern))
                 .collect::<Vec<_>>()
         })
@@ -29,6 +28,17 @@ fn external_process_management_stays_inside_shared_executor() {
         violations.is_empty(),
         "direct external process management escaped core/src/external_runtime.rs: {violations:?}"
     );
+}
+
+#[test]
+fn external_process_scan_distinguishes_processes_from_worker_threads() {
+    let worker_thread = "thread::Builder::new().spawn(|| run_worker())";
+    let direct_process = "std::process::Command::new(\"tool\").spawn()";
+    let direct_output = "command.output()";
+
+    assert!(external_process_patterns(worker_thread).is_empty());
+    assert_eq!(external_process_patterns(direct_process), [".spawn("]);
+    assert_eq!(external_process_patterns(direct_output), [".output("]);
 }
 
 #[test]
@@ -57,4 +67,19 @@ fn collect_rust_files(root: &Path, files: &mut Vec<PathBuf>) {
             files.push(path);
         }
     }
+}
+
+fn external_process_patterns(source: &str) -> Vec<&'static str> {
+    [".spawn(", ".wait_with_output(", ".output("]
+        .into_iter()
+        .filter(|pattern| source.contains(pattern) && !is_named_thread_spawn(source, pattern))
+        .collect()
+}
+
+fn is_named_thread_spawn(source: &str, pattern: &str) -> bool {
+    pattern == ".spawn("
+        && source.contains("thread::Builder::new()")
+        && !source.contains("std::process")
+        && !source.contains("process::Command")
+        && !source.contains("Command::new(")
 }

@@ -44,6 +44,23 @@ final class SingleFileImportIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    func testSourceRetainedImportUsesDegradedToastAndAccessibilityAnnouncement() async {
+        let fixture = makeImportSingleFileMainEmptyFixture()
+        var imported = FileEntrySnapshot.importSingleFileFixture(currentName: "source.pdf", category: "docs")
+        imported.importCommitState = .sourceRetained
+
+        await fixture.model.finishImportEntry(repoPath: fixture.opening.config.repoPath, entry: imported)
+
+        XCTAssertEqual(
+            fixture.model.toastMessage,
+            L10n.message("import.single.source-retained", arguments: [.string("source.pdf")])
+        )
+        fixture.accessibilityAnnouncer.assertAnnouncements([
+            "Imported: source.pdf. The original source file remains in its previous location."
+        ])
+    }
+
+    @MainActor
     func testImportSingleFileFailedImportRoutesThroughImportResultResultSummary() {
         let fixture = makeImportSingleFileMainListFixture()
         let model = fixture.model

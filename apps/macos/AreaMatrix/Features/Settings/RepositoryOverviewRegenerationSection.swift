@@ -21,7 +21,7 @@ struct RepositoryOverviewRegenerationSection: View {
                 value: stateLabel(status.state)
             )
             LabeledContent(L10n.string("settings.repository.overview.targetLocale")) {
-                Text(verbatim: localeLabel(status.contentLocale))
+                Text(localeLabel(status.contentLocale))
             }
             if !status.reasons.isEmpty {
                 Text(status.reasons.map(reasonLabel).joined(separator: ", "))
@@ -74,7 +74,7 @@ struct RepositoryOverviewRegenerationSection: View {
             tint: .orange
         ) {
             LabeledContent(L10n.string("settings.repository.overview.targetLocale")) {
-                Text(verbatim: localeLabel(plan.contentLocale))
+                Text(localeLabel(plan.contentLocale))
             }
             Text(L10n.format(
                 "settings.repository.overview.preflightCounts",

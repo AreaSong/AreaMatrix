@@ -35,6 +35,7 @@ mod import_conflict_batch;
 mod local_model_status;
 mod missing_file_recovery;
 mod note;
+mod observability;
 pub mod overview;
 mod platform_capabilities;
 mod platform_watcher_status;
@@ -161,6 +162,12 @@ pub use local_model_status::{
 pub use missing_file_recovery::{
     MissingFileReason, MissingFileRecoveryReport, MissingFileRecoveryStatus,
     MissingFileRelinkRequest, MissingFileRemoveRecordRequest, MissingFileState,
+};
+pub use observability::{
+    CoreObservabilityAttribute, CoreObservabilityError, CoreObservabilityEvent,
+    CoreObservabilityResourceRef, CoreObservabilitySink, CoreTraceContext,
+    ObservabilityBuildContext, ObservabilityConfig, ObservabilityHealth, ObservabilityLayer,
+    ObservabilityMode, ObservabilityOutcome, ObservabilityPrivacy, ObservabilitySeverity,
 };
 pub use overview::{
     OverviewLanguageState, OverviewLanguageStatus, OverviewRegenerationPlan,

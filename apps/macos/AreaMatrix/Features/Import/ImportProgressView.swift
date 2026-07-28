@@ -184,7 +184,7 @@ private struct ImportingListRow: View {
                 }
             }
             Spacer()
-            Text(item.phase.displayText)
+            Text(statusText)
                 .font(.caption.monospaced())
                 .foregroundStyle(phaseColor)
         }
@@ -194,6 +194,16 @@ private struct ImportingListRow: View {
 
     @ViewBuilder
     private var statusIcon: some View {
+        if item.importCommitState.isDegraded {
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(.orange)
+        } else {
+            phaseStatusIcon
+        }
+    }
+
+    @ViewBuilder
+    private var phaseStatusIcon: some View {
         switch item.phase {
         case .copying, .hashing, .classifying:
             ProgressView()
@@ -217,15 +227,22 @@ private struct ImportingListRow: View {
     }
 
     private var phaseColor: Color {
+        if item.importCommitState.isDegraded { return .orange }
         switch item.phase {
         case .failed:
-            .red
+            return .red
         case .done:
-            .green
+            return .green
         case .moving:
-            .orange
+            return .orange
         case .copying, .pending, .hashing, .classifying, .writingIndex:
-            .secondary
+            return .secondary
         }
+    }
+
+    private var statusText: String {
+        item.importCommitState.isDegraded
+            ? L10n.string("import.result.source-retained.status")
+            : item.phase.displayText
     }
 }

@@ -14,12 +14,17 @@ enum AdvancedSettingsPlatformServices {
         AppPlatformServices.existingRepositoryMetadataReader
     }
 
-    static var logsOpener: any AdvancedSettingsLogFolderOpening {
-        AdvancedSettingsLogFolderOpener()
-    }
-
     static var diagnosticSummaryCopier: any AdvancedSettingsDiagnosticSummaryCopying {
         AdvancedSettingsDiagnosticCopier()
+    }
+
+    @MainActor
+    static var diagnosticsPackageHandler: any DiagnosticsPackageHandling {
+        DiagnosticsPackageHandler()
+    }
+
+    static var diagnosticsPackagePreviewer: any DiagnosticsPackagePreviewing {
+        DiagnosticsPackagePreviewService()
     }
 }
 
@@ -40,37 +45,6 @@ struct BundleAppVersionReader: AppVersionReading {
     }
 }
 
-struct AdvancedSettingsLogFolderOpener: AdvancedSettingsLogFolderOpening {
-    private let localURLOpener: any LocalFileURLOpening
-
-    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
-        self.localURLOpener = localURLOpener
-    }
-
-    @MainActor
-    func openLogsFolder(repoPath: String) throws -> String {
-        let logsURL = RepositoryMetadataPath.logsURL(repoPath: repoPath)
-        
-        let fileManager = FileManager.default
-        if !fileManager.fileExists(atPath: logsURL.path) {
-            do {
-                try fileManager.createDirectory(at: logsURL, withIntermediateDirectories: true, attributes: nil)
-            } catch {
-                throw AdvancedSettingsLogFolderError.missing(logsURL.path)
-            }
-        }
-        
-        do {
-            try localURLOpener.openExisting(logsURL, requiresDirectory: true)
-        } catch LocalFileURLOpenError.openRejected(_) {
-            throw AdvancedSettingsLogFolderError.openRejected(logsURL.path)
-        } catch {
-            throw AdvancedSettingsLogFolderError.missing(logsURL.path)
-        }
-        return logsURL.path
-    }
-}
-
 struct AdvancedSettingsDiagnosticCopier: AdvancedSettingsDiagnosticSummaryCopying {
     private let writer: any PasteboardStringWriting
 
@@ -83,5 +57,78 @@ struct AdvancedSettingsDiagnosticCopier: AdvancedSettingsDiagnosticSummaryCopyin
         guard writer.write(summary) else {
             throw AdvancedSettingsDiagnosticSummaryError.copyRejected
         }
+    }
+}
+
+@MainActor
+protocol DiagnosticsPackageHandling {
+    func export(
+        _ preview: DiagnosticPackagePreview,
+        suggestedFileName: String
+    ) throws -> URL?
+
+    func openPackage() throws -> DiagnosticPackageInspection?
+}
+
+protocol DiagnosticsPackagePreviewing: Sendable {
+    func makePreview(
+        events: [ObservabilityEventSnapshot],
+        privacySelection: DiagnosticPackagePrivacySelection,
+        repositoryURL: URL?,
+        summary: String
+    ) async throws -> DiagnosticPackagePreview
+}
+
+actor DiagnosticsPackagePreviewService: DiagnosticsPackagePreviewing {
+    private let exporter: DiagnosticPackageExporter
+
+    init(exporter: DiagnosticPackageExporter = DiagnosticPackageExporter()) {
+        self.exporter = exporter
+    }
+
+    func makePreview(
+        events: [ObservabilityEventSnapshot],
+        privacySelection: DiagnosticPackagePrivacySelection,
+        repositoryURL: URL?,
+        summary: String
+    ) throws -> DiagnosticPackagePreview {
+        try exporter.preview(
+            events: events,
+            privacySelection: privacySelection,
+            repositoryURL: repositoryURL,
+            summary: summary
+        )
+    }
+}
+
+@MainActor
+struct DiagnosticsPackageHandler: DiagnosticsPackageHandling {
+    private let exporter: DiagnosticPackageExporter
+    private let reader: DiagnosticPackageReader
+    private let panelService: DiagnosticPackagePanelService
+
+    init(
+        exporter: DiagnosticPackageExporter = DiagnosticPackageExporter(),
+        reader: DiagnosticPackageReader = DiagnosticPackageReader(),
+        panelService: DiagnosticPackagePanelService = DiagnosticPackagePanelService()
+    ) {
+        self.exporter = exporter
+        self.reader = reader
+        self.panelService = panelService
+    }
+
+    func export(
+        _ preview: DiagnosticPackagePreview,
+        suggestedFileName: String
+    ) throws -> URL? {
+        guard let destination = panelService.chooseNewPackageDestination(
+            suggestedFileName: suggestedFileName
+        ) else { return nil }
+        return try exporter.export(preview, to: destination)
+    }
+
+    func openPackage() throws -> DiagnosticPackageInspection? {
+        guard let packageURL = panelService.choosePackageToRead() else { return nil }
+        return try reader.inspect(packageURL)
     }
 }

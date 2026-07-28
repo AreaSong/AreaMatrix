@@ -4,6 +4,7 @@ struct AboutSettingsPane: View {
     @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: AboutSettingsModel
     private let onOpenRepositorySettings: () -> Void
+    private let onOpenDiagnostics: () -> Void
     private let onClose: () -> Void
 
     init(
@@ -11,14 +12,12 @@ struct AboutSettingsPane: View {
         appVersionReader: any AppVersionReading = AboutSettingsPlatformServices.appVersionReader,
         coreVersionReader: any CoreVersionReading = AppCoreServices.coreVersionReader,
         metadataReader: any ExistingRepositoryMetadataReading = AboutSettingsPlatformServices.metadataReader,
-        diagnosticsExporter: any AboutDiagnosticsExporting = AboutSettingsPlatformServices.diagnosticsExporter,
         externalLinkOpener: any AboutExternalLinkOpening = AboutSettingsPlatformServices.externalLinkOpener,
-        logsOpener: any AboutLogsOpening = AboutSettingsPlatformServices.logsOpener,
         stringCopier: any AboutStringCopying = AboutSettingsPlatformServices.stringCopier,
-        diagnosticsRevealer: any AboutDiagnosticsRevealing = AboutSettingsPlatformServices.diagnosticsRevealer,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         accessibilityAnnouncer: any AccessibilityAnnouncing = AboutSettingsPlatformServices.accessibilityAnnouncer,
         onOpenRepositorySettings: @escaping () -> Void = {},
+        onOpenDiagnostics: @escaping () -> Void = {},
         onClose: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: AboutSettingsModel(
@@ -26,15 +25,13 @@ struct AboutSettingsPane: View {
             appVersionReader: appVersionReader,
             coreVersionReader: coreVersionReader,
             metadataReader: metadataReader,
-            diagnosticsExporter: diagnosticsExporter,
             externalLinkOpener: externalLinkOpener,
-            logsOpener: logsOpener,
             stringCopier: stringCopier,
-            diagnosticsRevealer: diagnosticsRevealer,
             errorMapper: errorMapper,
             accessibilityAnnouncer: accessibilityAnnouncer
         ))
         self.onOpenRepositorySettings = onOpenRepositorySettings
+        self.onOpenDiagnostics = onOpenDiagnostics
         self.onClose = onClose
     }
 
@@ -67,38 +64,13 @@ struct AboutSettingsPane: View {
                     onCopyLink: model.copyExternalLink
                 )
                 AboutSettingsDiagnosticsSection(
-                    diagnosticsButtonTitle: model.diagnosticsButtonTitle,
-                    diagnosticsState: model.diagnosticsState,
-                    onRequestDiagnostics: model.requestDiagnosticsExport,
-                    onRevealDiagnostics: model.revealDiagnostics,
-                    onCopyDiagnosticsPath: model.copyDiagnosticsPath,
-                    onCopyError: model.copyActionDetail
-                )
-                AboutSettingsLogsSection(
-                    isDisabled: model.diagnosticsState.isCollecting,
-                    logsPath: model.logsPath,
-                    onOpenLogs: model.openLogs,
-                    onCopyLogsPath: model.copyLogsPath
+                    onOpenDiagnostics: onOpenDiagnostics
                 )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
             await model.load()
-        }
-        .onDisappear(perform: model.cancelDiagnosticsExport)
-        .confirmationDialog(
-            "Collect diagnostics?",
-            isPresented: diagnosticsConfirmationBinding
-        ) {
-            Button(L10n.string("Cancel"), role: .cancel, action: model.cancelDiagnosticsExport)
-            Button(L10n.string("Collect diagnostics")) {
-                Task {
-                    await model.collectDiagnostics()
-                }
-            }
-        } message: {
-            Text(L10n.string("Diagnostics do not include your original file contents and are not uploaded automatically."))
         }
     }
 
@@ -127,16 +99,5 @@ struct AboutSettingsPane: View {
                 }
             }
         }
-    }
-
-    private var diagnosticsConfirmationBinding: Binding<Bool> {
-        Binding(
-            get: { model.diagnosticsState.isConfirmingPrivacy },
-            set: { isPresented in
-                if !isPresented {
-                    model.cancelDiagnosticsExport()
-                }
-            }
-        )
     }
 }

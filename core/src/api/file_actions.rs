@@ -1,8 +1,9 @@
 //! Public FFI file-actions entry points.
 
 use crate::{
-    classify, storage, ClassifyResult, CoreResult, FileEntry, ImportOptions, ImportResult,
-    MoveToCategoryPreview,
+    classify, observability::CoreOperationTrace, storage, ClassifyResult, CoreResult,
+    CoreTraceContext, FileEntry, ImportOptions, ImportResult, ImportSourceRemovalStatus,
+    MoveToCategoryPreview, ObservabilityOutcome,
 };
 
 /// Predicts a category for a filename without importing or mutating files.
@@ -213,6 +214,44 @@ pub fn import_file_with_result(
     options: ImportOptions,
 ) -> CoreResult<ImportResult> {
     storage::import_file_with_result(repo_path, source_path, options)
+}
+
+/// Imports one source file with an explicit cross-layer trace context.
+///
+/// The context is validated before any filesystem or database work. Observability delivery is
+/// best-effort and never changes the transactional import result.
+pub fn import_file_observed(
+    repo_path: String,
+    source_path: String,
+    options: ImportOptions,
+    trace_context: CoreTraceContext,
+) -> CoreResult<FileEntry> {
+    let trace = CoreOperationTrace::start(trace_context)?;
+    let result = storage::import_file_with_trace(repo_path, source_path, options, Some(&trace));
+    finish_import_trace(&trace, &result);
+    result.map(|result| result.entry)
+}
+
+/// Imports one source file with desktop result state and an explicit trace context.
+pub fn import_file_with_result_observed(
+    repo_path: String,
+    source_path: String,
+    options: ImportOptions,
+    trace_context: CoreTraceContext,
+) -> CoreResult<ImportResult> {
+    let trace = CoreOperationTrace::start(trace_context)?;
+    let result = storage::import_file_with_trace(repo_path, source_path, options, Some(&trace));
+    finish_import_trace(&trace, &result);
+    result
+}
+
+fn finish_import_trace(trace: &CoreOperationTrace, result: &CoreResult<ImportResult>) {
+    match result {
+        Ok(result) if result.source_removal_status == ImportSourceRemovalStatus::Retained => {
+            trace.finish_with_outcome(ObservabilityOutcome::Degraded, None);
+        }
+        _ => trace.finish(result),
+    }
 }
 
 /// Moves a repo-owned file entry to the system Trash and soft-deletes metadata.

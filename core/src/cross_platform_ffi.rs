@@ -208,6 +208,13 @@ fn supported_apis() -> Vec<BindingApiContract> {
     [
         ("get_version", "cross-platform-ffi"),
         ("init_logging", "cross-platform-ffi"),
+        ("get_observability_build_context", "observability"),
+        ("initialize_observability", "observability"),
+        ("update_observability_config", "observability"),
+        ("get_observability_health", "observability"),
+        ("flush_observability", "observability"),
+        ("import_file_observed", "storage-observability"),
+        ("import_file_with_result_observed", "storage-observability"),
         ("inspect_binding_contract", "cross-platform-ffi"),
         ("get_platform_capabilities", "platform-capabilities"),
     ]

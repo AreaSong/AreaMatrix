@@ -1,8 +1,9 @@
 //! Public FFI core-contract entry points.
 
 use crate::{
-    cross_platform_ffi, platform_capabilities, BindingContractReport, BindingContractRequest,
-    CoreError, CoreResult, PlatformCapabilities, PlatformId,
+    cross_platform_ffi, initialize_observability, observability, platform_capabilities,
+    BindingContractReport, BindingContractRequest, CoreObservabilityEvent, CoreObservabilitySink,
+    CoreResult, ObservabilitySeverity, PlatformCapabilities, PlatformId,
 };
 
 /// Inspects the cross-platform UniFFI contract surface for platform shells.
@@ -54,12 +55,7 @@ pub fn get_version() -> String {
     env!("CARGO_PKG_VERSION").to_owned()
 }
 
-/// Validates the requested logging level.
-///
-/// Full subscriber wiring is left for a later observability task so this
-/// skeleton remains side-effect light.
-use std::sync::Arc;
-
+/// Legacy unstructured Core log projection.
 pub struct CoreLogRecord {
     pub level: String,
     pub message: String,
@@ -72,19 +68,53 @@ pub trait CoreLogCallback: Send + Sync {
     fn on_log(&self, record: CoreLogRecord);
 }
 
+/// Connects the legacy callback to the structured observability runtime.
+///
+/// # Errors
+///
+/// Returns `CoreError::Config` when `level` is not a supported severity.
 pub fn init_logging(level: String, callback: Box<dyn CoreLogCallback>) -> CoreResult<()> {
-    // Phase 1 MVP: Just store or invoke the callback.
-    // In Phase 2, this will be wrapped in a custom `tracing_subscriber::Subscriber`.
-    // For now, we print a startup trace using the callback directly to verify the bridge.
-    
-    callback.on_log(CoreLogRecord {
-        level: "info".to_string(),
-        message: "Core logging infrastructure attached via FFI.".to_string(),
-        target: Some("areamatrix::core".to_string()),
-        thread_name: None,
-        repo_path: None,
-    });
-
+    let minimum_severity = parse_legacy_level(&level)?;
+    let config = observability::legacy_configuration(minimum_severity)?;
+    initialize_observability(config, Box::new(LegacyObservabilitySink { callback }))?;
     Ok(())
 }
 
+struct LegacyObservabilitySink {
+    callback: Box<dyn CoreLogCallback>,
+}
+
+impl CoreObservabilitySink for LegacyObservabilitySink {
+    fn on_event(&self, event: CoreObservabilityEvent) {
+        self.callback.on_log(CoreLogRecord {
+            level: legacy_level(event.severity).to_owned(),
+            message: event.message.unwrap_or(event.action_id),
+            target: event.target.or(Some(event.component_id)),
+            thread_name: event.thread_name,
+            repo_path: None,
+        });
+    }
+}
+
+fn parse_legacy_level(level: &str) -> CoreResult<ObservabilitySeverity> {
+    match level {
+        "trace" => Ok(ObservabilitySeverity::Trace),
+        "debug" => Ok(ObservabilitySeverity::Debug),
+        "info" => Ok(ObservabilitySeverity::Info),
+        "warn" => Ok(ObservabilitySeverity::Warn),
+        "error" => Ok(ObservabilitySeverity::Error),
+        _ => Err(crate::CoreError::config(
+            "logging level must be trace, debug, info, warn, or error",
+        )),
+    }
+}
+
+const fn legacy_level(severity: ObservabilitySeverity) -> &'static str {
+    match severity {
+        ObservabilitySeverity::Trace => "trace",
+        ObservabilitySeverity::Debug => "debug",
+        ObservabilitySeverity::Info => "info",
+        ObservabilitySeverity::Warn => "warn",
+        ObservabilitySeverity::Error => "error",
+    }
+}

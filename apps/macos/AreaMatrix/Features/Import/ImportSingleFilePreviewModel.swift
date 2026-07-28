@@ -33,6 +33,7 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     private var request: ImportEntryRequest?
     private var generation = 0
     private var isLoadingRequest = false
+    private var lastImportTraceContext: CoreImportTraceContext?
 
     init(
         predictor: any CoreCategoryPredicting,
@@ -62,7 +63,9 @@ extension ImportSingleFilePreviewModel {
             storageMode: selectedStorageMode,
             overrideCategory: selectedCategory.trimmingCharacters(in: .whitespacesAndNewlines),
             overrideFilename: resolvedImportFilename,
-            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: resolvedDuplicateStrategy)
+            duplicateStrategy: ImportProgressDuplicateStrategy(coreStrategy: resolvedDuplicateStrategy),
+            traceID: lastImportTraceContext?.traceID,
+            operationID: lastImportTraceContext?.operationID
         )
     }
 }
@@ -144,13 +147,24 @@ extension ImportSingleFilePreviewModel {
             return nil
         }
 
+        let traceContext = lastImportTraceContext.map {
+            CoreImportTraceContext.operation(
+                traceID: $0.traceID,
+                retryOfOperationID: $0.operationID,
+                actionID: "repository.import.single.confirmed",
+                componentID: "macos.import.single"
+            )
+        } ?? .singleFile()
+        lastImportTraceContext = traceContext
+        await AppLogger.shared.recordUIAction(traceContext: traceContext)
         importStatus = .importing(selectedStorageMode)
         do {
             let entry = try await importFile(
                 repoPath: request.repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: selectedCategory.trimmingCharacters(in: .whitespacesAndNewlines),
-                overrideFilename: resolvedImportFilename
+                overrideFilename: resolvedImportFilename,
+                traceContext: traceContext
             )
             importStatus = .imported(entry)
             return entry
@@ -245,12 +259,60 @@ private extension ImportSingleFilePreviewModel {
         repoPath: String,
         sourceURL: URL,
         overrideCategory: String,
-        overrideFilename: String
+        overrideFilename: String,
+        traceContext: CoreImportTraceContext
     ) async throws -> FileEntrySnapshot {
         let duplicateStrategy = resolvedDuplicateStrategy
+        guard let importer = importer as? any CoreObservedFileImporting else {
+            return try await importFileWithoutTrace(
+                repoPath: repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename,
+                duplicateStrategy: duplicateStrategy
+            )
+        }
         switch selectedStorageMode {
         case .copy:
-            return try await importer.importCopiedFile(
+            return try await importer.importCopiedFile(request: CoreObservedImportRequest(
+                repoPath: repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename,
+                duplicateStrategy: duplicateStrategy,
+                traceContext: traceContext
+            ))
+        case .move:
+            return try await importer.importMovedFile(request: CoreObservedImportRequest(
+                repoPath: repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename,
+                duplicateStrategy: duplicateStrategy,
+                traceContext: traceContext
+            ))
+        case .indexOnly:
+            return try await importer.importIndexedFile(request: CoreObservedImportRequest(
+                repoPath: repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: overrideCategory,
+                overrideFilename: overrideFilename,
+                duplicateStrategy: duplicateStrategy,
+                traceContext: traceContext
+            ))
+        }
+    }
+
+    private func importFileWithoutTrace(
+        repoPath: String,
+        sourceURL: URL,
+        overrideCategory: String,
+        overrideFilename: String,
+        duplicateStrategy: DuplicateStrategy
+    ) async throws -> FileEntrySnapshot {
+        switch selectedStorageMode {
+        case .copy:
+            try await importer.importCopiedFile(
                 repoPath: repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: overrideCategory,
@@ -258,7 +320,7 @@ private extension ImportSingleFilePreviewModel {
                 duplicateStrategy: duplicateStrategy
             )
         case .move:
-            return try await importer.importMovedFile(
+            try await importer.importMovedFile(
                 repoPath: repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: overrideCategory,
@@ -266,7 +328,7 @@ private extension ImportSingleFilePreviewModel {
                 duplicateStrategy: duplicateStrategy
             )
         case .indexOnly:
-            return try await importer.importIndexedFile(
+            try await importer.importIndexedFile(
                 repoPath: repoPath,
                 sourceURL: sourceURL,
                 overrideCategory: overrideCategory,
@@ -317,6 +379,7 @@ private extension ImportSingleFilePreviewModel {
         generation += 1
         self.request = request
         importStatus = .idle
+        lastImportTraceContext = nil
         guard let sourceURL = singleFileSourceURL(from: request) else { return }
         resetForNewSingleFileRequest(request, sourceURL: sourceURL)
     }

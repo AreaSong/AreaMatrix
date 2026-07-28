@@ -1,0 +1,136 @@
+id: v4-observability-diagnostics-change
+title: Deliver structured observability and privacy-preserving diagnostics
+version: v4
+status: ready
+features:
+  - id: v4-observability-diagnostics
+    module: observability
+    intent: Connect user actions, Swift and Core execution, storage outcomes, incidents, local developer tools, and shareable diagnostics through one typed privacy-safe causal event contract.
+    depends_on: []
+    docs:
+      source:
+        - docs/development/observability.md
+        - docs/product/privacy.md
+        - docs/api/core-api.md
+        - docs/ux/error-messages.md
+      update:
+        - docs/product/product-surfaces.md
+        - docs/product/workflows.md
+        - docs/user-guide/settings.md
+        - docs/user-guide/troubleshooting.md
+        - docs/ux/settings-panel.md
+        - docs/architecture/ffi-design.md
+        - docs/architecture/macos-frontend-architecture.md
+        - docs/architecture/concurrency.md
+        - docs/api/error-codes.md
+        - docs/development/testing.md
+        - docs/development/performance.md
+      api:
+        - docs/api/core-api.md
+      udl:
+        - core/area_matrix.udl
+    doc_changes:
+      - file: docs/development/observability.md
+        operation: update
+        line_start: 1
+        line_end: 1
+        heading: 可观测性与诊断
+        excerpt: "# 可观测性与诊断"
+        summary: Define modes, event identities, sinks, storage, backpressure, health, incidents, catalogs, packages, and compatibility.
+        depends_on: []
+        tasks:
+          - product-and-security-contract
+      - file: docs/product/privacy.md
+        operation: update
+        line_start: 1
+        line_end: 1
+        heading: 隐私与数据处理
+        excerpt: "# 隐私与数据处理"
+        summary: Define prohibited logging data, field classifications, pseudonyms, consent, preview, retention, deletion, and remote boundaries.
+        depends_on: []
+        tasks:
+          - product-and-security-contract
+      - file: docs/api/core-api.md
+        operation: update
+        line_start: 1
+        line_end: 1
+        heading: Core API（UDL 接口规范）
+        excerpt: "# Core API（UDL 接口规范）"
+        summary: Define structured observability initialization, configuration, health, flush, trace context, event sink, and compatibility behavior.
+        depends_on:
+          - docs/development/observability.md
+        tasks:
+          - product-and-security-contract
+          - core-and-platform-foundation
+      - file: docs/ux/error-messages.md
+        operation: update
+        line_start: 1
+        line_end: 1
+        heading: 错误文案与恢复路径（Error Messages & Recovery）
+        excerpt: "# 错误文案与恢复路径（Error Messages & Recovery）"
+        summary: Replace fragmented diagnostics assumptions with activity, incident, preview, package, and local-only support flows.
+        depends_on:
+          - docs/product/privacy.md
+        tasks:
+          - product-and-security-contract
+          - causal-import-and-user-experience
+    code_impacts:
+      existing:
+        - core/src/api/core_contract.rs
+        - core/src/storage/**
+        - core/area_matrix.udl
+        - apps/macos/AreaMatrix/App/AreaMatrixApp.swift
+        - apps/macos/AreaMatrix/Bridge/**
+        - apps/macos/AreaMatrix/Features/Import/**
+        - apps/macos/AreaMatrix/Features/Settings/**
+        - apps/macos/AreaMatrix/PlatformServices/**
+      expected:
+        - core/src/observability/**
+        - apps/macos/AreaMatrix/PlatformServices/Observability/**
+        - apps/macos/AreaMatrix/Features/Diagnostics/**
+      tests:
+        - core/tests/observability_*.rs
+        - apps/macos/AreaMatrixTests/Observability/**
+        - apps/macos/AreaMatrixTests/Import/**
+        - scripts/dev_tools/**
+    risk:
+      level: Mission-Critical
+      boundaries:
+        - Observation never mutates, moves, renames, deletes, overwrites, or downloads user files.
+        - Prohibited content never enters any logging mode or diagnostic package.
+        - Runtime logger failure cannot fail or partially commit an import or other business operation.
+        - Diagnostic packages are user-triggered and parsed as untrusted bounded input.
+        - Remote transfer remains disabled until a separately approved service contract exists.
+    task_split:
+      - id: product-and-security-contract
+        title: Align authoritative product, privacy, UX, architecture, API, threat, and testing contracts.
+        validation:
+          - ./dev check docs
+          - ./dev check wording
+          - ./dev workflow discuss --version v4 doctor
+      - id: core-and-platform-foundation
+        title: Implement the Rust subscriber, FFI sink, macOS hub, local stores, health, and signposts.
+        validation:
+          - cargo fmt --all -- --check
+          - cargo clippy --all-targets --all-features -- -D warnings
+          - cargo test --all-features --workspace
+          - ./dev bindings verify
+          - ./dev test macos
+      - id: causal-import-and-user-experience
+        title: Trace import end to end and deliver user and developer diagnostics surfaces.
+        validation:
+          - ./dev check localization
+          - ./dev test macos
+          - import file-safety acceptance evidence
+      - id: portable-diagnostics
+        title: Implement local preview, export, checksum, bounded parsing, and offline diagnostic viewing.
+        validation:
+          - privacy redaction and hostile package tests
+          - preview/export parity tests
+          - network-disabled evidence
+      - id: completion-and-governance
+        title: Run full cross-layer validation, security review, docs drift checks, and completion audit.
+        validation:
+          - ./dev check governance
+          - ./dev check quality
+          - ./dev workflow doctor

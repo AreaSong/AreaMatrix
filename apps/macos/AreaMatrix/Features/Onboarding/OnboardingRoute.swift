@@ -76,6 +76,7 @@ struct ImportResultRouteState: Equatable {
 
     enum ItemStatus: String, Equatable, Hashable {
         case imported = "Imported"
+        case sourceRetained = "Source retained"
         case skipped = "Skipped"
         case failed = "Failed"
         case pending = "Pending"
@@ -83,6 +84,7 @@ struct ImportResultRouteState: Equatable {
         var displayName: String {
             switch self {
             case .imported: L10n.string("Imported")
+            case .sourceRetained: L10n.string("import.result.source-retained.status")
             case .skipped: L10n.string("Skipped")
             case .failed: L10n.string("Failed")
             case .pending: L10n.string("Pending")
@@ -116,7 +118,7 @@ struct ImportResultRouteState: Equatable {
         }
 
         var canReviewTagSuggestions: Bool {
-            status == .imported && fileID != nil
+            (status == .imported || status == .sourceRetained) && fileID != nil
         }
     }
 
@@ -215,7 +217,7 @@ struct ImportResultRouteState: Equatable {
                 fileID: item.fileID,
                 sourcePath: item.sourcePath,
                 targetPath: item.targetPath,
-                status: status(for: item.phase, stopped: counts.stopped),
+                status: status(for: item, stopped: counts.stopped),
                 reason: reason(for: item),
                 retryContext: retryContext(for: item, repoPath: repoPath),
                 existingRelativePath: item.existingRelativePath
@@ -244,22 +246,26 @@ struct ImportResultRouteState: Equatable {
     }
 
     private static func status(
-        for phase: ImportBatchProgressSnapshot.Phase,
+        for item: ImportBatchProgressSnapshot.Item,
         stopped: Int
     ) -> ItemStatus {
-        switch phase {
+        if item.importCommitState.isDegraded { return .sourceRetained }
+        switch item.phase {
         case .done:
-            .imported
+            return .imported
         case .failed:
-            .failed
+            return .failed
         case .pending:
-            stopped > 0 ? .skipped : .pending
+            return stopped > 0 ? .skipped : .pending
         case .copying, .moving, .hashing, .classifying, .writingIndex:
-            .pending
+            return .pending
         }
     }
 
     private static func reason(for item: ImportBatchProgressSnapshot.Item) -> String {
+        if item.importCommitState.isDegraded {
+            return L10n.string("import.result.source-retained.reason")
+        }
         if let errorMessage = item.errorMessage {
             return errorMessage
         }

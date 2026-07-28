@@ -33,6 +33,7 @@ Trigger it for validation selection, final evidence reports, blocked checks, pro
 - [../areamatrix-file-safety/SKILL.md](../areamatrix-file-safety/SKILL.md): additional evidence for user-file, DB, staging, recovery, reindex, FSEvents, or iCloud risks.
 - [../areamatrix-enterprise-governance/SKILL.md](../areamatrix-enterprise-governance/SKILL.md): review, security, dependency, CI, and ownership gates.
 - [../areamatrix-residual-ledger/SKILL.md](../areamatrix-residual-ledger/SKILL.md): report whether relevant residual items remain open, blocked, deferred, or accepted.
+- [../areamatrix-macos-ui/SKILL.md](../areamatrix-macos-ui/SKILL.md): apply the page, L10n, accessibility, and language-switching gates for macOS UI work.
 
 ## Workflow
 

@@ -10,12 +10,13 @@
 
 设置窗口通过菜单或 `Command-,` 打开。左侧为固定宽度侧栏，右侧显示当前资料库对应的设置内容。
 
-当前共有 7 个一级 Tab：
+当前共有 8 个一级 Tab：
 
 | TabId | 名称 | 当前职责 |
 |---|---|---|
-| `general` | 通用 | 默认存储模式、概览输出、忽略规则、界面语言、外观状态 |
-| `repository` | 资料库 | 路径、健康状态、内容语言、资料库配置、Finder、恢复入口 |
+| `general` | 通用 | 默认存储模式、概览输出、忽略规则、语言摘要、外观状态 |
+| `language` | 语言 | 界面语言、当前资料库内容语言、生成内容语言状态与显式重新生成 |
+| `repository` | 资料库 | 路径、健康状态、资料库配置、语言摘要、Finder、恢复入口 |
 | `classifier` | 分类规则 | 可视化规则维护、规则引擎开关、YAML 操作、分类预览 |
 | `ai` | AI | AI 总开关、provider、功能开关、隐私规则、调用日志和暂停 |
 | `integrations` | 集成 | iCloud 状态与警告、Finder 和外部改动说明 |
@@ -47,11 +48,22 @@
 
 `Open ignore.yaml` 打开 `.areamatrix/ignore.yaml`。文件缺失时，应用可以在用户确认后创建默认文件；该动作不得修改资料库中的其他文件。
 
-### 界面语言与外观
+### 语言摘要与外观
 
-通用页只编辑应用界面语言：
+通用页只显示当前界面语言摘要，并提供前往 Language 页的入口，不提供语言编辑控件。
 
-- **界面语言**是应用级 `AppLanguage`，保存到 UserDefaults，选项为跟随系统、简体中文、English。它控制菜单、窗口、按钮、错误、确认与 Accessibility 文案；切换后立即刷新，不重置当前业务状态。
+外观当前只显示并锁定为 `system`，应用跟随系统外观。
+
+### 重置
+
+`Reset this tab` 只恢复通用页持久化字段，不是全局设置重置。其他 Tab 不提供统一的全局重置命令。
+
+## 语言
+
+Language 页在同一处明确展示两套彼此独立的语言系统：
+
+- **界面语言**是设备级 `AppLanguage`，保存到 UserDefaults，选项为跟随系统、简体中文、English。它控制菜单、窗口、按钮、错误、确认与 Accessibility 文案；切换后立即刷新，不重置当前业务状态。
+- **当前资料库内容语言**是每资料库 `RepositoryContentLanguage`，保存到 `RepoConfig.locale`，选项为跟随界面、简体中文、English。它控制内置分类显示名、目录树和之后生成的自然语言内容，不改变应用 UI、文件名、路径或正文。
 
 跟随系统只检查 macOS preferred languages 第一项：`zh-Hans` / `zh-CN` / `zh-SG` 解析为 `zh-Hans`，
 `en-*` 解析为 `en`，其他第一项直接回退 `en`，不扫描后续项。繁体中文与 bare `zh` 不隐含简体中文。
@@ -67,11 +79,13 @@ Accessibility 必须明确读出保存的当前模式；跟随系统时额外读
 语言，否则用户无法区分跟随系统与固定语言。紧凑视觉分别为带自动标识的地球、“中”和“EN”。该控件
 只修改界面语言，不修改任何资料库内容语言。
 
-外观当前只显示并锁定为 `system`，应用跟随系统外观。
+当前资料库内容语言使用 revision CAS 保存。保存只更新该字段，不自动重新生成或改写既有内容；成功后刷新
+当前内容语言摘要与概览 provenance 状态。选择“跟随界面”时，界面语言变化会立即重新解析内容目标语言并
+刷新状态，但仍不自动生成。冲突保留本地草稿，用户可以载入最新值，或基于最新 revision 审阅后再次显式保存。
 
-### 重置
-
-`Reset this tab` 只恢复通用页持久化字段，不是全局设置重置。其他 Tab 不提供统一的全局重置命令。
+Language 页同时显示生成内容目标语言和 provenance 状态：尚未生成、已同步、需要重新生成、语言/格式混合
+或来源未知。除已同步外，用户可以显式进入 preflight、staging、commit 或 recovery 流程；保存语言不会
+自动弹出或启动重新生成。
 
 ## 资料库
 
@@ -83,9 +97,10 @@ Accessibility 必须明确读出保存的当前模式；跟随系统时额外读
 - 导出 repository diagnostics snapshot；导出前必须确认，且不会自动上传。snapshot 会复制
   `index.db` 及存在的 WAL/SHM，可能包含路径、文件名、标签、笔记和其他 metadata，但不复制用户原文件正文；
   分享前必须审阅 snapshot 及其 companion files。
-- 更新资料库配置中的概览输出、内容语言、iCloud 警告和未匹配文件回落策略。
+- 更新资料库配置中的概览输出、iCloud 警告和未匹配文件回落策略。
+- 显示当前资料库内容语言摘要，并提供前往 Language 页的入口。
 
-**资料库内容语言**只在 Repository 页可编辑；General、Welcome、classifier 和生成界面只显示只读摘要。
+**资料库内容语言**只在 Language 页可编辑；General、Repository、Welcome、classifier 和生成界面只显示只读摘要。
 选项为跟随界面、简体中文、English，持久化到 `RepoConfig.locale`。它控制内置分类显示名、目录树和以后
 生成的概览或 AI 自然语言结果；保存设置本身不会重写既有内容，也不会改变应用 UI。之后正常发生且本来
 需要刷新 overview 的 operation 可以使用新语言更新派生内容。
@@ -96,7 +111,7 @@ Accessibility 必须明确读出保存的当前模式；跟随系统时额外读
 合法 `AREAMATRIX.md` managed block，不处理 AI 结果、`README.md` 或用户内容。
 保存反馈必须同时显示规范 policy 与当前 concrete 结果，并明确“现有内容未被重写”；只有 provenance
 不是已同步时才提供显式重新生成入口，不使用保存后的自动弹窗强迫用户生成。
-Repository 页必须依据 provenance 显示“概览尚未生成”“概览已同步”“概览需要重新生成”“概览语言/格式混合”
+Language 页必须依据 provenance 显示“概览尚未生成”“概览已同步”“概览需要重新生成”“概览语言/格式混合”
 或“概览来源未知”。需要重新生成时按结构化原因显示语言不同、格式过期、缺少目标和失效目标数量；混合表示
 多个已知 locale/format；未知表示任一现有输出缺少可信 provenance，或当前 bytes 与 provenance hash 不符。
 除已同步外均可提供显式“重新生成全部概览”，不扫描文本猜语言，也不在保存设置时自动执行。未知状态下
@@ -119,7 +134,7 @@ revision 上审阅 dirty fields 后再次显式保存。无草稿的同资料库
 用户必须再次点击 Save。即使字段不重叠也不自动 rebase，不提供 force overwrite。
 
 完全没有可证明语言策略的旧资料库仍可浏览并持续显示非阻断提示，但生成与 classifier mutation 禁用。
-Repository 的三项语言选择器初始不选中任何值；follow-interface 同时显示当前 concrete 结果。明确 Save 后
+Language 的三项内容语言选择器初始不选中任何值；follow-interface 同时显示当前 concrete 结果。明确 Save 后
 解除阻断，但不自动重新生成既有内容。
 
 更换资料库不会在设置页直接移动旧资料库内容，而是进入资料库选择和校验流程。
@@ -141,7 +156,7 @@ supported `editing_locale`，保存只 patch 该 locale 的显示名/说明。�
 `editing_locale`。已知显式/alias policy 按 exact raw/concrete/en/slug 回退，follow-interface 按当前
 concrete/en/slug 回退；unknown policy 下只允许查看 exact raw/en/slug fallback，不自动补译或语义合并；
 create、update、delete、rule toggle 和其他 classifier mutation 全部禁用，直到
-Repository 页明确改值。
+Language 页明确改值。
 
 编辑语言使用“简体中文 / English”分段控件。有 dirty draft 时切换必须选择保存并切换、放弃并切换或取消；
 不能把两个 locale 合并为一次可能部分成功的保存。删除可选 locale 值后立即预览 `current → en → slug`
@@ -244,7 +259,7 @@ About 文本诊断不包含用户原文件正文，路径和用户名按其合�
 
 ## 验证重点
 
-- 7 个 Tab 路由与侧栏标识一致。
+- 8 个 Tab 路由与侧栏标识一致，General 与 Repository 的语言摘要均可跳转到 Language。
 - 持久化失败后 UI 回到已保存值。
 - Move、Index-only、根 `AREAMATRIX.md` 和 Replace 都有确认。
 - 可视化 classifier CRUD 与 YAML 辅助动作均可恢复。

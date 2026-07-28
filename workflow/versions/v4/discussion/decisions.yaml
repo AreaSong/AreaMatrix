@@ -1,0 +1,85 @@
+version: v4
+status: ready
+allow_changes: true
+exact_docs:
+  - docs/product/privacy.md
+  - docs/product/product-surfaces.md
+  - docs/product/workflows.md
+  - docs/user-guide/settings.md
+  - docs/user-guide/troubleshooting.md
+  - docs/ux/error-messages.md
+  - docs/ux/settings-panel.md
+  - docs/architecture/ffi-design.md
+  - docs/architecture/macos-frontend-architecture.md
+  - docs/architecture/concurrency.md
+  - docs/api/core-api.md
+  - docs/api/error-codes.md
+  - docs/development/observability.md
+  - docs/development/testing.md
+  - docs/development/performance.md
+decisions:
+  - id: mode-availability
+    status: accepted
+    summary: Every installed build exposes standard, diagnostic, and developer modes; defaults and warnings differ, but no mode is permanently unavailable.
+  - id: local-first
+    status: accepted
+    summary: Observation, incident capture, review, export, and deletion work locally without an account or network and never upload automatically.
+  - id: data-boundaries
+    status: accepted
+    summary: Runtime logs, interaction traces, transactional change log, AI audit, metadata snapshots, and diagnostic packages remain separate products linked by stable identities.
+  - id: identity
+    status: accepted
+    summary: Trace, span, session, incident, operation, retry, run, call, action, component, event, and resource identities have explicit non-overlapping lifecycle contracts.
+  - id: structured-events
+    status: accepted
+    summary: Registered action and component IDs plus typed attributes drive queries and presentation; free text is supplementary and never the causal contract.
+  - id: platform-sinks
+    status: accepted
+    summary: OSLog serves Xcode and Console, while an application-owned ring buffer and rolling JSONL store serve UI and portable diagnostics.
+  - id: core-delivery
+    status: accepted
+    summary: Rust installs one subscriber and forwards sanitized structured events over a bounded non-blocking sink with explicit drop counters, health, and callback lifetime.
+  - id: privacy
+    status: accepted
+    summary: Fields are public, pseudonymous, sensitive, or prohibited; source and export redaction both run, and prohibited content is never enabled by developer mode.
+  - id: storage
+    status: accepted
+    summary: Runtime logs live under Application Support with user-visible budgets, retention, rotation, usage, expiry, and deletion rather than repository roots.
+  - id: incident-capture
+    status: accepted
+    summary: Marking a problem freezes a bounded pre/post event window and creates an incident identity without recording screen video or raw input.
+  - id: audience-projections
+    status: accepted
+    summary: Users receive localized activity and recovery language; developers receive timeline, tree, graph, terminal, raw data, signposts, catalogs, trace comparison, and health.
+  - id: diagnostic-package
+    status: accepted
+    summary: The portable package is previewed, checksummed, size-bounded, locally generated, safely parsed as untrusted input, and includes optional sensitive material only after separate confirmation.
+  - id: remote-boundary
+    status: accepted
+    summary: Export does not imply upload; network transport remains disabled until endpoint, authentication, encryption, retention, deletion, withdrawal, and service ownership are separately approved.
+  - id: failure-semantics
+    status: accepted
+    summary: Runtime observation failures degrade and report health without blocking user-file operations; existing transactional audit failure semantics remain unchanged.
+  - id: compatibility
+    status: accepted
+    summary: The old logging entry receives an explicit compatibility period while the documented structured API, UDL, generated bindings, Bridge, and callers move together.
+  - id: validation
+    status: accepted
+    summary: Completion requires privacy, hostile input, backpressure, disk-full, lifecycle, crash, trace continuity, localization, UI, Core, bindings, docs, workflow, security review, and fresh full-gate evidence.
+open_questions: []
+blockers: []
+risk_boundaries:
+  - Do not write version execution or historical workflow/versions/v1-mvp/execution from discussion.
+  - Do not record or export file bodies, note bodies, secrets, tokens, full AI payloads, raw keystrokes, pointer tracking, or screen video.
+  - Do not move, rename, overwrite, delete, download, or otherwise mutate user files while observing operations.
+  - Do not change import, staging, recovery, DB, watcher, iCloud, overview, or business audit semantics from observability spans.
+  - Do not send diagnostics over a network before a separate transport and service security approval.
+  - Update docs/api/core-api.md before UDL, regenerate bindings, and never hand-edit generated bindings.
+next_layers:
+  middle-layer: ready
+  changes: ready
+  plans: ready
+  drafts: ready
+  queue: ready
+  promotion: blocked
+  execution: blocked

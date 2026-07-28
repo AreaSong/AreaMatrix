@@ -37,9 +37,9 @@ impl ReplacementFileGuard {
         })
     }
 
-    pub(super) fn ensure_system_trash_copy(&mut self) -> CoreResult<()> {
+    pub(super) fn ensure_system_trash_copy(&mut self) -> CoreResult<bool> {
         if self.trash_copy_confirmed {
-            return Ok(());
+            return Ok(self.rollback_trash_copy_path.is_some());
         }
 
         let filename = self
@@ -73,7 +73,7 @@ impl ReplacementFileGuard {
         let _cleanup_result = fs::remove_dir(&trash_copy_dir);
         self.rollback_trash_copy_path = trash_destination;
         self.trash_copy_confirmed = true;
-        Ok(())
+        Ok(self.rollback_trash_copy_path.is_some())
     }
 
     pub(super) fn disarm(&mut self) {
@@ -109,14 +109,7 @@ pub(crate) fn send_to_system_trash(path: &Path) -> CoreResult<Option<PathBuf>> {
 
     match trash::delete(path) {
         Ok(()) => Ok(None),
-        Err(error) => {
-            tracing::warn!(
-                path = %path.display(),
-                error = %error,
-                "system trash API failed; falling back to user trash directory"
-            );
-            move_to_user_trash(path)
-        }
+        Err(_error) => move_to_user_trash(path),
     }
 }
 

@@ -87,10 +87,10 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/ux/settings-panel.md'
     line_start: 1
-    line_end: 260
+    line_end: 275
     heading: ''
     excerpt: '# 设置面板'
-    sha256: 'f276f7c3befd8c48d041ca3a1133f6242059c3216d38813aba1692a2edb4b041'
+    sha256: 'eb74ce5c3b8e8585052a16e5879ddfbc74b2fced6dcb770658cee1f543867ca6'
     source: 'discussion:exact_docs'
   - file: 'docs/ux/classifier-calibration.md'
     line_start: 1
@@ -101,10 +101,10 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/user-guide/settings.md'
     line_start: 1
-    line_end: 81
+    line_end: 94
     heading: ''
     excerpt: '# 设置'
-    sha256: '3cac63df44723d5faf1ac8ff72aa91a9b00019547bf384c9c7f31ee4ae2867ad'
+    sha256: '9dbbbe57e6ed0d0d4269d1499894e57780407d0676802b2c2ea645f96997804e'
     source: 'discussion:exact_docs'
   - file: 'docs/user-guide/ai-features-and-privacy.md'
     line_start: 1

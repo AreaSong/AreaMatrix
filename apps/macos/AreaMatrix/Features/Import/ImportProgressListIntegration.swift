@@ -45,11 +45,17 @@ struct ImportProgressListRow: Identifiable, Equatable {
     }
 
     var statusText: String {
-        item.phase.displayText
+        if item.importCommitState.isDegraded {
+            return L10n.string("import.result.source-retained.status")
+        }
+        return item.phase.displayText
     }
 
     var errorMessage: String? {
-        item.errorMessage
+        if item.importCommitState.isDegraded {
+            return L10n.string("import.result.source-retained.reason")
+        }
+        return item.errorMessage
     }
 }
 
@@ -194,15 +200,18 @@ struct SearchCommandPaletteRouteView: View {
 
 private extension ImportProgressListRow {
     var systemImage: String {
+        if item.importCommitState.isDegraded {
+            return "exclamationmark.circle.fill"
+        }
         switch item.phase {
         case .done:
-            "checkmark.circle.fill"
+            return "checkmark.circle.fill"
         case .failed:
-            "exclamationmark.triangle.fill"
+            return "exclamationmark.triangle.fill"
         case .pending:
-            "clock"
+            return "clock"
         case .copying, .moving, .hashing, .classifying, .writingIndex:
-            "arrow.triangle.2.circlepath"
+            return "arrow.triangle.2.circlepath"
         }
     }
 }

@@ -19,7 +19,6 @@ struct ImportBatchCopyFooterSection: View {
                 .keyboardShortcut(.cancelAction)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button(L10n.string("Import")) {
-                AppLogger.shared.logUIAction("User confirmed Batch Import for \(request.urls.count) items")
                 Task { await importBatch() }
             }
             .keyboardShortcut(.defaultAction)
@@ -73,7 +72,8 @@ struct ImportBatchCopyFooterSection: View {
         }
         if let retryContext = outcome.fatalRetryContext,
            let failure = batchImportModel.lastFailureMapping,
-           let progress = lastProgress {
+           let progress = lastProgress
+        {
             onImportFailed(progress, failure, retryContext, .checking)
             importProgressControlState.registerQueueContinuation(batchImportModel)
             return

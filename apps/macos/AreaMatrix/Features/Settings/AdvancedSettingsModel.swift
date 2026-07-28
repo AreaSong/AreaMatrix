@@ -29,7 +29,6 @@ final class AdvancedSettingsModel: ObservableObject {
     private let appVersionReader: any AppVersionReading
     private let coreVersionReader: any CoreVersionReading
     private let metadataReader: any ExistingRepositoryMetadataReading
-    private let logsOpener: any AdvancedSettingsLogFolderOpening
     private let summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying
     private let errorMapper: any CoreErrorMapping
     private var pendingRetry: AdvancedSettingsPendingSave?
@@ -45,7 +44,6 @@ final class AdvancedSettingsModel: ObservableObject {
         appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
         coreVersionReader: any CoreVersionReading = AppCoreServices.coreVersionReader,
         metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
-        logsOpener: any AdvancedSettingsLogFolderOpening = AdvancedSettingsPlatformServices.logsOpener,
         summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
             AdvancedSettingsPlatformServices.diagnosticSummaryCopier,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
@@ -58,7 +56,6 @@ final class AdvancedSettingsModel: ObservableObject {
         self.appVersionReader = appVersionReader
         self.coreVersionReader = coreVersionReader
         self.metadataReader = metadataReader
-        self.logsOpener = logsOpener
         self.summaryCopier = summaryCopier
         self.errorMapper = errorMapper
     }
@@ -145,21 +142,6 @@ final class AdvancedSettingsModel: ObservableObject {
             diagnosticsState = await .failed(mappedError(
                 for: error,
                 fallbackMessage: L10n.message("Diagnostics could not be exported")
-            ))
-        }
-    }
-
-    func openLogsFolder() {
-        actionFeedback = nil
-        do {
-            let openedPath = try logsOpener.openLogsFolder(repoPath: repoPath)
-            actionFeedback = .success(L10n.message("Logs folder opened: %@", arguments: [.string(openedPath)]))
-        } catch {
-            actionFeedback = .failed(AdvancedSettingsError(
-                message: L10n.message("Open logs folder failed"),
-                recovery: L10n.message(
-                    "Check that .areamatrix/logs exists, then retry after Core logging is initialized."
-                )
             ))
         }
     }

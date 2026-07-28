@@ -1,0 +1,108 @@
+version: v4
+status: ready
+docs:
+  - file: 'docs/development/observability.md'
+    line_start: 1
+    line_end: 1
+    heading: '可观测性与诊断'
+    excerpt: '# 可观测性与诊断'
+    sha256: 'e30c4af766ec52483a7ec3855383b5a040b8be5d2cd2a3afe04ffc5ffd18ad4c'
+    source: 'changes:v4-observability-diagnostics'
+  - file: 'docs/product/privacy.md'
+    line_start: 1
+    line_end: 1
+    heading: '隐私与数据处理'
+    excerpt: '# 隐私与数据处理'
+    sha256: '3e386579e47f43a1d76d6240ebf5f135f171cebed07891a8d7daa14bee8464a7'
+    source: 'changes:v4-observability-diagnostics'
+  - file: 'docs/api/core-api.md'
+    line_start: 1
+    line_end: 1
+    heading: 'Core API（UDL 接口规范）'
+    excerpt: '# Core API（UDL 接口规范）'
+    sha256: '50d9b109b25ab564e274df472530465702e8a7d02bc2ed8d8d81e1fa5b8dd12a'
+    source: 'changes:v4-observability-diagnostics'
+  - file: 'docs/ux/error-messages.md'
+    line_start: 1
+    line_end: 1
+    heading: '错误文案与恢复路径（Error Messages & Recovery）'
+    excerpt: '# 错误文案与恢复路径（Error Messages & Recovery）'
+    sha256: '17602642a53d9094cca7998d46e33514ecb5533dc64707eea609e481a9979909'
+    source: 'changes:v4-observability-diagnostics'
+  - file: 'docs/product/product-surfaces.md'
+    line_start: 1
+    line_end: 126
+    heading: ''
+    excerpt: '# AreaMatrix 产品界面地图'
+    sha256: 'd05586fac6e62d4197c17d7eee15660662a7b3990fc88723d3f2da940d4acd93'
+    source: 'discussion:exact_docs'
+  - file: 'docs/product/workflows.md'
+    line_start: 1
+    line_end: 81
+    heading: ''
+    excerpt: '# AreaMatrix 用户工作流'
+    sha256: '60aaf65bbc8e7fe9541358851455f8de379b092b4518adc008e3c5e9f9711e28'
+    source: 'discussion:exact_docs'
+  - file: 'docs/user-guide/settings.md'
+    line_start: 1
+    line_end: 94
+    heading: ''
+    excerpt: '# 设置'
+    sha256: '9dbbbe57e6ed0d0d4269d1499894e57780407d0676802b2c2ea645f96997804e'
+    source: 'discussion:exact_docs'
+  - file: 'docs/user-guide/troubleshooting.md'
+    line_start: 1
+    line_end: 52
+    heading: ''
+    excerpt: '# 常见问题与排障'
+    sha256: '31b6056618023866449577c412e7de56e850c97f750c6553725ecfcf1fbb34c2'
+    source: 'discussion:exact_docs'
+  - file: 'docs/ux/settings-panel.md'
+    line_start: 1
+    line_end: 275
+    heading: ''
+    excerpt: '# 设置面板'
+    sha256: 'eb74ce5c3b8e8585052a16e5879ddfbc74b2fced6dcb770658cee1f543867ca6'
+    source: 'discussion:exact_docs'
+  - file: 'docs/architecture/ffi-design.md'
+    line_start: 1
+    line_end: 106
+    heading: ''
+    excerpt: '# FFI 设计'
+    sha256: 'b1135e9bc0d4e0be3205a9d6680eda00d956999e998fbd34bde1b6c7d75a30a5'
+    source: 'discussion:exact_docs'
+  - file: 'docs/architecture/macos-frontend-architecture.md'
+    line_start: 1
+    line_end: 253
+    heading: ''
+    excerpt: '# macOS 前端架构稳定化'
+    sha256: '24c1333066dd7b0e0d1e0adf411c29047e908cfd8738844df602eca9880befb1'
+    source: 'discussion:exact_docs'
+  - file: 'docs/architecture/concurrency.md'
+    line_start: 1
+    line_end: 173
+    heading: ''
+    excerpt: '# 并发模型'
+    sha256: '92c5ee58afde79fa0df0d98f221cb17b5f4a9db5254bb89bc059339abfb2bdd9'
+    source: 'discussion:exact_docs'
+  - file: 'docs/api/error-codes.md'
+    line_start: 1
+    line_end: 157
+    heading: ''
+    excerpt: '# 错误码表（CoreError）'
+    sha256: '3229b37f07726c8fa04efbdecac831d2feb57db5d9a5069ecf196976bb36bb55'
+    source: 'discussion:exact_docs'
+  - file: 'docs/development/testing.md'
+    line_start: 1
+    line_end: 178
+    heading: ''
+    excerpt: '# 测试策略'
+    sha256: '3a3ec2697470243cc5fc7c5ea774027042628edbbcb245e2b95d0f5367e62b94'
+    source: 'discussion:exact_docs'
+  - file: 'docs/development/performance.md'
+    line_start: 1
+    line_end: 102
+    heading: ''
+    excerpt: '# 性能工程'
+    sha256: 'db986fd7d7e0a4d5a58b60a35134081b91eaf48c7c8ff276ef1d9ed382161834'
+    source: 'discussion:exact_docs'

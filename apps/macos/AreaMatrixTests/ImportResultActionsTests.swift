@@ -3,6 +3,38 @@ import XCTest
 
 final class ImportResultActionsTests: XCTestCase {
     @MainActor
+    func testSourceRetainedResultIsSuccessfulNonRetryableAndKeepsTagReview() {
+        let model = makeImportResultMainListFixture().model
+
+        guard let result = showImportResultRoute(model, progress: ImportResultFixtures.sourceRetainedProgress),
+              let item = requireImportResultItem(
+                  result,
+                  matching: { $0.status == .sourceRetained },
+                  message: "Expected source-retained result item"
+              )
+        else { return }
+
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 1, failed 0, stopped 0, pending 0.",
+            statuses: [.sourceRetained]
+        )
+        XCTAssertFalse(result.canRetryFailedItems)
+        XCTAssertTrue(item.canReviewTagSuggestions)
+        XCTAssertEqual(item.fileID, 117)
+        XCTAssertEqual(item.reason, L10n.string("import.result.source-retained.reason"))
+
+        model.reviewImportResultTagSuggestions(itemID: item.id)
+
+        XCTAssertEqual(model.pendingTagSuggestionFocus?.fileID, 117)
+        XCTAssertEqual(model.pendingTagSuggestionFocus?.source, .importResult)
+        guard let mainOpening = requireMainListRoute(model) else { return }
+        XCTAssertTrue(mainOpening.currentCategoryFiles.contains {
+            $0.id == 117 && $0.path == importResultTargetPath(importResultImportedFilename())
+        })
+    }
+
+    @MainActor
     func testImportResultSkippedDuplicateCanShowExistingFileFromResultSummary() {
         let revealer = RecordingRepositoryFileRevealer()
         let model = makeImportResultMainListFixture(fileRevealer: revealer).model

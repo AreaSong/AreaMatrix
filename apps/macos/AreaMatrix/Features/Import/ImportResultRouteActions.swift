@@ -18,7 +18,7 @@ extension ImportResultRouteState {
             L10n.string("AreaMatrix Import Result"),
             summaryText,
             L10n.string("No user file contents are included."),
-            ""
+            "",
         ]
         lines.append(contentsOf: items.map(exportLine(for:)))
         return lines.joined(separator: "\n")
@@ -31,7 +31,7 @@ extension ImportResultRouteState {
             item.reason,
             L10n.format("import.result.export.source", item.sanitizedSourcePath),
             item.existingRelativePath
-                .map { L10n.format("import.result.export.existing", Self.sanitizedPathDisplay($0)) }
+                .map { L10n.format("import.result.export.existing", Self.sanitizedPathDisplay($0)) },
         ].compactMap { $0 }.joined(separator: " | ")
     }
 
@@ -90,8 +90,10 @@ extension ImportResultRouteState {
                 fileID: entry.id,
                 sourcePath: item.sourcePath,
                 targetPath: entry.path,
-                status: .imported,
-                reason: "-",
+                status: entry.importCommitState.isDegraded ? .sourceRetained : .imported,
+                reason: entry.importCommitState.isDegraded
+                    ? L10n.string("import.result.source-retained.reason")
+                    : "-",
                 retryContext: nil,
                 existingRelativePath: nil
             ),
@@ -100,7 +102,11 @@ extension ImportResultRouteState {
         )
     }
 
-    func markingFailed(_ item: Item, message: String) -> ImportResultRouteState {
+    func markingFailed(
+        _ item: Item,
+        message: String,
+        retryContext: ImportProgressRetryContext? = nil
+    ) -> ImportResultRouteState {
         replacingItem(
             matching: item,
             with: Item(
@@ -109,7 +115,7 @@ extension ImportResultRouteState {
                 targetPath: item.targetPath,
                 status: .failed,
                 reason: message,
-                retryContext: item.retryContext,
+                retryContext: retryContext ?? item.retryContext,
                 existingRelativePath: item.existingRelativePath
             ),
             importedDelta: 0,

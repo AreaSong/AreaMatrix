@@ -11,6 +11,90 @@
 		0A0000000000000000000900 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000901 /* Assets.xcassets */; };
 		0A0000000000000000000964 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000960 /* Localizable.xcstrings */; };
 		0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000013 /* AreaMatrixApp.swift */; };
+		0A0B5B000000000000000001 /* DiagnosticsExpectedActualProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B000000000000000002 /* DiagnosticsExpectedActualProjection.swift */; };
+		0A0B5B000000000000000003 /* DiagnosticsTraceProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B000000000000000004 /* DiagnosticsTraceProjection.swift */; };
+		0A0B5B000000000000000005 /* DiagnosticPackagePublishOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B000000000000000006 /* DiagnosticPackagePublishOperations.swift */; };
+		0A0B5B000000000000000007 /* ObservabilityStoreSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B000000000000000008 /* ObservabilityStoreSupport.swift */; };
+		0A0B5B000000000000000009 /* ObservabilityHubEventFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B00000000000000000A /* ObservabilityHubEventFactory.swift */; };
+		0A0B5B00000000000000000B /* ObservabilityTraceContextFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B00000000000000000C /* ObservabilityTraceContextFactory.swift */; };
+		0A0B5B00000000000000000D /* ObservabilitySignpostSinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B00000000000000000E /* ObservabilitySignpostSinkTests.swift */; };
+		0A0B5B00000000000000000F /* ObservabilityApplicationLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B000000000000000010 /* ObservabilityApplicationLifecycleTests.swift */; };
+		0A0B5B000000000000000011 /* RollingObservabilityStoreBehaviorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B000000000000000012 /* RollingObservabilityStoreBehaviorTests.swift */; };
+		0A0B5B000000000000000013 /* ObservabilityHubAndStoreTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B000000000000000014 /* ObservabilityHubAndStoreTestSupport.swift */; };
+		0A0B5B000000000000000015 /* ObservabilityHubStoreContractTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B000000000000000016 /* ObservabilityHubStoreContractTestSupport.swift */; };
+		0A0B5C000000000000000001 /* ObservabilityEventWireCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5C000000000000000002 /* ObservabilityEventWireCoding.swift */; };
+		0A0B50000000000000000001 /* ObservabilityRuntimeAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000011 /* ObservabilityRuntimeAssembly.swift */; };
+		0A0B50000000000000000002 /* CoreObservabilityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000012 /* CoreObservabilityBridge.swift */; };
+		0A0B5F000000000000000201 /* CoreImportObservability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000202 /* CoreImportObservability.swift */; };
+		0A0B50000000000000000003 /* ObservabilityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000013 /* ObservabilityModels.swift */; };
+		0A0B50000000000000000004 /* RollingObservabilityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000014 /* RollingObservabilityStore.swift */; };
+		0A0B61000000000000000001 /* ObservabilityStoreManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B61000000000000000002 /* ObservabilityStoreManifest.swift */; };
+		0A0B61000000000000000003 /* RollingObservabilityStoreMaintenance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B61000000000000000004 /* RollingObservabilityStoreMaintenance.swift */; };
+		0A0B63000000000000000001 /* RollingObservabilityStoreRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B63000000000000000002 /* RollingObservabilityStoreRecovery.swift */; };
+		0A0B61000000000000000005 /* ObservabilityHubIncidentPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B61000000000000000006 /* ObservabilityHubIncidentPersistence.swift */; };
+		0A0B50000000000000000010 /* RollingObservabilityStoreFileIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000023 /* RollingObservabilityStoreFileIO.swift */; };
+		0A0B50000000000000000024 /* ObservabilityHubPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000025 /* ObservabilityHubPolicy.swift */; };
+		0A0B60000000000000000001 /* ObservabilitySafetyPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B60000000000000000002 /* ObservabilitySafetyPolicy.swift */; };
+		0A0B50000000000000000026 /* ObservabilityIncidentLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000027 /* ObservabilityIncidentLedger.swift */; };
+		0A0B50000000000000000005 /* ObservabilityHub.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000015 /* ObservabilityHub.swift */; };
+		0A0B50000000000000000201 /* CoreObservabilitySinkAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000211 /* CoreObservabilitySinkAdapter.swift */; };
+		0A0B50000000000000000202 /* ObservabilitySafeFileOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000212 /* ObservabilitySafeFileOperations.swift */; };
+		0A0B50000000000000000203 /* ObservabilitySessionLifecycleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000213 /* ObservabilitySessionLifecycleStore.swift */; };
+		0A0B50000000000000000204 /* ObservabilitySignpostSink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000214 /* ObservabilitySignpostSink.swift */; };
+		0A0B50000000000000000205 /* ObservabilityApplicationLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000215 /* ObservabilityApplicationLifecycle.swift */; };
+		0A0B50000000000000000206 /* ObservabilityRecoveryBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000216 /* ObservabilityRecoveryBanner.swift */; };
+		0A0B50000000000000000006 /* DiagnosticsSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000016 /* DiagnosticsSettingsPane.swift */; };
+		0A0B5F000000000000000203 /* DiagnosticsSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000204 /* DiagnosticsSettingsModel.swift */; };
+		0A0B5F000000000000000205 /* DiagnosticsSettingsSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000206 /* DiagnosticsSettingsSupportViews.swift */; };
+		0A0B50000000000000000007 /* DiagnosticsConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000017 /* DiagnosticsConsoleView.swift */; };
+		0A0B50000000000000000008 /* DiagnosticPackageModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000018 /* DiagnosticPackageModels.swift */; };
+		0A0B50000000000000000009 /* DiagnosticPackageRedactor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000019 /* DiagnosticPackageRedactor.swift */; };
+		0A0B5000000000000000000A /* DiagnosticPackageExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5000000000000000001A /* DiagnosticPackageExporter.swift */; };
+		0A0B5000000000000000000B /* DiagnosticPackageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5000000000000000001B /* DiagnosticPackageReader.swift */; };
+		0A0B54000000000000000001 /* DiagnosticPackageReaderFileIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B54000000000000000002 /* DiagnosticPackageReaderFileIO.swift */; };
+		0A0B53000000000000000001 /* DiagnosticPackageWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B53000000000000000002 /* DiagnosticPackageWriter.swift */; };
+		0A0B55000000000000000001 /* DiagnosticPackageStageCopier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B55000000000000000002 /* DiagnosticPackageStageCopier.swift */; };
+		0A0B53000000000000000003 /* DiagnosticPackagePrivacyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B53000000000000000004 /* DiagnosticPackagePrivacyTests.swift */; };
+		0A0B53000000000000000005 /* DiagnosticPackageWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B53000000000000000006 /* DiagnosticPackageWriterTests.swift */; };
+		0A0B5000000000000000000C /* DiagnosticPackageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5000000000000000001C /* DiagnosticPackageTests.swift */; };
+		0A0B5000000000000000000D /* ObservabilityHubAndStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5000000000000000001D /* ObservabilityHubAndStoreTests.swift */; };
+		0A0B5000000000000000000E /* DiagnosticsSettingsUIProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5000000000000000001E /* DiagnosticsSettingsUIProjectionTests.swift */; };
+		0A0B50000000000000000301 /* DiagnosticsIncidentSettingsModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000311 /* DiagnosticsIncidentSettingsModelTests.swift */; };
+		0A0B50000000000000000302 /* ObservabilitySafeDeletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000312 /* ObservabilitySafeDeletionTests.swift */; };
+		0A0B5F000000000000001001 /* ObservabilitySessionSignpostLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000001011 /* ObservabilitySessionSignpostLifecycleTests.swift */; };
+		0A0B5F000000000000001002 /* CoreObservabilitySinkAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000001012 /* CoreObservabilitySinkAdapterTests.swift */; };
+		0A0B5F000000000000000003 /* ObservabilityRuntimeSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000013 /* ObservabilityRuntimeSupport.swift */; };
+		0A0B5F000000000000000101 /* ObservabilityRuntimeAssemblyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000111 /* ObservabilityRuntimeAssemblyTests.swift */; };
+		0A0B5F000000000000000102 /* ObservabilityRuntimeSchedulingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000112 /* ObservabilityRuntimeSchedulingTests.swift */; };
+		0A0B5F000000000000000103 /* ObservabilityRuntimeTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000113 /* ObservabilityRuntimeTestSupport.swift */; };
+		0A0B5F000000000000000104 /* ObservabilityHubStoreContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000114 /* ObservabilityHubStoreContractTests.swift */; };
+		0A0B5F000000000000000105 /* ObservabilityTestPrimitives.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000115 /* ObservabilityTestPrimitives.swift */; };
+		0A0B62000000000000000001 /* ObservabilityStoreManifestV2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B62000000000000000002 /* ObservabilityStoreManifestV2Tests.swift */; };
+		0A0B62000000000000000003 /* ObservabilityIncidentDispositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B62000000000000000004 /* ObservabilityIncidentDispositionTests.swift */; };
+		0A0B56000000000000000001 /* ObservabilityCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B56000000000000000002 /* ObservabilityCatalogTests.swift */; };
+		0A0B5000000000000000000F /* ImportTraceContinuityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5000000000000000001F /* ImportTraceContinuityTests.swift */; };
+		0A0B50000000000000000101 /* ObservabilityResourceIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000111 /* ObservabilityResourceIdentity.swift */; };
+		0A0B50000000000000000102 /* ObservabilityResourceIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000112 /* ObservabilityResourceIdentityTests.swift */; };
+		0A0B50000000000000000103 /* ObservabilityConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000113 /* ObservabilityConfiguration.swift */; };
+		0A0B50000000000000000104 /* ObservabilityConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000114 /* ObservabilityConfigurationTests.swift */; };
+		0A0B60000000000000000003 /* ObservabilitySafetyPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B60000000000000000004 /* ObservabilitySafetyPolicyTests.swift */; };
+		0A0B5D000000000000000001 /* ObservabilityEventWireCodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5D000000000000000002 /* ObservabilityEventWireCodingTests.swift */; };
+		0A0B50000000000000000105 /* RepositoryMetadataSnapshotCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000115 /* RepositoryMetadataSnapshotCapture.swift */; };
+		0A0B50000000000000000106 /* RepositoryMetadataSnapshotCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000116 /* RepositoryMetadataSnapshotCaptureTests.swift */; };
+		0A0B50000000000000000107 /* DiagnosticsConsoleProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000117 /* DiagnosticsConsoleProjection.swift */; };
+		0A0B50000000000000000108 /* DiagnosticsConsoleFilters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000118 /* DiagnosticsConsoleFilters.swift */; };
+		0A0B50000000000000000109 /* DiagnosticsConsoleEventViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000119 /* DiagnosticsConsoleEventViews.swift */; };
+		0A0B5000000000000000010A /* DiagnosticsConsoleAnalysisViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5000000000000000011A /* DiagnosticsConsoleAnalysisViews.swift */; };
+		0A0B57000000000000000001 /* DiagnosticsTraceComparisonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B57000000000000000002 /* DiagnosticsTraceComparisonViews.swift */; };
+		0A0B58000000000000000001 /* DiagnosticsExpectedActualProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B58000000000000000002 /* DiagnosticsExpectedActualProjectionTests.swift */; };
+		0A0B58000000000000000003 /* DiagnosticsSettingsUIProjectionTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B58000000000000000004 /* DiagnosticsSettingsUIProjectionTestSupport.swift */; };
+		0A0B59000000000000000001 /* DiagnosticsEventInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B59000000000000000002 /* DiagnosticsEventInspectorView.swift */; };
+		0A0B59000000000000000003 /* DiagnosticsHealthViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B59000000000000000004 /* DiagnosticsHealthViews.swift */; };
+		0A0B5A000000000000000001 /* RollingObservabilityStoreRetentionContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5A000000000000000002 /* RollingObservabilityStoreRetentionContractTests.swift */; };
+		0A0B5000000000000000010B /* DiagnosticsConsoleProjectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5000000000000000011B /* DiagnosticsConsoleProjectionTests.swift */; };
+		0A0B5000000000000000010C /* DiagnosticsConsoleFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5000000000000000011C /* DiagnosticsConsoleFormatting.swift */; };
+		0A0B5F000000000000000207 /* observability_catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000208 /* observability_catalog.json */; };
+		0A0B5F000000000000000209 /* ObservabilityCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F00000000000000020A /* ObservabilityCatalog.swift */; };
 		0A0000000000000000002000 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000002001 /* AppLanguage.swift */; };
 		0A0000000000000000002010 /* AppLocalizationText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000002011 /* AppLocalizationText.swift */; };
 		0A0000000000000000000003 /* MainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000014 /* MainWindow.swift */; };
@@ -119,6 +203,7 @@
 		0A0000000000000000001C00 /* RepositoryOverviewRegenerationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001C01 /* RepositoryOverviewRegenerationModel.swift */; };
 		0A0000000000000000001C02 /* RepositoryOverviewRegenerationSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001C03 /* RepositoryOverviewRegenerationSection.swift */; };
 		0A0000000000000000001C04 /* RepositoryOverviewRegenerationModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001C05 /* RepositoryOverviewRegenerationModelTests.swift */; };
+		0A0000000000000000001D00 /* LanguageSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001D01 /* LanguageSettingsPane.swift */; };
 		0A0000000000000000000FF8 /* CoreUndoRedoActionLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FF9 /* CoreUndoRedoActionLogging.swift */; };
 		0A0000000000000000000A22 /* CoreSearchFacetSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000A23 /* CoreSearchFacetSnapshots.swift */; };
 		0A0000000000000000000FD8 /* CoreSearchQuerying.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FD9 /* CoreSearchQuerying.swift */; };
@@ -778,6 +863,90 @@
 		0A0000000000000000000011 /* AreaMatrixShellApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix.xcodeproj/Shell/AreaMatrixShellApp.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000012 /* AreaMatrix.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AreaMatrix.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A0000000000000000000013 /* AreaMatrixApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AreaMatrixApp.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B000000000000000002 /* DiagnosticsExpectedActualProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsExpectedActualProjection.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B000000000000000004 /* DiagnosticsTraceProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsTraceProjection.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B000000000000000006 /* DiagnosticPackagePublishOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/DiagnosticPackagePublishOperations.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B000000000000000008 /* ObservabilityStoreSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityStoreSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B00000000000000000A /* ObservabilityHubEventFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityHubEventFactory.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B00000000000000000C /* ObservabilityTraceContextFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/ObservabilityTraceContextFactory.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B00000000000000000E /* ObservabilitySignpostSinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilitySignpostSinkTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B000000000000000010 /* ObservabilityApplicationLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityApplicationLifecycleTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B000000000000000012 /* RollingObservabilityStoreBehaviorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/RollingObservabilityStoreBehaviorTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B000000000000000014 /* ObservabilityHubAndStoreTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityHubAndStoreTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5B000000000000000016 /* ObservabilityHubStoreContractTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityHubStoreContractTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5C000000000000000002 /* ObservabilityEventWireCoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityEventWireCoding.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000011 /* ObservabilityRuntimeAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/ObservabilityRuntimeAssembly.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000012 /* CoreObservabilityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreObservabilityBridge.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000202 /* CoreImportObservability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreImportObservability.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000013 /* ObservabilityModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityModels.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000014 /* RollingObservabilityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/RollingObservabilityStore.swift; sourceTree = SOURCE_ROOT; };
+		0A0B61000000000000000002 /* ObservabilityStoreManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityStoreManifest.swift; sourceTree = SOURCE_ROOT; };
+		0A0B61000000000000000004 /* RollingObservabilityStoreMaintenance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/RollingObservabilityStoreMaintenance.swift; sourceTree = SOURCE_ROOT; };
+		0A0B63000000000000000002 /* RollingObservabilityStoreRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/RollingObservabilityStoreRecovery.swift; sourceTree = SOURCE_ROOT; };
+		0A0B61000000000000000006 /* ObservabilityHubIncidentPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityHubIncidentPersistence.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000023 /* RollingObservabilityStoreFileIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/RollingObservabilityStoreFileIO.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000025 /* ObservabilityHubPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityHubPolicy.swift; sourceTree = SOURCE_ROOT; };
+		0A0B60000000000000000002 /* ObservabilitySafetyPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilitySafetyPolicy.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000027 /* ObservabilityIncidentLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityIncidentLedger.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000015 /* ObservabilityHub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityHub.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000211 /* CoreObservabilitySinkAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/CoreObservabilitySinkAdapter.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000212 /* ObservabilitySafeFileOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilitySafeFileOperations.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000213 /* ObservabilitySessionLifecycleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilitySessionLifecycleStore.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000214 /* ObservabilitySignpostSink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilitySignpostSink.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000215 /* ObservabilityApplicationLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/ObservabilityApplicationLifecycle.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000216 /* ObservabilityRecoveryBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/ObservabilityRecoveryBanner.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000016 /* DiagnosticsSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsSettingsPane.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000204 /* DiagnosticsSettingsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsSettingsModel.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000206 /* DiagnosticsSettingsSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsSettingsSupportViews.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000017 /* DiagnosticsConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsConsoleView.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000018 /* DiagnosticPackageModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/DiagnosticPackageModels.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000019 /* DiagnosticPackageRedactor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/DiagnosticPackageRedactor.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5000000000000000001A /* DiagnosticPackageExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/DiagnosticPackageExporter.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5000000000000000001B /* DiagnosticPackageReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/DiagnosticPackageReader.swift; sourceTree = SOURCE_ROOT; };
+		0A0B54000000000000000002 /* DiagnosticPackageReaderFileIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/DiagnosticPackageReaderFileIO.swift; sourceTree = SOURCE_ROOT; };
+		0A0B53000000000000000002 /* DiagnosticPackageWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/DiagnosticPackageWriter.swift; sourceTree = SOURCE_ROOT; };
+		0A0B55000000000000000002 /* DiagnosticPackageStageCopier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/DiagnosticPackageStageCopier.swift; sourceTree = SOURCE_ROOT; };
+		0A0B53000000000000000004 /* DiagnosticPackagePrivacyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/DiagnosticPackagePrivacyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B53000000000000000006 /* DiagnosticPackageWriterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/DiagnosticPackageWriterTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5000000000000000001C /* DiagnosticPackageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/DiagnosticPackageTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5000000000000000001D /* ObservabilityHubAndStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityHubAndStoreTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5000000000000000001E /* DiagnosticsSettingsUIProjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/DiagnosticsSettingsUIProjectionTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000311 /* DiagnosticsIncidentSettingsModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/DiagnosticsIncidentSettingsModelTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000312 /* ObservabilitySafeDeletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilitySafeDeletionTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000001011 /* ObservabilitySessionSignpostLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilitySessionSignpostLifecycleTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000001012 /* CoreObservabilitySinkAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/CoreObservabilitySinkAdapterTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000013 /* ObservabilityRuntimeSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/ObservabilityRuntimeSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000111 /* ObservabilityRuntimeAssemblyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityRuntimeAssemblyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000112 /* ObservabilityRuntimeSchedulingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityRuntimeSchedulingTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000113 /* ObservabilityRuntimeTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityRuntimeTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000114 /* ObservabilityHubStoreContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityHubStoreContractTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000115 /* ObservabilityTestPrimitives.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityTestPrimitives.swift; sourceTree = SOURCE_ROOT; };
+		0A0B62000000000000000002 /* ObservabilityStoreManifestV2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityStoreManifestV2Tests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B62000000000000000004 /* ObservabilityIncidentDispositionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityIncidentDispositionTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B56000000000000000002 /* ObservabilityCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityCatalogTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5000000000000000001F /* ImportTraceContinuityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ImportTraceContinuityTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000111 /* ObservabilityResourceIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityResourceIdentity.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000112 /* ObservabilityResourceIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityResourceIdentityTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000113 /* ObservabilityConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityConfiguration.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000114 /* ObservabilityConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityConfigurationTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B60000000000000000004 /* ObservabilitySafetyPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilitySafetyPolicyTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5D000000000000000002 /* ObservabilityEventWireCodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityEventWireCodingTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000115 /* RepositoryMetadataSnapshotCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/RepositoryMetadataSnapshotCapture.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000116 /* RepositoryMetadataSnapshotCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/RepositoryMetadataSnapshotCaptureTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000117 /* DiagnosticsConsoleProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsConsoleProjection.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000118 /* DiagnosticsConsoleFilters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsConsoleFilters.swift; sourceTree = SOURCE_ROOT; };
+		0A0B50000000000000000119 /* DiagnosticsConsoleEventViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsConsoleEventViews.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5000000000000000011A /* DiagnosticsConsoleAnalysisViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsConsoleAnalysisViews.swift; sourceTree = SOURCE_ROOT; };
+		0A0B57000000000000000002 /* DiagnosticsTraceComparisonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsTraceComparisonViews.swift; sourceTree = SOURCE_ROOT; };
+		0A0B58000000000000000002 /* DiagnosticsExpectedActualProjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/DiagnosticsExpectedActualProjectionTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B58000000000000000004 /* DiagnosticsSettingsUIProjectionTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/DiagnosticsSettingsUIProjectionTestSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0B59000000000000000002 /* DiagnosticsEventInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsEventInspectorView.swift; sourceTree = SOURCE_ROOT; };
+		0A0B59000000000000000004 /* DiagnosticsHealthViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsHealthViews.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5A000000000000000002 /* RollingObservabilityStoreRetentionContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/RollingObservabilityStoreRetentionContractTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5000000000000000011B /* DiagnosticsConsoleProjectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/DiagnosticsConsoleProjectionTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5000000000000000011C /* DiagnosticsConsoleFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Diagnostics/DiagnosticsConsoleFormatting.swift; sourceTree = SOURCE_ROOT; };
+		0A0B5F000000000000000208 /* observability_catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = observability_catalog.json; path = ../../core/resources/observability_catalog.json; sourceTree = SOURCE_ROOT; };
+		0A0B5F00000000000000020A /* ObservabilityCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityCatalog.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000002001 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppLanguage.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000002011 /* AppLocalizationText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppLocalizationText.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000014 /* MainWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/MainWindow.swift; sourceTree = SOURCE_ROOT; };
@@ -881,6 +1050,7 @@
 		0A0000000000000000001C01 /* RepositoryOverviewRegenerationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/RepositoryOverviewRegenerationModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001C03 /* RepositoryOverviewRegenerationSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/RepositoryOverviewRegenerationSection.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001C05 /* RepositoryOverviewRegenerationModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/RepositoryOverviewRegenerationModelTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0000000000000000001D01 /* LanguageSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/LanguageSettingsPane.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FF9 /* CoreUndoRedoActionLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreUndoRedoActionLogging.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000A23 /* CoreSearchFacetSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreSearchFacetSnapshots.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FD9 /* CoreSearchQuerying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreSearchQuerying.swift; sourceTree = SOURCE_ROOT; };
@@ -1595,6 +1765,10 @@
 			isa = PBXGroup;
 			children = (
 					0A0000000000000000000013 /* AreaMatrixApp.swift */,
+					0A0B50000000000000000011 /* ObservabilityRuntimeAssembly.swift */,
+					0A0B5F000000000000000013 /* ObservabilityRuntimeSupport.swift */,
+					0A0B5B00000000000000000C /* ObservabilityTraceContextFactory.swift */,
+					0A0B50000000000000000215 /* ObservabilityApplicationLifecycle.swift */,
 					0A0000000000000000002001 /* AppLanguage.swift */,
 					0A0000000000000000002011 /* AppLocalizationText.swift */,
 					0A0000000000000000000018 /* AppShellModel.swift */,
@@ -1613,7 +1787,8 @@
 			};
 			0A0000000000000000000832 /* PlatformServices */ = {
 				isa = PBXGroup;
-				children = (
+			children = (
+					0A0B50000000000000000020 /* Observability */,
 					0A0000000000000000000941 /* AboutSettingsPlatformServices.swift */,
 					0A0000000000000000000FCF /* AdvancedSettingsPlatformServices.swift */,
 					0A0000000000000000000229 /* MainExternalCreatedFileWatcher.swift */,
@@ -1635,6 +1810,43 @@
 				name = PlatformServices;
 				sourceTree = "<group>";
 			};
+		0A0B50000000000000000020 /* Observability */ = {
+			isa = PBXGroup;
+			children = (
+				0A0B50000000000000000211 /* CoreObservabilitySinkAdapter.swift */,
+				0A0B5F00000000000000020A /* ObservabilityCatalog.swift */,
+				0A0B50000000000000000013 /* ObservabilityModels.swift */,
+				0A0B5C000000000000000002 /* ObservabilityEventWireCoding.swift */,
+				0A0B5B000000000000000008 /* ObservabilityStoreSupport.swift */,
+				0A0B61000000000000000002 /* ObservabilityStoreManifest.swift */,
+				0A0B50000000000000000212 /* ObservabilitySafeFileOperations.swift */,
+				0A0B50000000000000000213 /* ObservabilitySessionLifecycleStore.swift */,
+				0A0B50000000000000000214 /* ObservabilitySignpostSink.swift */,
+				0A0B50000000000000000014 /* RollingObservabilityStore.swift */,
+				0A0B61000000000000000004 /* RollingObservabilityStoreMaintenance.swift */,
+				0A0B63000000000000000002 /* RollingObservabilityStoreRecovery.swift */,
+				0A0B50000000000000000023 /* RollingObservabilityStoreFileIO.swift */,
+				0A0B50000000000000000025 /* ObservabilityHubPolicy.swift */,
+				0A0B60000000000000000002 /* ObservabilitySafetyPolicy.swift */,
+				0A0B50000000000000000027 /* ObservabilityIncidentLedger.swift */,
+				0A0B50000000000000000015 /* ObservabilityHub.swift */,
+				0A0B61000000000000000006 /* ObservabilityHubIncidentPersistence.swift */,
+				0A0B5B00000000000000000A /* ObservabilityHubEventFactory.swift */,
+				0A0B50000000000000000111 /* ObservabilityResourceIdentity.swift */,
+				0A0B50000000000000000113 /* ObservabilityConfiguration.swift */,
+				0A0B50000000000000000115 /* RepositoryMetadataSnapshotCapture.swift */,
+				0A0B50000000000000000018 /* DiagnosticPackageModels.swift */,
+				0A0B50000000000000000019 /* DiagnosticPackageRedactor.swift */,
+				0A0B5000000000000000001A /* DiagnosticPackageExporter.swift */,
+				0A0B5B000000000000000006 /* DiagnosticPackagePublishOperations.swift */,
+				0A0B5000000000000000001B /* DiagnosticPackageReader.swift */,
+				0A0B54000000000000000002 /* DiagnosticPackageReaderFileIO.swift */,
+				0A0B53000000000000000002 /* DiagnosticPackageWriter.swift */,
+				0A0B55000000000000000002 /* DiagnosticPackageStageCopier.swift */,
+			);
+			name = Observability;
+			sourceTree = "<group>";
+		};
 		0A0000000000000000000036 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -1695,6 +1907,7 @@
 				isa = PBXGroup;
 				children = (
 					0A000000000000000000071B /* AI */,
+					0A0B50000000000000000021 /* Diagnostics */,
 					0A0000000000000000000856 /* CommandPalette */,
 					0A0000000000000000000D3A /* Detail */,
 					0A0000000000000000000843 /* FileActions */,
@@ -1707,6 +1920,67 @@
 					0A0000000000000000000857 /* SyncConflicts */,
 				);
 			name = Features;
+			sourceTree = "<group>";
+		};
+		0A0B50000000000000000021 /* Diagnostics */ = {
+			isa = PBXGroup;
+			children = (
+				0A0B5F000000000000000204 /* DiagnosticsSettingsModel.swift */,
+				0A0B50000000000000000016 /* DiagnosticsSettingsPane.swift */,
+				0A0B5F000000000000000206 /* DiagnosticsSettingsSupportViews.swift */,
+				0A0B59000000000000000004 /* DiagnosticsHealthViews.swift */,
+				0A0B50000000000000000017 /* DiagnosticsConsoleView.swift */,
+				0A0B50000000000000000117 /* DiagnosticsConsoleProjection.swift */,
+				0A0B50000000000000000118 /* DiagnosticsConsoleFilters.swift */,
+				0A0B50000000000000000119 /* DiagnosticsConsoleEventViews.swift */,
+				0A0B59000000000000000002 /* DiagnosticsEventInspectorView.swift */,
+				0A0B5000000000000000011A /* DiagnosticsConsoleAnalysisViews.swift */,
+				0A0B5B000000000000000002 /* DiagnosticsExpectedActualProjection.swift */,
+				0A0B5B000000000000000004 /* DiagnosticsTraceProjection.swift */,
+				0A0B57000000000000000002 /* DiagnosticsTraceComparisonViews.swift */,
+					0A0B5000000000000000011C /* DiagnosticsConsoleFormatting.swift */,
+					0A0B50000000000000000216 /* ObservabilityRecoveryBanner.swift */,
+			);
+			name = Diagnostics;
+			sourceTree = "<group>";
+		};
+		0A0B50000000000000000022 /* Observability */ = {
+			isa = PBXGroup;
+			children = (
+				0A0B5000000000000000001C /* DiagnosticPackageTests.swift */,
+				0A0B53000000000000000004 /* DiagnosticPackagePrivacyTests.swift */,
+				0A0B53000000000000000006 /* DiagnosticPackageWriterTests.swift */,
+				0A0B5000000000000000001D /* ObservabilityHubAndStoreTests.swift */,
+				0A0B5B000000000000000014 /* ObservabilityHubAndStoreTestSupport.swift */,
+				0A0B5000000000000000001E /* DiagnosticsSettingsUIProjectionTests.swift */,
+				0A0B58000000000000000004 /* DiagnosticsSettingsUIProjectionTestSupport.swift */,
+				0A0B50000000000000000311 /* DiagnosticsIncidentSettingsModelTests.swift */,
+				0A0B50000000000000000312 /* ObservabilitySafeDeletionTests.swift */,
+				0A0B5F000000000000001011 /* ObservabilitySessionSignpostLifecycleTests.swift */,
+				0A0B5B00000000000000000E /* ObservabilitySignpostSinkTests.swift */,
+				0A0B5B000000000000000010 /* ObservabilityApplicationLifecycleTests.swift */,
+				0A0B5F000000000000001012 /* CoreObservabilitySinkAdapterTests.swift */,
+				0A0B5F000000000000000111 /* ObservabilityRuntimeAssemblyTests.swift */,
+				0A0B5F000000000000000112 /* ObservabilityRuntimeSchedulingTests.swift */,
+				0A0B5F000000000000000113 /* ObservabilityRuntimeTestSupport.swift */,
+				0A0B5F000000000000000114 /* ObservabilityHubStoreContractTests.swift */,
+				0A0B5B000000000000000016 /* ObservabilityHubStoreContractTestSupport.swift */,
+				0A0B5F000000000000000115 /* ObservabilityTestPrimitives.swift */,
+				0A0B62000000000000000002 /* ObservabilityStoreManifestV2Tests.swift */,
+				0A0B62000000000000000004 /* ObservabilityIncidentDispositionTests.swift */,
+				0A0B5A000000000000000002 /* RollingObservabilityStoreRetentionContractTests.swift */,
+				0A0B5B000000000000000012 /* RollingObservabilityStoreBehaviorTests.swift */,
+				0A0B56000000000000000002 /* ObservabilityCatalogTests.swift */,
+				0A0B5000000000000000001F /* ImportTraceContinuityTests.swift */,
+				0A0B50000000000000000112 /* ObservabilityResourceIdentityTests.swift */,
+				0A0B50000000000000000114 /* ObservabilityConfigurationTests.swift */,
+				0A0B60000000000000000004 /* ObservabilitySafetyPolicyTests.swift */,
+				0A0B5D000000000000000002 /* ObservabilityEventWireCodingTests.swift */,
+				0A0B50000000000000000116 /* RepositoryMetadataSnapshotCaptureTests.swift */,
+				0A0B5000000000000000011B /* DiagnosticsConsoleProjectionTests.swift */,
+				0A0B58000000000000000002 /* DiagnosticsExpectedActualProjectionTests.swift */,
+			);
+			name = Observability;
 			sourceTree = "<group>";
 		};
 			0A0000000000000000000D44 /* RepositoryLifecycle */ = {
@@ -1820,6 +2094,7 @@
 					0A0000000000000000000271 /* GeneralSettingsModel.swift */,
 					0A0000000000000000000FC5 /* GeneralSettingsState.swift */,
 					0A0000000000000000000273 /* GeneralSettingsView.swift */,
+					0A0000000000000000001D01 /* LanguageSettingsPane.swift */,
 					0A000000000000000000029B /* IntegrationsSettingsModel.swift */,
 					0A000000000000000000029D /* IntegrationsSettingsPane.swift */,
 					0A0000000000000000000291 /* ClassifierSettingsModel.swift */,
@@ -2110,6 +2385,7 @@
 			isa = PBXGroup;
 				children = (
 					0A0000000000000000000017 /* CoreBridge.swift */,
+					0A0B50000000000000000012 /* CoreObservabilityBridge.swift */,
 					0A0000000000000000000A25 /* CoreBridgeFoundation.swift */,
 					0A00000000000000000000F9 /* CoreBridgeSnapshots.swift */,
 					0A0000000000000000000FF3 /* CoreErrorMappingSnapshots.swift */,
@@ -2133,6 +2409,7 @@
 				0A0000000000000000000331 /* CoreBatchChangeCategory.swift */,
 					0A0000000000000000000411 /* CoreBatchDelete.swift */,
 					0A0000000000000000000171 /* CoreImporting.swift */,
+					0A0B5F000000000000000202 /* CoreImportObservability.swift */,
 					0A0000000000000000000FD7 /* CoreImportConflictBatching.swift */,
 					0A0000000000000000000157 /* CoreExternalChangesSyncing.swift */,
 					0A0000000000000000000831 /* CoreStartupRecovering.swift */,
@@ -2168,6 +2445,7 @@
 			children = (
 				0A0000000000000000000903 /* AppIcon.icon */,
 				0A0000000000000000000901 /* Assets.xcassets */,
+				0A0B5F000000000000000208 /* observability_catalog.json */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -2183,6 +2461,7 @@
 		0A000000000000000000003A /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				0A0B50000000000000000022 /* Observability */,
 				0A0000000000000000002003 /* AppLanguageTests.swift */,
 				0A000000000000000000001A /* AreaMatrixShellTests.swift */,
 				0A00000000000000000008F7 /* AreaMatrixShellValidatePathTests.swift */,
@@ -2599,6 +2878,7 @@
 				0A0000000000000000000902 /* AppIcon.icon in Resources */,
 				0A0000000000000000000900 /* Assets.xcassets in Resources */,
 				0A0000000000000000000964 /* Localizable.xcstrings in Resources */,
+				0A0B5F000000000000000207 /* observability_catalog.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2638,6 +2918,57 @@
 			buildActionMask = 2147483647;
 			files = (
 				0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */,
+				0A0B50000000000000000001 /* ObservabilityRuntimeAssembly.swift in Sources */,
+				0A0B5F000000000000000003 /* ObservabilityRuntimeSupport.swift in Sources */,
+				0A0B5B00000000000000000B /* ObservabilityTraceContextFactory.swift in Sources */,
+				0A0B50000000000000000002 /* CoreObservabilityBridge.swift in Sources */,
+				0A0B5F000000000000000201 /* CoreImportObservability.swift in Sources */,
+				0A0B50000000000000000003 /* ObservabilityModels.swift in Sources */,
+				0A0B5C000000000000000001 /* ObservabilityEventWireCoding.swift in Sources */,
+				0A0B5F000000000000000209 /* ObservabilityCatalog.swift in Sources */,
+				0A0B50000000000000000004 /* RollingObservabilityStore.swift in Sources */,
+				0A0B5B000000000000000007 /* ObservabilityStoreSupport.swift in Sources */,
+				0A0B61000000000000000001 /* ObservabilityStoreManifest.swift in Sources */,
+				0A0B61000000000000000003 /* RollingObservabilityStoreMaintenance.swift in Sources */,
+				0A0B63000000000000000001 /* RollingObservabilityStoreRecovery.swift in Sources */,
+				0A0B50000000000000000010 /* RollingObservabilityStoreFileIO.swift in Sources */,
+				0A0B50000000000000000024 /* ObservabilityHubPolicy.swift in Sources */,
+				0A0B60000000000000000001 /* ObservabilitySafetyPolicy.swift in Sources */,
+				0A0B50000000000000000026 /* ObservabilityIncidentLedger.swift in Sources */,
+				0A0B50000000000000000005 /* ObservabilityHub.swift in Sources */,
+				0A0B61000000000000000005 /* ObservabilityHubIncidentPersistence.swift in Sources */,
+				0A0B5B000000000000000009 /* ObservabilityHubEventFactory.swift in Sources */,
+				0A0B50000000000000000201 /* CoreObservabilitySinkAdapter.swift in Sources */,
+				0A0B50000000000000000202 /* ObservabilitySafeFileOperations.swift in Sources */,
+				0A0B50000000000000000203 /* ObservabilitySessionLifecycleStore.swift in Sources */,
+					0A0B50000000000000000204 /* ObservabilitySignpostSink.swift in Sources */,
+					0A0B50000000000000000205 /* ObservabilityApplicationLifecycle.swift in Sources */,
+					0A0B50000000000000000006 /* DiagnosticsSettingsPane.swift in Sources */,
+					0A0B5F000000000000000203 /* DiagnosticsSettingsModel.swift in Sources */,
+					0A0B5F000000000000000205 /* DiagnosticsSettingsSupportViews.swift in Sources */,
+					0A0B59000000000000000003 /* DiagnosticsHealthViews.swift in Sources */,
+				0A0B50000000000000000007 /* DiagnosticsConsoleView.swift in Sources */,
+				0A0B50000000000000000107 /* DiagnosticsConsoleProjection.swift in Sources */,
+				0A0B50000000000000000108 /* DiagnosticsConsoleFilters.swift in Sources */,
+					0A0B50000000000000000109 /* DiagnosticsConsoleEventViews.swift in Sources */,
+					0A0B59000000000000000001 /* DiagnosticsEventInspectorView.swift in Sources */,
+				0A0B5000000000000000010A /* DiagnosticsConsoleAnalysisViews.swift in Sources */,
+				0A0B5B000000000000000001 /* DiagnosticsExpectedActualProjection.swift in Sources */,
+				0A0B5B000000000000000003 /* DiagnosticsTraceProjection.swift in Sources */,
+				0A0B57000000000000000001 /* DiagnosticsTraceComparisonViews.swift in Sources */,
+					0A0B5000000000000000010C /* DiagnosticsConsoleFormatting.swift in Sources */,
+					0A0B50000000000000000206 /* ObservabilityRecoveryBanner.swift in Sources */,
+				0A0B50000000000000000008 /* DiagnosticPackageModels.swift in Sources */,
+				0A0B50000000000000000009 /* DiagnosticPackageRedactor.swift in Sources */,
+				0A0B5000000000000000000A /* DiagnosticPackageExporter.swift in Sources */,
+				0A0B5B000000000000000005 /* DiagnosticPackagePublishOperations.swift in Sources */,
+				0A0B50000000000000000101 /* ObservabilityResourceIdentity.swift in Sources */,
+				0A0B50000000000000000103 /* ObservabilityConfiguration.swift in Sources */,
+				0A0B50000000000000000105 /* RepositoryMetadataSnapshotCapture.swift in Sources */,
+				0A0B5000000000000000000B /* DiagnosticPackageReader.swift in Sources */,
+				0A0B54000000000000000001 /* DiagnosticPackageReaderFileIO.swift in Sources */,
+				0A0B53000000000000000001 /* DiagnosticPackageWriter.swift in Sources */,
+				0A0B55000000000000000001 /* DiagnosticPackageStageCopier.swift in Sources */,
 				0A0000000000000000002000 /* AppLanguage.swift in Sources */,
 				0A0000000000000000002010 /* AppLocalizationText.swift in Sources */,
 				0A0000000000000000000D40 /* MainExternalCreatedFileActions.swift in Sources */,
@@ -2828,6 +3159,7 @@
 				0A0000000000000000000FAD /* MainRepositoryContentCommandPaletteActions.swift in Sources */,
 				0A0000000000000000000D47 /* CommandPaletteFallbacks.swift in Sources */,
 				0A0000000000000000000272 /* GeneralSettingsView.swift in Sources */,
+				0A0000000000000000001D00 /* LanguageSettingsPane.swift in Sources */,
 				0A0000000000000000000942 /* GeneralSettingsContentViews.swift in Sources */,
 				0A0000000000000000000948 /* SettingsPageScaffold.swift in Sources */,
 				0A000000000000000000089A /* SettingsFormSection.swift in Sources */,
@@ -3065,6 +3397,38 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A0B5000000000000000000C /* DiagnosticPackageTests.swift in Sources */,
+				0A0B53000000000000000003 /* DiagnosticPackagePrivacyTests.swift in Sources */,
+				0A0B53000000000000000005 /* DiagnosticPackageWriterTests.swift in Sources */,
+				0A0B5000000000000000000D /* ObservabilityHubAndStoreTests.swift in Sources */,
+				0A0B5B000000000000000013 /* ObservabilityHubAndStoreTestSupport.swift in Sources */,
+				0A0B5000000000000000000E /* DiagnosticsSettingsUIProjectionTests.swift in Sources */,
+				0A0B58000000000000000003 /* DiagnosticsSettingsUIProjectionTestSupport.swift in Sources */,
+				0A0B50000000000000000301 /* DiagnosticsIncidentSettingsModelTests.swift in Sources */,
+				0A0B50000000000000000302 /* ObservabilitySafeDeletionTests.swift in Sources */,
+				0A0B5F000000000000001001 /* ObservabilitySessionSignpostLifecycleTests.swift in Sources */,
+				0A0B5B00000000000000000D /* ObservabilitySignpostSinkTests.swift in Sources */,
+				0A0B5B00000000000000000F /* ObservabilityApplicationLifecycleTests.swift in Sources */,
+				0A0B5F000000000000001002 /* CoreObservabilitySinkAdapterTests.swift in Sources */,
+				0A0B5F000000000000000101 /* ObservabilityRuntimeAssemblyTests.swift in Sources */,
+				0A0B5F000000000000000102 /* ObservabilityRuntimeSchedulingTests.swift in Sources */,
+				0A0B5F000000000000000103 /* ObservabilityRuntimeTestSupport.swift in Sources */,
+				0A0B5F000000000000000104 /* ObservabilityHubStoreContractTests.swift in Sources */,
+				0A0B5B000000000000000015 /* ObservabilityHubStoreContractTestSupport.swift in Sources */,
+				0A0B5F000000000000000105 /* ObservabilityTestPrimitives.swift in Sources */,
+				0A0B62000000000000000001 /* ObservabilityStoreManifestV2Tests.swift in Sources */,
+				0A0B62000000000000000003 /* ObservabilityIncidentDispositionTests.swift in Sources */,
+				0A0B5A000000000000000001 /* RollingObservabilityStoreRetentionContractTests.swift in Sources */,
+				0A0B5B000000000000000011 /* RollingObservabilityStoreBehaviorTests.swift in Sources */,
+				0A0B56000000000000000001 /* ObservabilityCatalogTests.swift in Sources */,
+				0A0B5000000000000000000F /* ImportTraceContinuityTests.swift in Sources */,
+				0A0B50000000000000000102 /* ObservabilityResourceIdentityTests.swift in Sources */,
+				0A0B50000000000000000104 /* ObservabilityConfigurationTests.swift in Sources */,
+				0A0B60000000000000000003 /* ObservabilitySafetyPolicyTests.swift in Sources */,
+				0A0B5D000000000000000001 /* ObservabilityEventWireCodingTests.swift in Sources */,
+				0A0B50000000000000000106 /* RepositoryMetadataSnapshotCaptureTests.swift in Sources */,
+				0A0B5000000000000000010B /* DiagnosticsConsoleProjectionTests.swift in Sources */,
+				0A0B58000000000000000001 /* DiagnosticsExpectedActualProjectionTests.swift in Sources */,
 				0A0000000000000000002002 /* AppLanguageTests.swift in Sources */,
 					0A0000000000000000000004 /* AreaMatrixAppSmokeTests.swift in Sources */,
 					0A0000000000000000000FE6 /* AreaMatrixAppSmokeTestDoubleSupport.swift in Sources */,
@@ -3417,7 +3781,7 @@
 				CURRENT_PROJECT_VERSION = 202605101812;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_DEBUG_DYLIB = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
@@ -3425,6 +3789,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = AreaMatrix;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_FILE = AreaMatrix/Info.plist;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)",
@@ -3458,7 +3823,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 202605101812;
 				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/AreaMatrix/Bridge/UniFFI",
@@ -3466,6 +3831,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = AreaMatrix;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_FILE = AreaMatrix/Info.plist;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)",

@@ -855,6 +855,17 @@ def _check_macos_localization_contract(root: Path, failures: FailureCollector) -
             failures.fail(f"macOS user-visible string is missing from Localizable.xcstrings: {key!r}")
 
 
+def run_localization_check(root: Path | None = None) -> int:
+    root = (root or project_root()).resolve()
+    failures = FailureCollector()
+    _check_macos_localization_contract(root, failures)
+    if failures.count:
+        print(f"macOS localization contract: FAILED ({failures.count} issue(s))", file=os.sys.stderr)
+        return 1
+    print("macOS localization contract: OK")
+    return 0
+
+
 def _check_ai_runtime_environment_contract(root: Path, failures: FailureCollector) -> None:
     expected = set(AI_RUNTIME_ENV_CONTRACT)
     core_keys = {
@@ -1944,6 +1955,13 @@ def run_quality_check(root: Path | None = None) -> int:
     _require_text(
         root,
         failures,
+        ".codex/skills-src/areamatrix-macos-ui/SKILL.md",
+        "L10n|String Catalog",
+        "macOS UI localization owner",
+    )
+    _require_text(
+        root,
+        failures,
         ".codex/skills-src/README.md",
         "areamatrix-residual-ledger",
         "8th residual-ledger skill navigation",
@@ -1954,6 +1972,13 @@ def run_quality_check(root: Path | None = None) -> int:
         ".codex/skills-src/README.md",
         "areamatrix-codex-os",
         "Codex OS skill navigation",
+    )
+    _require_text(
+        root,
+        failures,
+        ".codex/skills-src/README.md",
+        "areamatrix-macos-ui",
+        "macOS UI skill navigation",
     )
     _require_text(root, failures, ".codex/references/index.md", "./dev check quality", "quality smoke reference")
     _require_text(root, failures, ".codex/references/index.md", "./dev check wording", "wording audit reference")
@@ -1967,10 +1992,14 @@ def run_quality_check(root: Path | None = None) -> int:
         r"已有 " + r"7 个",
         r"现有 " + r"8 个",
         r"已有 " + r"8 个",
+        r"现有 " + r"9 个",
+        r"已有 " + r"9 个",
         r"7 个 " + r"AreaMatrix skills",
         r"8 个 " + r"AreaMatrix skills",
+        r"9 个 " + r"AreaMatrix skills",
         r"强化现有 " + r"7",
         r"强化现有 " + r"8",
+        r"强化现有 " + r"9",
     )
     stale_count_pattern = "|".join(stale_skill_count_patterns)
     for rel_path in [
@@ -1979,7 +2008,7 @@ def run_quality_check(root: Path | None = None) -> int:
         ".codex/skills-src/README.md",
         ".codex/references/index.md",
     ]:
-        _forbid_text(root, failures, rel_path, stale_count_pattern, "stale 7-skill count")
+        _forbid_text(root, failures, rel_path, stale_count_pattern, "stale skill count")
 
     if failures.count:
         print(f"quality smoke: FAILED ({failures.count} issue(s))", file=os.sys.stderr)
@@ -2390,6 +2419,9 @@ def _unique_strings(values: list[str]) -> list[str]:
 
 
 def _run_page_task_checks(root: Path) -> int:
+    rc = run_localization_check(root)
+    if rc != 0:
+        return rc
     proc = run_step(
         [
             "xcodebuild",

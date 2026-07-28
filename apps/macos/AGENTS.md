@@ -57,6 +57,20 @@
 - `Bridge/UniFFI/` 是当前 Xcode 工程消费的 tracked UniFFI binding，也不要手写业务逻辑；
   UDL 变化后用仓库命令重新生成。
 
+## 本地化
+
+- 新增或修改页面时先列出 application-owned 用户可见文案；按钮、标题、说明、状态、错误、恢复建议、菜单、
+  toast 和 accessibility label/value/hint/action/announcement 都必须进入
+  `AreaMatrix/Localizations/Localizable.xcstrings`，同时维护 `en` 与 `zh-Hans`。
+- 立即使用的普通文本选择 `L10n.string` / `format` / `plural`；需要存入 model、错误、toast 或异步状态的文本
+  选择 `L10n.message` / `pluralMessage` / `display`，并在 View 展示边界用 `AppLocalizer.resolve`。
+- 用户内容、路径、文件名、品牌和技术标识需要保持原文时使用 `L10n.verbatim` 并写明 `VerbatimReason`；用户可编辑
+  默认值只在草稿创建时使用 `L10n.editableDefault`，不得在语言切换后覆盖用户输入。
+- L10n key 必须是静态字符串，不得插值或拼接；不得直接构造 `LocalizedMessage`、调用 bundle lookup，或用
+  `.id(locale)` 强制重建视图掩盖状态问题。
+- SwiftUI 编译器可抽取的字符串仍必须存在于 String Catalog；新代码优先显式使用 L10n API，使即时文本、延迟
+  状态和 verbatim 边界可审查。
+
 ## 高风险约束
 
 - 不移动、删除、覆盖或重命名用户原文件。
@@ -68,6 +82,7 @@
 macOS 改动后优先运行：
 
 ```bash
+./dev check localization
 xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO
 ./dev test macos
 ```

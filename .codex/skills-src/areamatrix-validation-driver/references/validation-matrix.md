@@ -58,7 +58,7 @@ the smallest repo-local implementation gate for that task:
   `cargo clippy --all-targets --all-features -- -D warnings`).
 - Mission-Critical file-safety, DB, staging, recovery, sync, import, migration,
   reindex, or user-file boundary: widen to the Core quality gate.
-- Page feature or page integration task: macOS build gate.
+- Page feature or page integration task: localization contract, then macOS build gate.
 - Foundation closeout or release-boundary task: `./dev check all`.
 
 Agents may run additional targeted tests when the task or observed changes need
@@ -96,9 +96,12 @@ If a task manifest names narrower tests, run those too. Do not skip the manifest
 Required for `apps/macos/**`:
 
 ```bash
+./dev check localization
 xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO
 ./dev test macos
 ```
+
+For a page or component that changes application-owned visible text, accessibility copy, errors, toast, or language behavior, apply `areamatrix-macos-ui` and verify `en` and `zh-Hans` against the same retained state. Build success alone does not prove the localization contract.
 
 `./dev test macos` is the local macOS unit-test gate. It first runs the
 standard `xcodebuild test` command. Only when the failure log explicitly points

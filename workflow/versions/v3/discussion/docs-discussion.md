@@ -7,8 +7,8 @@ v3 完成 AreaMatrix 的最终双语言架构：应用界面语言、资料库�
 
 ## User Paths
 
-- Welcome 或 General 修改设备级应用界面语言。
-- 创建或接管资料库时选择内容语言，默认“跟随界面”；之后只在 Repository 设置中修改。
+- Welcome 快捷切换或独立 Language 设置页修改设备级应用界面语言。
+- 创建或接管资料库时选择内容语言，默认“跟随界面”；之后在 Language 设置页显式保存修改。
 - 在 English 界面中浏览中文资料库内容，或在中文界面中生成 English 内容。
 - 运行中的界面切换语言而不丢失当前 route、focus、scroll、sheet、draft 或业务状态。
 - 显式执行全库 overview regeneration；既有生成物不因设置变化自动重写。
@@ -68,7 +68,8 @@ v3 完成 AreaMatrix 的最终双语言架构：应用界面语言、资料库�
   Simplified Chinese and `EN` for English. Repository follow-interface summaries use the same distinction.
 - The app supports multiple windows. Interface changes propagate to every window; repository drafts remain local,
   and stale saves fail with CAS conflict instead of overwriting another window.
-- App language selection commits immediately. Repository and classifier edits use Save/Discard/Cancel gates.
+- App language selection commits immediately. Repository content language on the Language page and classifier edits use
+  Save/Discard/Cancel gates.
 - New repositories expose a content-language choice before the first generated overview; the default is follow-interface.
 - Saving repository content language confirms the stored policy and current concrete result, states that existing
   generated content was not rewritten, and offers explicit regeneration only when provenance is not synchronized.
@@ -90,7 +91,7 @@ v3 完成 AreaMatrix 的最终双语言架构：应用界面语言、资料库�
   leave physical files mid-commit, but the repository cannot resume normal writes until recovery converges to an all-old
   or all-new settled state. It writes only generated overview outputs and the optional legal `AREAMATRIX.md` managed
   block, never AI results or user-owned text, and records locale/operation/format provenance.
-  Provenance drives five Repository states without inspecting generated prose: not-generated, synchronized,
+  Provenance drives five overview-language states without inspecting generated prose: not-generated, synchronized,
   needs-regeneration, mixed, and unknown. Needs-regeneration carries stable reasons for locale mismatch, format mismatch,
   missing targets, and obsolete targets; mixed means multiple known locale/format values; unknown means any existing
   output lacks trusted provenance. Legacy output without provenance stays unknown. The complete target set includes
@@ -134,7 +135,7 @@ v3 完成 AreaMatrix 的最终双语言架构：应用界面语言、资料库�
 - Missing app-owned catalog copy falls back to English plus the stable code. Raw technical details remain collapsible
   and copyable, while logs and recovery records retain only stable structured values and necessary verbatim details.
 - A legacy repository with no provable language policy remains browsable and shows persistent non-blocking guidance.
-  Its Repository chooser starts with no selected option rather than implying consent, offers follow-interface,
+  Its Language-page chooser starts with no selected option rather than implying consent, offers follow-interface,
   Simplified Chinese and English, and shows the current concrete result beside follow-interface. Only explicit Save
   unlocks generation and classifier mutation, and that save never regenerates existing output.
 - Repository CAS review shows the previously observed value, the latest persisted value and the local dirty value for
@@ -143,7 +144,7 @@ v3 完成 AreaMatrix 的最终双语言架构：应用界面语言、资料库�
 - Classifier conflict review retains the complete draft and frozen editing locale, compares only that locale and the
   affected rule fields against the latest snapshot, and keeps the other locale map read-only. Reload or explicit review
   followed by a new Save are the only mutation paths.
-- Overview regeneration is entered and summarized in Repository. Pre-commit work may be cancelled; commit disables
+- Overview regeneration is entered and summarized in Language. Pre-commit work may be cancelled; commit disables
   cancellation and non-initiating windows remain read-only observers. Crash recovery derives roll-forward or rollback
   from verified Core evidence and never asks the user to choose an unsafe recovery direction.
 - Generating a replacement for a user-owned summary preserves the current saved value and presents it beside the new

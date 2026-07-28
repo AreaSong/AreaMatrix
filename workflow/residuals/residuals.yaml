@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-25"
+updated: "2026-07-26"
 scope: global
 authority: index-only
 source_of_truth:
@@ -77,9 +77,9 @@ items:
       - ADR-0003/0006 and core-api.md updated for purge-on-startup metadata-only retention
     notes: Closed 2026-07-21. recover_on_startup purges files.status=deleted rows with deleted_at older than 30 days; user source files and Trash are not hard-deleted.
   - id: global-product-ui-localization
-    status: closed
+    status: open
     type: product-contract-gap
-    title: UI string localization pipeline from ADR-0008 is not implemented
+    title: Bilingual settings closeout evidence remains incomplete
     source: docs/adr/0008-naming-and-i18n.md
     supporting_sources:
       - core/area_matrix.udl
@@ -90,21 +90,21 @@ items:
       - apps/macos/AreaMatrix/Features/Settings/RepositorySettingsModel.swift
       - scripts/dev_tools/checks.py
     owner: macos-frontend
-    current_impact: none
-    executable_task: false
+    current_impact: The dedicated Language page and independent selectors are implemented, but the residual cannot close while the full macOS governance gate and explicit overview-regeneration evidence remain incomplete.
+    executable_task: true
     promotion_required: true
-    close_condition: Completed. Core, UDL, generated bindings and macOS implement independent interface/content languages, responsive app-owned UI, repository locale CAS, classifier locale maps, operation provenance, structured errors and explicit overview regeneration.
+    close_condition: Add one Language settings page that owns both selectors and overview language status/regeneration, reduce General and Repository to read-only summaries with navigation, preserve independent persistence and CAS semantics, and pass localization, macOS, docs and four-combination fixture UI validation.
     validation:
       - cargo fmt, clippy and workspace tests pass for the final Core contract
       - ./dev bindings verify
       - xcodebuild Debug build succeeds with Localizable.xcstrings in the app bundle
-      - ./dev test macos --disable-parallel-testing executes 1052 tests with 5 skipped and 0 failures
-      - localization compiler contract passes for 739 extracted keys with locale and placeholder parity
-      - full macOS SwiftFormat and SwiftLint pass with 0 findings across 749 Swift files
+      - ./dev test macos completes with 0 failures
+      - localization compiler contract passes for all extracted keys with locale and placeholder parity
+      - full macOS SwiftFormat and SwiftLint pass with 0 findings
       - fixture-only Debug UI smoke covers en/en, en/zh-Hans, zh-Hans/en and zh-Hans/zh-Hans
       - explicit zh-Hans and en overview regeneration each completes preflight, stage and commit for all 7 targets
       - fixture SQLite integrity_check is ok and no root README.md, root AREAMATRIX.md or user-file mutation occurs
-    notes: Closed 2026-07-25 after the reopened gap was completed across Core, UDL, generated bindings and macOS. Four interface/content combinations refresh immediately without coupling the two language stores; existing generated content remains unchanged until explicit journaled regeneration.
+    notes: Reopened 2026-07-26 for the settings information-architecture gap. The dedicated Language page, General/Repository summaries, independent persistence, targeted tests and four-combination fixture UI smoke are now implemented; keep open until the remaining full-suite governance failures and explicit regeneration close evidence are resolved.
   - id: global-docs-core-module-doc-coverage
     status: closed
     type: product-doc-marker

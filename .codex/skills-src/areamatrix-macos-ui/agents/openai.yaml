@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaMatrix macOS UI"
+  short_description: "Build localized macOS UI with complete evidence"
+  default_prompt: "Use $areamatrix-macos-ui to implement or review this AreaMatrix macOS page with the L10n, accessibility, ownership, and validation gates."
+policy:
+  allow_implicit_invocation: true

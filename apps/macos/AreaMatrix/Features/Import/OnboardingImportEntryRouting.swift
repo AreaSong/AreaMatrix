@@ -263,11 +263,8 @@ extension OnboardingModel {
         do {
             let opening = try await emptyRepositoryOpener.openConfiguredRepository(repoPath: repoPath)
             finishSuccessfulRepositoryOpen(opening)
-            toastMessage = L10n.message("import.single.imported-file", arguments: [.string(entry.currentName)])
-            accessibilityAnnouncer.announce(L10n.message(
-                "import.single.imported-file",
-                arguments: [.string(entry.currentName)]
-            ))
+            toastMessage = entry.importCompletionMessage
+            accessibilityAnnouncer.announce(entry.importCompletionMessage)
         } catch {
             await routeMainOpeningFailure(error, repoPath: repoPath)
         }

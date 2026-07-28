@@ -6,6 +6,9 @@ struct ValidatePathSatelliteRadar: View {
     let isValidating: Bool
     let errorMessage: LocalizedMessage?
 
+    @State private var rotation: Double = 0
+    @State private var pulse: CGFloat = 1.0
+
     var body: some View {
         HStack(alignment: .center, spacing: 64) {
             // ================= 左翼 4 颗伴星 =================
@@ -15,47 +18,75 @@ struct ValidatePathSatelliteRadar: View {
                 }
             }
             .frame(width: 220, alignment: .trailing)
-            
+
             // ================= 巨型中心雷达 =================
             ZStack {
                 Circle()
                     .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 8]))
                     .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.2))
                     .frame(width: 280, height: 280)
-                
+                    .rotationEffect(.degrees(rotation * 0.5))
+
                 Circle()
                     .stroke(style: StrokeStyle(lineWidth: 0.5, dash: [2, 4]))
                     .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.15))
                     .frame(width: 220, height: 220)
+                    .rotationEffect(.degrees(-rotation * 0.8))
 
                 Circle()
                     .strokeBorder(AreaMatrixTheme.Colors.teal.opacity(0.1), lineWidth: 1)
                     .frame(width: 160, height: 160)
-                
+
+                if isValidating {
+                    Circle()
+                        .fill(
+                            AngularGradient(
+                                gradient: Gradient(colors: [AreaMatrixTheme.Colors.teal.opacity(0.0), AreaMatrixTheme.Colors.teal.opacity(0.3)]),
+                                center: .center,
+                                startAngle: .degrees(0),
+                                endAngle: .degrees(360)
+                            )
+                        )
+                        .frame(width: 280, height: 280)
+                        .rotationEffect(.degrees(rotation * 1.5))
+                }
+
                 Circle()
                     .fill(AreaMatrixTheme.Colors.teal.opacity(0.06))
-                    .frame(width: 120, height: 120)
-                
-                if isValidating {
-                    AreaMatrixLucideIcon(name: .refreshCcw, lineWidth: 1.5)
-                        .frame(width: 52, height: 52)
-                        .foregroundStyle(AreaMatrixTheme.Colors.teal)
-                } else if validation?.isInitialized == true {
-                    AreaMatrixLucideIcon(name: .checkCircle, lineWidth: 2)
-                        .frame(width: 64, height: 64)
-                        .foregroundStyle(AreaMatrixTheme.Colors.teal)
-                } else if errorMessage != nil {
-                    AreaMatrixLucideIcon(name: .alertTriangle, lineWidth: 2)
-                        .frame(width: 64, height: 64)
-                        .foregroundStyle(Color.orange)
-                } else {
-                    AreaMatrixLucideIcon(name: .hardDrive, lineWidth: 1.5)
-                        .frame(width: 52, height: 52)
-                        .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.5))
+                    .frame(width: 120 * pulse, height: 120 * pulse)
+
+                Group {
+                    if isValidating {
+                        AreaMatrixLucideIcon(name: .refreshCcw, lineWidth: 1.5)
+                            .frame(width: 52, height: 52)
+                            .foregroundStyle(AreaMatrixTheme.Colors.teal)
+                            .rotationEffect(.degrees(rotation * 2))
+                    } else if validation?.isInitialized == true {
+                        AreaMatrixLucideIcon(name: .checkCircle, lineWidth: 2)
+                            .frame(width: 64, height: 64)
+                            .foregroundStyle(AreaMatrixTheme.Colors.teal)
+                    } else if errorMessage != nil {
+                        AreaMatrixLucideIcon(name: .alertTriangle, lineWidth: 2)
+                            .frame(width: 64, height: 64)
+                            .foregroundStyle(AreaMatrixTheme.Colors.coral)
+                    } else {
+                        AreaMatrixLucideIcon(name: .hardDrive, lineWidth: 1.5)
+                            .frame(width: 52, height: 52)
+                            .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.5))
+                    }
                 }
+                .scaleEffect(pulse)
             }
             .frame(width: 280, height: 280)
-            
+            .onAppear {
+                withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
+                    rotation = 360
+                }
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                    pulse = 1.05
+                }
+            }
+
             // ================= 右翼 4 颗伴星 =================
             VStack(alignment: .leading, spacing: 32) {
                 if rows.count > 4 {
@@ -186,6 +217,7 @@ private struct ValidatePathSatelliteNode: View {
     let index: Int
 
     @State private var isVisible = false
+    @State private var floatOffset: CGFloat = 0
 
     var body: some View {
         HStack(spacing: 12) {
@@ -195,7 +227,7 @@ private struct ValidatePathSatelliteNode: View {
                     .fill(row.status.tint)
                     .frame(width: 6, height: 6)
                     .shadow(color: row.status.tint.opacity(0.5), radius: 4)
-                
+
                 Text(row.title)
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.primary.opacity(0.7))
@@ -206,7 +238,7 @@ private struct ValidatePathSatelliteNode: View {
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.primary.opacity(0.7))
                     .lineLimit(1)
-                
+
                 Circle()
                     .fill(row.status.tint)
                     .frame(width: 6, height: 6)
@@ -214,10 +246,13 @@ private struct ValidatePathSatelliteNode: View {
             }
         }
         .opacity(isVisible ? 1 : 0)
-        .offset(x: isVisible ? 0 : (alignment == .leading ? -10 : 10))
+        .offset(x: isVisible ? 0 : (alignment == .leading ? -10 : 10), y: floatOffset)
         .onAppear {
             withAnimation(.easeOut(duration: 0.5).delay(Double(index) * 0.1)) {
                 isVisible = true
+            }
+            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(Double(index) * 0.15)) {
+                floatOffset = (index % 2 == 0) ? -3 : 3
             }
         }
     }

@@ -17,6 +17,7 @@ struct ImportBatchProgressSnapshot: Equatable {
         var sourcePath: String
         var targetPath: String
         var phase: Phase
+        var importCommitState: CoreImportCommitState
         var errorDisplayText: AppDisplayText?
         var existingRelativePath: String?
         var importConflictBatch: ImportConflictBatchProgressMetadata?
@@ -26,6 +27,7 @@ struct ImportBatchProgressSnapshot: Equatable {
             sourcePath: String,
             targetPath: String,
             phase: Phase,
+            importCommitState: CoreImportCommitState = .committed,
             errorMessage: String? = nil,
             existingRelativePath: String? = nil,
             importConflictBatch: ImportConflictBatchProgressMetadata? = nil
@@ -34,6 +36,7 @@ struct ImportBatchProgressSnapshot: Equatable {
             self.sourcePath = sourcePath
             self.targetPath = targetPath
             self.phase = phase
+            self.importCommitState = importCommitState
             errorDisplayText = errorMessage.map { L10n.verbatim($0, reason: .technicalDetail) }
             self.existingRelativePath = existingRelativePath
             self.importConflictBatch = importConflictBatch
@@ -44,6 +47,7 @@ struct ImportBatchProgressSnapshot: Equatable {
             sourcePath: String,
             targetPath: String,
             phase: Phase,
+            importCommitState: CoreImportCommitState = .committed,
             errorDisplayText: AppDisplayText?,
             existingRelativePath: String? = nil,
             importConflictBatch: ImportConflictBatchProgressMetadata? = nil
@@ -52,6 +56,7 @@ struct ImportBatchProgressSnapshot: Equatable {
             self.sourcePath = sourcePath
             self.targetPath = targetPath
             self.phase = phase
+            self.importCommitState = importCommitState
             self.errorDisplayText = errorDisplayText
             self.existingRelativePath = existingRelativePath
             self.importConflictBatch = importConflictBatch
@@ -117,6 +122,7 @@ struct ImportBatchImportResult: Equatable {
             || previewErrorCount > 0
             || skippedDuplicateCount > 0
             || pendingICloudCount > 0
+            || succeededEntries.contains { $0.importCommitState.isDegraded }
     }
 
     func progressSnapshot(currentPath fallbackPath: String) -> ImportBatchProgressSnapshot {
@@ -145,6 +151,7 @@ struct ImportBatchImportResult: Equatable {
                 sourcePath: entry.sourcePath ?? entry.path,
                 targetPath: entry.path,
                 phase: .done,
+                importCommitState: entry.importCommitState,
                 errorMessage: nil
             )
         }

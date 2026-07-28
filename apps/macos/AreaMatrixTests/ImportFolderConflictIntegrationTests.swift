@@ -97,12 +97,54 @@ final class ImportFolderConflictIntegrationTests: XCTestCase {
         )
         scenario.controlState.registerQueueContinuation(scenario.importModel)
         await scenario.importer.assertImportedOverrideFilenames(["first.pdf", "second.pdf"])
-        XCTAssertEqual(outcome?.fatalRetryContext, importFolderFatalRetryContext(sourcePath: scenario.secondURL.path))
+        assertImportProgressRetryContext(
+            outcome?.fatalRetryContext,
+            equals: importFolderFatalRetryContext(sourcePath: scenario.secondURL.path)
+        )
+        XCTAssertNotNil(outcome?.fatalRetryContext?.traceID)
+        XCTAssertNotNil(outcome?.fatalRetryContext?.operationID)
         guard let pausedState = requireImportProgressRoute(
             scenario.model,
             message: "Expected import-progress fatal pause route"
         ) else { return }
         assertImportFolderFatalPause(pausedState)
+    }
+
+    @MainActor
+    func testFolderRetrySourceRetainedContinuesQueueAndShowsDegradedResult() async {
+        var sourceRetainedEntry = FileEntrySnapshot.importSingleFileFixture(
+            currentName: "second.pdf",
+            category: "docs"
+        )
+        sourceRetainedEntry.importCommitState = .sourceRetained
+        let scenario = makeImportFolderFatalFolderImportScenario(
+            retryResults: [.success(sourceRetainedEntry)]
+        )
+
+        await scenario.importModel.load(
+            request: importFolderFolderRequest(rootURL: URL(fileURLWithPath: "/tmp/client-a"))
+        )
+        let outcome = await scenario.importModel.importReadyFiles(controlState: scenario.controlState) { progress in
+            scenario.model.updateImportEntryProgress(progress)
+        }
+        guard let progress = requireImportProgressRoute(scenario.model) else { return }
+        scenario.model.failImportEntry(
+            progress: progress.progressSnapshot,
+            mapping: .importProgressFatalFolderError,
+            retryContext: outcome?.fatalRetryContext,
+            recoveryCheck: .retryAllowed(nil)
+        )
+        scenario.controlState.registerQueueContinuation(scenario.importModel)
+
+        await scenario.model.retryCurrentImportProgressItem()
+
+        guard let result = requireImportResultRoute(scenario.model) else { return }
+        assertImportResultSummary(
+            result,
+            summaryText: "Imported 3, failed 0, stopped 0, pending 0.",
+            statuses: [.imported, .sourceRetained, .imported]
+        )
+        XCTAssertEqual(scenario.importModel.rows[1].importCommitState, .sourceRetained)
     }
 
     @MainActor
@@ -235,13 +277,16 @@ private func assertImportFolderConflictImportResult(
 private struct ImportFolderFatalFolderImportScenario {
     let secondURL: URL
     let importer: ImportBatchSequenceBatchImporter
+    let retryImporter: ImportSingleFileRecordingImporter
     let importModel: ImportFolderPreviewModel
     let controlState: ImportProgressControlState
     let model: OnboardingModel
 }
 
 @MainActor
-private func makeImportFolderFatalFolderImportScenario() -> ImportFolderFatalFolderImportScenario {
+private func makeImportFolderFatalFolderImportScenario(
+    retryResults: [Result<FileEntrySnapshot, Error>]? = nil
+) -> ImportFolderFatalFolderImportScenario {
     let urls = [
         URL(fileURLWithPath: "/tmp/client-a/first.pdf"),
         URL(fileURLWithPath: "/tmp/client-a/second.pdf"),
@@ -260,10 +305,15 @@ private func makeImportFolderFatalFolderImportScenario() -> ImportFolderFatalFol
         scanner: importFolderStaticScanner(urls: urls)
     )
     let controlState = ImportProgressControlState()
-    let fixture = makeImportProgressMainListFixture(importProgressControlState: controlState)
+    let retryImporter = ImportSingleFileRecordingImporter(results: retryResults)
+    let fixture = makeImportProgressMainListFixture(
+        importProgressImporter: retryImporter,
+        importProgressControlState: controlState
+    )
     return ImportFolderFatalFolderImportScenario(
         secondURL: urls[1],
         importer: importer,
+        retryImporter: retryImporter,
         importModel: importModel,
         controlState: controlState,
         model: fixture.model

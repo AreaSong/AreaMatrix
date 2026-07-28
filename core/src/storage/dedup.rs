@@ -34,15 +34,9 @@ pub(super) fn resolve_duplicate(
             existing,
             reason: ReplacementReason::DuplicateHash,
         }),
-        DuplicateStrategy::Skip | DuplicateStrategy::Ask => {
-            tracing::warn!(
-                existing_path = %existing.path,
-                "duplicate file detected before import commit"
-            );
-            Err(CoreError::DuplicateFile {
-                existing_path: existing.path,
-            })
-        }
+        DuplicateStrategy::Skip | DuplicateStrategy::Ask => Err(CoreError::DuplicateFile {
+            existing_path: existing.path,
+        }),
     }
 }
 

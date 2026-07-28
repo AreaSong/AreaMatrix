@@ -189,6 +189,7 @@ struct ImportBatchCopyImportRow: Identifiable, Equatable {
     var categoryOverride: String?
     var suggestedName: String
     var status: ImportBatchCopyImportRowStatus
+    var importCommitState: CoreImportCommitState = .committed
 
     var id: String {
         sourcePath

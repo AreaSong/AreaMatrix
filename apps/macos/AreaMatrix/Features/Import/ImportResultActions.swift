@@ -89,7 +89,7 @@ extension OnboardingModel {
         guard case let .importResult(state) = route else { return }
         guard let item = state.items.first(where: { $0.id == itemID }),
               let fileID = item.fileID,
-              item.status == .imported else { return }
+              item.status == .imported || item.status == .sourceRetained else { return }
         pendingTagSuggestionFocus = TagSuggestionPresentationRequest(
             fileID: fileID,
             source: .importResult,
@@ -160,27 +160,62 @@ extension OnboardingModel {
         context: ImportProgressRetryContext,
         state: ImportResultRouteState
     ) async -> ImportResultRetryOutcome {
+        let traceContext = CoreImportTraceContext.operation(
+            traceID: context.traceID ?? UUID().uuidString.lowercased(),
+            retryOfOperationID: context.operationID,
+            actionID: "repository.import.retry.confirmed",
+            componentID: "macos.import.result"
+        )
+        let updatedRetryContext = context.replacingTraceContext(traceContext)
+        await AppLogger.shared.recordUIAction(traceContext: traceContext)
         do {
-            let entry = try await importProgressImporter.importCopiedFile(
-                repoPath: context.repoPath,
-                sourceURL: URL(fileURLWithPath: context.sourcePath),
-                overrideCategory: context.overrideCategory,
-                overrideFilename: context.overrideFilename,
-                duplicateStrategy: context.duplicateStrategy.coreStrategy
-            )
+            let entry = try await retryCopiedImport(updatedRetryContext, traceContext: traceContext)
             return ImportResultRetryOutcome(
                 resultState: state.markingImported(item, entry: entry),
-                progressItem: retryProgressItem(for: item, targetPath: entry.path, phase: .done),
+                progressItem: retryProgressItem(
+                    for: item,
+                    targetPath: entry.path,
+                    phase: .done,
+                    importCommitState: entry.importCommitState
+                ),
                 didImport: true
             )
         } catch {
             let mapping = await importProgressMapping(for: error)
             return ImportResultRetryOutcome(
-                resultState: state.markingFailed(item, message: mapping.userMessage),
+                resultState: state.markingFailed(
+                    item,
+                    message: mapping.userMessage,
+                    retryContext: updatedRetryContext
+                ),
                 progressItem: retryProgressItem(for: item, phase: .failed, errorMessage: mapping.userMessage),
                 didImport: false
             )
         }
+    }
+
+    private func retryCopiedImport(
+        _ context: ImportProgressRetryContext,
+        traceContext: CoreImportTraceContext
+    ) async throws -> FileEntrySnapshot {
+        let sourceURL = URL(fileURLWithPath: context.sourcePath)
+        if let importer = importProgressImporter as? any CoreObservedFileImporting {
+            return try await importer.importCopiedFile(request: CoreObservedImportRequest(
+                repoPath: context.repoPath,
+                sourceURL: sourceURL,
+                overrideCategory: context.overrideCategory,
+                overrideFilename: context.overrideFilename,
+                duplicateStrategy: context.duplicateStrategy.coreStrategy,
+                traceContext: traceContext
+            ))
+        }
+        return try await importProgressImporter.importCopiedFile(
+            repoPath: context.repoPath,
+            sourceURL: sourceURL,
+            overrideCategory: context.overrideCategory,
+            overrideFilename: context.overrideFilename,
+            duplicateStrategy: context.duplicateStrategy.coreStrategy
+        )
     }
 
     @MainActor
@@ -213,6 +248,7 @@ private func retryProgressItem(
     for item: ImportResultRouteState.Item,
     targetPath: String? = nil,
     phase: ImportBatchProgressSnapshot.Phase,
+    importCommitState: CoreImportCommitState = .committed,
     errorMessage: String? = nil
 ) -> ImportBatchProgressSnapshot.Item {
     ImportBatchProgressSnapshot.Item(
@@ -220,6 +256,7 @@ private func retryProgressItem(
         sourcePath: item.sourcePath,
         targetPath: targetPath ?? item.targetPath,
         phase: phase,
+        importCommitState: importCommitState,
         errorMessage: errorMessage,
         existingRelativePath: item.existingRelativePath
     )

@@ -12,6 +12,7 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
         let retryRowIndex = rows.firstIndex { $0.fileURL.path == context.sourcePath }
         if let retryRowIndex {
             updateRowStatus(at: retryRowIndex, status: .imported(context.storageMode))
+            updateRowCommitState(at: retryRowIndex, commitState: entry.importCommitState)
         }
         let retryPath = retryRowIndex.map { targetRelativePath(for: rows[$0]) } ?? entry.path
         reportProgress(progressSnapshotAfterRetry(entry: entry, retryPath: retryPath))
@@ -19,6 +20,7 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
             request: request,
             retryEntry: entry,
             retryPath: retryPath,
+            traceID: context.traceID ?? UUID().uuidString.lowercased(),
             controlState: controlState,
             reportProgress: reportProgress
         )
@@ -28,6 +30,7 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
         request: ImportEntryRequest,
         retryEntry: FileEntrySnapshot,
         retryPath: String,
+        traceID: String,
         controlState: ImportProgressControlState,
         reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void
     ) async -> ImportBatchImportResult {
@@ -40,6 +43,11 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
         clearLastFailureMapping()
 
         for index in rows.indices where rows[index].status.importsIncomingFile {
+            let traceContext = CoreImportTraceContext.operation(
+                traceID: traceID,
+                actionID: "repository.import.confirmed",
+                componentID: "macos.import.folder"
+            )
             let cycle = await runFolderImportCycle(
                 input: ImportFolderImportCycleInput(
                     rowIndex: index,
@@ -47,7 +55,8 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
                     storageMode: selectedStorageMode,
                     completed: completed,
                     failed: failed,
-                    total: total
+                    total: total,
+                    traceContext: traceContext
                 )
             )
             completed = cycle.completed
@@ -68,7 +77,13 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
                     failed: failed,
                     total: total,
                     lastImportedPath: lastImportedPath,
-                    didStopAfterCurrentFile: didStopAfterCurrentFile
+                    didStopAfterCurrentFile: didStopAfterCurrentFile,
+                    fatalRetryContext: retryContext(
+                        for: rows[index],
+                        request: request,
+                        storageMode: selectedStorageMode,
+                        traceContext: traceContext
+                    )
                 )
             }
         }
@@ -102,7 +117,8 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
         failed: Int,
         total: Int,
         lastImportedPath: String,
-        didStopAfterCurrentFile: Bool
+        didStopAfterCurrentFile: Bool,
+        fatalRetryContext: ImportProgressRetryContext? = nil
     ) -> ImportBatchImportResult {
         ImportBatchImportResult(
             succeededEntries: entries,
@@ -112,7 +128,8 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
             pendingDuplicateCount: 0,
             skippedDuplicateCount: skippedDuplicateCount,
             pendingICloudCount: pendingICloudCount,
-            didStopAfterCurrentFile: didStopAfterCurrentFile
+            didStopAfterCurrentFile: didStopAfterCurrentFile,
+            fatalRetryContext: fatalRetryContext
         )
     }
 }

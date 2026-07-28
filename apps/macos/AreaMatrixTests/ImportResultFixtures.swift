@@ -59,6 +59,21 @@ enum ImportResultFixtures {
         ]
     )
 
+    static let sourceRetainedProgress = importBatchProgress(
+        completed: 1,
+        total: 1,
+        currentPath: importResultTargetPath(importResultImportedFilename()),
+        items: [
+            importBatchProgressItem(
+                fileID: 117,
+                sourcePath: importResultImportedSourcePath(),
+                targetPath: importResultTargetPath(importResultImportedFilename()),
+                phase: .done,
+                importCommitState: .sourceRetained
+            )
+        ]
+    )
+
     static let failedCopyProgress = importBatchProgress(
         completed: 1,
         failed: 1,

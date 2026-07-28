@@ -27,7 +27,6 @@ struct ImportFolderFooterSection: View {
                 .keyboardShortcut(.cancelAction)
                 .buttonStyle(AreaMatrixSecondaryButtonStyle())
             Button(L10n.string("Import Folder")) {
-                AppLogger.shared.logUIAction("User confirmed Import Folder: \(request.sheetTitle) with \(model.importableRows.count) files")
                 Task { await importFolder() }
             }
             .keyboardShortcut(.defaultAction)
@@ -54,7 +53,8 @@ struct ImportFolderFooterSection: View {
         guard let outcome else { return }
         if let retryContext = outcome.fatalRetryContext,
            let failure = model.lastFailureMapping,
-           let progress = lastProgress {
+           let progress = lastProgress
+        {
             onImportFailed(progress, failure, retryContext, .checking)
             importProgressControlState.registerQueueContinuation(model)
             return

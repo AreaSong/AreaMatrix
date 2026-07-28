@@ -1,5 +1,49 @@
 import SwiftUI
 
+protocol DiagnosticsIncidentManaging: Sendable {
+    func markIncident(note: String?) async -> String
+    func updateIncident(id: String, status: String) async throws
+    func deleteIncident(id: String) async throws
+    func incidentSnapshots() async -> [ObservabilityIncidentSnapshot]
+}
+
+struct ObservabilityRuntimeIncidentAdapter: DiagnosticsIncidentManaging {
+    let runtime: ObservabilityRuntimeAssembly
+
+    func markIncident(note: String?) async -> String {
+        await runtime.hub.markIncident(note: note)
+    }
+
+    func updateIncident(id: String, status: String) async throws {
+        try await runtime.hub.updateIncident(id: id, status: status)
+    }
+
+    func deleteIncident(id: String) async throws {
+        try await runtime.deleteIncident(id: id)
+    }
+
+    func incidentSnapshots() async -> [ObservabilityIncidentSnapshot] {
+        await runtime.hub.incidentSnapshots()
+    }
+}
+
+enum DiagnosticsPackageScope: String, CaseIterable {
+    case recentActivity
+    case selectedIncident
+
+    var label: String {
+        switch self {
+        case .recentActivity: L10n.string("observability.package.scope.recent")
+        case .selectedIncident: L10n.string("observability.package.scope.incident")
+        }
+    }
+}
+
+enum DiagnosticsPageFeedback: Equatable {
+    case success(LocalizedMessage)
+    case failure(LocalizedMessage)
+}
+
 struct AdvancedSettingsRecoveryToolsSection: View {
     let onOpenRecoveryTools: () -> Void
 
@@ -53,30 +97,24 @@ struct AdvancedSettingsDiagnosticsSection: View {
     }
 }
 
-struct AdvancedSettingsLogsSection: View {
+struct AdvancedSettingsObservabilitySection: View {
     let isCollecting: Bool
-    let onOpenLogsFolder: () -> Void
-    let onShowLogs: () -> Void
+    let onOpenDiagnostics: () -> Void
     let onCopyDiagnosticSummary: () -> Void
 
     var body: some View {
-        AdvancedSettingsSection(title: L10n.string("Logs")) {
+        AdvancedSettingsSection(title: L10n.string("settings.advanced.observability.title")) {
             HStack(spacing: 10) {
                 Button {
-                    onOpenLogsFolder()
+                    onOpenDiagnostics()
                 } label: {
-                    Label(L10n.string("Open logs folder"), systemImage: "folder")
+                    Label(
+                        L10n.string("settings.advanced.openDiagnostics"),
+                        systemImage: "waveform.path.ecg"
+                    )
                 }
                 .disabled(isCollecting)
-                .accessibilityIdentifier("advanced-settings-open-logs-folder")
-
-                Button {
-                    onShowLogs()
-                } label: {
-                    Label(L10n.string("View Logs..."), systemImage: "text.alignleft")
-                }
-                .disabled(isCollecting)
-                .accessibilityIdentifier("advanced-settings-show-logs")
+                .accessibilityIdentifier("advanced-settings-open-diagnostics")
 
                 Button {
                     onCopyDiagnosticSummary()
@@ -86,7 +124,7 @@ struct AdvancedSettingsLogsSection: View {
                 .accessibilityIdentifier("advanced-settings-copy-diagnostic-summary")
             }
 
-            Text(L10n.string("Diagnostics do not include your original file contents."))
+            Text(L10n.string("settings.advanced.observability.detail"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -191,174 +229,3 @@ struct AdvancedRootOverviewConfirmationSheet: View {
         .frame(width: 520)
     }
 }
-import SwiftUI
-import OSLog
-import UniformTypeIdentifiers
-
-public enum MemoryLogLevel {
-    case debug, info, warn, error
-}
-
-public struct LiveLogEntry: Identifiable {
-    public let id = UUID()
-    public let date: Date
-    public let level: MemoryLogLevel
-    public let category: String
-    public let message: String
-}
-
-@MainActor
-public final class MemoryLogStore: ObservableObject {
-    public static let shared = MemoryLogStore()
-    @Published public private(set) var logs: [LiveLogEntry] = []
-    
-    public func append(level: MemoryLogLevel, category: String, message: String) {
-        let entry = LiveLogEntry(date: Date(), level: level, category: category, message: message)
-        if logs.count > 1000 {
-            logs.removeLast()
-        }
-        logs.insert(entry, at: 0)
-    }
-    
-    public func clear() {
-        logs.removeAll()
-    }
-}
-
-enum LogViewMode: String, CaseIterable {
-    case card = "Card"
-    case terminal = "Terminal"
-}
-
-enum LogCategoryFilter: String, CaseIterable {
-    case all = "All"
-    case core = "Core"
-    case ui = "UI"
-    case sync = "Sync"
-}
-
-struct LiveLogsViewerSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var store = MemoryLogStore.shared
-    @State private var viewMode: LogViewMode = .card
-    @State private var categoryFilter: LogCategoryFilter = .all
-    
-    var filteredLogs: [LiveLogEntry] {
-        if categoryFilter == .all { return store.logs }
-        return store.logs.filter { $0.category.lowercased() == categoryFilter.rawValue.lowercased() }
-    }
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            header
-            Divider()
-            if store.logs.isEmpty {
-                Text("Waiting for incoming logs...").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                if viewMode == .terminal {
-                    terminalView
-                } else {
-                    cardView
-                }
-            }
-            Divider()
-            footer
-        }
-        .frame(width: 800, height: 600)
-    }
-    
-    private var header: some View {
-        HStack(spacing: 16) {
-            Text(L10n.string("Activity Monitor"))
-                .font(.headline)
-            
-            Picker("", selection: $viewMode) {
-                ForEach(LogViewMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }.pickerStyle(.segmented).frame(width: 150)
-            
-            Picker("Category:", selection: $categoryFilter) {
-                ForEach(LogCategoryFilter.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }.frame(width: 150)
-            
-            Spacer()
-            
-            Button(action: { store.clear() }) {
-                Label("Clear", systemImage: "trash")
-            }
-            Button(action: exportSanitized) {
-                Label("Export Sanitized", systemImage: "lock.shield")
-            }
-        }
-        .padding()
-        .background(Color(NSColor.windowBackgroundColor))
-    }
-    
-    private var terminalView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(filteredLogs) { log in
-                    Text("[\(log.date.formatted(date: .omitted, time: .standard))] [\(log.category)] \(log.message)")
-                        .font(.system(.footnote, design: .monospaced))
-                        .foregroundColor(.green)
-                }
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-        }
-        .background(Color.black)
-    }
-    
-    private var cardView: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                ForEach(filteredLogs) { log in
-                    HStack(alignment: .top) {
-                        icon(for: log.level)
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(log.category).font(.caption).bold().foregroundStyle(.secondary)
-                                Spacer()
-                                Text(log.date.formatted()).font(.caption2).foregroundStyle(.tertiary)
-                            }
-                            Text(log.message).font(.callout).textSelection(.enabled)
-                        }
-                    }
-                    .padding(12)
-                    .background(Material.ultraThin, in: RoundedRectangle(cornerRadius: 10))
-                }
-            }
-            .padding()
-        }
-        .background(Color(NSColor.controlBackgroundColor))
-    }
-    
-    private func icon(for level: MemoryLogLevel) -> some View {
-        switch level {
-        case .error: return Image(systemName: "xmark.circle.fill").foregroundColor(.red)
-        case .info: return Image(systemName: "info.circle.fill").foregroundColor(.blue)
-        case .warn: return Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.yellow)
-        case .debug: return Image(systemName: "ladybug.fill").foregroundColor(.orange)
-        }
-    }
-    
-    private var footer: some View {
-        HStack {
-            Text("\(filteredLogs.count) events found").font(.caption).foregroundStyle(.secondary)
-            Spacer()
-            Button("Close") { dismiss() }.keyboardShortcut(.defaultAction)
-        }
-        .padding()
-        .background(Color(NSColor.windowBackgroundColor))
-    }
-    
-    private func exportSanitized() {
-        let content = filteredLogs.map { "[\($0.date)] [\($0.category)] \($0.message)" }.joined(separator: "\n")
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
-        let sanitized = content.replacingOccurrences(of: homeDir, with: "[REDACTED_HOME]")
-        
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(sanitized, forType: .string)
-    }
-}
-

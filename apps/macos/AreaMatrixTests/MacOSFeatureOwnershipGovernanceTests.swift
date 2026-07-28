@@ -23,6 +23,14 @@ final class MacOSFeatureOwnershipGovernanceTests: MacOSGovernanceTestCase {
             validationFocus: "Detail page, tag, note, metadata, log, and multi-selection tests."
         ),
         FeatureOwnerInventory(
+            name: "Diagnostics",
+            responsibility: "Runtime evidence, incident capture, user activity, developer console, and diagnostic " +
+                "package preview and inspection.",
+            riskBoundary: "Privacy-safe local evidence and explicit no-overwrite package export; business writes " +
+                "stay with their owning feature.",
+            validationFocus: "Observability ingress, storage, privacy, incident, hostile package, and projection tests."
+        ),
+        FeatureOwnerInventory(
             name: "FileActions",
             responsibility: "Rename, delete, category move, batch actions, tags, confirmations, refresh, and " +
                 "undo routing.",

@@ -28,6 +28,7 @@
 | code review、安全、依赖、CI、CODEOWNERS 治理 | `areamatrix-enterprise-governance` |
 | 「还有什么没解决」、blocker / exception / reference 遗留项 | `areamatrix-residual-ledger` |
 | Codex OS intake、preflight、evidence、closeout、dashboard | `areamatrix-codex-os` |
+| macOS SwiftUI 页面、组件、交互、用户可见文案、L10n / String Catalog | `areamatrix-macos-ui` |
 | 其他未列出任务 | 不强制 skill；按本文件与最近局部 `AGENTS.md` 执行 |
 
 同会话每个新任务都重新匹配本表；上下文被压缩或清空后，重读本文件与命中的 SKILL.md，不凭记忆沿用上一个任务的路由结论。

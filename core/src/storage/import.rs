@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 
 use crate::{
     db, overview, CoreError, CoreResult, DuplicateStrategy, FileEntry, FileOrigin, ImportOptions,
-    ImportResult, ImportSourceRemovalStatus, StorageMode,
+    StorageMode,
 };
 
 use super::{
@@ -19,80 +19,14 @@ use super::{
     validate,
 };
 
+#[path = "import/flow.rs"]
+mod flow;
 #[path = "import/import_detail.rs"]
 mod import_detail;
 
 use import_detail::{destination_detail, import_change_detail, storage_mode_detail};
 
-pub(crate) fn import_file(
-    repo_path: String,
-    source_path: String,
-    options: ImportOptions,
-) -> CoreResult<FileEntry> {
-    Ok(import_file_with_result(repo_path, source_path, options)?.entry)
-}
-
-pub(crate) fn import_file_with_result(
-    repo_path: String,
-    source_path: String,
-    options: ImportOptions,
-) -> CoreResult<ImportResult> {
-    let prepared = PreparedImport::new(repo_path, source_path, options)?;
-    if matches!(prepared.options.mode, StorageMode::Indexed) {
-        return import_indexed_file(prepared);
-    }
-
-    let mut staged = stage_source(&prepared)?;
-    let duplicate_resolution = check_duplicate(&prepared, &staged.hash_sha256)?;
-    let destination = ImportDestinationPlan::prepare(
-        &prepared.repo,
-        &prepared.target.relative_dir,
-        &prepared.target.category,
-        &prepared.target_filename,
-        duplicate_resolution,
-    )?;
-    let file_id = insert_staging_row(&prepared, &staged, &destination)?;
-    let mut db_guard = DbStagingRowGuard::new(prepared.repo.clone(), file_id);
-
-    let mut replacement_guard = commit_filesystem(&staged, &destination)?;
-    staged.staging_guard.disarm();
-    let mut final_guard = FinalFileGuard::new(
-        &prepared.options.mode,
-        destination.final_path.clone(),
-        prepared.source.clone(),
-    );
-
-    let replacement_rollback = destination
-        .replacement()
-        .map(ReplacementDbRollback::from_plan);
-    promote_import(&prepared, file_id, &destination)?;
-    let entry = db::get_active_file_by_id(&prepared.repo, file_id)?;
-    let entry = finish_overview_regeneration(
-        &prepared.repo,
-        entry,
-        replacement_rollback.as_ref(),
-        prepared.options.content_locale.as_str(),
-    )?;
-    ensure_replacement_is_recoverable_from_system_trash(
-        &mut replacement_guard,
-        &prepared.repo,
-        file_id,
-        replacement_rollback.as_ref(),
-    )?;
-
-    db_guard.disarm();
-    final_guard.disarm();
-    if let Some(guard) = &mut replacement_guard {
-        guard.disarm();
-    }
-    destination.disarm();
-    let source_removal = finalize_source_removal(&prepared.options.mode, &prepared.source);
-    Ok(ImportResult {
-        entry,
-        source_removal_status: source_removal.status,
-        source_removal_failure: source_removal.failure,
-    })
-}
+pub(crate) use flow::{import_file, import_file_with_result, import_file_with_trace};
 
 struct PreparedImport {
     repo: PathBuf,
@@ -171,12 +105,19 @@ struct IndexedImportCommit {
     replacement_rollback: Option<ReplacementDbRollback>,
 }
 
-fn stage_source(prepared: &PreparedImport) -> CoreResult<StagedImport> {
-    let staging_guard = match prepared.options.mode {
+fn create_staging(prepared: &PreparedImport) -> CoreResult<StagingFileGuard> {
+    let guard = match prepared.options.mode {
         StorageMode::Copied => StagingFileGuard::create_for_copy(&prepared.repo)?,
         StorageMode::Moved => StagingFileGuard::create_for_move(&prepared.repo)?,
         StorageMode::Indexed => return Err(CoreError::internal("internal error")),
     };
+    Ok(guard)
+}
+
+fn fingerprint_staged_source(
+    prepared: &PreparedImport,
+    staging_guard: StagingFileGuard,
+) -> CoreResult<StagedImport> {
     let hashed_copy = match prepared.options.mode {
         StorageMode::Copied | StorageMode::Moved => {
             hash::copy_and_hash(&prepared.source, staging_guard.path())?
@@ -212,48 +153,6 @@ fn check_duplicate(
         }
     }
     dedup::resolve_duplicate(&prepared.options.duplicate_strategy, None)
-}
-
-fn import_indexed_file(prepared: PreparedImport) -> CoreResult<ImportResult> {
-    let fingerprint = hash::hash_file(&prepared.source)?;
-    let duplicate_resolution = check_duplicate(&prepared, &fingerprint.hash_sha256)?;
-
-    let mut commit = match duplicate_resolution {
-        dedup::DuplicateResolution::Overwrite { existing, .. } => {
-            insert_replacing_indexed_row(&prepared, &fingerprint, existing)?
-        }
-        dedup::DuplicateResolution::NoDuplicate | dedup::DuplicateResolution::KeepBoth => {
-            IndexedImportCommit {
-                file_id: insert_indexed_row(&prepared, &fingerprint)?,
-                replacement_guard: None,
-                replacement_rollback: None,
-            }
-        }
-    };
-    let mut db_guard = DbStagingRowGuard::new(prepared.repo.clone(), commit.file_id);
-    let entry = db::get_active_file_by_id(&prepared.repo, commit.file_id)?;
-    let entry = finish_overview_regeneration(
-        &prepared.repo,
-        entry,
-        commit.replacement_rollback.as_ref(),
-        prepared.options.content_locale.as_str(),
-    )?;
-    ensure_replacement_is_recoverable_from_system_trash(
-        &mut commit.replacement_guard,
-        &prepared.repo,
-        commit.file_id,
-        commit.replacement_rollback.as_ref(),
-    )?;
-
-    db_guard.disarm();
-    if let Some(guard) = &mut commit.replacement_guard {
-        guard.disarm();
-    }
-    Ok(ImportResult {
-        entry,
-        source_removal_status: ImportSourceRemovalStatus::NotRequested,
-        source_removal_failure: None,
-    })
 }
 
 fn finish_overview_regeneration(
@@ -310,10 +209,10 @@ fn ensure_replacement_is_recoverable_from_system_trash(
     repo: &Path,
     file_id: i64,
     replacement_rollback: Option<&ReplacementDbRollback>,
-) -> CoreResult<()> {
+) -> CoreResult<bool> {
     if let Some(guard) = replacement_guard {
         match guard.ensure_system_trash_copy() {
-            Ok(()) => {}
+            Ok(used_fallback) => return Ok(used_fallback),
             Err(error) => {
                 let rollback_error = replacement_rollback
                     .and_then(|rollback| rollback.rollback(repo, file_id).err());
@@ -321,7 +220,7 @@ fn ensure_replacement_is_recoverable_from_system_trash(
             }
         }
     }
-    Ok(())
+    Ok(false)
 }
 
 fn promote_import(

@@ -66,7 +66,7 @@ enum ImportSingleFileImportStatus: Equatable {
         case let .importing(mode):
             mode.importingDisplayText
         case let .imported(entry):
-            L10n.display("import.single.imported-file", arguments: [.string(entry.currentName)])
+            entry.importCompletionDisplayText
         case let .failed(mapping):
             .localized(mapping.userMessageDescriptor)
         case let .blocked(message):
@@ -77,7 +77,20 @@ enum ImportSingleFileImportStatus: Equatable {
     }
 }
 
-enum ImportSingleFileStorageMode: String, CaseIterable, Codable, Equatable, Identifiable {
+extension FileEntrySnapshot {
+    var importCompletionMessage: LocalizedMessage {
+        if importCommitState.isDegraded {
+            return L10n.message("import.single.source-retained", arguments: [.string(currentName)])
+        }
+        return L10n.message("import.single.imported-file", arguments: [.string(currentName)])
+    }
+
+    var importCompletionDisplayText: AppDisplayText {
+        .localized(importCompletionMessage)
+    }
+}
+
+enum ImportSingleFileStorageMode: String, CaseIterable, Codable, Equatable, Identifiable, Sendable {
     case copy = "Copy"
     case move = "Move"
     case indexOnly = "Index-only"

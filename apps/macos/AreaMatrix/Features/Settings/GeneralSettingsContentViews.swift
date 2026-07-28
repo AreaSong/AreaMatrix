@@ -48,6 +48,7 @@ struct GeneralSettingsLoadedContent: View {
     @EnvironmentObject private var localizer: AppLocalizer
     @EnvironmentObject private var languageStore: AppLanguageStore
     @ObservedObject var model: GeneralSettingsModel
+    let onOpenLanguageSettings: () -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -144,18 +145,11 @@ struct GeneralSettingsLoadedContent: View {
 
     private var languageSection: some View {
         SettingsFormSection(title: L10n.string("settings.language.section")) {
-            Picker(L10n.string("settings.language.interface.title"), selection: interfaceLanguageSelection) {
-                ForEach(AppLanguage.allCases) { language in
-                    Text(localizer.resolve(language.displayMessage)).tag(language)
-                }
+            LabeledContent(L10n.string("settings.language.interface.title")) {
+                Text(localizer.resolve(languageStore.selection.displayMessage))
             }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 360)
-            .accessibilityIdentifier("general-settings-interface-language-picker")
-
-            Text(L10n.string("settings.language.interface.description"))
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            Button(L10n.string("settings.language.openSettings"), action: onOpenLanguageSettings)
+                .accessibilityIdentifier("general-settings-open-language-settings")
         }
     }
 
@@ -215,13 +209,6 @@ struct GeneralSettingsLoadedContent: View {
                     await model.requestOverviewOutput(output)
                 }
             }
-        )
-    }
-
-    private var interfaceLanguageSelection: Binding<AppLanguage> {
-        Binding(
-            get: { languageStore.selection },
-            set: languageStore.select
         )
     }
 }

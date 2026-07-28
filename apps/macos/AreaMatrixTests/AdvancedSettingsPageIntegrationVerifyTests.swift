@@ -12,7 +12,6 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         await context.model.load()
         context.model.requestDiagnosticsExport()
         await context.model.collectDiagnostics()
-        context.model.openLogsFolder()
         context.model.copyDiagnosticSummary()
         await context.model.requestOverviewOutput(.rootAreaMatrixFile)
         XCTAssertEqual(context.model.pendingRootOverviewStatus, .missing)
@@ -70,25 +69,6 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
         XCTAssertNil(model.draft)
         XCTAssertNil(model.savedConfig)
         XCTAssertFalse(model.hasRetryableSave)
-    }
-
-    @MainActor
-    func testAdvancedSettingsLogFolderFailureKeepsPageLoadedWithRecoverableError() async {
-        let model = await loadedAdvancedSettingsModel(
-            logsOpener: RecordingAdvancedSettingsLogsOpener(result: .failure(AdvancedSettingsLogFolderError.missing(
-                "/tmp/repo/.areamatrix/logs"
-            )))
-        )
-
-        model.openLogsFolder()
-
-        XCTAssertEqual(model.loadState, .loaded)
-        XCTAssertEqual(model.actionFeedback, .failed(AdvancedSettingsError(
-            message: L10n.message("Open logs folder failed"),
-            recovery: L10n.message(
-                "Check that .areamatrix/logs exists, then retry after Core logging is initialized."
-            )
-        )))
     }
 
     @MainActor
@@ -153,7 +133,6 @@ private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSet
     XCTAssertNil(context.model.versionError)
     XCTAssertEqual(context.model.diagnosticsState, .collected(context.diagnosticsSnapshot))
     await context.diagnosticsCollector.assertRequestedRepoPaths([context.repoURL.path])
-    context.logsOpener.assertOpenedRepoPaths([context.repoURL.path])
     context.summaryCopier.assertCopiedSummary(contains: [
         L10n.format(
             "advanced.diagnosticSummary",
@@ -163,7 +142,7 @@ private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSet
             "v3",
             "GeneratedOnly",
             "false"
-        )
+        ),
     ])
 }
 
@@ -196,7 +175,6 @@ private struct AdvancedSettingsIntegrationContext {
     let generatedOverviewURL: URL
     let diagnosticsSnapshot: DiagnosticsSnapshotSnapshot
     let diagnosticsCollector: ShellRecordingDiagnosticsCollector
-    let logsOpener: RecordingAdvancedSettingsLogsOpener
     let summaryCopier: RecordingAdvancedDiagnosticCopier
     let bridge: CoreBridge
     let model: AdvancedSettingsModel
@@ -226,13 +204,11 @@ private func makeAdvancedSettingsIntegrationContext() async throws -> AdvancedSe
         warnings: ["index.db-wal disappeared during snapshot"]
     )
     let diagnosticsCollector = ShellRecordingDiagnosticsCollector(result: .success(diagnosticsSnapshot))
-    let logsOpener = RecordingAdvancedSettingsLogsOpener(logsPath: advancedSettingsLogsPath(repoURL: repoURL))
     let summaryCopier = RecordingAdvancedDiagnosticCopier()
     let model = advancedSettingsIntegrationModel(
         repoURL: repoURL,
         bridge: bridge,
         diagnosticsCollector: diagnosticsCollector,
-        logsOpener: logsOpener,
         summaryCopier: summaryCopier
     )
 
@@ -249,7 +225,6 @@ private func makeAdvancedSettingsIntegrationContext() async throws -> AdvancedSe
             .appendingPathComponent("root.md"),
         diagnosticsSnapshot: diagnosticsSnapshot,
         diagnosticsCollector: diagnosticsCollector,
-        logsOpener: logsOpener,
         summaryCopier: summaryCopier,
         bridge: bridge,
         model: model
@@ -264,8 +239,6 @@ private func makeAdvancedSettingsSourceFixture() throws -> (rootURL: URL, source
 }
 
 private func makeAdvancedSettingsRepositoryFiles(repoURL: URL) throws -> URL {
-    try FileManager.default.createDirectory(at: URL(fileURLWithPath: advancedSettingsLogsPath(repoURL: repoURL)),
-                                            withIntermediateDirectories: true)
     let readmeURL = repoURL.appendingPathComponent("README.md")
     try "user readme\n".write(to: readmeURL, atomically: true, encoding: .utf8)
     return readmeURL
@@ -276,7 +249,6 @@ private func advancedSettingsIntegrationModel(
     repoURL: URL,
     bridge: CoreBridge,
     diagnosticsCollector: ShellRecordingDiagnosticsCollector,
-    logsOpener: RecordingAdvancedSettingsLogsOpener,
     summaryCopier: RecordingAdvancedDiagnosticCopier
 ) -> AdvancedSettingsModel {
     AdvancedSettingsModel(
@@ -288,14 +260,9 @@ private func advancedSettingsIntegrationModel(
         appVersionReader: StaticAppVersionReader(version: "9.8.7 (654)"),
         coreVersionReader: StaticCoreVersionReader(version: "0.1.0-test"),
         metadataReader: SQLiteExistingRepositoryMetadataReader(),
-        logsOpener: logsOpener,
         summaryCopier: summaryCopier,
         errorMapper: bridge
     )
-}
-
-private func advancedSettingsLogsPath(repoURL: URL) -> String {
-    RepositoryMetadataPath.logsURL(repoPath: repoURL.path).path
 }
 
 private func advancedSettingsDiagnosticsPath(repoURL: URL) -> String {
@@ -313,10 +280,8 @@ private func loadedAdvancedSettingsModel(
             snapshotPath: "/tmp/repo/.areamatrix/diagnostics/advanced-settings-diagnostics.db",
             createdAt: 1_778_000_000
         )
-    )),
-    logsOpener: (any AdvancedSettingsLogFolderOpening)? = nil
+    ))
 ) async -> AdvancedSettingsModel {
-    let resolvedLogsOpener = logsOpener ?? RecordingAdvancedSettingsLogsOpener(logsPath: "/tmp/repo/.areamatrix/logs")
     let model = AdvancedSettingsModel(
         repoPath: "/tmp/repo",
         loader: StaticConfigurationLoader(config: .advancedSettingsFixture(repoPath: "/tmp/repo")),
@@ -326,7 +291,6 @@ private func loadedAdvancedSettingsModel(
         appVersionReader: StaticAppVersionReader(version: "1.0.0"),
         coreVersionReader: StaticCoreVersionReader(version: "0.1.0"),
         metadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
-        logsOpener: resolvedLogsOpener,
         summaryCopier: RecordingAdvancedDiagnosticCopier(),
         errorMapper: CoreBridge()
     )

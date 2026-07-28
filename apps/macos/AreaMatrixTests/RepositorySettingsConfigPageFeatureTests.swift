@@ -3,6 +3,58 @@ import XCTest
 
 final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
     @MainActor
+    func testLanguageSettingsLoadsCurrentRepositoryLanguageWithoutWritingConfig() async {
+        let config = AppRepoConfigSnapshot.testFixture(repoPath: "/tmp/repo") {
+            $0.revision = 7
+            $0.locale = "zh-Hans"
+        }
+        let loader = RecordingConfigurationLoader(result: .success(config))
+        let updater = RecordingConfigurationUpdater(result: .success(()))
+        let model = RepositorySettingsConfigModel(
+            repoPath: "/tmp/repo",
+            loader: loader,
+            updater: updater,
+            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+        )
+
+        await model.load()
+
+        await loader.assertRequestedPaths(["/tmp/repo"])
+        await updater.assertNoConfigurationUpdateRequests()
+        XCTAssertEqual(model.loadedConfig, config)
+        XCTAssertNil(model.loadError)
+    }
+
+    @MainActor
+    func testLanguageSettingsSaveChangesOnlyContentLanguage() async {
+        let current = AppRepoConfigSnapshot.testFixture(repoPath: "/tmp/repo") {
+            $0.revision = 4
+            $0.overviewOutput = "RootAreaMatrixFile"
+            $0.locale = "system"
+            $0.iCloudWarn = false
+            $0.fallbackToInbox = false
+        }
+        let updater = RecordingConfigurationUpdater(result: .success(()))
+        let model = RepositorySettingsConfigModel(
+            repoPath: "/tmp/repo",
+            updater: updater,
+            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+        )
+
+        let didSave = await model.saveContentLanguage(.en, currentConfig: current)
+
+        XCTAssertTrue(didSave)
+        await updater.assertConfigurationUpdateRequests([RecordingConfigurationUpdater.Request(
+            repoPath: "/tmp/repo",
+            config: current.withRepositorySettingsRepositorySettingsCoreLocale("en")
+        )])
+        XCTAssertEqual(model.loadedConfig?.revision, 5)
+        XCTAssertEqual(model.loadedConfig?.overviewOutput, "RootAreaMatrixFile")
+        XCTAssertEqual(model.loadedConfig?.iCloudWarn, false)
+        XCTAssertEqual(model.loadedConfig?.fallbackToInbox, false)
+    }
+
+    @MainActor
     func testRepositorySettingsCrossPlatformRepositorySettingsCoreSavesRepositoryConfigThroughUpdateConfig() async {
         let current = AppRepoConfigSnapshot.repositorySettingsConfigFixture(repoPath: "/tmp/repo")
         let updater = RecordingConfigurationUpdater(result: .success(()))
