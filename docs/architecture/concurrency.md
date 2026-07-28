@@ -31,7 +31,8 @@ flowchart LR
 - `CoreBridge` 是 actor，但隔离只作用于同一个实例。
 - 应用可以创建多个 `CoreBridge` 实例，不存在进程级全局写队列。
 - 跨实例和跨调用的数据库协调依赖 SQLite WAL、事务和 `busy_timeout`。
-- 当前 Core 不使用 Tokio runtime，也不暴露 async FFI、cancel handle 或 progress callback。
+- 当前 Core 不使用 Tokio runtime，也不暴露 async FFI、cancel handle 或 progress callback；结构化可观测性使用
+  专用的有界 delivery/callback worker，不是通用 async runtime。
 
 ## SwiftUI 与 MainActor
 
@@ -76,7 +77,7 @@ let result = try await Task.detached(priority: .userInitiated) {
 
 ## Rust Core
 
-Core 函数在调用线程同步执行。耗时来源包括：
+业务 Core 函数在调用线程同步执行。耗时来源包括：
 
 - 文件 metadata 和 hash。
 - SQLite 查询与事务。
@@ -84,6 +85,23 @@ Core 函数在调用线程同步执行。耗时来源包括：
 - 扫描、恢复和概览生成。
 
 Core 不持有 macOS watcher，不调用 AppKit，也不启动内部 Tokio worker。平台并发由 Swift 管理，Core 负责单次调用的业务一致性。
+
+## 可观测性并发
+
+可观测性为了隔离业务调用与平台 sink，使用两层有界交付：
+
+1. Core submit 在 source redaction 后进入按事件数和估算字节数受限的优先级队列；拥塞时优先保留较高级别事件并
+   累计 drop counter，不阻塞用户文件或 DB 操作。
+2. `areamatrix-observability` delivery thread 从队列取事件，再交给
+   `areamatrix-observability-callback` thread。每次 callback 最多等待 1 秒；超时、panic 或断开会降级健康并
+   断开失败 sink。
+3. Swift `CoreObservabilitySinkAdapter` 的同步 callback 只入一个 4,096 项的有界 ingress；`AsyncStream`
+   consumer 再异步调用 `ObservabilityHub` actor。平台 ingress 同样按 severity 替换低优先级事件并单独报告 drop。
+4. `ObservabilityHub` actor 串行协调 OSLog/signpost、内存、rolling JSONL、manifest ownership、incident 和健康；
+   SwiftUI 只读取 snapshot，不在 callback 或 View 中做文件 IO。
+
+停止顺序先停止新业务事件并等待 Core flush，再关闭 Swift ingress、drain adapter、flush/close Hub store。任一层
+超时或 writer 失败只形成 degraded health；它不会回滚或重试已经完成的业务操作。
 
 ## SQLite
 

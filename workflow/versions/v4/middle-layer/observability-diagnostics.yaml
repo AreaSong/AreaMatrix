@@ -27,8 +27,8 @@ docs_refs:
 insertions:
   - target: Runtime observability and user support diagnostics
     reason: Unknown failures need a privacy-safe causal record shared by users, testers, support, and developers.
-    before: Swift has a partial OSLog and memory-viewer prototype while Rust emits only a synthetic startup callback and unconnected tracing events.
-    after: One versioned event contract connects semantic actions, Bridge calls, Core spans, storage outcomes, incidents, local UI, and portable diagnostics.
+    before: Runtime evidence was fragmented across transactional logs, page errors, repository snapshots, and incomplete platform logging paths.
+    after: The implemented versioned event contract connects semantic actions, Bridge calls, Core spans, storage outcomes, incidents, the independent Diagnostics UI, and portable diagnostics; fresh completion evidence remains pending.
 links:
   - feature: v3-bilingual-architecture
     relationship: consumes-operation-identity-and-localized-presentation
@@ -116,7 +116,7 @@ slice_plan:
   - id: completion-and-governance
     purpose: Prove failure isolation, performance, privacy, compatibility, documentation, and review readiness.
     inputs:
-      - complete product implementation
+      - implemented product behavior with synchronized Exact Docs
     outputs:
       - fresh full validation evidence and documented residual risk
     acceptance:

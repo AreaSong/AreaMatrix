@@ -230,6 +230,10 @@ enum AppCoreServices {
         coreBridge()
     }
 
+    static var observabilityController: any CoreObservabilityControlling {
+        coreBridge()
+    }
+
     private static func coreBridge() -> CoreBridge {
         CoreBridge()
     }

@@ -13,7 +13,7 @@ final class ObservabilityRuntimeAssembly: ObservableObject {
     private let sink: CoreObservabilitySinkAdapter
     private let traceContextFactory: ObservabilityTraceContextFactory
     private let configuredSessionStore: ObservabilitySessionLifecycleStore?
-    private let sessionID: String
+    let sessionID: String
     private let scheduler: ObservabilityRuntimeScheduler
     private var resolvedSessionStore: ObservabilitySessionLifecycleStore?
     private var startupTask: Task<Void, Never>?
@@ -29,7 +29,7 @@ final class ObservabilityRuntimeAssembly: ObservableObject {
 
     init(
         hub: ObservabilityHub = .shared,
-        core: any CoreObservabilityControlling = CoreBridge(),
+        core: any CoreObservabilityControlling = AppCoreServices.observabilityController,
         resourceIdentityProvider: ObservabilityResourceIdentityProvider = .shared,
         sessionStore: ObservabilitySessionLifecycleStore? = nil,
         sessionID: String = ObservabilityProcessIdentity.sessionID,
@@ -92,10 +92,6 @@ final class ObservabilityRuntimeAssembly: ObservableObject {
         return await hub.configurationSnapshot()
     }
 
-    func sessionIDSnapshot() -> String {
-        sessionID
-    }
-
     func removeLocalLogs() async throws {
         await ensureStarted()
         guard state == .running else { throw ObservabilityRuntimeError.notRunning }
@@ -155,8 +151,7 @@ final class ObservabilityRuntimeAssembly: ObservableObject {
         sourceURL: URL? = nil,
         storageMode: StorageMode? = nil
     ) async -> CoreTraceContext {
-        await ensureStarted()
-        return await traceContextFactory.make(.init(
+        await makeCoreTraceContext(.init(
             traceID: traceID,
             parentSpanID: parentSpanID,
             operationID: operationID,
@@ -167,6 +162,11 @@ final class ObservabilityRuntimeAssembly: ObservableObject {
             sourceURL: sourceURL,
             storageMode: storageMode
         ))
+    }
+
+    func makeCoreTraceContext(_ request: ObservabilityTraceContextRequest) async -> CoreTraceContext {
+        await ensureStarted()
+        return await traceContextFactory.make(request)
     }
 }
 

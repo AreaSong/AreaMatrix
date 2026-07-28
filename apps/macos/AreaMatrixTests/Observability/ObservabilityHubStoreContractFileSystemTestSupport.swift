@@ -62,6 +62,15 @@ final class ManifestPersistRecorder: @unchecked Sendable {
         lock.unlock()
     }
 
+    func failNextCalls(_ count: Int) {
+        guard count > 0 else { return }
+        lock.lock()
+        for offset in 1 ... count {
+            failingCalls.insert(storedCallCount + offset)
+        }
+        lock.unlock()
+    }
+
     func makeNextCallUncertain() {
         lock.lock()
         uncertainCalls.insert(storedCallCount + 1)
@@ -233,4 +242,84 @@ func isSequentialEventFileName(_ name: String) -> Bool {
 func contractPermissions(at url: URL) throws -> Int {
     let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
     return (attributes[.posixPermissions] as? NSNumber)?.intValue ?? 0
+}
+
+extension ObservabilityStoreManifestV2Tests {
+    func manifest(entries: [ObservabilityStoreManifestEntry]) -> ObservabilityStoreManifest {
+        ObservabilityStoreManifest(schemaVersion: 2, nextEventSequence: 1, entries: entries)
+    }
+
+    func entry(
+        _ name: String,
+        kind: ObservabilityStoreManifestFileKind,
+        disposition: ObservabilityStoreManifestDisposition,
+        committedBytes: Int64? = nil
+    ) -> ObservabilityStoreManifestEntry {
+        ObservabilityStoreManifestEntry(
+            name: name,
+            kind: kind,
+            disposition: disposition,
+            committedBytes: committedBytes
+        )
+    }
+
+    func eventName(_ sequence: UInt64) -> String {
+        String(format: "events-%020llu.jsonl", sequence)
+    }
+
+    func manifestURL(_ logsURL: URL) -> URL {
+        logsURL.appendingPathComponent("manifest.json")
+    }
+
+    func entryMap(
+        _ manifest: ObservabilityStoreManifest
+    ) -> [String: ObservabilityStoreManifestEntry] {
+        Dictionary(uniqueKeysWithValues: manifest.entries.map { ($0.name, $0) })
+    }
+
+    func eventLine(id: String) throws -> Data {
+        try encodedLine(contractEvent(id: id, sessionID: "migration-session"))
+    }
+
+    func incidentJournalData(
+        id: String,
+        eventID: String? = nil,
+        legacyEvent: Bool = false
+    ) throws -> Data {
+        var data = try encodedLine(ObservabilityIncidentRecord.header(
+            contractIncident(id: id, sessionID: "legacy-session")
+        ))
+        if let eventID {
+            try data.append(incidentEventLine(id: id, eventID: eventID, legacy: legacyEvent))
+        }
+        return data
+    }
+
+    func incidentEventLine(id: String, eventID: String, legacy: Bool = false) throws -> Data {
+        var event = contractEvent(id: eventID, sessionID: "legacy-session")
+        event.incidentID = id
+        if legacy {
+            event.schemaVersion = 1
+            event.buildContext = nil
+        }
+        return try encodedLine(ObservabilityIncidentRecord.event(id, event))
+    }
+
+    func encodedLine(_ value: some Encodable) throws -> Data {
+        var data = try JSONEncoder().encode(value)
+        data.append(0x0A)
+        return data
+    }
+
+    func rawEntry(_ name: String, kind: String, disposition: String) -> [String: Any] {
+        ["name": name, "kind": kind, "disposition": disposition]
+    }
+
+    func rawManifest(schemaVersion: Int, entries: [[String: Any]]) throws -> Data {
+        try JSONSerialization.data(withJSONObject: [
+            "schema_version": schemaVersion,
+            "next_event_sequence": 1,
+            "entries": entries
+        ], options: [.sortedKeys])
+    }
 }

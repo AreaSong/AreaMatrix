@@ -56,7 +56,7 @@ tracked tree 的主要组成是：`workflow` 2,417 个条目、`apps` 1,107 个�
 | 领域 | 当前结论 |
 |---|---|
 | 正式客户端 | SwiftUI macOS 原生应用，单一 `WindowGroup`，窗口内路由承载 onboarding、主工作区、设置、导入和恢复。 |
-| Core | 平台无关 Rust Core，通过 117 个 UDL 公开函数向客户端提供资料库、文件、查询、AI、同步和恢复能力。 |
+| Core | 平台无关 Rust Core，通过 UDL 公开函数向客户端提供资料库、文件、查询、AI、同步、恢复和结构化可观测性。 |
 | 数据 | SQLite 中定义 21 张业务与恢复表；用户原文件仍是资料内容源，`.areamatrix/` 保存应用元数据和生成内容。 |
 | 资料库 | 支持创建空资料库、接管已有非空目录、路径校验、扫描恢复、重新索引、元数据修复和诊断。 |
 | 文件管理 | 支持 Copy、Move、Index-only 导入，单项与批量整理，重复/冲突处理，Trash 删除和受支持动作的 Undo/Redo。 |
@@ -88,11 +88,11 @@ Core 不依赖 macOS 专属 API。目录选择、Finder、Trash、Keychain、iCl
 
 ## Rust Core 已实现能力
 
-`core/area_matrix.udl:2-564` 暴露 117 个公开函数。下面按产品职责归并，而不是按文件逐个罗列。
+`core/area_matrix.udl` 暴露公开函数、DTO、enum 和 callback。下面按产品职责归并，而不是复制易漂移的函数计数。
 
 | 能力组 | 已实现内容 | 代表性 Core API |
 |---|---|---|
-| 运行时与绑定合同 | 版本、日志初始化、绑定兼容性检查、平台能力矩阵、统一错误映射。 | `get_version`、`init_logging`、`inspect_binding_contract`、`get_platform_capabilities`、`map_core_error` |
+| 运行时与绑定合同 | 版本、结构化 observability 初始化/更新/健康/flush、兼容日志入口、绑定兼容性检查、平台能力矩阵、统一错误映射。 | `get_version`、`initialize_observability`、`update_observability_config`、`get_observability_health`、`flush_observability`、`init_logging`、`inspect_binding_contract` |
 | 资料库生命周期 | 路径校验、创建或接管、配置读取与 CAS 更新、启动恢复、手动 rescan/reindex、扫描会话恢复、诊断、元数据修复。 | `validate_repo_path`、`init_repo`、`load_repo_config`、`update_repo_config`、`recover_on_startup`、`reindex_from_filesystem`、`repair_metadata` |
 | 概览生成 | 内容语言状态、生成计划、启动、提交、查询、启动恢复、继续、取消和回滚。 | `prepare_overview_regeneration`、`start_overview_regeneration`、`commit_overview_regeneration`、`resume_overview_regeneration`、`rollback_overview_regeneration` |
 | 导入与文件存储 | 分类预测、Copy/Move/Indexed 导入、删除到 Trash、移除索引、单文件重命名和改分类。 | `predict_category`、`import_file_with_result`、`delete_file`、`remove_index_entry`、`rename_file`、`move_to_category` |
@@ -168,7 +168,7 @@ Core API 的产品合同和错误语义集中在 `docs/api/core-api.md:2900-3023
 | `mainRepoError` | 重试、重新连接、修复、诊断、Finder reveal，并区分外部移除。 | 错误插图/图标、glass actions、dialog 和 sheet；随重试状态显示进度。证据：`RepositoryErrorView.swift:68-249`。 |
 | `dbRepairConfirm` | startup recovery、repair preflight、内容语言、metadata-only 确认、诊断、repair 或 rescan。 | 高风险警告层级、步骤和结果状态；执行时使用 progress，确认时使用 dialog。证据：`DatabaseRepairConfirmView.swift:43-195`。 |
 | `settingsRepository` | 这是取消或过渡期间的 repository settings fallback，不是完整设置页。 | `ContentUnavailableView`，只有标准 route 过渡。证据：`OnboardingIntroStepViews.swift:4-12`。 |
-| `settingsGeneral` | 完整七栏设置工作区。 | sidebar shell、material 分区、内容延迟进入；普通设置控件只做 hover、selection 和 sheet 过渡。证据：`GeneralSettingsView.swift:44-110`。 |
+| `settingsGeneral` | 完整九栏设置工作区，包含独立 Diagnostics Tab。 | sidebar shell、material 分区、内容延迟进入；普通设置控件只做 hover、selection 和 sheet 过渡。证据：`GeneralSettingsView.swift`。 |
 | `importProgress` | 导入队列、单项执行状态、停止在安全点、重试当前项、诊断和 Finder。 | 每项 `ProgressView`、状态色和结果切换；无 Welcome 式连续动画。证据：`ImportProgressView.swift:43-108`。 |
 | `importResult` | Imported/Skipped/Failed 过滤、逐项详情、标签建议、已有文件、失败重试、change log 和脱敏导出。 | 结果筛选切换、状态图标、sheet/alert、页面进入动画。证据：`ImportResultView.swift:18-115,170-228`。 |
 | `mainEmpty` | 进入三栏主工作区，但资料库当前没有可展示文件。 | 通用 empty-state：图标 glow、标题/正文/按钮 stagger、CTA shimmer 和 hover。 |
@@ -311,8 +311,9 @@ Overlay 使用 0.8 秒级 motion token、material、阴影和淡入/移除；toa
 | Classifier | 规则列表和编辑器、CRUD、打开 YAML、恢复最后有效配置、恢复默认、validation 和影响预览。 | 选择高亮、editor state、validation feedback、sheet；影响预览的最终 apply 仍未开放。 |
 | AI | 总开关、provider preference、分类/摘要/标签/语义功能 toggle、本地模型、远程 Provider、隐私、调用日志和 pause 状态。 | Toggle、segmented choice、状态 badge、嵌套 sheet 和确认 dialog；无持续背景动画。 |
 | Integrations | iCloud 状态、风险提示、冲突列表和 Finder 入口。 | 云状态图标、warning、loading、list transition 和 sheet。 |
-| Advanced | recovery tools、诊断、日志、概览输出、root `AREAMATRIX.md`、Replace import toggle。 | 高影响项使用 warning card 与二次确认；诊断使用 progress/result。 |
-| About | App/Core/Bridge 版本、licenses、HTTPS links、脱敏诊断、日志，以及内嵌 Platform Capabilities / binding contract 检查。 | 信息分区、link hover、progress/result；不做品牌级动画。 |
+| Diagnostics | mode/lease、health、activity、incident、Trace Console、`.amdiagnostic` 预览/保存/离线打开和受管理日志删除。 | 独立一级 Tab；模式和敏感选择需确认，离线包按不可信输入校验。 |
+| Advanced | recovery tools、repository metadata snapshot、Diagnostics 跳转、概览输出、root `AREAMATRIX.md`、Replace import toggle。 | 高影响项使用 warning card 与二次确认。 |
+| About | App/Core/Bridge 版本、licenses、HTTPS links、脱敏文本诊断、Diagnostics 跳转，以及内嵌 Platform Capabilities / binding contract 检查。 | 信息分区、link hover、progress/result；不做品牌级动画。 |
 
 设置窗口并不是 SwiftUI 独立 `Settings` Scene，而是主窗口 route。整个工作区使用 sidebar shell，内容视图在切换后延迟进入（`GeneralSettingsView.swift:44-52`）。
 
@@ -672,7 +673,7 @@ macOS 手写 UI 中未检索到 `accessibilityReduceMotion`、`reduceMotion` 或
 
 - `scripts/dev_tools/`、`dev`、`task-loop` 和 `scripts/task_loop/` 是构建、检查、workflow、release、Codex OS 和静默任务循环工具，不是终端用户功能。
 - `workflow/versions/**`、`workflow/templates/**`、`tasks/**` 和 `.codex/**` 是版本规划、prompt execution、证据、任务和代理运行材料；其中 v1 历史 execution 已完成或归档的任务状态不能冒充当前产品功能。
-- `apps/macos/AreaMatrix/Bridge/Generated/**` 是 UniFFI 生成绑定，负责把 117 个 UDL API 映射到 Swift；大量重复类型和序列化代码不是额外业务能力。
+- `apps/macos/AreaMatrix/Bridge/Generated/**` 是 UniFFI 生成绑定，负责把 UDL API 映射到 Swift；大量重复类型和序列化代码不是额外业务能力。
 - `assets/brand/**`、macOS asset catalog 和 AppIcon 是正式品牌资源；`assets/prototypes/landing/index.html`、`assets/prototypes/workspace/index.html` 及其修补脚本是视觉原型/参考，不是当前 App 内的网页页面。正式 macOS UI 已是 SwiftUI，不使用这些 prototype 充当运行时界面。
 - iOS/Windows/Linux 的 test projects、Core contract tests 和 UI smoke tests证明相应边界可被自动核验，但不等同于已签名、已分发或正式支持。
 - 历史 prompt execution 的完成度只证明任务材料和执行证据覆盖，不等于正式分发完成。

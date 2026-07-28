@@ -42,6 +42,10 @@ extension ObservabilityRuntimeAssembly {
         case stopping
         case stopped
     }
+
+    func sessionIDSnapshot() -> String {
+        sessionID
+    }
 }
 
 struct ObservabilityRuntimeScheduler {

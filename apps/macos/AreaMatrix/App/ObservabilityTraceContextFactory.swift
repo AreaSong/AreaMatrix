@@ -12,7 +12,11 @@ struct ObservabilityTraceContextRequest {
     let storageMode: StorageMode?
 }
 
-struct ObservabilityTraceContextFactory {
+protocol CoreImportTraceContextProviding: Sendable {
+    func make(_ request: ObservabilityTraceContextRequest) async -> CoreTraceContext
+}
+
+struct ObservabilityTraceContextFactory: CoreImportTraceContextProviding {
     let hub: ObservabilityHub
     let resourceIdentityProvider: ObservabilityResourceIdentityProvider
     let sessionID: String

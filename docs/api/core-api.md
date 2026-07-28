@@ -2849,45 +2849,23 @@ callback interface CoreLogCallback {
 };
 
 enum ObservabilityMode {
-    "Disabled",
-    "Standard",
-    "Diagnostic",
-    "Developer"
+    "Disabled", "Standard", "Diagnostic", "Developer"
 };
 
 enum ObservabilitySeverity {
-    "Trace",
-    "Debug",
-    "Info",
-    "Warn",
-    "Error"
+    "Trace", "Debug", "Info", "Warn", "Error"
 };
 
 enum ObservabilityLayer {
-    "SwiftUi",
-    "Platform",
-    "Bridge",
-    "Core",
-    "Database",
-    "Filesystem",
-    "Network"
+    "SwiftUi", "Platform", "Bridge", "Core", "Database", "Filesystem", "Network"
 };
 
 enum ObservabilityOutcome {
-    "None",
-    "Started",
-    "Succeeded",
-    "Failed",
-    "Cancelled",
-    "Skipped",
-    "Degraded"
+    "None", "Started", "Succeeded", "Failed", "Cancelled", "Skipped", "Degraded"
 };
 
 enum ObservabilityPrivacy {
-    "Public",
-    "Pseudonymous",
-    "Sensitive",
-    "Prohibited"
+    "Public", "Pseudonymous", "Sensitive", "Prohibited"
 };
 
 dictionary ObservabilityConfig {
@@ -2896,15 +2874,6 @@ dictionary ObservabilityConfig {
     ObservabilitySeverity minimum_severity;
     u64 queue_capacity;
     boolean include_sensitive;
-};
-
-dictionary ObservabilityBuildContext {
-    string producer;
-    string version;
-    string? build;
-    string configuration;
-    string platform;
-    string architecture;
 };
 
 dictionary CoreTraceContext {
@@ -2938,6 +2907,15 @@ dictionary CoreObservabilityError {
     string code;
     string? kind;
     string? technical_details;
+};
+
+dictionary ObservabilityBuildContext {
+    string producer;
+    string version;
+    string? build;
+    string configuration;
+    string platform;
+    string architecture;
 };
 
 dictionary CoreObservabilityEvent {
@@ -3304,8 +3282,10 @@ schema version 1 或旧的事件级 `privacy` 键；只读 reader 必须按 sche
 
 ### `CoreTraceContext`
 
-需要跨 Swift/Core 关联的请求 DTO 持有可选 `CoreTraceContext`。Swift 创建 session/trace/parent span，Core 创建本调用
-span；不能用 thread-local 隐式跨越 `Task.detached`。context 的 `session_id` 必须与当前 observability runtime 一致。
+需要跨 Swift/Core 关联的 observed API 显式要求独立、必填的 `CoreTraceContext` 参数。当前
+`import_file_observed` 与 `import_file_with_result_observed` 使用该形态；兼容 import API 不携带 context。
+Swift 创建 session/trace/parent span，Core 创建本调用 span；不能用 thread-local 隐式跨越 `Task.detached`。
+context 的 `session_id` 必须与当前 observability runtime 一致。
 `operation_id`、`retry_of_operation_id` 和 `incident_id` 只在对应业务/诊断生命周期存在时填写；retry 必须同时提供新的
 `operation_id`，且两者不能相同。
 
@@ -5329,12 +5309,15 @@ final 文件、写 DB、写导入日志、刷新生成概览，再尝试移除�
 结果必须标记 `Retained`，UI 显示 `Imported, original retained`，并且不得把
 该项标记为完整 Move。
 
-### observed import variants
+### `import_file_observed(repoPath: String, sourcePath: String, options: ImportOptions, traceContext: CoreTraceContext) throws -> FileEntry`
 
-`import_file_observed(repoPath, sourcePath, options, traceContext)` 与
-`import_file_with_result_observed(repoPath, sourcePath, options, traceContext)` 分别保持上述两个导入入口的
-返回值和事务语义，仅增加显式 `CoreTraceContext`。macOS 等支持结构化诊断的 shell 使用 observed variant；
-兼容调用方可以继续使用原入口。
+保持 `import_file` 的返回值和事务语义，仅增加显式 `CoreTraceContext`。macOS 等支持结构化诊断的 shell
+使用 observed variant；兼容调用方可以继续使用原入口。
+
+### `import_file_with_result_observed(repoPath: String, sourcePath: String, options: ImportOptions, traceContext: CoreTraceContext) throws -> ImportResult`
+
+保持 `import_file_with_result` 的返回值、source removal 状态和事务语义，仅增加显式
+`CoreTraceContext`。以下事件和隐私合同同时适用于两个 observed import API。
 
 Core 在任何 staging、用户文件或 DB 操作前验证 context 中的 UUID、session/retry 关系、action/component catalog ID、
 resource ref 和 typed attribute。无效 context 返回 `Validation` 且零副作用。有效调用为同一 Core span 发出

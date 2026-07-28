@@ -22,6 +22,9 @@ actor ObservabilityHub {
     private var ingressDropped: UInt64 = 0
     private var rejectedEvents: UInt64 = 0
     private var acceptingEvents = true
+    private var modeActivatedAtMilliseconds: Int64
+    private var modeUsageBaselineBytes: Int64
+    private var hasModeUsageBaseline = false
 
     init(
         configurationStore: ObservabilityConfigurationStore = ObservabilityConfigurationStore(),
@@ -53,8 +56,13 @@ actor ObservabilityHub {
         }
         configuration = configurationStore.load()
         self.writer = writer ?? RollingObservabilityStore(rootURL: rootURL, now: now)
+        modeActivatedAtMilliseconds = configuration.modeLease?.activatedAtMilliseconds
+            ?? ObservabilityHubPolicy.milliseconds(now())
+        modeUsageBaselineBytes = self.writer.usageBytes
     }
+}
 
+extension ObservabilityHub {
     func configurationSnapshot() -> AppObservabilityConfiguration {
         configuration
     }
@@ -97,6 +105,9 @@ actor ObservabilityHub {
             return
         }
         let normalized = ObservabilityHubPolicy.normalized(newConfiguration)
+        let modeWindowChanged = normalized.mode != configuration.mode
+            || normalized.modeLease != configuration.modeLease
+        let configuredAt = ObservabilityHubPolicy.milliseconds(now())
         if configuration.mode.persistsToDisk, !normalized.mode.persistsToDisk {
             do {
                 try freezeActiveIncidentForShutdown(at: ObservabilityHubPolicy.milliseconds(now()))
@@ -115,6 +126,11 @@ actor ObservabilityHub {
         } catch {
             writerFailureReason = "writer-unavailable"
             return
+        }
+        if modeWindowChanged || !hasModeUsageBaseline {
+            modeActivatedAtMilliseconds = normalized.modeLease?.activatedAtMilliseconds ?? configuredAt
+            modeUsageBaselineBytes = writer.usageBytes
+            hasModeUsageBaseline = true
         }
         recoverIncidentsIfNeeded()
     }
@@ -372,6 +388,9 @@ actor ObservabilityHub {
             memoryCapacity: configuration.observabilityMemoryCapacity,
             oldestEventTimestampMilliseconds: memoryEvents.first?.wallTimestampMilliseconds,
             fileUsageBytes: writer.usageBytes,
+            modeActivatedAtMilliseconds: modeActivatedAtMilliseconds,
+            modeUsageBaselineBytes: modeUsageBaselineBytes,
+            observedAtMilliseconds: timestamp,
             writerAvailable: writer.available,
             lastRotationAtMilliseconds: writer.lastRotationAtMilliseconds,
             incidentCount: incidentLedger.count,

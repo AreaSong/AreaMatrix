@@ -43,7 +43,10 @@ final class ObservabilitySafetyPolicyTests: XCTestCase {
             "refreshToken=opaque",
             "clientSecret: opaque",
             "privateKey=opaque",
-            "accessＴoken＝opaque"
+            "accessＴoken＝opaque",
+            "Bearer\topaque",
+            "auth = opaque",
+            "x-api-token : opaque"
         ] {
             XCTAssertTrue(
                 ObservabilitySafetyPolicy.assess(text: value).containsCredential,

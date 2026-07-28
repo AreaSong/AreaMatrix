@@ -57,20 +57,34 @@ fn core_observability_one_hundred_thousand_events_bench() {
     )
     .expect("initialize observability throughput benchmark");
 
-    let elapsed = measure(|| {
-        for index in 0..EVENT_COUNT {
-            tracing::info!(
-                action_id = "observability.benchmark.event",
-                component_id = "core.observability.benchmark",
-                phase = "delivery",
-                outcome = "succeeded",
-                obs_index = index
-            );
-        }
-        flush_observability(5_000).expect("flush observability throughput benchmark");
-    });
+    let start = Instant::now();
+    for index in 0..EVENT_COUNT {
+        tracing::info!(
+            action_id = "core.tracing.event",
+            component_id = "core.observability.runtime",
+            phase = "delivery",
+            outcome = "succeeded",
+            obs_public_index = index
+        );
+    }
+    let health = flush_observability(5_000).expect("flush observability throughput benchmark");
+    let elapsed = start.elapsed();
+    let delivered_count = delivered.load(Ordering::Acquire);
+    let dropped_count = health
+        .dropped_trace
+        .saturating_add(health.dropped_debug)
+        .saturating_add(health.dropped_info)
+        .saturating_add(health.dropped_warn)
+        .saturating_add(health.dropped_error);
 
-    assert!(delivered.load(Ordering::Relaxed) > 0);
+    assert!(delivered_count > 0);
+    assert_eq!(health.queue_depth, 0);
+    assert_eq!(health.redaction_rejected, 0);
+    assert!(health.callback_connected);
+    eprintln!(
+        "CORE_HOT_PATH_BENCH name=\"observability 100k delivery accounting\" submitted={} delivered={} dropped={}",
+        EVENT_COUNT, delivered_count, dropped_count
+    );
     report_ms(
         "observability 100k submit + delivery",
         elapsed,

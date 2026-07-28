@@ -62,6 +62,28 @@ swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf \
   --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore
 ```
 
+## 可观测性与诊断
+
+Core 专项至少覆盖：subscriber 单次安装、配置更新、source redaction、catalog ID、事件字段、双层大小限制、
+优先级队列、callback lifetime/deadline、并发、drop/health，以及 observed import 的 trace continuity。平台专项至少覆盖：
+
+- Core sink adapter 的有界 ingress、severity 替换、drop 汇总和 drain/close。
+- Hub 的 OSLog/signpost、内存 ring、rolling JSONL、manifest version/ownership、rotation、retention、disk-full、
+  corrupt manifest/tail 和无副作用 health。
+- incident pre/post window、`memory_only` / `manifest_owned` / `read_only`、持久化失败、异常 session 恢复和删除边界。
+- `.amdiagnostic` preview/export parity、双层 redaction、checksum、大小/文件数/单行限制、symlink/hardlink/path
+  traversal、非 allowlist 附件和离线 reader。
+- 独立 Diagnostics Tab、三种持久化模式与 disabled、租约、en / zh-Hans、Trace Console，以及日志失败不改变
+  import FS/DB/用户文件结果。
+
+功能门禁使用 `./dev test macos`；Core 观测测试随 `cargo test --all-features --workspace` 执行。性能门禁显式运行：
+
+```bash
+./dev test macos --only-testing AreaMatrixTests/ObservabilityPerformanceTests
+```
+
+所有文件测试使用临时目录，不读取或删除真实 Application Support 日志和用户资料库。
+
 ## Coverage
 
 远端 CI 的现行门槛：
@@ -125,6 +147,7 @@ macOS：
 
 ```bash
 ./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests
+./dev test macos --only-testing AreaMatrixTests/ObservabilityPerformanceTests
 ```
 
 Rust benchmark 的阈值当前只打印，需要人工检查每个 `result`；macOS performance XCTest 会 assertion。

@@ -60,6 +60,17 @@ UDL 函数是同步 FFI 合同，当前不使用 UniFFI `[Async]`。Swift `CoreB
 hash、reindex 等重工作的方法通常从 actor 内通过 `Task.detached` 调用同步绑定，页面模型在更新 UI 状态时
 回到 main actor。Core 不持有 SwiftUI 状态，也不回调平台 UI。
 
+结构化可观测性是受控的反向 callback 例外：`initialize_observability` 注册非 UI 的
+`CoreObservabilitySink`，`update_observability_config`、`get_observability_health` 和
+`flush_observability` 管理进程级 runtime。Core 在 source redaction 后把事件放入有界优先级队列，由独立
+delivery worker 交给具备 1 秒 deadline 的 callback worker；callback 不得同步等待 MainActor、SwiftUI 或文件
+writer。Swift `CoreObservabilitySinkAdapter` 再通过自己的有界 ingress 将事件异步交给 `ObservabilityHub`，
+因此 Core callback 生命周期、平台落盘和 UI 投影彼此隔离。
+
+需要端到端因果关联的 observed API 显式接收 `CoreTraceContext`。当前
+`import_file_observed` 和 `import_file_with_result_observed` 使用独立、必填的 context 参数；兼容 import API
+不携带 context，也不依赖 thread-local 穿过 `Task.detached`。
+
 跨 FFI 的长流程使用可恢复的小调用、report DTO 和持久化 session/cursor，不跨调用持有 SQLite
 transaction。
 

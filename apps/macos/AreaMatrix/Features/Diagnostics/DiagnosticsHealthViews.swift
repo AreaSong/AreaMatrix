@@ -20,12 +20,20 @@ struct DiagnosticsHealthSection: View {
         )
         LabeledContent(L10n.string("observability.health.mode"), value: health.mode.localizedLabel)
         LabeledContent(
+            L10n.string("observability.health.modeElapsed"),
+            value: elapsed(health.modeElapsedMilliseconds)
+        )
+        LabeledContent(
             L10n.string("observability.health.memory"),
             value: "\(health.memoryEventCount) / \(health.memoryCapacity)"
         )
         LabeledContent(
             L10n.string("observability.health.disk"),
             value: "\(bytes(health.fileUsageBytes)) / \(bytes(health.diskBudgetBytes))"
+        )
+        LabeledContent(
+            L10n.string("observability.health.estimatedGrowth"),
+            value: estimatedGrowth(health.estimatedGrowthBytesPerHour)
         )
         LabeledContent(
             L10n.string("observability.health.oldestEvent"),
@@ -122,6 +130,23 @@ struct DiagnosticsHealthSection: View {
     private func booleanValue(_ value: Bool) -> String {
         if value { return L10n.string("settings.value.yes") }
         return L10n.string("settings.value.no")
+    }
+
+    private func elapsed(_ milliseconds: Int64) -> String {
+        let totalMinutes = max(0, milliseconds) / 60000
+        return L10n.format(
+            "observability.health.elapsed.format",
+            totalMinutes / 60,
+            totalMinutes % 60
+        )
+    }
+
+    private func estimatedGrowth(_ bytesPerHour: Int64?) -> String {
+        guard let bytesPerHour else { return L10n.string("observability.health.none") }
+        return L10n.format(
+            "observability.health.estimatedGrowth.format",
+            bytes(bytesPerHour)
+        )
     }
 
     private func timestamp(_ milliseconds: Int64?) -> String {

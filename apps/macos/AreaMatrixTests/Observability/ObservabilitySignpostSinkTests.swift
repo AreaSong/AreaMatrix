@@ -96,42 +96,6 @@ final class ObservabilitySignpostSinkTests: XCTestCase {
     }
 }
 
-private struct SignpostCall: Equatable {
-    enum Kind: Equatable {
-        case begin
-        case end
-    }
-
-    let kind: Kind
-    let registration: ObservabilitySignpostRegistration
-    let key: String
-}
-
-private final class SignpostRecorderSpy: ObservabilitySignpostRecording, @unchecked Sendable {
-    private let lock = NSLock()
-    private var recordedCalls: [SignpostCall] = []
-
-    func begin(_ registration: ObservabilitySignpostRegistration, key: String) {
-        append(.init(kind: .begin, registration: registration, key: key))
-    }
-
-    func end(_ registration: ObservabilitySignpostRegistration, key: String) {
-        append(.init(kind: .end, registration: registration, key: key))
-    }
-
-    func calls() -> [SignpostCall] {
-        lock.lock()
-        defer { lock.unlock() }
-        return recordedCalls
-    }
-
-    private func append(_ call: SignpostCall) {
-        lock.lock()
-        recordedCalls.append(call)
-        lock.unlock()
-    }
-}
-
 private func signpostEvent(
     actionID: String = "repository.import.validation",
     componentID: String = "core.storage.import",

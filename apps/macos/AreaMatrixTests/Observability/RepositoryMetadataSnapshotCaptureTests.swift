@@ -53,10 +53,10 @@ final class RepositoryMetadataSnapshotCaptureTests: XCTestCase {
         defer { removeTestTemporaryItems(fixture.root) }
         let indexURL = fixture.metadata.appendingPathComponent("index.db")
         try Data("database".utf8).write(to: indexURL)
-        let capture = RepositoryMetadataSnapshotCapture { name in
+        let capture = RepositoryMetadataSnapshotCapture(afterReadHook: { name in
             guard name == "index.db" else { return }
             try Data("replace!".utf8).write(to: indexURL, options: .atomic)
-        }
+        })
 
         assertPackageError(.unsafeFile) {
             try capture.capture(repositoryURL: fixture.repository)
@@ -69,10 +69,10 @@ final class RepositoryMetadataSnapshotCaptureTests: XCTestCase {
         let indexURL = fixture.metadata.appendingPathComponent("index.db")
         try Data("database".utf8).write(to: indexURL)
         try Data("wal".utf8).write(to: fixture.metadata.appendingPathComponent("index.db-wal"))
-        let capture = RepositoryMetadataSnapshotCapture { name in
+        let capture = RepositoryMetadataSnapshotCapture(afterReadHook: { name in
             guard name == "index.db-wal" else { return }
             try Data("replace!".utf8).write(to: indexURL, options: .atomic)
-        }
+        })
 
         assertPackageError(.unsafeFile) {
             try capture.capture(repositoryURL: fixture.repository)
@@ -96,6 +96,52 @@ final class RepositoryMetadataSnapshotCaptureTests: XCTestCase {
         assertPackageError(.limitExceeded) {
             try totalLimited.capture(repositoryURL: aggregate.repository)
         }
+    }
+
+    func testAggregateBudgetRejectsBeforeReadingNextPayload() throws {
+        let fixture = try makeRepository(named: #function)
+        defer { removeTestTemporaryItems(fixture.root) }
+        try Data(repeating: 0x41, count: 8).write(to: fixture.metadata.appendingPathComponent("index.db"))
+        try Data(repeating: 0x42, count: 8).write(to: fixture.metadata.appendingPathComponent("index.db-wal"))
+        var readNames = [String]()
+        let capture = RepositoryMetadataSnapshotCapture(
+            maximumFileBytes: 8,
+            maximumTotalBytes: 12,
+            afterReadHook: { readNames.append($0) }
+        )
+
+        assertPackageError(.limitExceeded) {
+            try capture.capture(repositoryURL: fixture.repository)
+        }
+
+        XCTAssertEqual(readNames, ["index.db"])
+    }
+
+    func testMetadataCaptureRejectsProbeOpenedInodeMismatchWithoutReading() throws {
+        let fixture = try makeRepository(named: #function)
+        defer { removeTestTemporaryItems(fixture.root) }
+        try Data("database".utf8).write(to: fixture.metadata.appendingPathComponent("index.db"))
+        let decoy = fixture.root.appendingPathComponent("decoy.db")
+        try Data("decoy".utf8).write(to: decoy)
+        var decoyStatus = stat()
+        guard lstat(decoy.path, &decoyStatus) == 0 else { throw posixError() }
+        var readNames = [String]()
+        let capture = RepositoryMetadataSnapshotCapture(
+            placeholderProbe: { _ in
+                RepositoryMetadataPlaceholderProbeResult(
+                    device: decoyStatus.st_dev,
+                    inode: decoyStatus.st_ino,
+                    isNotDownloaded: false
+                )
+            },
+            afterReadHook: { readNames.append($0) }
+        )
+
+        assertPackageError(.unsafeFile) {
+            try capture.capture(repositoryURL: fixture.repository)
+        }
+
+        XCTAssertTrue(readNames.isEmpty)
     }
 
     private var metadataPaths: [String] {
@@ -383,19 +429,5 @@ final class DiagnosticPackageMetadataAttachmentTests: XCTestCase {
 
     private func posixError() -> NSError {
         NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
-    }
-}
-
-private final class StubRepositoryMetadataCapture: RepositoryMetadataSnapshotCapturing {
-    private(set) var callCount = 0
-    private let payloads: [DiagnosticPackageAttachmentPayload]
-
-    init(payloads: [DiagnosticPackageAttachmentPayload]) {
-        self.payloads = payloads
-    }
-
-    func capture(repositoryURL _: URL) throws -> [DiagnosticPackageAttachmentPayload] {
-        callCount += 1
-        return payloads
     }
 }

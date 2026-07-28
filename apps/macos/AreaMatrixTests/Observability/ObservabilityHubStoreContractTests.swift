@@ -153,7 +153,7 @@ final class ObservabilityHubStoreContractTests: XCTestCase {
         )
         await hub.configure(contractConfiguration(mode: .developer))
         _ = await hub.markIncident(note: nil)
-        try FileManager.default.removeItem(at: fixture.incidentURL(id: "failed-freeze-incident"))
+        try removeTestTemporaryItem(fixture.incidentURL(id: "failed-freeze-incident"))
 
         do {
             try await hub.shutdown()
@@ -166,7 +166,7 @@ final class ObservabilityHubStoreContractTests: XCTestCase {
         let incident = try XCTUnwrap(incidentSnapshots.first)
         let health = await hub.health(core: nil)
         XCTAssertTrue(incident.isFrozen)
-        XCTAssertEqual(incident.captureEndsAtMilliseconds, clock.milliseconds + 30_000)
+        XCTAssertEqual(incident.captureEndsAtMilliseconds, clock.milliseconds + 30000)
         XCTAssertNil(health.activeIncidentID)
         XCTAssertFalse(health.writerAvailable)
         do {

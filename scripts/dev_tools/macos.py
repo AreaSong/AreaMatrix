@@ -24,6 +24,7 @@ SWIFT_WATCHER_COVERAGE_FILES = {
     "PlatformServices/MainExternalCreatedFileWatcher.swift",
     "PlatformServices/MainExternalSyncEvents.swift",
 }
+PERFORMANCE_TEST_SUITES = frozenset({"AreaMatrixPerfTests", "ObservabilityPerformanceTests"})
 
 
 def _run_and_tee(argv: Sequence[str], log_path: Path, *, env: Mapping[str, str] | None = None) -> int:
@@ -136,11 +137,18 @@ def _fallback_env(products_dir: Path, scheme: str) -> dict[str, str]:
     return env
 
 
+def _products_dir_for_test_bundle(test_bundle: Path, scheme: str) -> Path:
+    for candidate in test_bundle.parents:
+        if (candidate / f"{scheme}.app/Contents/MacOS").is_dir():
+            return candidate
+    fail(f"app products directory not found for {test_bundle}.")
+
+
 def _run_xctest_bundle(test_bundle: Path, scheme: str) -> int:
-    products_dir = test_bundle.parent
     if not test_bundle.is_dir():
         fail(f"test bundle not found at {test_bundle}.")
 
+    products_dir = _products_dir_for_test_bundle(test_bundle, scheme)
     env = _fallback_env(products_dir, scheme)
     print()
     print(f"==> xcrun xctest {test_bundle}")
@@ -155,8 +163,21 @@ def _includes_release_perf_tests(only_testing: Sequence[str]) -> bool:
     )
 
 
+def _performance_test_ids(only_testing: Sequence[str]) -> list[str]:
+    return [
+        test_id
+        for test_id in only_testing
+        if len(parts := [part for part in test_id.split("/") if part]) >= 2
+        and parts[1] in PERFORMANCE_TEST_SUITES
+    ]
+
+
+def _includes_performance_tests(only_testing: Sequence[str]) -> bool:
+    return bool(_performance_test_ids(only_testing))
+
+
 def _xcode_test_env(only_testing: Sequence[str]) -> dict[str, str] | None:
-    if _includes_release_perf_tests(only_testing):
+    if _includes_performance_tests(only_testing):
         return {"AREAMATRIX_RUN_PERF_TESTS": "1"}
     return None
 
@@ -206,17 +227,32 @@ def _xctest_filter(only_testing: Sequence[str]) -> list[str]:
 
 
 def _run_filtered_xctest_bundle(test_bundle: Path, scheme: str, only_testing: Sequence[str]) -> int:
-    products_dir = test_bundle.parent
     if not test_bundle.is_dir():
         fail(f"test bundle not found at {test_bundle}.")
 
+    products_dir = _products_dir_for_test_bundle(test_bundle, scheme)
     env = _fallback_env(products_dir, scheme)
-    if _includes_release_perf_tests(only_testing):
+    if _includes_performance_tests(only_testing):
         env["AREAMATRIX_RUN_PERF_TESTS"] = "1"
     filters = _xctest_filter(only_testing)
     print()
     print(f"==> xcrun xctest {' '.join(filters)} {test_bundle}")
     return subprocess.run(["xcrun", "xctest", *filters, str(test_bundle)], env=env, check=False).returncode
+
+
+def _run_explicit_performance_tests(
+    derived_data_dir: Path,
+    scheme: str,
+    test_bundle_name: str,
+    only_testing: Sequence[str],
+) -> int:
+    performance_ids = _performance_test_ids(only_testing)
+    if not performance_ids:
+        return 0
+    test_bundle = _find_test_bundle(derived_data_dir, test_bundle_name)
+    if test_bundle is None:
+        fail(f"test bundle not found under {derived_data_dir}.")
+    return _run_filtered_xctest_bundle(test_bundle, scheme, performance_ids)
 
 
 def _test_base_args(
@@ -483,6 +519,14 @@ def _run_macos_tests_inner(
     print("==> xcodebuild test")
     rc = _run_and_tee(["xcodebuild", "test", *base], test_log_path, env=_xcode_test_env(only_testing))
     if rc == 0:
+        performance_rc = _run_explicit_performance_tests(
+            derived_data_dir,
+            scheme,
+            test_bundle_name,
+            only_testing,
+        )
+        if performance_rc != 0:
+            return performance_rc
         _validate_localization_compiler_keys(root, derived_data_dir)
         handled_rc = _run_release_probe_when_requested(
             root,
@@ -498,6 +542,14 @@ def _run_macos_tests_inner(
         print("macOS tests: xcodebuild test passed.")
         return 0
     if _xcodebuild_tests_passed_before_sandbox_teardown(test_log_path, only_testing):
+        performance_rc = _run_explicit_performance_tests(
+            derived_data_dir,
+            scheme,
+            test_bundle_name,
+            only_testing,
+        )
+        if performance_rc != 0:
+            return performance_rc
         _validate_localization_compiler_keys(root, derived_data_dir)
         handled_rc = _run_release_probe_when_requested(
             root,

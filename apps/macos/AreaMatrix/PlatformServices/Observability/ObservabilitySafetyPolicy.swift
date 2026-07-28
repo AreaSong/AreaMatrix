@@ -113,15 +113,7 @@ enum ObservabilitySafetyPolicy {
               buildContext.platform == "macos"
         else { return .failure(.invalidBuildContext) }
 
-        let validTuple = switch buildContext.producer {
-        case "areamatrix_macos":
-            ["arm64", "x86_64"].contains(buildContext.architecture)
-        case "area_matrix_core":
-            ["aarch64", "x86_64"].contains(buildContext.architecture)
-        default:
-            false
-        }
-        guard validTuple else { return .failure(.invalidBuildContext) }
+        guard validBuildTuple(buildContext) else { return .failure(.invalidBuildContext) }
         switch scope {
         case .liveApp:
             guard buildContext == .currentApp else { return .failure(.invalidBuildContext) }
@@ -140,6 +132,17 @@ enum ObservabilitySafetyPolicy {
             isASCIIAlphanumeric($0) || [46, 95, 45].contains($0)
         }
     }
+
+    private static func validBuildTuple(_ context: ObservabilityBuildContextSnapshot) -> Bool {
+        switch context.producer {
+        case "areamatrix_macos":
+            ["arm64", "x86_64"].contains(context.architecture)
+        case "area_matrix_core":
+            ["aarch64", "x86_64"].contains(context.architecture)
+        default:
+            false
+        }
+    }
 }
 
 private extension ObservabilitySafetyPolicy {
@@ -149,11 +152,13 @@ private extension ObservabilitySafetyPolicy {
     ])
 
     static let credentialMarkers = [
-        "authorization:", "authorization=", "bearer ", "api_key", "api-key", "apikey",
-        "access_token", "access-token", "accesstoken", "refresh_token", "refresh-token",
-        "refreshtoken", "client_secret", "client-secret", "clientsecret", "password:",
+        "authorization:", "authorization=", "auth:", "auth=", "bearer ",
+        "api_key", "api-key", "api key", "apikey",
+        "access_token", "access-token", "access token", "accesstoken",
+        "refresh_token", "refresh-token", "refresh token", "refreshtoken",
+        "client_secret", "client-secret", "client secret", "clientsecret", "password:",
         "password=", "passwd:", "passwd=", "token:", "token=", "secret:", "secret=",
-        "private_key", "private-key", "privatekey",
+        "private_key", "private-key", "private key", "privatekey",
         "-----begin private key", "-----begin rsa private key", "-----begin ec private key",
         "-----begin openssh private key"
     ]
@@ -214,8 +219,34 @@ private extension ObservabilitySafetyPolicy {
     }
 
     static func containsCredentialPattern(_ value: String) -> Bool {
-        let lowercased = value.precomposedStringWithCompatibilityMapping.lowercased()
-        return credentialMarkers.contains(where: lowercased.contains)
+        let normalized = normalizedCredentialText(value)
+        return credentialMarkers.contains(where: normalized.contains)
+    }
+
+    static func normalizedCredentialText(_ value: String) -> String {
+        let source = value.precomposedStringWithCompatibilityMapping.lowercased()
+        var normalized = ""
+        var pendingWhitespace = false
+        for character in source {
+            if character.isWhitespace {
+                pendingWhitespace = true
+                continue
+            }
+            if character == ":" || character == "=" {
+                while normalized.last == " " {
+                    normalized.removeLast()
+                }
+                normalized.append(character)
+                pendingWhitespace = false
+                continue
+            }
+            if pendingWhitespace, !normalized.isEmpty {
+                normalized.append(" ")
+            }
+            normalized.append(character)
+            pendingWhitespace = false
+        }
+        return normalized
     }
 
     static func locatorClass(in value: String) -> LocatorClass {

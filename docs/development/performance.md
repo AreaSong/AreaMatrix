@@ -8,12 +8,13 @@
 
 ## 当前性能门禁
 
-AreaMatrix 有两组显式性能测试：
+AreaMatrix 有三组显式性能测试：
 
 | 层 | 文件 | 运行方式 |
 |---|---|---|
 | Rust Core | `core/benches/core_hot_paths.rs` | ignored libtest benchmark |
 | macOS | `apps/macos/AreaMatrixTests/AreaMatrixPerfTests.swift` | explicit XCTest gate |
+| macOS observability | `apps/macos/AreaMatrixTests/Observability/ObservabilityPerformanceTests.swift` | explicit XCTest gate |
 
 仓库当前没有 Criterion 依赖、`storage_bench.rs`、HTML report、跨 commit 自动 baseline 比较或统一“回归
 +10% 即失败”CI。
@@ -42,15 +43,17 @@ cargo test --manifest-path core/Cargo.toml \
 | reindex 10k files | 30 s |
 | list tree 1k files | 30 ms |
 | list files 200 rows | 5 ms |
-| 100k structured observability submit + delivery | 2 s |
+| 100k structured observability submit + bounded drain/backpressure | 2 s |
 
-Rust benchmark 会打印 `CORE_HOT_PATH_BENCH ... result=PASS/FAIL`，但当前不会对阈值执行 assertion。因此
+Rust benchmark 会打印 `CORE_HOT_PATH_BENCH ... result=PASS/FAIL`，并为 observability 场景报告 delivered/drop
+数量；有界队列允许拥塞丢弃，因此该场景不声明 100k 事件全部送达。当前 benchmark 不对阈值执行 assertion，
 命令 exit 0 只能证明 benchmark 完成，必须同时审查每一行 result。
 
 ## macOS performance XCTest
 
 ```bash
 ./dev test macos --only-testing AreaMatrixTests/AreaMatrixPerfTests
+./dev test macos --only-testing AreaMatrixTests/ObservabilityPerformanceTests
 ```
 
 当前覆盖：
@@ -61,6 +64,10 @@ Rust benchmark 会打印 `CORE_HOT_PATH_BENCH ... result=PASS/FAIL`，但当前�
 - 1k tree：30 ms。
 - list 200 rows：标准路径 5 ms，hostless fallback 10 ms。
 - resident memory：idle 200 MB、1k files 300 MB、10k files 500 MB。
+- observability source sanitization 10k 次：2 s。
+- observability bounded ring append 200k 次：2 s。
+- observability rolling JSONL append 500 条并完成 rotation：5 s。
+- Trace Console 10k 事件投影：10 s。
 
 macOS tests 使用 assertion，超阈值会失败。受限环境无法启动真实 app 时可执行 hostless first-screen
 fallback；该结果不能替代正式分发的 clean-Mac 首启证据。
@@ -70,8 +77,8 @@ fallback；该结果不能替代正式分发的 clean-Mac 首启证据。
 
 ## 普通 CI 边界
 
-`AreaMatrixPerfTests` 默认不参加普通 `./dev test macos`，避免共享 runner 的 wall-clock 和 resident memory
-抖动阻断功能 CI。Rust benchmark 同样需要显式运行。
+`AreaMatrixPerfTests` 和 `ObservabilityPerformanceTests` 默认不参加普通 `./dev test macos`，避免共享 runner
+的 wall-clock 和 resident memory 抖动阻断功能 CI。Rust benchmark 同样需要显式运行。
 
 普通 CI 仍覆盖：
 

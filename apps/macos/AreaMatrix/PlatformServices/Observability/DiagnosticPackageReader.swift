@@ -2,6 +2,11 @@ import CryptoKit
 import Darwin
 import Foundation
 
+struct DiagnosticPackageValidatedContents {
+    let inspection: DiagnosticPackageInspection
+    let payloads: [String: Data]
+}
+
 struct DiagnosticPackageReader {
     private let decoder = JSONDecoder()
 
@@ -17,7 +22,7 @@ struct DiagnosticPackageReader {
         defer { close(descriptor) }
         do {
             try validateDirectory(descriptor)
-            return try inspect(directoryDescriptor: descriptor)
+            return try inspectValidatedContents(directoryDescriptor: descriptor).inspection
         } catch let error as DiagnosticPackageError {
             throw error
         } catch {
@@ -26,6 +31,10 @@ struct DiagnosticPackageReader {
     }
 
     func inspect(directoryDescriptor: Int32) throws -> DiagnosticPackageInspection {
+        try inspectValidatedContents(directoryDescriptor: directoryDescriptor).inspection
+    }
+
+    func inspectValidatedContents(directoryDescriptor: Int32) throws -> DiagnosticPackageValidatedContents {
         do {
             try validateDirectory(directoryDescriptor)
             return try inspectOpenedDirectory(directoryDescriptor)
@@ -38,7 +47,7 @@ struct DiagnosticPackageReader {
 }
 
 private extension DiagnosticPackageReader {
-    private func inspectOpenedDirectory(_ directoryDescriptor: Int32) throws -> DiagnosticPackageInspection {
+    private func inspectOpenedDirectory(_ directoryDescriptor: Int32) throws -> DiagnosticPackageValidatedContents {
         let names = try directoryEntryNames(
             descriptor: directoryDescriptor,
             maximumCount: DiagnosticPackageFormat.allowedEntryNames.count
@@ -51,7 +60,9 @@ private extension DiagnosticPackageReader {
         try validateSchema(manifest)
         let attachmentPayloads = try readAttachments(
             directoryDescriptor: directoryDescriptor,
-            manifest: manifest
+            manifest: manifest,
+            remainingPackageBytes: DiagnosticPackageFormat.maximumPackageBytes
+                - payloads.values.reduce(0) { $0 + $1.count }
         )
         try addAttachments(attachmentPayloads, to: &payloads)
         let checksums = try validateChecksums(payloads)
@@ -59,7 +70,10 @@ private extension DiagnosticPackageReader {
             attachmentPayloads,
             checksums: checksums
         )
-        return try decodeInspection(payloads, manifest: manifest, attachments: descriptors)
+        return try DiagnosticPackageValidatedContents(
+            inspection: decodeInspection(payloads, manifest: manifest, attachments: descriptors),
+            payloads: payloads
+        )
     }
 
     private func readRootPayloads(directoryDescriptor: Int32) throws -> [String: Data] {
@@ -69,7 +83,11 @@ private extension DiagnosticPackageReader {
             guard let limit = DiagnosticPackageFormat.fileByteLimits[name] else {
                 throw DiagnosticPackageError.invalidPackage
             }
-            let data = try readRegularFile(named: name, directoryDescriptor: directoryDescriptor, limit: limit)
+            let data = try readRegularFile(
+                named: name,
+                directoryDescriptor: directoryDescriptor,
+                limit: min(limit, DiagnosticPackageFormat.maximumPackageBytes - total)
+            )
             try addToPackageTotal(data.count, total: &total)
             payloads[name] = data
         }
@@ -98,7 +116,8 @@ private extension DiagnosticPackageReader {
 
     private func readAttachments(
         directoryDescriptor: Int32,
-        manifest: DiagnosticPackageManifest
+        manifest: DiagnosticPackageManifest,
+        remainingPackageBytes: Int
     ) throws -> [DiagnosticPackageAttachmentPayload] {
         let attachmentsDescriptor = try openDirectory(
             named: DiagnosticPackageFormat.attachmentsDirectoryName,
@@ -114,11 +133,15 @@ private extension DiagnosticPackageReader {
         guard names == Set([DiagnosticPackageFormat.repositoryMetadataDirectoryName]) else {
             throw DiagnosticPackageError.unexpectedEntry
         }
-        return try readMetadataAttachments(attachmentsDescriptor: attachmentsDescriptor)
+        return try readMetadataAttachments(
+            attachmentsDescriptor: attachmentsDescriptor,
+            remainingPackageBytes: remainingPackageBytes
+        )
     }
 
     private func readMetadataAttachments(
-        attachmentsDescriptor: Int32
+        attachmentsDescriptor: Int32,
+        remainingPackageBytes: Int
     ) throws -> [DiagnosticPackageAttachmentPayload] {
         let descriptor = try openDirectory(
             named: DiagnosticPackageFormat.repositoryMetadataDirectoryName,
@@ -135,16 +158,20 @@ private extension DiagnosticPackageReader {
         }
         var payloads: [DiagnosticPackageAttachmentPayload] = []
         var total = 0
+        var packageRemaining = remainingPackageBytes
         for name in DiagnosticPackageFormat.repositoryMetadataFileNames where names.contains(name) {
+            let remainingMetadataBytes = DiagnosticPackageFormat.maximumMetadataBytes - total
             let data = try readRegularFile(
                 named: name,
                 directoryDescriptor: descriptor,
-                limit: DiagnosticPackageFormat.maximumMetadataFileBytes
+                limit: min(
+                    DiagnosticPackageFormat.maximumMetadataFileBytes,
+                    remainingMetadataBytes,
+                    packageRemaining
+                )
             )
-            guard data.count <= DiagnosticPackageFormat.maximumMetadataBytes - total else {
-                throw DiagnosticPackageError.limitExceeded
-            }
             total += data.count
+            packageRemaining -= data.count
             payloads.append(DiagnosticPackageAttachmentPayload(
                 relativePath: DiagnosticPackageFormat.metadataRelativePath(name),
                 data: data

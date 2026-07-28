@@ -8,11 +8,14 @@ struct AreaMatrixApp: App {
     @StateObject private var languageStore: AppLanguageStore
 
     init() {
-        ObservabilityRuntimeAssembly.shared.start()
+        let isRunningTests = ProcessInfo.processInfo.environment["XCTestBundlePath"] != nil
+        if !isRunningTests {
+            ObservabilityRuntimeAssembly.shared.start()
+        }
         let runtime = AppLanguageRuntime.shared
         let localizer = AppLocalizer(runtime: runtime)
         _localizer = StateObject(wrappedValue: localizer)
-        let testLanguage: AppLanguage? = ProcessInfo.processInfo.environment["XCTestBundlePath"] == nil ? nil : .en
+        let testLanguage: AppLanguage? = isRunningTests ? .en : nil
         _languageStore = StateObject(wrappedValue: AppLanguageStore(
             runtime: runtime,
             localizer: localizer,

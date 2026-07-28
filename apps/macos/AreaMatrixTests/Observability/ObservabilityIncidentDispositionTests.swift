@@ -87,9 +87,23 @@ final class ObservabilityIncidentDispositionTests: XCTestCase {
         )
         await hub.configure(contractConfiguration(mode: .developer))
         let firstIncidentID = await hub.markIncident(note: nil)
+        let incidentURL = fixture.incidentURL(id: "same-id")
+        let bytesBeforeDuplicate = try Data(contentsOf: incidentURL)
         let duplicateIncidentID = await hub.markIncident(note: nil)
         XCTAssertEqual(firstIncidentID, "same-id")
         XCTAssertEqual(duplicateIncidentID, "")
+        XCTAssertEqual(try Data(contentsOf: incidentURL), bytesBeforeDuplicate)
+        let activeIncidentID = await hub.activeIncidentID()
+        XCTAssertEqual(activeIncidentID, "same-id")
+
+        await hub.ingestCoreEvent(contractEvent(
+            id: "captured-after-duplicate",
+            sessionID: "duplicate-session"
+        ))
+        let activeSnapshots = await hub.incidentSnapshots()
+        let activeSnapshot = try XCTUnwrap(activeSnapshots.first)
+        XCTAssertFalse(activeSnapshot.isFrozen)
+        XCTAssertEqual(activeSnapshot.events.map(\.eventID), ["captured-after-duplicate"])
 
         try await hub.updateIncident(id: "same-id", status: "resolved")
         let snapshots = await hub.incidentSnapshots()
@@ -117,7 +131,7 @@ private extension ObservabilityIncidentDispositionTests {
         )
         await hub.configure(contractConfiguration(mode: .developer))
         _ = await hub.markIncident(note: nil)
-        try FileManager.default.removeItem(at: fixture.incidentURL(id: "capture-failure"))
+        try removeTestTemporaryItem(fixture.incidentURL(id: "capture-failure"))
 
         await hub.ingestCoreEvent(contractEvent(
             id: "not-captured",
@@ -142,7 +156,7 @@ private extension ObservabilityIncidentDispositionTests {
         )
         await hub.configure(contractConfiguration(mode: .developer))
         _ = await hub.markIncident(note: nil)
-        try FileManager.default.removeItem(at: fixture.incidentURL(id: "status-failure"))
+        try removeTestTemporaryItem(fixture.incidentURL(id: "status-failure"))
 
         await assertIncidentError(.persistenceUnavailable) {
             try await hub.updateIncident(id: "status-failure", status: "resolved")

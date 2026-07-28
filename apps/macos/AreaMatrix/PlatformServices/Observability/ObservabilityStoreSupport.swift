@@ -1,5 +1,11 @@
 import Foundation
 
+private struct ObservabilityIncidentPrefix {
+    let records: [ObservabilityIncidentRecord]
+    let byteCount: Int64
+    let state: ObservabilityIncidentJournalState
+}
+
 struct ObservabilityStoreRecordCodec {
     static let maximumEventBytes = 256 * 1024
     static let maximumRecoveredEvents = 50000
@@ -93,11 +99,7 @@ struct ObservabilityStoreRecordCodec {
     private func incidentPrefix(
         _ data: Data,
         expectedIncidentID: String
-    ) -> (
-        records: [ObservabilityIncidentRecord],
-        byteCount: Int64,
-        state: ObservabilityIncidentJournalState
-    )? {
+    ) -> ObservabilityIncidentPrefix? {
         var records: [ObservabilityIncidentRecord] = []
         var state = ObservabilityIncidentJournalState.expectingHeader
         var byteCount: Int64 = 0
@@ -111,7 +113,7 @@ struct ObservabilityStoreRecordCodec {
             byteCount = line.endOffset
         }
         guard !records.isEmpty else { return nil }
-        return (records, byteCount, state)
+        return ObservabilityIncidentPrefix(records: records, byteCount: byteCount, state: state)
     }
 
     private func valid(
@@ -122,47 +124,75 @@ struct ObservabilityStoreRecordCodec {
         guard record.incidentID == expectedIncidentID else { return false }
         switch record.kind {
         case .header:
-            guard state == .expectingHeader,
-                  let incident = record.incident,
-                  incident.id == expectedIncidentID,
-                  incident.events.isEmpty,
-                  record.event == nil,
-                  record.status == nil,
-                  record.frozenAtMilliseconds == nil
-            else { return false }
-            state = .capturing
-            return true
+            return validateHeader(record, expectedIncidentID: expectedIncidentID, state: &state)
         case .event:
-            return state == .capturing
-                && record.incident == nil
-                && record.event?.incidentID == expectedIncidentID
-                && record.status == nil
-                && record.frozenAtMilliseconds == nil
+            return validateEvent(record, expectedIncidentID: expectedIncidentID, state: state)
         case .freeze:
-            guard state == .capturing,
-                  record.incident == nil,
-                  record.event == nil,
-                  record.status == nil,
-                  record.frozenAtMilliseconds != nil
-            else { return false }
-            state = .frozen
-            return true
+            return validateFreeze(record, state: &state)
         case .status:
-            guard state != .expectingHeader,
-                  record.incident == nil,
-                  record.event == nil,
-                  let status = record.status
-            else { return false }
-            if state == .frozen {
-                return status == .open ? record.frozenAtMilliseconds == nil : true
-            }
-            if let _ = record.frozenAtMilliseconds {
-                guard status != .open else { return false }
-                state = .frozen
-                return true
-            }
-            return status == .open
+            return validateStatus(record, state: &state)
         }
+    }
+
+    private func validateHeader(
+        _ record: ObservabilityIncidentRecord,
+        expectedIncidentID: String,
+        state: inout ObservabilityIncidentJournalState
+    ) -> Bool {
+        guard state == .expectingHeader,
+              let incident = record.incident,
+              incident.id == expectedIncidentID,
+              incident.events.isEmpty,
+              record.event == nil,
+              record.status == nil,
+              record.frozenAtMilliseconds == nil
+        else { return false }
+        state = .capturing
+        return true
+    }
+
+    private func validateEvent(
+        _ record: ObservabilityIncidentRecord,
+        expectedIncidentID: String,
+        state: ObservabilityIncidentJournalState
+    ) -> Bool {
+        state == .capturing
+            && record.incident == nil
+            && record.event?.incidentID == expectedIncidentID
+            && record.status == nil
+            && record.frozenAtMilliseconds == nil
+    }
+
+    private func validateFreeze(
+        _ record: ObservabilityIncidentRecord,
+        state: inout ObservabilityIncidentJournalState
+    ) -> Bool {
+        guard state == .capturing,
+              record.incident == nil,
+              record.event == nil,
+              record.status == nil,
+              record.frozenAtMilliseconds != nil
+        else { return false }
+        state = .frozen
+        return true
+    }
+
+    private func validateStatus(
+        _ record: ObservabilityIncidentRecord,
+        state: inout ObservabilityIncidentJournalState
+    ) -> Bool {
+        guard state != .expectingHeader,
+              record.incident == nil,
+              record.event == nil,
+              let status = record.status
+        else { return false }
+        if state == .frozen {
+            return status == .open ? record.frozenAtMilliseconds == nil : true
+        }
+        guard record.frozenAtMilliseconds != nil else { return status == .open }
+        guard status != .open else { return false }
+        state = .frozen
+        return true
     }
 
     private func completeLines(_ data: Data) -> [CompleteJSONLine] {
@@ -278,5 +308,65 @@ enum ObservabilityTime {
         if value >= Double(Int64.max) { return .max }
         if value <= Double(Int64.min) { return .min }
         return Int64(value)
+    }
+}
+
+extension RollingObservabilityStore {
+    func encodedIncident(_ incident: ObservabilityIncidentSnapshot) throws -> Data {
+        var data = try codec.encodedRecord(.header(incident))
+        guard data.count <= Self.maximumIncidentBytes else {
+            throw ObservabilityStoreError.incidentTooLarge
+        }
+        for event in incident.events {
+            let record = try codec.encodedRecord(.event(incident.id, event))
+            let next = try ObservabilityStoreArithmetic.adding(
+                ObservabilityStoreArithmetic.bytes(data.count),
+                ObservabilityStoreArithmetic.bytes(record.count)
+            )
+            guard next <= Self.maximumIncidentBytes else {
+                throw ObservabilityStoreError.incidentTooLarge
+            }
+            data.append(record)
+        }
+        if incident.isFrozen || incident.status != .open {
+            let freeze = try codec.encodedRecord(.freeze(
+                incident.id,
+                incident.captureEndsAtMilliseconds
+            ))
+            let next = try ObservabilityStoreArithmetic.adding(
+                ObservabilityStoreArithmetic.bytes(data.count),
+                ObservabilityStoreArithmetic.bytes(freeze.count)
+            )
+            guard next <= Self.maximumIncidentBytes else {
+                throw ObservabilityStoreError.incidentTooLarge
+            }
+            data.append(freeze)
+        }
+        return data
+    }
+
+    mutating func createManagedIncident(_ data: Data, id: String) throws {
+        var name = ""
+        try refreshPhysicalOccupancy()
+        try persistManifestMutation { state in
+            name = try state.reserveIncident(id: id)
+        }.requireDurable()
+        do {
+            try fileIO.writeIncidentExclusive(data, id: id, synchronize: true)
+            let result = try persistManifestMutation {
+                try $0.markManaged(
+                    name,
+                    committedBytes: ObservabilityStoreArithmetic.bytes(data.count)
+                )
+            }
+            try result.requireDurable()
+            guard let state = codec.incidentJournalState(data, expectedIncidentID: id) else {
+                throw ObservabilityStoreError.unsafePath
+            }
+            incidentJournalStates[id] = state
+        } catch {
+            abandonCreation(named: name)
+            throw error
+        }
     }
 }

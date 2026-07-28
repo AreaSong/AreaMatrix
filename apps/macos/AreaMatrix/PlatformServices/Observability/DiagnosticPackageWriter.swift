@@ -12,6 +12,7 @@ struct DiagnosticPackageWriter {
         let name: String
         let descriptor: Int32
         let identity: stat
+        let cleanupOwnership = DiagnosticPackageCleanupOwnership()
     }
 
     private let stagingRootURL: URL?
@@ -71,12 +72,17 @@ private extension DiagnosticPackageWriter {
         guard parentDescriptor >= 0 else { throw DiagnosticPackageError.invalidDestination }
         defer { close(parentDescriptor) }
         try validateDirectory(parentDescriptor, requireCurrentUser: false)
+        let parentIdentity = try captureDestinationParentIdentity(
+            path: destination.parentPath,
+            descriptor: parentDescriptor
+        )
         try ensureDestinationAbsent(named: destination.fileName, parentDescriptor: parentDescriptor)
         return try publishPartial(
             preview,
             stageDescriptor: stageDescriptor,
             destination: destination,
-            parentDescriptor: parentDescriptor
+            parentDescriptor: parentDescriptor,
+            parentIdentity: parentIdentity
         )
     }
 
@@ -84,7 +90,8 @@ private extension DiagnosticPackageWriter {
         _ preview: DiagnosticPackagePreview,
         stageDescriptor: Int32,
         destination: DiagnosticPackageDestination,
-        parentDescriptor: Int32
+        parentDescriptor: Int32,
+        parentIdentity: stat
     ) throws -> URL {
         let partial = try createPackageDirectory(
             parentDescriptor: parentDescriptor,
@@ -101,11 +108,21 @@ private extension DiagnosticPackageWriter {
             attachments: preview.attachments,
             synchronize: operations.synchronize
         )
+        try partial.cleanupOwnership.capture(
+            directoryDescriptor: partial.descriptor,
+            attachments: preview.attachments
+        )
         guard operations.synchronize(parentDescriptor) == 0 else {
             throw DiagnosticPackageError.invalidDestination
         }
         try validateIdentity(partial, parentDescriptor: parentDescriptor)
         try validatePackage(preview, directoryDescriptor: partial.descriptor)
+        operations.beforePublish(parentDescriptor)
+        try validateDestinationParentIdentity(
+            path: destination.parentPath,
+            descriptor: parentDescriptor,
+            expected: parentIdentity
+        )
         try renamePartial(
             partial,
             destinationName: destination.fileName,
@@ -115,6 +132,11 @@ private extension DiagnosticPackageWriter {
         guard operations.synchronize(parentDescriptor) == 0 else {
             throw DiagnosticPackageError.durabilityUncertain
         }
+        try validateDestinationParentIdentity(
+            path: destination.parentPath,
+            descriptor: parentDescriptor,
+            expected: parentIdentity
+        )
         return destination.url
     }
 
@@ -144,6 +166,10 @@ private extension DiagnosticPackageWriter {
         parentDescriptor: Int32
     ) throws {
         try writePackage(preview, directoryDescriptor: directory.descriptor)
+        try directory.cleanupOwnership.capture(
+            directoryDescriptor: directory.descriptor,
+            attachments: preview.attachments
+        )
         guard operations.synchronize(parentDescriptor) == 0 else {
             throw DiagnosticPackageError.invalidDestination
         }
@@ -155,13 +181,15 @@ private extension DiagnosticPackageWriter {
         _ preview: DiagnosticPackagePreview,
         directoryDescriptor: Int32
     ) throws {
-        let inspection = try reader.inspect(directoryDescriptor: directoryDescriptor)
+        let contents = try reader.inspectValidatedContents(directoryDescriptor: directoryDescriptor)
+        let inspection = contents.inspection
         guard let expectedSummary = String(data: preview.summaryData, encoding: .utf8) else {
             throw DiagnosticPackageError.invalidPackage
         }
         guard inspection.manifest == preview.manifest,
               inspection.privacyReport == preview.privacyReport,
-              inspection.summary == expectedSummary
+              inspection.summary == expectedSummary,
+              try contents.payloads == previewPayloads(preview)
         else { throw DiagnosticPackageError.invalidPackage }
     }
 
@@ -389,44 +417,17 @@ private extension DiagnosticPackageWriter {
     }
 
     private func cleanup(_ directory: PackageDirectory, parentDescriptor: Int32) {
-        for fileName in DiagnosticPackageFormat.payloadFileNames {
-            unlinkat(directory.descriptor, fileName, 0)
+        operations.beforeCleanup(directory.descriptor)
+        guard (try? validateIdentity(directory, parentDescriptor: parentDescriptor)) != nil else {
+            return
         }
-        cleanupAttachments(directoryDescriptor: directory.descriptor)
-        unlinkat(
-            directory.descriptor,
-            DiagnosticPackageFormat.attachmentsDirectoryName,
-            AT_REMOVEDIR
-        )
+        guard (try? directory.cleanupOwnership.removeContents(
+            directoryDescriptor: directory.descriptor
+        )) != nil else { return }
         guard (try? validateIdentity(directory, parentDescriptor: parentDescriptor)) != nil else {
             return
         }
         unlinkat(parentDescriptor, directory.name, AT_REMOVEDIR)
         _ = operations.synchronize(parentDescriptor)
-    }
-
-    func cleanupAttachments(directoryDescriptor: Int32) {
-        let attachments = openat(
-            directoryDescriptor,
-            DiagnosticPackageFormat.attachmentsDirectoryName,
-            O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW
-        )
-        guard attachments >= 0 else { return }
-        defer { close(attachments) }
-        let metadata = openat(
-            attachments,
-            DiagnosticPackageFormat.repositoryMetadataDirectoryName,
-            O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW
-        )
-        guard metadata >= 0 else { return }
-        for fileName in DiagnosticPackageFormat.repositoryMetadataFileNames {
-            unlinkat(metadata, fileName, 0)
-        }
-        close(metadata)
-        unlinkat(
-            attachments,
-            DiagnosticPackageFormat.repositoryMetadataDirectoryName,
-            AT_REMOVEDIR
-        )
     }
 }

@@ -31587,6 +31587,57 @@
         }
       }
     },
+    "observability.health.elapsed.format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld h %2$lld min"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld 小时 %2$lld 分钟"
+          }
+        }
+      }
+    },
+    "observability.health.estimatedGrowth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated growth"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预计增长"
+          }
+        }
+      }
+    },
+    "observability.health.estimatedGrowth.format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ per hour"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每小时 %@"
+          }
+        }
+      }
+    },
     "observability.health.dropped" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31974,6 +32025,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "当前模式"
+          }
+        }
+      }
+    },
+    "observability.health.modeElapsed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current mode elapsed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前模式已运行"
           }
         }
       }

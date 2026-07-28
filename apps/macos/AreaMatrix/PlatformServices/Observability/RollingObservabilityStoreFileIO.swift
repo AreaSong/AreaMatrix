@@ -1,6 +1,14 @@
 import Darwin
 import Foundation
 
+private struct ObservabilityStoreManifestHeader: Decodable {
+    let schemaVersion: Int
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+    }
+}
+
 struct ObservabilityStoreDurabilityOperations {
     let synchronizeIncident: @Sendable (Int32, String) throws -> Void
 
@@ -61,7 +69,7 @@ struct ObservabilityStoreFileIO {
             return .missing
         }
         let decoder = JSONDecoder()
-        guard let header = try? decoder.decode(ManifestHeader.self, from: data) else {
+        guard let header = try? decoder.decode(ObservabilityStoreManifestHeader.self, from: data) else {
             return .corrupt
         }
         switch header.schemaVersion {
@@ -256,14 +264,6 @@ struct ObservabilityStoreFileIO {
 }
 
 private extension ObservabilityStoreFileIO {
-    struct ManifestHeader: Decodable {
-        let schemaVersion: Int
-
-        enum CodingKeys: String, CodingKey {
-            case schemaVersion = "schema_version"
-        }
-    }
-
     func ownedFiles(
         in directory: URL,
         matching predicate: (String) -> Bool

@@ -10,7 +10,7 @@ final class ObservabilitySafeDeletionTests: XCTestCase {
         let identifiers = TestObservabilityIdentifierSequence(["first", "second"])
         let hub = fixture.makeHub(
             sessionID: "delete-selected-session",
-            idGenerator: identifiers.next
+            idGenerator: { identifiers.next() }
         )
         let config = safeDeletionConfiguration()
         await hub.configure(config)
@@ -31,7 +31,7 @@ final class ObservabilitySafeDeletionTests: XCTestCase {
         let fixture = try makeSafeDeletionFixture()
         defer { fixture.cleanup() }
         let identifiers = TestObservabilityIdentifierSequence(["retained", "active"])
-        let hub = fixture.makeHub(sessionID: "delete-active-session", idGenerator: identifiers.next)
+        let hub = fixture.makeHub(sessionID: "delete-active-session", idGenerator: { identifiers.next() })
         await hub.configure(safeDeletionConfiguration())
         let retainedID = await hub.markIncident(note: nil)
         let activeID = await hub.markIncident(note: nil)
@@ -44,7 +44,7 @@ final class ObservabilitySafeDeletionTests: XCTestCase {
         XCTAssertNil(activeIncidentID)
     }
 
-    func testDeleteIncidentPersistenceFailureKeepsIncidentAndActiveStateInMemory() async throws {
+    func testDeleteIncidentUnlinkFailureKeepsIncidentReadOnlyAndClearsActiveState() async throws {
         let fixture = try makeSafeDeletionFixture()
         defer { fixture.cleanup() }
         let clock = TestObservabilityClock(milliseconds: 1000)
@@ -64,11 +64,11 @@ final class ObservabilitySafeDeletionTests: XCTestCase {
         let incidents = await hub.incidentSnapshots()
         let activeIncidentID = await hub.activeIncidentID()
         XCTAssertEqual(incidents.map(\.id), [incidentID])
-        XCTAssertEqual(activeIncidentID, incidentID)
+        XCTAssertNil(activeIncidentID)
         XCTAssertEqual(try Data(contentsOf: sentinelURL), Data("external".utf8))
     }
 
-    func testRemoveLocalLogsUnsafeOwnedEntryKeepsHubMemoryAndIncidents() async throws {
+    func testRemoveLocalLogsUnsafeOwnedEntryKeepsMemoryAndRevokesIncidentCapture() async throws {
         let fixture = try makeSafeDeletionFixture()
         defer { fixture.cleanup() }
         let clock = TestObservabilityClock(milliseconds: 2000)
@@ -95,7 +95,7 @@ final class ObservabilitySafeDeletionTests: XCTestCase {
         let activeIncidentID = await hub.activeIncidentID()
         XCTAssertEqual(events.map(\.eventID), [event.eventID])
         XCTAssertEqual(incidents.map(\.id), [incidentID])
-        XCTAssertEqual(activeIncidentID, incidentID)
+        XCTAssertNil(activeIncidentID)
         XCTAssertTrue(FileManager.default.fileExists(atPath: eventURL.path))
         XCTAssertEqual(try Data(contentsOf: sentinelURL), Data("external".utf8))
     }
@@ -179,7 +179,7 @@ private struct SafeDeletionFixture {
 
     func makeHub(
         sessionID: String,
-        now: @escaping @Sendable () -> Date = Date.init,
+        now: @escaping @Sendable () -> Date = { Date() },
         idGenerator: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() }
     ) -> ObservabilityHub {
         ObservabilityHub(
@@ -272,7 +272,7 @@ private func replaceIncidentWithSymlink(
     incidentID: String
 ) throws -> URL {
     let incidentURL = fixture.incidentURL(id: incidentID)
-    try FileManager.default.removeItem(at: incidentURL)
+    try removeTestTemporaryItem(incidentURL)
     let sentinelURL = fixture.rootURL.appendingPathComponent("external-\(incidentID).txt")
     try Data("external".utf8).write(to: sentinelURL)
     try FileManager.default.createSymbolicLink(at: incidentURL, withDestinationURL: sentinelURL)

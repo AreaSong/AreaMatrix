@@ -86,7 +86,7 @@ extension ImportSingleFilePreviewModel {
         } catch {
             guard generation == currentGeneration else { return }
             prediction = nil
-            status = .failed(Self.classifyDisplayText(for: error))
+            status = .failed(ImportSingleFilePreviewFailurePolicy.displayText(for: error))
         }
     }
 
@@ -228,7 +228,7 @@ private extension ImportSingleFilePreviewModel {
             targetFilename: suggestedName
         ))
         guard generation == currentGeneration else { return }
-        preflightStatus = isImportablePreflightResult(result) ? .ready(result) : .blocked(result)
+        preflightStatus = ImportSingleFilePreflightPolicy.isImportable(result) ? .ready(result) : .blocked(result)
     }
 
     private var invalidFilenamePreflightResult: ImportSingleFilePreflightResult? {
@@ -243,16 +243,6 @@ private extension ImportSingleFilePreviewModel {
             conflict: .invalidFilename(validationMessage),
             keepBothTargetRelativePath: nil
         )
-    }
-
-    private func isImportablePreflightResult(_ result: ImportSingleFilePreflightResult) -> Bool {
-        switch result.conflict {
-        case .none, .duplicate, .name:
-            true
-        case .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
-             .sourceUnavailable, .error:
-            false
-        }
     }
 
     private func importFile(
@@ -340,29 +330,6 @@ private extension ImportSingleFilePreviewModel {
 
     private func mapImportError(_ error: Error) async -> CoreErrorMappingSnapshot {
         await errorMapper.mapError(error)
-    }
-
-    private static func classifyDisplayText(for error: Error) -> AppDisplayText {
-        guard let context = CoreErrorRawContextSnapshot(error) else {
-            return L10n.display("import.preview.categoryUnavailable")
-        }
-
-        switch context.kind {
-        case .config:
-            return L10n.display(
-                "import.preview.invalidRules",
-                arguments: [.string(context.rawContext)],
-                technicalDetail: context.rawContext
-            )
-        case .classify:
-            return L10n.display(
-                "import.preview.category-unavailable",
-                arguments: [.string(context.rawContext)],
-                technicalDetail: context.rawContext
-            )
-        default:
-            return L10n.display("import.preview.categoryUnavailable", technicalDetail: context.rawContext)
-        }
     }
 
     private func applyDuplicateConflictIfPresent(_ error: Error) -> Bool {
@@ -478,12 +445,5 @@ extension ImportSingleFilePreviewModel {
 
     func resetNameConflictResolutionForPreflight() {
         nameConflictResolution = .keepBoth
-    }
-}
-
-private extension ImportEntryRequest {
-    var explicitCategory: String? {
-        guard case let .category(slug) = destination else { return nil }
-        return slug
     }
 }

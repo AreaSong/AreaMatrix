@@ -56,6 +56,24 @@ final class DiagnosticsSettingsUIProjectionTests: XCTestCase {
     }
 
     @MainActor
+    func testSelectingDiagnosticModeAppliesFortyEightHourDefaultRetention() {
+        let model = DiagnosticsSettingsModel(
+            packagePreviewer: DiagnosticsPackagePreviewerSpy(),
+            packageHandler: DiagnosticsPackageHandlerSpy()
+        )
+        model.configuration = .standard
+
+        model.selectMode(.diagnostic)
+
+        XCTAssertEqual(model.configuration.mode, .diagnostic)
+        XCTAssertEqual(model.configuration.retentionHours, 48)
+
+        model.configuration.retentionHours = 72
+        model.selectMode(.diagnostic)
+        XCTAssertEqual(model.configuration.retentionHours, 72)
+    }
+
+    @MainActor
     func testApplyConfigurationUpdatesCoreAndHubTogether() async throws {
         let fixture = try DiagnosticsUIFixture()
         defer { fixture.cleanup() }
@@ -239,6 +257,8 @@ extension DiagnosticsSettingsUIProjectionTests {
         let runtime = AppLanguageRuntime(selection: .en)
         XCTAssertEqual(runtime.localizedString("settings.page.diagnostics"), "Diagnostics and Logs")
         XCTAssertEqual(runtime.localizedString("settings.advanced.openDiagnostics"), "Open Diagnostics")
+        XCTAssertEqual(runtime.localizedString("observability.health.modeElapsed"), "Current mode elapsed")
+        XCTAssertEqual(runtime.localizedString("observability.health.estimatedGrowth"), "Estimated growth")
         XCTAssertEqual(runtime.localizedString("observability.package.scope.incident"), "Selected incident")
         XCTAssertEqual(
             runtime.localizedString("observability.confirm.sensitivePackage.title"),
@@ -260,6 +280,8 @@ extension DiagnosticsSettingsUIProjectionTests {
         runtime.update(.zhHans)
         XCTAssertEqual(runtime.localizedString("settings.page.diagnostics"), "诊断与日志")
         XCTAssertEqual(runtime.localizedString("settings.advanced.openDiagnostics"), "打开诊断")
+        XCTAssertEqual(runtime.localizedString("observability.health.modeElapsed"), "当前模式已运行")
+        XCTAssertEqual(runtime.localizedString("observability.health.estimatedGrowth"), "预计增长")
         XCTAssertEqual(runtime.localizedString("observability.package.scope.incident"), "所选问题记录")
         XCTAssertEqual(
             runtime.localizedString("observability.confirm.sensitivePackage.title"),

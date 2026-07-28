@@ -306,24 +306,13 @@ private extension RollingObservabilityStore {
             let nextUsage = try ObservabilityStoreArithmetic.adding(usageBytes, bytes)
             let nextManagedUsage = try ObservabilityStoreArithmetic.adding(managedUsageBytes, bytes)
             do {
-                let appendedBytes = try fileIO.appendIncident(
+                try persistIncidentAppend(
                     data,
-                    id: record.incidentID,
-                    expectedCommittedBytes: committedBytes
-                ) { descriptor in
-                    try durabilityOperations.synchronizeIncident(descriptor, record.incidentID)
-                }
-                guard appendedBytes == nextCommittedBytes else {
-                    throw ObservabilityStoreError.unsafePath
-                }
-                let result = try persistManifestMutation {
-                    try $0.commitIncidentBytes(
-                        name,
-                        from: committedBytes,
-                        to: nextCommittedBytes
-                    )
-                }
-                try result.requireDurable()
+                    record: record,
+                    name: name,
+                    committedBytes: committedBytes,
+                    nextCommittedBytes: nextCommittedBytes
+                )
             } catch {
                 try? markIncidentReadOnly(id: record.incidentID)
                 throw error
@@ -338,62 +327,31 @@ private extension RollingObservabilityStore {
         }
     }
 
-    func encodedIncident(_ incident: ObservabilityIncidentSnapshot) throws -> Data {
-        var data = try codec.encodedRecord(.header(incident))
-        guard data.count <= Self.maximumIncidentBytes else {
-            throw ObservabilityStoreError.incidentTooLarge
+    mutating func persistIncidentAppend(
+        _ data: Data,
+        record: ObservabilityIncidentRecord,
+        name: String,
+        committedBytes: Int64,
+        nextCommittedBytes: Int64
+    ) throws {
+        let appendedBytes = try fileIO.appendIncident(
+            data,
+            id: record.incidentID,
+            expectedCommittedBytes: committedBytes
+        ) { descriptor in
+            try durabilityOperations.synchronizeIncident(descriptor, record.incidentID)
         }
-        for event in incident.events {
-            let record = try codec.encodedRecord(.event(incident.id, event))
-            let next = try ObservabilityStoreArithmetic.adding(
-                ObservabilityStoreArithmetic.bytes(data.count),
-                ObservabilityStoreArithmetic.bytes(record.count)
+        guard appendedBytes == nextCommittedBytes else {
+            throw ObservabilityStoreError.unsafePath
+        }
+        let result = try persistManifestMutation {
+            try $0.commitIncidentBytes(
+                name,
+                from: committedBytes,
+                to: nextCommittedBytes
             )
-            guard next <= Self.maximumIncidentBytes else {
-                throw ObservabilityStoreError.incidentTooLarge
-            }
-            data.append(record)
         }
-        if incident.isFrozen || incident.status != .open {
-            let freeze = try codec.encodedRecord(.freeze(
-                incident.id,
-                incident.captureEndsAtMilliseconds
-            ))
-            let next = try ObservabilityStoreArithmetic.adding(
-                ObservabilityStoreArithmetic.bytes(data.count),
-                ObservabilityStoreArithmetic.bytes(freeze.count)
-            )
-            guard next <= Self.maximumIncidentBytes else {
-                throw ObservabilityStoreError.incidentTooLarge
-            }
-            data.append(freeze)
-        }
-        return data
-    }
-
-    mutating func createManagedIncident(_ data: Data, id: String) throws {
-        var name = ""
-        try refreshPhysicalOccupancy()
-        try persistManifestMutation { state in
-            name = try state.reserveIncident(id: id)
-        }.requireDurable()
-        do {
-            try fileIO.writeIncidentExclusive(data, id: id, synchronize: true)
-            let result = try persistManifestMutation {
-                try $0.markManaged(
-                    name,
-                    committedBytes: ObservabilityStoreArithmetic.bytes(data.count)
-                )
-            }
-            try result.requireDurable()
-            guard let state = codec.incidentJournalState(data, expectedIncidentID: id) else {
-                throw ObservabilityStoreError.unsafePath
-            }
-            incidentJournalStates[id] = state
-        } catch {
-            abandonCreation(named: name)
-            throw error
-        }
+        try result.requireDurable()
     }
 
     mutating func ensurePrepared(

@@ -296,16 +296,17 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
             actionID: "repository.import.confirmed",
             componentID: "macos.import.bridge"
         )
-        let coreTraceContext = await ObservabilityRuntimeAssembly.shared.makeCoreTraceContext(
+        let coreTraceContext = await importObservability.traceContextProvider.make(.init(
             traceID: appTraceContext.traceID,
             parentSpanID: appTraceContext.spanID,
             operationID: appTraceContext.operationID,
             actionID: appTraceContext.actionID,
             componentID: "core.repository.import",
+            incidentID: nil,
             retryOfOperationID: appTraceContext.retryOfOperationID,
             sourceURL: sourceURL,
             storageMode: options.mode
-        )
+        ))
         do {
             let result = try await Task.detached(priority: .userInitiated) {
                 try AreaMatrix.importFileWithResultObserved(
@@ -317,14 +318,14 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
             }.value
             var entry = FileEntrySnapshot(coreEntry: result.entry) { _, _ in .available }
             entry.importCommitState = CoreImportCommitState(result.sourceRemovalStatus)
-            await recordImportTerminal(
+            await importObservability.recordTerminal(
                 appTraceContext,
                 coreTraceContext: coreTraceContext,
                 outcome: entry.importCommitState.isDegraded ? "degraded" : "succeeded"
             )
             return entry
         } catch {
-            await recordImportTerminal(
+            await importObservability.recordTerminal(
                 appTraceContext,
                 coreTraceContext: coreTraceContext,
                 outcome: "failed",

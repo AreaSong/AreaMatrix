@@ -157,8 +157,8 @@ Swift 平台层统一路由 OSLog、signpost、内存和文件 sink。业务 Fea
 
 ## Trace Context 传播
 
-Swift 为有语义的用户动作创建 trace context。CoreBridge 在调用开始、返回和错误时生成 span，并将可选
-`CoreTraceContext` 作为请求 DTO 的一部分传入需要端到端关联的 Core API。不能依赖线程局部状态跨越
+Swift 为有语义的用户动作创建 trace context。CoreBridge 在调用开始、返回和错误时生成 span；需要端到端关联的
+observed Core API 显式接收必填 `CoreTraceContext` 参数，兼容 API 不携带 context。不能依赖线程局部状态跨越
 `Task.detached` 或同步 FFI。
 
 后台根事件由 owning subsystem 创建：watcher window、startup recovery、scheduled cleanup 和 crash recovery 均有独立
@@ -233,7 +233,7 @@ bytes，单个 context/event 的结构化 payload 最多 65,536 bytes；filename
 - 查看关键操作的自然语言时间线。
 - 展开受控技术详情和稳定错误码。
 - 标记刚才的问题并补充说明。
-- 选择诊断范围、文件名策略和可选附件。
+- 选择诊断范围、文件名策略和可选的 repository metadata snapshot 附件。
 - 预览将被保存的内容和隐私报告。
 - 删除本地运行日志或 incident。
 
@@ -263,11 +263,13 @@ bytes，单个 context/event 的结构化 payload 最多 65,536 bytes；filename
 ├── privacy-report.json
 ├── summary.txt
 ├── checksums.json
-└── attachments/
+└── attachments/repository-metadata/
 ```
 
 包先写入 Application Support 下的受控临时目录，完成 flush、checksum 与内容复核后，再由用户选择目标执行不覆盖落位。
-默认只包含脱敏事件和非敏感环境摘要。repository snapshot、真实文件名、完整路径和附件均为独立 opt-in。
+默认只包含脱敏事件和非敏感环境摘要。真实文件名、完整路径和 repository metadata snapshot 均为独立 opt-in。
+当前附件 allowlist 只接受 `attachments/repository-metadata/` 下的 `index.db` 及存在时的 WAL/SHM，不支持任意
+用户文件附件。
 
 离线 viewer 将包视为不可信输入：拒绝 symlink、目录穿越、未知 required schema、超出总大小/文件数/单行/嵌套深度
 限制、checksum 不一致和不规则文件。viewer 不执行脚本、URL、恢复动作或包内命令。
@@ -280,8 +282,8 @@ service owner 和 security evidence 前，应用不提供网络发送实现。
 `create_diagnostics_snapshot(repoPath)` 仍只在 `.areamatrix/diagnostics/` 创建 metadata DB 及可选 WAL/SHM 副本。
 它不包含用户文件正文，但可能包含路径、文件名、tags 和 notes，必须作为 sensitive 附件单独确认。
 
-About diagnostics 继续输出 App/Core/schema 和版本兼容摘要。它可以被 `.amdiagnostic` exporter 读取为非敏感环境输入，
-但不能冒充完整运行 trace。
+About diagnostics 继续输出 App/Core/schema 和版本兼容摘要。`.amdiagnostic` 的 `environment.json` 使用同类
+非敏感环境摘要语义，但不依赖或复制 About 文本产物；两者都不能冒充完整运行 trace。
 
 ## 自身健康与失败语义
 

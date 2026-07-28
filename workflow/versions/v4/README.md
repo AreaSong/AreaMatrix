@@ -7,6 +7,11 @@ Product and architecture behavior remains authoritative under `docs/`. This vers
 approved design through middle-layer, changes, plans, drafts, queue, and promotion review without
 writing live execution before explicit approval and mapping.
 
+The product implementation now exists across Rust Core, UniFFI, the macOS observability runtime,
+Diagnostics UI, diagnostic packages, and tests. The version remains `planning`: Exact Docs alignment,
+fresh cross-layer validation, security/review evidence, and closeout are still required, and this
+implementation state does not authorize promotion or execution writes.
+
 ## Flow
 
 ```text

@@ -262,13 +262,17 @@ sheet 内部失败应留在 sheet 上下文，不能假设存在统一全局重�
 
 支持 diagnostics 的 medium+ 错误至少提供一个真实入口：
 
+- runtime diagnostics：进入设置窗口的独立 Diagnostics Tab，并允许用户在已有事件中按稳定错误 code、
+  operation/trace/incident 身份过滤、查看活动、标记 incident 或预览 `.amdiagnostic`。当前入口不自动绑定错误上下文。
 - repository diagnostics：创建 `.areamatrix/diagnostics/index-*.db`，并按存在性复制 WAL/SHM。
   该 snapshot 不含用户文件正文，但包含路径、文件名、标签、笔记和其他 metadata；不能称为全文脱敏。
 - About diagnostics：在 Application Support 下创建按专用合同脱敏的文本目录。
-- `Open logs`：只打开已存在的 `.areamatrix/logs/`；当前不保证应用会创建或写入该目录。
+- `Open diagnostics`：打开应用拥有的 Diagnostics 页面或真实存在的诊断产物，不猜测资料库日志目录。
 
-当前没有统一 zip diagnostics bundle、自动 OSLog 收集或自动上传。
-repository diagnostics 分享前必须由用户审阅 snapshot 及其 companion files。
+`.amdiagnostic` 是本地、versioned、checksummed 的目录包，不是 repository repair snapshot，也不抓取 OSLog。
+保存前必须预览事件范围、隐私报告、预计大小和可选 repository metadata snapshot 附件；当前不支持任意用户文件
+附件。repository diagnostics 分享前仍必须单独审阅
+snapshot 及 companion files。所有诊断产物都不自动上传。
 
 隐私说明必须出现一次：
 > 诊断信息保存在你的本地，不会自动上传。

@@ -6,8 +6,13 @@ enum DiagnosticPackageStageCopier {
         from sourceDirectory: Int32,
         to destinationDirectory: Int32,
         attachments: [DiagnosticPackageAttachmentPayload],
-        synchronize: (Int32) -> Int32
+        synchronize: @escaping (Int32) -> Int32,
+        beforeFinalSourceValidation: @escaping (String) -> Void = { _ in }
     ) throws {
+        let operations = CopyOperations(
+            synchronize: synchronize,
+            beforeFinalSourceValidation: beforeFinalSourceValidation
+        )
         for name in DiagnosticPackageFormat.payloadFileNames {
             guard let limit = DiagnosticPackageFormat.fileByteLimits[name] else {
                 throw DiagnosticPackageError.invalidPackage
@@ -17,16 +22,16 @@ enum DiagnosticPackageStageCopier {
                 from: sourceDirectory,
                 to: destinationDirectory,
                 byteLimit: Int64(limit),
-                synchronize: synchronize
+                operations: operations
             )
         }
         try copyAttachments(
             from: sourceDirectory,
             to: destinationDirectory,
             attachments: attachments,
-            synchronize: synchronize
+            operations: operations
         )
-        guard synchronize(destinationDirectory) == 0 else {
+        guard operations.synchronize(destinationDirectory) == 0 else {
             throw DiagnosticPackageError.invalidDestination
         }
     }
@@ -35,11 +40,27 @@ enum DiagnosticPackageStageCopier {
 private extension DiagnosticPackageStageCopier {
     static let bufferSize = 64 * 1024
 
+    struct CopyOperations {
+        let synchronize: (Int32) -> Int32
+        let beforeFinalSourceValidation: (String) -> Void
+    }
+
+    struct CopyEndpoints {
+        let name: String
+        let sourceDirectory: Int32
+        let source: Int32
+        let sourceIdentity: stat
+        let destinationDirectory: Int32
+        let destination: Int32
+        let initialDestinationIdentity: stat
+        let byteLimit: Int64
+    }
+
     static func copyAttachments(
         from sourceDirectory: Int32,
         to destinationDirectory: Int32,
         attachments: [DiagnosticPackageAttachmentPayload],
-        synchronize: (Int32) -> Int32
+        operations: CopyOperations
     ) throws {
         let sourceAttachments = try openDirectory(
             named: DiagnosticPackageFormat.attachmentsDirectoryName,
@@ -57,10 +78,10 @@ private extension DiagnosticPackageStageCopier {
                 from: sourceAttachments,
                 to: destinationAttachments,
                 attachments: attachments,
-                synchronize: synchronize
+                operations: operations
             )
         }
-        guard synchronize(destinationAttachments) == 0 else {
+        guard operations.synchronize(destinationAttachments) == 0 else {
             throw DiagnosticPackageError.invalidDestination
         }
     }
@@ -69,7 +90,7 @@ private extension DiagnosticPackageStageCopier {
         from sourceAttachments: Int32,
         to destinationAttachments: Int32,
         attachments: [DiagnosticPackageAttachmentPayload],
-        synchronize: (Int32) -> Int32
+        operations: CopyOperations
     ) throws {
         let sourceMetadata = try openDirectory(
             named: DiagnosticPackageFormat.repositoryMetadataDirectoryName,
@@ -94,10 +115,10 @@ private extension DiagnosticPackageStageCopier {
                 from: sourceMetadata,
                 to: destinationMetadata,
                 byteLimit: Int64(DiagnosticPackageFormat.maximumMetadataFileBytes),
-                synchronize: synchronize
+                operations: operations
             )
         }
-        guard synchronize(destinationMetadata) == 0 else {
+        guard operations.synchronize(destinationMetadata) == 0 else {
             throw DiagnosticPackageError.invalidDestination
         }
     }
@@ -107,12 +128,20 @@ private extension DiagnosticPackageStageCopier {
         from sourceDirectory: Int32,
         to destinationDirectory: Int32,
         byteLimit: Int64,
-        synchronize: (Int32) -> Int32
+        operations: CopyOperations
     ) throws {
-        let source = openat(sourceDirectory, name, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+        let sourcePathIdentity = try validatedRegularFile(
+            named: name,
+            directoryDescriptor: sourceDirectory,
+            byteLimit: byteLimit
+        )
+        let source = openat(sourceDirectory, name, O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)
         guard source >= 0 else { throw DiagnosticPackageError.unsafeFile }
         defer { close(source) }
         let sourceIdentity = try validatedRegularFile(source, byteLimit: byteLimit)
+        guard sameIdentityAndContents(sourcePathIdentity, sourceIdentity) else {
+            throw DiagnosticPackageError.unsafeFile
+        }
 
         let destination = openat(
             destinationDirectory,
@@ -122,7 +151,15 @@ private extension DiagnosticPackageStageCopier {
         )
         guard destination >= 0 else { throw DiagnosticPackageError.invalidDestination }
         defer { close(destination) }
-        _ = try validatedRegularFile(destination, byteLimit: byteLimit)
+        let initialDestinationIdentity = try validatedRegularFile(destination, byteLimit: byteLimit)
+        let initialDestinationPath = try validatedRegularFile(
+            named: name,
+            directoryDescriptor: destinationDirectory,
+            byteLimit: byteLimit
+        )
+        guard sameResourceIdentity(initialDestinationIdentity, initialDestinationPath) else {
+            throw DiagnosticPackageError.unsafeFile
+        }
 
         try copyBytes(
             from: source,
@@ -130,15 +167,47 @@ private extension DiagnosticPackageStageCopier {
             expectedByteCount: sourceIdentity.st_size,
             byteLimit: byteLimit
         )
-        guard synchronize(destination) == 0 else {
+        guard operations.synchronize(destination) == 0 else {
             throw DiagnosticPackageError.invalidDestination
         }
-        let finalSourceIdentity = try validatedRegularFile(source, byteLimit: byteLimit)
-        guard sameIdentityAndContents(sourceIdentity, finalSourceIdentity) else {
+        operations.beforeFinalSourceValidation(name)
+        try validateFinalIdentities(CopyEndpoints(
+            name: name,
+            sourceDirectory: sourceDirectory,
+            source: source,
+            sourceIdentity: sourceIdentity,
+            destinationDirectory: destinationDirectory,
+            destination: destination,
+            initialDestinationIdentity: initialDestinationIdentity,
+            byteLimit: byteLimit
+        ))
+    }
+
+    static func validateFinalIdentities(_ endpoints: CopyEndpoints) throws {
+        let finalSourceIdentity = try validatedRegularFile(endpoints.source, byteLimit: endpoints.byteLimit)
+        let finalSourcePath = try validatedRegularFile(
+            named: endpoints.name,
+            directoryDescriptor: endpoints.sourceDirectory,
+            byteLimit: endpoints.byteLimit
+        )
+        guard sameIdentityAndContents(endpoints.sourceIdentity, finalSourceIdentity),
+              sameIdentityAndContents(endpoints.sourceIdentity, finalSourcePath)
+        else {
             throw DiagnosticPackageError.unsafeFile
         }
-        let destinationIdentity = try validatedRegularFile(destination, byteLimit: byteLimit)
-        guard destinationIdentity.st_size == sourceIdentity.st_size else {
+        let destinationIdentity = try validatedRegularFile(
+            endpoints.destination,
+            byteLimit: endpoints.byteLimit
+        )
+        let destinationPath = try validatedRegularFile(
+            named: endpoints.name,
+            directoryDescriptor: endpoints.destinationDirectory,
+            byteLimit: endpoints.byteLimit
+        )
+        guard sameIdentityAndContents(destinationIdentity, destinationPath),
+              sameResourceIdentity(endpoints.initialDestinationIdentity, destinationIdentity),
+              destinationIdentity.st_size == endpoints.sourceIdentity.st_size
+        else {
             throw DiagnosticPackageError.invalidPackage
         }
     }
@@ -228,6 +297,29 @@ private extension DiagnosticPackageStageCopier {
               status.st_size <= byteLimit
         else { throw DiagnosticPackageError.unsafeFile }
         return status
+    }
+
+    static func validatedRegularFile(
+        named name: String,
+        directoryDescriptor: Int32,
+        byteLimit: Int64
+    ) throws -> stat {
+        var status = stat()
+        guard fstatat(directoryDescriptor, name, &status, AT_SYMLINK_NOFOLLOW) == 0 else {
+            throw DiagnosticPackageError.unsafeFile
+        }
+        guard status.st_mode & S_IFMT == S_IFREG,
+              status.st_nlink == 1,
+              status.st_uid == geteuid(),
+              status.st_flags & UInt32(SF_DATALESS) == 0,
+              status.st_size >= 0,
+              status.st_size <= byteLimit
+        else { throw DiagnosticPackageError.unsafeFile }
+        return status
+    }
+
+    static func sameResourceIdentity(_ lhs: stat, _ rhs: stat) -> Bool {
+        lhs.st_dev == rhs.st_dev && lhs.st_ino == rhs.st_ino
     }
 
     static func sameIdentityAndContents(_ lhs: stat, _ rhs: stat) -> Bool {

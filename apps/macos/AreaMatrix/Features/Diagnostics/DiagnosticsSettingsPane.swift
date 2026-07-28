@@ -179,7 +179,7 @@ private extension DiagnosticsSettingsPane {
 
     var modeSection: some View {
         SettingsFormSection(title: L10n.string("observability.mode.title")) {
-            Picker(L10n.string("observability.mode.title"), selection: $model.configuration.mode) {
+            Picker(L10n.string("observability.mode.title"), selection: modeBinding) {
                 ForEach(AppObservabilityMode.allCases, id: \.self) { mode in
                     Text(mode.localizedLabel).tag(mode)
                 }
@@ -205,6 +205,13 @@ private extension DiagnosticsSettingsPane {
                 .buttonStyle(.borderedProminent)
                 .disabled(model.isBusy)
         }
+    }
+
+    var modeBinding: Binding<AppObservabilityMode> {
+        Binding(
+            get: { model.configuration.mode },
+            set: model.selectMode
+        )
     }
 
     @ViewBuilder

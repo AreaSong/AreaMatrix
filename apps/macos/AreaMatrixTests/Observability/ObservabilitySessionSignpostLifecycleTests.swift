@@ -179,9 +179,7 @@ private final class SessionMarkerFixture {
     private let baseURL: URL
 
     init() throws {
-        baseURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("areamatrix-session-marker-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
+        baseURL = try makeTestTemporaryDirectory(named: "areamatrix-session-marker")
     }
 
     func root(_ name: String) -> URL {
@@ -206,6 +204,6 @@ private final class SessionMarkerFixture {
     }
 
     func cleanup() {
-        try? FileManager.default.removeItem(at: baseURL)
+        removeTestTemporaryItems(baseURL)
     }
 }

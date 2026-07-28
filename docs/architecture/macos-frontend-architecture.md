@@ -53,6 +53,7 @@ inventory，新增业务 View / State / Action 不得回流这些目录。
 - `Features/CommandPalette/`
 - `Features/Detail/`
 - `Features/RepositoryLifecycle/`
+- `Features/Diagnostics/`
 
 每个 feature 可以按需要包含：
 
@@ -65,8 +66,12 @@ inventory，新增业务 View / State / Action 不得回流这些目录。
 
 只有当组件跨多个 feature 复用且不携带业务语义时，才放入 `Views/DesignSystem/` 或共享 support。
 
-当前 11 个 Feature 目录由 `MacOSFeatureOwnershipGovernanceTests` 精确登记职责、风险边界和验证重点。
+当前 12 个 Feature 目录由 `MacOSFeatureOwnershipGovernanceTests` 精确登记职责、风险边界和验证重点。
 新增 Feature 目录必须先补 owner inventory；跨 feature 公共能力仍需至少两个真实调用方后再抽取。
+
+`Features/Diagnostics/` 拥有独立 Diagnostics 设置页、活动投影、incident 操作、Trace Console、诊断包预览和
+离线查看状态。它不直接写日志文件，不扩大 repository snapshot 权限，也不允许覆盖导出目标；这些副作用分别由
+受注入的平台服务和不覆盖保存合同承接。
 
 ## Bridge 边界
 
@@ -177,9 +182,16 @@ locale 时 fail closed，不从当前设置补猜。已开始 operation 的 UI p
 - `NSWorkspace`
 - `NSPasteboard`
 - system capability probing
-- OS logging wrappers
+- OSLog/signpost wrappers
+- `ObservabilityHub`、有界内存事件、rolling JSONL、manifest ownership、retention 和 incident persistence
+- `.amdiagnostic` preview/writer/reader、离线不可信输入校验和 open/save panel
 
 平台服务应通过小接口注入到 model 或 app shell，便于测试替身复用。不要为了一个调用点过度抽象；当能力跨 feature 复用或涉及用户文件安全边界时，再抽到稳定服务。
+
+`ObservabilityRuntimeAssembly` 位于 App 层，负责进程 session、Core build identity、sink 注册、模式租约、异常
+session 恢复、flush 与有序停止；它不把 feature 页面状态做成全局单例。`CoreObservabilitySinkAdapter` 是
+UniFFI callback 到 `ObservabilityHub` 的平台边界，使用有界队列和独立 drop 计数，不能在 callback 中同步落盘或
+等待 MainActor。
 
 Import progress 在主列表中的临时行展示通过 `ImportProgressListPresentation` 传入，选择状态、row/detail
 projection 和文件选择互斥 relay 由 Import feature 持有；MainList 只负责摆放 Import 提供的 table/detail contract，

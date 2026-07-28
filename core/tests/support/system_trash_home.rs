@@ -19,6 +19,18 @@ impl HomeOverride {
             previous_force_user_trash,
         }
     }
+
+    #[allow(dead_code)]
+    fn install_unavailable() -> Self {
+        let previous = std::env::var_os("HOME");
+        let previous_force_user_trash = std::env::var_os(FORCE_USER_TRASH_ENV);
+        std::env::remove_var("HOME");
+        std::env::remove_var(FORCE_USER_TRASH_ENV);
+        Self {
+            previous,
+            previous_force_user_trash,
+        }
+    }
 }
 
 impl Drop for HomeOverride {
@@ -43,4 +55,13 @@ pub(crate) fn with_test_system_trash<R>(run: impl FnOnce(&Path) -> R) -> R {
     fs::create_dir(&trash_dir).expect("create temporary system Trash");
     let _home = HomeOverride::install(home.path());
     run(&trash_dir)
+}
+
+#[allow(dead_code)]
+pub(crate) fn with_unavailable_system_trash<R>(run: impl FnOnce() -> R) -> R {
+    let _guard = HOME_ENV_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let _home = HomeOverride::install_unavailable();
+    run()
 }

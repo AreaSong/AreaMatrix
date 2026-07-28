@@ -224,8 +224,8 @@ final class RepoStore {
 ### 不允许
 
 - 直接调 UniFFI 生成函数（必须经过 CoreBridge）
-- 用 `print()` 冒充持久化日志或错误处理；当前应映射为页面状态或显式 diagnostics，日志体系接入后再使用
-  受治理的 logger
+- 用 `print()` 冒充持久化日志或错误处理；应映射为页面状态或通过受治理的 observability event、OSLog sink 与
+  diagnostics 合同记录，不能让业务代码直接写 JSONL
 - 强制解包 `!`（除非是 `IBOutlet` 或类型已经是 force unwrap 的字面量类型）
 - 在 View body 闭包内 `await`（Swift 编译能过但要避免）
 - 单文件超 500 行

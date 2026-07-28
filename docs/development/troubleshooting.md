@@ -152,8 +152,8 @@ status='staging'`。
 - RootChanged：重新连接资料库路径。
 - watermark 补写失败：保留 pending 事件，重试 external sync；不能手工跳过 cursor。
 
-当前没有 Debug → Show watcher state 或已接入的 OSLog watcher stream。开发验证使用 watcher tests、页面状态和
-Core cursor/DB 证据。
+watcher 业务状态继续以 watcher tests、页面状态和 Core cursor/DB 为权威证据。结构化 runtime event 可以在
+Diagnostics 的 Trace Console、OSLog/Console 或 rolling JSONL 中辅助关联，但不能替代 cursor、receipt 或 DB 证据。
 
 ## iCloud placeholder
 
@@ -186,12 +186,16 @@ JSON 构造还是 UI 持有对象；当前没有 TreeCache/LRU 可调。
 
 应用内真实入口：
 
-- Repository/Advanced settings：创建 repository metadata snapshot。
-- About settings：隐私确认后导出脱敏文本 diagnostics。
-- Open logs：只打开已存在的 `.areamatrix/logs/`，当前不保证存在日志 writer。
+- 独立 Diagnostics Tab：模式与租约、健康、活动、incident、Trace Console、受管理日志删除、
+  `.amdiagnostic` 预览/保存和离线打开。
+- Repository/Advanced settings：创建 repository metadata snapshot，并可跳转到 Diagnostics。
+- About settings：隐私确认后导出脱敏文本 diagnostics，并可跳转到 Diagnostics。
+- 运行日志默认位于 `~/Library/Application Support/AreaMatrix/Logs/`，由 manifest 明确文件 ownership；不读取或
+  删除未知同名文件，也不写入资料库根目录。
 
 repository snapshot 可能包含路径、文件名、tags、notes 等敏感 metadata；不要公开上传。About diagnostics
-排除用户内容、脱敏路径且不自动上传。
+排除用户内容、脱敏路径且不自动上传。`.amdiagnostic` 默认脱敏、checksummed、本地生成且不自动上传；当前只允许
+单独确认的 repository metadata snapshot 作为附件类别，不接受任意用户文件。
 
 应用无法运行且必须人工保全时，先完全退出应用，再复制 `index.db`、存在的 WAL/SHM 和相关 warning；不要
 在原文件上执行写入或修复命令。

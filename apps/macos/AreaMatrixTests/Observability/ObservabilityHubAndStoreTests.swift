@@ -2,6 +2,33 @@
 import XCTest
 
 final class ObservabilityHubAndStoreTests: XCTestCase {
+    func testHubRejectsNormalizedCredentialVariantsAtLiveIngress() async throws {
+        let fixture = try makeObservabilityFixture()
+        defer { fixture.cleanup() }
+        let hub = ObservabilityHub(
+            configurationStore: ObservabilityConfigurationStore(defaults: fixture.defaults),
+            rootURL: fixture.logsURL,
+            sessionID: "credential-session",
+            expectedCoreBuildContext: observabilityTestCoreBuildContext()
+        )
+        await hub.configure(configuration(mode: .developer, minimumSeverity: .trace))
+
+        for (index, message) in ["Bearer\topaque", "auth = opaque", "x-api-token : opaque"].enumerated() {
+            var candidate = event(
+                id: "credential-\(index)",
+                timestamp: Int64(index),
+                sessionID: "credential-session"
+            )
+            candidate.message = message
+            await hub.ingestCoreEvent(candidate)
+        }
+
+        let health = await hub.health(core: nil)
+        let recentEvents = await hub.recentEvents(limit: 10)
+        XCTAssertTrue(recentEvents.isEmpty)
+        XCTAssertEqual(health.rejectedEvents, 3)
+    }
+
     func testHubBoundsMemoryAndReportsIngressHealthForOneSession() async throws {
         let fixture = try makeObservabilityFixture()
         defer { fixture.cleanup() }
@@ -195,7 +222,9 @@ final class ObservabilityHubAndStoreTests: XCTestCase {
         let health = await hub.health(core: nil)
         XCTAssertEqual(health.rejectedEvents, 1)
     }
+}
 
+extension ObservabilityHubAndStoreTests {
     func testHubRejectsUnsafeWireValuesBeforeMemoryAndDiskSinks() async throws {
         let fixture = try makeObservabilityFixture()
         defer { fixture.cleanup() }
@@ -207,56 +236,11 @@ final class ObservabilityHubAndStoreTests: XCTestCase {
         )
         await hub.configure(configuration(mode: .developer, minimumSeverity: .trace))
 
-        var credential = event(id: "credential", timestamp: 1, sessionID: "wire-safety-session")
-        credential.message = "accessToken opaque"
-        var confusableKey = event(
-            id: "confusable-key",
-            timestamp: 2,
-            sessionID: "wire-safety-session",
-            privacy: "sensitive"
-        )
-        confusableKey.attributes = [
-            .init(key: "accessＴoken", value: "opaque", privacy: "sensitive")
-        ]
-        var underclassified = event(id: "locator", timestamp: 3, sessionID: "wire-safety-session")
-        underclassified.message = "/Users/example/private.txt"
-        var invalidResource = event(
-            id: "resource",
-            timestamp: 4,
-            sessionID: "wire-safety-session",
-            privacy: "pseudonymous"
-        )
-        invalidResource.resources = [
-            .init(
-                resourceID: "00000000-0000-4000-8000-000000000001",
-                alias: "file.0123456789ABCDEF01234567",
-                pathExtension: "txt",
-                sizeBucket: "lt_1mb",
-                storageMode: "copied"
-            )
-        ]
-        var invalidBuild = event(id: "build", timestamp: 5, sessionID: "wire-safety-session")
-        invalidBuild.buildContext = .init(
-            producer: "area_matrix_core",
-            version: "0.1.0",
-            build: "test",
-            configuration: "debug",
-            platform: "macos",
-            architecture: "arm64"
-        )
-        for rejected in [credential, confusableKey, underclassified, invalidResource, invalidBuild] {
+        for rejected in unsafeWireEvents(sessionID: "wire-safety-session") {
             await hub.ingestCoreEvent(rejected)
         }
 
-        var sanitized = event(
-            id: "sanitized",
-            timestamp: 6,
-            sessionID: "wire-safety-session",
-            privacy: "sensitive"
-        )
-        sanitized.message = "来源，/用户/机密.txt"
-        sanitized.target = "file:///Users/example/private.txt"
-        sanitized.threadName = "worker /Users/example/private.txt"
+        let sanitized = sanitizedWireEvent(sessionID: "wire-safety-session")
         await hub.ingestCoreEvent(sanitized)
         try await hub.flush()
 
@@ -342,7 +326,11 @@ final class ObservabilityHubAndStoreTests: XCTestCase {
         candidate.platform = "linux"
         mismatches.append(candidate)
         for (index, buildContext) in mismatches.enumerated() {
-            var rejected = event(id: "mismatch-\(index)", timestamp: Int64(index + 3), sessionID: "core-identity-session")
+            var rejected = event(
+                id: "mismatch-\(index)",
+                timestamp: Int64(index + 3),
+                sessionID: "core-identity-session"
+            )
             rejected.buildContext = buildContext
             await hub.ingestCoreEvent(rejected)
         }
@@ -405,5 +393,46 @@ final class ObservabilityHubAndStoreTests: XCTestCase {
 
         XCTAssertEqual(try observabilityEventURLs(in: fixture.logsURL), filesBeforeLateEvent)
         XCTAssertEqual(eventsAfterLateEvent, eventsBeforeLateEvent)
+    }
+}
+
+private extension ObservabilityHubAndStoreTests {
+    func unsafeWireEvents(sessionID: String) -> [ObservabilityEventSnapshot] {
+        var credential = event(id: "credential", timestamp: 1, sessionID: sessionID)
+        credential.message = "accessToken opaque"
+        var confusableKey = event(id: "confusable-key", timestamp: 2, sessionID: sessionID, privacy: "sensitive")
+        confusableKey.attributes = [
+            .init(key: "accessＴoken", value: "opaque", privacy: "sensitive")
+        ]
+        var underclassified = event(id: "locator", timestamp: 3, sessionID: sessionID)
+        underclassified.message = "/Users/example/private.txt"
+        var invalidResource = event(id: "resource", timestamp: 4, sessionID: sessionID, privacy: "pseudonymous")
+        invalidResource.resources = [
+            .init(
+                resourceID: "00000000-0000-4000-8000-000000000001",
+                alias: "file.0123456789ABCDEF01234567",
+                pathExtension: "txt",
+                sizeBucket: "lt_1mb",
+                storageMode: "copied"
+            )
+        ]
+        var invalidBuild = event(id: "build", timestamp: 5, sessionID: sessionID)
+        invalidBuild.buildContext = .init(
+            producer: "area_matrix_core",
+            version: "0.1.0",
+            build: "test",
+            configuration: "debug",
+            platform: "macos",
+            architecture: "arm64"
+        )
+        return [credential, confusableKey, underclassified, invalidResource, invalidBuild]
+    }
+
+    func sanitizedWireEvent(sessionID: String) -> ObservabilityEventSnapshot {
+        var sanitized = event(id: "sanitized", timestamp: 6, sessionID: sessionID, privacy: "sensitive")
+        sanitized.message = "来源，/用户/机密.txt"
+        sanitized.target = "file:///Users/example/private.txt"
+        sanitized.threadName = "worker /Users/example/private.txt"
+        return sanitized
     }
 }

@@ -54,3 +54,40 @@ enum ImportSingleFilePreflightTarget {
         return "\(cleanCategory.isEmpty ? "inbox" : cleanCategory)/\(cleanName.isEmpty ? "untitled" : cleanName)"
     }
 }
+
+enum ImportSingleFilePreflightPolicy {
+    static func isImportable(_ result: ImportSingleFilePreflightResult) -> Bool {
+        switch result.conflict {
+        case .none, .duplicate, .name:
+            true
+        case .invalidFilename, .iCloudPlaceholder, .iCloudDownloadFailed, .corePreviewUnavailable,
+             .sourceUnavailable, .error:
+            false
+        }
+    }
+}
+
+enum ImportSingleFilePreviewFailurePolicy {
+    static func displayText(for error: Error) -> AppDisplayText {
+        guard let context = CoreErrorRawContextSnapshot(error) else {
+            return L10n.display("import.preview.categoryUnavailable")
+        }
+
+        switch context.kind {
+        case .config:
+            return L10n.display(
+                "import.preview.invalidRules",
+                arguments: [.string(context.rawContext)],
+                technicalDetail: context.rawContext
+            )
+        case .classify:
+            return L10n.display(
+                "import.preview.category-unavailable",
+                arguments: [.string(context.rawContext)],
+                technicalDetail: context.rawContext
+            )
+        default:
+            return L10n.display("import.preview.categoryUnavailable", technicalDetail: context.rawContext)
+        }
+    }
+}

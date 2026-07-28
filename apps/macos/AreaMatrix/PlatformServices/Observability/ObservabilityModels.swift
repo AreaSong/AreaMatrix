@@ -202,6 +202,8 @@ struct AppObservabilityHealth: Equatable {
     var oldestEventTimestampMilliseconds: Int64?
     var fileUsageBytes: Int64 = 0
     var diskBudgetBytes: Int64 = 0
+    var modeElapsedMilliseconds: Int64 = 0
+    var estimatedGrowthBytesPerHour: Int64?
     var droppedEvents: UInt64 = 0
     var droppedTraceEvents: UInt64 = 0
     var droppedDebugEvents: UInt64 = 0

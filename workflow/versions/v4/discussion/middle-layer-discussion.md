@@ -52,3 +52,11 @@
 - `queue`: version-local candidates only until explicit promotion.
 - `promotion`: blocked until execution mapping is configured.
 - `execution`: blocked until promotion is approved.
+
+## Implementation Alignment
+
+- Product code and tests have landed directly under their authoritative code owners while v4 remains
+  a planning and evidence ledger; no version execution artifact was used or modified.
+- Middle-layer and changes now carry the implemented architecture rather than a prototype gap.
+- Plans, drafts, queue, and promotion remain review artifacts only. Fresh full validation and
+  completion evidence are still prerequisites for closeout and do not relax promotion gates.

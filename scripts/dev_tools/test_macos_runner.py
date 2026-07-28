@@ -15,6 +15,7 @@ from scripts.dev_tools.macos import (
     _evaluate_swift_coverage_report,
     _handle_release_app_launch_probe_result,
     _parallel_xcodebuild_retry_allowed,
+    _products_dir_for_test_bundle,
     _run_sandbox_fallback,
     _run_macos_tests_inner,
     _test_base_args,
@@ -310,7 +311,7 @@ class MacOSTestRunnerTest(unittest.TestCase):
     def test_release_launch_probe_keeps_real_probe_failure_red(self) -> None:
         self.assertEqual(_handle_release_app_launch_probe_result(42), 42)
 
-    def test_release_perf_tests_are_enabled_only_for_explicit_perf_selection(self) -> None:
+    def test_performance_tests_are_enabled_only_for_explicit_perf_selection(self) -> None:
         self.assertIsNone(_xcode_test_env([]))
         self.assertIsNone(_xcode_test_env(["AreaMatrixTests/AISummaryPrivacyRuleTests"]))
         self.assertEqual(
@@ -320,6 +321,49 @@ class MacOSTestRunnerTest(unittest.TestCase):
         self.assertEqual(
             _xcode_test_env(["AreaMatrixTests/AreaMatrixPerfTests/testMemoryBaselinesUnderReleaseThresholds"]),
             {"AREAMATRIX_RUN_PERF_TESTS": "1"},
+        )
+        self.assertEqual(
+            _xcode_test_env(["AreaMatrixTests/ObservabilityPerformanceTests"]),
+            {"AREAMATRIX_RUN_PERF_TESTS": "1"},
+        )
+
+    def test_nested_test_bundle_resolves_host_app_products_directory(self) -> None:
+        products = self.tmp_path / "Build/Products/Debug"
+        app_binary = products / "AreaMatrix.app/Contents/MacOS"
+        app_binary.mkdir(parents=True)
+        bundle = products / "AreaMatrix.app/Contents/PlugIns/AreaMatrixTests.xctest"
+        bundle.mkdir(parents=True)
+
+        self.assertEqual(_products_dir_for_test_bundle(bundle, "AreaMatrix"), products)
+
+    def test_xcodebuild_success_runs_explicit_observability_performance_tests(self) -> None:
+        project = self.tmp_path / "AreaMatrix.xcodeproj"
+        project.mkdir()
+        bundle = self.tmp_path / "AreaMatrixTests.xctest"
+        bundle.mkdir()
+
+        with patch("scripts.dev_tools.macos._run_and_tee", return_value=0), \
+            patch("scripts.dev_tools.macos._find_test_bundle", return_value=bundle), \
+            patch("scripts.dev_tools.macos._run_filtered_xctest_bundle", return_value=0) as direct, \
+            patch("scripts.dev_tools.macos._validate_localization_compiler_keys"):
+            result = _run_macos_tests_inner(
+                self.tmp_path,
+                project,
+                "AreaMatrix",
+                "AreaMatrixTests.xctest",
+                "platform=macOS,arch=arm64",
+                self.tmp_path,
+                self.tmp_path / "test.log",
+                self.tmp_path / "build.log",
+                None,
+                ["AreaMatrixTests/ObservabilityPerformanceTests"],
+            )
+
+        self.assertEqual(result, 0)
+        direct.assert_called_once_with(
+            bundle,
+            "AreaMatrix",
+            ["AreaMatrixTests/ObservabilityPerformanceTests"],
         )
 
     def test_disable_parallel_testing_adds_xcodebuild_flag(self) -> None:
@@ -516,6 +560,8 @@ class MacOSTestRunnerTest(unittest.TestCase):
             return 75
 
         with patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee), \
+            patch("scripts.dev_tools.macos._find_test_bundle", return_value=self.tmp_path), \
+            patch("scripts.dev_tools.macos._run_filtered_xctest_bundle", return_value=0), \
             patch("scripts.dev_tools.macos._validate_localization_compiler_keys"), \
             patch(
                 "scripts.dev_tools.macos.run_release_app_launch_probe",

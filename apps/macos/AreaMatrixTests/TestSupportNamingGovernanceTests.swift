@@ -259,12 +259,16 @@ final class TestSupportNamingGovernanceTests: XCTestCase {
 
     private func testSupportSwiftFiles() throws -> [URL] {
         let testsDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-
-        return try FileManager.default.contentsOfDirectory(
+        let enumerator = FileManager.default.enumerator(
             at: testsDirectory,
             includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
         )
+        return try (enumerator?.compactMap { $0 as? URL } ?? [])
+            .filter { $0.pathExtension == "swift" }
+            .filter {
+                try $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true
+            }
     }
 
     private func supportSwiftFiles() throws -> [URL] {

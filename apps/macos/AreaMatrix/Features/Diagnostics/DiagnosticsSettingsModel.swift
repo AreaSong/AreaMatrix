@@ -124,6 +124,14 @@ final class DiagnosticsSettingsModel: ObservableObject {
         configuration.includeSensitive = isEnabled
     }
 
+    func selectMode(_ mode: AppObservabilityMode) {
+        guard configuration.mode != mode else { return }
+        configuration.mode = mode
+        if mode == .diagnostic {
+            configuration.retentionHours = 48
+        }
+    }
+
     func deleteLocalLogs() async {
         isBusy = true
         do {

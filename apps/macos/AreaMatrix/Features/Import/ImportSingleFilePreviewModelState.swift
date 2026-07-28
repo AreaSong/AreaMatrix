@@ -90,7 +90,14 @@ extension FileEntrySnapshot {
     }
 }
 
-enum ImportSingleFileStorageMode: String, CaseIterable, Codable, Equatable, Identifiable, Sendable {
+extension ImportEntryRequest {
+    var explicitCategory: String? {
+        guard case let .category(slug) = destination else { return nil }
+        return slug
+    }
+}
+
+enum ImportSingleFileStorageMode: String, CaseIterable, Codable, Equatable, Identifiable {
     case copy = "Copy"
     case move = "Move"
     case indexOnly = "Index-only"

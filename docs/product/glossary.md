@@ -66,7 +66,7 @@
 | 应用版本 | App version | 应用的 SemVer 版本号（MAJOR.MINOR.PATCH） |
 | 模式迁移 | Schema migration | 由内嵌 `INITIAL_SCHEMA` 与 `run_schema_migrations` 完成的单次 schema 升级，迁移前一次性备份 `.areamatrix/index.db.pre-v2.bak`，无独立 `.sql` 迁移文件 |
 | Tracing span | Tracing span | tracing crate 表达"嵌套耗时段"的概念，参见 observability.md |
-| 诊断导出 | Diagnostics export | 用户/QA 提报问题时的导出材料：About 脱敏文本报告（about-diagnostics.txt）、repository metadata snapshot 与打开日志目录入口，不生成压缩包 |
+| 诊断导出 | Diagnostics export | 用户/QA 提报问题时的本地产物：checksummed 的 `.amdiagnostic` 目录包、About 脱敏文本报告和独立的 repository metadata snapshot；目录包不是 zip，也不自动上传 |
 | 反向 callback | Reverse callback | 由 Rust Core 主动调用 Swift 端的 callback interface |
 | 取消令牌 | Cancellation token | 用于跨 FFI 协作式取消的小对象（参见 uniffi-recipes.md Recipe 6）|
 

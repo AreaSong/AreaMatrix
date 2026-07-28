@@ -205,6 +205,17 @@ final class DiagnosticPackagePrivacyTests: XCTestCase {
     }
 
     func testReaderRejectsRechecksummedMaliciousEvents() throws {
+        try assertUnderclassifiedResourceRejected()
+        try assertMalformedResourceRejected()
+        try assertInvalidBuildContextRejected()
+        try assertCredentialMaterialRejected()
+        try assertConfusableAttributeKeyRejected()
+        try assertUnknownEventKeyRejected()
+    }
+}
+
+private extension DiagnosticPackagePrivacyTests {
+    func assertUnderclassifiedResourceRejected() throws {
         let underclassified = try makeExportedPackage(named: #function + "-privacy")
         defer { removeTestTemporaryItems(underclassified.root) }
         var eventObject = try jsonObject(underclassified.package.appendingPathComponent("events.jsonl"))
@@ -217,7 +228,9 @@ final class DiagnosticPackagePrivacyTests: XCTestCase {
         ]]
         try replaceEventPayload(eventObject, in: underclassified.package)
         assertPackageError(.redactionFailed) { try reader.inspect(underclassified.package) }
+    }
 
+    func assertMalformedResourceRejected() throws {
         let malformedResource = try makeExportedPackage(named: #function + "-resource")
         defer { removeTestTemporaryItems(malformedResource.root) }
         var malformedEvent = try jsonObject(malformedResource.package.appendingPathComponent("events.jsonl"))
@@ -231,7 +244,9 @@ final class DiagnosticPackagePrivacyTests: XCTestCase {
         ]]
         try replaceEventPayload(malformedEvent, in: malformedResource.package)
         assertPackageError(.invalidPackage) { try reader.inspect(malformedResource.package) }
+    }
 
+    func assertInvalidBuildContextRejected() throws {
         let invalidBuild = try makeExportedPackage(named: #function + "-build")
         defer { removeTestTemporaryItems(invalidBuild.root) }
         var invalidBuildEvent = try jsonObject(invalidBuild.package.appendingPathComponent("events.jsonl"))
@@ -245,14 +260,25 @@ final class DiagnosticPackagePrivacyTests: XCTestCase {
         ]
         try replaceEventPayload(invalidBuildEvent, in: invalidBuild.package)
         assertPackageError(.invalidPackage) { try reader.inspect(invalidBuild.package) }
+    }
 
-        let credential = try makeExportedPackage(named: #function + "-credential")
-        defer { removeTestTemporaryItems(credential.root) }
-        var credentialEvent = try jsonObject(credential.package.appendingPathComponent("events.jsonl"))
-        credentialEvent["thread_name"] = "privateKey=opaque"
-        try replaceEventPayload(credentialEvent, in: credential.package)
-        assertPackageError(.redactionFailed) { try reader.inspect(credential.package) }
+    func assertCredentialMaterialRejected() throws {
+        for (index, value) in [
+            "privateKey=opaque",
+            "Bearer\topaque",
+            "auth = opaque",
+            "x-api-token : opaque"
+        ].enumerated() {
+            let credential = try makeExportedPackage(named: #function + "-credential-\(index)")
+            defer { removeTestTemporaryItems(credential.root) }
+            var credentialEvent = try jsonObject(credential.package.appendingPathComponent("events.jsonl"))
+            credentialEvent["thread_name"] = value
+            try replaceEventPayload(credentialEvent, in: credential.package)
+            assertPackageError(.redactionFailed) { try reader.inspect(credential.package) }
+        }
+    }
 
+    func assertConfusableAttributeKeyRejected() throws {
         let confusableKey = try makeExportedPackage(named: #function + "-confusable-key")
         defer { removeTestTemporaryItems(confusableKey.root) }
         var confusableEvent = try jsonObject(confusableKey.package.appendingPathComponent("events.jsonl"))
@@ -264,7 +290,9 @@ final class DiagnosticPackagePrivacyTests: XCTestCase {
         ]]
         try replaceEventPayload(confusableEvent, in: confusableKey.package)
         assertPackageError(.invalidPackage) { try reader.inspect(confusableKey.package) }
+    }
 
+    func assertUnknownEventKeyRejected() throws {
         let unknownKey = try makeExportedPackage(named: #function + "-unknown")
         defer { removeTestTemporaryItems(unknownKey.root) }
         var unknownEvent = try jsonObject(unknownKey.package.appendingPathComponent("events.jsonl"))

@@ -57,7 +57,9 @@ final class AreaMatrixPerfTests: XCTestCase {
         defer { removeTestTemporaryItems(repoURL, sourceRoot) }
         let sourceURL = sourceRoot.appendingPathComponent("invoice.pdf")
         try writePerfFile(sourceURL, sizeBytes: 1 * 1024 * 1024)
-        let bridge = CoreBridge()
+        let fixture = try PerfImportObservabilityFixture()
+        defer { fixture.cleanup() }
+        let bridge = fixture.bridge
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
 
         let elapsed = try await measureClock {
@@ -83,7 +85,9 @@ final class AreaMatrixPerfTests: XCTestCase {
             try writePerfFile(url, sizeBytes: 4 * 1024, seed: index)
             return url
         }
-        let bridge = CoreBridge()
+        let fixture = try PerfImportObservabilityFixture()
+        defer { fixture.cleanup() }
+        let bridge = fixture.bridge
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
 
         let elapsed = try await measureClock {
@@ -173,7 +177,12 @@ private func measureHostlessFirstScreenFallback(repoPath: String) async throws -
     await model.bootstrapIfNeeded()
     try await waitForMainEmptyRoute(model)
 
-    let hostingView = NSHostingView(rootView: MainWindow(model: model))
+    let runtime = AppLanguageRuntime(selection: .en)
+    let localizer = AppLocalizer(runtime: runtime)
+    let hostingView = NSHostingView(
+        rootView: MainWindow(model: model)
+            .environmentObject(localizer)
+    )
     hostingView.frame = NSRect(x: 0, y: 0, width: 900, height: 620)
     hostingView.layoutSubtreeIfNeeded()
     hostingView.layoutSubtreeIfNeeded()
@@ -205,6 +214,53 @@ private func measureApplicationLaunchToFirstScreen(repoPath: String) throws -> D
         throw AreaMatrixPerfTestError.firstScreenTimedOut
     }
     return elapsed
+}
+
+private final class PerfImportObservabilityFixture {
+    let bridge: CoreBridge
+    private let rootURL: URL
+    private let suiteName: String
+    private let defaults: UserDefaults
+
+    init() throws {
+        rootURL = try makePerfTemporaryRepoURL("import-observability")
+        suiteName = "AreaMatrixPerfTests.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            throw AreaMatrixPerfTestError.userDefaultsSuiteUnavailable
+        }
+        self.defaults = defaults
+        defaults.removePersistentDomain(forName: suiteName)
+        let sessionID = UUID().uuidString.lowercased()
+        let hub = ObservabilityHub(
+            configurationStore: ObservabilityConfigurationStore(defaults: defaults),
+            rootURL: rootURL.appendingPathComponent("Logs", isDirectory: true),
+            sessionID: sessionID
+        )
+        let traceContextFactory = ObservabilityTraceContextFactory(
+            hub: hub,
+            resourceIdentityProvider: ObservabilityResourceIdentityProvider(
+                keyStore: PerfObservabilityAliasKeyStore()
+            ),
+            sessionID: sessionID
+        )
+        bridge = CoreBridge(importObservability: CoreImportObservabilityRecorder(
+            traceContextProvider: traceContextFactory,
+            logger: AppLogger(hub: hub)
+        ))
+    }
+
+    func cleanup() {
+        defaults.removePersistentDomain(forName: suiteName)
+        removeTestTemporaryItems(rootURL)
+    }
+}
+
+private struct PerfObservabilityAliasKeyStore: ObservabilityAliasKeyStoring {
+    func load() throws -> Data? {
+        Data(repeating: 0x5A, count: 32)
+    }
+
+    func save(_: Data) throws {}
 }
 
 private func launchPerfApplication(repoPath: String) throws -> NSRunningApplication {
@@ -364,6 +420,7 @@ private enum ProcessMemoryGaugeError: Error {
 private enum AreaMatrixPerfTestError: Error {
     case appBundleMissing(String), appLaunchTimedOut, appLaunchReturnedNil
     case firstScreenTimedOut, unexpectedFirstScreenRoute
+    case userDefaultsSuiteUnavailable
 }
 
 private final class ApplicationLaunchBox: @unchecked Sendable {

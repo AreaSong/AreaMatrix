@@ -59,10 +59,10 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/architecture/ffi-design.md'
     line_start: 1
-    line_end: 106
+    line_end: 117
     heading: ''
     excerpt: '# FFI 设计'
-    sha256: 'b1135e9bc0d4e0be3205a9d6680eda00d956999e998fbd34bde1b6c7d75a30a5'
+    sha256: '7052d2614a23ef981485d669b62c7d1d4563cbf7541c5be3c63d4923a7e34887'
     source: 'discussion:exact_docs'
   - file: 'docs/product/overview.md'
     line_start: 1
@@ -73,10 +73,10 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/product/product-surfaces.md'
     line_start: 1
-    line_end: 126
+    line_end: 144
     heading: ''
     excerpt: '# AreaMatrix 产品界面地图'
-    sha256: 'd05586fac6e62d4197c17d7eee15660662a7b3990fc88723d3f2da940d4acd93'
+    sha256: 'd67adbed14da4666cb183dacd02be933bc69519d8dadbc23beb69e29b865da5f'
     source: 'discussion:exact_docs'
   - file: 'docs/ux/first-launch.md'
     line_start: 1
@@ -87,10 +87,10 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/ux/settings-panel.md'
     line_start: 1
-    line_end: 275
+    line_end: 289
     heading: ''
     excerpt: '# 设置面板'
-    sha256: 'eb74ce5c3b8e8585052a16e5879ddfbc74b2fced6dcb770658cee1f543867ca6'
+    sha256: '850987fa6c2137c0cdb1166109bc77a4d9b3f89d76f5848a1a51c024c57230aa'
     source: 'discussion:exact_docs'
   - file: 'docs/ux/classifier-calibration.md'
     line_start: 1
@@ -101,10 +101,10 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/user-guide/settings.md'
     line_start: 1
-    line_end: 94
+    line_end: 107
     heading: ''
     excerpt: '# 设置'
-    sha256: '9dbbbe57e6ed0d0d4269d1499894e57780407d0676802b2c2ea645f96997804e'
+    sha256: 'cab7d9c872ee10584a2f53e221b3596bcdee476e8b9c4cd62c341e9b27fe553d'
     source: 'discussion:exact_docs'
   - file: 'docs/user-guide/ai-features-and-privacy.md'
     line_start: 1
@@ -164,31 +164,31 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/api/error-codes.md'
     line_start: 1
-    line_end: 157
+    line_end: 159
     heading: ''
     excerpt: '# 错误码表（CoreError）'
-    sha256: '3229b37f07726c8fa04efbdecac831d2feb57db5d9a5069ecf196976bb36bb55'
+    sha256: '74bb919c454b57eb6bd4fe2924c30ce2865648143ca885aa4c3a449b0d4ce58d'
     source: 'discussion:exact_docs'
   - file: 'docs/ux/error-messages.md'
     line_start: 1
-    line_end: 317
+    line_end: 321
     heading: ''
     excerpt: '# 错误文案与恢复路径（Error Messages & Recovery）'
-    sha256: 'e50daa1d808e8b68db69171be6a9619f79ec158457e7aa4c4ce2ba3ed657d2fc'
+    sha256: '9a850ad15bf88c70c1df041d186a7a28c27101e4e3e5d000d7b349a2b2255377'
     source: 'discussion:exact_docs'
   - file: 'docs/development/coding-standards.md'
     line_start: 1
     line_end: 367
     heading: ''
     excerpt: '# 编码规范'
-    sha256: '4e3a4a483c2083bb9e78a528521b1fcddc1df10a90356ba3098c0ee950e909b0'
+    sha256: '7d58c26f282f4ea4bc94ea374fa70ce3230e2db0df5dbc1b1066b3bf13d37427'
     source: 'discussion:exact_docs'
   - file: 'docs/development/testing.md'
     line_start: 1
-    line_end: 178
+    line_end: 201
     heading: ''
     excerpt: '# 测试策略'
-    sha256: '3a3ec2697470243cc5fc7c5ea774027042628edbbcb245e2b95d0f5367e62b94'
+    sha256: '9398f42a319eff91fb30ac9961bb63948dc0d8180744dc971062c8340924e171'
     source: 'discussion:exact_docs'
   - file: 'docs/development/ci-governance.md'
     line_start: 1

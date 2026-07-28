@@ -14,7 +14,7 @@ use rusqlite::Connection;
 
 mod support;
 
-use support::system_trash_home::with_test_system_trash;
+use support::system_trash_home::{with_test_system_trash, with_unavailable_system_trash};
 
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
@@ -353,42 +353,37 @@ fn icloud_conflict_visual_failure_edge_failed_destructive_retry_can_keep_both() 
 
 #[test]
 fn icloud_conflict_visual_failure_edge_trash_unavailable_blocks_destructive_choice() {
-    let repo = initialized_repo();
-    write_repo_file(repo.path(), "docs/report.pdf", b"original");
-    write_repo_file(
-        repo.path(),
-        "docs/report (Alice's conflicted copy).pdf",
-        b"conflicted",
-    );
-    let previous_home = std::env::var_os("HOME");
-    std::env::remove_var("HOME");
+    with_unavailable_system_trash(|| {
+        let repo = initialized_repo();
+        write_repo_file(repo.path(), "docs/report.pdf", b"original");
+        write_repo_file(
+            repo.path(),
+            "docs/report (Alice's conflicted copy).pdf",
+            b"conflicted",
+        );
 
-    let preview = preview_conflict_versions(
-        path_string(repo.path()),
-        "docs/report (Alice's conflicted copy).pdf".to_owned(),
-    )
-    .expect("preview with unavailable trash");
-    let result = resolve_icloud_conflict(
-        path_string(repo.path()),
-        "docs/report (Alice's conflicted copy).pdf".to_owned(),
-        ICloudConflictResolution::KeepOriginal,
-    );
+        let preview = preview_conflict_versions(
+            path_string(repo.path()),
+            "docs/report (Alice's conflicted copy).pdf".to_owned(),
+        )
+        .expect("preview with unavailable trash");
+        let result = resolve_icloud_conflict(
+            path_string(repo.path()),
+            "docs/report (Alice's conflicted copy).pdf".to_owned(),
+            ICloudConflictResolution::KeepOriginal,
+        );
 
-    match previous_home {
-        Some(value) => std::env::set_var("HOME", value),
-        None => std::env::remove_var("HOME"),
-    }
-
-    assert!(!preview.trash_available);
-    assert!(!preview.can_resolve_destructive);
-    assert!(preview
-        .resolution_options
-        .iter()
-        .filter(|option| option.destructive)
-        .all(|option| !option.enabled));
-    assert!(matches!(result, Err(CoreError::Conflict { .. })));
-    assert_eq!(change_log_count(repo.path()), 0);
-    assert_eq!(undo_action_count(repo.path()), 0);
+        assert!(!preview.trash_available);
+        assert!(!preview.can_resolve_destructive);
+        assert!(preview
+            .resolution_options
+            .iter()
+            .filter(|option| option.destructive)
+            .all(|option| !option.enabled));
+        assert!(matches!(result, Err(CoreError::Conflict { .. })));
+        assert_eq!(change_log_count(repo.path()), 0);
+        assert_eq!(undo_action_count(repo.path()), 0);
+    });
 }
 
 #[test]

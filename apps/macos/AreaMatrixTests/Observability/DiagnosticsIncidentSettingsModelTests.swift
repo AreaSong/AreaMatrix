@@ -87,72 +87,7 @@ private struct DiagnosticsIncidentSettingsFixture {
     }
 }
 
-private actor DiagnosticsIncidentManagerSpy: DiagnosticsIncidentManaging {
-    enum DeleteFailure: Error {
-        case rejected
-    }
-
-    private var snapshots: [ObservabilityIncidentSnapshot]
-    private let deleteFailure: DeleteFailure?
-    private var recordedDeletedIDs: [String] = []
-
-    init(
-        snapshots: [ObservabilityIncidentSnapshot],
-        deleteFailure: DeleteFailure? = nil
-    ) {
-        self.snapshots = snapshots
-        self.deleteFailure = deleteFailure
-    }
-
-    func markIncident(note _: String?) -> String {
-        "marked"
-    }
-
-    func updateIncident(id _: String, status _: String) throws {}
-
-    func deleteIncident(id: String) throws {
-        recordedDeletedIDs.append(id)
-        if let deleteFailure {
-            throw deleteFailure
-        }
-        snapshots.removeAll { $0.id == id }
-    }
-
-    func incidentSnapshots() -> [ObservabilityIncidentSnapshot] {
-        snapshots
-    }
-
-    func deletedIDs() -> [String] {
-        recordedDeletedIDs
-    }
-}
-
-private actor DiagnosticsIncidentCoreStub: CoreObservabilityControlling {
-    func observabilityBuildContext() async -> ObservabilityBuildContextSnapshot {
-        observabilityTestCoreBuildContext()
-    }
-
-    func initializeObservability(
-        config _: ObservabilityConfig,
-        sink _: any CoreObservabilitySink
-    ) async throws -> ObservabilityHealth {
-        .diagnosticsIncidentTestHealthy
-    }
-
-    func updateObservability(config _: ObservabilityConfig) async throws -> ObservabilityHealth {
-        .diagnosticsIncidentTestHealthy
-    }
-
-    func observabilityHealth() async -> ObservabilityHealth {
-        .diagnosticsIncidentTestHealthy
-    }
-
-    func flushObservability(deadlineMilliseconds _: UInt64) async throws -> ObservabilityHealth {
-        .diagnosticsIncidentTestHealthy
-    }
-}
-
-private extension ObservabilityHealth {
+extension ObservabilityHealth {
     static let diagnosticsIncidentTestHealthy = Self(
         initialized: true,
         mode: .developer,

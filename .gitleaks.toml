@@ -18,11 +18,12 @@ regex = '''/Users/[A-Za-z0-9._-]+/'''
 tags = ["path-leak"]
 
 [rules.allowlist]
-description = "Allow audited fixtures and the historical governance commit whose local path is removed by the current change"
+description = "Allow audited path-redaction fixtures and the historical governance commit whose local path is removed by the current change"
 commits = [
   '''197edde093f7724e20f90f295a17705224aa93e1''',
 ]
 paths = [
   '''.codex/runtime/task-loop/progress-backups/progress-before-reset-example.json''',
   '''.codex/task-loop-progress-backups/progress-before-reset-example.json''',
+  '''apps/macos/AreaMatrixTests/Observability/ObservabilityHubAndStoreTests.swift''',
 ]

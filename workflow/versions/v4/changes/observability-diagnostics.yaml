@@ -5,7 +5,7 @@ status: ready
 features:
   - id: v4-observability-diagnostics
     module: observability
-    intent: Connect user actions, Swift and Core execution, storage outcomes, incidents, local developer tools, and shareable diagnostics through one typed privacy-safe causal event contract.
+    intent: Maintain the implemented connection between user actions, Swift and Core execution, storage outcomes, incidents, local developer tools, and shareable diagnostics through one typed privacy-safe causal event contract, then prove it with fresh completion evidence.
     depends_on: []
     docs:
       source:

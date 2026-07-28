@@ -81,10 +81,23 @@ Language 会根据生成 provenance 显示尚未生成、已同步、需要重�
 调用日志中的 `Privacy rules checked = yes` 表示请求实际经过隐私评估，不等于命中了规则；命中的规则
 会单独显示。旧日志无法证明是否检查过时显示为 `not recorded`。
 
-## 高级与诊断
+## 诊断与日志
 
-查看诊断、恢复和平台差异。repository snapshot 可能包含路径、文件名、标签、笔记和其他 metadata；
-About 文本诊断按专用合同脱敏。导出前检查内容和隐私说明，AreaMatrix 不自动上传诊断产物。
+`diagnostics` 是设置窗口的独立一级 Tab。它显示当前日志模式、已运行时间、保留期限、磁盘预算与实际占用、最旧事件、丢弃计数和
+writer/回调健康状态。标准模式保留关键语义动作；诊断和开发者模式可选择限时、直到下次启动或手动关闭，
+并继续受磁盘与隐私上限约束。开发者模式不会允许 secret、正文、token、完整 AI payload 或其他 prohibited 数据。
+
+该页可以标记刚才的问题、打开活动视图或 Trace Console、删除 `memory_only` / `manifest_owned` incident、删除所有受管理本地日志，
+以及预览、保存或离线打开 `.amdiagnostic`。保存前分别选择是否包含 sensitive events、文件名、完整路径和
+repository metadata snapshot；这些选项互不蕴含，且当前不支持添加任意用户文件附件。`read_only` 历史 incident
+只能查看，不能更新或删除。取消保存不会留下最终包，AreaMatrix 不自动上传。
+
+repository metadata snapshot 可能包含路径、文件名、标签、笔记和其他 metadata，必须单独确认；About 文本
+诊断按专用合同脱敏。三者与运行日志是不同数据产品，不能互相替代。日志默认位于 Application Support，
+不写入资料库根目录；删除日志不会删除用户文件或 `.areamatrix/` 业务数据。
+
+Advanced 页负责恢复工具、repository metadata snapshot、概览输出和危险导入选项；About 页负责版本、平台差异和
+脱敏文本诊断。两页仅提供前往 Diagnostics Tab 的快捷入口，不重复持有日志模式或诊断包设置。
 
 ## Related
 

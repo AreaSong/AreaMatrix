@@ -13,7 +13,8 @@ AreaMatrix 可能在本机处理：
 - 标签、笔记、改动历史、Saved Search、Smart List 和 AI 隐私规则。
 - 本地日志、诊断摘要和 AI 调用记录。
 
-应用不以遥测或后台上传为前提。诊断导出由用户显式触发，并在导出前展示内容、脱敏等级、大小和可选敏感附件。
+应用不以遥测或后台上传为前提。诊断导出由用户显式触发，并在导出前展示内容、脱敏等级、大小，以及是否包含
+repository metadata snapshot。当前诊断包不接受任意用户文件附件。
 
 ## 日志与诊断
 
@@ -28,7 +29,7 @@ AreaMatrix 可能在本机处理：
 - `prohibited`：文件或 Note 正文、secret、token、Authorization header、完整 AI prompt/output 或原始响应体。
 
 `prohibited` 数据不进入任何日志模式。`sensitive` 数据只在对应本地设置或诊断包步骤明确选择后使用；选择文件名不等于
-选择完整路径，选择运行日志不等于选择 repository metadata snapshot 或附件。
+选择完整路径，选择运行日志不等于选择 repository metadata snapshot。
 
 脱敏在事件产生端和诊断导出端分别执行。错误字符串、第三方响应、恶意文件名、URL 和非 home 路径同样处理。
 文件别名使用随机密钥生成的不可反查 pseudonym，不直接 hash 原文件名。
@@ -38,8 +39,10 @@ AreaMatrix 可能在本机处理：
 用户可以标记刚才的问题。应用只冻结有界的事件窗口、稳定状态和受控资源引用，不记录屏幕视频、鼠标轨迹、hover、
 滚动或逐键输入。
 
-`.amdiagnostic` 在本地生成，用户保存前可以预览事件范围、环境摘要、隐私报告和可选附件。包默认不包含用户文件正文、
-真实路径或 repository DB。metadata snapshot 可能含路径、文件名、tags 和 notes，必须单独确认且保持明确标记。
+`.amdiagnostic` 在本地生成，用户保存前可以预览事件范围、环境摘要、隐私报告和附件清单。包默认不包含用户文件正文、
+真实路径或 repository DB。当前唯一允许的附件类别是用户单独确认的 repository metadata snapshot，以及存在时与其配套的
+WAL/SHM；它们可能含路径、文件名、tags 和 notes，必须保持明确标记。离线 viewer 将包视为不可信输入，不执行其中的
+URL、脚本、恢复动作或命令。
 
 AreaMatrix 不因创建或保存诊断包而自动上传。网络发送必须在 endpoint、身份、传输加密、服务端保留、删除、撤回和
 安全责任都形成独立合同后才能提供；远程服务也不能静默开启本机开发者模式。
@@ -94,7 +97,7 @@ Rust Core 负责生成不含密钥的调用计划和处理净化后的 observati
 - 开启或关闭标准、诊断和开发者日志模式。
 - 设置日志保留期限与磁盘预算并删除本地日志。
 - 标记问题、预览脱敏结果并决定是否保存诊断包。
-- 分别决定是否包含文件名、完整路径、metadata snapshot 或附件。
+- 分别决定是否包含文件名、完整路径或 repository metadata snapshot；不支持添加任意用户文件附件。
 
 ## Related
 

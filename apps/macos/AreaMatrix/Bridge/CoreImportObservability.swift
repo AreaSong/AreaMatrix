@@ -47,27 +47,43 @@ protocol CoreObservedFileImporting: CoreFileImporting {
     func importIndexedFile(request: CoreObservedImportRequest) async throws -> FileEntrySnapshot
 }
 
-func recordImportTerminal(
-    _ appContext: CoreImportTraceContext,
-    coreTraceContext: CoreTraceContext,
-    outcome: String,
-    error: Error? = nil
-) async {
-    var event = ObservabilitySemanticEventInput(
-        actionID: appContext.actionID,
-        componentID: appContext.componentID
+struct CoreImportObservabilityRecorder {
+    static let live = Self(
+        traceContextProvider: SharedCoreImportTraceContextProvider(),
+        logger: .shared
     )
-    event.traceID = appContext.traceID
-    event.spanID = appContext.spanID
-    event.operationID = appContext.operationID
-    event.retryOfOperationID = appContext.retryOfOperationID
-    event.phase = "completed"
-    event.outcome = outcome
-    event.severity = outcome == "failed" ? .error : (outcome == "degraded" ? .warn : .info)
-    event.resources = coreTraceContext.resourceRefs.map(ObservabilityResourceSnapshot.init)
-    event.attributes = coreTraceContext.attributes.map(ObservabilityAttributeSnapshot.init)
-    event.error = error.map(observabilityErrorSnapshot)
-    await AppLogger.shared.record(event)
+
+    let traceContextProvider: any CoreImportTraceContextProviding
+    let logger: AppLogger
+
+    func recordTerminal(
+        _ appContext: CoreImportTraceContext,
+        coreTraceContext: CoreTraceContext,
+        outcome: String,
+        error: Error? = nil
+    ) async {
+        var event = ObservabilitySemanticEventInput(
+            actionID: appContext.actionID,
+            componentID: appContext.componentID
+        )
+        event.traceID = appContext.traceID
+        event.spanID = appContext.spanID
+        event.operationID = appContext.operationID
+        event.retryOfOperationID = appContext.retryOfOperationID
+        event.phase = "completed"
+        event.outcome = outcome
+        event.severity = outcome == "failed" ? .error : (outcome == "degraded" ? .warn : .info)
+        event.resources = coreTraceContext.resourceRefs.map(ObservabilityResourceSnapshot.init)
+        event.attributes = coreTraceContext.attributes.map(ObservabilityAttributeSnapshot.init)
+        event.error = error.map(observabilityErrorSnapshot)
+        await logger.record(event)
+    }
+}
+
+private struct SharedCoreImportTraceContextProvider: CoreImportTraceContextProviding {
+    func make(_ request: ObservabilityTraceContextRequest) async -> CoreTraceContext {
+        await ObservabilityRuntimeAssembly.shared.makeCoreTraceContext(request)
+    }
 }
 
 private func observabilityErrorSnapshot(_ error: Error) -> ObservabilityErrorSnapshot {

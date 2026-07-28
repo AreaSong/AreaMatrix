@@ -1,6 +1,8 @@
 @testable import AreaMatrix
 import XCTest
 
+private let platformDifferencesDefaultTestAppVersion = "1"
+
 final class PlatformDifferencesPageFeatureTests: XCTestCase {
     @MainActor
     func testPlatformDifferencesCrossPlatformBindingContractCoreLoadsBindingContractThroughCoreBridgeBoundary() async {
@@ -21,7 +23,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
         )])
         await capabilityLoader.assertPlatformCapabilityRequests([PlatformDifferencesCapabilityRequest(
             platform: .macos,
-            appVersion: PlatformDifferencesModel.defaultTestAppVersion
+            appVersion: platformDifferencesDefaultTestAppVersion
         )])
         XCTAssertEqual(model.contractState, .loaded(.fixture()))
         XCTAssertEqual(model.capabilityState, .loaded(.fixture()))
@@ -81,7 +83,7 @@ final class PlatformDifferencesPageFeatureTests: XCTestCase {
 
         XCTAssertEqual(model.capabilityState, .failed(.unknown(
             platform: .macos,
-            appVersion: PlatformDifferencesModel.defaultTestAppVersion,
+            appVersion: platformDifferencesDefaultTestAppVersion,
             reason: "platform Unknown"
         ), PlatformDifferencesCapabilityError(
             message: L10n.message("Capability snapshot unavailable"),
@@ -144,9 +146,9 @@ private typealias PlatformDifferencesStaticErrorMapper = RecordingCoreErrorMappe
 
 @MainActor
 private func makePlatformDifferencesModel(
-    appVersion: String? = PlatformDifferencesModel.defaultTestAppVersion,
+    appVersion: String? = platformDifferencesDefaultTestAppVersion,
     appVersionReader: any AppVersionReading = StaticAppVersionReader(
-        version: PlatformDifferencesModel.defaultTestAppVersion
+        version: platformDifferencesDefaultTestAppVersion
     ),
     selectedTargetPlatform: BindingTargetPlatformSnapshot = .swift,
     bindingVersion: Int64 = 1,
@@ -189,10 +191,6 @@ private func platformDifferencesRawContext(for error: CoreError) -> String {
     }
 }
 
-private extension PlatformDifferencesModel {
-    static let defaultTestAppVersion = "1"
-}
-
 private extension BindingContractReportSnapshot {
     static func fixture(targetPlatform: BindingTargetPlatformSnapshot = .swift) -> BindingContractReportSnapshot {
         BindingContractReportSnapshot(
@@ -226,7 +224,7 @@ private extension PlatformCapabilitiesSnapshot {
         let available = PlatformCapabilitySupportSnapshot.testFixture()
         let limited = PlatformCapabilitySupportSnapshot.limitedFixture()
         return PlatformCapabilitiesSnapshot.testFixture(
-            appVersion: PlatformDifferencesModel.defaultTestAppVersion,
+            appVersion: platformDifferencesDefaultTestAppVersion,
             watcher: available,
             trash: available,
             shareExtension: limited,

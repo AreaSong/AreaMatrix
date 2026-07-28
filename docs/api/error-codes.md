@@ -129,8 +129,10 @@ Swift 可以在 Technical Details 中显示经过控制的 `technicalDetails`，
 - `FileNotFound` 的 Relink 只更新索引指向；移除索引不得删除外部用户文件。
 - repository diagnostics 可能包含完整 metadata DB、WAL 和 SHM；导出前必须确认，不得称为全文脱敏。
 - About 文本诊断不包含用户文件正文，并按其专用合同处理路径和用户名。
-- `Internal` 默认提供 Leave flow、Collect diagnostics 和 Open Issue；不假设存在全局重启或统一 zip
-  bundle。只有当前上下文接入了真实可执行且经过验证的 restart 动作时，才显示 Restart。
+- `Internal` 默认提供 Leave flow、Collect diagnostics 和 Open Issue；Collect diagnostics 可以打开独立
+  Diagnostics Tab，但当前不会自动绑定触发错误的 trace。AreaMatrix 支持本地 `.amdiagnostic` 目录包，它不是 zip，
+  也不同于 repository metadata snapshot；离线打开时按不可信输入校验，不执行 URL、脚本、命令或恢复动作。
+  只有当前上下文接入了真实可执行且经过验证的 restart 动作时，才显示 Restart。
 
 ## 反模式
 

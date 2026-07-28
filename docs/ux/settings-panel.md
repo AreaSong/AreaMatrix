@@ -10,7 +10,7 @@
 
 设置窗口通过菜单或 `Command-,` 打开。左侧为固定宽度侧栏，右侧显示当前资料库对应的设置内容。
 
-当前共有 8 个一级 Tab：
+当前共有 9 个一级 Tab：
 
 | TabId | 名称 | 当前职责 |
 |---|---|---|
@@ -20,8 +20,9 @@
 | `classifier` | 分类规则 | 可视化规则维护、规则引擎开关、YAML 操作、分类预览 |
 | `ai` | AI | AI 总开关、provider、功能开关、隐私规则、调用日志和暂停 |
 | `integrations` | 集成 | iCloud 状态与警告、Finder 和外部改动说明 |
-| `advanced` | 高级 | 诊断、日志、恢复工具、概览输出和危险导入选项 |
-| `about` | 关于 | 版本、平台差异、许可证、外部链接、诊断和日志 |
+| `diagnostics` | 诊断与日志 | 模式、租约、健康、incident、Trace Console、诊断包和受管理日志删除 |
+| `advanced` | 高级 | 恢复工具、repository diagnostics、概览输出和危险导入选项 |
+| `about` | 关于 | 版本、平台差异、许可证、外部链接、脱敏文本诊断和 Diagnostics 跳转 |
 
 侧栏 Tab 是稳定路由标识。功能入口可以直接打开指定 Tab，例如 AI 错误恢复可以跳转到 `ai`。
 
@@ -212,13 +213,25 @@ AI 页管理仓库级 AI 行为：
 
 该页面不会自动下载 iCloud placeholder，也不会修改 Spotlight 或系统 iCloud 设置。
 
+## 诊断与日志
+
+独立 Diagnostics Tab 提供：
+
+- Diagnostics 模式、租约、保留期限、磁盘预算、usage、drop count 和 writer/回调健康状态。
+- 活动与 Trace Console、incident 标记/删除、受管理本地日志删除。
+- `.amdiagnostic` 隐私预览、保存和不可信包离线打开。
+
+诊断与开发者模式必须显示到期策略；开发者模式不解除 prohibited 数据边界。诊断包中的 sensitive events、
+文件名、完整路径和 repository metadata snapshot 使用独立选择与确认；当前不支持任意用户文件附件，取消保存
+不留下最终包。删除入口只处理 manifest 明确拥有的日志或 `memory_only` / `manifest_owned` incident，
+`read_only` 历史 incident 与未知文件不可删除。
+
 ## 高级
 
 高级页提供：
 
-- App/Core/schema 版本和诊断边界说明。
-- 日志目录和诊断摘要。
 - 恢复工具入口。
+- repository metadata snapshot 和前往 Diagnostics Tab 的入口。
 - 概览输出设置。
 - 默认关闭的 Replace 导入选项。
 
@@ -234,10 +247,11 @@ AI 页管理仓库级 AI 行为：
 - 当前平台能力差异。
 - 许可证。
 - 项目、Issues、Discussions 等 HTTPS 链接。
-- About 脱敏文本诊断和日志路径。
+- About 脱敏文本诊断和 Diagnostics 入口。
 
 About 文本诊断不包含用户原文件正文，路径和用户名按其合同脱敏。repository diagnostics snapshot 是
-完整 metadata 快照，不应标记为脱敏；两种产物都不自动上传。
+完整 metadata 快照，不应标记为脱敏；`.amdiagnostic` 则按独立的事件、隐私报告、checksum 和附件合同生成。
+三种产物都不自动上传。
 
 ## 保存、失败与恢复
 

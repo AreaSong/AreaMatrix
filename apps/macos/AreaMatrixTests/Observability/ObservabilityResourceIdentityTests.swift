@@ -10,7 +10,7 @@ final class ObservabilityResourceIdentityTests: XCTestCase {
         ])
         let factory = ObservabilityResourceIdentityFactory(
             keyData: Data(repeating: 0x11, count: 32),
-            idGenerator: identifiers.next
+            idGenerator: { identifiers.next() }
         )
         let source = URL(fileURLWithPath: "/tmp/private-client/Quarterly Report.PDF")
 

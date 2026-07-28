@@ -5,13 +5,13 @@ final class SwiftFileSizeGovernanceTests: MacOSGovernanceTestCase {
     private let hardLimit = 500
     private let nearLimitInventory: [NearLimitSwiftFile] = [
         NearLimitSwiftFile(
-            path: "AreaMatrixTests/MacOSArchitectureBoundaryGovernanceTests.swift",
-            owner: "macOS architecture boundary governance",
-            rationale: "Keeps the cross-layer source scans and their shared boundary assertions "
-                + "together as one governance surface.",
-            splitTrigger: "Before any growth beyond the current inventory, extract another scan family "
-                + "or shared assertion helper into a feature-local governance support file.",
-            maximumLineCount: 459
+            path: "AreaMatrix/App/ObservabilityRuntimeAssembly.swift",
+            owner: "application observability runtime lifecycle",
+            rationale: "Keeps startup, session recovery, mode lease, mutation ordering, and coordinated stop "
+                + "under the same process-lifecycle owner.",
+            splitTrigger: "Before any growth beyond the current inventory, extract the ordered stop state and "
+                + "deadline race into a dedicated runtime stop coordinator.",
+            maximumLineCount: 451
         ),
         NearLimitSwiftFile(
             path: "AreaMatrixTests/DetailMetaPageFeatureTests.swift",

@@ -33,8 +33,8 @@ macOS deployment target 和 Xcode build settings 以
 | `sha2` | 0.10 | SHA-256 |
 | `walkdir` | 2 | tree/reindex 遍历 |
 | `chrono` | 0.4 | 时间戳 |
-| `tracing` | 0.1 | Core 内少量 event 调用 |
-| `tracing-subscriber` | 0.3 | 已声明但 app 尚未安装 subscriber |
+| `tracing` | 0.1 | Core 结构化 event 与 span |
+| `tracing-subscriber` | 0.3 | Core 进程级 subscriber、过滤与结构化事件层 |
 | `unicode-normalization` | 0.1 | 搜索/分类文本归一化 |
 | `regex` | 1 | 查询和规则处理 |
 | `trash` | 5 | 系统 Trash |
@@ -50,7 +50,8 @@ dev dependency 为 `tempfile` 和 `pretty_assertions`。仓库当前没有 Crite
 准。FSEventStream、NSWorkspace、Pasteboard、security bookmark 和 window probing 都
 留在平台层。
 
-当前手写 Swift 未接入 OSLog logger；不要把系统框架可用等同于产品已经实现结构化日志。
+手写 Swift 通过平台 observability sink 接入 `OSLog` / signpost，并同时维护有界内存、rolling JSONL、incident 和
+诊断包。OSLog 只服务 Apple 开发工具，不是便携诊断包的源事实。
 
 macOS target 当前没有第三方 Swift Package。新增 Swift Package 或其他外部依赖必须走
 [dependency policy](../development/dependency-policy.md) 的准入、许可证和供应链检查。
@@ -74,6 +75,8 @@ Swift/C bindings。
 - SQLite bundled，写连接使用 WAL、foreign keys、busy timeout。
 - Core 同步 API 由 Swift bridge/model 移出 main actor。
 - Core 不安装通用 async runtime。
+- Core observability 使用两个专用 std thread 与有界队列隔离 delivery/callback；Swift 使用 actor 与有界 ingress
+  交付平台 sink，这不等于引入 Tokio 或通用任务 runtime。
 - AI provider/network runtime 使用专用显式模块和环境/配置合同，不进入普通本地文件路径。
 - 默认无远程 telemetry 或自动 diagnostics upload。
 

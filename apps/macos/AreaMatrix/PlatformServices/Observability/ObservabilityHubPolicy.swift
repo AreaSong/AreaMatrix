@@ -145,6 +145,16 @@ enum ObservabilityHubPolicy {
         let coreRejected = core?.redactionRejected ?? 0
         let totalRejected = saturatingSum([state.rejectedEvents, coreRejected])
         let issues = healthIssues(state: state, core: core)
+        let elapsed = nonnegativeDifference(
+            state.observedAtMilliseconds,
+            state.modeActivatedAtMilliseconds
+        )
+        let estimatedGrowth = estimatedGrowthBytesPerHour(
+            currentBytes: state.fileUsageBytes,
+            baselineBytes: state.modeUsageBaselineBytes,
+            elapsedMilliseconds: elapsed,
+            persistsToDisk: state.configuration.mode.persistsToDisk
+        )
         return AppObservabilityHealth(
             initialized: core?.initialized ?? false,
             mode: state.configuration.mode,
@@ -153,6 +163,8 @@ enum ObservabilityHubPolicy {
             oldestEventTimestampMilliseconds: state.oldestEventTimestampMilliseconds,
             fileUsageBytes: state.fileUsageBytes,
             diskBudgetBytes: state.configuration.diskBudgetBytes,
+            modeElapsedMilliseconds: elapsed,
+            estimatedGrowthBytesPerHour: estimatedGrowth,
             droppedEvents: saturatingSum([coreDrops, state.ingressDroppedEvents]),
             droppedTraceEvents: droppedTrace,
             droppedDebugEvents: droppedDebug,
@@ -173,6 +185,24 @@ enum ObservabilityHubPolicy {
             issues: issues
         )
     }
+
+    static func estimatedGrowthBytesPerHour(
+        currentBytes: Int64,
+        baselineBytes: Int64,
+        elapsedMilliseconds: Int64,
+        persistsToDisk: Bool
+    ) -> Int64? {
+        guard persistsToDisk, elapsedMilliseconds > 0 else { return nil }
+        let delta = nonnegativeDifference(currentBytes, baselineBytes)
+        let (scaled, overflow) = delta.multipliedReportingOverflow(by: 3_600_000)
+        return overflow ? .max : scaled / elapsedMilliseconds
+    }
+
+    static func nonnegativeDifference(_ end: Int64, _ start: Int64) -> Int64 {
+        let (difference, overflow) = end.subtractingReportingOverflow(start)
+        if overflow { return end >= start ? .max : 0 }
+        return max(0, difference)
+    }
 }
 
 extension AppObservabilityConfiguration {
@@ -187,6 +217,9 @@ struct ObservabilityHubHealthState {
     let memoryCapacity: Int
     let oldestEventTimestampMilliseconds: Int64?
     let fileUsageBytes: Int64
+    let modeActivatedAtMilliseconds: Int64
+    let modeUsageBaselineBytes: Int64
+    let observedAtMilliseconds: Int64
     let writerAvailable: Bool
     let lastRotationAtMilliseconds: Int64?
     let incidentCount: Int

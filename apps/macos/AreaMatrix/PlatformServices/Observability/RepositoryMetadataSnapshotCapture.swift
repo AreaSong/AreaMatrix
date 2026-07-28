@@ -5,26 +5,37 @@ protocol RepositoryMetadataSnapshotCapturing {
     func capture(repositoryURL: URL) throws -> [DiagnosticPackageAttachmentPayload]
 }
 
+struct RepositoryMetadataPlaceholderProbeResult {
+    let device: dev_t
+    let inode: ino_t
+    let isNotDownloaded: Bool
+}
+
 struct RepositoryMetadataSnapshotCapture: RepositoryMetadataSnapshotCapturing {
     typealias AfterReadHook = (_ fileName: String) throws -> Void
+    typealias PlaceholderProbe = (_ fileURL: URL) throws -> RepositoryMetadataPlaceholderProbeResult
 
     private struct CapturedFile {
         let name: String
         let data: Data
         let initialStatus: stat
+        let byteLimit: Int
     }
 
     private let afterReadHook: AfterReadHook
+    private let placeholderProbe: PlaceholderProbe
     private let maximumFileBytes: Int
     private let maximumTotalBytes: Int
 
     init(
         maximumFileBytes: Int = DiagnosticPackageFormat.maximumMetadataFileBytes,
         maximumTotalBytes: Int = DiagnosticPackageFormat.maximumMetadataBytes,
+        placeholderProbe: @escaping PlaceholderProbe = Self.livePlaceholderProbe,
         afterReadHook: @escaping AfterReadHook = { _ in }
     ) {
         self.maximumFileBytes = maximumFileBytes
         self.maximumTotalBytes = maximumTotalBytes
+        self.placeholderProbe = placeholderProbe
         self.afterReadHook = afterReadHook
     }
 
@@ -46,12 +57,10 @@ struct RepositoryMetadataSnapshotCapture: RepositoryMetadataSnapshotCapturing {
                 named: fileName,
                 fileURL: fileURL,
                 directoryDescriptor: metadataDescriptor,
-                required: index == 0
+                required: index == 0,
+                byteLimit: min(maximumFileBytes, maximumTotalBytes - totalBytes)
             ) else { continue }
             totalBytes += file.data.count
-            guard totalBytes <= maximumTotalBytes else {
-                throw DiagnosticPackageError.limitExceeded
-            }
             files.append(file)
         }
         try validateFinalState(
@@ -99,12 +108,22 @@ struct RepositoryMetadataSnapshotCapture: RepositoryMetadataSnapshotCapturing {
         named name: String,
         fileURL: URL,
         directoryDescriptor: Int32,
-        required: Bool
+        required: Bool,
+        byteLimit: Int
     ) throws -> CapturedFile? {
-        guard try preflightFile(named: name, directoryDescriptor: directoryDescriptor, required: required) else {
+        guard byteLimit >= 0,
+              try preflightFile(
+                  named: name,
+                  directoryDescriptor: directoryDescriptor,
+                  required: required,
+                  byteLimit: byteLimit
+              )
+        else {
+            if byteLimit < 0 { throw DiagnosticPackageError.limitExceeded }
             return nil
         }
-        try rejectPlaceholder(fileURL)
+        let probe = try placeholderProbe(fileURL)
+        guard !probe.isNotDownloaded else { throw DiagnosticPackageError.unsafeFile }
         let descriptor = openat(
             directoryDescriptor,
             name,
@@ -112,56 +131,68 @@ struct RepositoryMetadataSnapshotCapture: RepositoryMetadataSnapshotCapturing {
         )
         guard descriptor >= 0 else { throw DiagnosticPackageError.unsafeFile }
         defer { close(descriptor) }
-        let initial = try regularFileStatus(descriptor)
-        let data = try readBounded(descriptor, expectedSize: initial.st_size)
+        let initial = try regularFileStatus(descriptor, byteLimit: byteLimit)
+        guard initial.st_dev == probe.device, initial.st_ino == probe.inode else {
+            throw DiagnosticPackageError.unsafeFile
+        }
+        let data = try readBounded(descriptor, expectedSize: initial.st_size, byteLimit: byteLimit)
         try afterReadHook(name)
-        let final = try regularFileStatus(descriptor)
-        let finalPath = try regularFileStatus(named: name, directoryDescriptor: directoryDescriptor)
+        let final = try regularFileStatus(descriptor, byteLimit: byteLimit)
+        let finalPath = try regularFileStatus(
+            named: name,
+            directoryDescriptor: directoryDescriptor,
+            byteLimit: byteLimit
+        )
         guard isStable(initial: initial, final: final, byteCount: data.count),
               isStable(initial: initial, final: finalPath, byteCount: data.count)
         else {
             throw DiagnosticPackageError.unsafeFile
         }
-        return CapturedFile(name: name, data: data, initialStatus: initial)
+        return CapturedFile(name: name, data: data, initialStatus: initial, byteLimit: byteLimit)
     }
 
     private func preflightFile(
         named name: String,
         directoryDescriptor: Int32,
-        required: Bool
+        required: Bool,
+        byteLimit: Int
     ) throws -> Bool {
         var status = stat()
         if fstatat(directoryDescriptor, name, &status, AT_SYMLINK_NOFOLLOW) != 0 {
             if !required, errno == ENOENT { return false }
             throw DiagnosticPackageError.unsafeFile
         }
-        try validateRegularFile(status)
+        try validateRegularFile(status, byteLimit: byteLimit)
         return true
     }
 
-    private func regularFileStatus(_ descriptor: Int32) throws -> stat {
+    private func regularFileStatus(_ descriptor: Int32, byteLimit: Int) throws -> stat {
         var status = stat()
         guard fstat(descriptor, &status) == 0 else { throw DiagnosticPackageError.unsafeFile }
-        try validateRegularFile(status)
+        try validateRegularFile(status, byteLimit: byteLimit)
         return status
     }
 
-    private func regularFileStatus(named name: String, directoryDescriptor: Int32) throws -> stat {
+    private func regularFileStatus(
+        named name: String,
+        directoryDescriptor: Int32,
+        byteLimit: Int
+    ) throws -> stat {
         var status = stat()
         guard fstatat(directoryDescriptor, name, &status, AT_SYMLINK_NOFOLLOW) == 0 else {
             throw DiagnosticPackageError.unsafeFile
         }
-        try validateRegularFile(status)
+        try validateRegularFile(status, byteLimit: byteLimit)
         return status
     }
 
-    private func validateRegularFile(_ status: stat) throws {
+    private func validateRegularFile(_ status: stat, byteLimit: Int) throws {
         guard status.st_mode & S_IFMT == S_IFREG,
               status.st_nlink == 1,
               status.st_size >= 0,
               status.st_flags & UInt32(SF_DATALESS) == 0
         else { throw DiagnosticPackageError.unsafeFile }
-        guard status.st_size <= off_t(maximumFileBytes) else {
+        guard status.st_size <= off_t(byteLimit) else {
             throw DiagnosticPackageError.limitExceeded
         }
     }
@@ -179,17 +210,35 @@ struct RepositoryMetadataSnapshotCapture: RepositoryMetadataSnapshotCapturing {
         return status
     }
 
-    private func rejectPlaceholder(_ url: URL) throws {
+    static func livePlaceholderProbe(_ url: URL) throws -> RepositoryMetadataPlaceholderProbeResult {
+        let initial = try pathStatus(url)
         let values = try url.resourceValues(forKeys: [
             .isUbiquitousItemKey,
             .ubiquitousItemDownloadingStatusKey
         ])
-        guard values.isUbiquitousItem != true || values.ubiquitousItemDownloadingStatus != .notDownloaded else {
+        let final = try pathStatus(url)
+        guard initial.st_dev == final.st_dev, initial.st_ino == final.st_ino else {
             throw DiagnosticPackageError.unsafeFile
         }
+        return RepositoryMetadataPlaceholderProbeResult(
+            device: final.st_dev,
+            inode: final.st_ino,
+            isNotDownloaded: values.isUbiquitousItem == true
+                && values.ubiquitousItemDownloadingStatus == .notDownloaded
+        )
     }
 
-    private func readBounded(_ descriptor: Int32, expectedSize: off_t) throws -> Data {
+    static func pathStatus(_ url: URL) throws -> stat {
+        var status = stat()
+        guard lstat(url.path, &status) == 0,
+              status.st_mode & S_IFMT == S_IFREG,
+              status.st_nlink == 1,
+              status.st_flags & UInt32(SF_DATALESS) == 0
+        else { throw DiagnosticPackageError.unsafeFile }
+        return status
+    }
+
+    private func readBounded(_ descriptor: Int32, expectedSize: off_t, byteLimit: Int) throws -> Data {
         var data = Data()
         data.reserveCapacity(Int(expectedSize))
         var buffer = [UInt8](repeating: 0, count: 64 * 1024)
@@ -200,7 +249,7 @@ struct RepositoryMetadataSnapshotCapture: RepositoryMetadataSnapshotCapturing {
             if count < 0, errno == EINTR { continue }
             guard count >= 0 else { throw DiagnosticPackageError.unsafeFile }
             guard count > 0 else { return data }
-            guard count <= maximumFileBytes - data.count else {
+            guard count <= byteLimit - data.count else {
                 throw DiagnosticPackageError.limitExceeded
             }
             data.append(contentsOf: buffer.prefix(count))
@@ -228,7 +277,11 @@ struct RepositoryMetadataSnapshotCapture: RepositoryMetadataSnapshotCapturing {
             throw DiagnosticPackageError.unsafeFile
         }
         for file in files {
-            let final = try regularFileStatus(named: file.name, directoryDescriptor: directoryDescriptor)
+            let final = try regularFileStatus(
+                named: file.name,
+                directoryDescriptor: directoryDescriptor,
+                byteLimit: file.byteLimit
+            )
             guard isStable(initial: file.initialStatus, final: final, byteCount: file.data.count) else {
                 throw DiagnosticPackageError.unsafeFile
             }

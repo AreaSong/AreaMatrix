@@ -77,3 +77,16 @@
 - Logging failure, queue saturation, disk exhaustion, malformed diagnostic packages, and callback
   lifecycle failures have explicit degraded behavior and do not corrupt business state.
 - Open questions and blockers are resolved or explicitly deferred in `decisions.yaml` before changes.
+
+## Implementation Alignment
+
+- The approved behavior is implemented in Rust Core, UniFFI, the macOS runtime/platform layer,
+  the independent Diagnostics settings tab, Trace Console, incident lifecycle, and local
+  `.amdiagnostic` package flow.
+- Exact Docs describe the implemented nine-tab settings architecture, bounded callback/ingress
+  concurrency, manifest ownership, read-only incident restrictions, and the repository-metadata-only
+  attachment allowlist.
+- Implementation presence is not completion evidence. Fresh Core, bindings, macOS, performance,
+  docs, workflow, governance, security, and review gates remain required before closeout.
+- Lifecycle remains planning; promotion and execution stay blocked until explicit approval and live
+  mapping, regardless of product implementation state.

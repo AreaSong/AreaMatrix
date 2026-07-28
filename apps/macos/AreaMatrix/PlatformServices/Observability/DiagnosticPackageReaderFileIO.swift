@@ -56,7 +56,11 @@ extension DiagnosticPackageReader {
     }
 
     func directoryEntryNames(descriptor: Int32, maximumCount: Int) throws -> Set<String> {
-        let duplicate = dup(descriptor)
+        let duplicate = openat(
+            descriptor,
+            ".",
+            O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK
+        )
         guard duplicate >= 0 else { throw DiagnosticPackageError.unsafeFile }
         guard let directory = fdopendir(duplicate) else {
             close(duplicate)

@@ -41,6 +41,16 @@ UPSTREAM_GOVERNANCE_SNAPSHOTS = {
     "docs/governance/upstream/ASW-EWF-001-1.0.0.txt",
 }
 
+OBSERVABILITY_LIFECYCLE_PATHS = {
+    "core/benches/core_hot_paths.rs",
+    "core/resources/observability_catalog.json",
+    "core/tests/import_observability_integration_verify.rs",
+    "core/tests/observability_delivery_integration_verify.rs",
+    "core/tests/support/import_observability.rs",
+    "core/tests/support/observability_delivery.rs",
+    "docs/development/observability.md",
+}
+
 TEXT_SUFFIXES = {
     "",
     ".c",
@@ -203,6 +213,8 @@ def _is_allowed_technical(rel_path: str, term: str, line: str) -> tuple[bool, st
     lower_term = term.lower()
     if lower_term == "phase" and "build phase" in lower_line:
         return True, "Xcode Build Phase 技术术语"
+    if _is_observability_lifecycle_term(rel_path, lower_term, lower_line):
+        return True, "结构化 observability 事件生命周期技术术语"
     if lower_term == "beta" and ("macos" in lower_line or "apple" in lower_line or "ci beta" in lower_line):
         return True, "Apple/macOS beta 测试语义"
     if term == "阶段" and ("两阶段提交" in line or "两阶段" in line):
@@ -223,6 +235,24 @@ def _is_allowed_technical(rel_path: str, term: str, line: str) -> tuple[bool, st
     if lower_term in {"alpha", "beta"} and _is_test_path(rel_path):
         return True, "测试 fixture 示例数据"
     return False, ""
+
+
+def _is_observability_lifecycle_term(rel_path: str, lower_term: str, lower_line: str) -> bool:
+    if lower_term not in {"phase", "stage"}:
+        return False
+    if rel_path.startswith("core/src/observability/"):
+        return True
+    if rel_path in OBSERVABILITY_LIFECYCLE_PATHS:
+        return True
+    if rel_path == "core/src/storage/import/flow.rs":
+        return lower_term == "stage" and "trace.stage" in lower_line
+    if rel_path == "core/area_matrix.udl":
+        return lower_term == "phase" and lower_line.strip() == "string phase;"
+    if rel_path == "docs/api/core-api.md":
+        return lower_term == "phase" and (
+            lower_line.strip() == "string phase;" or "privacy" in lower_line
+        )
+    return False
 
 
 def _classify(rel_path: str, line_no: int, term: str, line: str) -> WordingHit:

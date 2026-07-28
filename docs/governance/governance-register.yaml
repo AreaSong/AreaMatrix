@@ -1427,6 +1427,14 @@ core_modules:
     test_families:
       - overview_generated
       - overview_regeneration
+  - module: observability
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/development/observability.md
+      - docs/api/core-api.md
+    test_families:
+      - import_observability
+      - observability
   - module: platform_capabilities
     owner: "@AreaSong"
     authority_docs:
@@ -1602,6 +1610,13 @@ macos_features:
     authority_docs:
       - docs/ux/ui-states.md
       - docs/user-guide/organizing-files.md
+  - feature: Diagnostics
+    owner: "@AreaSong"
+    governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests
+    authority_docs:
+      - docs/development/observability.md
+      - docs/ux/settings-panel.md
+      - docs/user-guide/settings.md
   - feature: FileActions
     owner: "@AreaSong"
     governance: MacOSFeatureOwnershipGovernanceTests inventory and route-host governance tests

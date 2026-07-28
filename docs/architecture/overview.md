@@ -13,7 +13,8 @@
 3. 文件系统与 DB 通过短 transaction、staging 和补偿 guard 保持一致，不假设跨资源原子 transaction。
 4. 默认本地运行；AI/网络能力需要显式配置、隐私规则和 provider 边界。
 5. 用户文件安全优先于自动修复、覆盖和静默推测。
-6. 可观测性以 change log、错误状态和 diagnostics 为主，不宣称未接入的日志或 metrics 能力。
+6. 结构化可观测性连接 Swift、CoreBridge 和 Rust Core，并与事务性 `change_log`、AI call log 和 repository
+   diagnostics 保持独立失败语义。
 
 ## 四层结构
 
@@ -53,6 +54,7 @@ Rust Core：
 - `core/src/sync/**`：外部 Created/Renamed/Modified/Removed 规划。
 - `core/src/tree/mod.rs`：每次调用读取文件系统并构造 tree JSON。
 - `core/src/overview/**`：generated overview。
+- `core/src/observability/**`：结构化 event、catalog、source redaction、有界 queue、callback 和 health。
 - `core/src/repair.rs`：metadata snapshot、integrity check 和 replacement DB repair。
 
 macOS：
@@ -60,7 +62,8 @@ macOS：
 - `App/**`：app 入口和依赖装配。
 - `Bridge/**`：CoreBridge、snapshot 和 error mapping。
 - `PlatformServices/**`：FSEvents、iCloud、Finder、Trash availability probe/危险确认/UI、security bookmark
-  和 diagnostics 平台能力；不执行确认后的 Trash mutation。
+  和 diagnostics 平台能力，包括 OSLog/signpost、内存/rolling JSONL、incident 与诊断包；不执行确认后的
+  Trash mutation。
 - `Features/**`：按功能组织的 model/action/view support。
 - `Views/**`：窗口和页面组合。
 
@@ -139,12 +142,15 @@ Core 不执行外部物理 rename/delete，只登记已经发生的文件系统�
 
 当前证据面包括：
 
+- schema version 2 的结构化 runtime event、跨 Swift/Core trace context 和 Action/Component Catalog。
+- OSLog/signpost、受限内存、Application Support rolling JSONL、incident、health 和 `.amdiagnostic`。
 - SQLite `change_log`，覆盖定义明确的 mutation。
 - 页面 error mapping、watcher/platform/local-model status DTO。
 - repository DB/WAL/SHM diagnostics snapshot。
 - About 页脱敏版本报告。
 
-Core `init_logging` 只校验 level；Swift 未接入 OSLog wrapper；当前没有自动 metrics 或远程 telemetry。详见
+Core `initialize_observability` 安装单一 subscriber 并通过有界 callback sink 交给 Swift 平台层；`init_logging`
+只作为兼容入口。系统没有自动 metrics、产品分析、远程 telemetry 或诊断上传。详见
 [可观测性与诊断](../development/observability.md)。
 
 ## 性能

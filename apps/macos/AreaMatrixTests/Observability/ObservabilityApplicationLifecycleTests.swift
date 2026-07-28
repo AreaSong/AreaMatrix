@@ -53,7 +53,7 @@ final class ObservabilityApplicationLifecycleTests: XCTestCase {
 
     func testTerminationRetainsLifecycleUntilReplyThenReleasesIt() async {
         var lifecycle: ObservabilityApplicationLifecycle? = ObservabilityApplicationLifecycle()
-        weak var weakLifecycle = lifecycle
+        weak let weakLifecycle = lifecycle
         let probe = TerminationProbe()
         let replyExpectation = expectation(description: "retained lifecycle replies")
 

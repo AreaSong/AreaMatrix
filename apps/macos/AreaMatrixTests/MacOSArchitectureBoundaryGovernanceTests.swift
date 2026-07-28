@@ -26,7 +26,7 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
         #"unsetenv\("#,
         #"\blstat\("#,
         #"\bstat\("#,
-        #"\bgeteuid\("#,
+        #"\bgeteuid\("#
     ]
 
     private let nonBridgeCoreErrorInventory = [
@@ -34,7 +34,7 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
         "Features/SyncConflicts/ICloudConflictMinimalResolution.swift:CoreError:1",
         "Features/SyncConflicts/ICloudConflictMinimalValidation.swift:CoreError.Conflict:1",
         "Features/SyncConflicts/ICloudConflictMinimalValidation.swift:CoreError.Internal:2",
-        "Features/SyncConflicts/MainICloudConflictRoutingActions.swift:CoreError.Internal:2",
+        "Features/SyncConflicts/MainICloudConflictRoutingActions.swift:CoreError.Internal:2"
     ]
 
     func testGeneratedCoreCallsStayInsideBridge() throws {
@@ -64,7 +64,7 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "NSFileCoordinator",
             "FSEventStream",
             "URLSession",
-            "Task.detached",
+            "Task.detached"
         ]
         let violations = try productionSwiftFiles()
             .filter(isViewLikeProductionFile)
@@ -87,7 +87,7 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "Features/Import/ImportBatchPreviewState.swift:resourceValues:5",
             "Features/Import/ImportFolderPreviewState.swift:resourceValues:1",
             "Features/Import/ImportSingleFilePreflightCorePreview.swift:FileHandle:1",
-            "Features/Import/ImportSingleFilePreviewModelState.swift:resourceValues:1",
+            "Features/Import/ImportSingleFilePreviewModelState.swift:resourceValues:1"
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles().filter { relativeProductionPath(for: $0).hasPrefix("Features/") },
@@ -131,7 +131,7 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "maximumResponseBodyBytes == 0",
             "!plan.followRedirects",
             "completionHandler(nil)",
-            "kSecReturnData",
+            "kSecReturnData"
         ]
 
         let missing = requiredTerms.filter { !source.contains($0) }
@@ -168,7 +168,9 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "Bridge/Generated/module.modulemap",
             "Bridge/UniFFI/area_matrix.swift",
             "Bridge/UniFFI/area_matrixFFI.h",
-            "Bridge/UniFFI/module.modulemap",
+            "Bridge/UniFFI/area_matrixFFI.modulemap",
+            "Bridge/UniFFI/libarea_matrix_core.a",
+            "Bridge/UniFFI/module.modulemap"
         ]
         let actual = try generatedBindingArtifacts()
 
@@ -246,7 +248,7 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
                         #"\bErrorMapping\b"#,
                         #"\bErrorSeverity\b"#,
                         #"\bErrorRecoverability\b"#,
-                        #"\bmapCoreError\s*\(\s*input\s*:"#,
+                        #"\bmapCoreError\s*\(\s*input\s*:"#
                     ].joined(separator: "|")
                 )
             }
@@ -280,7 +282,7 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
     private let nsWorkspaceOpenInventory = [
         "App/LocalFileURLPlatformAdapters.swift:NSWorkspace.shared.activateFileViewerSelecting:1",
         "App/LocalFileURLPlatformAdapters.swift:NSWorkspace.shared.open:1",
-        "PlatformServices/ExternalURLPolicy.swift:NSWorkspace.shared.open:1",
+        "PlatformServices/ExternalURLPolicy.swift:NSWorkspace.shared.open:1"
     ]
 
     func testAppPlatformDefaultAdaptersStayCentralized() throws {
@@ -306,7 +308,7 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
                         #"\bVoiceOverAccessibilityAnnouncer\s*\("#,
                         #"\bNSWorkspaceRepositoryFileOpener\s*\("#,
                         #"\bNSWorkspaceRepositoryFileRevealer\s*\("#,
-                        #"\bNSWorkspaceRepositoryFinderOpener\s*\("#,
+                        #"\bNSWorkspaceRepositoryFinderOpener\s*\("#
                     ].joined(separator: "|")
                 )
             }
@@ -336,7 +338,7 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
                         #"\bNSPasteboardLocalModelDiagnosticsCopier\s*\("#,
                         #"\bNSWorkspaceLocalModelFolderOpener\s*\("#,
                         #"\bNSWorkspaceLocalModelInstallHelpOpener\s*\("#,
-                        #"\bNSWorkspaceRepositoryIgnoreRulesManager\s*\("#,
+                        #"\bNSWorkspaceRepositoryIgnoreRulesManager\s*\("#
                     ].joined(separator: "|")
                 )
             }
@@ -388,7 +390,7 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
     func testExternalURLStringParsingStaysCentralizedInPolicy() throws {
         let expected = [
             "PlatformServices/ExternalURLPolicy.swift:URL(string::1",
-            "PlatformServices/RemoteProviderProbeService.swift:URL(string::1",
+            "PlatformServices/RemoteProviderProbeService.swift:URL(string::1"
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles(),
@@ -405,7 +407,7 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
 
     func testExternalURLPolicyUseStaysBehindSharedOpener() throws {
         let expected = [
-            "PlatformServices/ExternalURLPolicy.swift:ExternalURLPolicy.validatedHTTPSURL:1",
+            "PlatformServices/ExternalURLPolicy.swift:ExternalURLPolicy.validatedHTTPSURL:1"
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles(),

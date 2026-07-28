@@ -1903,6 +1903,27 @@ repo_domains:
             self.assertTrue(hits)
             self.assertTrue(all(hit.category == "allowed-technical" for hit in hits))
 
+    def test_wording_audit_scopes_observability_lifecycle_terms(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            observability = root / "core/src/observability/types.rs"
+            import_flow = root / "core/src/storage/import/flow.rs"
+            ordinary = root / "docs/README.md"
+            observability.parent.mkdir(parents=True)
+            import_flow.parent.mkdir(parents=True)
+            ordinary.parent.mkdir(parents=True)
+            observability.write_text("pub phase: String\nfn stage() {}\n", encoding="utf-8")
+            import_flow.write_text("Some(trace) => trace.stage(action, component, work)\n", encoding="utf-8")
+            ordinary.write_text("Current phase and stage remain active.\n", encoding="utf-8")
+
+            hits, file_count = audit_wording(root)
+
+            self.assertEqual(file_count, 3)
+            categories = {hit.rel_path: hit.category for hit in hits}
+            self.assertEqual(categories["core/src/observability/types.rs"], "allowed-technical")
+            self.assertEqual(categories["core/src/storage/import/flow.rs"], "allowed-technical")
+            self.assertEqual(categories["docs/README.md"], "blocked")
+
     def test_wording_audit_allows_release_helper_literal_names(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -1944,6 +1965,7 @@ repo_domains:
             core_dir.mkdir()
             (core_dir / "Cargo.toml").write_text("[package]\nname = \"area_matrix_core\"\n", encoding="utf-8")
             (core_dir / "area_matrix.udl").write_text("namespace area_matrix {}\n", encoding="utf-8")
+            (core_dir / "uniffi.toml").write_text("[bindings.swift]\n", encoding="utf-8")
             (core_dir / "build.rs").write_text("fn main() {}\n", encoding="utf-8")
 
             calls: list[str] = []

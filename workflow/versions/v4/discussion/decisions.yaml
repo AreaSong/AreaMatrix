@@ -66,6 +66,9 @@ decisions:
   - id: validation
     status: accepted
     summary: Completion requires privacy, hostile input, backpressure, disk-full, lifecycle, crash, trace continuity, localization, UI, Core, bindings, docs, workflow, security review, and fresh full-gate evidence.
+  - id: implementation-alignment
+    status: accepted
+    summary: Product implementation exists outside version execution, but v4 remains planning and cannot close or promote until Exact Docs and fresh full-gate evidence are complete.
 open_questions: []
 blockers: []
 risk_boundaries:

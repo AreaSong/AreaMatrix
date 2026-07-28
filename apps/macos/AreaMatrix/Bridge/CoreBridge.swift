@@ -9,17 +9,20 @@ actor CoreBridge {
     private let repoURL: URL?
     private let unavailableState: CoreBridgeUnavailableState
     private let availabilityChecker: any FileAvailabilityChecking
+    let importObservability: CoreImportObservabilityRecorder
     let remoteProviderProbePerformer: any RemoteProviderProbePerforming
 
     init(
         repoURL: URL? = nil,
         unavailableState: CoreBridgeUnavailableState = .generatedBindingsUnavailable,
         availabilityChecker: any FileAvailabilityChecking = LocalFileAvailabilityChecker(),
+        importObservability: CoreImportObservabilityRecorder = .live,
         remoteProviderProbePerformer: any RemoteProviderProbePerforming = RemoteProviderProbeService.shared
     ) {
         self.repoURL = repoURL
         self.unavailableState = unavailableState
         self.availabilityChecker = availabilityChecker
+        self.importObservability = importObservability
         self.remoteProviderProbePerformer = remoteProviderProbePerformer
     }
 

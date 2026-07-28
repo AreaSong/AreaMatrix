@@ -87,10 +87,28 @@ AreaMatrix 只有一个顶层 `WindowGroup`。产品任务通过窗口内路由�
 - 分类器规则与预览。
 - 集成和 iCloud 状态。
 - AI 配置与隐私。
-- 高级诊断与恢复入口。
+- 独立的诊断与日志页。
+- 高级恢复、repository diagnostics 与危险选项。
 - 平台差异与关于信息。
 
 设置由主窗口路由承载，不是独立 SwiftUI `Settings` Scene。
+
+## 日志与诊断界面
+
+- `diagnostics` 是设置窗口的独立一级 Tab，提供标准、诊断和开发者模式，限时租约、保留期限、磁盘预算、健康状态、
+  incident 标记、本地日志删除和 Trace Console 入口。
+- Advanced 与 About 页只提供跳转入口；Advanced 继续负责 repository metadata snapshot 和恢复工具，About 继续负责
+  App/Core/schema 摘要与脱敏文本诊断。
+- 用户投影以本地化活动和问题状态解释事件；开发者投影提供 timeline、tree、graph、terminal、raw data、
+  expected-vs-actual 和 trace comparison，并使用同一组稳定事件身份。
+- 异常退出后若能恢复中断 session，主窗口显示只读恢复提示并关联恢复 incident；提示不会自动执行文件恢复。
+- `.amdiagnostic` 保存前展示事件范围、隐私选择、预计大小，以及可选 repository metadata snapshot 附件；已保存包作为不可信输入离线打开，
+  先校验 schema、类型、大小、checksum、符号链接和硬链接边界。
+- About 脱敏文本诊断和 repository metadata snapshot 仍是独立产物，不与运行事件或诊断包混为一体。
+
+日志与诊断默认保存在 Application Support，不写入资料库根目录、不自动上传，也不把 observation 当成
+用户文件恢复或业务审计的真相源。删除入口只删除 manifest 明确拥有的日志或 incident；`read_only` 历史 incident 和
+未知文件不可删除，也不触碰用户资料库内容。
 
 ## 同步、冲突与恢复界面
 
@@ -102,7 +120,7 @@ AreaMatrix 只有一个顶层 `WindowGroup`。产品任务通过窗口内路由�
 - 启动恢复提示与重试。
 - 资料库错误视图。
 - DB 元数据修复确认与结果。
-- 诊断导出确认。
+- 诊断包隐私预览与保存确认。
 
 冲突应用、修复、重新索引和占位符下载属于高风险行为，必须显示影响范围并保留取消路径。
 
