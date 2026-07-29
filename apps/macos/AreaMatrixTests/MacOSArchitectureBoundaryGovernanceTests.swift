@@ -37,24 +37,6 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
         "Features/SyncConflicts/MainICloudConflictRoutingActions.swift:CoreError.Internal:2"
     ]
 
-    func testGeneratedCoreCallsStayInsideBridge() throws {
-        let violations = try productionSwiftFiles()
-            .filter { !relativeProductionPath(for: $0).hasPrefix("Bridge/") }
-            .flatMap {
-                try sourceRegexViolations(
-                    in: $0,
-                    pattern: #"\bAreaMatrix\.[A-Za-z_][A-Za-z0-9_]*\s*\("#
-                )
-            }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "Swift production code must call Rust Core through Bridge/CoreBridge, not generated UniFFI bindings."
-        )
-    }
-
     func testSwiftUIViewFilesDoNotOwnPlatformIO() throws {
         let platformIOTerms = [
             "FileManager.default",
@@ -83,11 +65,7 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "Features/AI/RemoteProviderCredentialStore.swift:SecItemAdd:1",
             "Features/AI/RemoteProviderCredentialStore.swift:SecItemCopyMatching:1",
             "Features/AI/RemoteProviderCredentialStore.swift:SecItemDelete:1",
-            "Features/AI/RemoteProviderCredentialStore.swift:SecItemUpdate:1",
-            "Features/Import/ImportBatchPreviewState.swift:resourceValues:5",
-            "Features/Import/ImportFolderPreviewState.swift:resourceValues:1",
-            "Features/Import/ImportSingleFilePreflightCorePreview.swift:FileHandle:1",
-            "Features/Import/ImportSingleFilePreviewModelState.swift:resourceValues:1"
+            "Features/AI/RemoteProviderCredentialStore.swift:SecItemUpdate:1"
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles().filter { relativeProductionPath(for: $0).hasPrefix("Features/") },

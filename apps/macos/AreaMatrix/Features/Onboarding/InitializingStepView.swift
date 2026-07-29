@@ -25,7 +25,7 @@ struct InitializingStepView: View {
                 warningSection
                 safetyText
             }
-            
+
             Spacer()
             footer
         }
@@ -53,21 +53,22 @@ struct InitializingStepView: View {
                     .tracking(6)
             }
             .padding(.bottom, 8)
-            
+
             HStack(alignment: .center) {
-                Text(isCreateMode ? L10n.string("onboarding.initializing.createTitle") : L10n.string("onboarding.initializing.adoptTitle"))
+                Text(isCreateMode ? L10n.string("onboarding.initializing.createTitle") : L10n
+                    .string("onboarding.initializing.adoptTitle"))
                     .font(.system(size: 42, weight: .heavy))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
-                
+
                 Spacer()
-                
+
                 ProgressView()
                     .controlSize(.small)
                     .accessibilityLabel(accessibilityProgressLabel)
             }
-            
+
             Text(detailText)
                 .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(.secondary)
@@ -124,7 +125,7 @@ struct InitializingStepView: View {
                         AreaMatrixLucideIcon(name: row.iconName, lineWidth: 2)
                             .frame(width: 16, height: 16)
                             .foregroundStyle(row.tint)
-                        
+
                         Text(row.title)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(row.tint == .secondary ? .secondary : .primary)
@@ -205,7 +206,6 @@ struct InitializingStepView: View {
             .opacity(isCancellationRequested ? 0.5 : 1)
         }
     }
-
 
     private var statusText: String {
         if isCancellationRequested {
@@ -317,7 +317,7 @@ private struct HoverableGhostButton: View {
     let icon: AreaMatrixLucideIcon.IconName?
     let title: String
     @State private var isHovered = false
-    
+
     var body: some View {
         AreaMatrixGhostButton(isHovered: isHovered, action: action) {
             HStack(spacing: 6) {

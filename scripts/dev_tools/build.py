@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from .artifacts import cargo_lane_lock, cargo_target_dir
 from .common import fail, project_root, require_command, require_file, resolve_project_path, run_step
 
 UNIFFI_BINDGEN_WRAPPER = "areamatrix_uniffi_bindgen_wrapper"
@@ -315,10 +316,10 @@ def _build_core_targets(core_dir: Path, cargo_profile_args: list[str], env: dict
     return 0
 
 
-def _generated_artifacts(core_dir: Path, host_triple: str, target_profile: str) -> tuple[Path, Path, Path]:
-    staticlib_arm = core_dir / "target/aarch64-apple-darwin" / target_profile / "libarea_matrix_core.a"
-    staticlib_x86 = core_dir / "target/x86_64-apple-darwin" / target_profile / "libarea_matrix_core.a"
-    bindgen_library = core_dir / "target" / host_triple / target_profile / "libarea_matrix_core.dylib"
+def _generated_artifacts(target_dir: Path, host_triple: str, target_profile: str) -> tuple[Path, Path, Path]:
+    staticlib_arm = target_dir / "aarch64-apple-darwin" / target_profile / "libarea_matrix_core.a"
+    staticlib_x86 = target_dir / "x86_64-apple-darwin" / target_profile / "libarea_matrix_core.a"
+    bindgen_library = target_dir / host_triple / target_profile / "libarea_matrix_core.dylib"
     return staticlib_arm, staticlib_x86, bindgen_library
 
 
@@ -418,13 +419,19 @@ def _run_swift_bindgen(
     return proc.returncode
 
 
-def _bindings_bindgen_library(core_dir: Path, profile: str | None = None) -> Path:
+def _bindings_bindgen_library(
+    core_dir: Path,
+    profile: str | None = None,
+    *,
+    target_dir: Path | None = None,
+) -> Path:
     build_profile = profile or os.environ.get("BUILD_PROFILE", "release")
     _, target_profile = _cargo_profile_args(build_profile)
     host_triple = _macos_rust_host()
     if host_triple is None:
         fail("Swift binding generation requires a macOS Rust host.")
-    _, _, bindgen_library = _generated_artifacts(core_dir, host_triple, target_profile)
+    resolved_target_dir = target_dir or cargo_target_dir(core_dir.parent, lane="sdk")
+    _, _, bindgen_library = _generated_artifacts(resolved_target_dir, host_triple, target_profile)
     if not bindgen_library.is_file():
         fail(
             f"host dylib for UniFFI binding generation not found at {bindgen_library}. "
@@ -597,18 +604,21 @@ def _ios_bindings_subset_issues(
     return issues
 
 
-def run_core_build(
+def _run_core_build_unlocked(
     root: Path | None = None,
     *,
     profile: str | None = None,
     out_dir: str | Path | None = None,
     deployment_target: str | None = None,
+    cargo_lane: str = "sdk",
+    target_dir: str | Path | None = None,
 ) -> int:
     root = (root or project_root()).resolve()
     core_dir = root / "core"
     out_path = resolve_project_path(root, out_dir or os.environ.get("OUT_DIR", "apps/macos/AreaMatrix/Bridge/Generated"))
     build_profile = profile or os.environ.get("BUILD_PROFILE", "release")
     macos_target = deployment_target or os.environ.get("MACOSX_DEPLOYMENT_TARGET", "14.0")
+    resolved_target_dir = cargo_target_dir(root, lane=cargo_lane, configured=target_dir)
 
     cargo_profile_args, target_profile = _cargo_profile_args(build_profile)
     _require_core_build_inputs(core_dir)
@@ -620,14 +630,23 @@ def run_core_build(
     _require_rust_target("x86_64-apple-darwin")
     bindgen_cmd = _uniffi_bindgen_command(core_dir)
 
-    env = {"MACOSX_DEPLOYMENT_TARGET": macos_target}
+    env = {
+        "CARGO_TARGET_DIR": str(resolved_target_dir),
+        "MACOSX_DEPLOYMENT_TARGET": macos_target,
+    }
     print(f"==> Building AreaMatrix core ({build_profile})")
+    print(f"    Cargo lane: {cargo_lane}")
+    print(f"    target dir: {resolved_target_dir}")
     rc = _build_core_targets(core_dir, cargo_profile_args, env)
     if rc != 0:
         return rc
 
     out_path.mkdir(parents=True, exist_ok=True)
-    staticlib_arm, staticlib_x86, bindgen_library = _generated_artifacts(core_dir, host_triple, target_profile)
+    staticlib_arm, staticlib_x86, bindgen_library = _generated_artifacts(
+        resolved_target_dir,
+        host_triple,
+        target_profile,
+    )
 
     rc = _create_universal_staticlib(out_path, staticlib_arm, staticlib_x86)
     if rc != 0:
@@ -641,6 +660,139 @@ def run_core_build(
     print(f"    swift:     {out_path / 'area_matrix.swift'}")
     print(f"    header:    {out_path / 'area_matrixFFI.h'}")
     return 0
+
+
+def run_core_build(
+    root: Path | None = None,
+    *,
+    profile: str | None = None,
+    out_dir: str | Path | None = None,
+    deployment_target: str | None = None,
+    cargo_lane: str = "sdk",
+    target_dir: str | Path | None = None,
+    acquire_cargo_lock: bool = True,
+) -> int:
+    """Build Core while serializing Cargo producers that share one lane."""
+
+    root = (root or project_root()).resolve()
+    if not acquire_cargo_lock:
+        return _run_core_build_unlocked(
+            root,
+            profile=profile,
+            out_dir=out_dir,
+            deployment_target=deployment_target,
+            cargo_lane=cargo_lane,
+            target_dir=target_dir,
+        )
+
+    operation = f"core-build:{profile or os.environ.get('BUILD_PROFILE', 'release')}"
+    with cargo_lane_lock(root, lane=cargo_lane, operation=operation):
+        return _run_core_build_unlocked(
+            root,
+            profile=profile,
+            out_dir=out_dir,
+            deployment_target=deployment_target,
+            cargo_lane=cargo_lane,
+            target_dir=target_dir,
+        )
+
+
+def _core_build_inputs(core_dir: Path) -> list[Path]:
+    inputs = [
+        core_dir / "Cargo.toml",
+        core_dir / "Cargo.lock",
+        core_dir / "build.rs",
+        core_dir / "area_matrix.udl",
+        core_dir / UNIFFI_CONFIG_NAME,
+    ]
+    for directory in (core_dir / "src", core_dir / "resources"):
+        if directory.is_dir():
+            inputs.append(directory)
+            inputs.extend(path for path in sorted(directory.rglob("*")) if path.is_file())
+    return inputs
+
+
+def _escape_makefile_path(path: Path) -> str:
+    return str(path).replace("\\", "\\\\").replace(" ", "\\ ").replace("#", "\\#").replace("$", "$$")
+
+
+def _write_core_dependency_file(dependency_file: Path, output: Path, core_dir: Path) -> None:
+    dependency_file.parent.mkdir(parents=True, exist_ok=True)
+    dependencies = " ".join(_escape_makefile_path(path) for path in _core_build_inputs(core_dir))
+    dependency_file.write_text(f"{_escape_makefile_path(output)}: {dependencies}\n", encoding="utf-8")
+
+
+def _run_xcode_core_build_unlocked(
+    root: Path | None = None,
+    *,
+    profile: str | None = None,
+    target: str = "aarch64-apple-darwin",
+    target_dir: str | Path | None = None,
+    dependency_file: str | Path | None = None,
+    deployment_target: str | None = None,
+) -> int:
+    """Build the single Rust slice consumed by Xcode without generating bindings."""
+
+    root = (root or project_root()).resolve()
+    core_dir = root / "core"
+    build_profile = profile or os.environ.get("BUILD_PROFILE", "debug")
+    cargo_profile_args, target_profile = _cargo_profile_args(build_profile)
+    resolved_target_dir = cargo_target_dir(root, lane="xcode", configured=target_dir)
+    macos_target = deployment_target or os.environ.get("MACOSX_DEPLOYMENT_TARGET", "14.0")
+
+    for command in ("cargo", "rustc"):
+        require_command(command)
+    _require_core_build_inputs(core_dir)
+    _require_rust_target(target)
+
+    env = {
+        "CARGO_TARGET_DIR": str(resolved_target_dir),
+        "MACOSX_DEPLOYMENT_TARGET": macos_target,
+    }
+    print(f"==> Building AreaMatrix core for Xcode ({build_profile}, {target})")
+    print(f"    target dir: {resolved_target_dir}")
+    proc = run_step(
+        ["cargo", "build", *cargo_profile_args, "--target", target],
+        cwd=core_dir,
+        env=env,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return proc.returncode
+
+    output = resolved_target_dir / target / target_profile / "libarea_matrix_core.a"
+    require_file(output, f"{target} static library")
+    if dependency_file:
+        dependency_path = Path(dependency_file)
+        if not dependency_path.is_absolute():
+            dependency_path = root / dependency_path
+        _write_core_dependency_file(dependency_path, output, core_dir)
+    print(f"    staticlib: {output}")
+    return 0
+
+
+def run_xcode_core_build(
+    root: Path | None = None,
+    *,
+    profile: str | None = None,
+    target: str = "aarch64-apple-darwin",
+    target_dir: str | Path | None = None,
+    dependency_file: str | Path | None = None,
+    deployment_target: str | None = None,
+) -> int:
+    """Build a diagnostic Apple Rust slice with an explicit xcode-lane single-flight lock."""
+
+    root = (root or project_root()).resolve()
+    operation = f"xcode-core:{profile or os.environ.get('BUILD_PROFILE', 'debug')}:{target}"
+    with cargo_lane_lock(root, lane="xcode", operation=operation):
+        return _run_xcode_core_build_unlocked(
+            root,
+            profile=profile,
+            target=target,
+            target_dir=target_dir,
+            dependency_file=dependency_file,
+            deployment_target=deployment_target,
+        )
 
 
 def run_bindings_update(root: Path | None, udl: str | Path, out_dir: str | Path) -> int:

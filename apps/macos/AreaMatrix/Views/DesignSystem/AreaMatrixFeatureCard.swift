@@ -94,7 +94,7 @@ struct AreaMatrixFeatureCard: View {
             titleText
             descriptionText
         }
-        .padding(.vertical, 24)
+        .padding(.vertical, 16)
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.ultraThinMaterial)
@@ -143,8 +143,9 @@ struct AreaMatrixFeatureCard: View {
         Text(description)
             .font(.system(size: 13))
             .foregroundColor(.secondary)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+            .minimumScaleFactor(0.9)
     }
 
     private var cardSpotlight: some View {

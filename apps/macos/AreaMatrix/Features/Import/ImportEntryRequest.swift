@@ -7,7 +7,7 @@ enum ImportEntrySource: Equatable {
     case importConflictBatch(CommandPaletteLinkedPageRoute?)
 }
 
-enum ImportEntryDestination: Equatable, Sendable {
+enum ImportEntryDestination: Equatable {
     case autoClassify
     case category(String)
     case repositoryRoot

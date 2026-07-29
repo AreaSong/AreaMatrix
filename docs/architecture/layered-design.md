@@ -82,7 +82,8 @@ model 放到异步任务，UI 更新回到 main actor。
 - 在 Swift 中执行确认后的 Trash mutation、写 delete metadata/change log 或自行拼装 Undo；这些操作及
   失败回滚由 Core 统一负责。
 
-当前没有 Swift OSLog wrapper；diagnostics 边界见 [observability.md](../development/observability.md)。
+Swift 的 OSLog/signpost 适配集中在 `PlatformServices/Observability/ObservabilitySignpostSink.swift`；它只服务
+Apple 开发工具，便携 diagnostics 的源事实仍遵循 [observability.md](../development/observability.md)。
 
 ## L4 SwiftUI 与 Features
 

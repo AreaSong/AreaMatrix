@@ -176,13 +176,13 @@ private struct ValidatePathICloudNotice: View {
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundStyle(.blue)
             }
-            
+
             VStack(alignment: .center, spacing: 8) {
                 Text(L10n.string("onboarding.validate.icloudRisk"))
                     .font(.system(size: 11, weight: .regular, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    
+
                 Toggle(
                     L10n.string("onboarding.validate.icloudRiskAcceptance"),
                     isOn: Binding(get: { isAccepted }, set: onAcceptedChanged)
@@ -212,7 +212,7 @@ private struct ValidatePathNoticeCard: View {
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundStyle(tint)
             }
-            
+
             if !lines.isEmpty {
                 VStack(alignment: .center, spacing: 4) {
                     ForEach(lines, id: \.self) { line in

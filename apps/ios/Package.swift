@@ -14,24 +14,14 @@ let package = Package(
         .executable(name: "AreaMatrixIOSApp", targets: ["AreaMatrixIOSApp"])
     ],
     targets: [
-        .systemLibrary(
+        .binaryTarget(
             name: "Carea_matrixFFI",
-            path: "Carea_matrixFFI"
+            path: ".core-sdk/AreaMatrixCoreFFI.xcframework"
         ),
         .target(
             name: "AreaMatrixIOS",
             dependencies: ["Carea_matrixFFI"],
-            path: "AreaMatrix",
-            linkerSettings: [
-                .unsafeFlags([
-                    "-L../../core/target/aarch64-apple-darwin/debug",
-                    "-larea_matrix_core"
-                ], .when(platforms: [.macOS])),
-                .unsafeFlags([
-                    "-L../../core/target/aarch64-apple-ios/debug",
-                    "-larea_matrix_core"
-                ], .when(platforms: [.iOS]))
-            ]
+            path: "AreaMatrix"
         ),
         .executableTarget(
             name: "AreaMatrixIOSApp",

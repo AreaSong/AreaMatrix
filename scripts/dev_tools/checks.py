@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import os
@@ -1236,7 +1237,7 @@ _REPO_DOMAIN_AUTHORITIES = {
 
 
 def _check_repo_domain_coverage(root: Path, failures: FailureCollector) -> None:
-    """Every tracked file must resolve to exactly one registered repo domain."""
+    """Every tracked or prospective tracked file must resolve to one repo domain."""
 
     from .changes import ChangeYAMLError, parse_yaml_subset
 
@@ -1291,14 +1292,22 @@ def _check_repo_domain_coverage(root: Path, failures: FailureCollector) -> None:
                 continue
             patterns[pattern] = domain
 
-    tracked = _git_text(root, "-c", "core.quotepath=off", "ls-files")
-    if tracked is None:
+    inventory = _git_text(
+        root,
+        "-c",
+        "core.quotepath=off",
+        "ls-files",
+        "--cached",
+        "--others",
+        "--exclude-standard",
+    )
+    if inventory is None:
         # Outside a git checkout only the schema above can be validated.
         return
-    tracked_files = [line for line in tracked.splitlines() if line]
+    repository_files = sorted({line for line in inventory.splitlines() if line})
     winning_patterns: set[str] = set()
     unowned: list[str] = []
-    for rel_path in tracked_files:
+    for rel_path in repository_files:
         best: str | None = None
         for pattern in patterns:
             if pattern.endswith("/"):
@@ -1318,7 +1327,7 @@ def _check_repo_domain_coverage(root: Path, failures: FailureCollector) -> None:
     if len(unowned) > 20:
         failures.fail(f"repo domain coverage is missing owners for {len(unowned) - 20} more file(s)")
     for pattern in sorted(set(patterns) - winning_patterns):
-        failures.fail(f"repo domain path matches no tracked file: {pattern}")
+        failures.fail(f"repo domain path matches no repository file: {pattern}")
 
 
 def _registered_families(entries: list, key: str, failures: FailureCollector, label: str) -> list[str]:
@@ -1438,6 +1447,85 @@ def _check_code_correspondence(root: Path, failures: FailureCollector) -> None:
             failures.fail(f"macos_features registers a directory missing from Features/: {feature}")
 
 
+def _python_developer_scenario_ids(source: str) -> list[str]:
+    tree = ast.parse(source)
+    for node in tree.body:
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        if not any(isinstance(target, ast.Name) and target.id == "DEVELOPER_SCENARIOS" for target in targets):
+            continue
+        value = node.value
+        if not isinstance(value, (ast.List, ast.Tuple)):
+            return []
+        return [
+            item.value
+            for item in value.elts
+            if isinstance(item, ast.Constant) and isinstance(item.value, str)
+        ]
+    return []
+
+
+def _swift_developer_scenario_ids(source: str) -> list[str]:
+    pattern = re.compile(
+        r'^\s*case\s+(?P<name>[a-z][A-Za-z0-9_]*)(?:\s*=\s*"(?P<raw>[^"]+)")?\s*$',
+        re.MULTILINE,
+    )
+    return [match.group("raw") or match.group("name") for match in pattern.finditer(source)]
+
+
+def _check_developer_workflow_contract(root: Path, failures: FailureCollector) -> None:
+    developer_path = root / "scripts/dev_tools/developer.py"
+    scenario_path = root / "apps/macos/AreaMatrix/App/AreaMatrixDeveloperScenario.swift"
+    if not developer_path.is_file() or not scenario_path.is_file():
+        failures.fail("developer workflow requires Python and Swift scenario inventories")
+        return
+
+    python_ids = _python_developer_scenario_ids(_read(developer_path))
+    swift_ids = _swift_developer_scenario_ids(_read(scenario_path))
+    if not python_ids:
+        failures.fail("scripts/dev_tools/developer.py has no DEVELOPER_SCENARIOS inventory")
+    if not swift_ids:
+        failures.fail("AreaMatrixDeveloperScenario.swift has no scenario cases")
+    if python_ids != swift_ids:
+        failures.fail(
+            "developer scenario inventories differ between Python and Swift: "
+            f"python={python_ids}, swift={swift_ids}"
+        )
+
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/cli.py",
+        r'test_sub\.add_parser\("changed"',
+        "changed-path test entry",
+    )
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/cli.py",
+        r'run_sub\.add_parser\("macos"',
+        "macOS developer scenario entry",
+    )
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/cli.py",
+        r'doctor_sub\.add_parser\("build"',
+        "build doctor entry",
+    )
+    _require_text(root, failures, "docs/development/build.md", r"\./dev doctor build", "build doctor docs")
+    _require_text(root, failures, "docs/development/testing.md", r"\./dev test changed", "changed-path test docs")
+    for scenario_id in python_ids:
+        _require_text(
+            root,
+            failures,
+            "docs/development/build.md",
+            rf"\./dev run macos --scenario {re.escape(scenario_id)}",
+            f"developer scenario docs for {scenario_id}",
+        )
+
+
 def run_governance_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     failures = FailureCollector()
@@ -1445,6 +1533,7 @@ def run_governance_check(root: Path | None = None) -> int:
         "CODE_REVIEW.md",
         "SECURITY.md",
         "CONTRIBUTING.md",
+        ".cargo/config.toml",
         ".github/CODEOWNERS",
         ".github/PULL_REQUEST_TEMPLATE.md",
         ".github/ISSUE_TEMPLATE/bug_report.md",
@@ -1477,6 +1566,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _check_enterprise_governance_baseline(root, failures)
     _check_repo_domain_coverage(root, failures)
     _check_code_correspondence(root, failures)
+    _check_developer_workflow_contract(root, failures)
     _check_core_api_contract_sync(root, failures)
     _check_data_model_schema_sync(root, failures)
 
@@ -1540,6 +1630,13 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(root, failures, "CONTRIBUTING.md", "CODE_REVIEW.md", "code review entry")
     _require_text(root, failures, "CONTRIBUTING.md", "dependency-policy.md", "dependency policy entry")
     _require_text(root, failures, "CONTRIBUTING.md", "ci-governance.md", "CI governance entry")
+    _require_text(
+        root,
+        failures,
+        ".cargo/config.toml",
+        r'target-dir\s*=\s*"\.build/cargo/validation"',
+        "default local Cargo validation artifact lane",
+    )
     _require_text(root, failures, "docs/README.md", "dependency-policy.md", "dependency policy docs navigation")
     _require_text(root, failures, "docs/README.md", "ci-governance.md", "CI governance docs navigation")
     _require_text(root, failures, ".ai-governance/README.md", "CODE_REVIEW.md", "code review governance entry")
@@ -1592,6 +1689,69 @@ def run_governance_check(root: Path | None = None) -> int:
         root,
         failures,
         ".github/workflows/macos-ci.yml",
+        r"\./dev build core-sdk",
+        "reusable CoreSDK build gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"actions/upload-artifact@v4",
+        "CoreSDK artifact upload gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"actions/download-artifact@v4",
+        "CoreSDK artifact reuse gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"tar -czf core-sdk\.tar\.gz -C \.build core-sdk",
+        "CoreSDK artifact archive gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"tar -xzf \.build/artifacts/core-sdk\.tar\.gz -C \.build",
+        "CoreSDK artifact restore gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"\./dev build core-sdk --verify-only",
+        "CoreSDK restored artifact integrity gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"(?s)^  build:\n(?:(?!^  [A-Za-z0-9_-]+:).)*?^      - uses: dtolnay/rust-toolchain@stable$",
+        "Xcode job Rust toolchain for source-bound CoreSDK verification",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r'AREAMATRIX_CORE_SDK_VERIFY_ONLY:\s*"1"',
+        "Xcode restored CoreSDK verify-only mode",
+    )
+    _require_text(
+        root,
+        failures,
+        "apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+        r"AREAMATRIX_CORE_SDK_VERIFY_ONLY",
+        "Xcode CoreSDK verify-only Build Phase branch",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
         r"run: test -d apps/macos/AreaMatrix\.xcodeproj$",
         "required macOS project gate",
     )
@@ -1606,6 +1766,20 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"--coverage-gate", "Swift coverage gate")
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"swiftlint lint --strict", "SwiftLint gate")
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"swiftformat --lint", "SwiftFormat gate")
+    _require_text(
+        root,
+        failures,
+        "apps/macos/AreaMatrix.xcodeproj/xcshareddata/xcschemes/AreaMatrix.xcscheme",
+        r"AreaMatrix-Functional\.xctestplan",
+        "shared macOS functional XCTestPlan",
+    )
+    _require_text(
+        root,
+        failures,
+        "apps/macos/AreaMatrix-Functional.xctestplan",
+        r'"name"\s*:\s*"AreaMatrixTests"',
+        "functional XCTestPlan target",
+    )
     _forbid_text(
         root,
         failures,

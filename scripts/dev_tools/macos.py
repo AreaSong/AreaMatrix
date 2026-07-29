@@ -10,9 +10,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Mapping, Sequence
 
+from .artifacts import macos_derived_data_dir
 from .common import fail, project_root, require_command
 from .macos_release_probe import RELEASE_APP_LAUNCH_BLOCKED, run_release_app_launch_probe
 
@@ -414,10 +416,22 @@ def _validate_localization_compiler_keys(root: Path, derived_data_dir: Path) -> 
     print(f"macOS compiler localization contract: PASS ({len(compiler_keys)} keys)")
 
 
-def _resolve_derived_data_dir(derived_data_path: str | Path | None) -> tuple[Path, bool]:
+def _resolve_derived_data_dir(
+    root: Path,
+    derived_data_path: str | Path | None,
+    *,
+    temporary: bool = False,
+) -> tuple[Path, bool]:
+    if temporary:
+        if derived_data_path is not None:
+            fail("--derived-data-path cannot be combined with --temporary-derived-data.")
+        temp_root = os.environ.get("TMPDIR", "/tmp")
+        return Path(tempfile.mkdtemp(prefix="areamatrix-xcode-tests.", dir=temp_root)), True
     configured_path = derived_data_path or os.environ.get("DERIVED_DATA_PATH")
     if configured_path:
-        return Path(configured_path), False
+        return macos_derived_data_dir(root, configured=configured_path), False
+    if os.environ.get("AREAMATRIX_TEMP_DERIVED_DATA", "0") != "1":
+        return macos_derived_data_dir(root), False
     temp_root = os.environ.get("TMPDIR", "/tmp")
     return Path(tempfile.mkdtemp(prefix="areamatrix-xcode-tests.", dir=temp_root)), True
 
@@ -441,6 +455,7 @@ def run_macos_tests(
     test_bundle_name: str | None = None,
     destination: str | None = None,
     derived_data_path: str | Path | None = None,
+    temporary_derived_data: bool = False,
     keep_derived_data: bool | None = None,
     test_log: str | Path | None = None,
     build_log: str | Path | None = None,
@@ -450,13 +465,19 @@ def run_macos_tests(
     enable_code_coverage: bool = False,
     coverage_gate: bool = False,
 ) -> int:
+    started_at = time.monotonic()
+    result: int | None = None
     root = (root or project_root()).resolve()
     project_path = root / "apps/macos/AreaMatrix.xcodeproj"
     scheme = scheme or os.environ.get("XCODE_SCHEME", "AreaMatrix")
     test_bundle_name = test_bundle_name or os.environ.get("XCODE_TEST_BUNDLE_NAME", "AreaMatrixTests.xctest")
     destination = destination or os.environ.get("XCODE_DESTINATION", f"platform=macOS,arch={platform.machine()}")
     keep = keep_derived_data if keep_derived_data is not None else os.environ.get("KEEP_DERIVED_DATA", "0") == "1"
-    derived_data_dir, created = _resolve_derived_data_dir(derived_data_path)
+    derived_data_dir, created = _resolve_derived_data_dir(
+        root,
+        derived_data_path,
+        temporary=temporary_derived_data,
+    )
     test_log_path, build_log_path = _resolve_log_paths(derived_data_dir, test_log, build_log)
     result_bundle = result_bundle_path or os.environ.get("XCODE_RESULT_BUNDLE_PATH")
     if coverage_gate and not result_bundle:
@@ -470,7 +491,7 @@ def run_macos_tests(
         if not project_path.is_dir():
             fail(f"Xcode project not found at {project_path}.")
         derived_data_dir.mkdir(parents=True, exist_ok=True)
-        return _run_macos_tests_inner(
+        result = _run_macos_tests_inner(
             root,
             project_path,
             scheme,
@@ -485,7 +506,14 @@ def run_macos_tests(
             enable_code_coverage,
             coverage_gate,
         )
+        return result
     finally:
+        status = result if result is not None else "error"
+        print(
+            "macOS test metrics: "
+            f"status={status} derived_data={'temporary' if created else 'persistent'} "
+            f"duration_seconds={time.monotonic() - started_at:.3f}"
+        )
         if created and not keep:
             shutil.rmtree(derived_data_dir, ignore_errors=True)
 

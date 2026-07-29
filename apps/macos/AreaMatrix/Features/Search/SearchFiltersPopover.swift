@@ -53,9 +53,12 @@ struct SearchFiltersPopover: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else {
-            Label(L10n.string("Filter counts load after entering a query"), systemImage: "line.3.horizontal.decrease.circle")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            Label(
+                L10n.string("Filter counts load after entering a query"),
+                systemImage: "line.3.horizontal.decrease.circle"
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
         }
     }
 

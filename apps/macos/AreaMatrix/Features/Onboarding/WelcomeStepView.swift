@@ -194,7 +194,11 @@ private extension WelcomeStepView {
             .focused($isLearnMoreFocused)
             .focusEffectDisabled()
             .onChange(of: isLearnMoreFocused) { _, focused in
-                if focused { activateHoverScene(.feat4) } else if hoverScene == .feat4 { scheduleHoverReset(for: .feat4) }
+                if focused {
+                    activateHoverScene(.feat4)
+                } else if hoverScene == .feat4 {
+                    scheduleHoverReset(for: .feat4)
+                }
             }
             .onHover { hovering in
                 isLearnMoreHovered = hovering
@@ -205,7 +209,11 @@ private extension WelcomeStepView {
 
             Spacer()
 
-            AreaMatrixCapsuleButton(accent: AreaMatrixTheme.Colors.teal, isHovered: isCtaHovered, action: startScanningSequence) {
+            AreaMatrixCapsuleButton(
+                accent: AreaMatrixTheme.Colors.teal,
+                isHovered: isCtaHovered,
+                action: startScanningSequence
+            ) {
                 HStack(spacing: 12) {
                     Text(L10n.string("onboarding.welcome.chooseFolder"))
                     AreaMatrixLucideIcon(name: .folder, lineWidth: 2.0)
@@ -217,7 +225,11 @@ private extension WelcomeStepView {
             .focused($isChooseFolderFocused)
             .focusEffectDisabled()
             .onChange(of: isChooseFolderFocused) { _, focused in
-                if focused { activateHoverScene(.feat5) } else if hoverScene == .feat5 { scheduleHoverReset(for: .feat5) }
+                if focused {
+                    activateHoverScene(.feat5)
+                } else if hoverScene == .feat5 {
+                    scheduleHoverReset(for: .feat5)
+                }
             }
             .onHover { hovering in
                 isCtaHovered = hovering

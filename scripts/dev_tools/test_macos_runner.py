@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import io
 import json
+import re
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,6 +19,8 @@ from scripts.dev_tools.macos import (
     _handle_release_app_launch_probe_result,
     _parallel_xcodebuild_retry_allowed,
     _products_dir_for_test_bundle,
+    _resolve_derived_data_dir,
+    run_macos_tests,
     _run_sandbox_fallback,
     _run_macos_tests_inner,
     _test_base_args,
@@ -38,6 +43,84 @@ class MacOSTestRunnerTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
+
+    def test_default_derived_data_is_persistent_and_workspace_local(self) -> None:
+        root = self.tmp_path / "workspace"
+
+        derived, temporary = _resolve_derived_data_dir(root, None)
+
+        self.assertEqual(derived, (root / ".build/derived-data/macos-tests").resolve())
+        self.assertFalse(temporary)
+
+    def test_temporary_derived_data_remains_explicit(self) -> None:
+        root = self.tmp_path / "workspace"
+        with patch.dict("os.environ", {"TMPDIR": str(self.tmp_path)}, clear=True):
+            derived, temporary = _resolve_derived_data_dir(root, None, temporary=True)
+
+        self.assertTrue(temporary)
+        self.assertTrue(derived.name.startswith("areamatrix-xcode-tests."))
+
+    def test_explicit_temporary_derived_data_overrides_environment_path(self) -> None:
+        root = self.tmp_path / "workspace"
+        environment_path = self.tmp_path / "environment-derived-data"
+        with patch.dict(
+            "os.environ",
+            {"TMPDIR": str(self.tmp_path), "DERIVED_DATA_PATH": str(environment_path)},
+            clear=True,
+        ):
+            derived, temporary = _resolve_derived_data_dir(root, None, temporary=True)
+
+        self.assertTrue(temporary)
+        self.assertNotEqual(derived, environment_path)
+
+    def test_explicit_path_and_temporary_derived_data_are_mutually_exclusive(self) -> None:
+        with self.assertRaises(ToolError):
+            _resolve_derived_data_dir(
+                self.tmp_path / "workspace",
+                self.tmp_path / "explicit-derived-data",
+                temporary=True,
+            )
+
+    def test_outer_runner_reports_persistent_derived_data_metrics(self) -> None:
+        root = self.tmp_path / "workspace"
+        (root / "apps/macos/AreaMatrix.xcodeproj").mkdir(parents=True)
+        output = io.StringIO()
+
+        with (
+            patch("scripts.dev_tools.macos.require_command"),
+            patch("scripts.dev_tools.macos._run_macos_tests_inner", return_value=0),
+            redirect_stdout(output),
+        ):
+            self.assertEqual(run_macos_tests(root), 0)
+
+        self.assertRegex(
+            output.getvalue(),
+            re.compile(
+                r"macOS test metrics: status=0 derived_data=persistent duration_seconds=\d+\.\d{3}"
+            ),
+        )
+
+    def test_outer_runner_reports_nonzero_temporary_metrics_and_cleans_cache(self) -> None:
+        root = self.tmp_path / "workspace"
+        (root / "apps/macos/AreaMatrix.xcodeproj").mkdir(parents=True)
+        temporary_cache = self.tmp_path / "temporary-derived-data"
+        output = io.StringIO()
+
+        with (
+            patch("scripts.dev_tools.macos.require_command"),
+            patch("scripts.dev_tools.macos.tempfile.mkdtemp", return_value=str(temporary_cache)),
+            patch("scripts.dev_tools.macos._run_macos_tests_inner", return_value=65),
+            redirect_stdout(output),
+        ):
+            self.assertEqual(run_macos_tests(root, temporary_derived_data=True), 65)
+
+        self.assertFalse(temporary_cache.exists())
+        self.assertRegex(
+            output.getvalue(),
+            re.compile(
+                r"macOS test metrics: status=65 derived_data=temporary duration_seconds=\d+\.\d{3}"
+            ),
+        )
 
     def write_localization_compiler_fixture(
         self,

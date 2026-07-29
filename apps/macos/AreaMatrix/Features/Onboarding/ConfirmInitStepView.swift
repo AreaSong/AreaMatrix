@@ -40,7 +40,7 @@ struct ConfirmInitStepView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 40) {
             header
-            
+
             VStack(alignment: .leading, spacing: 24) {
                 pathBox
                 planSection
@@ -49,7 +49,7 @@ struct ConfirmInitStepView: View {
                 iCloudWarning
             }
             .padding(.top, 10)
-            
+
             Spacer()
             footer
         }
@@ -83,13 +83,14 @@ struct ConfirmInitStepView: View {
                     .tracking(6)
             }
             .padding(.bottom, 8)
-            
-            Text(isCreateMode ? L10n.string("onboarding.confirm.createTitle") : L10n.string("onboarding.confirm.adoptTitle"))
+
+            Text(isCreateMode ? L10n.string("onboarding.confirm.createTitle") : L10n
+                .string("onboarding.confirm.adoptTitle"))
                 .font(.system(size: 42, weight: .heavy))
                 .foregroundStyle(.primary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
-            
+
             Text(L10n.string("onboarding.confirm.subtitle"))
                 .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(.secondary)
@@ -180,7 +181,8 @@ struct ConfirmInitStepView: View {
             if footerActions.contains(.primary) {
                 HoverableCapsuleButton(
                     action: primaryAction,
-                    title: isCreateMode ? L10n.string("onboarding.confirm.createRepository") : L10n.string("onboarding.confirm.adoptFolder"),
+                    title: isCreateMode ? L10n.string("onboarding.confirm.createRepository") : L10n
+                        .string("onboarding.confirm.adoptFolder"),
                     isDisabled: !canRunPrimaryAction,
                     accent: AreaMatrixTheme.Colors.teal
                 )
@@ -275,95 +277,95 @@ enum ConfirmInitStepRules {
 }
 
 private struct InitPlanList: View {
-        let title: String
-        let items: [String]
-        var iconName: AreaMatrixLucideIcon.IconName = .checkCircle
-        var tint: Color = AreaMatrixTheme.Colors.teal
+    let title: String
+    let items: [String]
+    var iconName: AreaMatrixLucideIcon.IconName = .checkCircle
+    var tint: Color = AreaMatrixTheme.Colors.teal
 
-        var body: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    AreaMatrixLucideIcon(name: iconName, lineWidth: 2)
-                        .frame(width: 16, height: 16)
-                        .foregroundStyle(tint)
-                    Text(title)
-                        .font(.system(size: 14, weight: .bold))
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(Array(items.enumerated()), id: \.element) { index, item in
-                        HStack(alignment: .top, spacing: 8) {
-                            Text("•")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(tint.opacity(0.8))
-                            Text(item)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.secondary)
-                        }
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                        .animation(
-                            .spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.04),
-                            value: items
-                        )
-                    }
-                }
-                .padding(.leading, 8)
-                .padding(.vertical, 14)
-                .padding(.horizontal, 16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.primary.opacity(0.03))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(Color.primary.opacity(0.05), lineWidth: 1)
-                        )
-                )
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                AreaMatrixLucideIcon(name: iconName, lineWidth: 2)
+                    .frame(width: 16, height: 16)
+                    .foregroundStyle(tint)
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
             }
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(items.enumerated()), id: \.element) { index, item in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(tint.opacity(0.8))
+                        Text(item)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                    .animation(
+                        .spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.04),
+                        value: items
+                    )
+                }
+            }
+            .padding(.leading, 8)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.primary.opacity(0.03))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(Color.primary.opacity(0.05), lineWidth: 1)
+                    )
+            )
         }
     }
+}
 
-    private struct HoverableGhostButton: View {
-        let action: () -> Void
-        let icon: AreaMatrixLucideIcon.IconName?
-        let title: String
-        @State private var isHovered = false
-        
-        var body: some View {
-            AreaMatrixGhostButton(isHovered: isHovered, action: action) {
-                HStack(spacing: 6) {
-                    if let icon {
-                        AreaMatrixLucideIcon(name: icon, lineWidth: 2)
-                            .frame(width: 14, height: 14)
-                    }
-                    Text(title)
+private struct HoverableGhostButton: View {
+    let action: () -> Void
+    let icon: AreaMatrixLucideIcon.IconName?
+    let title: String
+    @State private var isHovered = false
+
+    var body: some View {
+        AreaMatrixGhostButton(isHovered: isHovered, action: action) {
+            HStack(spacing: 6) {
+                if let icon {
+                    AreaMatrixLucideIcon(name: icon, lineWidth: 2)
+                        .frame(width: 14, height: 14)
                 }
+                Text(title)
             }
-            .onHover { hovering in
+        }
+        .onHover { hovering in
+            isHovered = hovering
+            AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+        }
+    }
+}
+
+private struct HoverableCapsuleButton: View {
+    let action: () -> Void
+    let title: String
+    let isDisabled: Bool
+    let accent: Color
+    @State private var isHovered = false
+
+    var body: some View {
+        AreaMatrixCapsuleButton(accent: accent, isHovered: isHovered, action: action) {
+            Text(title)
+        }
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.5 : 1)
+        .onHover { hovering in
+            if !isDisabled {
                 isHovered = hovering
                 AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
             }
         }
     }
-
-    private struct HoverableCapsuleButton: View {
-        let action: () -> Void
-        let title: String
-        let isDisabled: Bool
-        let accent: Color
-        @State private var isHovered = false
-        
-        var body: some View {
-            AreaMatrixCapsuleButton(accent: accent, isHovered: isHovered, action: action) {
-                Text(title)
-            }
-            .disabled(isDisabled)
-            .opacity(isDisabled ? 0.5 : 1)
-            .onHover { hovering in
-                if !isDisabled {
-                    isHovered = hovering
-                    AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
-                }
-            }
-        }
-    }
+}

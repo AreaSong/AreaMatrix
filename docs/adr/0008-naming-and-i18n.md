@@ -17,7 +17,7 @@
 
 ## 当前实施状态
 
-截至 2026-07-26，本 ADR 的双语言合同已在 Core、UDL、生成绑定与 macOS 应用中落地：
+截至 2026-07-29，本 ADR 的双语言合同已在 Core、UDL、生成绑定与 macOS 应用中落地：
 
 - `AppLanguage` 与 `RepositoryContentLanguage` 使用独立持久化和解析链路；界面语言切换会立即重投影全部
   application-owned 文案，资料库内容语言只影响内置分类显示名和之后生成的内容。
@@ -31,11 +31,12 @@
 - overview provenance 能区分 synchronized、needs regeneration、mixed 与 unknown。内容语言切换不会自动改写
   既有文件；全库 regeneration 只能由用户显式触发，并经过 preflight、durable journal、staging、backup、commit
   与恢复门禁。
-- 当前工作树的 Debug build、Language 设置定向测试和本轮 Settings 文件定向 SwiftFormat/SwiftLint 已通过。
-  fixture-only UI 检查覆盖 `en/en`、`en/zh-Hans`、`zh-Hans/en` 与 `zh-Hans/zh-Hans` 四种界面/内容组合，
-  验证了即时界面刷新、两套语言状态独立、显式保存、摘要跳转、SQLite 完整性，以及根目录
-  `README.md` / `AREAMATRIX.md` 不被创建或改写。本轮未执行 overview regeneration commit；全量 macOS
-  测试仍有与本页改动无关的既有治理失败，因此 residual 在完整门禁恢复前保持 open。
+- 完整 macOS 构建、标准 XCTest Runner、81-key 本地化编译器合同、SwiftFormat 与严格 SwiftLint 均通过；
+  Debug-only UI fixture 覆盖 `en/en`、`en/zh-Hans`、`zh-Hans/en` 与 `zh-Hans/zh-Hans` 四种界面/内容组合，
+  验证即时界面刷新、两套语言状态独立、显式保存和摘要跳转。
+- Rust closeout 测试分别以 `zh-Hans` 和 `en` 完成 overview regeneration 的 preflight、7-target staging 与
+  7-target commit。每次提交后语言状态均为 synchronized、SQLite `integrity_check` 为 `ok`，根目录
+  `README.md`、根目录 `AREAMATRIX.md` 和其他用户文件字节保持不变。双语言设置与概述重生成的关闭证据已完整。
 
 ## 上下文
 

@@ -212,7 +212,11 @@ struct IntegrationsSettingsPane: View {
     private var externalToolsSection: some View {
         IntegrationsSettingsSection(title: L10n.string("Finder and other apps")) {
             Text(
-                L10n.string("You can open files directly in Finder. External changes are picked up by file watching when available.")
+                L10n
+                    .string(
+                        // swiftlint:disable:next line_length
+                        "You can open files directly in Finder. External changes are picked up by file watching when available."
+                    )
             )
             .font(.callout)
             .foregroundStyle(.secondary)

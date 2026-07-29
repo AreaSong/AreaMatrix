@@ -53,13 +53,14 @@ dev dependency 为 `tempfile` 和 `pretty_assertions`。仓库当前没有 Crite
 手写 Swift 通过平台 observability sink 接入 `OSLog` / signpost，并同时维护有界内存、rolling JSONL、incident 和
 诊断包。OSLog 只服务 Apple 开发工具，不是便携诊断包的源事实。
 
-macOS target 当前没有第三方 Swift Package。新增 Swift Package 或其他外部依赖必须走
+macOS target 当前没有第三方 Swift Package；仓库自有 CoreSDK 以 fingerprinted XCFramework 接入。
+新增外部 Swift Package 或其他外部依赖必须走
 [dependency policy](../development/dependency-policy.md) 的准入、许可证和供应链检查。
 
 ## 构建与绑定
 
 ```bash
-./dev build core
+./dev build core-sdk
 ./dev bindings verify
 xcodebuild -project apps/macos/AreaMatrix.xcodeproj \
   -scheme AreaMatrix \
@@ -67,8 +68,8 @@ xcodebuild -project apps/macos/AreaMatrix.xcodeproj \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
-Core 构建目标包括 `rlib`、`staticlib` 和 `cdylib`。macOS 使用 universal Rust static library 和 tracked
-Swift/C bindings。
+Core 构建目标包括 `rlib`、`staticlib` 和 `cdylib`。macOS 与 iOS 使用同一份多 slice CoreSDK
+XCFramework；macOS 继续使用 tracked Swift/C bindings，UDL 漂移由 bindings verify 阻止。
 
 ## 数据与运行时
 

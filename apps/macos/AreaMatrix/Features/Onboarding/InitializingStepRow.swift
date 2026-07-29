@@ -15,6 +15,7 @@ struct InitializingStepRow {
     }
 
     static func completed(_ title: String, when condition: Bool) -> InitializingStepRow {
-        condition ? InitializingStepRow(title: title, iconName: .checkCircle, tint: AreaMatrixTheme.Colors.teal) : pending(title)
+        condition ? InitializingStepRow(title: title, iconName: .checkCircle, tint: AreaMatrixTheme.Colors.teal) :
+            pending(title)
     }
 }

@@ -17,11 +17,21 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 | Workflow | 目的 | 触发 |
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
-| `macos-ci.yml` | Core build、tracked Swift bindings drift、Xcode build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
+| `macos-ci.yml` | CoreSDK artifact、tracked Swift bindings drift、Xcode build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
 | `governance-ci.yml` | governance files、文档链接与导航、skills、quality smoke、品牌资产、Codex OS、wording audit、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 
 macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.yml` 必须先显式检查工程和源码目录；
 任一目录缺失都应立即失败，不得通过条件表达式跳过 build/test、SwiftLint 或 SwiftFormat。
+CoreSDK job 只构建一次 fingerprinted XCFramework，验证 tracked bindings 和生成的 Swift Package 后上传
+artifact；Xcode build/test job 下载并恢复完整 `.build/core-sdk/` 缓存条目与 `current` 指针。这保证
+macOS 验证消费的是已验证制品，而不是在 Xcode Pre-Test Build Gate 内再启动一次 Cargo。
+恢复后运行 `./dev build core-sdk --verify-only`，解析 manifest 并验证 fingerprint、schema、symlink
+边界，以及 macOS、iOS device、iOS simulator 三个 XCFramework slice 的 architecture 和实际文件。
+Xcode build/test job 同样安装 Rust toolchain，使 `--verify-only` 能用当前源码、Rust 与 Xcode 版本重新计算
+source/tool-bound fingerprint；下载到结构完整但来源不同的 artifact 必须失败，不能仅凭缓存目录存在通过。
+`./dev build core-sdk` 输出 status、cache hit/miss、Cargo lane 和 wall-clock duration；`./dev test macos` 输出
+持久/临时 DerivedData、结果与 wall-clock duration。GitHub Actions 保留这些标准化行和 job/step
+耗时，用于识别缓存回退、重复 Cargo 构建和 XCTest 延迟。
 `./dev check governance` 还会把磁盘上的 `*GovernanceTests.swift` 和
 `MacOSGovernance*TestSupport.swift` 与 `AreaMatrixTests` target 的 Sources membership 双向核对，
 防止治理测试只有文件引用、没有进入可执行 XCTest target 时被 CI 静默漏跑。
@@ -49,7 +59,7 @@ H1 后紧跟的摘要引用、代码块语言与闭合、`## Related` 章节和�
 ./dev check prompts
 ./dev check diff
 ./dev check secrets          # 默认 diff 模式：未提交变更 + 领先 origin/main 的 commit
-./dev build core
+./dev build core-sdk
 ./dev bindings verify        # 只读比较当前 UDL 与 Xcode tracked Swift bindings
 python3 -m venv .brand-venv
 .brand-venv/bin/pip install --requirement scripts/brand/requirements.txt

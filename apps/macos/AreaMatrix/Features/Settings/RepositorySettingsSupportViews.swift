@@ -116,7 +116,8 @@ struct RepositorySettingsSafeActionsSection: View {
                 .help(diagnosticsDisabledReason ?? L10n.string("Diagnostics export is available."))
                 .accessibilityIdentifier("repository-settings-export-diagnostics")
 
-            Text(L10n.string("Diagnostics do not include your original file contents and are not uploaded automatically."))
+            Text(L10n
+                .string("Diagnostics do not include your original file contents and are not uploaded automatically."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }

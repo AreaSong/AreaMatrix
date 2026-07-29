@@ -25,7 +25,7 @@ struct AreaMatrixApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainWindow()
+            rootContent
                 .environmentObject(languageStore)
                 .environmentObject(localizer)
                 .environment(\.locale, Locale(identifier: localizer.resourceLocaleIdentifier))
@@ -57,6 +57,19 @@ struct AreaMatrixApp: App {
                 .keyboardShortcut("z", modifiers: [.command, .option])
             }
         }
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
+        #if DEBUG
+        if let scenario = AreaMatrixDeveloperScenario.current {
+            AreaMatrixDeveloperScenarioView(scenario: scenario)
+        } else {
+            MainWindow()
+        }
+        #else
+        MainWindow()
+        #endif
     }
 }
 

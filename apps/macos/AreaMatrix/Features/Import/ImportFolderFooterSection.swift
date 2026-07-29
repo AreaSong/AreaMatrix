@@ -53,8 +53,7 @@ struct ImportFolderFooterSection: View {
         guard let outcome else { return }
         if let retryContext = outcome.fatalRetryContext,
            let failure = model.lastFailureMapping,
-           let progress = lastProgress
-        {
+           let progress = lastProgress {
             onImportFailed(progress, failure, retryContext, .checking)
             importProgressControlState.registerQueueContinuation(model)
             return

@@ -72,8 +72,7 @@ struct ImportBatchCopyFooterSection: View {
         }
         if let retryContext = outcome.fatalRetryContext,
            let failure = batchImportModel.lastFailureMapping,
-           let progress = lastProgress
-        {
+           let progress = lastProgress {
             onImportFailed(progress, failure, retryContext, .checking)
             importProgressControlState.registerQueueContinuation(batchImportModel)
             return
@@ -138,7 +137,10 @@ struct ImportBatchSummarySection: View {
                     LabeledContent(L10n.string("总大小"), value: totalSizeDescription)
                 }
                 LabeledContent(L10n.string("来源"), value: sourceLabel)
-                LabeledContent(L10n.string("预计重复"), value: L10n.plural("import.batch.duplicate-count", count: duplicateCount))
+                LabeledContent(
+                    L10n.string("预计重复"),
+                    value: L10n.plural("import.batch.duplicate-count", count: duplicateCount)
+                )
                 LabeledContent(
                     L10n.string("重名冲突"),
                     value: L10n.plural("import.batch.name-conflict-count", count: nameConflictCount)

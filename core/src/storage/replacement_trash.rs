@@ -107,10 +107,22 @@ pub(crate) fn send_to_system_trash(path: &Path) -> CoreResult<Option<PathBuf>> {
         return move_to_user_trash(path);
     }
 
+    send_to_platform_trash(path)
+}
+
+#[cfg(areamatrix_system_trash)]
+fn send_to_platform_trash(path: &Path) -> CoreResult<Option<PathBuf>> {
     match trash::delete(path) {
         Ok(()) => Ok(None),
         Err(_error) => move_to_user_trash(path),
     }
+}
+
+#[cfg(not(areamatrix_system_trash))]
+fn send_to_platform_trash(_path: &Path) -> CoreResult<Option<PathBuf>> {
+    Err(CoreError::config(
+        "system trash is unavailable on this platform",
+    ))
 }
 
 pub(crate) fn move_to_user_trash(path: &Path) -> CoreResult<Option<PathBuf>> {

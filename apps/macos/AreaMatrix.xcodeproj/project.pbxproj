@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A0C00000000000000000001 /* AreaMatrixCoreFFI.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A0C00000000000000000002 /* AreaMatrixCoreFFI.xcframework */; };
+		0A0C00000000000000000011 /* AreaMatrixDeveloperScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0C00000000000000000012 /* AreaMatrixDeveloperScenario.swift */; };
+		0A0C00000000000000000013 /* AreaMatrixUICatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0C00000000000000000014 /* AreaMatrixUICatalog.swift */; };
+		0A0C00000000000000000015 /* AreaMatrixPreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0C00000000000000000016 /* AreaMatrixPreviewSupport.swift */; };
+		0A0C00000000000000000017 /* AreaMatrixDeveloperScenarioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0C00000000000000000018 /* AreaMatrixDeveloperScenarioTests.swift */; };
+		0A0C00000000000000000019 /* DeveloperScenarioCoreFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0C0000000000000000001A /* DeveloperScenarioCoreFixtures.swift */; };
+		0A0C0000000000000000001B /* GeneratedCoreBoundaryGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0C0000000000000000001C /* GeneratedCoreBoundaryGovernanceTests.swift */; };
 		0A0000000000000000000902 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000903 /* AppIcon.icon */; };
 		0A0000000000000000000900 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000901 /* Assets.xcassets */; };
 		0A0000000000000000000964 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000960 /* Localizable.xcstrings */; };
@@ -866,6 +873,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0A0C00000000000000000002 /* AreaMatrixCoreFFI.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = AreaMatrixCoreFFI.xcframework; path = ../../.build/core-sdk/current/AreaMatrixCoreFFI.xcframework; sourceTree = SOURCE_ROOT; };
+		0A0C00000000000000000012 /* AreaMatrixDeveloperScenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AreaMatrixDeveloperScenario.swift; sourceTree = SOURCE_ROOT; };
+		0A0C00000000000000000014 /* AreaMatrixUICatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixUICatalog.swift; sourceTree = SOURCE_ROOT; };
+		0A0C00000000000000000016 /* AreaMatrixPreviewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixPreviewSupport.swift; sourceTree = SOURCE_ROOT; };
+		0A0C00000000000000000018 /* AreaMatrixDeveloperScenarioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixDeveloperScenarioTests.swift; sourceTree = SOURCE_ROOT; };
+		0A0C0000000000000000001A /* DeveloperScenarioCoreFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/DeveloperScenarioCoreFixtures.swift; sourceTree = SOURCE_ROOT; };
+		0A0C0000000000000000001C /* GeneratedCoreBoundaryGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/GeneratedCoreBoundaryGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000901 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AreaMatrix/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000903 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AreaMatrix/Resources/AppIcon.icon; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000960 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -1725,6 +1739,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A0C00000000000000000001 /* AreaMatrixCoreFFI.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1741,6 +1756,7 @@
 		0A0000000000000000000031 = {
 			isa = PBXGroup;
 			children = (
+				0A0C00000000000000000002 /* AreaMatrixCoreFFI.xcframework */,
 				0A0000000000000000000032 /* Shell */,
 				0A0000000000000000000033 /* Future SwiftUI Structure */,
 				0A000000000000000000003A /* Tests */,
@@ -1782,6 +1798,7 @@
 		0A0000000000000000000035 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				0A0C00000000000000000012 /* AreaMatrixDeveloperScenario.swift */,
 					0A0000000000000000000013 /* AreaMatrixApp.swift */,
 					0A0B50000000000000000011 /* ObservabilityRuntimeAssembly.swift */,
 					0A0B5F000000000000000013 /* ObservabilityRuntimeSupport.swift */,
@@ -1887,6 +1904,8 @@
 		0A0000000000000000000D10 /* DesignSystem */ = {
 			isa = PBXGroup;
 			children = (
+				0A0C00000000000000000014 /* AreaMatrixUICatalog.swift */,
+				0A0C00000000000000000016 /* AreaMatrixPreviewSupport.swift */,
 				0A0000000000000000000D11 /* AreaMatrixTheme.swift */,
 				0A0000000000000000000D12 /* AreaMatrixAmbientBackground.swift */,
 				0A0000000000000000000D13 /* AreaMatrixControls.swift */,
@@ -2421,7 +2440,8 @@
 						0A0000000000000000000A23 /* CoreSearchFacetSnapshots.swift */,
 						0A0000000000000000000FF5 /* CoreSavedSearches.swift */,
 						0A0000000000000000000FF7 /* CoreClassifierRuleEditing.swift */,
-						0A0000000000000000001109 /* CoreOverviewRegenerating.swift */,
+					0A0000000000000000001109 /* CoreOverviewRegenerating.swift */,
+					0A0C0000000000000000001A /* DeveloperScenarioCoreFixtures.swift */,
 					0A0000000000000000000FD9 /* CoreSearchQuerying.swift */,
 				0A0000000000000000000019 /* CoreBridgeUnavailableState.swift */,
 				0A00000000000000000000C2 /* CoreRepositoryOpening.swift */,
@@ -2488,6 +2508,8 @@
 		0A000000000000000000003A /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				0A0C00000000000000000018 /* AreaMatrixDeveloperScenarioTests.swift */,
+				0A0C0000000000000000001C /* GeneratedCoreBoundaryGovernanceTests.swift */,
 				0A0B50000000000000000022 /* Observability */,
 				0A0000000000000000002003 /* AppLanguageTests.swift */,
 				0A000000000000000000001A /* AreaMatrixShellTests.swift */,
@@ -2827,7 +2849,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0A0000000000000000000070 /* Build configuration list for PBXNativeTarget "AreaMatrix" */;
 			buildPhases = (
-				0A0000000000000000000054 /* Build Core Static Library */,
+				0A0000000000000000000054 /* Prepare CoreSDK */,
 				0A0000000000000000000050 /* Sources */,
 				0A0000000000000000000021 /* Frameworks */,
 				0A0000000000000000000051 /* Resources */,
@@ -2919,23 +2941,32 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		0A0000000000000000000054 /* Build Core Static Library */ = {
+		0A0000000000000000000054 /* Prepare CoreSDK */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
+			dependencyFile = "$(DERIVED_FILE_DIR)/AreaMatrixCoreSDK.d";
 			files = (
 			);
 			inputPaths = (
 				"$(SRCROOT)/../../core/Cargo.toml",
+				"$(SRCROOT)/../../core/Cargo.lock",
+				"$(SRCROOT)/../../core/build.rs",
 				"$(SRCROOT)/../../core/area_matrix.udl",
+				"$(SRCROOT)/../../core/uniffi.toml",
+				"$(SRCROOT)/../../core/src",
+				"$(SRCROOT)/../../core/resources",
+				"$(SRCROOT)/../../scripts/dev_tools/artifacts.py",
+				"$(SRCROOT)/../../scripts/dev_tools/build.py",
+				"$(SRCROOT)/../../scripts/dev_tools/core_sdk.py",
+				"$(SRCROOT)/../../scripts/dev_tools/core_sdk_artifact.py",
 			);
-			name = "Build Core Static Library";
+			name = "Prepare CoreSDK";
 			outputPaths = (
-				"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)/libarea_matrix_core.a",
+				"$(SRCROOT)/../../.build/core-sdk/current/manifest.json",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\nexport PATH=\"$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\nexport MACOSX_DEPLOYMENT_TARGET=\"${MACOSX_DEPLOYMENT_TARGET:-14.0}\"\nif ! command -v cargo >/dev/null 2>&1; then\n  echo \"error: cargo not found. Install Rust or add cargo to PATH for Xcode Run Script phases.\" >&2\n  exit 127\nfi\nif [ \"${CONFIGURATION:-Debug}\" = \"Release\" ]; then\n  cargo build --manifest-path \"${SRCROOT}/../../core/Cargo.toml\" --target aarch64-apple-darwin --release\nelse\n  cargo build --manifest-path \"${SRCROOT}/../../core/Cargo.toml\" --target aarch64-apple-darwin\nfi\n";
+			shellScript = "set -euo pipefail\nexport PATH=\"$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\nif [ \"${AREAMATRIX_CORE_SDK_VERIFY_ONLY:-0}\" = \"1\" ]; then\n  \"${SRCROOT}/../../dev\" build core-sdk --verify-only\nelse\n  \"${SRCROOT}/../../dev\" build core-sdk --dependency-file \"${DERIVED_FILE_DIR}/AreaMatrixCoreSDK.d\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -2944,6 +2975,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A0C00000000000000000011 /* AreaMatrixDeveloperScenario.swift in Sources */,
+				0A0C00000000000000000013 /* AreaMatrixUICatalog.swift in Sources */,
+				0A0C00000000000000000015 /* AreaMatrixPreviewSupport.swift in Sources */,
 				0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */,
 				0A0B50000000000000000001 /* ObservabilityRuntimeAssembly.swift in Sources */,
 				0A0B5F000000000000000003 /* ObservabilityRuntimeSupport.swift in Sources */,
@@ -3379,6 +3413,7 @@
 					0A0000000000000000001A10 /* CoreClassifierRuleSavingAndImpactPreviewing.swift in Sources */,
 					0A0000000000000000000FF6 /* CoreClassifierRuleEditing.swift in Sources */,
 					0A0000000000000000001108 /* CoreOverviewRegenerating.swift in Sources */,
+					0A0C00000000000000000019 /* DeveloperScenarioCoreFixtures.swift in Sources */,
 					0A0000000000000000000330 /* CoreBatchChangeCategory.swift in Sources */,
 				0A0000000000000000000410 /* CoreBatchDelete.swift in Sources */,
 				0A0000000000000000000260 /* MainFileListDetailSupport.swift in Sources */,
@@ -3427,6 +3462,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A0C00000000000000000017 /* AreaMatrixDeveloperScenarioTests.swift in Sources */,
+				0A0C0000000000000000001B /* GeneratedCoreBoundaryGovernanceTests.swift in Sources */,
 				0A0B5000000000000000000C /* DiagnosticPackageTests.swift in Sources */,
 				0A0B53000000000000000003 /* DiagnosticPackagePrivacyTests.swift in Sources */,
 				0A0B53000000000000000005 /* DiagnosticPackageWriterTests.swift in Sources */,
@@ -3810,7 +3847,6 @@
 		0A0000000000000000000080 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				AREAMATRIX_CORE_PROFILE = debug;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
@@ -3828,14 +3864,12 @@
 				INFOPLIST_FILE = AreaMatrix/Info.plist;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-larea_matrix_core",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -3853,7 +3887,6 @@
 		0A0000000000000000000081 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				AREAMATRIX_CORE_PROFILE = release;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
@@ -3870,14 +3903,12 @@
 				INFOPLIST_FILE = AreaMatrix/Info.plist;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-larea_matrix_core",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = app.areamatrix.AreaMatrix;
 				PRODUCT_NAME = "$(TARGET_NAME)";

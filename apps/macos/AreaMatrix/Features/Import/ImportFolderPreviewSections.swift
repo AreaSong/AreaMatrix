@@ -22,7 +22,7 @@ struct ImportFolderPreviewView: View {
                 .modifier(ImportSectionCardModifier())
 
                 ImportFolderExclusionSection(skippedRules: model.skippedRules)
-                .modifier(ImportSectionCardModifier())
+                    .modifier(ImportSectionCardModifier())
 
                 VStack(alignment: .leading, spacing: 16) {
                     ImportFolderAdvancedOptionsSection(
@@ -81,7 +81,7 @@ struct ImportFolderPreviewView: View {
                     )
                     .modifier(ImportSectionCardModifier())
                 }
-                
+
                 Text(L10n.format("import.folder.destination", model.selectedDestination.title))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -94,9 +94,9 @@ struct ImportFolderPreviewView: View {
     private var includeHiddenFilesBinding: Binding<Bool> {
         Binding(
             get: { model.includeHiddenFiles },
-            set: { 
+            set: {
                 AppLogger.shared.logUIAction("repository.import.folder.include_hidden.changed")
-                model.updateIncludeHiddenFiles($0) 
+                model.updateIncludeHiddenFiles($0)
             }
         )
     }
@@ -104,9 +104,9 @@ struct ImportFolderPreviewView: View {
     private var followSymlinksBinding: Binding<Bool> {
         Binding(
             get: { model.followSymlinks },
-            set: { 
+            set: {
                 AppLogger.shared.logUIAction("repository.import.folder.follow_symlinks.changed")
-                model.updateFollowSymlinks($0) 
+                model.updateFollowSymlinks($0)
             }
         )
     }
@@ -150,8 +150,14 @@ struct ImportFolderSummarySection: View {
             LabeledContent(L10n.string("文件夹"), value: folderPath)
             HStack(spacing: 16) {
                 LabeledContent(L10n.string("已发现"), value: L10n.plural("import.folder.file-count", count: fileCount))
-                LabeledContent(L10n.string("总大小"), value: totalSizeDescription ?? L10n.string("import.folder.calculating"))
-                LabeledContent(L10n.string("子文件夹"), value: L10n.plural("import.folder.subfolder-count", count: folderCount))
+                LabeledContent(
+                    L10n.string("总大小"),
+                    value: totalSizeDescription ?? L10n.string("import.folder.calculating")
+                )
+                LabeledContent(
+                    L10n.string("子文件夹"),
+                    value: L10n.plural("import.folder.subfolder-count", count: folderCount)
+                )
                 LabeledContent(
                     L10n.string("iCloud"),
                     value: L10n.plural("import.folder.icloud-placeholder-count", count: iCloudPlaceholderCount)

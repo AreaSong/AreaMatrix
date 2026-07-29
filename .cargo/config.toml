@@ -1,0 +1,4 @@
+# Keep ad-hoc local Cargo checks away from the Xcode, SDK, and release lanes.
+# Explicit CARGO_TARGET_DIR values used by those workflows continue to win.
+[build]
+target-dir = ".build/cargo/validation"

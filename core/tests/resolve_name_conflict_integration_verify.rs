@@ -23,6 +23,7 @@ use api_contract_source::API_RS;
 const DESTINATION_RS: &str = include_str!("../src/storage/destination.rs");
 const IMPORT_RS: &str = include_str!("../src/storage/import.rs");
 const REPLACEMENT_TRASH_RS: &str = include_str!("../src/storage/replacement_trash.rs");
+const BUILD_RS: &str = include_str!("../build.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 
 fn assert_contains(haystack: &str, needle: &str) {
@@ -212,6 +213,19 @@ fn resolve_name_conflict_integration_verify_storage_quality_stays_platform_neutr
             !REPLACEMENT_TRASH_RS.contains(forbidden),
             "replacement_trash.rs must not depend on macOS-specific Trash APIs"
         );
+    }
+
+    for fragment in [
+        "cargo:rustc-check-cfg=cfg(areamatrix_system_trash)",
+        "cargo:rustc-cfg=areamatrix_system_trash",
+    ] {
+        assert_contains(BUILD_RS, fragment);
+    }
+    for fragment in [
+        "#[cfg(areamatrix_system_trash)]",
+        "#[cfg(not(areamatrix_system_trash))]",
+    ] {
+        assert_contains(REPLACEMENT_TRASH_RS, fragment);
     }
 }
 

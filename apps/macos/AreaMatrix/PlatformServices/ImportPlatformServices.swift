@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 enum ImportPlatformServices {
@@ -24,6 +25,21 @@ enum ImportPlatformServices {
             return false
         }
         return values.isUbiquitousItem == true && values.ubiquitousItemDownloadingStatus == .notDownloaded
+    }
+
+    static func fileSizeBytes(_ url: URL) -> Int64? {
+        (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init)
+    }
+
+    static func sha256Hex(for fileURL: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: fileURL)
+        defer { try? handle.close() }
+
+        var hasher = SHA256()
+        while let data = try handle.read(upToCount: 64 * 1024), !data.isEmpty {
+            hasher.update(data: data)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }
 

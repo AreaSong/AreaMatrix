@@ -151,7 +151,19 @@ extension ImportBatchCopyImportModel {
         if shouldClearImportSession(runState: runState, total: total) {
             await sessionStore.clearSession(repoPath: request.repoPath)
         }
-        return ImportBatchImportResult(
+        return importResult(
+            runState: runState,
+            initialPreviewErrorCount: initialPreviewErrorCount,
+            total: total
+        )
+    }
+
+    private func importResult(
+        runState: ImportBatchCopyRunState,
+        initialPreviewErrorCount: Int,
+        total: Int
+    ) -> ImportBatchImportResult {
+        ImportBatchImportResult(
             succeededEntries: runState.succeededEntries,
             failedCount: runState.failed,
             previewErrorCount: initialPreviewErrorCount,

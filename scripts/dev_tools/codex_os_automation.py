@@ -1625,7 +1625,11 @@ def _build_validation_flow_data(root: Path, args: Namespace, runtime_dir: Path) 
         results = [_dry_validation_result(command) for command in selected_commands]
         not_run = _not_run_entries(selected_commands, "dry-run preview; pass --execute --write for fresh evidence", blocks_done=True)
     validation_result = _aggregate_validation_results(results, executed=args.execute)
-    fingerprint = _validation_fingerprint(root, task, recommendation, selected_commands)
+    validation_summary = _validation_summary(results)
+    fingerprint_task = task
+    if task and args.write:
+        fingerprint_task = {**task, "validation": validation_summary}
+    fingerprint = _validation_fingerprint(root, fingerprint_task, recommendation, selected_commands)
     residual = _residual_prompt(root, recommendation.get("input_paths", []))
     dirty_scope = _dirty_worktree_scope(root, getattr(args, "path", []) or [], recommendation.get("input_paths", []))
     report = {
@@ -1646,7 +1650,7 @@ def _build_validation_flow_data(root: Path, args: Namespace, runtime_dir: Path) 
         "residual_prompt": residual,
         "dirty_worktree_scope": dirty_scope,
         "result": validation_result,
-        "validation_summary": _validation_summary(results),
+        "validation_summary": validation_summary,
         "guardrails": _flow_guardrails(),
         "next_commands": _validation_next_commands(getattr(args, "task_id", None), validation_result, executed=args.execute),
     }

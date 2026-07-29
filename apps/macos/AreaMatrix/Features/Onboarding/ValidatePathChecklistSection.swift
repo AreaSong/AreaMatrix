@@ -13,7 +13,7 @@ struct ValidatePathSatelliteRadar: View {
         HStack(alignment: .center, spacing: 64) {
             // ================= 左翼 4 颗伴星 =================
             VStack(alignment: .trailing, spacing: 32) {
-                ForEach(0..<min(4, rows.count), id: \.self) { index in
+                ForEach(0 ..< min(4, rows.count), id: \.self) { index in
                     ValidatePathSatelliteNode(row: rows[index], alignment: .trailing, index: index)
                 }
             }
@@ -41,7 +41,10 @@ struct ValidatePathSatelliteRadar: View {
                     Circle()
                         .fill(
                             AngularGradient(
-                                gradient: Gradient(colors: [AreaMatrixTheme.Colors.teal.opacity(0.0), AreaMatrixTheme.Colors.teal.opacity(0.3)]),
+                                gradient: Gradient(colors: [
+                                    AreaMatrixTheme.Colors.teal.opacity(0.0),
+                                    AreaMatrixTheme.Colors.teal.opacity(0.3)
+                                ]),
                                 center: .center,
                                 startAngle: .degrees(0),
                                 endAngle: .degrees(360)
@@ -90,7 +93,7 @@ struct ValidatePathSatelliteRadar: View {
             // ================= 右翼 4 颗伴星 =================
             VStack(alignment: .leading, spacing: 32) {
                 if rows.count > 4 {
-                    ForEach(4..<rows.count, id: \.self) { index in
+                    ForEach(4 ..< rows.count, id: \.self) { index in
                         ValidatePathSatelliteNode(row: rows[index], alignment: .leading, index: index)
                     }
                 } else {
@@ -107,9 +110,17 @@ struct ValidatePathSatelliteRadar: View {
                 .init(L10n.string("onboarding.validate.check.directory"), displayedPath, .checking),
                 .init(L10n.string("onboarding.validate.check.readable"), waitingForCore, .checking),
                 .init(L10n.string("onboarding.validate.check.writable"), waitingForCore, .checking),
-                .init(L10n.string("onboarding.validate.check.capacity"), L10n.string("onboarding.validate.check.waitingCapacity"), .checking),
+                .init(
+                    L10n.string("onboarding.validate.check.capacity"),
+                    L10n.string("onboarding.validate.check.waitingCapacity"),
+                    .checking
+                ),
                 .init(L10n.string("onboarding.validate.check.icloud"), waitingForCore, .checking),
-                .init(L10n.string("onboarding.validate.check.externalVolume"), L10n.string("onboarding.validate.check.waitingVolume"), .checking),
+                .init(
+                    L10n.string("onboarding.validate.check.externalVolume"),
+                    L10n.string("onboarding.validate.check.waitingVolume"),
+                    .checking
+                ),
                 .init(L10n.string("onboarding.validate.check.existingRepo"), waitingForCore, .checking),
                 .init(L10n.string("onboarding.validate.check.nonEmpty"), waitingForCore, .checking)
             ]
@@ -121,7 +132,8 @@ struct ValidatePathSatelliteRadar: View {
         return [
             .init(
                 L10n.string("onboarding.validate.check.directory"),
-                isUsableDirectory ? L10n.string("onboarding.validate.check.candidateDirectory") : L10n.string("onboarding.validate.check.chooseExistingFolder"),
+                isUsableDirectory ? L10n.string("onboarding.validate.check.candidateDirectory") : L10n
+                    .string("onboarding.validate.check.chooseExistingFolder"),
                 isUsableDirectory ? .passed : .failed
             ),
             .init(
@@ -162,9 +174,17 @@ struct ValidatePathSatelliteRadar: View {
         ]
     }
 
-    private var waitingForCore: String { L10n.string("onboarding.validate.check.waitingCore") }
-    private var passedDetail: String { L10n.string("onboarding.validate.check.passed") }
-    private var warningDetail: String { L10n.string("onboarding.validate.check.warning") }
+    private var waitingForCore: String {
+        L10n.string("onboarding.validate.check.waitingCore")
+    }
+
+    private var passedDetail: String {
+        L10n.string("onboarding.validate.check.passed")
+    }
+
+    private var warningDetail: String {
+        L10n.string("onboarding.validate.check.warning")
+    }
 
     private func statusDetail(_ passed: Bool) -> String {
         passed ? passedDetail : L10n.string("onboarding.validate.check.failed")
@@ -184,17 +204,17 @@ struct ValidatePathSatelliteRadar: View {
 
     private func externalVolumeDetail(for validation: RepoPathValidationSnapshot) -> String {
         switch validation.isExternalVolume {
-        case .some(true): return warningDetail
-        case .some(false): return passedDetail
-        case nil: return L10n.string("onboarding.validate.check.missingResult")
+        case .some(true): warningDetail
+        case .some(false): passedDetail
+        case nil: L10n.string("onboarding.validate.check.missingResult")
         }
     }
 
     private func externalVolumeStatus(for validation: RepoPathValidationSnapshot) -> ValidatePathCheckStatus {
         switch validation.isExternalVolume {
-        case .some(true): return .warning
-        case .some(false): return .passed
-        case nil: return .failed
+        case .some(true): .warning
+        case .some(false): .passed
+        case nil: .failed
         }
     }
 }

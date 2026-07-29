@@ -56,24 +56,20 @@ extension ImportFolderPreviewModel {
                 actionID: "repository.import.confirmed",
                 componentID: "macos.import.folder"
             )
-            let cycle = await runFolderImportCycle(
-                input: ImportFolderImportCycleInput(
-                    rowIndex: index,
-                    request: input.request,
-                    storageMode: input.storageMode,
-                    completed: state.completed,
-                    failed: state.failed,
-                    total: input.total,
-                    traceContext: traceContext
-                )
-            )
-            updateFolderImportRunState(
-                &state,
-                cycle: cycle,
+            let cycleInput = ImportFolderImportCycleInput(
                 rowIndex: index,
                 request: input.request,
                 storageMode: input.storageMode,
+                completed: state.completed,
+                failed: state.failed,
+                total: input.total,
                 traceContext: traceContext
+            )
+            let cycle = await runFolderImportCycle(input: cycleInput)
+            updateFolderImportRunState(
+                &state,
+                cycle: cycle,
+                input: cycleInput
             )
             reportProgress(cycle.progress.withItems(progressItems()))
             if shouldStopFolderImportRun(&state, controlState: controlState) {
@@ -86,10 +82,7 @@ extension ImportFolderPreviewModel {
     private func updateFolderImportRunState(
         _ state: inout ImportFolderImportRunState,
         cycle: ImportBatchCopyCycleResult,
-        rowIndex: Int,
-        request: ImportEntryRequest,
-        storageMode: ImportSingleFileStorageMode,
-        traceContext: CoreImportTraceContext
+        input: ImportFolderImportCycleInput
     ) {
         state.completed = cycle.completed
         state.failed = cycle.failed
@@ -99,10 +92,10 @@ extension ImportFolderPreviewModel {
         }
         if cycle.stoppedForQueue {
             state.fatalRetryContext = retryContext(
-                for: rows[rowIndex],
-                request: request,
-                storageMode: storageMode,
-                traceContext: traceContext
+                for: rows[input.rowIndex],
+                request: input.request,
+                storageMode: input.storageMode,
+                traceContext: input.traceContext
             )
         }
     }

@@ -69,6 +69,14 @@ inventory，新增业务 View / State / Action 不得回流这些目录。
 当前 12 个 Feature 目录由 `MacOSFeatureOwnershipGovernanceTests` 精确登记职责、风险边界和验证重点。
 新增 Feature 目录必须先补 owner inventory；跨 feature 公共能力仍需至少两个真实调用方后再抽取。
 
+### Typed route 合同
+
+- 互斥的页面、sheet 或导航 destination 使用 feature-owned `enum` / `struct` route，不使用字符串标识。
+- route state、builder 和 destination view 归对应 Feature；跨 Feature host 只保存明确的 typed handoff。
+- 多个 Boolean 只表达可以同时成立的独立 UI 状态，不用一组 Boolean 模拟互斥 destination。
+- `MainRepositoryRouteHostGovernanceTests` 盘点主内容 shell 的跨 Feature route host；架构边界测试同时禁止
+  `*Route` / `*Destination` 字符串状态和新增未登记的生成 Core 函数裸调用。
+
 `Features/Diagnostics/` 拥有独立 Diagnostics 设置页、活动投影、incident 操作、Trace Console、诊断包预览和
 离线查看状态。它不直接写日志文件，不扩大 repository snapshot 权限，也不允许覆盖导出目标；这些副作用分别由
 受注入的平台服务和不覆盖保存合同承接。

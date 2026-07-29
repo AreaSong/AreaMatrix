@@ -66,7 +66,10 @@ extension AITagSuggestionsPanel {
                 set: { onEditDisplayName(draft.suggestionID, $0) }
             ))
             HStack {
-                TextField(L10n.string("Slug"), text: Binding(get: { draft.slug }, set: { onEditSlug(draft.suggestionID, $0) }))
+                TextField(
+                    L10n.string("Slug"),
+                    text: Binding(get: { draft.slug }, set: { onEditSlug(draft.suggestionID, $0) })
+                )
                 Button(L10n.string("Regenerate")) { onRegenerateSlug(draft.suggestionID) }
             }
             if draft.status.preventsApply {

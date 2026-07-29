@@ -174,7 +174,7 @@ final class AboutSettingsModel: ObservableObject {
             [
                 L10n.format("App version: %@", versionInfo.appVersion),
                 L10n.format("Core version: %@", versionInfo.coreVersion),
-                L10n.format("Schema version: %@", versionInfo.schemaVersion),
+                L10n.format("Schema version: %@", versionInfo.schemaVersion)
             ].joined(separator: "\n")
         )
     }

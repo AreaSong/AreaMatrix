@@ -11,6 +11,7 @@ target/
 .build/
 **/.build/
 .swiftpm/
+apps/ios/.core-sdk
 build/
 DerivedData/
 apps/macos/.derived-data-log-*

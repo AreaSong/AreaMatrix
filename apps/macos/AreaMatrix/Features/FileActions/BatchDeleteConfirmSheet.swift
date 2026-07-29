@@ -137,12 +137,15 @@ struct BatchDeleteConfirmSheet: View {
                         L10n.string("Undo will not be available for these items. Review the list before continuing."),
                         systemImage: "exclamationmark.triangle"
                     )
-                    Toggle(L10n.string("I understand undo will not be available for these items."), isOn: $undoConfirmationAccepted)
-                        .accessibilityLabel(
-                            L10n.string(
-                                "Required confirmation. Undo will not be available for this deletion or index removal."
-                            )
+                    Toggle(
+                        L10n.string("I understand undo will not be available for these items."),
+                        isOn: $undoConfirmationAccepted
+                    )
+                    .accessibilityLabel(
+                        L10n.string(
+                            "Required confirmation. Undo will not be available for this deletion or index removal."
                         )
+                    )
                 }
             }
             .font(.callout)

@@ -94,7 +94,7 @@ private struct HoverableGhostButton: View {
     let icon: AreaMatrixLucideIcon.IconName?
     let title: String
     @State private var isHovered = false
-    
+
     var body: some View {
         AreaMatrixGhostButton(isHovered: isHovered, action: action) {
             HStack(spacing: 6) {
@@ -118,7 +118,7 @@ private struct HoverableCapsuleButton: View {
     let isDisabled: Bool
     let accent: Color
     @State private var isHovered = false
-    
+
     var body: some View {
         AreaMatrixCapsuleButton(accent: accent, isHovered: isHovered, action: action) {
             Text(title)

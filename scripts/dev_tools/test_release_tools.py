@@ -1881,8 +1881,9 @@ class ReleaseToolsTest(unittest.TestCase):
         self.assertIn("CODE_SIGN_STYLE=Manual", command)
         self.assertIn("CODE_SIGN_IDENTITY=-", command)
         self.assertIn("DEVELOPMENT_TEAM=", command)
-        self.assertIn("LIBRARY_SEARCH_PATHS=/repo/core/target/aarch64-apple-darwin/release", command)
-        self.assertIn("OTHER_LDFLAGS=/repo/core/target/aarch64-apple-darwin/release/libarea_matrix_core.a", command)
+        self.assertFalse(any(value.startswith("AREAMATRIX_CARGO_TARGET_DIR=") for value in command))
+        self.assertFalse(any(value.startswith("LIBRARY_SEARCH_PATHS=") for value in command))
+        self.assertFalse(any(value.startswith("OTHER_LDFLAGS=") for value in command))
         self.assertIn("-configuration", command)
         self.assertIn("Release", command)
 

@@ -8,7 +8,7 @@ struct ImportSingleFileSource: Equatable {
     init(url: URL) {
         fileName = url.lastPathComponent
         sourcePath = (url.path as NSString).abbreviatingWithTildeInPath
-        sizeBytes = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init)
+        sizeBytes = ImportPlatformServices.fileSizeBytes(url)
     }
 }
 

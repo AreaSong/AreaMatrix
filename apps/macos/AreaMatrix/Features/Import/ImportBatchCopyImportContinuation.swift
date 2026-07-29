@@ -258,8 +258,7 @@ extension ImportBatchCopyImportModel {
     }
 
     func currentDuplicateStrategiesByRowID()
-        -> [ImportBatchCopyImportRow.ID: ImportBatchDuplicateResolutionStrategy]
-    {
+        -> [ImportBatchCopyImportRow.ID: ImportBatchDuplicateResolutionStrategy] {
         rows.reduce(into: [:]) { strategies, row in
             guard let strategy = row.duplicateResolution else { return }
             strategies[row.id] = strategy
@@ -274,8 +273,7 @@ extension ImportBatchCopyImportModel {
     }
 
     func currentNameConflictResolutionsByRowID()
-        -> [ImportBatchCopyImportRow.ID: ImportBatchNameConflictResolution]
-    {
+        -> [ImportBatchCopyImportRow.ID: ImportBatchNameConflictResolution] {
         rows.reduce(into: [:]) { resolutions, row in
             guard case let .nameConflict(_, resolution) = row.status else { return }
             resolutions[row.id] = resolution

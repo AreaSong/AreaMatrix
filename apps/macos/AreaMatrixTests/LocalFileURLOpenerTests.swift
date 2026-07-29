@@ -148,10 +148,9 @@ final class LocalFileURLOpenerTests: XCTestCase {
         )
 
         XCTAssertThrowsError(try NSWorkspaceRepositoryIgnoreRulesManager(localURLOpener: localURLOpener)
-            .openIgnoreRules(repoPath: fixture.repoURL.path))
-        { error in
-            XCTAssertEqual(error as? RepositoryIgnoreRulesError, .openRejected)
-        }
+            .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
+                XCTAssertEqual(error as? RepositoryIgnoreRulesError, .openRejected)
+            }
         localURLOpener.assertOpenedPaths([fixture.ignoreRulesURL.path])
     }
 
@@ -163,10 +162,9 @@ final class LocalFileURLOpenerTests: XCTestCase {
         let localURLOpener = RecordingLocalFileURLOpener()
 
         XCTAssertThrowsError(try NSWorkspaceRepositoryIgnoreRulesManager(localURLOpener: localURLOpener)
-            .openIgnoreRules(repoPath: fixture.repoURL.path))
-        { error in
-            XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesMissing)
-        }
+            .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
+                XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesMissing)
+            }
         localURLOpener.assertNoOpenedURLs()
     }
 
@@ -179,10 +177,9 @@ final class LocalFileURLOpenerTests: XCTestCase {
         let localURLOpener = RecordingLocalFileURLOpener()
 
         XCTAssertThrowsError(try NSWorkspaceRepositoryIgnoreRulesManager(localURLOpener: localURLOpener)
-            .openIgnoreRules(repoPath: fixture.repoURL.path))
-        { error in
-            XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesNotRegularFile)
-        }
+            .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
+                XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesNotRegularFile)
+            }
         localURLOpener.assertNoOpenedURLs()
     }
 }

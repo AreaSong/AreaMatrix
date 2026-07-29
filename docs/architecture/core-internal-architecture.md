@@ -251,6 +251,12 @@ DB 查询、源码聚合或断言 helper 移入 `core/tests/support/**`。但测
   `core/tests/support/**`。
 - 只有一个实现、一个调用点、一个测试场景时，不为了“架构完整”提前抽象。
 
+`rust_architecture_governance` 自动阻止稳定层反向依赖：`domain/error` 不得依赖
+`api/db/storage`，`db` 与 `storage` 不得反向依赖 `api` 或彼此耦合。`rust_file_size_governance`
+同时扫描 `core/src` 与 `core/tests`：新文件必须保持在 500 行以内；已有超限文件使用精确 legacy
+budget 登记 owner、保留理由、拆分触发条件和当前上限，任何继续增长都会失败。接近上限但尚未超限的
+文件仍按上面的触达式拆分规则处理，不为了满足行数进行高风险的大规模搬迁。
+
 拆分必须保持行为不变，并优先保留原 public 路径、crate 内 re-export 或测试源码聚合
 所需的可读入口。拆分后至少运行与影响面匹配的验证。
 

@@ -133,7 +133,7 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init),
+            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
             predictedCategory: nil,
             suggestedName: url.lastPathComponent,
             status: .loading
@@ -144,7 +144,7 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init),
+            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
             status: .ready(
@@ -167,7 +167,7 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init),
+            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
             status: .duplicate(
@@ -188,7 +188,7 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init),
+            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
             status: .nameConflict(
@@ -216,7 +216,7 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init),
+            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
             predictedCategory: nil,
             suggestedName: url.lastPathComponent,
             status: .error(message)

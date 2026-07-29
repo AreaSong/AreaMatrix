@@ -76,7 +76,8 @@ struct AITagSuggestionsPanel: View {
                 .disabled(!state.canApplySelectedSuggestions || state.isApplying || disabledReason != nil)
             Button(L10n.string("Edit selected"), action: onStartEditing)
                 .disabled(!state.canEditSelectedSuggestions || state.isApplying || disabledReason != nil)
-            Button(L10n.string("Reject selected"), action: onClearSelection).disabled(state.selectedIDs.isEmpty || state.isApplying)
+            Button(L10n.string("Reject selected"), action: onClearSelection)
+                .disabled(state.selectedIDs.isEmpty || state.isApplying)
             Button(L10n.string("Cancel"), action: onClose)
         }
     }
@@ -87,8 +88,10 @@ struct AITagSuggestionsPanel: View {
                 Button(L10n.string("Open AI settings"), action: onOpenAISettings)
             }
             if let ruleID = privacyRuleID(for: report) {
-                Button(L10n.string("View privacy rule")) { privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID) }
-                    .accessibilityIdentifier("ai-tag-suggestions-ai-privacy-rules-core-view-privacy-rule")
+                Button(L10n.string("View privacy rule")) {
+                    privacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                }
+                .accessibilityIdentifier("ai-tag-suggestions-ai-privacy-rules-core-view-privacy-rule")
             }
             if let callLogID = report.callLogId {
                 Button(L10n.string("View AI call")) { callLogRoute = AITagCallLogRoute(callLogID: callLogID) }

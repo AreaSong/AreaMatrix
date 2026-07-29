@@ -14,6 +14,26 @@
 - required command 无法运行时结果是 `BLOCKED` 或 `NOT-READY`，不是 PASS。
 - 所有完成证据必须在最终相关修改后重新执行。
 
+## 按变更路径验证
+
+高频开发先查看并执行当前工作树需要的完整层级门禁：
+
+```bash
+./dev test changed --list
+./dev test changed
+```
+
+| 变更层 | 当前执行内容 |
+|---|---|
+| developer tools | Python developer-tool regression suite |
+| Rust Core | `validation` lane single-flight lock 内执行 `cargo test --workspace` |
+| macOS client | localization contract + 复用持久 DerivedData 的 `./dev test macos` |
+| iOS client | `swift build --package-path apps/ios`，不误跑 macOS XCTest |
+| docs / governance | `./dev check docs` + `./dev check governance` |
+
+该入口按层去重并按稳定顺序执行，适合开发反馈；跨层、高风险或最终收口仍需组合下方完整门禁，不能把
+changed-path 选择当成 release 或 merge evidence。
+
 ## Rust Core
 
 完整门禁：
@@ -40,6 +60,15 @@ Core 测试位于：
 ```bash
 ./dev test macos
 ```
+
+Xcode 共享 scheme 使用 `apps/macos/AreaMatrix-Functional.xctestplan` 作为默认功能测试计划。
+它固定 `AreaMatrixTests` target 和可并行执行属性，让 Xcode UI、`xcodebuild` 和 `./dev test macos`
+消费同一份可追踪计划。`AreaMatrixPerfTests` 和 `ObservabilityPerformanceTests` 继续由
+`AREAMATRIX_RUN_PERF_TESTS` fail-closed，只在下方显式 performance gate 中执行。
+
+本地默认 DerivedData 位于 `.build/derived-data/macos-tests/` 并跨运行保留。需要隔离缓存时使用
+`./dev test macos --temporary-derived-data`，CI 或并行任务使用独立 `--derived-data-path`；两个显式选项
+互斥，temporary 模式优先于环境中的 `DERIVED_DATA_PATH` 并在运行后清理。
 
 脚本优先运行标准 `xcodebuild test`。只有日志明确显示本地 `testmanagerd` sandbox restriction 时，才允许
 复用同一 DerivedData 的 hostless XCTest bundle。编译、链接、断言或非沙箱失败不能 fallback 成 PASS。
@@ -178,9 +207,10 @@ cargo test --all-features --workspace
 cargo llvm-cov --workspace --lcov --output-path lcov.info --fail-under-lines 70
 ```
 
-macOS CI 使用 `./dev build core`、`./dev bindings verify`、带 coverage gate 的 `./dev test macos`、
-SwiftLint 和 SwiftFormat。治理 CI 覆盖 governance、docs、skills、quality、品牌资产、Codex OS、
-wording、task-loop、prompts、diff 和 secret scan。
+macOS CI 使用 `./dev build core-sdk` 一次生产并上传 CoreSDK artifact，下游 Xcode job 恢复同一
+artifact 后执行 `./dev test macos` coverage gate；tracked bindings 由 CoreSDK job 中的
+`./dev bindings verify` 校验。SwiftLint 和 SwiftFormat 保持独立并行。治理 CI 覆盖 governance、docs、
+skills、quality、品牌资产、Codex OS、wording、task-loop、prompts、diff 和 secret scan。
 
 ## 反模式
 

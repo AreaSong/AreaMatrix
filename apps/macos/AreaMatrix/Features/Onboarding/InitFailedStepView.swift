@@ -61,13 +61,13 @@ struct InitFailedStepView: View {
                     .tracking(6)
             }
             .padding(.bottom, 8)
-            
+
             Text(L10n.string("onboarding.failed.title"))
                 .font(.system(size: 42, weight: .heavy))
                 .foregroundStyle(.primary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
-            
+
             Text(L10n.string("onboarding.failed.subtitle"))
                 .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(.secondary)
@@ -209,7 +209,7 @@ private struct HoverableGhostButton: View {
     let icon: AreaMatrixLucideIcon.IconName?
     let title: String
     @State private var isHovered = false
-    
+
     var body: some View {
         AreaMatrixGhostButton(isHovered: isHovered, action: action) {
             HStack(spacing: 6) {
@@ -233,7 +233,7 @@ private struct HoverableCapsuleButton: View {
     let isDisabled: Bool
     let accent: Color
     @State private var isHovered = false
-    
+
     var body: some View {
         AreaMatrixCapsuleButton(accent: accent, isHovered: isHovered, action: action) {
             Text(title)

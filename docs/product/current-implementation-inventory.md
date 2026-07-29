@@ -572,7 +572,9 @@ Swift Package 包含 library、Share Extension、executable 和 test target；�
 
 iOS 没有 macOS Welcome 那套 blobs、视差、Diorama 或 deep-dive；当前视觉主要依赖系统 List、NavigationStack、sheet、ProgressView 和 SF Symbols。
 
-限制：`Package.swift` 的 linker 仍固定到仓库内 debug Core 路径（macOS/iOS 各一条 `-L.../debug`），因此这是实验客户端，不是可正式归档分发的 iOS 产品：`apps/ios/Package.swift:25-33`。
+Core 接入：`Package.swift` 的 `Carea_matrixFFI` binary target 消费由 `./dev build core-sdk` 生成的
+macOS/iOS 共用 XCFramework，不再固定到仓库内 debug Cargo 路径。iOS 仍属于实验客户端，正式支持状态
+取决于签名、归档、真机和发布证据，而不是本地 SwiftPM 编译结果。
 
 ### Windows
 

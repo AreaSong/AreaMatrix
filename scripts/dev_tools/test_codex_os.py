@@ -1753,6 +1753,81 @@ class CodexOsToolsTest(unittest.TestCase):
             self.assertEqual(task["status"], "Done")
             self.assertEqual(task["validation"], "./dev check codex-os: PASS")
 
+    def test_run_validation_write_fingerprint_matches_updated_task_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_db = root / "state.sqlite"
+            runtime = root / ".codex/runtime/codex-os"
+            create_state_db(state_db)
+            (root / ".codex/templates").mkdir(parents=True)
+            (root / ".codex/templates/codex-evidence-template.md").write_text("Evidence <task-id>\n", encoding="utf-8")
+            (root / ".codex/templates/codex-closeout-template.md").write_text("Closeout <task-id>\n", encoding="utf-8")
+            dev = root / "dev"
+            dev.write_text("#!/bin/sh\n[ \"$1\" = \"check\" ] && exit 0\nexit 1\n", encoding="utf-8")
+            dev.chmod(dev.stat().st_mode | stat.S_IXUSR)
+            self.assertEqual(
+                run_codex_os_command(root, args("registry", state_db, runtime, registry_command="init", write=True)),
+                0,
+            )
+            self.assertEqual(
+                run_codex_os_command(
+                    root,
+                    args(
+                        "registry",
+                        state_db,
+                        runtime,
+                        registry_command="add",
+                        task_id="AM-FINGERPRINT-WRITE",
+                        project_name="AreaMatrix",
+                        lane="Change",
+                        status="Verifying",
+                        validation="./dev check codex-os",
+                        write=True,
+                    ),
+                ),
+                0,
+            )
+
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "run-validation",
+                            state_db,
+                            runtime,
+                            task_id="AM-FINGERPRINT-WRITE",
+                            path=[".codex/references/example.md"],
+                            execute=True,
+                            write=True,
+                            json=True,
+                        ),
+                    ),
+                    0,
+                )
+            registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
+            self.assertIn("./dev check quality: PASS", registry["tasks"][0]["validation"])
+
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(
+                    run_codex_os_command(
+                        root,
+                        args(
+                            "close-flow",
+                            state_db,
+                            runtime,
+                            task_id="AM-FINGERPRINT-WRITE",
+                            status="Done",
+                            from_latest_validation=True,
+                            write=True,
+                            json=True,
+                        ),
+                    ),
+                    0,
+                )
+            registry = json.loads((runtime / "task-registry.json").read_text(encoding="utf-8"))
+            self.assertEqual(registry["tasks"][0]["status"], "Done")
+
     def test_close_flow_latest_validation_rejects_dry_run_fail_and_wrong_task(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

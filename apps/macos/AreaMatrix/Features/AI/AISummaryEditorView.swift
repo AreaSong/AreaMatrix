@@ -202,7 +202,10 @@ private extension AISummaryEditor {
             .frame(minHeight: 150)
             .overlay(alignment: .topLeading) {
                 if model.draftText.isEmpty {
-                    Text(L10n.string("No AI summary yet.")).foregroundStyle(.secondary).padding(.top, 8).padding(.leading, 5)
+                    Text(L10n.string("No AI summary yet.")).foregroundStyle(.secondary).padding(.top, 8).padding(
+                        .leading,
+                        5
+                    )
                 }
             }
             .disabled(model.operation.isBusy)
@@ -221,7 +224,8 @@ private extension AISummaryEditor {
                     notice.expectedRevision,
                     notice.currentRevision
                 ))
-                Text(L10n.string("The latest summary has been loaded. Review it and choose Clear summary again if needed."))
+                Text(L10n
+                    .string("The latest summary has been loaded. Review it and choose Clear summary again if needed."))
             }
             .font(.caption)
             .foregroundStyle(.secondary)

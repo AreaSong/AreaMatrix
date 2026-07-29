@@ -185,15 +185,15 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/development/testing.md'
     line_start: 1
-    line_end: 201
+    line_end: 231
     heading: ''
     excerpt: '# 测试策略'
-    sha256: '9398f42a319eff91fb30ac9961bb63948dc0d8180744dc971062c8340924e171'
+    sha256: '58399c409d1c2ad0c61927e49dc1e4cd69623005b778b54cd169d92e4acb144f'
     source: 'discussion:exact_docs'
   - file: 'docs/development/ci-governance.md'
     line_start: 1
-    line_end: 160
+    line_end: 170
     heading: ''
     excerpt: '# CI Governance'
-    sha256: 'd85fb297f61fbfa4df875d37d445dc0ac6642763f49f15a6480d186b6641923d'
+    sha256: 'ec81ddaf18d78cea10e3c97e1943ca40205cb29a125802e288557cf60f0ef79d'
     source: 'discussion:exact_docs'

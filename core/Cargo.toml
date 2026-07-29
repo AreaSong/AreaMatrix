@@ -27,9 +27,11 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unicode-normalization = "0.1"
 regex = "1"
-trash = "5"
 uuid = { version = "1", features = ["v4"] }
 tracing-appender = "0.2.5"
+
+[target.'cfg(any(target_os = "macos", target_os = "windows", target_os = "linux", target_os = "freebsd"))'.dependencies]
+trash = "5"
 
 [build-dependencies]
 uniffi = { version = "0.28", features = ["build"] }

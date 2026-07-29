@@ -50,7 +50,8 @@ extension ChangeCategorySheet {
                 Text(ruleSuggestionText(for: file))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(L10n.string("Apply correction changes only this file. Save a rule from Edit rule or Preview impact."))
+                Text(L10n
+                    .string("Apply correction changes only this file. Save a rule from Edit rule or Preview impact."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack {

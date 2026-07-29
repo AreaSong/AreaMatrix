@@ -28,13 +28,11 @@ def _release_launch_probe_build_base(root: Path, build_base: Sequence[str]) -> l
     ]
     if "-configuration" not in release_build_base:
         release_build_base.extend(["-configuration", "Release"])
-    staticlib = root / "core/target/aarch64-apple-darwin/release/libarea_matrix_core.a"
     release_build_base.extend([
         "CODE_SIGNING_ALLOWED=YES",
         "CODE_SIGN_STYLE=Manual",
         "CODE_SIGN_IDENTITY=-",
         "DEVELOPMENT_TEAM=",
-        f"OTHER_LDFLAGS={staticlib}",
     ])
     return release_build_base
 

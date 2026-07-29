@@ -277,7 +277,7 @@ struct ImportFolderPreviewRow: Identifiable, Equatable {
     }
 
     private static func sizeBytes(for url: URL) -> Int64? {
-        (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init)
+        ImportPlatformServices.fileSizeBytes(url)
     }
 
     private static func relativePath(for fileURL: URL, rootURL: URL) -> String {

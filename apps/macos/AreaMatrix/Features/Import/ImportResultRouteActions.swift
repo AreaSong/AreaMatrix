@@ -18,7 +18,7 @@ extension ImportResultRouteState {
             L10n.string("AreaMatrix Import Result"),
             summaryText,
             L10n.string("No user file contents are included."),
-            "",
+            ""
         ]
         lines.append(contentsOf: items.map(exportLine(for:)))
         return lines.joined(separator: "\n")
@@ -31,7 +31,7 @@ extension ImportResultRouteState {
             item.reason,
             L10n.format("import.result.export.source", item.sanitizedSourcePath),
             item.existingRelativePath
-                .map { L10n.format("import.result.export.existing", Self.sanitizedPathDisplay($0)) },
+                .map { L10n.format("import.result.export.existing", Self.sanitizedPathDisplay($0)) }
         ].compactMap { $0 }.joined(separator: " | ")
     }
 

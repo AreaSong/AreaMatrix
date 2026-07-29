@@ -48,8 +48,11 @@ struct SyncConflictReplaceConfirmationPanel: View {
                 ("Recovery note", plan.recoveryNote)
             ])
             if !preview.hasRecoverableOldVersion {
-                Label(L10n.string("Replace requires Trash or a Core safety backup."), systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
+                Label(
+                    L10n.string("Replace requires Trash or a Core safety backup."),
+                    systemImage: "exclamationmark.triangle"
+                )
+                .foregroundStyle(.orange)
             }
         }
     }

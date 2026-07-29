@@ -36,24 +36,24 @@ struct ValidatePathStepView: View {
                         .foregroundStyle(AreaMatrixTheme.Colors.teal)
                         .tracking(4)
                 }
-                
+
                 AreaMatrixPathBox(path: displayedPath)
                     .frame(maxWidth: 360)
             }
             .padding(.top, 48)
-            
+
             // ================== 中枢：巨型深空雷达与卫星阵列 ==================
             Spacer(minLength: 40)
-            
+
             ValidatePathSatelliteRadar(
                 displayedPath: displayedPath,
                 validation: validation,
                 isValidating: isValidating,
                 errorMessage: errorMessage
             )
-            
+
             Spacer(minLength: 40)
-            
+
             // ================== 底部：极简状态与控制 ==================
             VStack(spacing: 32) {
                 ValidatePathNotices(
@@ -68,7 +68,7 @@ struct ValidatePathStepView: View {
                     onICloudRiskAcceptedChanged: onICloudRiskAcceptedChanged
                 )
                 .frame(maxWidth: 600)
-                
+
                 ValidatePathFooter(
                     isInitializedRepository: validation?.isInitialized == true,
                     isValidating: isValidating,

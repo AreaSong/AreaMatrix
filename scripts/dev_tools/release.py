@@ -991,8 +991,6 @@ def _readiness_xcodebuild_command(
         "CODE_SIGN_IDENTITY=-",
         "DEVELOPMENT_TEAM=",
         f"CURRENT_PROJECT_VERSION={build_number}",
-        f"LIBRARY_SEARCH_PATHS={root / 'core/target/aarch64-apple-darwin/release'}",
-        f"OTHER_LDFLAGS={root / 'core/target/aarch64-apple-darwin/release/libarea_matrix_core.a'}",
         "build",
     ]
 

@@ -67,7 +67,10 @@ struct ImportProgressView: View {
             Button(L10n.string("Cancel"), role: .cancel, action: onCancelDiagnostics)
             Button(L10n.string("Collect Diagnostics..."), action: onConfirmDiagnostics)
         } message: {
-            Text(L10n.string("Diagnostics do not include user file contents, are not uploaded, and paths/usernames are redacted."))
+            Text(L10n
+                .string(
+                    "Diagnostics do not include user file contents, are not uploaded, and paths/usernames are redacted."
+                ))
         }
     }
 
@@ -76,7 +79,12 @@ struct ImportProgressView: View {
             Label(L10n.string("导入已暂停"), systemImage: "exclamationmark.triangle.fill")
                 .font(.headline)
                 .foregroundStyle(.red)
-            Text(L10n.format("已完成 %lld，失败 %lld，未开始 %lld", state.completed, state.failed, state.remaining + state.pending))
+            Text(L10n.format(
+                "已完成 %lld，失败 %lld，未开始 %lld",
+                state.completed,
+                state.failed,
+                state.remaining + state.pending
+            ))
             Text(L10n.format("import.progress.current-failure", state.currentPath))
                 .textSelection(.enabled)
             if let errorMapping = state.errorMapping {

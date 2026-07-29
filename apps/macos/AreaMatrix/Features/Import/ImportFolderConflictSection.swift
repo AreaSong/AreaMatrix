@@ -153,11 +153,13 @@ struct ImportFolderConflictSection: View {
             set: { model.updateNameConflictResolution(for: row.id, resolution: $0) }
         )) {
             Text(L10n.string("Keep both (auto-number)")).tag(ImportBatchNameConflictResolution.keepBoth)
-            Text(L10n.string("Rename incoming")).tag(ImportBatchNameConflictResolution.renameIncoming(row.resolvedIncomingName))
+            Text(L10n.string("Rename incoming"))
+                .tag(ImportBatchNameConflictResolution.renameIncoming(row.resolvedIncomingName))
             if showsReplaceOption {
                 Text(L10n.string("Replace")).tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
             } else if model.replaceOptionVisibility == .disabled {
-                Text(L10n.string("Replace requires system Trash")).tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
+                Text(L10n.string("Replace requires system Trash"))
+                    .tag(ImportBatchNameConflictResolution.replace(isConfirmed: false))
             }
         }
         .labelsHidden()

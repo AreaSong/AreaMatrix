@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-26"
+updated: "2026-07-29"
 scope: global
 authority: index-only
 source_of_truth:
@@ -77,9 +77,9 @@ items:
       - ADR-0003/0006 and core-api.md updated for purge-on-startup metadata-only retention
     notes: Closed 2026-07-21. recover_on_startup purges files.status=deleted rows with deleted_at older than 30 days; user source files and Trash are not hard-deleted.
   - id: global-product-ui-localization
-    status: open
+    status: closed
     type: product-contract-gap
-    title: Bilingual settings closeout evidence remains incomplete
+    title: Bilingual settings and overview regeneration closeout complete
     source: docs/adr/0008-naming-and-i18n.md
     supporting_sources:
       - core/area_matrix.udl
@@ -90,10 +90,10 @@ items:
       - apps/macos/AreaMatrix/Features/Settings/RepositorySettingsModel.swift
       - scripts/dev_tools/checks.py
     owner: macos-frontend
-    current_impact: The dedicated Language page and independent selectors are implemented, but the residual cannot close while the full macOS governance gate and explicit overview-regeneration evidence remain incomplete.
-    executable_task: true
+    current_impact: none
+    executable_task: false
     promotion_required: true
-    close_condition: Add one Language settings page that owns both selectors and overview language status/regeneration, reduce General and Repository to read-only summaries with navigation, preserve independent persistence and CAS semantics, and pass localization, macOS, docs and four-combination fixture UI validation.
+    close_condition: Completed. The dedicated Language page owns both selectors and overview status/regeneration; General and Repository expose read-only summaries with navigation; independent persistence, CAS semantics, full Rust/macOS/localization/lint gates, four-combination UI fixtures, and bilingual seven-target overview regeneration closeout all pass without modifying root README.md, root AREAMATRIX.md, or user files.
     validation:
       - cargo fmt, clippy and workspace tests pass for the final Core contract
       - ./dev bindings verify
@@ -104,7 +104,7 @@ items:
       - fixture-only Debug UI smoke covers en/en, en/zh-Hans, zh-Hans/en and zh-Hans/zh-Hans
       - explicit zh-Hans and en overview regeneration each completes preflight, stage and commit for all 7 targets
       - fixture SQLite integrity_check is ok and no root README.md, root AREAMATRIX.md or user-file mutation occurs
-    notes: Reopened 2026-07-26 for the settings information-architecture gap. The dedicated Language page, General/Repository summaries, independent persistence, targeted tests and four-combination fixture UI smoke are now implemented; keep open until the remaining full-suite governance failures and explicit regeneration close evidence are resolved.
+    notes: Closed 2026-07-29 after the full macOS build/XCTest/localization/SwiftFormat/SwiftLint gates and the zh-Hans/en overview regeneration closeout test passed. The Rust fixture proves preflight, staging, and commit for all seven generated targets, SQLite integrity, and byte-for-byte preservation of root README.md, root AREAMATRIX.md, and other user files.
   - id: global-docs-core-module-doc-coverage
     status: closed
     type: product-doc-marker

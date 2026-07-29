@@ -68,7 +68,8 @@ struct ICloudConflictMinimalSheet: View {
             pageID: "icloud-conflict-review"
         ) {
             VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.string("This is an iCloud conflicted copy. AreaMatrix will not delete any version automatically."))
+                Text(L10n
+                    .string("This is an iCloud conflicted copy. AreaMatrix will not delete any version automatically."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 previewStatus
@@ -95,7 +96,8 @@ struct ICloudConflictMinimalSheet: View {
                 Text(L10n.string("Move the other version to Trash?"))
                     .font(.caption)
                     .fontWeight(.semibold)
-                Text(L10n.string("AreaMatrix will move the other version to system Trash and keep a change-log record."))
+                Text(L10n
+                    .string("AreaMatrix will move the other version to system Trash and keep a change-log record."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let disabledReason = selectedOption?.disabledReason, !disabledReason.isEmpty {

@@ -15,8 +15,10 @@ from .build import (
     run_bindings_update,
     run_bindings_verify,
     run_core_build,
+    run_xcode_core_build,
 )
 from .changes import run_changes_doctor, run_changes_generate, run_changes_preview
+from .core_sdk import run_core_sdk_build
 from .checks import (
     run_all_check,
     run_codex_os_check,
@@ -35,6 +37,7 @@ from .checks import (
 from .common import ToolError, print_error, project_root
 from .codex_os import run_codex_os_command
 from .discussion import run_workflow_discuss
+from .developer import run_build_doctor, run_changed_tests, run_macos_developer_scenario
 from .macos import run_macos_tests
 from .middle_layer import run_workflow_middle
 from .release import (
@@ -130,11 +133,32 @@ def _build_parser() -> argparse.ArgumentParser:
     build_core = build_sub.add_parser("core", help="Build Rust core universal staticlib and Swift bindings")
     build_core.add_argument("--profile", choices=["release", "debug"], help="Build profile; overrides BUILD_PROFILE")
     build_core.add_argument("--out-dir", help="Generated output directory; overrides OUT_DIR")
+    build_core.add_argument("--target-dir", help="Cargo target directory; overrides the isolated sdk lane")
     build_core.add_argument(
         "--deployment-target",
         "--macosx-deployment-target",
         dest="deployment_target",
         help="macOS deployment target; overrides MACOSX_DEPLOYMENT_TARGET",
+    )
+    build_xcode_core = build_sub.add_parser(
+        "xcode-core",
+        help="Build an isolated Rust static library for directed Xcode-link diagnostics",
+    )
+    build_xcode_core.add_argument("--profile", choices=["release", "debug"], help="Xcode Core build profile")
+    build_xcode_core.add_argument("--target", default="aarch64-apple-darwin", help="Rust target triple")
+    build_xcode_core.add_argument("--target-dir", help="Cargo target directory; overrides the isolated xcode lane")
+    build_xcode_core.add_argument("--dependency-file", help="Write an Xcode-compatible make dependency file")
+    build_xcode_core.add_argument("--deployment-target", help="macOS deployment target")
+    build_core_sdk = build_sub.add_parser("core-sdk", help="Build or reuse the fingerprinted Apple CoreSDK")
+    build_core_sdk.add_argument("--profile", choices=["release", "debug"], default="release")
+    build_core_sdk.add_argument("--macos-deployment-target", default="14.0")
+    build_core_sdk.add_argument("--ios-deployment-target", default="17.0")
+    build_core_sdk.add_argument("--dependency-file", help="Write an Xcode-compatible make dependency file")
+    build_core_sdk.add_argument("--force", action="store_true", help="Rebuild even when the fingerprint cache exists")
+    build_core_sdk.add_argument(
+        "--verify-only",
+        action="store_true",
+        help="Validate the restored CoreSDK pointer, manifest, and XCFramework slices without building",
     )
 
     test = subparsers.add_parser("test", help="Run developer tests")
@@ -144,6 +168,11 @@ def _build_parser() -> argparse.ArgumentParser:
     macos.add_argument("--test-bundle-name", help="XCTest bundle name; overrides XCODE_TEST_BUNDLE_NAME")
     macos.add_argument("--destination", help="Xcode destination; overrides XCODE_DESTINATION")
     macos.add_argument("--derived-data-path", help="DerivedData path; overrides DERIVED_DATA_PATH")
+    macos.add_argument(
+        "--temporary-derived-data",
+        action="store_true",
+        help="Use isolated temporary DerivedData instead of the persistent local cache",
+    )
     macos.add_argument("--keep-derived-data", action="store_true", help="Keep temporary DerivedData")
     macos.add_argument("--test-log", help="xcodebuild test log path")
     macos.add_argument("--build-log", help="xcodebuild build-for-testing log path")
@@ -169,6 +198,20 @@ def _build_parser() -> argparse.ArgumentParser:
         default=[],
         help="Limit XCTest execution to TARGET/CLASS or TARGET/CLASS/METHOD; may be repeated",
     )
+    changed = test_sub.add_parser("changed", help="Run validation layers implied by current workspace changes")
+    changed.add_argument("--list", action="store_true", help="Print the selected validation layers without executing")
+
+    run = subparsers.add_parser("run", help="Run deterministic local developer scenarios")
+    run_sub = run.add_subparsers(dest="run_target", required=True)
+    run_macos = run_sub.add_parser("macos", help="Build and launch a DEBUG-only macOS developer scenario")
+    run_macos.add_argument("--scenario", required=True, help="Developer scenario id")
+    run_macos.add_argument("--derived-data-path", help="Persistent DerivedData directory")
+    run_macos.add_argument("--no-build", action="store_true", help="Launch an existing Debug product without building")
+    run_macos.add_argument("--build-only", action="store_true", help="Build and validate the scenario product without launching")
+
+    doctor = subparsers.add_parser("doctor", help="Diagnose local developer infrastructure")
+    doctor_sub = doctor.add_subparsers(dest="doctor_target", required=True)
+    doctor_sub.add_parser("build", help="Audit Cargo lanes, Xcode incrementality, locks, and CoreSDK")
 
     bindings = subparsers.add_parser("bindings", help="Manage generated language bindings")
     bindings_sub = bindings.add_subparsers(dest="bindings_command", required=True)
@@ -844,7 +887,32 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "wording" and args.wording_command == "audit":
             return run_wording_audit(root, args)
         if args.command == "build" and args.build_target == "core":
-            return run_core_build(root, profile=args.profile, out_dir=args.out_dir, deployment_target=args.deployment_target)
+            return run_core_build(
+                root,
+                profile=args.profile,
+                out_dir=args.out_dir,
+                deployment_target=args.deployment_target,
+                target_dir=args.target_dir,
+            )
+        if args.command == "build" and args.build_target == "xcode-core":
+            return run_xcode_core_build(
+                root,
+                profile=args.profile,
+                target=args.target,
+                target_dir=args.target_dir,
+                dependency_file=args.dependency_file,
+                deployment_target=args.deployment_target,
+            )
+        if args.command == "build" and args.build_target == "core-sdk":
+            return run_core_sdk_build(
+                root,
+                profile=args.profile,
+                macos_deployment_target=args.macos_deployment_target,
+                ios_deployment_target=args.ios_deployment_target,
+                force=args.force,
+                dependency_file=args.dependency_file,
+                verify_only=args.verify_only,
+            )
         if args.command == "test" and args.test_target == "macos":
             return run_macos_tests(
                 root,
@@ -852,6 +920,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 test_bundle_name=args.test_bundle_name,
                 destination=args.destination,
                 derived_data_path=args.derived_data_path,
+                temporary_derived_data=args.temporary_derived_data,
                 keep_derived_data=args.keep_derived_data or None,
                 test_log=args.test_log,
                 build_log=args.build_log,
@@ -861,6 +930,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                 enable_code_coverage=args.enable_code_coverage,
                 coverage_gate=args.coverage_gate,
             )
+        if args.command == "test" and args.test_target == "changed":
+            return run_changed_tests(root, list_only=args.list)
+        if args.command == "run" and args.run_target == "macos":
+            return run_macos_developer_scenario(
+                root,
+                scenario=args.scenario,
+                derived_data_path=args.derived_data_path,
+                no_build=args.no_build,
+                build_only=args.build_only,
+            )
+        if args.command == "doctor" and args.doctor_target == "build":
+            return run_build_doctor(root)
         if args.command == "bindings" and args.bindings_command == "update":
             return run_bindings_update(root, args.udl, args.out_dir)
         if args.command == "bindings" and args.bindings_command == "verify":

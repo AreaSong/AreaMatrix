@@ -112,16 +112,16 @@ cd AreaMatrix
 ## 第 6 步：构建 Rust 核心
 
 ```bash
-./dev build core
+./dev build core-sdk
 ```
 
-这个 CLI 子命令做了：
+这个 CLI 子命令在隔离的 `.build/cargo/sdk/` lane 中构建 Rust，并在 fingerprint cache 中生成：
 
-1. `cargo build --release --target aarch64-apple-darwin`
-2. `cargo build --release --target x86_64-apple-darwin`
-3. `lipo` 合并为 universal staticlib
-4. `uniffi-bindgen` 生成 Swift bindings
-5. 写入默认本地导出目录 `apps/macos/AreaMatrix/Bridge/Generated/`
+1. macOS arm64/x86_64 universal staticlib
+2. iOS device arm64 staticlib
+3. iOS simulator arm64/x86_64 universal staticlib
+4. `uniffi-bindgen` Swift/C bindings
+5. `.build/core-sdk/current/AreaMatrixCoreFFI.xcframework` 与 Swift Package
 
 `Bridge/Generated/` 是 `.gitignore` 忽略的生成产物目录。当前 Xcode 工程实际消费的 tracked
 bindings 位于 `apps/macos/AreaMatrix/Bridge/UniFFI/`，构建参数、Xcode 集成和 binding 更新方式见
@@ -208,10 +208,15 @@ cd ../..
 
 | 改动类型 | 怎么重建 |
 |---|---|
-| 改 Rust 业务代码（不改 UDL） | `./dev build core && Xcode rebuild` |
-| 改 Rust 接口（改 UDL） | 同上（脚本会重新生成 bindings） |
+| 改 Rust 业务代码（不改 UDL） | `./dev build core-sdk && Xcode rebuild` |
+| 改 Rust 接口（改 UDL） | 构建 CoreSDK，更新 tracked bindings，再运行 `./dev bindings verify` |
 | 只改 Swift 代码 | Xcode ⌘R 即可 |
 | 只改 SQL schema | 加 migration 文件（不要改 schema.sql v1） |
+
+`./dev test macos` 默认复用 `.build/derived-data/macos-tests/`，因此重复定向测试可以增量编译。
+只有需要验证完全隔离环境时才使用 `--temporary-derived-data`；显式 `--derived-data-path` 适合 CI
+或并行任务。Cargo 验证命令应使用 `.build/cargo/validation/`，不要复用 CoreSDK 的
+`.build/cargo/sdk/`。
 
 ---
 
@@ -219,13 +224,13 @@ cd ../..
 
 ### Q1: `linker error` / `library not found`
 
-**原因**：Core staticlib 没有构建到 Xcode 当前配置的 `core/target/...` 路径，或 `LIBRARY_SEARCH_PATHS`
-/ `OTHER_LDFLAGS` 没指向当前 profile。
+**原因**：`.build/core-sdk/current/AreaMatrixCoreFFI.xcframework` 尚未生成、指纹缓存不完整，或
+Xcode Frameworks 引用失效。
 
 **修复**：
 
 ```bash
-./dev build core
+./dev build core-sdk
 # 然后 Xcode → Product → Clean Build Folder（⇧⌘K）
 ```
 

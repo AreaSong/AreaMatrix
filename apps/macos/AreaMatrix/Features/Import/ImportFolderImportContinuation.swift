@@ -17,83 +17,82 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
         let retryPath = retryRowIndex.map { targetRelativePath(for: rows[$0]) } ?? entry.path
         reportProgress(progressSnapshotAfterRetry(entry: entry, retryPath: retryPath))
         return await importRemainingFiles(
-            request: request,
-            retryEntry: entry,
-            retryPath: retryPath,
-            traceID: context.traceID ?? UUID().uuidString.lowercased(),
-            controlState: controlState,
+            input: ImportFolderContinuationInput(
+                request: request,
+                retryEntry: entry,
+                retryPath: retryPath,
+                traceID: context.traceID ?? UUID().uuidString.lowercased(),
+                controlState: controlState
+            ),
             reportProgress: reportProgress
         )
     }
 
     private func importRemainingFiles(
-        request: ImportEntryRequest,
-        retryEntry: FileEntrySnapshot,
-        retryPath: String,
-        traceID: String,
-        controlState: ImportProgressControlState,
+        input: ImportFolderContinuationInput,
         reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void
     ) async -> ImportBatchImportResult {
         let total = importableRows.count + 1
-        var completed = 1
-        var failed = 0
-        var succeededEntries = [retryEntry]
-        var lastImportedPath = retryPath
-        var didStopAfterCurrentFile = false
+        var state = ImportFolderContinuationRunState(
+            retryEntry: input.retryEntry,
+            retryPath: input.retryPath
+        )
         clearLastFailureMapping()
 
         for index in rows.indices where rows[index].status.importsIncomingFile {
-            let traceContext = CoreImportTraceContext.operation(
-                traceID: traceID,
-                actionID: "repository.import.confirmed",
-                componentID: "macos.import.folder"
-            )
-            let cycle = await runFolderImportCycle(
-                input: ImportFolderImportCycleInput(
-                    rowIndex: index,
-                    request: request,
-                    storageMode: selectedStorageMode,
-                    completed: completed,
-                    failed: failed,
-                    total: total,
-                    traceContext: traceContext
-                )
-            )
-            completed = cycle.completed
-            failed = cycle.failed
-            lastImportedPath = cycle.lastImportedPath ?? lastImportedPath
-            if let entry = cycle.entry {
-                succeededEntries.append(entry)
-            }
+            let cycleInput = continuationCycleInput(index: index, input: input, state: state, total: total)
+            let cycle = await runFolderImportCycle(input: cycleInput)
+            state.absorb(cycle)
             reportProgress(cycle.progress.withItems(progressItems()))
-            if controlState.isStopAfterCurrentFileRequested {
-                controlState.markStoppedAfterCurrentFile()
-                didStopAfterCurrentFile = true
+            if input.controlState.isStopAfterCurrentFileRequested {
+                input.controlState.markStoppedAfterCurrentFile()
+                state.didStopAfterCurrentFile = true
                 break
             }
             if cycle.stoppedForQueue {
                 return continuedImportResult(
-                    entries: succeededEntries,
-                    failed: failed,
+                    entries: state.succeededEntries,
+                    failed: state.failed,
                     total: total,
-                    lastImportedPath: lastImportedPath,
-                    didStopAfterCurrentFile: didStopAfterCurrentFile,
+                    lastImportedPath: state.lastImportedPath,
+                    didStopAfterCurrentFile: state.didStopAfterCurrentFile,
                     fatalRetryContext: retryContext(
                         for: rows[index],
-                        request: request,
+                        request: input.request,
                         storageMode: selectedStorageMode,
-                        traceContext: traceContext
+                        traceContext: cycleInput.traceContext
                     )
                 )
             }
         }
 
         return continuedImportResult(
-            entries: succeededEntries,
-            failed: failed,
+            entries: state.succeededEntries,
+            failed: state.failed,
             total: total,
-            lastImportedPath: lastImportedPath,
-            didStopAfterCurrentFile: didStopAfterCurrentFile
+            lastImportedPath: state.lastImportedPath,
+            didStopAfterCurrentFile: state.didStopAfterCurrentFile
+        )
+    }
+
+    private func continuationCycleInput(
+        index: Int,
+        input: ImportFolderContinuationInput,
+        state: ImportFolderContinuationRunState,
+        total: Int
+    ) -> ImportFolderImportCycleInput {
+        ImportFolderImportCycleInput(
+            rowIndex: index,
+            request: input.request,
+            storageMode: selectedStorageMode,
+            completed: state.completed,
+            failed: state.failed,
+            total: total,
+            traceContext: CoreImportTraceContext.operation(
+                traceID: input.traceID,
+                actionID: "repository.import.confirmed",
+                componentID: "macos.import.folder"
+            )
         )
     }
 
@@ -131,5 +130,35 @@ extension ImportFolderPreviewModel: ImportProgressQueueContinuing {
             didStopAfterCurrentFile: didStopAfterCurrentFile,
             fatalRetryContext: fatalRetryContext
         )
+    }
+}
+
+private struct ImportFolderContinuationInput {
+    let request: ImportEntryRequest
+    let retryEntry: FileEntrySnapshot
+    let retryPath: String
+    let traceID: String
+    let controlState: ImportProgressControlState
+}
+
+private struct ImportFolderContinuationRunState {
+    var completed = 1
+    var failed = 0
+    var succeededEntries: [FileEntrySnapshot]
+    var lastImportedPath: String
+    var didStopAfterCurrentFile = false
+
+    init(retryEntry: FileEntrySnapshot, retryPath: String) {
+        succeededEntries = [retryEntry]
+        lastImportedPath = retryPath
+    }
+
+    mutating func absorb(_ cycle: ImportBatchCopyCycleResult) {
+        completed = cycle.completed
+        failed = cycle.failed
+        lastImportedPath = cycle.lastImportedPath ?? lastImportedPath
+        if let entry = cycle.entry {
+            succeededEntries.append(entry)
+        }
     }
 }

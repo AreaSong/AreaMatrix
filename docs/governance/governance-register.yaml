@@ -1061,6 +1061,7 @@ repo_domains:
     review_triggers:
       - dependency-or-build-config-changed
     paths:
+      - .cargo/
       - core/
   - domain: core-api-contract
     owner: "@AreaSong"
@@ -1127,6 +1128,7 @@ repo_domains:
       - target-membership-or-build-settings-changed
     paths:
       - apps/macos/AreaMatrix.xcodeproj/
+      - apps/macos/AreaMatrix-Functional.xctestplan
   - domain: ios-port
     owner: "@AreaSong"
     status: active
@@ -1593,6 +1595,12 @@ cross_cutting_test_families:
   - family: release_evidence
     owner: "@AreaSong"
     purpose: release evidence checklist and residual ledger pinning tests spanning docs and workflow sources
+  - family: rust_file_size_governance
+    owner: "@AreaSong"
+    purpose: exact legacy budgets and no-growth enforcement for oversized Rust production and test sources
+  - family: rust_architecture_governance
+    owner: "@AreaSong"
+    purpose: executable Core layer dependency-direction and platform-neutrality boundaries
 macos_features:
   - feature: AI
     owner: "@AreaSong"

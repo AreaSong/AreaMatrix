@@ -13,7 +13,7 @@ docs:
     line_end: 1714
     heading: 'AM-GOV-REGISTER-001'
     excerpt: 'id: AM-GOV-REGISTER-001'
-    sha256: '088ab8c1f33358644bcdbaeb51aed22bc4be7d1beb838f364d72d88c2cff8d95'
+    sha256: '6d7e98f31ab8ed91cafbcea5ab08a6e5e8ad3d906f55c9403279348a1e598f9a'
     source: 'changes:v2-asw-governance-adoption'
   - file: 'docs/governance/project-charter.md'
     line_start: 1
@@ -45,10 +45,10 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/development/ci-governance.md'
     line_start: 1
-    line_end: 160
+    line_end: 170
     heading: ''
     excerpt: '# CI Governance'
-    sha256: 'd85fb297f61fbfa4df875d37d445dc0ac6642763f49f15a6480d186b6641923d'
+    sha256: 'ec81ddaf18d78cea10e3c97e1943ca40205cb29a125802e288557cf60f0ef79d'
     source: 'discussion:exact_docs'
   - file: 'workflow/README.md'
     line_start: 1

@@ -1,6 +1,6 @@
 # 构建与运行
 
-> 详解 AreaMatrix 的构建流水线：Rust core → universal staticlib → Swift bindings → Xcode app。
+> 详解 AreaMatrix 的构建流水线：Rust core → fingerprinted CoreSDK XCFramework → Swift clients。
 >
 > 阅读时长：约 5 分钟。
 
@@ -15,17 +15,19 @@ flowchart LR
     UDL --> Scaffold[build.rs<br/>uniffi scaffolding]
     Scaffold --> Cargo
     RS --> Cargo[cargo build]
-    Cargo --> ARM[libarea_matrix_core.a aarch64]
-    Cargo --> X86[libarea_matrix_core.a x86_64]
-    ARM --> Lipo[lipo merge]
-    X86 --> Lipo
-    Lipo --> Universal[Universal staticlib]
+    Cargo --> Mac[macOS universal]
+    Cargo --> IOS[iOS device]
+    Cargo --> Sim[iOS simulator universal]
     UDL --> BindGen[uniffi-bindgen]
     BindGen --> SwiftFile[area_matrix.swift]
     BindGen --> Header[area_matrixFFI.h]
-    Universal --> XcodeBuild
-    SwiftFile --> XcodeBuild
-    Header --> XcodeBuild
+    Mac --> XCFramework[AreaMatrixCoreFFI.xcframework]
+    IOS --> XCFramework
+    Sim --> XCFramework
+    SwiftFile --> CoreSDK[AreaMatrixCoreSDK Package]
+    Header --> XCFramework
+    XCFramework --> XcodeBuild
+    CoreSDK --> SwiftPM[Swift Package clients]
     XcodeBuild[xcodebuild] --> App[AreaMatrix.app]
 ```
 
@@ -51,7 +53,31 @@ flowchart LR
 
 默认输出目录 `apps/macos/AreaMatrix/Bridge/Generated/` 是 `.gitignore` 忽略的本地生成产物目录，
 用于检查 universal staticlib 与最新 bindings。当前 Xcode 工程消费的 tracked bindings 位于
-`apps/macos/AreaMatrix/Bridge/UniFFI/`，并直接链接 `core/target/aarch64-apple-darwin/<profile>/libarea_matrix_core.a`。
+`apps/macos/AreaMatrix/Bridge/UniFFI/`。Cargo 产物按用途隔离，避免 Xcode 与验证命令竞争同一个
+artifact lock：
+
+```text
+.build/cargo/
+├── xcode/       # ./dev build xcode-core 的定向诊断产物
+├── validation/  # check / clippy / test / coverage
+├── sdk/         # CoreSDK、bindings 与 Xcode Prepare CoreSDK cache miss
+└── release/     # release readiness / distribution build
+```
+
+仓库级 `.cargo/config.toml` 把未显式覆盖的本地 `cargo check`、`cargo clippy`、`cargo test`
+和其他临时 Cargo 命令默认路由到 `validation` lane。`./dev build core` 默认使用 `sdk` lane；
+CoreSDK、Xcode 和 release 工具通过显式 `CARGO_TARGET_DIR` 选择各自 lane，优先级高于仓库默认值。
+不要把本地验证命令指向 `xcode`、`sdk` 或 `release` lane。
+
+每个 lane 还有仓库级 single-flight lock。不同 lane 可以并行，互不争抢 Cargo artifact directory；同一
+lane 的生产者会输出 `WAIT` / `ACQUIRED` 和等待时间。CoreSDK 等待获取 `sdk` lock 后会再次检查内容缓存，
+若前一个进程已经生成相同 fingerprint，后一个进程返回 `HIT-AFTER-WAIT`，不重复构建。
+
+Apple 客户端使用 `./dev build core-sdk`。该命令以 Rust/UDL、锁文件、toolchain、Xcode 版本、
+target 和 deployment target 计算内容指纹；命中 `.build/core-sdk/<fingerprint>/` 时不运行 Cargo。
+产物包含 macOS universal、iOS device 和 iOS simulator XCFramework slices，以及可独立编译的
+`AreaMatrixCoreSDK` Swift Package。稳定入口为 `.build/core-sdk/current`；iOS Package 通过
+`apps/ios/.core-sdk` 指针消费同一份二进制产物。
 
 常用参数：
 
@@ -60,7 +86,13 @@ flowchart LR
 ./dev build core --profile debug
 ./dev build core --out-dir /tmp/areamatrix-generated
 ./dev build core --deployment-target 14.0
+./dev build core-sdk
+./dev build core-sdk --verify-only   # 只校验恢复后的 symlink、manifest 与 XCFramework slices
+./dev build core-sdk --force         # 原子替换同一 fingerprint 的生成缓存，用于诊断
 ```
+
+自定义 `--macos-deployment-target` / `--ios-deployment-target` 会同时进入 Cargo 环境、fingerprint 和
+生成的 `Package.swift` platform 声明，不能出现二进制与 Swift Package 最低系统版本不一致。
 
 ---
 
@@ -95,11 +127,14 @@ sha2 = "0.10"
 walkdir = "2"
 chrono = { version = "0.4", features = ["serde"] }
 tracing = "0.1"
+tracing-appender = "0.2.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unicode-normalization = "0.1"
 regex = "1"
-trash = "5"
 uuid = { version = "1", features = ["v4"] }
+
+[target.'cfg(any(target_os = "macos", target_os = "windows", target_os = "linux", target_os = "freebsd"))'.dependencies]
+trash = "5"
 
 [build-dependencies]
 uniffi = { version = "0.28", features = ["build"] }
@@ -117,21 +152,42 @@ pretty_assertions = "1"
 
 ```rust
 fn main() {
+    println!("cargo:rustc-check-cfg=cfg(areamatrix_system_trash)");
+
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS")
+        .expect("Cargo must provide CARGO_CFG_TARGET_OS to build scripts");
+    if matches!(
+        target_os.as_str(),
+        "macos" | "windows" | "linux" | "freebsd"
+    ) {
+        println!("cargo:rustc-cfg=areamatrix_system_trash");
+    }
+
+    println!("cargo:rerun-if-changed=area_matrix.udl");
+    println!("cargo:rerun-if-changed=uniffi.toml");
     uniffi::generate_scaffolding("./area_matrix.udl").expect("generate UniFFI scaffolding");
 }
 ```
+
+平台支持列表只在 Cargo 构建配置中解析并投影为 `areamatrix_system_trash`；storage 源码只消费该
+能力 cfg，不直接识别 macOS 或其他桌面操作系统。未启用该能力的平台返回明确的 unsupported 配置错误。
 
 ---
 
 ## Xcode 集成
 
-当前 `apps/macos/AreaMatrix.xcodeproj` 已配置好 Core 静态库和 tracked UniFFI bindings：
+当前 `apps/macos/AreaMatrix.xcodeproj` 已配置好 CoreSDK XCFramework 和 tracked UniFFI bindings：
 
-- Build Phase `Build Core Static Library` 构建 `core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)/libarea_matrix_core.a`。
-- `LIBRARY_SEARCH_PATHS` 指向 `$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)`。
-- `OTHER_LDFLAGS` 使用 `-larea_matrix_core`。
+- `Frameworks` Build Phase 链接 `.build/core-sdk/current/AreaMatrixCoreFFI.xcframework`，不再链接裸
+  `core/target` 或手写 `-L`/`-larea_matrix_core`。
+- `Prepare CoreSDK` Build Phase 调用 `./dev build core-sdk`；Rust/UDL 和打包器未变化时由 Xcode
+  依赖分析跳过，即使执行命令也只发生 fingerprint cache hit。
+- 该 Build Phase 启用 dependency analysis，以 Cargo/UDL/构建脚本为输入、CoreSDK manifest 为输出，并由
+  dependency file 补齐递归 Rust 源文件；不再使用 Always Out Of Date。
 - Swift source 引用 `AreaMatrix/Bridge/UniFFI/area_matrix.swift`。
 - Bridging header 引用 `Bridge/UniFFI/area_matrixFFI.h`。
+- `apps/ios/Package.swift` 的 `Carea_matrixFFI` binary target 消费同一个 XCFramework，不再硬编码
+  本机 Cargo debug 路径。
 
 ### 更新 tracked bindings
 
@@ -170,8 +226,7 @@ metadata probe 直接以只读方式打开 SQLite，不经过 Core 写路径。
 
 - `Objective-C Bridging Header` → `AreaMatrix/AreaMatrix-Bridging-Header.h`
 - `Header Search Paths` → `$(SRCROOT)/AreaMatrix/Bridge/UniFFI`
-- `Library Search Paths` → `$(SRCROOT)/../../core/target/aarch64-apple-darwin/$(AREAMATRIX_CORE_PROFILE)`
-- `Other Linker Flags` → `-larea_matrix_core`
+- Frameworks → `.build/core-sdk/current/AreaMatrixCoreFFI.xcframework`
 
 ---
 
@@ -213,20 +268,68 @@ panic = "abort"
 ### 改 Rust 代码（不动 UDL）
 
 ```bash
-./dev build core   # ~30s 增量
-# 然后 Xcode 自动检测 staticlib 改动并重新链接
+./dev test changed --list   # 先查看受影响验证层
+./dev build core-sdk        # 可选预热；Xcode 也会在 fingerprint miss 时构建一次
 ```
+
+CoreSDK fingerprint 改变时只生成一次新的 XCFramework；随后 Xcode 重新链接。相同输入再次 Build、Run 或
+Test 时，Xcode 依赖分析直接跳过 `Prepare CoreSDK`，或者命中同一个内容缓存。
 
 ### 改 UDL
 
 ```bash
-./dev build core   # ~45s 增量（含 bindings 重生成）
-# Xcode 重新编译 area_matrix.swift
+./dev build core-sdk
+./dev bindings update --udl core/area_matrix.udl --out-dir apps/macos/AreaMatrix/Bridge/UniFFI
+./dev bindings verify
 ```
+
+UDL 是公开合同变化：除 CoreSDK 失效外，还必须更新 Xcode 实际消费的 tracked Swift bindings，并让 Apple
+客户端重新编译。不要只更新 `.build/core-sdk` 中的生成文件。
 
 ### 只改 Swift
 
-直接 Xcode ⌘R。
+直接 Xcode ⌘R。Rust/UDL 与 CoreSDK 打包输入未变化时，Xcode 会跳过 `Prepare CoreSDK`，不会启动 Cargo。
+
+### SwiftUI 可视化开发
+
+单个组件优先使用 Xcode Canvas 中的 `#Preview`。设计令牌和通用组件可以从
+`AreaMatrixPreviewSupport.swift` 中的 light/dark UI Catalog 预览集中查看，不会启动资料库、
+Repository 或 Core service。
+
+需要验证真实窗口、滚动和控件交互时，使用统一开发入口。它复用
+`.build/derived-data/macos-run/`，避免每个场景重新创建 DerivedData：
+
+```bash
+./dev run macos --scenario ui-catalog
+./dev run macos --scenario ui-catalog-dark
+./dev run macos --scenario onboarding
+./dev run macos --scenario onboarding-dark
+./dev run macos --scenario settings-language
+./dev run macos --scenario settings-language-dark
+```
+
+未知场景名 fail closed 到正常应用根视图。这些入口只在 `DEBUG` 编译中存在，不进入
+Release 产品路径，也不能替代真实 feature 测试。已有 Debug 产品可使用 `--no-build`；只验证构建产物而不
+启动窗口可使用 `--build-only`。
+
+### 高频诊断与按变更验证
+
+```bash
+./dev doctor build        # Cargo lanes、lock metadata、Xcode 增量输入输出和 CoreSDK 完整性
+./dev test changed --list # 只显示当前工作树将触发的验证层
+./dev test changed        # 执行对应 developer tools / Rust / macOS / iOS / docs-governance 门禁
+```
+
+### 本地 Rust 验证
+
+为避免与 Xcode 竞争 artifact lock，使用 validation lane：
+
+```bash
+export CARGO_TARGET_DIR="$PWD/.build/cargo/validation"
+cargo check --manifest-path core/Cargo.toml --all-targets --all-features
+cargo clippy --manifest-path core/Cargo.toml --all-targets --all-features -- -D warnings
+cargo test --manifest-path core/Cargo.toml --workspace --all-features
+```
 
 ---
 
@@ -240,10 +343,11 @@ CI 在 macos-14 runner 上执行：
 2. `cargo clippy --all-targets --all-features -- -D warnings`
 3. `cargo test --all-features --workspace`
 4. `cargo llvm-cov --fail-under-lines 70`
-5. `./dev build core`
-6. `./dev test macos`
-7. `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore`
-8. `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache`
+5. `./dev build core-sdk`，上传并在 Xcode job 复用同一 CoreSDK artifact
+6. `./dev bindings verify`
+7. `./dev test macos`
+8. `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore`
+9. `cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache`
 
 PR 要全绿才能合并。
 
@@ -300,6 +404,14 @@ hdiutil create -volname "AreaMatrix" -srcfolder build/Build/Products/Release/Are
 ---
 
 ## 故障排查
+
+### Cargo artifact directory lock 长时间等待
+
+先运行 `./dev doctor build`，确认四个 lane 解析到不同目录、Xcode 没有 Always Out Of Date Build Phase，并检查
+`.build/locks/cargo/` 中的 operation 与 wait time。普通 `cargo check` / `clippy` / `test` 应留在默认
+`validation` lane，Xcode 应只消费 `sdk` lane 的 CoreSDK。相同 SDK 请求短暂等待后出现
+`HIT-AFTER-WAIT` 属于正常去重；跨 lane 持续等待则说明调用方覆盖了 `CARGO_TARGET_DIR`，应修正入口而不是
+删除 Cargo lock 或强制终止所有构建进程。
 
 ### 缺少 macOS universal build Rust target
 

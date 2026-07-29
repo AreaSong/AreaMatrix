@@ -142,7 +142,7 @@ private func assertAdvancedSettingsDiagnosticsAndOverview(_ context: AdvancedSet
             "v3",
             "GeneratedOnly",
             "false"
-        ),
+        )
     ])
 }
 

@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import os
 import subprocess
 import tempfile
+import time
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.dev_tools import build, checks
+from scripts.dev_tools import artifacts, build, checks
 from scripts.dev_tools.common import ToolError
 from scripts.dev_tools.wording import audit_wording
 from scripts.task_loop import console
@@ -20,6 +22,142 @@ from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopRunner
 
 
 class BuildToolsTest(unittest.TestCase):
+    def test_repository_cargo_config_routes_ad_hoc_commands_to_validation_lane(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        config = (root / ".cargo/config.toml").read_text(encoding="utf-8")
+
+        self.assertIn('target-dir = ".build/cargo/validation"', config)
+
+    def test_cargo_artifact_lanes_are_isolated_and_root_relative(self) -> None:
+        root = Path("/repo")
+
+        self.assertEqual(artifacts.cargo_target_dir(root, lane="xcode"), Path("/repo/.build/cargo/xcode"))
+        self.assertEqual(artifacts.cargo_target_dir(root, lane="sdk"), Path("/repo/.build/cargo/sdk"))
+        self.assertNotEqual(
+            artifacts.cargo_target_dir(root, lane="xcode"),
+            artifacts.cargo_target_dir(root, lane="validation"),
+        )
+
+    def test_cargo_lane_lock_serializes_independent_processes(self) -> None:
+        child_script = """
+import os
+import sys
+import time
+from pathlib import Path
+from scripts.dev_tools.artifacts import cargo_lane_lock
+
+root = Path(sys.argv[1])
+events = Path(sys.argv[2])
+operation = sys.argv[3]
+hold_seconds = float(sys.argv[4])
+
+def record(value: str) -> None:
+    descriptor = os.open(events, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    try:
+        os.write(descriptor, f"{value}\\n".encode("utf-8"))
+    finally:
+        os.close(descriptor)
+
+with cargo_lane_lock(root, lane="sdk", operation=operation, poll_interval=0.01):
+    record(f"{operation}:enter")
+    time.sleep(hold_seconds)
+    record(f"{operation}:exit")
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            events = root / "events.log"
+            repo_root = Path(__file__).resolve().parents[2]
+            child_env = os.environ.copy()
+            child_env["PYTHONDONTWRITEBYTECODE"] = "1"
+            child_env["PYTHONPATH"] = os.pathsep.join(
+                part for part in (str(repo_root), child_env.get("PYTHONPATH", "")) if part
+            )
+
+            first = subprocess.Popen(
+                ["python3", "-c", child_script, str(root), str(events), "first", "0.35"],
+                cwd=repo_root,
+                env=child_env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                if events.is_file() and "first:enter" in events.read_text(encoding="utf-8"):
+                    break
+                if first.poll() is not None:
+                    stdout, stderr = first.communicate()
+                    self.fail(f"first lock process exited early:\n{stdout}\n{stderr}")
+                time.sleep(0.01)
+            else:
+                first.kill()
+                self.fail("first lock process did not acquire the sdk lane")
+
+            second = subprocess.Popen(
+                ["python3", "-c", child_script, str(root), str(events), "second", "0"],
+                cwd=repo_root,
+                env=child_env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            first_stdout, first_stderr = first.communicate(timeout=5)
+            second_stdout, second_stderr = second.communicate(timeout=5)
+
+            self.assertEqual(first.returncode, 0, f"{first_stdout}\n{first_stderr}")
+            self.assertEqual(second.returncode, 0, f"{second_stdout}\n{second_stderr}")
+            self.assertEqual(
+                events.read_text(encoding="utf-8").splitlines(),
+                ["first:enter", "first:exit", "second:enter", "second:exit"],
+            )
+            metadata = json.loads(
+                (root / ".build/locks/cargo/sdk.lock").read_text(encoding="utf-8")
+            )
+            self.assertEqual(metadata["operation"], "second")
+            self.assertEqual(metadata["state"], "released")
+            self.assertGreater(metadata["wait_seconds"], 0.1)
+
+    def test_xcode_core_build_uses_isolated_lane_and_writes_dependency_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            core = root / "core"
+            source = core / "src/lib.rs"
+            source.parent.mkdir(parents=True)
+            source.write_text("pub fn value() -> u8 { 1 }\n", encoding="utf-8")
+            for relative, content in {
+                "Cargo.toml": '[package]\nname = "area_matrix_core"\n',
+                "Cargo.lock": "version = 3\n",
+                "build.rs": "fn main() {}\n",
+                "area_matrix.udl": "namespace area_matrix {};\n",
+                "uniffi.toml": "[bindings.swift]\n",
+            }.items():
+                (core / relative).write_text(content, encoding="utf-8")
+
+            captured_env: dict[str, str] = {}
+
+            def fake_run_step(_argv: list[object], *, env: dict[str, str], **_kwargs: object) -> object:
+                captured_env.update(env)
+                output = Path(env["CARGO_TARGET_DIR"]) / "aarch64-apple-darwin/debug/libarea_matrix_core.a"
+                output.parent.mkdir(parents=True)
+                output.write_bytes(b"staticlib")
+                return type("Completed", (), {"returncode": 0})()
+
+            dependency_file = root / ".build/derived/AreaMatrixCoreBuild.d"
+            with (
+                patch("scripts.dev_tools.build.require_command"),
+                patch("scripts.dev_tools.build._require_rust_target"),
+                patch("scripts.dev_tools.build.run_step", side_effect=fake_run_step),
+            ):
+                self.assertEqual(
+                    build.run_xcode_core_build(root, dependency_file=dependency_file),
+                    0,
+                )
+
+            self.assertEqual(captured_env["CARGO_TARGET_DIR"], str((root / ".build/cargo/xcode").resolve()))
+            dependency_text = dependency_file.read_text(encoding="utf-8")
+            self.assertIn("libarea_matrix_core.a:", dependency_text)
+            self.assertIn(str(source), dependency_text)
+
     def _write_enterprise_governance_fixture(
         self,
         root: Path,
@@ -230,7 +368,7 @@ documents:
         )
         udl = core_dir / "area_matrix.udl"
         udl.write_text("namespace area_matrix {}\n", encoding="utf-8")
-        bindgen_library = core_dir / "target/aarch64-apple-darwin/release/libarea_matrix_core.dylib"
+        bindgen_library = root / ".build/cargo/sdk/aarch64-apple-darwin/release/libarea_matrix_core.dylib"
         bindgen_library.parent.mkdir(parents=True)
         bindgen_library.write_bytes(b"host dylib")
         tracked_dir = root / build.DEFAULT_TRACKED_BINDINGS_DIR
@@ -441,7 +579,7 @@ private var initializationResult: InitializationResult = {
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             self._write_bindings_fixture(root)
-            bindgen_library = root / "core/target/aarch64-apple-darwin/release/libarea_matrix_core.dylib"
+            bindgen_library = root / ".build/cargo/sdk/aarch64-apple-darwin/release/libarea_matrix_core.dylib"
             bindgen_library.unlink()
 
             with (
@@ -1023,7 +1161,20 @@ repo_domains:
             checks._check_repo_domain_coverage(root, failures)
 
             self.assertEqual(failures.count, 1)
-            self.assertIn("matches no tracked file: missing/", stderr.getvalue())
+            self.assertIn("matches no repository file: missing/", stderr.getvalue())
+
+    def test_repo_domain_coverage_rejects_unowned_untracked_file(self) -> None:
+        stderr = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stderr(stderr):
+            root = Path(tmp)
+            self._write_repo_domain_git_fixture(root)
+            (root / "unowned-new-file.txt").write_text("new\n", encoding="utf-8")
+            failures = checks.FailureCollector()
+
+            checks._check_repo_domain_coverage(root, failures)
+
+            self.assertEqual(failures.count, 1)
+            self.assertIn("missing an owner for unowned-new-file.txt", stderr.getvalue())
 
     def test_repo_domain_coverage_rejects_duplicate_pattern(self) -> None:
         stderr = io.StringIO()
