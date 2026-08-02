@@ -51,6 +51,7 @@ struct AreaMatrixFeatureCard: View {
     let onHoverChanged: (Bool) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
     @State private var hasEntered = false
     @State private var hoverPoint = UnitPoint.center
     @FocusState private var isFocused: Bool
@@ -79,7 +80,7 @@ struct AreaMatrixFeatureCard: View {
             .focusEffectDisabled()
             .onChange(of: isFocused) { _, focused in
                 if focused {
-                    AppPlatformServices.interactionFeedback.performHaptic(.alignment)
+                    interactionFeedback.performHaptic(.alignment)
                 }
                 onHoverChanged(focused)
             }
@@ -230,7 +231,7 @@ struct AreaMatrixFeatureCard: View {
                 y: max(0, min(1, location.y / max(size.height, 1)))
             )
             if !isHovered {
-                AppPlatformServices.interactionFeedback.performHaptic(.levelChange)
+                interactionFeedback.performHaptic(.levelChange)
                 onHoverChanged(true)
             }
         case .ended:

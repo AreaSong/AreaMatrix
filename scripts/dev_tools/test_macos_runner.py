@@ -395,19 +395,31 @@ class MacOSTestRunnerTest(unittest.TestCase):
         self.assertEqual(_handle_release_app_launch_probe_result(42), 42)
 
     def test_performance_tests_are_enabled_only_for_explicit_perf_selection(self) -> None:
-        self.assertIsNone(_xcode_test_env([]))
-        self.assertIsNone(_xcode_test_env(["AreaMatrixTests/AISummaryPrivacyRuleTests"]))
+        self.assertEqual(_xcode_test_env([]), {"AREAMATRIX_TEST_MODE": "1"})
+        self.assertEqual(
+            _xcode_test_env(["AreaMatrixTests/AISummaryPrivacyRuleTests"]),
+            {"AREAMATRIX_TEST_MODE": "1"},
+        )
         self.assertEqual(
             _xcode_test_env(["AreaMatrixTests/AreaMatrixPerfTests"]),
-            {"AREAMATRIX_RUN_PERF_TESTS": "1"},
+            {
+                "AREAMATRIX_TEST_MODE": "1",
+                "AREAMATRIX_RUN_PERF_TESTS": "1",
+            },
         )
         self.assertEqual(
             _xcode_test_env(["AreaMatrixTests/AreaMatrixPerfTests/testMemoryBaselinesUnderReleaseThresholds"]),
-            {"AREAMATRIX_RUN_PERF_TESTS": "1"},
+            {
+                "AREAMATRIX_TEST_MODE": "1",
+                "AREAMATRIX_RUN_PERF_TESTS": "1",
+            },
         )
         self.assertEqual(
             _xcode_test_env(["AreaMatrixTests/ObservabilityPerformanceTests"]),
-            {"AREAMATRIX_RUN_PERF_TESTS": "1"},
+            {
+                "AREAMATRIX_TEST_MODE": "1",
+                "AREAMATRIX_RUN_PERF_TESTS": "1",
+            },
         )
 
     def test_nested_test_bundle_resolves_host_app_products_directory(self) -> None:

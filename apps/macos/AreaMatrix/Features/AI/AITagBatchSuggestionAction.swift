@@ -3,7 +3,7 @@ import Foundation
 enum AITagBatchSuggestionAction {
     static func initialReview(
         files: [FileEntrySnapshot],
-        reports: [Int64: AiTagSuggestionReport],
+        reports: [Int64: AITagSuggestionReportSnapshot],
         loadFailures: [Int64: CoreErrorMappingSnapshot] = [:]
     ) -> AITagBatchSuggestionReview {
         AITagBatchSuggestionReview(

@@ -306,7 +306,10 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
         )
         let model = makeImportSingleFilePreviewModel(
             importer: bridge,
-            preflight: CoreImportSingleFilePreflight()
+            preflight: CoreImportSingleFilePreflight(
+                fileLoader: CoreBridgeBatchFileLoader(fileLister: bridge),
+                sourceInspector: ImportPlatformServices.sourcePreflightInspector
+            )
         )
 
         await model.load(request: .importSingleFileImportRequest(
@@ -353,7 +356,10 @@ final class SingleFileImportRecoveryIntegrationTests: XCTestCase {
 
         let model = makeImportSingleFilePreviewModel(
             importer: bridge,
-            preflight: CoreImportSingleFilePreflight()
+            preflight: CoreImportSingleFilePreflight(
+                fileLoader: CoreBridgeBatchFileLoader(fileLister: bridge),
+                sourceInspector: ImportPlatformServices.sourcePreflightInspector
+            )
         )
         await model.load(request: .importSingleFileImportRequest(
             repoPath: repoURL.path,

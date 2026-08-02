@@ -162,7 +162,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
         let localizer = AppLocalizer(runtime: AppLanguageRuntime(selection: .en))
 
         XCTAssertEqual(status.primaryAction, .buildSemanticIndex)
-        XCTAssertEqual(status.nonAiFallbackAction, .useNormalSearch)
+        XCTAssertEqual(status.nonAIFallbackAction, .useNormalSearch)
         XCTAssertEqual(status.actions, [.buildSemanticIndex, .useNormalSearch])
         XCTAssertTrue(status.canBuildSemanticIndex)
         XCTAssertEqual(localizer.resolve(status.title), "Semantic index is not ready")

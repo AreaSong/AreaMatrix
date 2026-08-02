@@ -97,8 +97,8 @@ struct ICloudConflictResolutionBlocker: Equatable {
     var suggestedAction: String
     var rawContext: String
 
-    var coreError: CoreError {
-        CoreError.Internal(message: rawContext)
+    var error: AppSemanticError {
+        .internalFailure(rawContext: rawContext)
     }
 
     static let missingCoreResolutionEndpoint = ICloudConflictResolutionBlocker(

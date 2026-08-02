@@ -30,6 +30,7 @@ struct ClassifierRuleHandoffRouteView: View {
     let repoPath: String
     let handoff: ClassifierRuleHandoff
     let ruleSaver: any CoreClassifierRuleSaving
+    let previewer: any CoreClassifierImpactPreviewing
     let errorMapper: any CoreErrorMapping
     let onCancel: () -> Void
     let onBack: (ClassifierRuleHandoff) -> Void
@@ -41,8 +42,9 @@ struct ClassifierRuleHandoffRouteView: View {
         mode: Mode,
         repoPath: String,
         handoff: ClassifierRuleHandoff,
-        ruleSaver: any CoreClassifierRuleSaving = AppCoreServices.classifierRuleSaver,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        ruleSaver: any CoreClassifierRuleSaving,
+        previewer: any CoreClassifierImpactPreviewing,
+        errorMapper: any CoreErrorMapping,
         onCancel: @escaping () -> Void,
         onBack: @escaping (ClassifierRuleHandoff) -> Void,
         onPreviewImpact: @escaping (ClassifierRuleHandoff) -> Void,
@@ -52,6 +54,7 @@ struct ClassifierRuleHandoffRouteView: View {
         self.repoPath = repoPath
         self.handoff = handoff
         self.ruleSaver = ruleSaver
+        self.previewer = previewer
         self.errorMapper = errorMapper
         self.onCancel = onCancel
         self.onBack = onBack
@@ -65,6 +68,8 @@ struct ClassifierRuleHandoffRouteView: View {
             ClassifierImpactPreviewSheet(
                 repoPath: repoPath,
                 handoff: handoff,
+                previewer: previewer,
+                errorMapper: errorMapper,
                 onCancel: onCancel,
                 onBack: onBack
             )

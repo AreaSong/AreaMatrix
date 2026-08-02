@@ -3,7 +3,7 @@ import XCTest
 
 struct AITagSuggestionBridgeRequests {
     let suggest: [AITagSuggestionRequestSnapshot]
-    let apply: [ApplyAiTagSuggestionsRequest]
+    let apply: [ApplyAITagSuggestionsRequestSnapshot]
 
     func assertNoAITagSuggestionRequests(
         file: StaticString = #filePath,
@@ -208,18 +208,18 @@ extension AITagSuggestionBridgeRequestRecording {
 }
 
 actor AITagSuggestionAITagBridge: CoreAITagSuggestionManaging, AITagSuggestionBridgeRequestRecording {
-    private let report: AiTagSuggestionReport
+    private let report: AITagSuggestionReportSnapshot
     private var suggestRequests: [AITagSuggestionRequestSnapshot] = []
-    private var applyRequests: [ApplyAiTagSuggestionsRequest] = []
+    private var applyRequests: [ApplyAITagSuggestionsRequestSnapshot] = []
 
-    init(_ report: AiTagSuggestionReport) {
+    init(_ report: AITagSuggestionReportSnapshot) {
         self.report = report
     }
 
     func suggestTagsWithAI(
         repoPath: String,
         request: AITagSuggestionRequestSnapshot
-    ) async throws -> AiTagSuggestionReport {
+    ) async throws -> AITagSuggestionReportSnapshot {
         XCTAssertEqual(repoPath, "/tmp/repo")
         suggestRequests.append(request)
         return report
@@ -227,8 +227,8 @@ actor AITagSuggestionAITagBridge: CoreAITagSuggestionManaging, AITagSuggestionBr
 
     func applyAITagSuggestions(
         repoPath: String,
-        request: ApplyAiTagSuggestionsRequest
-    ) async throws -> AiTagSuggestionApplyReport {
+        request: ApplyAITagSuggestionsRequestSnapshot
+    ) async throws -> AITagSuggestionApplyReportSnapshot {
         XCTAssertEqual(repoPath, "/tmp/repo")
         applyRequests.append(request)
         return aiTagSuggestionApplyReport(fileID: request.fileId)
@@ -240,14 +240,14 @@ actor AITagSuggestionAITagBridge: CoreAITagSuggestionManaging, AITagSuggestionBr
 }
 
 actor AITagSuggestionBatchAITagBridge: CoreAITagSuggestionManaging, AITagSuggestionBridgeRequestRecording {
-    private let reports: [Int64: AiTagSuggestionReport]
-    private let applyReports: [Int64: AiTagSuggestionApplyReport]
+    private let reports: [Int64: AITagSuggestionReportSnapshot]
+    private let applyReports: [Int64: AITagSuggestionApplyReportSnapshot]
     private var suggestRequests: [AITagSuggestionRequestSnapshot] = []
-    private var applyRequests: [ApplyAiTagSuggestionsRequest] = []
+    private var applyRequests: [ApplyAITagSuggestionsRequestSnapshot] = []
 
     init(
-        reports: [Int64: AiTagSuggestionReport],
-        applyReports: [Int64: AiTagSuggestionApplyReport] = [:]
+        reports: [Int64: AITagSuggestionReportSnapshot],
+        applyReports: [Int64: AITagSuggestionApplyReportSnapshot] = [:]
     ) {
         self.reports = reports
         self.applyReports = applyReports
@@ -256,7 +256,7 @@ actor AITagSuggestionBatchAITagBridge: CoreAITagSuggestionManaging, AITagSuggest
     func suggestTagsWithAI(
         repoPath: String,
         request: AITagSuggestionRequestSnapshot
-    ) async throws -> AiTagSuggestionReport {
+    ) async throws -> AITagSuggestionReportSnapshot {
         XCTAssertEqual(repoPath, "/tmp/repo")
         suggestRequests.append(request)
         guard let report = reports[request.fileID] else {
@@ -267,8 +267,8 @@ actor AITagSuggestionBatchAITagBridge: CoreAITagSuggestionManaging, AITagSuggest
 
     func applyAITagSuggestions(
         repoPath: String,
-        request: ApplyAiTagSuggestionsRequest
-    ) async throws -> AiTagSuggestionApplyReport {
+        request: ApplyAITagSuggestionsRequestSnapshot
+    ) async throws -> AITagSuggestionApplyReportSnapshot {
         XCTAssertEqual(repoPath, "/tmp/repo")
         applyRequests.append(request)
         return applyReports[request.fileId] ?? aiTagSuggestionBatchApplyReport(

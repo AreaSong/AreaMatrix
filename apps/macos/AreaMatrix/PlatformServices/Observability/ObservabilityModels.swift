@@ -39,7 +39,7 @@ struct ObservabilityBuildContextSnapshot: Equatable {
 enum AppObservabilitySeverity: String, Codable, CaseIterable {
     case trace, debug, info, warn, error
 
-    var coreSeverity: ObservabilitySeverity {
+    var coreSnapshot: CoreObservabilitySeveritySnapshot {
         switch self {
         case .trace: .trace
         case .debug: .debug

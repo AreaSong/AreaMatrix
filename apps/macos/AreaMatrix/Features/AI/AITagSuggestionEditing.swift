@@ -29,9 +29,9 @@ struct AITagSuggestionEditDraft: Equatable, Identifiable {
         suggestionID
     }
 
-    var applyItem: ApplyAiTagSuggestionItem {
+    var applyItem: ApplyAITagSuggestionItemSnapshot {
         let cleanName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return ApplyAiTagSuggestionItem(
+        return ApplyAITagSuggestionItemSnapshot(
             suggestionId: suggestionID,
             slug: slug,
             displayName: cleanName.isEmpty ? slug : cleanName,
@@ -53,34 +53,34 @@ struct AITagSuggestionEditSession: Equatable {
         !drafts.isEmpty && drafts.allSatisfy { !$0.status.preventsApply }
     }
 
-    var applyItems: [ApplyAiTagSuggestionItem] {
+    var applyItems: [ApplyAITagSuggestionItemSnapshot] {
         canApply ? drafts.map(\.applyItem) : []
     }
 }
 
 enum AITagSuggestionAction {
-    static func canApply(_ suggestion: AiTagSuggestion) -> Bool {
+    static func canApply(_ suggestion: AITagSuggestionSnapshot) -> Bool {
         suggestion.status == .suggested && suggestion.disabledReason == nil
     }
 
-    static func initialSelection(in report: AiTagSuggestionReport) -> Set<String> {
+    static func initialSelection(in report: AITagSuggestionReportSnapshot) -> Set<String> {
         Set(report.suggestions.filter { $0.selectedByDefault && canApply($0) }.map(\.suggestionId))
     }
 
-    static func selectedApplyItems(in state: AITagSuggestionState) -> [ApplyAiTagSuggestionItem] {
+    static func selectedApplyItems(in state: AITagSuggestionState) -> [ApplyAITagSuggestionItemSnapshot] {
         guard let report = state.report else { return [] }
         return report.suggestions.compactMap { suggestion in
             guard state.selectedIDs.contains(suggestion.suggestionId), canApply(suggestion) else { return nil }
-            return ApplyAiTagSuggestionItem(suggestion: suggestion, editedByUser: false)
+            return ApplyAITagSuggestionItemSnapshot(suggestion: suggestion, editedByUser: false)
         }
     }
 
-    static func applyItem(suggestionID: String, in state: AITagSuggestionState) -> ApplyAiTagSuggestionItem? {
+    static func applyItem(suggestionID: String, in state: AITagSuggestionState) -> ApplyAITagSuggestionItemSnapshot? {
         guard let suggestion = state.report?.suggestions.first(where: { $0.suggestionId == suggestionID }),
               canApply(suggestion) else {
             return nil
         }
-        return ApplyAiTagSuggestionItem(suggestion: suggestion, editedByUser: false)
+        return ApplyAITagSuggestionItemSnapshot(suggestion: suggestion, editedByUser: false)
     }
 
     static func toggling(_ suggestionID: String, in state: AITagSuggestionState) -> AITagSuggestionState {
@@ -196,11 +196,11 @@ enum AITagSuggestionAction {
         return .applyingEdited(fileID: report.fileId, report: report, session: session)
     }
 
-    static func editedItems(in state: AITagSuggestionState) -> [ApplyAiTagSuggestionItem] {
+    static func editedItems(in state: AITagSuggestionState) -> [ApplyAITagSuggestionItemSnapshot] {
         state.editSession?.applyItems ?? []
     }
 
-    static func retryFailedItems(in state: AITagSuggestionState) -> [ApplyAiTagSuggestionItem] {
+    static func retryFailedItems(in state: AITagSuggestionState) -> [ApplyAITagSuggestionItemSnapshot] {
         state.editSession?.drafts.compactMap { draft in
             if case .failed = draft.status { return draft.applyItem }
             return nil
@@ -209,7 +209,7 @@ enum AITagSuggestionAction {
 
     static func sessionAfterApply(
         _ session: AITagSuggestionEditSession,
-        report: AiTagSuggestionApplyReport
+        report: AITagSuggestionApplyReportSnapshot
     ) -> AITagSuggestionEditSession {
         var next = session
         next.drafts = session.drafts.map { draft in
@@ -225,7 +225,7 @@ enum AITagSuggestionAction {
 
     private static func validated(
         _ session: AITagSuggestionEditSession,
-        report: AiTagSuggestionReport,
+        report: AITagSuggestionReportSnapshot,
         disabledReason: String?
     ) -> AITagSuggestionEditSession {
         var seen: Set<String> = []
@@ -240,7 +240,7 @@ enum AITagSuggestionAction {
 
     private static func rowStatus(
         for draft: AITagSuggestionEditDraft,
-        report: AiTagSuggestionReport,
+        report: AITagSuggestionReportSnapshot,
         disabledReason: String?,
         seen: inout Set<String>
     ) -> TagSuggestionEditRowStatus {
@@ -265,7 +265,7 @@ enum AITagSuggestionAction {
         return .ready
     }
 
-    private static func rowStatus(for result: AiTagSuggestionApplyItemResult) -> TagSuggestionEditRowStatus {
+    private static func rowStatus(for result: AITagSuggestionApplyItemResultSnapshot) -> TagSuggestionEditRowStatus {
         switch result.status {
         case .applied: .applied
         case .alreadyAdded:
@@ -284,7 +284,7 @@ enum AITagSuggestionAction {
 }
 
 extension AITagSuggestionEditDraft {
-    init(suggestion: AiTagSuggestion) {
+    init(suggestion: AITagSuggestionSnapshot) {
         suggestionID = suggestion.suggestionId
         originalSlug = suggestion.slug
         originalDisplayName = suggestion.displayName
@@ -298,8 +298,8 @@ extension AITagSuggestionEditDraft {
     }
 }
 
-extension ApplyAiTagSuggestionItem {
-    init(suggestion: AiTagSuggestion, editedByUser: Bool) {
+extension ApplyAITagSuggestionItemSnapshot {
+    init(suggestion: AITagSuggestionSnapshot, editedByUser: Bool) {
         self.init(
             suggestionId: suggestion.suggestionId,
             slug: suggestion.slug,
@@ -311,8 +311,8 @@ extension ApplyAiTagSuggestionItem {
     }
 }
 
-extension AiTagSuggestionReport {
-    func hidingSuggestions(_ hiddenIDs: Set<String>) -> AiTagSuggestionReport {
+extension AITagSuggestionReportSnapshot {
+    func hidingSuggestions(_ hiddenIDs: Set<String>) -> AITagSuggestionReportSnapshot {
         var next = self
         next.suggestions.removeAll { hiddenIDs.contains($0.suggestionId) }
         return next

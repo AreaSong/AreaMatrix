@@ -210,7 +210,12 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let model = GeneralSettingsModel(repoPath: repoURL.path, loader: bridge, updater: bridge)
+        let model = GeneralSettingsModel(
+            repoPath: repoURL.path,
+            loader: bridge,
+            updater: bridge,
+            errorMapper: bridge
+        )
 
         await model.load()
         await model.requestStorageMode(.indexOnly)
@@ -233,7 +238,12 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
         try "source".write(to: sourceURL, atomically: true, encoding: .utf8)
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let model = GeneralSettingsModel(repoPath: repoURL.path, loader: bridge, updater: bridge)
+        let model = GeneralSettingsModel(
+            repoPath: repoURL.path,
+            loader: bridge,
+            updater: bridge,
+            errorMapper: bridge
+        )
 
         await model.load()
         await model.requestStorageMode(.move)

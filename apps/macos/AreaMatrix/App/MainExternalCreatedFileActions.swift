@@ -8,6 +8,7 @@ extension OnboardingModel {
 
     @MainActor
     func consumePendingExternalSyncWindows(repoPath: String?) {
+        guard let repoPath, !repoPath.isEmpty else { return }
         _ = handleExternalSyncWindows(
             AreaMatrixExternalCreatedFileRelay.takePendingWindows(matchingRepoPath: repoPath)
         )

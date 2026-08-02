@@ -17,7 +17,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             mapping: nil,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
+            repositoryReindexer: RepairRecordingReindexer(),
             startupRecoverer: recoverer,
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
@@ -46,7 +48,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
                 result: .success(.databaseRepairRepairReportFixture())
             ),
+            repositoryReindexer: RepairRecordingReindexer(),
             startupRecoverer: recoverer,
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
@@ -77,6 +81,7 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             metadataRepairer: repairer,
             repositoryReindexer: reindexer,
             startupRecoverer: StaticStartupRecoverer(),
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
@@ -128,7 +133,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             mapping: nil,
             lastOpenedAt: nil,
             metadataRepairer: repairer,
+            repositoryReindexer: RepairRecordingReindexer(),
             startupRecoverer: StaticStartupRecoverer(),
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
@@ -161,7 +168,9 @@ final class DatabaseRepairConfirmPageFeatureTests: XCTestCase {
             mapping: .databaseRepairRepairMapping(kind: .repoNotInitialized),
             lastOpenedAt: nil,
             metadataRepairer: repairer,
+            repositoryReindexer: RepairRecordingReindexer(),
             startupRecoverer: StaticStartupRecoverer(),
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
@@ -199,7 +208,9 @@ extension DatabaseRepairConfirmPageFeatureTests {
             metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
                 result: .success(.databaseRepairRepairReportFixture())
             ),
+            repositoryReindexer: RepairRecordingReindexer(),
             startupRecoverer: StaticStartupRecoverer(),
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: diagnosticsCollector,
             errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .permissionDenied))
         )
@@ -232,7 +243,9 @@ extension DatabaseRepairConfirmPageFeatureTests {
             metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
                 result: .success(.databaseRepairRepairReportFixture())
             ),
+            repositoryReindexer: RepairRecordingReindexer(),
             startupRecoverer: StaticStartupRecoverer(),
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: collector,
             errorMapper: StaticCoreErrorMapper(mapping: .databaseRepairRepairMapping(kind: .db))
         )
@@ -256,6 +269,9 @@ extension DatabaseRepairConfirmPageFeatureTests {
             metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
                 result: .success(.databaseRepairRepairReportFixture())
             ),
+            repositoryReindexer: RepairRecordingReindexer(),
+            startupRecoverer: StaticStartupRecoverer(),
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),
@@ -322,6 +338,9 @@ extension DatabaseRepairConfirmPageFeatureTests {
             metadataRepairer: DatabaseRepairRecordingMetadataRepairer(
                 result: .success(.databaseRepairRepairReportFixture())
             ),
+            repositoryReindexer: RepairRecordingReindexer(),
+            startupRecoverer: StaticStartupRecoverer(),
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: ShellRecordingDiagnosticsCollector(
                 result: .success(.databaseRepairDiagnosticsFixture())
             ),

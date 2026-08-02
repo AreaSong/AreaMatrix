@@ -2,19 +2,24 @@ import Foundation
 
 enum AITagSuggestionState: Equatable {
     case idle
-    case loading(fileID: Int64, previous: AiTagSuggestionReport?)
-    case loaded(fileID: Int64, AiTagSuggestionReport, Set<String>)
-    case rejected(fileID: Int64, AiTagSuggestionReport, AITagSuggestionRejectedFeedback)
-    case editing(fileID: Int64, AiTagSuggestionReport, AITagSuggestionEditSession)
-    case applying(fileID: Int64, report: AiTagSuggestionReport, selectedIDs: Set<String>)
-    case applyingEdited(fileID: Int64, report: AiTagSuggestionReport, session: AITagSuggestionEditSession)
-    case editApplied(fileID: Int64, AiTagSuggestionReport, AiTagSuggestionApplyReport, AITagSuggestionEditSession)
-    case applied(fileID: Int64, AiTagSuggestionReport, AiTagSuggestionApplyReport, Set<String>)
-    case failed(fileID: Int64, CoreErrorMappingSnapshot, previous: AiTagSuggestionReport?)
+    case loading(fileID: Int64, previous: AITagSuggestionReportSnapshot?)
+    case loaded(fileID: Int64, AITagSuggestionReportSnapshot, Set<String>)
+    case rejected(fileID: Int64, AITagSuggestionReportSnapshot, AITagSuggestionRejectedFeedback)
+    case editing(fileID: Int64, AITagSuggestionReportSnapshot, AITagSuggestionEditSession)
+    case applying(fileID: Int64, report: AITagSuggestionReportSnapshot, selectedIDs: Set<String>)
+    case applyingEdited(fileID: Int64, report: AITagSuggestionReportSnapshot, session: AITagSuggestionEditSession)
+    case editApplied(
+        fileID: Int64,
+        AITagSuggestionReportSnapshot,
+        AITagSuggestionApplyReportSnapshot,
+        AITagSuggestionEditSession
+    )
+    case applied(fileID: Int64, AITagSuggestionReportSnapshot, AITagSuggestionApplyReportSnapshot, Set<String>)
+    case failed(fileID: Int64, CoreErrorMappingSnapshot, previous: AITagSuggestionReportSnapshot?)
 }
 
 extension AITagSuggestionState {
-    var report: AiTagSuggestionReport? {
+    var report: AITagSuggestionReportSnapshot? {
         switch self {
         case let .loaded(_, report, _), let .rejected(_, report, _), let .loading(_, report?),
              let .editing(_, report, _), let .applying(_, report, _), let .applyingEdited(_, report, _),
@@ -56,7 +61,7 @@ extension AITagSuggestionState {
         return mapping
     }
 
-    var appliedReport: AiTagSuggestionApplyReport? {
+    var appliedReport: AITagSuggestionApplyReportSnapshot? {
         switch self {
         case let .applied(_, _, report, _), let .editApplied(_, _, report, _):
             report

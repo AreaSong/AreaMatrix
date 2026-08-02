@@ -62,9 +62,11 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         ])
         assertTestMirrorDescription(of: ICloudConflictListView(
             model: model,
+            systemCapabilityChecker: StaticOnboardingSystemCapabilityChecker(),
             onClose: {},
             onResolve: { _ in },
-            onCollectDiagnostics: {}
+            onCollectDiagnostics: {},
+            makeResolutionModel: makeICloudConflictListResolutionModel
         ).body, contains: [
             "icloud-conflicts-icloud-conflicts-core-error",
             "Unable to list iCloud conflicts",
@@ -84,8 +86,10 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
         assertTestMirrorDescription(of: ICloudConflictListView(
             model: emptyModel,
+            systemCapabilityChecker: StaticOnboardingSystemCapabilityChecker(),
             onClose: {},
-            onResolve: { _ in }
+            onResolve: { _ in },
+            makeResolutionModel: makeICloudConflictListResolutionModel
         ).body, contains: [
             ICloudConflictListCopy.emptyTitle,
             ICloudConflictListAccessibilityID.emptyRefresh
@@ -101,8 +105,10 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
 
         assertTestMirrorDescription(of: ICloudConflictListView(
             model: loadedModel,
+            systemCapabilityChecker: StaticOnboardingSystemCapabilityChecker(),
             onClose: {},
-            onResolve: { _ in XCTFail("Body inspection must not invoke row actions") }
+            onResolve: { _ in XCTFail("Body inspection must not invoke row actions") },
+            makeResolutionModel: makeICloudConflictListResolutionModel
         ).body, contains: [
             ICloudConflictListCopy.title,
             ICloudConflictListCopy.subtitle
@@ -263,8 +269,10 @@ final class ICloudConflictListPageFeatureTests: XCTestCase {
         assertTestMirrorDescription(of: ICloudConflictListView(
             model: model,
             pageContext: .iCloudConflictVisualConflictVisual,
+            systemCapabilityChecker: StaticOnboardingSystemCapabilityChecker(),
             onClose: {},
-            onResolve: { _ in XCTFail("Body inspection must not invoke icloud-conflict-visual resolution") }
+            onResolve: { _ in XCTFail("Body inspection must not invoke icloud-conflict-visual resolution") },
+            makeResolutionModel: makeICloudConflictListResolutionModel
         ).body, contains: [
             ICloudConflictListAccessibilityID.iCloudConflictVisualPage,
             ICloudConflictListCopy.iCloudConflictVisualTitle,
@@ -319,6 +327,26 @@ private actor ICloudConflictLister: CoreICloudConflictListing {
 }
 
 private typealias ICloudConflictListRecordingPathValidator = RecordingRepositoryPathValidator
+
+@MainActor
+private func makeICloudConflictListResolutionModel(
+    _ route: ICloudConflictMinimalRouteContext
+) -> ICloudConflictMinimalModel {
+    ICloudConflictMinimalModel(
+        repoPath: route.repoPath,
+        conflictID: route.conflict.conflictID,
+        originalVersion: route.originalVersion,
+        conflictedCopyVersion: route.conflictedCopyVersion,
+        pathValidator: ICloudConflictListRecordingPathValidator(
+            validation: .iCloudConflictListValidationFixture(repoPath: route.repoPath)
+        ),
+        conflictReviewer: ICloudConflictReviewer(
+            previewResult: .success(.iCloudConflictVisualPreview(conflictID: route.conflict.conflictID)),
+            resolveResult: .success(.iCloudConflictVisualResolvedReport(conflictID: route.conflict.conflictID))
+        ),
+        errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictListMapping(kind: .internal))
+    )
+}
 
 private extension ICloudConflictPairSnapshot {
     static func iCloudConflictListFixture(

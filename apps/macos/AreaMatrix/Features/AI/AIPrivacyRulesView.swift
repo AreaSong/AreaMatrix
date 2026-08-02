@@ -14,7 +14,7 @@ struct AIPrivacyRulesView: View {
     @State private var isTemplateSheetPresented = false
     @State private var selectedTemplates: Set<AIPrivacyRuleTemplate> = []
     @State var testFileContext = AIPrivacyRuleTestFileContext(repoRelativePath: "", category: nil, tags: [])
-    @State var deletionCandidate: AiPrivacyRuleRecord?
+    @State var deletionCandidate: AIPrivacyRuleRecordSnapshot?
     @State private var pendingFocus: AIPrivacyRulesRouteFocus?
     @State private var consumedFocus: AIPrivacyRulesRouteFocus?
 
@@ -25,18 +25,16 @@ struct AIPrivacyRulesView: View {
 
     init(
         model: AISettingsModel,
-        providerModel: AIPrivacyRemoteProviderStateModel? = nil,
-        privacyModel: AIPrivacyRulesModel? = nil,
-        registry: AIPrivacyRuleRegistrySnapshot = .unavailable,
+        providerModel: AIPrivacyRemoteProviderStateModel,
+        privacyModel: AIPrivacyRulesModel,
+        registry: AIPrivacyRuleRegistrySnapshot,
         initialFocus: AIPrivacyRulesRouteFocus? = nil,
         onConfigureRemoteAI: @escaping () -> Void,
         onClose: @escaping () -> Void
     ) {
         self.model = model
-        _providerModel = StateObject(wrappedValue: providerModel ??
-            AIPrivacyRemoteProviderStateModel(repoPath: model.repoPath))
-        _privacyModel = StateObject(wrappedValue: privacyModel ??
-            AIPrivacyRulesModel(repoPath: model.repoPath, settingsSync: model))
+        _providerModel = StateObject(wrappedValue: providerModel)
+        _privacyModel = StateObject(wrappedValue: privacyModel)
         self.registry = registry
         self.initialFocus = initialFocus
         self.onConfigureRemoteAI = onConfigureRemoteAI
@@ -218,7 +216,7 @@ struct AIPrivacyRulesView: View {
         )
     }
 
-    func fieldBinding(_ field: AiPrivacyFieldState) -> Binding<Bool> {
+    func fieldBinding(_ field: AIPrivacyFieldStateSnapshot) -> Binding<Bool> {
         Binding(
             get: { field.allowRemote },
             set: { allow in Task { await privacyModel.setField(field.field, allowRemote: allow) } }
@@ -256,7 +254,7 @@ struct AIPrivacyRulesView: View {
         Task { await privacyModel.setPrivacyGate(false) }
     }
 
-    func toggleRule(_ rule: AiPrivacyRuleRecord) {
+    func toggleRule(_ rule: AIPrivacyRuleRecordSnapshot) {
         Task { await privacyModel.setRuleEnabled(rule, enabled: !rule.enabled) }
     }
 
@@ -267,7 +265,7 @@ struct AIPrivacyRulesView: View {
         }
     }
 
-    func beginEditRule(_ rule: AiPrivacyRuleRecord) {
+    func beginEditRule(_ rule: AIPrivacyRuleRecordSnapshot) {
         transitionFromDirtyEditor(or: .switchRule(rule)) {
             editorDraft = AIPrivacyRuleEditorDraft(record: rule)
             editorMode = .visible
@@ -375,7 +373,7 @@ struct AIPrivacyRulesView: View {
         pendingFocus?.matches(ruleID: ruleID) == true
     }
 
-    func isFocused(field: AiPrivacyInputField) -> Bool {
+    func isFocused(field: AIPrivacyInputFieldState) -> Bool {
         pendingFocus?.matches(field: field) == true
     }
 

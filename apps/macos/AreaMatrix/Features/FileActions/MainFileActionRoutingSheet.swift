@@ -13,9 +13,12 @@ struct MainFileActionRoutingSheet: View {
     let iCloudConflictResolutionCapability: ICloudConflictResolutionCapability
     let repoPath: String
     let isTrashAvailable: Bool
+    let aiDependencies: AIFeatureDependencies
     let iCloudConflictPathValidator: any CoreRepositoryPathValidating
     let iCloudConflictReviewer: any CoreICloudConflictReviewing
     let iCloudConflictErrorMapper: any CoreErrorMapping
+    let classifierRuleSaver: any CoreClassifierRuleSaving
+    let classifierImpactPreviewer: any CoreClassifierImpactPreviewing
     let onDismiss: () -> Void
     let onRename: (Int64, String) -> Void
     let onShowExistingFile: (Int64) -> Void
@@ -59,7 +62,9 @@ struct MainFileActionRoutingSheet: View {
                 onBeginChange: onBeginAIClassificationChange,
                 onPreview: onPreviewChangeCategory,
                 onApply: onApplyAIClassificationSuggestion,
-                onOpenAIRecoverySettings: onOpenAIRecoverySettings
+                onOpenAIRecoverySettings: onOpenAIRecoverySettings,
+                aiDependencies: aiDependencies,
+                errorMapper: iCloudConflictErrorMapper
             )
         case .delete:
             DeleteFileConfirmSheet(
@@ -136,6 +141,9 @@ struct MainFileActionRoutingSheet: View {
             mode: route.handoffMode,
             repoPath: repoPath,
             handoff: route.handoff,
+            ruleSaver: classifierRuleSaver,
+            previewer: classifierImpactPreviewer,
+            errorMapper: iCloudConflictErrorMapper,
             onCancel: route.handoff.sourcePageID == "ai-category-suggestion" ? onCancelClassifierRuleRoute : onDismiss,
             onBack: onEditClassifierRule,
             onPreviewImpact: onPreviewClassifierRuleImpact,

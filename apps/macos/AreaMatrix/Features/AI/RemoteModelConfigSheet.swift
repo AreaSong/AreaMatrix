@@ -11,12 +11,12 @@ struct RemoteModelConfigSheet: View {
 
     init(
         model: RemoteProviderConfigModel,
-        privacyModel: RemotePrivacyGateModel? = nil,
+        privacyModel: RemotePrivacyGateModel,
         onOpenPrivacyRules: @escaping () -> Void = {},
         onClose: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: model)
-        _privacyModel = StateObject(wrappedValue: privacyModel ?? RemotePrivacyGateModel(repoPath: model.repoPath))
+        _privacyModel = StateObject(wrappedValue: privacyModel)
         self.onOpenPrivacyRules = onOpenPrivacyRules
         self.onClose = onClose
     }

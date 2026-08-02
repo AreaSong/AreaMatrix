@@ -179,9 +179,10 @@ def _includes_performance_tests(only_testing: Sequence[str]) -> bool:
 
 
 def _xcode_test_env(only_testing: Sequence[str]) -> dict[str, str] | None:
+    env = {"AREAMATRIX_TEST_MODE": "1"}
     if _includes_performance_tests(only_testing):
-        return {"AREAMATRIX_RUN_PERF_TESTS": "1"}
-    return None
+        env["AREAMATRIX_RUN_PERF_TESTS"] = "1"
+    return env
 
 
 def _handle_release_app_launch_probe_result(probe_rc: int) -> int:
@@ -234,6 +235,7 @@ def _run_filtered_xctest_bundle(test_bundle: Path, scheme: str, only_testing: Se
 
     products_dir = _products_dir_for_test_bundle(test_bundle, scheme)
     env = _fallback_env(products_dir, scheme)
+    env["AREAMATRIX_TEST_MODE"] = "1"
     if _includes_performance_tests(only_testing):
         env["AREAMATRIX_RUN_PERF_TESTS"] = "1"
     filters = _xctest_filter(only_testing)

@@ -4,6 +4,7 @@ struct AreaMatrixDecodedText: View {
     let text: String
     var gradient: LinearGradient?
 
+    @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
     @State private var displayText: String = ""
     @State private var timerTask: Task<Void, Never>?
 
@@ -39,7 +40,7 @@ struct AreaMatrixDecodedText: View {
                 displayText = String(currentCharacters)
             }
 
-            AppPlatformServices.interactionFeedback.performHaptic(.levelChange)
+            interactionFeedback.performHaptic(.levelChange)
         }
     }
 

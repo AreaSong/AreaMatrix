@@ -34,6 +34,18 @@ enum AppCoreServices {
         coreBridge()
     }
 
+    static var repositoryInitializer: any CoreRepositoryInitializing {
+        coreBridge()
+    }
+
+    static var importProgressImporter: any CoreFileImporting {
+        coreBridge()
+    }
+
+    static var startupRecoverer: any CoreStartupRecovering {
+        coreBridge()
+    }
+
     static var scanSessionReader: any CoreScanSessionReading {
         coreBridge()
     }
@@ -235,179 +247,6 @@ enum AppCoreServices {
     }
 
     private static func coreBridge() -> CoreBridge {
-        CoreBridge()
-    }
-}
-
-@MainActor
-struct MainRepositoryContentAssembly {
-    let treeLister: any CoreRepositoryTreeListing
-    let savedSearchStore: any CoreSavedSearchCRUD
-    let batchRenamer: any CoreBatchRenaming
-    let systemCapabilityChecker: any OnboardingSystemCapabilityChecking
-    let errorMapper: any CoreErrorMapping
-    let makeFileListModel: () -> MainFileListModel
-    let makeSyncConflictEntryModel: () -> SyncConflictEntryModel
-    let makeDropPreviewModel: () -> ImportDropPreviewModel
-    let makeDetailNoteModel: () -> DetailNoteModel
-    let makeSummaryExitController: () -> AISummaryEditorExitController
-
-    static func live(opening: RepositoryOpeningResult) -> Self {
-        make(opening: opening)
-    }
-
-    // swiftlint:disable:next function_body_length
-    static func make(
-        opening: RepositoryOpeningResult,
-        treeLister: any CoreRepositoryTreeListing = AppCoreServices.treeLister,
-        savedSearchStore: any CoreSavedSearchCRUD = AppCoreServices.savedSearchStore,
-        fileLister: any CoreFileListing = AppCoreServices.fileLister,
-        fileDetailer: any CoreFileDetailing = AppCoreServices.fileDetailer,
-        searchQuerying: any CoreSearchQuerying = AppCoreServices.searchQuerying,
-        semanticSearching: any CoreSemanticSearching = AppCoreServices.semanticSearching,
-        semanticFallbackReader: any CoreSemanticFallbackStatusReading = AppCoreServices.semanticFallbackReader,
-        searchFiltering: any CoreSearchFiltering = AppCoreServices.searchFiltering,
-        commandIndexer: any CoreCommandIndexing = AppCoreServices.commandIndexer,
-        fileRenamer: any CoreFileRenaming = AppCoreServices.fileRenamer,
-        fileDeleter: any CoreFileDeleting = AppCoreServices.fileDeleter,
-        fileCategoryMover: any CoreFileCategoryMoving = AppCoreServices.fileCategoryMover,
-        fileListCategoryPredictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
-        batchDeleter: any CoreBatchDeleting = AppCoreServices.batchDeleter,
-        batchCategoryChanger: any CoreBatchCategoryChanging = AppCoreServices.batchCategoryChanger,
-        batchRenamer: any CoreBatchRenaming = AppCoreServices.batchRenamer,
-        systemCapabilityChecker: any OnboardingSystemCapabilityChecking = AppPlatformServices.systemCapabilityChecker,
-        syncConflictDetector: any CoreSyncConflictDetecting = AppCoreServices.syncConflictDetector,
-        iCloudConflictResolver: any ICloudConflictResolving = AppCoreServices.iCloudConflictResolver,
-        tagStore: any CoreTagCRUD = AppCoreServices.tagStore,
-        aiSettingsLoader: any CoreAISettingsLoading = AppCoreServices.aiSettingsLoader,
-        aiTagSuggestionStore: any CoreAITagSuggestionManaging = AppCoreServices.aiTagSuggestionStore,
-        aiPrivacyRules: any CoreAIPrivacyEvaluating = AppCoreServices.aiPrivacyRules,
-        undoActionStore: any CoreUndoActionLogging = AppCoreServices.undoActionStore,
-        redoActionStore: any CoreRedoActionLogging = AppCoreServices.redoActionStore,
-        changeLogLister: any CoreChangeLogListing = AppCoreServices.changeLogLister,
-        externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer,
-        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
-        noteStore: any CoreNoteReadingWriting = AppCoreServices.noteStore,
-        dropCategoryPredictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector
-    ) -> Self {
-        Self(
-            treeLister: treeLister,
-            savedSearchStore: savedSearchStore,
-            batchRenamer: batchRenamer,
-            systemCapabilityChecker: systemCapabilityChecker,
-            errorMapper: errorMapper,
-            makeFileListModel: fileListModelFactory(
-                opening: opening,
-                fileLister: fileLister,
-                fileDetailer: fileDetailer,
-                searchQuerying: searchQuerying,
-                semanticSearching: semanticSearching,
-                semanticFallbackReader: semanticFallbackReader,
-                searchFiltering: searchFiltering,
-                commandIndexer: commandIndexer,
-                fileRenamer: fileRenamer,
-                fileDeleter: fileDeleter,
-                fileCategoryMover: fileCategoryMover,
-                categoryPredictor: fileListCategoryPredictor,
-                batchDeleter: batchDeleter,
-                batchCategoryChanger: batchCategoryChanger,
-                iCloudConflictResolver: iCloudConflictResolver,
-                tagStore: tagStore,
-                aiSettingsLoader: aiSettingsLoader,
-                aiTagSuggestionStore: aiTagSuggestionStore,
-                aiPrivacyRules: aiPrivacyRules,
-                undoActionStore: undoActionStore,
-                redoActionStore: redoActionStore,
-                changeLogLister: changeLogLister,
-                externalChangesSyncer: externalChangesSyncer,
-                repositoryWriteCoordinator: repositoryWriteCoordinator,
-                errorMapper: errorMapper,
-                diagnosticsCollector: diagnosticsCollector
-            ),
-            makeSyncConflictEntryModel: {
-                SyncConflictEntryModel(
-                    repoPath: opening.config.repoPath,
-                    conflictDetector: syncConflictDetector,
-                    errorMapper: errorMapper
-                )
-            },
-            makeDropPreviewModel: {
-                ImportDropPreviewModel(
-                    repoPath: opening.config.repoPath,
-                    predictor: dropCategoryPredictor
-                )
-            },
-            makeDetailNoteModel: {
-                DetailNoteModel(
-                    repoPath: opening.config.repoPath,
-                    noteStore: noteStore,
-                    errorMapper: errorMapper
-                )
-            },
-            makeSummaryExitController: AISummaryEditorExitController.init
-        )
-    }
-
-    // swiftlint:disable:next function_parameter_count
-    private static func fileListModelFactory(
-        opening: RepositoryOpeningResult,
-        fileLister: any CoreFileListing,
-        fileDetailer: any CoreFileDetailing,
-        searchQuerying: any CoreSearchQuerying,
-        semanticSearching: any CoreSemanticSearching,
-        semanticFallbackReader: any CoreSemanticFallbackStatusReading,
-        searchFiltering: any CoreSearchFiltering,
-        commandIndexer: any CoreCommandIndexing,
-        fileRenamer: any CoreFileRenaming,
-        fileDeleter: any CoreFileDeleting,
-        fileCategoryMover: any CoreFileCategoryMoving,
-        categoryPredictor: any CoreCategoryPredicting,
-        batchDeleter: any CoreBatchDeleting,
-        batchCategoryChanger: any CoreBatchCategoryChanging,
-        iCloudConflictResolver: any ICloudConflictResolving,
-        tagStore: any CoreTagCRUD,
-        aiSettingsLoader: any CoreAISettingsLoading,
-        aiTagSuggestionStore: any CoreAITagSuggestionManaging,
-        aiPrivacyRules: any CoreAIPrivacyEvaluating,
-        undoActionStore: any CoreUndoActionLogging,
-        redoActionStore: any CoreRedoActionLogging,
-        changeLogLister: any CoreChangeLogListing,
-        externalChangesSyncer: any CoreExternalChangesSyncing,
-        repositoryWriteCoordinator: RepositoryWriteCoordinator,
-        errorMapper: any CoreErrorMapping,
-        diagnosticsCollector: any CoreDiagnosticsCollecting
-    ) -> () -> MainFileListModel {
-        {
-            MainFileListModel(
-                opening: opening,
-                fileLister: fileLister,
-                fileDetailer: fileDetailer,
-                searchQuerying: searchQuerying,
-                semanticSearching: semanticSearching,
-                semanticFallbackReader: semanticFallbackReader,
-                searchFiltering: searchFiltering,
-                commandIndexer: commandIndexer,
-                fileRenamer: fileRenamer,
-                fileDeleter: fileDeleter,
-                fileCategoryMover: fileCategoryMover,
-                categoryPredictor: categoryPredictor,
-                batchDeleter: batchDeleter,
-                batchCategoryChanger: batchCategoryChanger,
-                iCloudConflictResolver: iCloudConflictResolver,
-                tagStore: tagStore,
-                aiSettingsLoader: aiSettingsLoader,
-                aiTagSuggestionStore: aiTagSuggestionStore,
-                aiPrivacyRules: aiPrivacyRules,
-                undoActionStore: undoActionStore,
-                redoActionStore: redoActionStore,
-                changeLogLister: changeLogLister,
-                externalChangesSyncer: externalChangesSyncer,
-                repositoryWriteCoordinator: repositoryWriteCoordinator,
-                errorMapper: errorMapper,
-                diagnosticsCollector: diagnosticsCollector
-            )
-        }
+        CoreBridgeRuntime.shared
     }
 }

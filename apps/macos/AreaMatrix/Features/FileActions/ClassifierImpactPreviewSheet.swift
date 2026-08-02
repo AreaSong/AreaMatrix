@@ -12,8 +12,8 @@ struct ClassifierImpactPreviewSheet: View {
     init(
         repoPath: String,
         handoff: ClassifierRuleHandoff,
-        previewer: any CoreClassifierImpactPreviewing = AppCoreServices.classifierImpactPreviewer,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        previewer: any CoreClassifierImpactPreviewing,
+        errorMapper: any CoreErrorMapping,
         onCancel: @escaping () -> Void,
         onBack: @escaping (ClassifierRuleHandoff) -> Void
     ) {

@@ -12,6 +12,7 @@ struct WelcomeStepView: View {
     let onLearnMore: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
     @EnvironmentObject private var localizer: AppLocalizer
     @State private var activeScene: WelcomeScene = .default
     @State private var hoverScene: WelcomeScene?
@@ -202,7 +203,7 @@ private extension WelcomeStepView {
             }
             .onHover { hovering in
                 isLearnMoreHovered = hovering
-                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+                interactionFeedback.setPointingCursor(active: hovering)
                 if hovering { activateHoverScene(.feat4) } else { scheduleHoverReset(for: .feat4) }
             }
             .areaMatrixDelayedEntrance(isVisible: footerEntered, delay: AreaMatrixMotionTokens.EntranceDelay.footer)
@@ -233,7 +234,7 @@ private extension WelcomeStepView {
             }
             .onHover { hovering in
                 isCtaHovered = hovering
-                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+                interactionFeedback.setPointingCursor(active: hovering)
                 if hovering { activateHoverScene(.feat5) } else { scheduleHoverReset(for: .feat5) }
             }
             .areaMatrixDelayedEntrance(isVisible: footerEntered, delay: 0.6)
@@ -266,7 +267,7 @@ private extension WelcomeStepView {
             max(0, min(scenes.count - 1, current + direction))
         }
         guard scenes[next] != activeScene else { return }
-        AppPlatformServices.interactionFeedback.performHaptic(.alignment)
+        interactionFeedback.performHaptic(.alignment)
         withAnimation(.areaMatrixSceneEnterExit) {
             activeScene = scenes[next]
         }

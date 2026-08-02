@@ -34,8 +34,8 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
         hostPlatform: PlatformIdSnapshot = .macos,
         appVersion: String? = nil,
         appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
-        capabilityLoader: any CorePlatformCapabilitiesLoading = AppCoreServices.platformCapabilityLoader,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        capabilityLoader: any CorePlatformCapabilitiesLoading,
+        errorMapper: any CoreErrorMapping
     ) {
         self.hostPlatform = hostPlatform
         self.appVersion = appVersion ?? appVersionReader.appVersion()

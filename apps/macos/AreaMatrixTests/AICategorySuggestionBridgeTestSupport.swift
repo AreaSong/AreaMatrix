@@ -28,15 +28,15 @@ actor AICategorySuggestionSuggestionBridge: CoreAIClassificationSuggesting {
 
 actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusReading {
     enum Response {
-        case success(AiFallbackStatus)
+        case success(AIFallbackStatusSnapshot)
         case failure(CoreError)
         case unexpected
     }
 
     private let response: Response
-    private var requests: [AiFallbackStatusRequest] = []
+    private var requests: [AIFallbackStatusRequestSnapshot] = []
 
-    init(status: AiFallbackStatus? = nil) {
+    init(status: AIFallbackStatusSnapshot? = nil) {
         response = status.map(Response.success) ?? .unexpected
     }
 
@@ -46,8 +46,8 @@ actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusRead
 
     func classificationFallbackStatus(
         repoPath _: String,
-        request: AiFallbackStatusRequest
-    ) async throws -> AiFallbackStatus {
+        request: AIFallbackStatusRequestSnapshot
+    ) async throws -> AIFallbackStatusSnapshot {
         requests.append(request)
         switch response {
         case let .success(status):
@@ -62,7 +62,7 @@ actor AICategorySuggestionFallbackBridge: CoreAIClassificationFallbackStatusRead
     func assertSingleAIFallbackStatusRequest(
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> AiFallbackStatusRequest? {
+    ) -> AIFallbackStatusRequestSnapshot? {
         XCTAssertEqual(requests.count, 1, file: file, line: line)
         return requests.first
     }

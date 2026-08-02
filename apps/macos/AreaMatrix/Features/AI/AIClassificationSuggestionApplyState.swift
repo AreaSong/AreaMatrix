@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-func aiCallLogFeatureLabel(_ feature: AiCallLogFeature) -> String {
+func aiCallLogFeatureLabel(_ feature: AICallLogFeatureSnapshot) -> String {
     switch feature {
     case .classification: L10n.string("Classification")
     case .summary: L10n.string("Summary")
@@ -11,14 +11,14 @@ func aiCallLogFeatureLabel(_ feature: AiCallLogFeature) -> String {
     }
 }
 
-func aiCallLogRouteLabel(_ route: AiCallLogRoute) -> String {
+func aiCallLogRouteLabel(_ route: AICallLogRouteSnapshot) -> String {
     switch route {
     case .local: L10n.string("Local")
     case .remote: L10n.string("Remote")
     }
 }
 
-func aiCallLogStatusLabel(_ status: AiCallLogStatus) -> String {
+func aiCallLogStatusLabel(_ status: AICallLogStatusSnapshot) -> String {
     switch status {
     case .success: L10n.string("Success")
     case .failed: L10n.string("Failed")
@@ -27,7 +27,7 @@ func aiCallLogStatusLabel(_ status: AiCallLogStatus) -> String {
     }
 }
 
-func aiCallLogSentFieldLabel(_ field: AiCallLogSentField) -> String {
+func aiCallLogSentFieldLabel(_ field: AICallLogSentFieldSnapshot) -> String {
     switch field {
     case .fileName: L10n.string("filename")
     case .repoRelativePath: L10n.string("repo-relative path")
@@ -39,25 +39,25 @@ func aiCallLogSentFieldLabel(_ field: AiCallLogSentField) -> String {
     }
 }
 
-func sentFieldSummary(_ fields: [AiCallLogSentField]) -> String {
+func sentFieldSummary(_ fields: [AICallLogSentFieldSnapshot]) -> String {
     fields.isEmpty ? L10n.string("none") : fields.map(aiCallLogSentFieldLabel).joined(separator: ", ")
 }
 
-func fileBatchLabel(_ record: AiCallLogRecord) -> String {
+func fileBatchLabel(_ record: AICallLogRecordSnapshot) -> String {
     if record.feature == .providerTest { return L10n.string("None") }
     if let name = record.fileDisplayName { return name }
     if let batch = record.batchId { return batch }
     return record.scope ?? L10n.string("None")
 }
 
-func privacyMatchLabel(_ record: AiCallLogRecord) -> String {
+func privacyMatchLabel(_ record: AICallLogRecordSnapshot) -> String {
     let rule = record.privacyRuleName ?? record.privacyRuleId
     let field = record.matchedFieldType.map(aiCallLogSentFieldLabel)
     let text = [rule, field].compactMap { $0 }.joined(separator: " - ")
     return text.isEmpty ? L10n.string("None") : text
 }
 
-func rowAccessibility(_ record: AiCallLogRecord) -> String {
+func rowAccessibility(_ record: AICallLogRecordSnapshot) -> String {
     [
         "\(record.occurredAt)",
         aiCallLogFeatureLabel(record.feature),
@@ -78,7 +78,7 @@ struct AICallLogRowPresentation: Equatable {
     var duration: String
     var result: String
 
-    init(record: AiCallLogRecord) {
+    init(record: AICallLogRecordSnapshot) {
         time = "\(record.occurredAt)"
         feature = aiCallLogFeatureLabel(record.feature)
         provider = record.providerName ?? record.route.map(aiCallLogRouteLabel) ?? L10n.string("Not recorded")
@@ -100,7 +100,7 @@ enum AICallLogDateRangePreset: Equatable {
 enum AICallLogPageState: Equatable {
     case idle
     case loading
-    case loaded(AiCallLogPage)
+    case loaded(AICallLogPageSnapshot)
     case failed(AISettingsError)
 }
 
@@ -110,9 +110,9 @@ final class AICallLogModel: ObservableObject {
     @Published private(set) var actionError: AISettingsError?
     @Published private(set) var toastMessage: LocalizedMessage?
     @Published private(set) var isMutating = false
-    @Published var featureFilter: AiCallLogFeature?
-    @Published var routeFilter: AiCallLogRoute?
-    @Published var statusFilter: AiCallLogStatus?
+    @Published var featureFilter: AICallLogFeatureSnapshot?
+    @Published var routeFilter: AICallLogRouteSnapshot?
+    @Published var statusFilter: AICallLogStatusSnapshot?
     @Published private(set) var dateRangePreset: AICallLogDateRangePreset = .any
     @Published private(set) var occurredAfter: Int64?
     @Published private(set) var occurredBefore: Int64?
@@ -126,9 +126,9 @@ final class AICallLogModel: ObservableObject {
 
     init(
         repoPath: String,
-        lister: any CoreAICallLogListing = AppCoreServices.aiCallLogLister,
-        clearer: any CoreAICallLogClearing = AppCoreServices.aiCallLogClearer,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        lister: any CoreAICallLogListing,
+        clearer: any CoreAICallLogClearing,
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.lister = lister
@@ -136,16 +136,16 @@ final class AICallLogModel: ObservableObject {
         self.errorMapper = errorMapper
     }
 
-    var page: AiCallLogPage? {
+    var page: AICallLogPageSnapshot? {
         guard case let .loaded(page) = state else { return nil }
         return page
     }
 
-    var records: [AiCallLogRecord] {
+    var records: [AICallLogRecordSnapshot] {
         page?.records ?? []
     }
 
-    var selectedRecord: AiCallLogRecord? {
+    var selectedRecord: AICallLogRecordSnapshot? {
         records.first { selectedRecordIDs.contains($0.id) }
     }
 
@@ -220,7 +220,7 @@ final class AICallLogModel: ObservableObject {
             let loaded = try await lister.listAICalls(
                 repoPath: repoPath,
                 filter: currentFilter,
-                pagination: AiCallLogPagination(limit: 100, offset: 0)
+                pagination: AICallLogPaginationSnapshot(limit: 100, offset: 0)
             )
             selectedRecordIDs = selectedRecordIDs.intersection(Set(loaded.records.map(\.id)))
             state = .loaded(loaded)
@@ -251,7 +251,7 @@ final class AICallLogModel: ObservableObject {
 
     func clearAll() async {
         await performClear(
-            request: AiCallLogClearRequest(scope: .all, entryIds: [], olderThan: nil),
+            request: AICallLogClearRequestSnapshot(scope: .all, entryIds: [], olderThan: nil),
             toast: L10n.message("AI call log cleared.")
         )
     }
@@ -259,7 +259,7 @@ final class AICallLogModel: ObservableObject {
     func deleteSelected() async {
         guard !selectedRecordIDs.isEmpty else { return }
         await performClear(
-            request: AiCallLogClearRequest(
+            request: AICallLogClearRequestSnapshot(
                 scope: .selectedEntries,
                 entryIds: selectedRecordIDs.sorted(),
                 olderThan: nil
@@ -268,9 +268,9 @@ final class AICallLogModel: ObservableObject {
         )
     }
 
-    private var currentFilter: AiCallLogFilter {
+    private var currentFilter: AICallLogFilterSnapshot {
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        return AiCallLogFilter(
+        return AICallLogFilterSnapshot(
             feature: featureFilter,
             route: routeFilter,
             status: statusFilter,
@@ -305,7 +305,7 @@ final class AICallLogModel: ObservableObject {
         Int64(date.timeIntervalSince1970.rounded(.down))
     }
 
-    private func performClear(request: AiCallLogClearRequest, toast: LocalizedMessage) async {
+    private func performClear(request: AICallLogClearRequestSnapshot, toast: LocalizedMessage) async {
         guard canMutate else { return }
         isMutating = true
         actionError = nil

@@ -49,7 +49,7 @@ func importBatchReadyBatchRow(
 }
 
 func importBatchExpectedAutoClassifyRequests(
-    duplicateStrategy: DuplicateStrategy = .ask
+    duplicateStrategy: ImportDuplicateStrategySnapshot = .ask
 ) -> [ImportBatchBatchImportRequest] {
     [
         importBatchExpectedInvoiceRequest(duplicateStrategy: duplicateStrategy),
@@ -69,7 +69,7 @@ func importBatchExpectedInvoiceRequest(
     destination: ImportEntryDestination = .autoClassify,
     suggestedCategory: String = "finance",
     overrideFilename: String = "Invoice_2026Q1.pdf",
-    duplicateStrategy: DuplicateStrategy = .ask
+    duplicateStrategy: ImportDuplicateStrategySnapshot = .ask
 ) -> ImportBatchBatchImportRequest {
     ImportBatchBatchImportRequest(
         storageMode: storageMode,
@@ -85,7 +85,7 @@ func importBatchExpectedContractRequest(
     destination: ImportEntryDestination = .autoClassify,
     suggestedCategory: String = "docs",
     overrideFilename: String = "2026Q1_合同.pdf",
-    duplicateStrategy: DuplicateStrategy = .ask
+    duplicateStrategy: ImportDuplicateStrategySnapshot = .ask
 ) -> ImportBatchBatchImportRequest {
     ImportBatchBatchImportRequest(
         storageMode: storageMode,

@@ -120,9 +120,9 @@ final class IntegrationsSettingsModel: ObservableObject {
 
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
+        errorMapper: any CoreErrorMapping,
         statusDetector: any ICloudStatusDetecting = IntegrationsSettingsPlatformServices.statusDetector,
         finderOpener: any RepositoryFinderOpening = IntegrationsSettingsPlatformServices.finderOpener,
         helpOpener: any ICloudHelpOpening = IntegrationsSettingsPlatformServices.helpOpener

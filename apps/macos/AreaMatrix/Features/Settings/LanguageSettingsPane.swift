@@ -11,14 +11,37 @@ struct LanguageSettingsPane: View {
 
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
-        capabilityLoader: any CorePlatformCapabilitiesLoading = AppCoreServices.platformCapabilityLoader,
-        overviewRegenerator: any CoreOverviewRegenerating = AppCoreServices.overviewRegenerator,
+        featureDependencies: SettingsFeatureDependencies,
+        sharedDependencies: SharedFeatureDependencies,
         overviewRegenerationCoordinator: OverviewRegenerationCoordinator? = nil,
         appVersion: String? = nil,
         appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
+    ) {
+        self.init(
+            repoPath: repoPath,
+            loader: featureDependencies.configurationLoader,
+            updater: featureDependencies.configurationUpdater,
+            capabilityLoader: featureDependencies.platformCapabilityLoader,
+            overviewRegenerator: featureDependencies.overviewRegenerator,
+            overviewRegenerationCoordinator: overviewRegenerationCoordinator,
+            appVersion: appVersion,
+            appVersionReader: appVersionReader,
+            errorMapper: sharedDependencies.errorMapper,
+            accessibilityAnnouncer: accessibilityAnnouncer
+        )
+    }
+
+    init(
+        repoPath: String,
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
+        capabilityLoader: any CorePlatformCapabilitiesLoading,
+        overviewRegenerator: any CoreOverviewRegenerating,
+        overviewRegenerationCoordinator: OverviewRegenerationCoordinator? = nil,
+        appVersion: String? = nil,
+        appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
+        errorMapper: any CoreErrorMapping,
         accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
     ) {
         _configModel = StateObject(wrappedValue: RepositorySettingsConfigModel(

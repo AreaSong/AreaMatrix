@@ -13,7 +13,7 @@ docs:
     line_end: 1714
     heading: 'AM-GOV-REGISTER-001'
     excerpt: 'id: AM-GOV-REGISTER-001'
-    sha256: '6d7e98f31ab8ed91cafbcea5ab08a6e5e8ad3d906f55c9403279348a1e598f9a'
+    sha256: '695f1ec377473d9145f00d82238c8e9ef828b0cd6835f03d0482453cadab6e85'
     source: 'changes:v2-asw-governance-adoption'
   - file: 'docs/governance/project-charter.md'
     line_start: 1

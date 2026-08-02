@@ -4,7 +4,7 @@ extension AISummarySavedSnapshot {
     static func aiSummarySavedSummary(
         fileID: Int64,
         text: String,
-        ownership: AiContentOwnership = .generated
+        ownership: AIContentOwnershipState = .generated
     ) -> AISummarySavedSnapshot {
         AISummarySavedSnapshot(
             fileID: fileID,
@@ -28,9 +28,9 @@ extension AISummarySavedSnapshot {
     }
 }
 
-extension AiPrivacyEvaluationReport {
-    static func aiSummaryAllowed() -> AiPrivacyEvaluationReport {
-        AiPrivacyEvaluationReport(
+extension AIPrivacyEvaluationReportSnapshot {
+    static func aiSummaryAllowed() -> AIPrivacyEvaluationReportSnapshot {
+        AIPrivacyEvaluationReportSnapshot(
             decision: .allowed,
             skippedReason: nil,
             providerGateReason: nil,
@@ -43,13 +43,13 @@ extension AiPrivacyEvaluationReport {
         )
     }
 
-    static func aiSummaryDeniedPrivacyRule() -> AiPrivacyEvaluationReport {
-        AiPrivacyEvaluationReport(
+    static func aiSummaryDeniedPrivacyRule() -> AIPrivacyEvaluationReportSnapshot {
+        AIPrivacyEvaluationReportSnapshot(
             decision: .skipped,
             skippedReason: .privacyRule,
             providerGateReason: nil,
             matchedRules: [
-                AiPrivacyRuleMatch(
+                AIPrivacyRuleMatchSnapshot(
                     ruleId: "rule-confidential",
                     name: "Confidential",
                     kind: .keyword,
@@ -67,19 +67,19 @@ extension AiPrivacyEvaluationReport {
     }
 }
 
-extension AiSummaryDraft {
+extension AISummaryDraftSnapshot {
     static func aiSummaryIntegrationDraft(
         fileID: Int64,
         text: String,
         draftID: String,
         callLogID: Int64
-    ) -> AiSummaryDraft {
-        AiSummaryDraft(
-            operationId: "operation-\(fileID)-\(draftID)",
+    ) -> AISummaryDraftSnapshot {
+        AISummaryDraftSnapshot(
+            operationID: "operation-\(fileID)-\(draftID)",
             contentLocale: .en,
             formatContractVersion: 1,
-            fileId: fileID,
-            draftId: draftID,
+            fileID: fileID,
+            draftID: draftID,
             status: .draft,
             summaryText: text,
             route: .remote,
@@ -87,8 +87,8 @@ extension AiSummaryDraft {
             generatedAt: 1_700_000_000,
             usedContext: [.fileName, .extractedTextExcerpt],
             skippedReason: nil,
-            privacyRuleId: nil,
-            callLogId: callLogID,
+            privacyRuleID: nil,
+            callLogID: callLogID,
             requiresUserSave: true,
             characterCount: Int64(text.count)
         )
@@ -96,14 +96,14 @@ extension AiSummaryDraft {
 
     static func aiSummaryIntegrationUnavailableDraft(
         fileID: Int64,
-        reason: AiSummarySkipReason
-    ) -> AiSummaryDraft {
-        AiSummaryDraft(
-            operationId: "operation-\(fileID)-unavailable",
+        reason: AISummarySkipReasonState
+    ) -> AISummaryDraftSnapshot {
+        AISummaryDraftSnapshot(
+            operationID: "operation-\(fileID)-unavailable",
             contentLocale: .en,
             formatContractVersion: 1,
-            fileId: fileID,
-            draftId: nil,
+            fileID: fileID,
+            draftID: nil,
             status: .unavailable,
             summaryText: nil,
             route: nil,
@@ -111,8 +111,8 @@ extension AiSummaryDraft {
             generatedAt: nil,
             usedContext: [],
             skippedReason: reason,
-            privacyRuleId: nil,
-            callLogId: nil,
+            privacyRuleID: nil,
+            callLogID: nil,
             requiresUserSave: false,
             characterCount: 0
         )
@@ -122,13 +122,13 @@ extension AiSummaryDraft {
         fileID: Int64,
         privacyRuleID: String,
         callLogID: Int64
-    ) -> AiSummaryDraft {
-        AiSummaryDraft(
-            operationId: "operation-\(fileID)-privacy",
+    ) -> AISummaryDraftSnapshot {
+        AISummaryDraftSnapshot(
+            operationID: "operation-\(fileID)-privacy",
             contentLocale: .en,
             formatContractVersion: 1,
-            fileId: fileID,
-            draftId: nil,
+            fileID: fileID,
+            draftID: nil,
             status: .skipped,
             summaryText: nil,
             route: nil,
@@ -136,8 +136,8 @@ extension AiSummaryDraft {
             generatedAt: nil,
             usedContext: [],
             skippedReason: .privacyRule,
-            privacyRuleId: privacyRuleID,
-            callLogId: callLogID,
+            privacyRuleID: privacyRuleID,
+            callLogID: callLogID,
             requiresUserSave: false,
             characterCount: 0
         )

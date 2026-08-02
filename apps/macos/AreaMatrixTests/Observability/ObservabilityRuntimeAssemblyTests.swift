@@ -159,7 +159,7 @@ final class ObservabilityRuntimeAssemblyTests: XCTestCase {
     func testHealthIssuesRemainStableAndDeduplicatedAcrossReads() async throws {
         var behavior = ObservabilityRuntimeCoreSpy.Behavior()
         behavior.failInitialization = true
-        behavior.reportedHealth = ObservabilityHealth(
+        behavior.reportedHealth = CoreObservabilityHealthSnapshot(
             initialized: false,
             mode: .standard,
             queueDepth: 0,

@@ -10,7 +10,10 @@ extension MainRepositoryContentView {
             model: SyncConflictReviewModel(
                 repoPath: route.repoPath,
                 conflictID: route.conflictID,
-                primaryPath: route.primaryPath
+                primaryPath: route.primaryPath,
+                conflictDetector: syncConflictsDependencies.syncConflictDetector,
+                conflictResolver: syncConflictsDependencies.conflictResolver,
+                errorMapper: errorMapper
             ),
             onBackToNeedsReview: { syncConflictReviewRoutingState.route = nil },
             onClose: { syncConflictReviewRoutingState.route = nil },

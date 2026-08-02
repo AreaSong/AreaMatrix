@@ -145,7 +145,7 @@ actor ObservabilityRuntimeCoreSpy: CoreObservabilityControlling {
         var suspendFlush = false
         var failFlush = false
         var emitEventDuringFlush = false
-        var reportedHealth = ObservabilityHealth.runtimeHealthy
+        var reportedHealth = CoreObservabilityHealthSnapshot.runtimeHealthy
     }
 
     enum SpyError: Error {
@@ -159,11 +159,11 @@ actor ObservabilityRuntimeCoreSpy: CoreObservabilityControlling {
     private let flushGate = ObservabilityRuntimeSuspensionGate()
     private var initializationCount = 0
     private var startupCalls: [StartupCall] = []
-    private var initializedConfigurations: [ObservabilityConfig] = []
-    private var updatedConfigurations: [ObservabilityConfig] = []
+    private var initializedConfigurations: [CoreObservabilityConfigurationSnapshot] = []
+    private var updatedConfigurations: [CoreObservabilityConfigurationSnapshot] = []
     private var flushDeadlines: [UInt64] = []
     private var didBlockModeUpdate = false
-    private var eventSink: (any CoreObservabilitySink)?
+    private var eventSink: (any CoreObservabilityEventSinking)?
 
     init(behavior: Behavior = Behavior()) {
         self.behavior = behavior
@@ -175,9 +175,9 @@ actor ObservabilityRuntimeCoreSpy: CoreObservabilityControlling {
     }
 
     func initializeObservability(
-        config: ObservabilityConfig,
-        sink: any CoreObservabilitySink
-    ) async throws -> ObservabilityHealth {
+        config: CoreObservabilityConfigurationSnapshot,
+        sink: any CoreObservabilityEventSinking
+    ) async throws -> CoreObservabilityHealthSnapshot {
         startupCalls.append(.initialize)
         initializationCount += 1
         initializedConfigurations.append(config)
@@ -186,7 +186,9 @@ actor ObservabilityRuntimeCoreSpy: CoreObservabilityControlling {
         return behavior.reportedHealth
     }
 
-    func updateObservability(config: ObservabilityConfig) async throws -> ObservabilityHealth {
+    func updateObservability(
+        config: CoreObservabilityConfigurationSnapshot
+    ) async throws -> CoreObservabilityHealthSnapshot {
         updatedConfigurations.append(config)
         if behavior.blockFirstModeUpdate, config.mode != .disabled, !didBlockModeUpdate {
             didBlockModeUpdate = true
@@ -197,15 +199,15 @@ actor ObservabilityRuntimeCoreSpy: CoreObservabilityControlling {
         return behavior.reportedHealth
     }
 
-    func observabilityHealth() async -> ObservabilityHealth {
+    func observabilityHealth() async -> CoreObservabilityHealthSnapshot {
         behavior.reportedHealth
     }
 
-    func flushObservability(deadlineMilliseconds: UInt64) async throws -> ObservabilityHealth {
+    func flushObservability(deadlineMilliseconds: UInt64) async throws -> CoreObservabilityHealthSnapshot {
         flushDeadlines.append(deadlineMilliseconds)
         if behavior.emitEventDuringFlush,
-           let sessionID = initializedConfigurations.last?.sessionId {
-            eventSink?.onEvent(event: runtimeCoreEvent(id: "flush-event", sessionID: sessionID))
+           let sessionID = initializedConfigurations.last?.sessionID {
+            eventSink?.onEvent(runtimeCoreEvent(id: "flush-event", sessionID: sessionID))
         }
         if behavior.suspendFlush { await flushGate.enterAndWait() }
         if behavior.failFlush { throw SpyError.flush }
@@ -228,8 +230,8 @@ actor ObservabilityRuntimeCoreSpy: CoreObservabilityControlling {
         await flushGate.release()
     }
 
-    func emit(_ event: CoreObservabilityEvent) {
-        eventSink?.onEvent(event: event)
+    func emit(_ event: ObservabilityEventSnapshot) {
+        eventSink?.onEvent(event)
     }
 
     func initializeCallCount() -> Int {
@@ -240,11 +242,11 @@ actor ObservabilityRuntimeCoreSpy: CoreObservabilityControlling {
         startupCalls
     }
 
-    func initializedModes() -> [ObservabilityMode] {
+    func initializedModes() -> [CoreObservabilityModeSnapshot] {
         initializedConfigurations.map(\.mode)
     }
 
-    func updatedModes() -> [ObservabilityMode] {
+    func updatedModes() -> [CoreObservabilityModeSnapshot] {
         updatedConfigurations.map(\.mode)
     }
 
@@ -309,7 +311,7 @@ func waitForRuntimeCondition(
     return false
 }
 
-extension ObservabilityHealth {
+extension CoreObservabilityHealthSnapshot {
     static let runtimeHealthy = Self(
         initialized: true,
         mode: .standard,
@@ -343,35 +345,35 @@ extension AppObservabilityConfiguration {
     }
 }
 
-func runtimeCoreEvent(id: String, sessionID: String) -> CoreObservabilityEvent {
-    CoreObservabilityEvent(
+func runtimeCoreEvent(id: String, sessionID: String) -> ObservabilityEventSnapshot {
+    ObservabilityEventSnapshot(
         schemaVersion: 2,
-        eventId: id,
-        wallTimestampMs: 1,
-        monotonicTimestampNs: 1,
+        eventID: id,
+        wallTimestampMilliseconds: 1,
+        monotonicTimestampNanoseconds: 1,
         sequenceNumber: 1,
-        sessionId: sessionID,
-        incidentId: nil,
-        traceId: "trace-\(id)",
-        spanId: "span-\(id)",
-        parentSpanId: nil,
-        operationId: nil,
-        retryOfOperationId: nil,
-        actionId: "diagnostics.export.confirmed",
-        componentId: "core.observability.runtime",
-        layer: .core,
+        sessionID: sessionID,
+        incidentID: nil,
+        traceID: "trace-\(id)",
+        spanID: "span-\(id)",
+        parentSpanID: nil,
+        operationID: nil,
+        retryOfOperationID: nil,
+        actionID: "diagnostics.export.confirmed",
+        componentID: "core.observability.runtime",
+        layer: "core",
         phase: "event",
         severity: .info,
-        outcome: .succeeded,
-        durationMs: nil,
-        resourceRefs: [],
+        outcome: "succeeded",
+        durationMilliseconds: nil,
+        resources: [],
         error: nil,
         attributes: [],
-        privacyLevel: .public,
+        privacy: "public",
         message: nil,
         target: nil,
         threadName: "runtime-test",
-        buildContext: ObservabilityBuildContext(
+        buildContext: ObservabilityBuildContextSnapshot(
             producer: "area_matrix_core",
             version: "0.1.0",
             build: "test",

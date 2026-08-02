@@ -3,13 +3,37 @@ import SwiftUI
 struct IntegrationsSettingsPane: View {
     @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: IntegrationsSettingsModel
+    private let syncConflictsDependencies: SyncConflictsFeatureDependencies
+    private let errorMapper: any CoreErrorMapping
     @State private var isConflictListPresented = false
 
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        featureDependencies: SettingsFeatureDependencies,
+        sharedDependencies: SharedFeatureDependencies,
+        syncConflictsDependencies: SyncConflictsFeatureDependencies,
+        statusDetector: any ICloudStatusDetecting = IntegrationsSettingsPlatformServices.statusDetector,
+        finderOpener: any RepositoryFinderOpening = IntegrationsSettingsPlatformServices.finderOpener,
+        helpOpener: any ICloudHelpOpening = IntegrationsSettingsPlatformServices.helpOpener
+    ) {
+        self.init(
+            repoPath: repoPath,
+            loader: featureDependencies.configurationLoader,
+            updater: featureDependencies.configurationUpdater,
+            errorMapper: sharedDependencies.errorMapper,
+            syncConflictsDependencies: syncConflictsDependencies,
+            statusDetector: statusDetector,
+            finderOpener: finderOpener,
+            helpOpener: helpOpener
+        )
+    }
+
+    init(
+        repoPath: String,
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
+        errorMapper: any CoreErrorMapping,
+        syncConflictsDependencies: SyncConflictsFeatureDependencies,
         statusDetector: any ICloudStatusDetecting = IntegrationsSettingsPlatformServices.statusDetector,
         finderOpener: any RepositoryFinderOpening = IntegrationsSettingsPlatformServices.finderOpener,
         helpOpener: any ICloudHelpOpening = IntegrationsSettingsPlatformServices.helpOpener
@@ -23,6 +47,8 @@ struct IntegrationsSettingsPane: View {
             finderOpener: finderOpener,
             helpOpener: helpOpener
         ))
+        self.syncConflictsDependencies = syncConflictsDependencies
+        self.errorMapper = errorMapper
     }
 
     var body: some View {
@@ -36,11 +62,27 @@ struct IntegrationsSettingsPane: View {
         }
         .sheet(isPresented: $isConflictListPresented) {
             ICloudConflictListView(
-                model: ICloudConflictListModel(repoPath: model.repoPath),
+                model: ICloudConflictListModel(
+                    repoPath: model.repoPath,
+                    conflictLister: syncConflictsDependencies.iCloudConflictLister,
+                    errorMapper: errorMapper
+                ),
                 pageContext: .iCloudConflictVisualConflictVisual,
+                systemCapabilityChecker: syncConflictsDependencies.systemCapabilityChecker,
                 onClose: { isConflictListPresented = false },
                 onResolve: model.recordConflictResolveEntry,
-                onCollectDiagnostics: model.recordConflictDiagnosticsEntry
+                onCollectDiagnostics: model.recordConflictDiagnosticsEntry,
+                makeResolutionModel: { route in
+                    ICloudConflictMinimalModel(
+                        repoPath: route.repoPath,
+                        conflictID: route.conflict.conflictID,
+                        originalVersion: route.originalVersion,
+                        conflictedCopyVersion: route.conflictedCopyVersion,
+                        pathValidator: syncConflictsDependencies.repositoryPathValidator,
+                        conflictReviewer: syncConflictsDependencies.iCloudConflictReviewer,
+                        errorMapper: errorMapper
+                    )
+                }
             )
         }
     }

@@ -87,6 +87,8 @@ extension MainRepositoryContentView {
             ClassifierRuleEditorRouteView(
                 repoPath: opening.config.repoPath,
                 context: context,
+                settingsDependencies: settingsDependencies,
+                errorMapper: errorMapper,
                 onCancelFromBatchCategory: cancelClassifierRuleEditorFromBatchCategory,
                 onAcceptedCategoryFromBatchCategory: acceptClassifierRuleEditorCategory
             )

@@ -16,6 +16,8 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             loader: loader,
             updater: updater,
+            predictor: ClassifierSettingsSequencePredictor(),
+            ruleEditor: ClassifierSettingsRecordingRuleEditor(),
             errorMapper: RecordingCoreErrorMapper.classifierSettings()
         )
 
@@ -210,6 +212,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             loader: loader,
             updater: RecordingConfigurationUpdater(result: .success(())),
             predictor: predictor,
+            ruleEditor: ClassifierSettingsRecordingRuleEditor(),
             errorMapper: RecordingCoreErrorMapper.classifierSettings(),
             accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
@@ -237,6 +240,8 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             repoPath: repoURL.path,
             loader: bridge,
             updater: bridge,
+            predictor: bridge,
+            ruleEditor: bridge,
             errorMapper: bridge
         )
 
@@ -270,6 +275,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             loader: bridge,
             updater: bridge,
             predictor: bridge,
+            ruleEditor: bridge,
             errorMapper: bridge
         )
 

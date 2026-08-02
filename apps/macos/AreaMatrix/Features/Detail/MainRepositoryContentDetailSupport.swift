@@ -26,6 +26,7 @@ extension MainRepositoryContentView {
             selectedImportProgressRow: selectedImportProgressRow,
             semanticDetail: semanticDetailPresentationForSelectedFile,
             repoPath: opening.config.repoPath,
+            aiDependencies: aiDependencies,
             batchTagStore: fileListModel.tagStore,
             batchTagUndoStore: fileListModel.undoActionStore,
             batchTagErrorMapper: fileListModel.errorMapper,

@@ -18,7 +18,7 @@ from .build import (
     run_xcode_core_build,
 )
 from .changes import run_changes_doctor, run_changes_generate, run_changes_preview
-from .core_sdk import run_core_sdk_build
+from .core_sdk import run_core_sdk_build, run_core_sdk_cache_prune
 from .checks import (
     run_all_check,
     run_codex_os_check,
@@ -37,7 +37,14 @@ from .checks import (
 from .common import ToolError, print_error, project_root
 from .codex_os import run_codex_os_command
 from .discussion import run_workflow_discuss
-from .developer import run_build_doctor, run_changed_tests, run_macos_developer_scenario
+from .developer import (
+    DEVELOPER_SCENARIO_LOCALES,
+    DEVELOPER_SCENARIO_THEMES,
+    DEVELOPER_SCENARIO_VIEWPORTS,
+    run_build_doctor,
+    run_changed_tests,
+    run_macos_developer_scenario,
+)
 from .macos import run_macos_tests
 from .middle_layer import run_workflow_middle
 from .release import (
@@ -118,8 +125,9 @@ def _build_parser() -> argparse.ArgumentParser:
     check.add_argument(
         "target",
         nargs="?",
-        choices=["governance", "docs", "skills", "quality", "localization", "wording", "task-loop", "prompts", "diff", "secrets", "codex-os", "all", "task"],
+        choices=["governance", "docs", "skills", "quality", "localization", "wording", "task-loop", "prompts", "diff", "secrets", "codex-os", "affected", "all", "task"],
     )
+    check.add_argument("--list", action="store_true", help="Print the affected-path validation plan without executing it")
     check.add_argument("task_label", nargs="?", help="Task label for './dev check task', for example 4-1/task-15")
 
     wording = subparsers.add_parser("wording", help="Audit long-term source wording")
@@ -159,6 +167,24 @@ def _build_parser() -> argparse.ArgumentParser:
         "--verify-only",
         action="store_true",
         help="Validate the restored CoreSDK pointer, manifest, and XCFramework slices without building",
+    )
+
+    cache = subparsers.add_parser("cache", help="Inspect and explicitly prune local build caches")
+    cache_sub = cache.add_subparsers(dest="cache_target", required=True)
+    cache_core_sdk = cache_sub.add_parser("core-sdk", help="Manage fingerprinted CoreSDK cache entries")
+    cache_core_sdk_sub = cache_core_sdk.add_subparsers(dest="cache_action", required=True)
+    cache_core_sdk_prune = cache_core_sdk_sub.add_parser("prune", help="Plan or apply an LRU cache prune")
+    cache_core_sdk_prune.add_argument("--max-bytes", type=int, required=True, help="Maximum cache capacity")
+    cache_core_sdk_prune.add_argument(
+        "--keep-recent",
+        type=int,
+        default=1,
+        help="Protect this many most-recent entries in addition to the active pointer",
+    )
+    cache_core_sdk_prune.add_argument(
+        "--apply",
+        action="store_true",
+        help="Delete planned entries; without this flag the command is preview-only",
     )
 
     test = subparsers.add_parser("test", help="Run developer tests")
@@ -205,6 +231,9 @@ def _build_parser() -> argparse.ArgumentParser:
     run_sub = run.add_subparsers(dest="run_target", required=True)
     run_macos = run_sub.add_parser("macos", help="Build and launch a DEBUG-only macOS developer scenario")
     run_macos.add_argument("--scenario", required=True, help="Developer scenario id")
+    run_macos.add_argument("--theme", choices=DEVELOPER_SCENARIO_THEMES, default="light")
+    run_macos.add_argument("--locale", choices=DEVELOPER_SCENARIO_LOCALES, default="en")
+    run_macos.add_argument("--viewport", choices=DEVELOPER_SCENARIO_VIEWPORTS, default="standard")
     run_macos.add_argument("--derived-data-path", help="Persistent DerivedData directory")
     run_macos.add_argument("--no-build", action="store_true", help="Launch an existing Debug product without building")
     run_macos.add_argument("--build-only", action="store_true", help="Build and validate the scenario product without launching")
@@ -878,6 +907,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return run_secrets_check(root)
             if args.target == "codex-os":
                 return run_codex_os_check(root)
+            if args.target == "affected":
+                return run_changed_tests(root, list_only=args.list)
             if args.target == "all":
                 return run_all_check(root)
             if args.target == "task":
@@ -913,6 +944,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 dependency_file=args.dependency_file,
                 verify_only=args.verify_only,
             )
+        if args.command == "cache" and args.cache_target == "core-sdk" and args.cache_action == "prune":
+            return run_core_sdk_cache_prune(
+                root,
+                max_bytes=args.max_bytes,
+                keep_recent=args.keep_recent,
+                apply=args.apply,
+            )
         if args.command == "test" and args.test_target == "macos":
             return run_macos_tests(
                 root,
@@ -936,6 +974,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             return run_macos_developer_scenario(
                 root,
                 scenario=args.scenario,
+                theme=args.theme,
+                locale=args.locale,
+                viewport=args.viewport,
                 derived_data_path=args.derived_data_path,
                 no_build=args.no_build,
                 build_only=args.build_only,

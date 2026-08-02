@@ -87,13 +87,13 @@ extension CommandPaletteSnapshot {
         )
     }
 
-    static func testFixture(coreIndex: CommandIndex) -> CommandPaletteSnapshot {
+    static func testFixture(coreIndex: CoreCommandIndexSnapshot) -> CommandPaletteSnapshot {
         CommandPaletteSnapshot(coreIndex: coreIndex)
     }
 }
 
 extension CommandTargetSnapshot {
-    static func testFixture(coreTarget: CommandTarget) -> CommandTargetSnapshot {
+    static func testFixture(coreTarget: CoreCommandTargetSnapshot) -> CommandTargetSnapshot {
         CommandTargetSnapshot(coreTarget: coreTarget)
     }
 
@@ -126,12 +126,12 @@ extension CommandTargetSnapshot {
     }
 }
 
-extension CommandIndex {
+extension CoreCommandIndexSnapshot {
     static func commandPaletteFixture(
-        commands: [CommandTarget] = [],
-        smartLists: [CommandTarget] = []
-    ) -> CommandIndex {
-        CommandIndex(
+        commands: [CoreCommandTargetSnapshot] = [],
+        smartLists: [CoreCommandTargetSnapshot] = []
+    ) -> CoreCommandIndexSnapshot {
+        CoreCommandIndexSnapshot(
             commands: commands,
             navigationTargets: [],
             currentSelectionTargets: [],
@@ -143,15 +143,15 @@ extension CommandIndex {
     }
 }
 
-extension CommandTarget {
+extension CoreCommandTargetSnapshot {
     static func commandPaletteFixture(
         id: String,
         title: String,
-        action: CommandTargetAction,
+        action: CommandTargetActionSnapshot,
         route: String?,
         savedSearchID: Int64? = nil
-    ) -> CommandTarget {
-        CommandTarget(
+    ) -> CoreCommandTargetSnapshot {
+        CoreCommandTargetSnapshot(
             id: id,
             title: title,
             subtitle: "Open command target",
@@ -163,8 +163,8 @@ extension CommandTarget {
             disabled: false,
             disabledReason: nil,
             requiresConfirmation: false,
-            fileId: nil,
-            savedSearchId: savedSearchID
+            fileID: nil,
+            savedSearchID: savedSearchID
         )
     }
 }

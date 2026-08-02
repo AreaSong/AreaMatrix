@@ -153,7 +153,7 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
         XCTAssertEqual(model.acceptDisabledReason, "Skipped by privacy rule.")
         XCTAssertEqual(model.suggestion?.privacyRuleID, "rule-confidential")
         XCTAssertEqual(model.suggestion?.usedContext, [])
-        XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
+        XCTAssertEqual(model.fallbackStatus?.nonAIFallbackAction, .classifyManually)
     }
 
     @MainActor
@@ -180,7 +180,7 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
         XCTAssertEqual(model.fallbackStatus?.kind, .privacySkipped)
         XCTAssertEqual(model.fallbackStatus?.primaryAction, .viewPrivacyRule)
         XCTAssertEqual(model.fallbackStatus?.secondaryAction, .viewCallLog)
-        XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
+        XCTAssertEqual(model.fallbackStatus?.nonAIFallbackAction, .classifyManually)
         assertTestMirrorDescription(of: panel.body, contains: [
             "Skipped by privacy rule",
             "View privacy rule",
@@ -241,7 +241,7 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
         XCTAssertEqual(model.fallbackStatus?.kind, .providerUnavailable)
         XCTAssertEqual(model.fallbackStatus?.primaryAction, .retry)
         XCTAssertEqual(model.fallbackStatus?.secondaryAction, .viewCallLog)
-        XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
+        XCTAssertEqual(model.fallbackStatus?.nonAIFallbackAction, .classifyManually)
         assertTestMirrorDescription(of: panel.body, contains: [
             "Retry",
             "Classify manually"
@@ -249,7 +249,7 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
         XCTAssertFalse(panel.isFallbackActionDisabled(.retry))
         XCTAssertFalse(panel.isFallbackActionDisabled(.viewCallLog))
         XCTAssertNotEqual(model.fallbackStatus?.primaryAction, .buildSemanticIndex)
-        XCTAssertNotEqual(model.fallbackStatus?.nonAiFallbackAction, .useNormalSearch)
+        XCTAssertNotEqual(model.fallbackStatus?.nonAIFallbackAction, .useNormalSearch)
     }
 
     @MainActor
@@ -272,13 +272,13 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
             onConfigureRemoteAI: { configuredRemoteAI = true }
         )
 
-        XCTAssertFalse(panel.isFallbackActionDisabled(.openAiSettings))
+        XCTAssertFalse(panel.isFallbackActionDisabled(.openAISettings))
         XCTAssertFalse(panel.isFallbackActionDisabled(.openLocalModelStatus))
-        XCTAssertFalse(panel.isFallbackActionDisabled(.configureRemoteAi))
+        XCTAssertFalse(panel.isFallbackActionDisabled(.configureRemoteAI))
 
-        panel.performFallbackAction(.openAiSettings)
+        panel.performFallbackAction(.openAISettings)
         panel.performFallbackAction(.openLocalModelStatus)
-        panel.performFallbackAction(.configureRemoteAi)
+        panel.performFallbackAction(.configureRemoteAI)
 
         XCTAssertTrue(openedAISettings)
         XCTAssertTrue(openedLocalModelStatus)
@@ -419,6 +419,6 @@ final class RemoteProviderProbeServiceTests: XCTestCase {
         ))
         XCTAssertEqual(model.failure?.detail, L10n.string("error.unmapped.message"))
         XCTAssertEqual(model.acceptDisabledReason, "No suggestion to accept.")
-        XCTAssertEqual(model.fallbackStatus?.nonAiFallbackAction, .classifyManually)
+        XCTAssertEqual(model.fallbackStatus?.nonAIFallbackAction, .classifyManually)
     }
 }

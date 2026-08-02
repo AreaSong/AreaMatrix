@@ -16,7 +16,7 @@ actor CoreBridge {
         repoURL: URL? = nil,
         unavailableState: CoreBridgeUnavailableState = .generatedBindingsUnavailable,
         availabilityChecker: any FileAvailabilityChecking = LocalFileAvailabilityChecker(),
-        importObservability: CoreImportObservabilityRecorder = .live,
+        importObservability: CoreImportObservabilityRecorder = .defaultForCurrentProcess,
         remoteProviderProbePerformer: any RemoteProviderProbePerforming = RemoteProviderProbeService.shared
     ) {
         self.repoURL = repoURL
@@ -188,9 +188,15 @@ actor CoreBridge {
         }.value
     }
 
-    func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
+    func listCommandTargets(
+        repoPath: String,
+        context: CommandIndexRequestSnapshot
+    ) async throws -> CoreCommandIndexSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            try listCoreCommandTargets(repoPath: repoPath, context: context)
+            try CoreCommandIndexSnapshot(coreIndex: listCoreCommandTargets(
+                repoPath: repoPath,
+                context: CommandIndexContext(snapshot: context)
+            ))
         }.value
     }
 
@@ -205,6 +211,16 @@ actor CoreBridge {
     func repoPathForDiagnostics() -> String? {
         repoURL?.path
     }
+}
+
+/// Process-scoped Core runtime used by the App composition root.
+///
+/// Feature tests and high-risk flows may still construct an isolated bridge
+/// explicitly. Production service defaults share this instance so Core
+/// observation, probe coordination, and actor state do not fan out across a
+/// new bridge for every protocol lookup.
+enum CoreBridgeRuntime {
+    static let shared = CoreBridge()
 }
 
 extension CoreBridge: CoreVersionLoading {}

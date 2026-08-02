@@ -96,6 +96,7 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             selectedImportProgressRow: nil,
             semanticDetail: nil,
             repoPath: "/tmp/repo",
+            aiDependencies: AIFeatureDependencies.live,
             batchTagStore: model.tagStore, batchTagUndoStore: model.undoActionStore,
             batchTagErrorMapper: model.errorMapper,
             batchDeleter: CoreBridge(),

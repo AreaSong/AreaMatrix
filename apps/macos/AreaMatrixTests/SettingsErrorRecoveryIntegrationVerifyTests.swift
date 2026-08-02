@@ -55,6 +55,7 @@ private func verifyClassifierRepositoryAndOverview(_ context: SettingsRecoveryIn
         loader: context.bridge,
         updater: context.bridge,
         predictor: context.bridge,
+        ruleEditor: context.bridge,
         errorMapper: context.bridge,
         accessibilityAnnouncer: NoopAccessibilityAnnouncer()
     )
@@ -80,12 +81,14 @@ private func verifyClassifierRepositoryAndOverview(_ context: SettingsRecoveryIn
     let repository = RepositorySettingsModel(
         repoPath: context.repoURL.path,
         loader: context.bridge,
+        updater: context.bridge,
         repositoryOpener: context.bridge,
         fileLister: context.bridge,
         scanSessionReader: context.bridge,
         existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
         generatedOverviewRevealer: generatedRevealer,
         diagnosticsCollector: makeSettingsRecoveryDiagnosticsCollector(context),
+        coreVersionLoader: context.bridge,
         errorMapper: context.bridge
     )
     await repository.load()

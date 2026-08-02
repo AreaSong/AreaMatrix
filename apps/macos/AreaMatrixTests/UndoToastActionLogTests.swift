@@ -11,7 +11,11 @@ final class UndoToastActionLogTests: XCTestCase {
             state: .list,
             assembly: .make(
                 opening: .importSingleFileFixture(repoPath: importProgressRepoPath()),
-                errorMapper: StaticCoreErrorMapper(mapping: .undoActionLogHistoryFailure)
+                errorMapper: StaticCoreErrorMapper(mapping: .undoActionLogHistoryFailure),
+                aiDependencies: AppDependencyContainer.live.feature.ai,
+                fileActionsDependencies: AppDependencyContainer.live.feature.fileActions,
+                settingsDependencies: AppDependencyContainer.live.feature.settings,
+                syncConflictsDependencies: AppDependencyContainer.live.feature.syncConflicts
             ),
             onImport: {},
             onDropImport: { _, _ in }

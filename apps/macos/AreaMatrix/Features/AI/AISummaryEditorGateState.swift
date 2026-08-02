@@ -18,7 +18,7 @@ struct AISummaryEditorNotice: Equatable {
     var capability: String
     var opensAISettings: Bool
     var privacyRuleID: String?
-    var privacyField: AiPrivacyInputField?
+    var privacyField: AIPrivacyInputFieldState?
     var reason: AISummaryEditorGateReason
 }
 

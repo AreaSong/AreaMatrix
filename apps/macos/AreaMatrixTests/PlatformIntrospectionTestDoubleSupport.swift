@@ -96,3 +96,5 @@ actor StaticCoreVersionReader: CoreVersionReading {
         XCTAssertEqual(count, expectedCount, file: file, line: line)
     }
 }
+
+extension StaticCoreVersionReader: CoreVersionLoading {}

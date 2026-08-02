@@ -52,7 +52,7 @@ func assertRemoteProviderConfigEnabledPageIntegration(
     line: UInt = #line
 ) async {
     let expectedScopes: [AISettingsFeatureKind] = [.classificationSuggestions, .autoSummaries]
-    let expectedCoreScopes = expectedScopes.map(AiFeatureKind.init(snapshotFeature:))
+    let expectedCoreScopes = expectedScopes
     await providerBridge.assertLoadCount(1, file: file, line: line)
     await providerBridge.assertTestRequest(keyReference: "keychain:openAi-managed", file: file, line: line)
     await providerBridge.assertEnableRequest(

@@ -7,7 +7,7 @@ protocol ImportBatchCoreFileLoading: Sendable {
 struct CoreBridgeBatchFileLoader: ImportBatchCoreFileLoading {
     private let fileLister: any CoreFileListing
 
-    init(fileLister: any CoreFileListing = AppCoreServices.fileLister) {
+    init(fileLister: any CoreFileListing) {
         self.fileLister = fileLister
     }
 
@@ -38,7 +38,7 @@ protocol ImportBatchNameConflictPrechecking: Sendable {
 struct CoreImportBatchNameConflictPrechecker: ImportBatchNameConflictPrechecking {
     private let fileLoader: any ImportBatchCoreFileLoading
 
-    init(fileLoader: any ImportBatchCoreFileLoading = CoreBridgeBatchFileLoader()) {
+    init(fileLoader: any ImportBatchCoreFileLoading) {
         self.fileLoader = fileLoader
     }
 
@@ -97,7 +97,7 @@ enum ImportBatchNameConflictPrecheckResult: Equatable {
 struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
     private let fileLoader: any ImportBatchCoreFileLoading
 
-    init(fileLoader: any ImportBatchCoreFileLoading = CoreBridgeBatchFileLoader()) {
+    init(fileLoader: any ImportBatchCoreFileLoading) {
         self.fileLoader = fileLoader
     }
 

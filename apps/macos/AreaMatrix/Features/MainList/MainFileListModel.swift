@@ -134,33 +134,7 @@ final class MainFileListModel: ObservableObject {
 
     init(
         opening: RepositoryOpeningResult,
-        fileLister: any CoreFileListing,
-        fileDetailer: any CoreFileDetailing,
-        missingFileRecoverer: any CoreMissingFileRecovering = AppCoreServices.missingFileRecoverer,
-        missingFilePicker: any RepositoryMissingFilePicking = AppPlatformServices.missingFilePicker,
-        searchQuerying: any CoreSearchQuerying = AppCoreServices.searchQuerying,
-        semanticSearching: any CoreSemanticSearching = AppCoreServices.semanticSearching,
-        semanticFallbackReader: any CoreSemanticFallbackStatusReading = AppCoreServices.semanticFallbackReader,
-        searchFiltering: any CoreSearchFiltering = AppCoreServices.searchFiltering,
-        commandIndexer: any CoreCommandIndexing = AppCoreServices.commandIndexer,
-        fileRenamer: any CoreFileRenaming = AppCoreServices.fileRenamer,
-        fileDeleter: any CoreFileDeleting = AppCoreServices.fileDeleter,
-        fileCategoryMover: any CoreFileCategoryMoving = AppCoreServices.fileCategoryMover,
-        categoryPredictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
-        batchDeleter: any CoreBatchDeleting = AppCoreServices.batchDeleter,
-        batchCategoryChanger: any CoreBatchCategoryChanging = AppCoreServices.batchCategoryChanger,
-        iCloudConflictResolver: any ICloudConflictResolving = AppCoreServices.iCloudConflictResolver,
-        tagStore: any CoreTagCRUD = AppCoreServices.tagStore,
-        aiSettingsLoader: any CoreAISettingsLoading = AppCoreServices.aiSettingsLoader,
-        aiTagSuggestionStore: any CoreAITagSuggestionManaging = AppCoreServices.aiTagSuggestionStore,
-        aiPrivacyRules: any CoreAIPrivacyEvaluating = AppCoreServices.aiPrivacyRules,
-        undoActionStore: any CoreUndoActionLogging = AppCoreServices.undoActionStore,
-        redoActionStore: any CoreRedoActionLogging = AppCoreServices.redoActionStore,
-        changeLogLister: any CoreChangeLogListing = AppCoreServices.changeLogLister,
-        externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer,
-        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
-        errorMapper: any CoreErrorMapping,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector
+        dependencies: MainListFeatureDependencies
     ) {
         repoPath = opening.config.repoPath
         isReadOnly = opening.isReadOnly
@@ -169,33 +143,33 @@ final class MainFileListModel: ObservableObject {
         nextFilePageOffset = Int64(opening.currentCategoryFiles.count)
         hasMore = opening.currentCategoryFiles.count == Int(Self.fileListPageSize)
         errorMapping = opening.currentCategoryListError
-        self.fileLister = fileLister
-        self.fileDetailer = fileDetailer
-        self.missingFileRecoverer = missingFileRecoverer
-        self.missingFilePicker = missingFilePicker
-        self.searchQuerying = searchQuerying
-        self.semanticSearching = semanticSearching
-        self.semanticFallbackReader = semanticFallbackReader
-        self.searchFiltering = searchFiltering
-        self.commandIndexer = commandIndexer
-        self.fileRenamer = fileRenamer
-        self.fileDeleter = fileDeleter
-        self.fileCategoryMover = fileCategoryMover
-        self.categoryPredictor = categoryPredictor
-        self.batchDeleter = batchDeleter
-        self.batchCategoryChanger = batchCategoryChanger
-        self.iCloudConflictResolver = iCloudConflictResolver
-        self.tagStore = tagStore
-        self.aiSettingsLoader = aiSettingsLoader
-        self.aiTagSuggestionStore = aiTagSuggestionStore
-        self.aiPrivacyRules = aiPrivacyRules
-        self.undoActionStore = undoActionStore
-        self.redoActionStore = redoActionStore
-        self.changeLogLister = changeLogLister
-        self.externalChangesSyncer = externalChangesSyncer
-        self.repositoryWriteCoordinator = repositoryWriteCoordinator
-        self.errorMapper = errorMapper
-        self.diagnosticsCollector = diagnosticsCollector
+        fileLister = dependencies.fileLister
+        fileDetailer = dependencies.fileDetailer
+        missingFileRecoverer = dependencies.missingFileRecoverer
+        missingFilePicker = dependencies.missingFilePicker
+        searchQuerying = dependencies.searchQuerying
+        semanticSearching = dependencies.semanticSearching
+        semanticFallbackReader = dependencies.semanticFallbackReader
+        searchFiltering = dependencies.searchFiltering
+        commandIndexer = dependencies.commandIndexer
+        fileRenamer = dependencies.fileRenamer
+        fileDeleter = dependencies.fileDeleter
+        fileCategoryMover = dependencies.fileCategoryMover
+        categoryPredictor = dependencies.categoryPredictor
+        batchDeleter = dependencies.batchDeleter
+        batchCategoryChanger = dependencies.batchCategoryChanger
+        iCloudConflictResolver = dependencies.iCloudConflictResolver
+        tagStore = dependencies.tagStore
+        aiSettingsLoader = dependencies.aiSettingsLoader
+        aiTagSuggestionStore = dependencies.aiTagSuggestionStore
+        aiPrivacyRules = dependencies.aiPrivacyRules
+        undoActionStore = dependencies.undoActionStore
+        redoActionStore = dependencies.redoActionStore
+        changeLogLister = dependencies.changeLogLister
+        externalChangesSyncer = dependencies.externalChangesSyncer
+        repositoryWriteCoordinator = dependencies.repositoryWriteCoordinator
+        errorMapper = dependencies.errorMapper
+        diagnosticsCollector = dependencies.diagnosticsCollector
     }
 }
 

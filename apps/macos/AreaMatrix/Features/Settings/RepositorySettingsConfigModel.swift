@@ -195,9 +195,9 @@ final class RepositorySettingsConfigModel: ObservableObject {
 
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
+        errorMapper: any CoreErrorMapping,
         accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
     ) {
         self.repoPath = repoPath

@@ -85,6 +85,7 @@ private func makeFailureRepairModel(
         metadataRepairer: repairer,
         repositoryReindexer: reindexer,
         startupRecoverer: StaticStartupRecoverer(),
+        repositoryWriteCoordinator: RepositoryWriteCoordinator(),
         diagnosticsCollector: ShellRecordingDiagnosticsCollector(
             result: .success(.databaseRepairIntegrationDiagnostics)
         ),
@@ -171,7 +172,9 @@ private struct DatabaseRepairIntegrationSuccessContext {
             mapping: repairRoute.mapping,
             lastOpenedAt: 1_777_000_000,
             metadataRepairer: bridge,
+            repositoryReindexer: bridge,
             startupRecoverer: bridge,
+            repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             diagnosticsCollector: bridge,
             errorMapper: bridge
         )

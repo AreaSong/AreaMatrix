@@ -154,7 +154,7 @@ final class RemoteProviderConfigFeatureTests: XCTestCase {
         await model.evaluate(repoRelativePath: "finance/private/q1.pdf")
 
         await bridge.assertEvaluationCount(4)
-        await bridge.assertEvaluationFeatures(AiFeatureKind.aiPrivacyRulesCases)
+        await bridge.assertEvaluationFeatures(AISettingsFeatureKind.aiPrivacyRulesCases)
         await bridge.assertEvaluation(
             at: 0,
             route: .remote,

@@ -61,7 +61,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
         await privacyBridge.assertUpdateFieldPolicy(at: 1, field: .noteSummary, allowRemote: false)
         await privacyBridge.assertUpdateRule(at: 2, position: .first, pattern: "finance/private/q2/")
         await privacyBridge.assertUpdateRule(at: 3, position: .last, name: L10n.string("Confidential keywords"))
-        await privacyBridge.assertEvaluationFeatures(AiFeatureKind.aiPrivacyRulesCases)
+        await privacyBridge.assertEvaluationFeatures(AISettingsFeatureKind.aiPrivacyRulesCases)
         await privacyBridge.assertEvaluation(
             at: 0,
             repoRelativePath: "finance/private/q2/report.key",
@@ -114,7 +114,7 @@ final class AIPrivacyRulesPageIntegrationVerifyTests: XCTestCase {
             L10n.string("Ready to save.")
         )
 
-        let rule = AiPrivacyRuleRecord.aiPrivacyRulesIntegrationRule()
+        let rule = AIPrivacyRuleRecordSnapshot.aiPrivacyRulesIntegrationRule()
         var edit = AIPrivacyRuleEditorDraft(record: rule)
         XCTAssertFalse(edit.hasChanges)
         edit.description = "Updated reason"
@@ -315,8 +315,8 @@ private extension RemoteProviderConfigState {
     }
 }
 
-private extension AiPrivacyRulesSnapshot {
-    static func aiPrivacyRulesIntegrationRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
+private extension AIPrivacyRulesSnapshot {
+    static func aiPrivacyRulesIntegrationRules(privacyGateEnabled: Bool) -> AIPrivacyRulesSnapshot {
         testFixture(
             privacyGateEnabled: privacyGateEnabled,
             rules: [.aiPrivacyRulesIntegrationRule()],
@@ -337,9 +337,9 @@ private extension AiPrivacyRulesSnapshot {
     }
 }
 
-private extension AiPrivacyRuleRecord {
-    static func aiPrivacyRulesIntegrationRule() -> AiPrivacyRuleRecord {
-        AiPrivacyRuleRecord(
+private extension AIPrivacyRuleRecordSnapshot {
+    static func aiPrivacyRulesIntegrationRule() -> AIPrivacyRuleRecordSnapshot {
+        AIPrivacyRuleRecordSnapshot(
             ruleId: "rule-finance-folder",
             name: "Folder finance/private/",
             kind: .folder,
@@ -354,16 +354,16 @@ private extension AiPrivacyRuleRecord {
 }
 
 private extension AIPrivacyRuleEditorDraft {
-    func withPattern(_ pattern: String) -> AiPrivacyRuleInput {
+    func withPattern(_ pattern: String) -> AIPrivacyRuleInputSnapshot {
         var copy = self
         copy.pattern = pattern
         return copy.input
     }
 }
 
-private extension AiPrivacyEvaluationReport {
-    static func aiPrivacyRulesIntegrationProviderGateBlocked() -> AiPrivacyEvaluationReport {
-        AiPrivacyEvaluationReport(
+private extension AIPrivacyEvaluationReportSnapshot {
+    static func aiPrivacyRulesIntegrationProviderGateBlocked() -> AIPrivacyEvaluationReportSnapshot {
+        AIPrivacyEvaluationReportSnapshot(
             decision: .skipped,
             skippedReason: .privacyGateDisabled,
             providerGateReason: .privacyGateDisabled,

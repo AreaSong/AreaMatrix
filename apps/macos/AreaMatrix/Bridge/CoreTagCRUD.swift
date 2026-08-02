@@ -19,69 +19,11 @@ protocol CoreAITagSuggestionManaging: Sendable {
     func suggestTagsWithAI(
         repoPath: String,
         request: AITagSuggestionRequestSnapshot
-    ) async throws -> AiTagSuggestionReport
+    ) async throws -> AITagSuggestionReportSnapshot
     func applyAITagSuggestions(
         repoPath: String,
-        request: ApplyAiTagSuggestionsRequest
-    ) async throws -> AiTagSuggestionApplyReport
-}
-
-struct AITagSuggestionRequestSnapshot: Equatable {
-    var fileID: Int64
-    var candidateTags: [String]
-    var privacyPolicyRef: String?
-}
-
-struct TagRecordSnapshot: Equatable, Identifiable {
-    var value: String
-    var label: String
-    var fileCount: Int64
-    var selected: Bool
-    var disabled: Bool
-    var updatedAt: Int64
-
-    var id: String {
-        value
-    }
-
-    var displayName: String {
-        label.isEmpty ? value : label
-    }
-}
-
-struct TagSetSnapshot: Equatable {
-    var fileID: Int64
-    var fileTags: [TagRecordSnapshot]
-    var availableTags: [TagRecordSnapshot]
-    var recentTags: [TagRecordSnapshot]
-    var updatedAt: Int64
-}
-
-enum BatchMutationStatusSnapshot: Equatable {
-    case added
-    case alreadyHadTag
-    case failed
-}
-
-struct BatchMutationItemResultSnapshot: Equatable, Identifiable {
-    var fileID: Int64
-    var tag: String
-    var status: BatchMutationStatusSnapshot
-    var error: String?
-
-    var id: String {
-        "\(fileID):\(tag):\(status)"
-    }
-}
-
-struct BatchMutationReportSnapshot: Equatable {
-    var requestedFileCount: Int64
-    var requestedTagCount: Int64
-    var addedCount: Int64
-    var skippedCount: Int64
-    var failedCount: Int64
-    var itemResults: [BatchMutationItemResultSnapshot]
-    var undoToken: String?
+        request: ApplyAITagSuggestionsRequestSnapshot
+    ) async throws -> AITagSuggestionApplyReportSnapshot
 }
 
 extension CoreTagCRUD {
@@ -166,7 +108,7 @@ extension CoreBridge: CoreAITagSuggestionManaging {
     func suggestTagsWithAI(
         repoPath: String,
         request: AITagSuggestionRequestSnapshot
-    ) async throws -> AiTagSuggestionReport {
+    ) async throws -> AITagSuggestionReportSnapshot {
         let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
         let coreRequest = try AiTagSuggestionRequest(
             fileId: request.fileID,
@@ -175,71 +117,21 @@ extension CoreBridge: CoreAITagSuggestionManaging {
             contentLocale: ContentLocale(snapshotValue: contentLocale)
         )
         return try await Task.detached(priority: .userInitiated) {
-            try AreaMatrix.suggestTagsWithAi(repoPath: repoPath, request: coreRequest)
+            try AITagSuggestionReportSnapshot(
+                coreReport: AreaMatrix.suggestTagsWithAi(repoPath: repoPath, request: coreRequest)
+            )
         }.value
     }
 
     func applyAITagSuggestions(
         repoPath: String,
-        request: ApplyAiTagSuggestionsRequest
-    ) async throws -> AiTagSuggestionApplyReport {
+        request: ApplyAITagSuggestionsRequestSnapshot
+    ) async throws -> AITagSuggestionApplyReportSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            try AreaMatrix.applyAiTagSuggestions(repoPath: repoPath, request: request)
+            try AITagSuggestionApplyReportSnapshot(coreReport: AreaMatrix.applyAiTagSuggestions(
+                repoPath: repoPath,
+                request: ApplyAiTagSuggestionsRequest(snapshot: request)
+            ))
         }.value
-    }
-}
-
-extension TagSetSnapshot {
-    init(coreTagSet: TagSet) {
-        fileID = coreTagSet.fileId
-        fileTags = coreTagSet.fileTags.map(TagRecordSnapshot.init(coreRecord:))
-        availableTags = coreTagSet.availableTags.map(TagRecordSnapshot.init(coreRecord:))
-        recentTags = coreTagSet.recentTags.map(TagRecordSnapshot.init(coreRecord:))
-        updatedAt = coreTagSet.updatedAt
-    }
-}
-
-private extension TagRecordSnapshot {
-    init(coreRecord: TagRecord) {
-        value = coreRecord.value
-        label = coreRecord.label
-        fileCount = coreRecord.fileCount
-        selected = coreRecord.selected
-        disabled = coreRecord.disabled
-        updatedAt = coreRecord.updatedAt
-    }
-}
-
-private extension BatchMutationReportSnapshot {
-    init(coreReport: BatchMutationReport) {
-        requestedFileCount = coreReport.requestedFileCount
-        requestedTagCount = coreReport.requestedTagCount
-        addedCount = coreReport.addedCount
-        skippedCount = coreReport.skippedCount
-        failedCount = coreReport.failedCount
-        itemResults = coreReport.itemResults.map(BatchMutationItemResultSnapshot.init(coreResult:))
-        undoToken = coreReport.undoToken
-    }
-}
-
-private extension BatchMutationItemResultSnapshot {
-    init(coreResult: BatchMutationItemResult) {
-        fileID = coreResult.fileId
-        tag = coreResult.tag
-        status = BatchMutationStatusSnapshot(coreStatus: coreResult.status)
-        error = coreResult.error
-    }
-}
-
-private extension BatchMutationStatusSnapshot {
-    init(coreStatus: BatchMutationStatus) {
-        switch coreStatus {
-        case .added:
-            self = .added
-        case .alreadyHadTag:
-            self = .alreadyHadTag
-        case .failed:
-            self = .failed
-        }
     }
 }

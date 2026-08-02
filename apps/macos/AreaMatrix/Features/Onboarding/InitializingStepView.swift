@@ -316,6 +316,7 @@ private struct HoverableGhostButton: View {
     let action: () -> Void
     let icon: AreaMatrixLucideIcon.IconName?
     let title: String
+    @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
     @State private var isHovered = false
 
     var body: some View {
@@ -330,7 +331,7 @@ private struct HoverableGhostButton: View {
         }
         .onHover { hovering in
             isHovered = hovering
-            AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+            interactionFeedback.setPointingCursor(active: hovering)
         }
     }
 }

@@ -21,7 +21,7 @@ extension MainFileListModel {
               canPerformWriteAction(fileID: fileID) else { return }
 
         if let blocker = iCloudConflictResolver.iCloudConflictResolutionCapability.blocker {
-            let mapping = await mapCoreError(blocker.coreError)
+            let mapping = await mapCoreError(blocker.error)
             iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
             return
         }
@@ -95,10 +95,14 @@ extension MainFileListModel {
         fileID: Int64
     ) throws {
         guard result.didClearConflictState else {
-            throw CoreError.Internal(message: "iCloud conflict \(fileID) did not clear conflict state")
+            throw AppSemanticError.internalFailure(
+                rawContext: "iCloud conflict \(fileID) did not clear conflict state"
+            )
         }
         guard result.didWriteChangeLog else {
-            throw CoreError.Internal(message: "iCloud conflict \(fileID) did not write change_log")
+            throw AppSemanticError.internalFailure(
+                rawContext: "iCloud conflict \(fileID) did not write change_log"
+            )
         }
     }
 

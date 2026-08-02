@@ -22,7 +22,10 @@ protocol CoreSemanticSearching: Sendable {
 }
 
 protocol CoreSemanticFallbackStatusReading: Sendable {
-    func semanticFallbackStatus(repoPath: String, request: AiFallbackStatusRequest) async throws -> AiFallbackStatus
+    func semanticFallbackStatus(
+        repoPath: String,
+        request: AIFallbackStatusRequestSnapshot
+    ) async throws -> AIFallbackStatusSnapshot
 }
 
 enum AISettingsProviderPreference: String, CaseIterable, Equatable, Identifiable {
@@ -199,9 +202,15 @@ extension CoreBridge: CoreSemanticSearching {
 }
 
 extension CoreBridge: CoreSemanticFallbackStatusReading {
-    func semanticFallbackStatus(repoPath: String, request: AiFallbackStatusRequest) async throws -> AiFallbackStatus {
+    func semanticFallbackStatus(
+        repoPath: String,
+        request: AIFallbackStatusRequestSnapshot
+    ) async throws -> AIFallbackStatusSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            try getAiFallbackStatus(repoPath: repoPath, request: request)
+            try AIFallbackStatusSnapshot(getAiFallbackStatus(
+                repoPath: repoPath,
+                request: AiFallbackStatusRequest(request)
+            ))
         }.value
     }
 }

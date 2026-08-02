@@ -3,6 +3,8 @@ import SwiftUI
 struct DetailTagSection: View {
     let file: FileEntrySnapshot
     let repoPath: String
+    let aiDependencies: AIFeatureDependencies
+    let errorMapper: any CoreErrorMapping
     let state: DetailTagEditorState
     let suggestionState: DetailTagSuggestionState
     let suggestionPresentationRequest: TagSuggestionPresentationRequest?
@@ -62,6 +64,8 @@ struct DetailTagSection: View {
         .sheet(isPresented: $isAISuggestionsPresented) {
             AITagSuggestionsPanel(
                 repoPath: repoPath,
+                aiDependencies: aiDependencies,
+                errorMapper: errorMapper,
                 file: file,
                 existingTags: state.tagSet?.fileTags ?? [],
                 state: tagActions.aiSuggestionState,

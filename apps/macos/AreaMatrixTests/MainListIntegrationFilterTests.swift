@@ -227,7 +227,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             .semanticSearchIndexNotReady(repoPath: "/tmp/repo", callLogID: 308)
         ])
         XCTAssertEqual(model.semanticFallbackState.status?.primaryAction, .buildSemanticIndex)
-        XCTAssertEqual(model.semanticFallbackState.status?.nonAiFallbackAction, .useNormalSearch)
+        XCTAssertEqual(model.semanticFallbackState.status?.nonAIFallbackAction, .useNormalSearch)
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.getAiFallbackStatus))
     }
 }

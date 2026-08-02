@@ -31,7 +31,7 @@ final class ImportFolderPreviewModel: ObservableObject {
         predictor: any CoreCategoryPredicting,
         importer: any CoreBatchCopyImporting,
         errorMapper: any CoreErrorMapping,
-        conflictPrechecker: any ImportFolderConflictPrechecking = CoreImportFolderConflictPrechecker(),
+        conflictPrechecker: any ImportFolderConflictPrechecking,
         scanner: any ImportFolderScanning = ImportPlatformServices.folderScanner,
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
     ) {

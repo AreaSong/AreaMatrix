@@ -6,22 +6,28 @@ struct SemanticSearchFallbackStatusRegion: View {
     let page: SemanticSearchResultPageSnapshot
     let state: SemanticFallbackState
     let repoPath: String?
+    let aiDependencies: AIFeatureDependencies
+    let errorMapper: any CoreErrorMapping
     let isIndexBuildBusy: Bool
     let isPrivacyGateChecking: Bool
-    let onAction: (AiFallbackAction) -> Void
+    let onAction: (AIFallbackActionSnapshot) -> Void
     @State private var recoverySheet: SemanticSearchFallbackRecoverySheet?
 
     init(
         page: SemanticSearchResultPageSnapshot,
         state: SemanticFallbackState,
         repoPath: String? = nil,
+        aiDependencies: AIFeatureDependencies,
+        errorMapper: any CoreErrorMapping,
         isIndexBuildBusy: Bool,
         isPrivacyGateChecking: Bool,
-        onAction: @escaping (AiFallbackAction) -> Void
+        onAction: @escaping (AIFallbackActionSnapshot) -> Void
     ) {
         self.page = page
         self.state = state
         self.repoPath = repoPath
+        self.aiDependencies = aiDependencies
+        self.errorMapper = errorMapper
         self.isIndexBuildBusy = isIndexBuildBusy
         self.isPrivacyGateChecking = isPrivacyGateChecking
         self.onAction = onAction
@@ -107,11 +113,11 @@ struct SemanticSearchFallbackStatusRegion: View {
         }
     }
 
-    private func performAction(_ action: AiFallbackAction) {
+    private func performAction(_ action: AIFallbackActionSnapshot) {
         switch action {
         case .openLocalModelStatus where hasRepoPath:
             recoverySheet = .localModelStatus
-        case .configureRemoteAi where hasRepoPath:
+        case .configureRemoteAI where hasRepoPath:
             recoverySheet = .remoteConfig
         default:
             onAction(action)
@@ -127,18 +133,34 @@ struct SemanticSearchFallbackStatusRegion: View {
         if let repoPath = repoPath?.trimmingCharacters(in: .whitespacesAndNewlines), !repoPath.isEmpty {
             switch sheet {
             case .localModelStatus:
-                LocalModelStatusView(model: LocalModelStatusModel(repoPath: repoPath), onClose: {
+                LocalModelStatusView(model: LocalModelStatusModel(
+                    repoPath: repoPath,
+                    statusReader: aiDependencies.localModelStatusReader,
+                    errorMapper: errorMapper
+                ), onClose: {
                     recoverySheet = nil
                 })
             case .remoteConfig:
-                RemoteModelConfigSheet(model: RemoteProviderConfigModel(repoPath: repoPath), onClose: {
-                    recoverySheet = nil
-                })
+                RemoteModelConfigSheet(
+                    model: RemoteProviderConfigModel(
+                        repoPath: repoPath,
+                        bridge: aiDependencies.remoteProviderConfigurer,
+                        errorMapper: errorMapper
+                    ),
+                    privacyModel: RemotePrivacyGateModel(
+                        repoPath: repoPath,
+                        bridge: aiDependencies.aiPrivacyRulesManager,
+                        errorMapper: errorMapper
+                    ),
+                    onClose: {
+                        recoverySheet = nil
+                    }
+                )
             }
         }
     }
 
-    private func isDisabled(_ action: AiFallbackAction, status: SemanticSearchFallbackStatus) -> Bool {
+    private func isDisabled(_ action: AIFallbackActionSnapshot, status: SemanticSearchFallbackStatus) -> Bool {
         switch action {
         case .retry:
             !status.retryable
@@ -150,7 +172,7 @@ struct SemanticSearchFallbackStatusRegion: View {
             status.callLogID == nil
         case .buildSemanticIndex:
             isIndexBuildBusy || isPrivacyGateChecking || !status.canBuildSemanticIndex
-        case .openAiSettings, .openLocalModelStatus, .configureRemoteAi, .useNormalSearch:
+        case .openAISettings, .openLocalModelStatus, .configureRemoteAI, .useNormalSearch:
             false
         case .classifyManually:
             true

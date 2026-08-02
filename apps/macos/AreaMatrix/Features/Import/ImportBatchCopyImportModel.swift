@@ -39,10 +39,10 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     init(
         importer: any CoreBatchCopyImporting,
         errorMapper: any CoreErrorMapping,
-        conflictBatcher: any CoreImportConflictBatching = CoreBridge(),
-        undoActionStore: any CoreUndoActionLogging = AppCoreServices.undoActionStore,
-        sessionStore: any ImportBatchSessionPersisting = AppPlatformServices.importBatchSessionStore,
-        placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
+        conflictBatcher: any CoreImportConflictBatching,
+        undoActionStore: any CoreUndoActionLogging,
+        sessionStore: any ImportBatchSessionPersisting,
+        placeholderDownloader: any ICloudPlaceholderDownloading,
         initialNamingPrefix: String? = nil
     ) {
         namingPrefixOverride = initialNamingPrefix ?? L10n.editableDefault("import.batch-naming.default-prefix")
@@ -385,7 +385,7 @@ extension ImportBatchCopyImportModel {
         }
     }
 
-    func duplicateStrategy(for row: ImportBatchCopyImportRow) -> DuplicateStrategy {
+    func duplicateStrategy(for row: ImportBatchCopyImportRow) -> ImportDuplicateStrategySnapshot {
         if let duplicateResolution = row.duplicateResolution {
             return duplicateResolution.duplicateStrategy
         }

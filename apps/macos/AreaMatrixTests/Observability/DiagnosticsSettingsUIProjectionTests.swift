@@ -112,8 +112,8 @@ final class DiagnosticsSettingsUIProjectionTests: XCTestCase {
 
         let updatedConfiguration = await core.lastUpdatedConfiguration()
         let persistedConfiguration = await fixture.hub.configurationSnapshot()
-        XCTAssertEqual(updatedConfiguration, ObservabilityConfig(
-            sessionId: ObservabilityProcessIdentity.sessionID,
+        XCTAssertEqual(updatedConfiguration, CoreObservabilityConfigurationSnapshot(
+            sessionID: ObservabilityProcessIdentity.sessionID,
             mode: .developer,
             minimumSeverity: .debug,
             queueCapacity: 4096,

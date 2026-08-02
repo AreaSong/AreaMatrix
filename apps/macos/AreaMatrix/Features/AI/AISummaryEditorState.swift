@@ -17,7 +17,7 @@ final class AISummaryEditorModel: ObservableObject {
     private let contentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting
     private let privacyRules: any CoreAIPrivacyEvaluating
     let errorMapper: any CoreErrorMapping
-    private let summaryProviderScope: AiSummaryProviderScope
+    private let summaryProviderScope: AISummaryProviderScopeState
     private var privacyContext: AISummaryPrivacyContext
     private var generationToken = UUID()
     private var entryLoadToken = UUID()
@@ -29,12 +29,11 @@ final class AISummaryEditorModel: ObservableObject {
     init(
         repoPath: String,
         fileID: Int64,
-        summaryStore: any CoreAISummaryManaging = AppCoreServices.aiSummaryStore,
-        contentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting = AppCoreServices
-            .repositoryContentLocaleSnapshotter,
-        privacyRules: any CoreAIPrivacyEvaluating = AppCoreServices.aiPrivacyRules,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
-        summaryProviderScope: AiSummaryProviderScope = .localPreferred,
+        summaryStore: any CoreAISummaryManaging,
+        contentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting,
+        privacyRules: any CoreAIPrivacyEvaluating,
+        errorMapper: any CoreErrorMapping,
+        summaryProviderScope: AISummaryProviderScopeState = .localPreferred,
         privacyContext: AISummaryPrivacyContext = AISummaryPrivacyContext()
     ) {
         self.repoPath = repoPath
@@ -243,8 +242,8 @@ extension AISummaryEditorModel {
         do {
             let report = try await summaryStore.clearAISummary(
                 repoPath: repoPath,
-                request: AiSummaryClearRequest(
-                    fileId: fileID,
+                request: AISummaryClearRequestSnapshot(
+                    fileID: fileID,
                     expectedContentRevision: contentState.expectedContentRevision,
                     confirmed: true
                 )
@@ -356,7 +355,7 @@ extension AISummaryEditorModel {
         )
     }
 
-    private func apply(_ draft: AiSummaryDraft) {
+    private func apply(_ draft: AISummaryDraftSnapshot) {
         privacySkip = nil
         if let review = contentState.replacementReview(candidate: draft) {
             replacementReview = review
@@ -373,7 +372,7 @@ extension AISummaryEditorModel {
         }
     }
 
-    private func apply(_ skip: AISummaryPrivacySkip, draft: AiSummaryDraft) {
+    private func apply(_ skip: AISummaryPrivacySkip, draft: AISummaryDraftSnapshot) {
         privacySkip = skip
         contentState.apply(skip, draft: draft)
     }
@@ -406,7 +405,7 @@ extension AISummaryEditorModel {
 
     private func applySaveConflictIfPresent(
         _ error: Error,
-        request: AiSummarySaveRequest
+        request: AISummarySaveRequestSnapshot
     ) async -> Bool {
         guard let conflict = coreRevisionConflict(
             from: error,
@@ -432,7 +431,7 @@ extension AISummaryEditorModel {
         }
     }
 
-    private func updateGateState(for reason: AiSummarySkipReason?) {
+    private func updateGateState(for reason: AISummarySkipReasonState?) {
         guard let reason else { return }
         gateState = .blocked(AISummaryEditorPresentationSupport.notice(for: reason))
     }

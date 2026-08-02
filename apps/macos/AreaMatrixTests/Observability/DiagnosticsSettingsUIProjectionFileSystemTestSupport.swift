@@ -38,34 +38,36 @@ struct DiagnosticsUIFixture {
 }
 
 actor DiagnosticsCoreSpy: CoreObservabilityControlling {
-    private var updatedConfiguration: ObservabilityConfig?
+    private var updatedConfiguration: CoreObservabilityConfigurationSnapshot?
 
     func observabilityBuildContext() async -> ObservabilityBuildContextSnapshot {
         observabilityTestCoreBuildContext()
     }
 
     func initializeObservability(
-        config: ObservabilityConfig,
-        sink _: any CoreObservabilitySink
-    ) async throws -> ObservabilityHealth {
+        config: CoreObservabilityConfigurationSnapshot,
+        sink _: any CoreObservabilityEventSinking
+    ) async throws -> CoreObservabilityHealthSnapshot {
         updatedConfiguration = config
         return .testHealthy
     }
 
-    func updateObservability(config: ObservabilityConfig) async throws -> ObservabilityHealth {
+    func updateObservability(
+        config: CoreObservabilityConfigurationSnapshot
+    ) async throws -> CoreObservabilityHealthSnapshot {
         updatedConfiguration = config
         return .testHealthy
     }
 
-    func observabilityHealth() async -> ObservabilityHealth {
+    func observabilityHealth() async -> CoreObservabilityHealthSnapshot {
         .testHealthy
     }
 
-    func flushObservability(deadlineMilliseconds _: UInt64) async throws -> ObservabilityHealth {
+    func flushObservability(deadlineMilliseconds _: UInt64) async throws -> CoreObservabilityHealthSnapshot {
         .testHealthy
     }
 
-    func lastUpdatedConfiguration() -> ObservabilityConfig? {
+    func lastUpdatedConfiguration() -> CoreObservabilityConfigurationSnapshot? {
         updatedConfiguration
     }
 }
@@ -134,7 +136,7 @@ extension AppObservabilityConfiguration {
     )
 }
 
-extension ObservabilityHealth {
+extension CoreObservabilityHealthSnapshot {
     static let testHealthy = Self(
         initialized: true,
         mode: .developer,

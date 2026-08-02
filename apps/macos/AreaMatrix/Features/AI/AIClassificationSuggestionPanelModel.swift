@@ -5,7 +5,7 @@ enum AIClassificationSuggestionPanelState: Equatable {
     case idle
     case loading
     case loaded(AIClassificationSuggestionState)
-    case failed(AISettingsError, AiFallbackStatus?)
+    case failed(AISettingsError, AIFallbackStatusSnapshot?)
 
     var isLoading: Bool {
         if case .loading = self { return true }
@@ -16,7 +16,7 @@ enum AIClassificationSuggestionPanelState: Equatable {
 @MainActor
 final class AIClassificationSuggestionPanelModel: ObservableObject {
     @Published private(set) var state: AIClassificationSuggestionPanelState = .idle
-    @Published private(set) var fallbackStatus: AiFallbackStatus?
+    @Published private(set) var fallbackStatus: AIFallbackStatusSnapshot?
     @Published private(set) var isResolvingFallbackStatus = false
 
     let repoPath: String
@@ -28,9 +28,9 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
     init(
         repoPath: String,
         request: AIClassificationSuggestionRequestState,
-        suggester: any CoreAIClassificationSuggesting = AppCoreServices.aiClassificationSuggester,
-        fallbackReader: any CoreAIClassificationFallbackStatusReading = AppCoreServices.aiClassificationFallbackReader,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        suggester: any CoreAIClassificationSuggesting,
+        fallbackReader: any CoreAIClassificationFallbackStatusReading,
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.request = request
@@ -160,7 +160,8 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
         }
     }
 
-    private func loadFallbackStatus(for suggestion: AIClassificationSuggestionState) async -> AiFallbackStatus? {
+    private func loadFallbackStatus(for suggestion: AIClassificationSuggestionState) async
+        -> AIFallbackStatusSnapshot? {
         guard let request = suggestion.fallbackStatusRequest else { return nil }
         do {
             return try await fallbackReader.classificationFallbackStatus(repoPath: repoPath, request: request)
@@ -169,9 +170,9 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
         }
     }
 
-    private func loadFallbackStatus(for error: Error) async -> AiFallbackStatus? {
+    private func loadFallbackStatus(for error: Error) async -> AIFallbackStatusSnapshot? {
         let providerError = await providerErrorSnapshot(for: error)
-        let request = AiFallbackStatusRequest(
+        let request = AIFallbackStatusRequestSnapshot(
             operation: .classificationSuggestion,
             route: nil,
             providerError: providerError.kind,
@@ -181,8 +182,8 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
             categorySkippedReason: nil,
             semanticFallbackReason: nil,
             callLogStatus: .failed,
-            callLogId: nil,
-            privacyRuleId: nil,
+            callLogID: nil,
+            privacyRuleID: nil,
             retryAfter: nil
         )
         do {
@@ -192,7 +193,8 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
         }
     }
 
-    private func providerErrorSnapshot(for error: Error) async -> (kind: AiFallbackProviderErrorKind, code: String) {
+    private func providerErrorSnapshot(for error: Error) async
+        -> (kind: AIFallbackProviderErrorKindSnapshot, code: String) {
         guard let mapping = await errorMapper.mapCoreErrorIfPresent(error) else {
             return (.internalFailure, "SwiftError")
         }
@@ -208,10 +210,10 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
 
     private func fallbackReaderFailureStatus(
         for error: Error,
-        request: AiFallbackStatusRequest
-    ) async -> AiFallbackStatus {
+        request: AIFallbackStatusRequestSnapshot
+    ) async -> AIFallbackStatusSnapshot {
         let message = await fallbackReaderFailureMessage(for: error)
-        return AiFallbackStatus(
+        return AIFallbackStatusSnapshot(
             operation: .classificationSuggestion,
             kind: .internalFailure,
             category: .error,
@@ -220,11 +222,11 @@ final class AIClassificationSuggestionPanelModel: ObservableObject {
             retryable: false,
             retryDisabledReason: L10n.string("Classify manually or retry after the fallback status is available."),
             primaryAction: .classifyManually,
-            secondaryAction: request.callLogId == nil ? nil : .viewCallLog,
-            nonAiFallbackAction: .classifyManually,
+            secondaryAction: request.callLogID == nil ? nil : .viewCallLog,
+            nonAIFallbackAction: .classifyManually,
             route: request.route,
-            callLogId: request.callLogId,
-            privacyRuleId: request.privacyRuleId,
+            callLogID: request.callLogID,
+            privacyRuleID: request.privacyRuleID,
             retryAfter: nil
         )
     }

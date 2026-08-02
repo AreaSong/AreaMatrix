@@ -88,9 +88,9 @@ final class ICloudConflictMinimalModel: ObservableObject {
         conflictID: String? = nil,
         originalVersion: ICloudConflictVersionSnapshot,
         conflictedCopyVersion: ICloudConflictVersionSnapshot,
-        pathValidator: any CoreRepositoryPathValidating = AppCoreServices.repositoryPathValidator,
-        conflictReviewer: (any CoreICloudConflictReviewing)? = AppCoreServices.iCloudConflictReviewer,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        pathValidator: any CoreRepositoryPathValidating,
+        conflictReviewer: (any CoreICloudConflictReviewing)?,
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.conflictID = conflictID
@@ -188,7 +188,9 @@ final class ICloudConflictMinimalModel: ObservableObject {
         guard let reviewer = conflictReviewer,
               let conflictID,
               !conflictID.isEmpty else {
-            let mapping = await errorMapper.mapError(CoreError.Conflict(path: "missing iCloud conflict id"))
+            let mapping = await errorMapper.mapError(
+                AppSemanticError.conflict(rawContext: "missing iCloud conflict id")
+            )
             return .failed(mapping)
         }
 
@@ -319,10 +321,10 @@ final class ICloudConflictMinimalModel: ObservableObject {
 
     private func validateResolutionResult(_ result: ICloudConflictResolutionResult) throws {
         guard result.didClearConflictState else {
-            throw CoreError.Internal(message: "iCloud conflict did not clear conflict state")
+            throw AppSemanticError.internalFailure(rawContext: "iCloud conflict did not clear conflict state")
         }
         guard result.didWriteChangeLog else {
-            throw CoreError.Internal(message: "iCloud conflict did not write change_log")
+            throw AppSemanticError.internalFailure(rawContext: "iCloud conflict did not write change_log")
         }
     }
 }

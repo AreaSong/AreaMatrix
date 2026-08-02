@@ -65,8 +65,8 @@ final class SyncConflictEntryModel: ObservableObject {
 
     init(
         repoPath: String,
-        conflictDetector: any CoreSyncConflictDetecting = AppCoreServices.syncConflictDetector,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        conflictDetector: any CoreSyncConflictDetecting,
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.conflictDetector = conflictDetector

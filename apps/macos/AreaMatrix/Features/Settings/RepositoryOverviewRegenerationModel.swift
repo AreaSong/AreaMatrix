@@ -73,9 +73,9 @@ final class RepositoryOverviewRegenerationModel: ObservableObject {
     init(
         repoPath: String,
         windowID: UUID = UUID(),
-        bridge: any CoreOverviewRegenerating = AppCoreServices.overviewRegenerator,
+        bridge: any CoreOverviewRegenerating,
         coordinator: OverviewRegenerationCoordinator? = nil,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.windowID = windowID

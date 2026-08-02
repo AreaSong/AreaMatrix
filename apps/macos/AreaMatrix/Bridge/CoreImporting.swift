@@ -1,12 +1,25 @@
 import Foundation
 
+enum ImportDuplicateStrategySnapshot: Equatable, Hashable {
+    case skip, overwrite, keepBoth, ask
+
+    fileprivate var coreValue: DuplicateStrategy {
+        switch self {
+        case .skip: .skip
+        case .overwrite: .overwrite
+        case .keepBoth: .keepBoth
+        case .ask: .ask
+        }
+    }
+}
+
 protocol CoreFileImporting: Sendable {
     func importCopiedFile(
         repoPath: String,
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot
 
     func importMovedFile(
@@ -14,7 +27,7 @@ protocol CoreFileImporting: Sendable {
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot
 
     func importIndexedFile(
@@ -22,7 +35,7 @@ protocol CoreFileImporting: Sendable {
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot
 }
 
@@ -39,7 +52,7 @@ struct CoreBatchImportRequest {
     var destination: ImportEntryDestination
     var suggestedCategory: String?
     var overrideFilename: String
-    var duplicateStrategy: DuplicateStrategy
+    var duplicateStrategy: ImportDuplicateStrategySnapshot
     var traceContext: CoreImportTraceContext?
 }
 
@@ -116,7 +129,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
         return try await importFile(
@@ -128,7 +141,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
                 targetDirectory: nil,
                 overrideCategory: overrideCategory,
                 overrideFilename: overrideFilename,
-                duplicateStrategy: duplicateStrategy,
+                duplicateStrategy: duplicateStrategy.coreValue,
                 contentLocale: ContentLocale(snapshotValue: contentLocale)
             ),
             traceContext: nil
@@ -153,7 +166,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
                     suggestedCategory: request.suggestedCategory
                 ),
                 overrideFilename: request.overrideFilename,
-                duplicateStrategy: request.duplicateStrategy,
+                duplicateStrategy: request.duplicateStrategy.coreValue,
                 contentLocale: ContentLocale(snapshotValue: contentLocale)
             ),
             traceContext: request.traceContext
@@ -178,7 +191,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
                         suggestedCategory: request.suggestedCategory
                     ),
                     overrideFilename: request.overrideFilename,
-                    duplicateStrategy: request.duplicateStrategy,
+                    duplicateStrategy: request.duplicateStrategy.coreValue,
                     contentLocale: ContentLocale(snapshotValue: contentLocale)
                 ),
                 traceContext: request.traceContext
@@ -197,7 +210,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
                         suggestedCategory: request.suggestedCategory
                     ),
                     overrideFilename: request.overrideFilename,
-                    duplicateStrategy: request.duplicateStrategy,
+                    duplicateStrategy: request.duplicateStrategy.coreValue,
                     contentLocale: ContentLocale(snapshotValue: contentLocale)
                 ),
                 traceContext: request.traceContext
@@ -210,7 +223,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
         return try await importFile(
@@ -222,7 +235,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
                 targetDirectory: nil,
                 overrideCategory: overrideCategory,
                 overrideFilename: overrideFilename,
-                duplicateStrategy: duplicateStrategy,
+                duplicateStrategy: duplicateStrategy.coreValue,
                 contentLocale: ContentLocale(snapshotValue: contentLocale)
             ),
             traceContext: nil
@@ -238,7 +251,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         let contentLocale = try await repositoryContentLocaleSnapshot(repoPath: repoPath)
         return try await importFile(
@@ -250,7 +263,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
                 targetDirectory: nil,
                 overrideCategory: overrideCategory,
                 overrideFilename: overrideFilename,
-                duplicateStrategy: duplicateStrategy,
+                duplicateStrategy: duplicateStrategy.coreValue,
                 contentLocale: ContentLocale(snapshotValue: contentLocale)
             ),
             traceContext: nil
@@ -275,7 +288,7 @@ extension CoreBridge: CoreFileImporting, CoreObservedFileImporting, CoreBatchCop
                 targetDirectory: nil,
                 overrideCategory: request.overrideCategory,
                 overrideFilename: request.overrideFilename,
-                duplicateStrategy: request.duplicateStrategy,
+                duplicateStrategy: request.duplicateStrategy.coreValue,
                 contentLocale: ContentLocale(snapshotValue: contentLocale)
             ),
             traceContext: request.traceContext

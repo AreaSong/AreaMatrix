@@ -2,11 +2,21 @@ import SwiftUI
 
 struct MainWindowRouteContent: View {
     @ObservedObject var model: OnboardingModel
+    let dependencies: AppDependencyContainer
+    @ObservedObject var commandRouter: AppCommandRouter
     private let windowCloser: any WindowClosing
 
-    init(model: OnboardingModel, windowCloser: any WindowClosing = AppPlatformServices.windowCloser) {
+    @MainActor
+    init(
+        model: OnboardingModel,
+        dependencies: AppDependencyContainer,
+        commandRouter: AppCommandRouter? = nil,
+        windowCloser: (any WindowClosing)? = nil
+    ) {
         self.model = model
-        self.windowCloser = windowCloser
+        self.dependencies = dependencies
+        self.commandRouter = commandRouter ?? .shared
+        self.windowCloser = windowCloser ?? dependencies.platform.windowCloser
     }
 
     var body: some View {
@@ -245,7 +255,12 @@ private extension MainWindowRouteContent {
             scanSession: repairRoute.scanSession,
             mapping: repairRoute.mapping,
             lastOpenedAt: model.mainRepoLastOpenedAt,
-            repositoryWriteCoordinator: model.repositoryWriteCoordinator,
+            metadataRepairer: dependencies.feature.onboarding.metadataRepairer,
+            repositoryReindexer: dependencies.feature.onboarding.repositoryReindexer,
+            startupRecoverer: dependencies.feature.onboarding.startupRecoverer,
+            repositoryWriteCoordinator: dependencies.feature.onboarding.repositoryWriteCoordinator,
+            diagnosticsCollector: dependencies.feature.onboarding.diagnosticsCollector,
+            errorMapper: dependencies.feature.onboarding.errorMapper,
             onCancel: {
                 model.returnFromDatabaseRepair(repairRoute)
             },
@@ -275,7 +290,14 @@ private extension MainWindowRouteContent {
             onReturnToWelcome: {
                 model.updateRepositoryPath("")
                 model.showWelcome()
-            }
+            },
+            featureDependencies: dependencies.feature.settings,
+            aiDependencies: dependencies.feature.ai,
+            sharedDependencies: dependencies.feature.shared,
+            syncConflictsDependencies: dependencies.feature.syncConflicts,
+            loader: dependencies.feature.settings.configurationLoader,
+            updater: dependencies.feature.settings.configurationUpdater,
+            errorMapper: dependencies.feature.shared.errorMapper
         )
     }
 
@@ -351,7 +373,8 @@ private extension MainWindowRouteContent {
         return MainRepositoryContentView(
             opening: displayOpening,
             state: state,
-            assembly: .live(opening: displayOpening),
+            assembly: .live(opening: displayOpening, dependencies: dependencies),
+            commandRouter: commandRouter,
             onImport: isImportProgressReadOnly ? {} : { model.chooseImportSources(opening: opening) },
             onDropImport: { urls, destination in
                 guard !isImportProgressReadOnly else { return }

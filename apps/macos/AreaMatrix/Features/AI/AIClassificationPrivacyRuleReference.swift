@@ -12,15 +12,15 @@ enum AIClassificationPrivacyRuleReferenceState: Equatable {
 struct AIClassificationPrivacyRuleReference: Equatable {
     var ruleID: String
     var name: String
-    var kind: AiPrivacyRuleKind
+    var kind: AIPrivacyRuleKindState
     var pattern: String
-    var appliesTo: AiPrivacyRuleAppliesTo
+    var appliesTo: AIPrivacyRuleAppliesToState
     var enabled: Bool
     var description: String?
     var matchCount: Int64
     var lastMatchedAt: Int64?
 
-    init(record: AiPrivacyRuleRecord) {
+    init(record: AIPrivacyRuleRecordSnapshot) {
         ruleID = record.ruleId
         name = record.name
         kind = record.kind
@@ -46,8 +46,8 @@ final class AIClassificationPrivacyRuleReferenceModel: ObservableObject {
     init(
         repoPath: String,
         ruleID: String,
-        bridge: any CoreAIPrivacyRulesManaging = AppCoreServices.aiPrivacyRulesManager,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        bridge: any CoreAIPrivacyRulesManaging,
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.ruleID = ruleID
@@ -100,8 +100,8 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
     init(
         repoPath: String,
         ruleID: String,
-        bridge: any CoreAIPrivacyRulesManaging = AppCoreServices.aiPrivacyRulesManager,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        bridge: any CoreAIPrivacyRulesManaging,
+        errorMapper: any CoreErrorMapping,
         onClose: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: AIClassificationPrivacyRuleReferenceModel(
@@ -217,7 +217,7 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
         .font(.callout)
     }
 
-    private func kindLabel(_ kind: AiPrivacyRuleKind) -> String {
+    private func kindLabel(_ kind: AIPrivacyRuleKindState) -> String {
         switch kind {
         case .folder: L10n.string("Folder")
         case .category: L10n.string("Category")
@@ -227,7 +227,7 @@ struct AIClassificationPrivacyRuleReferenceSheet: View {
         }
     }
 
-    private func appliesToLabel(_ appliesTo: AiPrivacyRuleAppliesTo) -> String {
+    private func appliesToLabel(_ appliesTo: AIPrivacyRuleAppliesToState) -> String {
         switch appliesTo {
         case .remoteAi: L10n.string("Remote AI")
         case .localAndRemoteAi: L10n.string("Local and remote AI")

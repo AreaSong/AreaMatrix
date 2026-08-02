@@ -25,9 +25,9 @@ struct AICallLogView: View {
 
     init(
         repoPath: String,
-        lister: any CoreAICallLogListing = AppCoreServices.aiCallLogLister,
-        clearer: any CoreAICallLogClearing = AppCoreServices.aiCallLogClearer,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        lister: any CoreAICallLogListing,
+        clearer: any CoreAICallLogClearing,
+        errorMapper: any CoreErrorMapping,
         onClose: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: AICallLogModel(
@@ -84,18 +84,18 @@ struct AICallLogView: View {
     private var filterPickers: some View {
         Group {
             Picker(L10n.string("Feature"), selection: $model.featureFilter) {
-                Text(L10n.string("All")).tag(AiCallLogFeature?.none)
+                Text(L10n.string("All")).tag(AICallLogFeatureSnapshot?.none)
                 ForEach(AICallLogView.featureOptions, id: \.self) {
                     Text(aiCallLogFeatureLabel($0)).tag(Optional($0))
                 }
             }.frame(width: 166).onChange(of: model.featureFilter) { _, _ in Task { await model.load() } }
             Picker(L10n.string("Provider"), selection: $model.routeFilter) {
-                Text(L10n.string("All")).tag(AiCallLogRoute?.none)
-                Text(L10n.string("Local")).tag(Optional(AiCallLogRoute.local))
-                Text(L10n.string("Remote")).tag(Optional(AiCallLogRoute.remote))
+                Text(L10n.string("All")).tag(AICallLogRouteSnapshot?.none)
+                Text(L10n.string("Local")).tag(Optional(AICallLogRouteSnapshot.local))
+                Text(L10n.string("Remote")).tag(Optional(AICallLogRouteSnapshot.remote))
             }.frame(width: 128).onChange(of: model.routeFilter) { _, _ in Task { await model.load() } }
             Picker(L10n.string("Status"), selection: $model.statusFilter) {
-                Text(L10n.string("All")).tag(AiCallLogStatus?.none)
+                Text(L10n.string("All")).tag(AICallLogStatusSnapshot?.none)
                 ForEach(AICallLogView.statusOptions, id: \.self) {
                     Text(aiCallLogStatusLabel($0)).tag(Optional($0))
                 }
@@ -267,7 +267,7 @@ private struct AICallLogHeaderRow: View {
 }
 
 private struct AICallLogRow: View {
-    let record: AiCallLogRecord
+    let record: AICallLogRecordSnapshot
     private var row: AICallLogRowPresentation {
         AICallLogRowPresentation(record: record)
     }
@@ -288,12 +288,12 @@ private struct AICallLogRow: View {
 }
 
 private extension AICallLogView {
-    static let featureOptions: [AiCallLogFeature] = [
+    static let featureOptions: [AICallLogFeatureSnapshot] = [
         .classification,
         .summary,
         .tags,
         .semanticSearch,
         .providerTest
     ]
-    static let statusOptions: [AiCallLogStatus] = [.success, .failed, .skipped, .unavailable]
+    static let statusOptions: [AICallLogStatusSnapshot] = [.success, .failed, .skipped, .unavailable]
 }

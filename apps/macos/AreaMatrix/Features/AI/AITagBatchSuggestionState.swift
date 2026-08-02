@@ -2,10 +2,10 @@ import Foundation
 
 struct AITagBatchSuggestionReview: Equatable {
     var files: [FileEntrySnapshot]
-    var reports: [Int64: AiTagSuggestionReport]
+    var reports: [Int64: AITagSuggestionReportSnapshot]
     var selectedIDsByFileID: [Int64: Set<String>]
     var loadFailures: [Int64: CoreErrorMappingSnapshot]
-    var applyReports: [Int64: AiTagSuggestionApplyReport] = [:]
+    var applyReports: [Int64: AITagSuggestionApplyReportSnapshot] = [:]
     var applyFailures: [Int64: CoreErrorMappingSnapshot] = [:]
     var editSessionsByFileID: [Int64: AITagSuggestionEditSession] = [:]
     var rejectedFeedback: [AITagSuggestionRejectedFeedback] = []
@@ -66,14 +66,14 @@ struct AITagBatchSuggestionReview: Equatable {
         selectedTagCount > 0 && invalidCount == 0
     }
 
-    func applyItems(fileID: Int64) -> [ApplyAiTagSuggestionItem] {
+    func applyItems(fileID: Int64) -> [ApplyAITagSuggestionItemSnapshot] {
         if let session = editSessionsByFileID[fileID] { return session.applyItems }
         guard let report = reports[fileID], let selected = selectedIDsByFileID[fileID] else { return [] }
         return report.suggestions.compactMap { suggestion in
             guard selected.contains(suggestion.suggestionId), AITagSuggestionAction.canApply(suggestion) else {
                 return nil
             }
-            return ApplyAiTagSuggestionItem(suggestion: suggestion, editedByUser: false)
+            return ApplyAITagSuggestionItemSnapshot(suggestion: suggestion, editedByUser: false)
         }
     }
 }

@@ -53,9 +53,9 @@ extension AIClassificationSuggestionState {
     }
 }
 
-extension AiFallbackStatus {
-    static func aiCategorySuggestionPrivacySkipped(callLogID: Int64) -> AiFallbackStatus {
-        AiFallbackStatus(
+extension AIFallbackStatusSnapshot {
+    static func aiCategorySuggestionPrivacySkipped(callLogID: Int64) -> AIFallbackStatusSnapshot {
+        AIFallbackStatusSnapshot(
             operation: .classificationSuggestion,
             kind: .privacySkipped,
             category: .skipped,
@@ -65,16 +65,16 @@ extension AiFallbackStatus {
             retryDisabledReason: "Privacy skipped suggestions cannot be retried from this panel.",
             primaryAction: .viewPrivacyRule,
             secondaryAction: .viewCallLog,
-            nonAiFallbackAction: .classifyManually,
+            nonAIFallbackAction: .classifyManually,
             route: nil,
-            callLogId: callLogID,
-            privacyRuleId: "rule-confidential",
+            callLogID: callLogID,
+            privacyRuleID: "rule-confidential",
             retryAfter: nil
         )
     }
 
-    static func aiCategorySuggestionProviderUnavailable(callLogID: Int64) -> AiFallbackStatus {
-        AiFallbackStatus(
+    static func aiCategorySuggestionProviderUnavailable(callLogID: Int64) -> AIFallbackStatusSnapshot {
+        AIFallbackStatusSnapshot(
             operation: .classificationSuggestion,
             kind: .providerUnavailable,
             category: .unavailable,
@@ -84,16 +84,16 @@ extension AiFallbackStatus {
             retryDisabledReason: "Retry before accepting this suggestion.",
             primaryAction: .retry,
             secondaryAction: .viewCallLog,
-            nonAiFallbackAction: .classifyManually,
+            nonAIFallbackAction: .classifyManually,
             route: .remote,
-            callLogId: callLogID,
-            privacyRuleId: nil,
+            callLogID: callLogID,
+            privacyRuleID: nil,
             retryAfter: nil
         )
     }
 
-    static func aiCategorySuggestionInternalFailure() -> AiFallbackStatus {
-        AiFallbackStatus(
+    static func aiCategorySuggestionInternalFailure() -> AIFallbackStatusSnapshot {
+        AIFallbackStatusSnapshot(
             operation: .classificationSuggestion,
             kind: .internalFailure,
             category: .error,
@@ -103,10 +103,10 @@ extension AiFallbackStatus {
             retryDisabledReason: "Retry is unavailable until the failure is resolved.",
             primaryAction: .viewCallLog,
             secondaryAction: nil,
-            nonAiFallbackAction: .classifyManually,
+            nonAIFallbackAction: .classifyManually,
             route: nil,
-            callLogId: nil,
-            privacyRuleId: nil,
+            callLogID: nil,
+            privacyRuleID: nil,
             retryAfter: nil
         )
     }

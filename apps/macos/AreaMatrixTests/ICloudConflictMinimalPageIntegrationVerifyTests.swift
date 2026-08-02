@@ -62,7 +62,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         ))
         let blockedResolver = ICloudConflictResolver(
             capability: .blocked(.missingCoreResolutionEndpoint),
-            result: .failure(ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError)
+            result: .failure(ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.error)
         )
         let model = MainFileListModel(
             opening: .iCloudConflictMinimalFixture(repoPath: "/tmp/iCloudConflictMinimal-repo", files: [conflictFile]),
@@ -85,7 +85,11 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         )
 
         XCTAssertEqual(model.pendingActionDestination, .iCloudConflict(fileID: conflictFile.id))
-        await mapper.assertMappedCoreErrors([ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.coreError])
+        guard case let .failed(_, _, mapping) = model.iCloudConflictResolutionState else {
+            return XCTFail("Expected application error mapping for the missing Core endpoint")
+        }
+        XCTAssertEqual(mapping, ICloudConflictResolutionBlocker.missingCoreResolutionEndpoint.error.appErrorMapping)
+        await mapper.assertMappedCoreErrors([])
         assertTestMirrorDescription(of: failedBody, contains: [
             "icloud-conflict-minimal-error-mapping-apply-failure",
             "Apply failed: Internal",
@@ -241,6 +245,7 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             selectedImportProgressRow: nil,
             semanticDetail: nil,
             repoPath: "/tmp/iCloudConflictMinimal-repo",
+            aiDependencies: AIFeatureDependencies.live,
             batchTagStore: model.tagStore,
             batchTagUndoStore: model.undoActionStore,
             batchTagErrorMapper: model.errorMapper,

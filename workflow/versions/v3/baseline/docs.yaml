@@ -178,17 +178,17 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/development/coding-standards.md'
     line_start: 1
-    line_end: 367
+    line_end: 372
     heading: ''
     excerpt: '# 编码规范'
-    sha256: '7d58c26f282f4ea4bc94ea374fa70ce3230e2db0df5dbc1b1066b3bf13d37427'
+    sha256: 'e4a3902d63c568a3ae7e8aba7ffa8cd32cd3ec61ad4e5cb79874b3d3aa710dd1'
     source: 'discussion:exact_docs'
   - file: 'docs/development/testing.md'
     line_start: 1
-    line_end: 231
+    line_end: 236
     heading: ''
     excerpt: '# 测试策略'
-    sha256: '58399c409d1c2ad0c61927e49dc1e4cd69623005b778b54cd169d92e4acb144f'
+    sha256: 'b4b277005c70596f6577fa09f6a9c1fad935c4e6da96c6f3708b8813086b0fe7'
     source: 'discussion:exact_docs'
   - file: 'docs/development/ci-governance.md'
     line_start: 1

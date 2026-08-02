@@ -5,7 +5,7 @@ import XCTest
 final class AreaMatrixAppSmokeTests: XCTestCase {
     @MainActor
     func testMainWindowShellCanBeCreated() {
-        let view = MainWindow()
+        let view = MainWindow(dependencies: .live)
 
         XCTAssertEqual(String(describing: type(of: view)), "MainWindow")
     }

@@ -1,14 +1,59 @@
 import Foundation
 
+enum CoreObservabilityModeSnapshot: Equatable {
+    case disabled
+    case standard
+    case diagnostic
+    case developer
+}
+
+enum CoreObservabilitySeveritySnapshot: Equatable {
+    case trace
+    case debug
+    case info
+    case warn
+    case error
+}
+
+struct CoreObservabilityConfigurationSnapshot: Equatable {
+    var sessionID: String
+    var mode: CoreObservabilityModeSnapshot
+    var minimumSeverity: CoreObservabilitySeveritySnapshot
+    var queueCapacity: UInt64
+    var includeSensitive: Bool
+}
+
+struct CoreObservabilityHealthSnapshot: Equatable {
+    var initialized: Bool
+    var mode: CoreObservabilityModeSnapshot
+    var queueDepth: UInt64
+    var queueCapacity: UInt64
+    var droppedTrace: UInt64
+    var droppedDebug: UInt64
+    var droppedInfo: UInt64
+    var droppedWarn: UInt64
+    var droppedError: UInt64
+    var redactionRejected: UInt64
+    var callbackConnected: Bool
+    var degraded: Bool
+    var degradedReason: String?
+}
+
+protocol CoreObservabilityEventSinking: AnyObject, Sendable {
+    func onEvent(_ event: ObservabilityEventSnapshot)
+}
+
 protocol CoreObservabilityControlling: Sendable {
     func observabilityBuildContext() async -> ObservabilityBuildContextSnapshot
     func initializeObservability(
-        config: ObservabilityConfig,
-        sink: any CoreObservabilitySink
-    ) async throws -> ObservabilityHealth
-    func updateObservability(config: ObservabilityConfig) async throws -> ObservabilityHealth
-    func observabilityHealth() async -> ObservabilityHealth
-    func flushObservability(deadlineMilliseconds: UInt64) async throws -> ObservabilityHealth
+        config: CoreObservabilityConfigurationSnapshot,
+        sink: any CoreObservabilityEventSinking
+    ) async throws -> CoreObservabilityHealthSnapshot
+    func updateObservability(
+        config: CoreObservabilityConfigurationSnapshot
+    ) async throws -> CoreObservabilityHealthSnapshot
+    func observabilityHealth() async -> CoreObservabilityHealthSnapshot
+    func flushObservability(deadlineMilliseconds: UInt64) async throws -> CoreObservabilityHealthSnapshot
 }
 
 extension CoreBridge: CoreObservabilityControlling {
@@ -17,22 +62,41 @@ extension CoreBridge: CoreObservabilityControlling {
     }
 
     func initializeObservability(
-        config: ObservabilityConfig,
-        sink: any CoreObservabilitySink
-    ) async throws -> ObservabilityHealth {
-        try initializeCoreObservability(config: config, sink: sink)
+        config: CoreObservabilityConfigurationSnapshot,
+        sink: any CoreObservabilityEventSinking
+    ) async throws -> CoreObservabilityHealthSnapshot {
+        try CoreObservabilityHealthSnapshot(initializeCoreObservability(
+            config: ObservabilityConfig(config),
+            sink: CoreObservabilitySinkBridgeAdapter(sink: sink)
+        ))
     }
 
-    func updateObservability(config: ObservabilityConfig) async throws -> ObservabilityHealth {
-        try updateCoreObservability(config: config)
+    func updateObservability(
+        config: CoreObservabilityConfigurationSnapshot
+    ) async throws -> CoreObservabilityHealthSnapshot {
+        try CoreObservabilityHealthSnapshot(updateCoreObservability(config: ObservabilityConfig(config)))
     }
 
-    func observabilityHealth() async -> ObservabilityHealth {
-        getCoreObservabilityHealth()
+    func observabilityHealth() async -> CoreObservabilityHealthSnapshot {
+        CoreObservabilityHealthSnapshot(getCoreObservabilityHealth())
     }
 
-    func flushObservability(deadlineMilliseconds: UInt64) async throws -> ObservabilityHealth {
-        try flushCoreObservability(deadlineMilliseconds: deadlineMilliseconds)
+    func flushObservability(deadlineMilliseconds: UInt64) async throws -> CoreObservabilityHealthSnapshot {
+        try CoreObservabilityHealthSnapshot(flushCoreObservability(
+            deadlineMilliseconds: deadlineMilliseconds
+        ))
+    }
+}
+
+private final class CoreObservabilitySinkBridgeAdapter: CoreObservabilitySink, @unchecked Sendable {
+    private let sink: any CoreObservabilityEventSinking
+
+    init(sink: any CoreObservabilityEventSinking) {
+        self.sink = sink
+    }
+
+    func onEvent(event: CoreObservabilityEvent) {
+        sink.onEvent(ObservabilityEventSnapshot(coreEvent: event))
     }
 }
 
@@ -57,6 +121,70 @@ private func getCoreObservabilityHealth() -> ObservabilityHealth {
 
 private func flushCoreObservability(deadlineMilliseconds: UInt64) throws -> ObservabilityHealth {
     try flushObservability(deadlineMs: deadlineMilliseconds)
+}
+
+private extension ObservabilityConfig {
+    init(_ snapshot: CoreObservabilityConfigurationSnapshot) {
+        self.init(
+            sessionId: snapshot.sessionID,
+            mode: snapshot.mode.coreValue,
+            minimumSeverity: snapshot.minimumSeverity.coreValue,
+            queueCapacity: snapshot.queueCapacity,
+            includeSensitive: snapshot.includeSensitive
+        )
+    }
+}
+
+private extension CoreObservabilityHealthSnapshot {
+    init(_ health: ObservabilityHealth) {
+        self.init(
+            initialized: health.initialized,
+            mode: CoreObservabilityModeSnapshot(health.mode),
+            queueDepth: health.queueDepth,
+            queueCapacity: health.queueCapacity,
+            droppedTrace: health.droppedTrace,
+            droppedDebug: health.droppedDebug,
+            droppedInfo: health.droppedInfo,
+            droppedWarn: health.droppedWarn,
+            droppedError: health.droppedError,
+            redactionRejected: health.redactionRejected,
+            callbackConnected: health.callbackConnected,
+            degraded: health.degraded,
+            degradedReason: health.degradedReason
+        )
+    }
+}
+
+private extension CoreObservabilityModeSnapshot {
+    init(_ mode: ObservabilityMode) {
+        switch mode {
+        case .disabled: self = .disabled
+        case .standard: self = .standard
+        case .diagnostic: self = .diagnostic
+        case .developer: self = .developer
+        }
+    }
+
+    var coreValue: ObservabilityMode {
+        switch self {
+        case .disabled: .disabled
+        case .standard: .standard
+        case .diagnostic: .diagnostic
+        case .developer: .developer
+        }
+    }
+}
+
+private extension CoreObservabilitySeveritySnapshot {
+    var coreValue: ObservabilitySeverity {
+        switch self {
+        case .trace: .trace
+        case .debug: .debug
+        case .info: .info
+        case .warn: .warn
+        case .error: .error
+        }
+    }
 }
 
 extension ObservabilityEventSnapshot {

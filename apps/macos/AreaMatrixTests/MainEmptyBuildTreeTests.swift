@@ -110,7 +110,11 @@ final class MainEmptyBuildTreeTests: XCTestCase {
                 opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
                 fileLister: MainListRecordingFileLister(results: []),
                 fileDetailer: RecordingFileDetailer(results: []),
-                errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+                errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused")),
+                aiDependencies: AppDependencyContainer.live.feature.ai,
+                fileActionsDependencies: AppDependencyContainer.live.feature.fileActions,
+                settingsDependencies: AppDependencyContainer.live.feature.settings,
+                syncConflictsDependencies: AppDependencyContainer.live.feature.syncConflicts
             ),
             onImport: {},
             onDropImport: { _, _ in },

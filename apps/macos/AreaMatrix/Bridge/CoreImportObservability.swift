@@ -37,7 +37,7 @@ struct CoreObservedImportRequest {
     var sourceURL: URL
     var overrideCategory: String
     var overrideFilename: String
-    var duplicateStrategy: DuplicateStrategy
+    var duplicateStrategy: ImportDuplicateStrategySnapshot
     var traceContext: CoreImportTraceContext
 }
 
@@ -50,11 +50,45 @@ protocol CoreObservedFileImporting: CoreFileImporting {
 struct CoreImportObservabilityRecorder {
     static let live = Self(
         traceContextProvider: SharedCoreImportTraceContextProvider(),
-        logger: .shared
+        logger: .shared,
+        enabled: true
+    )
+
+    /// XCTest must not inherit production Keychain and observability side effects.
+    /// The test runner sets this flag explicitly; normal app launches keep the live path.
+    static var defaultForCurrentProcess: Self {
+        isTestProcess ? .testNoop : .live
+    }
+
+    private static var isTestProcess: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        // Scheme environment variables are not consistently inherited by the
+        // XCTest host. The XCTest configuration marker is the reliable
+        // boundary for preventing production Keychain side effects in tests.
+        return environment["AREAMATRIX_TEST_MODE"] == "1"
+            || environment["XCTestConfigurationFilePath"] != nil
+            || environment["XCTestSessionIdentifier"] != nil
+    }
+
+    private static let testNoop = Self(
+        traceContextProvider: TestCoreImportTraceContextProvider(),
+        logger: .shared,
+        enabled: false
     )
 
     let traceContextProvider: any CoreImportTraceContextProviding
     let logger: AppLogger
+    let enabled: Bool
+
+    init(
+        traceContextProvider: any CoreImportTraceContextProviding,
+        logger: AppLogger,
+        enabled: Bool = true
+    ) {
+        self.traceContextProvider = traceContextProvider
+        self.logger = logger
+        self.enabled = enabled
+    }
 
     func recordTerminal(
         _ appContext: CoreImportTraceContext,
@@ -62,6 +96,7 @@ struct CoreImportObservabilityRecorder {
         outcome: String,
         error: Error? = nil
     ) async {
+        guard enabled else { return }
         var event = ObservabilitySemanticEventInput(
             actionID: appContext.actionID,
             componentID: appContext.componentID
@@ -83,6 +118,23 @@ struct CoreImportObservabilityRecorder {
 private struct SharedCoreImportTraceContextProvider: CoreImportTraceContextProviding {
     func make(_ request: ObservabilityTraceContextRequest) async -> CoreTraceContext {
         await ObservabilityRuntimeAssembly.shared.makeCoreTraceContext(request)
+    }
+}
+
+private struct TestCoreImportTraceContextProvider: CoreImportTraceContextProviding {
+    func make(_ request: ObservabilityTraceContextRequest) async -> CoreTraceContext {
+        CoreTraceContext(
+            sessionId: "00000000-0000-0000-0000-000000000001",
+            traceId: request.traceID,
+            parentSpanId: request.parentSpanID,
+            incidentId: request.incidentID,
+            operationId: request.operationID,
+            retryOfOperationId: request.retryOfOperationID,
+            actionId: request.actionID,
+            componentId: request.componentID,
+            resourceRefs: [],
+            attributes: []
+        )
     }
 }
 

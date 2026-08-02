@@ -129,7 +129,7 @@ enum ImportBatchDuplicateResolutionStrategy: String, CaseIterable, Equatable {
         }
     }
 
-    var duplicateStrategy: DuplicateStrategy {
+    var duplicateStrategy: ImportDuplicateStrategySnapshot {
         switch self {
         case .skip:
             .skip

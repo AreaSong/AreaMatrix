@@ -1,12 +1,12 @@
 @testable import AreaMatrix
 import XCTest
 
-typealias AICallLogListRequest = (filter: AiCallLogFilter, pagination: AiCallLogPagination)
+typealias AICallLogListRequest = (filter: AICallLogFilterSnapshot, pagination: AICallLogPaginationSnapshot)
 
 private struct AICallLogListRequestExpectation {
-    let feature: AiCallLogFeature?
-    let route: AiCallLogRoute?
-    let status: AiCallLogStatus?
+    let feature: AICallLogFeatureSnapshot?
+    let route: AICallLogRouteSnapshot?
+    let status: AICallLogStatusSnapshot?
     let occurredAfter: Int64?
     let occurredBefore: Int64?
     let searchQuery: String?
@@ -15,34 +15,34 @@ private struct AICallLogListRequestExpectation {
 }
 
 actor RecordingAICallLogLister: CoreAICallLogListing {
-    private var pageQueue: TestValueQueue<AiCallLogPage>
+    private var pageQueue: TestValueQueue<AICallLogPageSnapshot>
     private let error: Error?
     private var recordedRequests: [AICallLogListRequest] = []
 
-    init(page: AiCallLogPage) {
-        pageQueue = TestValueQueue(values: [page], missingValue: AiCallLogPage.emptyTestPage)
+    init(page: AICallLogPageSnapshot) {
+        pageQueue = TestValueQueue(values: [page], missingValue: AICallLogPageSnapshot.emptyTestPage)
         error = nil
     }
 
-    init(pages: [AiCallLogPage] = [], error: Error? = nil) {
-        pageQueue = TestValueQueue(values: pages, missingValue: AiCallLogPage.emptyTestPage)
+    init(pages: [AICallLogPageSnapshot] = [], error: Error? = nil) {
+        pageQueue = TestValueQueue(values: pages, missingValue: AICallLogPageSnapshot.emptyTestPage)
         self.error = error
     }
 
     func listAICalls(
         repoPath _: String,
-        filter: AiCallLogFilter,
-        pagination: AiCallLogPagination
-    ) async throws -> AiCallLogPage {
+        filter: AICallLogFilterSnapshot,
+        pagination: AICallLogPaginationSnapshot
+    ) async throws -> AICallLogPageSnapshot {
         recordedRequests.append((filter, pagination))
         if let error { throw error }
         return pageQueue.next()
     }
 
     func assertFirstAICallLogListRequest(
-        feature: AiCallLogFeature? = nil,
-        route: AiCallLogRoute? = nil,
-        status: AiCallLogStatus? = nil,
+        feature: AICallLogFeatureSnapshot? = nil,
+        route: AICallLogRouteSnapshot? = nil,
+        status: AICallLogStatusSnapshot? = nil,
         occurredAfter: Int64? = nil,
         occurredBefore: Int64? = nil,
         searchQuery: String? = nil,
@@ -69,9 +69,9 @@ actor RecordingAICallLogLister: CoreAICallLogListing {
     }
 
     func assertLastAICallLogListRequest(
-        feature: AiCallLogFeature? = nil,
-        route: AiCallLogRoute? = nil,
-        status: AiCallLogStatus? = nil,
+        feature: AICallLogFeatureSnapshot? = nil,
+        route: AICallLogRouteSnapshot? = nil,
+        status: AICallLogStatusSnapshot? = nil,
         occurredAfter: Int64? = nil,
         occurredBefore: Int64? = nil,
         searchQuery: String? = nil,
@@ -118,11 +118,12 @@ actor RecordingAICallLogLister: CoreAICallLogListing {
 }
 
 actor RecordingAICallLogClearer: CoreAICallLogClearing {
-    private var recordedRequests: [AiCallLogClearRequest] = []
+    private var recordedRequests: [AICallLogClearRequestSnapshot] = []
 
-    func clearAICallLog(repoPath _: String, request: AiCallLogClearRequest) async throws -> AiCallLogClearReport {
+    func clearAICallLog(repoPath _: String,
+                        request: AICallLogClearRequestSnapshot) async throws -> AICallLogClearReportSnapshot {
         recordedRequests.append(request)
-        return AiCallLogClearReport(
+        return AICallLogClearReportSnapshot(
             deletedCount: Int64(request.entryIds.count),
             remainingCount: 0,
             clearedAt: 1_700_000_100
@@ -130,7 +131,7 @@ actor RecordingAICallLogClearer: CoreAICallLogClearing {
     }
 
     func assertFirstAICallLogClearRequest(
-        scope: AiCallLogClearScope,
+        scope: AICallLogClearScopeSnapshot,
         entryIDs: [Int64],
         olderThan: Int64? = nil,
         file: StaticString = #filePath,
@@ -152,9 +153,9 @@ actor RecordingAICallLogClearer: CoreAICallLogClearing {
     }
 }
 
-extension AiCallLogPage {
-    static func emptyTestPage() -> AiCallLogPage {
-        AiCallLogPage(
+extension AICallLogPageSnapshot {
+    static func emptyTestPage() -> AICallLogPageSnapshot {
+        AICallLogPageSnapshot(
             totalCount: 0,
             records: [],
             limit: 100,

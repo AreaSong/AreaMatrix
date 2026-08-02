@@ -10,7 +10,7 @@ extension AIPrivacyRulesView {
         }
     }
 
-    func fieldRow(_ field: AiPrivacyFieldState) -> some View {
+    func fieldRow(_ field: AIPrivacyFieldStateSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Toggle(isOn: fieldBinding(field)) {
                 Text(aiPrivacyInputFieldLabel(field.field))
@@ -50,7 +50,7 @@ extension AIPrivacyRulesView {
         }
     }
 
-    func ruleRow(_ rule: AiPrivacyRuleRecord) -> some View {
+    func ruleRow(_ rule: AIPrivacyRuleRecordSnapshot) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(rule.enabled ? L10n.string("Enabled") : L10n.string("Disabled"))
                 .frame(width: 70, alignment: .leading)

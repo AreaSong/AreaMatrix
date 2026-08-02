@@ -110,7 +110,7 @@ extension MainFileListModel {
         fileID: Int64,
         file: FileEntrySnapshot?,
         candidateTags: [String]
-    ) async throws -> AiTagSuggestionReport {
+    ) async throws -> AITagSuggestionReportSnapshot {
         if let blockedReport = try await aiTagSettingsBlockedReport(fileID: fileID) {
             return blockedReport
         }
@@ -129,7 +129,7 @@ extension MainFileListModel {
     }
 
     func applyAITagSuggestions(
-        _ suggestions: [ApplyAiTagSuggestionItem],
+        _ suggestions: [ApplyAITagSuggestionItemSnapshot],
         editedSession: AITagSuggestionEditSession? = nil
     ) async -> BatchTagUndoState? {
         guard let fileID = writableActionFileID(),
@@ -151,7 +151,7 @@ extension MainFileListModel {
         do {
             let applyReport = try await aiTagSuggestionStore.applyAITagSuggestions(
                 repoPath: repoPath,
-                request: ApplyAiTagSuggestionsRequest(
+                request: ApplyAITagSuggestionsRequestSnapshot(
                     fileId: fileID,
                     suggestions: suggestions,
                     callLogId: report.callLogId,
@@ -183,7 +183,7 @@ extension MainFileListModel {
         )
     }
 
-    private func aiTagSettingsBlockedReport(fileID: Int64) async throws -> AiTagSuggestionReport? {
+    private func aiTagSettingsBlockedReport(fileID: Int64) async throws -> AITagSuggestionReportSnapshot? {
         let snapshot = try await aiSettingsLoader.loadAISettings(repoPath: repoPath)
         let config = snapshot.config
         if !config.aiEnabled {
@@ -198,10 +198,10 @@ extension MainFileListModel {
 
     private func aiTagSkippedReport(
         fileID: Int64,
-        reason: AiTagSuggestionSkipReason,
+        reason: AITagSuggestionSkipReasonSnapshot,
         privacyRuleID: String? = nil
-    ) -> AiTagSuggestionReport {
-        AiTagSuggestionReport(
+    ) -> AITagSuggestionReportSnapshot {
+        AITagSuggestionReportSnapshot(
             fileId: fileID,
             status: .skipped,
             suggestions: [],
@@ -238,14 +238,15 @@ extension MainFileListModel {
         return AITagPrivacyGateResult()
     }
 
-    private func aiTagPrivacyPolicyRef(from report: AiPrivacyEvaluationReport) -> String? {
+    private func aiTagPrivacyPolicyRef(from report: AIPrivacyEvaluationReportSnapshot) -> String? {
         guard report.skippedReason == .privacyRule || report.skippedReason == .fieldRule else { return nil }
         let ruleID = report.matchedRules.first?.ruleId.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let ruleID, !ruleID.isEmpty else { return "block:privacy-rule" }
         return "block:\(ruleID)"
     }
 
-    private func aiTagProviderBlockedReason(for report: AiPrivacyEvaluationReport) -> AiTagSuggestionSkipReason? {
+    private func aiTagProviderBlockedReason(for report: AIPrivacyEvaluationReportSnapshot)
+        -> AITagSuggestionSkipReasonSnapshot? {
         if report.providerGateReason != nil { return .providerUnavailable }
         guard let skippedReason = report.skippedReason else { return nil }
         switch skippedReason {
@@ -262,9 +263,9 @@ extension MainFileListModel {
     private func aiTagPrivacyEvaluationRequest(
         fileID: Int64,
         file: FileEntrySnapshot?,
-        snapshot: AiPrivacyRulesSnapshot
-    ) -> AiPrivacyEvaluationRequest {
-        AiPrivacyEvaluationRequest(
+        snapshot: AIPrivacyRulesSnapshot
+    ) -> AIPrivacyEvaluationRequestSnapshot {
+        AIPrivacyEvaluationRequestSnapshot(
             feature: .autoTags,
             route: .remote,
             requestedFields: [
@@ -273,14 +274,14 @@ extension MainFileListModel {
             ],
             privacyGateEnabled: snapshot.privacyGateEnabled,
             providerScope: snapshot.providerScope,
-            rules: snapshot.rules.map(AiPrivacyRuleInput.init(summaryRule:)),
-            remoteAllowedFields: snapshot.remoteAllowedFields.map(AiPrivacyFieldRule.init(state:)),
+            rules: snapshot.rules.map(AIPrivacyRuleInputSnapshot.init(summaryRule:)),
+            remoteAllowedFields: snapshot.remoteAllowedFields.map(AIPrivacyFieldRuleSnapshot.init(state:)),
             context: aiTagPrivacyContext(fileID: fileID, file: file)
         )
     }
 
-    private func aiTagPrivacyContext(fileID: Int64, file: FileEntrySnapshot?) -> AiPrivacyEvaluationContext {
-        AiPrivacyEvaluationContext(
+    private func aiTagPrivacyContext(fileID: Int64, file: FileEntrySnapshot?) -> AIPrivacyEvaluationContextSnapshot {
+        AIPrivacyEvaluationContextSnapshot(
             fileId: fileID,
             repoRelativePath: file?.path,
             fileName: file?.currentName,
@@ -296,11 +297,11 @@ extension MainFileListModel {
     }
 
     private func applyAITagSuggestionSuccess(
-        report: AiTagSuggestionReport,
-        applyReport: AiTagSuggestionApplyReport,
+        report: AITagSuggestionReportSnapshot,
+        applyReport: AITagSuggestionApplyReportSnapshot,
         editedSession: AITagSuggestionEditSession?
     ) {
-        detailTagEditorState = .loaded(fileID: applyReport.fileId, TagSetSnapshot(coreTagSet: applyReport.tagSet))
+        detailTagEditorState = .loaded(fileID: applyReport.fileId, applyReport.tagSet)
         if let editedSession {
             aiTagSuggestionState = .editApplied(
                 fileID: applyReport.fileId,
@@ -320,7 +321,7 @@ extension MainFileListModel {
 
     private func applyAITagSuggestionFailure(
         mapping: CoreErrorMappingSnapshot,
-        report: AiTagSuggestionReport,
+        report: AITagSuggestionReportSnapshot,
         editedSession: AITagSuggestionEditSession?,
         previousTagSet: TagSetSnapshot?,
         submittedSlugs: [String]
@@ -341,5 +342,5 @@ extension MainFileListModel {
 
 private struct AITagPrivacyGateResult {
     var privacyPolicyRef: String?
-    var blockedReport: AiTagSuggestionReport?
+    var blockedReport: AITagSuggestionReportSnapshot?
 }

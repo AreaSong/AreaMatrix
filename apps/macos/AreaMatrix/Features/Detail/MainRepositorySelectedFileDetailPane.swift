@@ -18,6 +18,8 @@ struct MainRepositorySelectedFileDetailPane: View {
     let tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
     let detailTagUndoToast: DetailTagUndoToast?
     let repoPath: String
+    let aiDependencies: AIFeatureDependencies
+    let errorMapper: any CoreErrorMapping
     let tagActions: MainRepositoryDetailPaneTagActions
     let onRequestTabChange: (DetailPaneTab) -> Void
     let onRetrySelectedFileDetail: () -> Void
@@ -87,6 +89,8 @@ struct MainRepositorySelectedFileDetailPane: View {
             AISummaryEditor(
                 repoPath: repoPath,
                 fileID: detail.id,
+                aiDependencies: aiDependencies,
+                errorMapper: errorMapper,
                 privacyContext: summaryPrivacyContext,
                 exitController: summaryExitController,
                 onOpenAISettings: onOpenAISettings,
@@ -137,6 +141,8 @@ struct MainRepositorySelectedFileDetailPane: View {
         DetailTagSection(
             file: detail,
             repoPath: repoPath,
+            aiDependencies: aiDependencies,
+            errorMapper: errorMapper,
             state: detailTagEditorState,
             suggestionState: detailTagSuggestionState,
             suggestionPresentationRequest: tagSuggestionPresentationRequest,

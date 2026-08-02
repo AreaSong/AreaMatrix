@@ -185,6 +185,11 @@ AreaMatrix/
 └── Resources/
 ```
 
+可复用的稳定边界放在 `apps/macos/Packages/AreaMatrixModules/`，当前包括
+`AreaMatrixCoreContracts`、`AreaMatrixUIFoundation` 和 `AreaMatrixPlatformKit`。App target 必须真实链接
+这些产品；不要为单个页面创建 Package。Feature 的 owner、风险和验证信息由 feature-local manifest
+提供，依赖图由 `AreaMatrixCoreContracts.FeatureManifestGraph` 统一校验。
+
 ### SwiftUI 规范
 
 - 用 `@Observable` 而不是 `ObservableObject`（macOS 14+）

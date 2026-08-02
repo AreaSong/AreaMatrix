@@ -9,18 +9,18 @@ enum RemotePrivacyRulesRequestPosition {
 actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluating {
     struct Requests: Equatable {
         var loadCount = 0
-        var updates: [AiPrivacyRulesUpdateRequest] = []
-        var evaluations: [AiPrivacyEvaluationRequest] = []
+        var updates: [AIPrivacyRulesUpdateRequestSnapshot] = []
+        var evaluations: [AIPrivacyEvaluationRequestSnapshot] = []
     }
 
-    private var snapshot: AiPrivacyRulesSnapshot
-    private let evaluationReport: AiPrivacyEvaluationReport
+    private var snapshot: AIPrivacyRulesSnapshot
+    private let evaluationReport: AIPrivacyEvaluationReportSnapshot
     private let updateFails: Bool
     private var recorded = Requests()
 
     init(
-        snapshot: AiPrivacyRulesSnapshot = .remoteProviderConfigPrivacyRules(),
-        evaluationReport: AiPrivacyEvaluationReport = .remoteProviderConfigAllowedPrivacyEvaluation(),
+        snapshot: AIPrivacyRulesSnapshot = .remoteProviderConfigPrivacyRules(),
+        evaluationReport: AIPrivacyEvaluationReportSnapshot = .remoteProviderConfigAllowedPrivacyEvaluation(),
         updateFails: Bool = false
     ) {
         self.snapshot = snapshot
@@ -28,15 +28,15 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
         self.updateFails = updateFails
     }
 
-    func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
+    func loadAIPrivacyRules(repoPath _: String) async throws -> AIPrivacyRulesSnapshot {
         recorded.loadCount += 1
         return snapshot
     }
 
     func updateAIPrivacyRules(
         repoPath _: String,
-        request: AiPrivacyRulesUpdateRequest
-    ) async throws -> AiPrivacyRulesSnapshot {
+        request: AIPrivacyRulesUpdateRequestSnapshot
+    ) async throws -> AIPrivacyRulesSnapshot {
         recorded.updates.append(request)
         if updateFails {
             throw CoreError.Db(message: "privacy gate write failed")
@@ -47,8 +47,8 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
 
     func evaluateAIPrivacy(
         repoPath _: String,
-        request: AiPrivacyEvaluationRequest
-    ) async throws -> AiPrivacyEvaluationReport {
+        request: AIPrivacyEvaluationRequestSnapshot
+    ) async throws -> AIPrivacyEvaluationReportSnapshot {
         recorded.evaluations.append(request)
         return evaluationReport
     }
@@ -95,7 +95,7 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
         at index: Int,
         providerConfigured expectedProviderConfigured: Bool? = nil,
         remoteProviderEnabled expectedRemoteProviderEnabled: Bool? = nil,
-        featureScope expectedFeatureScope: [AiFeatureKind]? = nil,
+        featureScope expectedFeatureScope: [AISettingsFeatureKind]? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -138,7 +138,7 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
 
     func assertUpdateFieldPolicy(
         at index: Int,
-        field expectedField: AiPrivacyInputField,
+        field expectedField: AIPrivacyInputFieldState,
         allowRemote expectedAllowRemote: Bool,
         file: StaticString = #filePath,
         line: UInt = #line
@@ -156,7 +156,7 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
     func assertUpdateFieldPolicy(
         at index: Int,
         fieldIndex expectedFieldIndex: Int,
-        field expectedField: AiPrivacyInputField,
+        field expectedField: AIPrivacyInputFieldState,
         allowRemote expectedAllowRemote: Bool,
         file: StaticString = #filePath,
         line: UInt = #line
@@ -193,7 +193,7 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
     }
 
     func assertEvaluationFeatures(
-        _ expectedFeatures: [AiFeatureKind],
+        _ expectedFeatures: [AISettingsFeatureKind],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -202,14 +202,14 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
 
     func assertEvaluation(
         at index: Int,
-        feature expectedFeature: AiFeatureKind? = nil,
-        route expectedRoute: AiPrivacyEvaluationRoute? = nil,
+        feature expectedFeature: AISettingsFeatureKind? = nil,
+        route expectedRoute: AIPrivacyEvaluationRouteState? = nil,
         repoRelativePath expectedRepoRelativePath: String? = nil,
         fileName expectedFileName: String? = nil,
         category expectedCategory: String? = nil,
         fileExtension expectedExtension: String? = nil,
         tags expectedTags: [String]? = nil,
-        requestedFields expectedRequestedFields: [AiPrivacyInputField]? = nil,
+        requestedFields expectedRequestedFields: [AIPrivacyInputFieldState]? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -245,7 +245,7 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
         at index: Int,
         file: StaticString,
         line: UInt
-    ) -> AiPrivacyRulesUpdateRequest? {
+    ) -> AIPrivacyRulesUpdateRequestSnapshot? {
         guard recorded.updates.indices.contains(index) else {
             XCTFail("Expected AI privacy update request at index \(index).", file: file, line: line)
             return nil
@@ -258,7 +258,7 @@ actor RemotePrivacyRulesBridge: CoreAIPrivacyRulesManaging, CoreAIPrivacyEvaluat
         at index: Int,
         file: StaticString,
         line: UInt
-    ) -> AiPrivacyEvaluationRequest? {
+    ) -> AIPrivacyEvaluationRequestSnapshot? {
         guard recorded.evaluations.indices.contains(index) else {
             XCTFail("Expected AI privacy evaluation request at index \(index).", file: file, line: line)
             return nil
@@ -275,14 +275,14 @@ private extension Array {
 }
 
 actor AIPrivacyRulesFailingBridge: CoreAIPrivacyRulesManaging {
-    func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
+    func loadAIPrivacyRules(repoPath _: String) async throws -> AIPrivacyRulesSnapshot {
         throw CoreError.Db(message: "privacy rules read failed")
     }
 
     func updateAIPrivacyRules(
         repoPath _: String,
-        request _: AiPrivacyRulesUpdateRequest
-    ) async throws -> AiPrivacyRulesSnapshot {
+        request _: AIPrivacyRulesUpdateRequestSnapshot
+    ) async throws -> AIPrivacyRulesSnapshot {
         throw CoreError.Db(message: "privacy rules write failed")
     }
 }

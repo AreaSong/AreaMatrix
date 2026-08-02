@@ -135,6 +135,11 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: movedURL.path,
             loader: bridge,
+            updater: bridge,
+            repositoryOpener: bridge,
+            scanSessionReader: bridge,
+            diagnosticsCollector: bridge,
+            coreVersionLoader: bridge,
             errorMapper: bridge
         )
 
@@ -178,9 +183,12 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: bridge,
+            updater: bridge,
             repositoryOpener: bridge,
             scanSessionReader: bridge,
             existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            diagnosticsCollector: bridge,
+            coreVersionLoader: bridge,
             errorMapper: bridge
         )
 
@@ -212,9 +220,12 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
+            updater: NoopConfigurationUpdater(),
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
+            diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 

@@ -9,11 +9,11 @@ enum AISummaryPrivacySummaryEvent: Equatable {
 }
 
 actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
-    private let saveResult: Result<AiSummarySaveReport, Error>?
+    private let saveResult: Result<AISummarySaveReportSnapshot, Error>?
     private var recordedEvents: [AISummaryPrivacySummaryEvent] = []
     private var generatedContentLocales: [String] = []
 
-    init(saveResult: Result<AiSummarySaveReport, Error>? = nil) {
+    init(saveResult: Result<AISummarySaveReportSnapshot, Error>? = nil) {
         self.saveResult = saveResult
     }
 
@@ -21,31 +21,33 @@ actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
         nil
     }
 
-    func generateAISummary(repoPath _: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft {
+    func generateAISummary(repoPath _: String,
+                           request: AISummaryGenerationRequestSnapshot) async throws -> AISummaryDraftSnapshot {
         generatedContentLocales.append(request.contentLocale == .zhHans ? "zh-Hans" : "en")
         if let policyRef = request.privacyPolicyRef {
             recordedEvents.append(.generateSkipped(
-                fileID: request.fileId,
+                fileID: request.fileID,
                 regenerate: request.regenerateExisting,
                 privacyPolicyRef: policyRef
             ))
             return .aiSummaryPrivacySkippedDraft(request: request, privacyPolicyRef: policyRef)
         }
-        recordedEvents.append(.generate(fileID: request.fileId, regenerate: request.regenerateExisting))
+        recordedEvents.append(.generate(fileID: request.fileID, regenerate: request.regenerateExisting))
         return .aiSummaryPrivacyDraft(request: request)
     }
 
-    func saveAISummary(repoPath _: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport {
+    func saveAISummary(repoPath _: String,
+                       request: AISummarySaveRequestSnapshot) async throws -> AISummarySaveReportSnapshot {
         recordedEvents.append(.save(
-            fileID: request.fileId,
+            fileID: request.fileID,
             text: request.summaryText,
             edited: request.ownership == .userOwned
         ))
         if let saveResult {
             return try saveResult.get()
         }
-        return AiSummarySaveReport(
-            fileId: request.fileId,
+        return AISummarySaveReportSnapshot(
+            fileID: request.fileID,
             contentRevision: request.expectedContentRevision + 1,
             ownership: request.ownership,
             savedSummary: request.summaryText,
@@ -54,19 +56,20 @@ actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
             modelName: request.modelName,
             generatedAt: request.generatedAt,
             usedContext: request.usedContext,
-            privacyRuleId: request.privacyRuleId,
-            callLogId: request.callLogId,
-            operationId: request.operationId,
+            privacyRuleID: request.privacyRuleID,
+            callLogID: request.callLogID,
+            operationID: request.operationID,
             contentLocale: request.contentLocale,
             formatContractVersion: request.formatContractVersion,
             characterCount: Int64(request.summaryText.count)
         )
     }
 
-    func clearAISummary(repoPath _: String, request: AiSummaryClearRequest) async throws -> AiSummaryClearReport {
-        recordedEvents.append(.clear(fileID: request.fileId, confirmed: request.confirmed))
-        return AiSummaryClearReport(
-            fileId: request.fileId,
+    func clearAISummary(repoPath _: String,
+                        request: AISummaryClearRequestSnapshot) async throws -> AISummaryClearReportSnapshot {
+        recordedEvents.append(.clear(fileID: request.fileID, confirmed: request.confirmed))
+        return AISummaryClearReportSnapshot(
+            fileID: request.fileID,
             cleared: request.confirmed,
             contentRevision: request.expectedContentRevision + 1,
             clearedAt: 1_700_000_200
@@ -98,26 +101,26 @@ actor AISummaryPrivacySummaryBridge: CoreAISummaryManaging {
 }
 
 actor AISummaryPrivacyRulesBridge: CoreAIPrivacyEvaluating {
-    private let report: AiPrivacyEvaluationReport
-    private var recorded: [AiPrivacyEvaluationRequest] = []
+    private let report: AIPrivacyEvaluationReportSnapshot
+    private var recorded: [AIPrivacyEvaluationRequestSnapshot] = []
 
-    init(report: AiPrivacyEvaluationReport) {
+    init(report: AIPrivacyEvaluationReportSnapshot) {
         self.report = report
     }
 
-    func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
+    func loadAIPrivacyRules(repoPath _: String) async throws -> AIPrivacyRulesSnapshot {
         .aiSummaryPrivacyRules()
     }
 
     func evaluateAIPrivacy(
         repoPath _: String,
-        request: AiPrivacyEvaluationRequest
-    ) async throws -> AiPrivacyEvaluationReport {
+        request: AIPrivacyEvaluationRequestSnapshot
+    ) async throws -> AIPrivacyEvaluationReportSnapshot {
         recorded.append(request)
         return report
     }
 
-    func firstEvaluation() -> AiPrivacyEvaluationRequest? {
+    func firstEvaluation() -> AIPrivacyEvaluationRequestSnapshot? {
         recorded.first
     }
 }

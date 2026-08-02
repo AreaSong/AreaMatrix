@@ -96,7 +96,12 @@ extension MainRepositoryContentView {
     }
 
     func semanticPrivacyRuleSheet(_ route: AIClassificationPrivacyRuleRoute) -> some View {
-        AIClassificationPrivacyRuleReferenceSheet(repoPath: opening.config.repoPath, ruleID: route.ruleID) {
+        AIClassificationPrivacyRuleReferenceSheet(
+            repoPath: opening.config.repoPath,
+            ruleID: route.ruleID,
+            bridge: aiDependencies.aiPrivacyRulesManager,
+            errorMapper: errorMapper
+        ) {
             searchRoutingState.semanticPrivacyRuleRoute = nil
         }
     }
@@ -105,7 +110,9 @@ extension MainRepositoryContentView {
         AIClassificationCallLogDetailSheet(
             repoPath: opening.config.repoPath,
             callLogID: route.callLogID,
-            feature: .semanticSearch
+            feature: .semanticSearch,
+            lister: aiDependencies.aiCallLogLister,
+            errorMapper: errorMapper
         ) {
             searchRoutingState.semanticCallLogRoute = nil
         }
@@ -203,6 +210,8 @@ extension MainRepositoryContentView {
                 page: page,
                 state: fileListModel.semanticFallbackState,
                 repoPath: opening.config.repoPath,
+                aiDependencies: aiDependencies,
+                errorMapper: errorMapper,
                 isIndexBuildBusy: fileListModel.semanticIndexBuildState.isBuilding ||
                     fileListModel.semanticIndexControlState.isCanceling,
                 isPrivacyGateChecking: fileListModel.semanticPrivacyGateState.isChecking,
@@ -214,22 +223,22 @@ extension MainRepositoryContentView {
         .accessibilityIdentifier("ai-fallback-semantic-search-core-ai-fallback")
     }
 
-    private func performSemanticFallbackAction(_ action: AiFallbackAction) {
+    private func performSemanticFallbackAction(_ action: AIFallbackActionSnapshot) {
         switch action {
         case .retry:
             Task { await fileListModel.retrySearch() }
-        case .openAiSettings:
+        case .openAISettings:
             onOpenAISettings()
-        case .openLocalModelStatus, .configureRemoteAi:
+        case .openLocalModelStatus, .configureRemoteAI:
             break
         case .viewPrivacyRule:
-            let ruleID = fileListModel.semanticFallbackState.status?.privacyRuleId ??
+            let ruleID = fileListModel.semanticFallbackState.status?.privacyRuleID ??
                 fileListModel.searchState.page?.semanticPage?.privacyRuleID
             if let ruleID = ruleID?.trimmingCharacters(in: .whitespacesAndNewlines), !ruleID.isEmpty {
                 searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
             }
         case .viewCallLog:
-            let callLogID = fileListModel.semanticFallbackState.status?.callLogId ??
+            let callLogID = fileListModel.semanticFallbackState.status?.callLogID ??
                 fileListModel.searchState.page?.semanticPage?.callLogID
             if let callLogID {
                 searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)

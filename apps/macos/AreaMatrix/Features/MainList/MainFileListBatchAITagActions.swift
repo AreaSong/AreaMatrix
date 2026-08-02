@@ -158,7 +158,7 @@ extension MainFileListModel {
         files: [FileEntrySnapshot],
         selectedIDs: Set<Int64>
     ) async -> AITagBatchSuggestionReview {
-        var reports: [Int64: AiTagSuggestionReport] = [:]
+        var reports: [Int64: AITagSuggestionReportSnapshot] = [:]
         var failures: [Int64: CoreErrorMappingSnapshot] = [:]
         for file in files {
             do {
@@ -180,7 +180,7 @@ extension MainFileListModel {
     private func applyBatchAITagSuggestions(
         fileID: Int64,
         review: AITagBatchSuggestionReview
-    ) async -> (applyReport: AiTagSuggestionApplyReport?, failure: CoreErrorMappingSnapshot?) {
+    ) async -> (applyReport: AITagSuggestionApplyReportSnapshot?, failure: CoreErrorMappingSnapshot?) {
         guard let report = review.reports[fileID] else { return (nil, nil) }
         let items = review.applyItems(fileID: fileID)
         guard !items.isEmpty, canPerformWriteAction(fileID: fileID) else { return (nil, nil) }
@@ -188,7 +188,7 @@ extension MainFileListModel {
         do {
             let applyReport = try await aiTagSuggestionStore.applyAITagSuggestions(
                 repoPath: repoPath,
-                request: ApplyAiTagSuggestionsRequest(
+                request: ApplyAITagSuggestionsRequestSnapshot(
                     fileId: fileID,
                     suggestions: items,
                     callLogId: report.callLogId,
@@ -202,7 +202,7 @@ extension MainFileListModel {
         }
     }
 
-    private func failedSuggestionIDs(in report: AiTagSuggestionApplyReport) -> Set<String> {
+    private func failedSuggestionIDs(in report: AITagSuggestionApplyReportSnapshot) -> Set<String> {
         Set(report.itemResults.compactMap { $0.status == .failed ? $0.suggestionId : nil })
     }
 }

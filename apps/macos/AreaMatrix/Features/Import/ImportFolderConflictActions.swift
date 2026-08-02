@@ -17,7 +17,7 @@ enum ImportFolderConflictPrecheckResult: Equatable {
 struct CoreImportFolderConflictPrechecker: ImportFolderConflictPrechecking {
     private let fileLoader: any ImportBatchCoreFileLoading
 
-    init(fileLoader: any ImportBatchCoreFileLoading = CoreBridgeBatchFileLoader()) {
+    init(fileLoader: any ImportBatchCoreFileLoading) {
         self.fileLoader = fileLoader
     }
 

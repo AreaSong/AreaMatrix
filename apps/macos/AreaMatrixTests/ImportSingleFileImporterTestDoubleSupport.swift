@@ -14,7 +14,7 @@ struct ImportSingleFileImportRequest: Equatable {
     var mode: ImportSingleFileStorageMode
     var overrideCategory: String
     var overrideFilename: String
-    var duplicateStrategy: DuplicateStrategy = .ask
+    var duplicateStrategy: ImportDuplicateStrategySnapshot = .ask
 }
 
 struct ImportSingleFileCoreImportRequest: Equatable {
@@ -23,7 +23,7 @@ struct ImportSingleFileCoreImportRequest: Equatable {
     var mode: ImportSingleFileStorageMode
     var overrideCategory: String
     var overrideFilename: String
-    var duplicateStrategy: DuplicateStrategy = .ask
+    var duplicateStrategy: ImportDuplicateStrategySnapshot = .ask
 }
 
 actor ImportSingleFileRecordingImporter: CoreFileImporting {
@@ -44,7 +44,7 @@ actor ImportSingleFileRecordingImporter: CoreFileImporting {
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         try record(ImportSingleFileCoreImportRequest(
             repoPath: repoPath,
@@ -61,7 +61,7 @@ actor ImportSingleFileRecordingImporter: CoreFileImporting {
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         try record(ImportSingleFileCoreImportRequest(
             repoPath: repoPath,
@@ -78,7 +78,7 @@ actor ImportSingleFileRecordingImporter: CoreFileImporting {
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         try record(ImportSingleFileCoreImportRequest(
             repoPath: repoPath,
@@ -122,7 +122,7 @@ actor ImportSingleFileRecordingImporter: CoreFileImporting {
     }
 
     func assertImportedDuplicateStrategies(
-        _ expectedStrategies: [DuplicateStrategy],
+        _ expectedStrategies: [ImportDuplicateStrategySnapshot],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -163,7 +163,7 @@ actor ImportSingleFileSuspendingImporter: CoreFileImporting {
         sourceURL _: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy _: DuplicateStrategy
+        duplicateStrategy _: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         await gate.markStarted()
         await gate.waitUntilFinished()
@@ -175,7 +175,7 @@ actor ImportSingleFileSuspendingImporter: CoreFileImporting {
         sourceURL _: URL,
         overrideCategory _: String,
         overrideFilename _: String,
-        duplicateStrategy _: DuplicateStrategy
+        duplicateStrategy _: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         throw CoreError.Internal(message: "unexpected move import")
     }
@@ -185,7 +185,7 @@ actor ImportSingleFileSuspendingImporter: CoreFileImporting {
         sourceURL _: URL,
         overrideCategory _: String,
         overrideFilename _: String,
-        duplicateStrategy _: DuplicateStrategy
+        duplicateStrategy _: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         throw CoreError.Internal(message: "unexpected indexed import")
     }
@@ -240,7 +240,7 @@ actor ImportSingleFileFailingImporter: CoreFileImporting {
         sourceURL _: URL,
         overrideCategory _: String,
         overrideFilename _: String,
-        duplicateStrategy _: DuplicateStrategy
+        duplicateStrategy _: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         throw error
     }
@@ -250,7 +250,7 @@ actor ImportSingleFileFailingImporter: CoreFileImporting {
         sourceURL _: URL,
         overrideCategory _: String,
         overrideFilename _: String,
-        duplicateStrategy _: DuplicateStrategy
+        duplicateStrategy _: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         throw error
     }
@@ -260,7 +260,7 @@ actor ImportSingleFileFailingImporter: CoreFileImporting {
         sourceURL _: URL,
         overrideCategory _: String,
         overrideFilename _: String,
-        duplicateStrategy _: DuplicateStrategy
+        duplicateStrategy _: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         throw error
     }

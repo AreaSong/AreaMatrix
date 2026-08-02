@@ -198,29 +198,29 @@ extension AIClassificationSuggestionSkipReasonState {
 }
 
 extension AIClassificationSuggestionState {
-    var fallbackStatusRequest: AiFallbackStatusRequest? {
+    var fallbackStatusRequest: AIFallbackStatusRequestSnapshot? {
         switch status {
         case .suggested:
             nil
         case .noSuggestion, .skipped, .unavailable:
-            AiFallbackStatusRequest(
+            AIFallbackStatusRequestSnapshot(
                 operation: .classificationSuggestion,
-                route: route.map(AiCallLogRoute.init(snapshotRoute:)),
+                route: route.map(AICallLogRouteSnapshot.init),
                 providerError: fallbackProviderError,
                 providerErrorCode: skippedReason?.fallbackProviderErrorCode,
                 privacyDecision: skippedReason == .privacyRule ? .skipped : nil,
                 privacySkippedReason: skippedReason == .privacyRule ? .privacyRule : nil,
-                categorySkippedReason: skippedReason.map(AiCategorySuggestionSkipReason.init(snapshotReason:)),
+                categorySkippedReason: skippedReason,
                 semanticFallbackReason: nil,
                 callLogStatus: fallbackCallLogStatus,
-                callLogId: callLogID,
-                privacyRuleId: privacyRuleID,
+                callLogID: callLogID,
+                privacyRuleID: privacyRuleID,
                 retryAfter: nil
             )
         }
     }
 
-    private var fallbackProviderError: AiFallbackProviderErrorKind? {
+    private var fallbackProviderError: AIFallbackProviderErrorKindSnapshot? {
         switch skippedReason {
         case .providerUnavailable:
             .providerUnavailable
@@ -229,7 +229,7 @@ extension AIClassificationSuggestionState {
         }
     }
 
-    private var fallbackCallLogStatus: AiCallLogStatus? {
+    private var fallbackCallLogStatus: AICallLogStatusSnapshot? {
         switch status {
         case .suggested:
             nil
@@ -237,6 +237,15 @@ extension AIClassificationSuggestionState {
             .skipped
         case .unavailable:
             .unavailable
+        }
+    }
+}
+
+private extension AICallLogRouteSnapshot {
+    init(_ route: AIClassificationSuggestionRouteState) {
+        switch route {
+        case .local: self = .local
+        case .remote: self = .remote
         }
     }
 }

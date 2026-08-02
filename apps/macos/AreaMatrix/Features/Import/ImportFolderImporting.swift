@@ -188,7 +188,7 @@ extension ImportFolderPreviewModel {
         selectedDestination.entryDestination
     }
 
-    private func duplicateStrategy(for row: ImportFolderPreviewRow) -> DuplicateStrategy {
+    private func duplicateStrategy(for row: ImportFolderPreviewRow) -> ImportDuplicateStrategySnapshot {
         if let duplicateResolution = row.duplicateResolution {
             return duplicateResolution.duplicateStrategy
         }

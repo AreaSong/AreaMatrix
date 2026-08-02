@@ -212,6 +212,8 @@ struct BatchRenameTrigger: View {
 
 struct BatchAITagSuggestionTrigger: View {
     let repoPath: String
+    let aiDependencies: AIFeatureDependencies
+    let errorMapper: any CoreErrorMapping
     let selectedFiles: [FileEntrySnapshot]
     let selectedCount: Int
     let disabledReason: String?
@@ -231,6 +233,8 @@ struct BatchAITagSuggestionTrigger: View {
         .sheet(isPresented: $isPresented) {
             BatchAITagSuggestionSheet(
                 repoPath: repoPath,
+                aiDependencies: aiDependencies,
+                errorMapper: errorMapper,
                 selectedFiles: selectedFiles,
                 state: state,
                 actions: actions,
@@ -249,6 +253,8 @@ struct BatchAITagSuggestionTrigger: View {
 
 struct BatchAITagSuggestionSheet: View {
     let repoPath: String
+    let aiDependencies: AIFeatureDependencies
+    let errorMapper: any CoreErrorMapping
     let selectedFiles: [FileEntrySnapshot]
     let state: AITagBatchSuggestionState
     let actions: AITagBatchSuggestionActions
@@ -287,13 +293,20 @@ struct BatchAITagSuggestionSheet: View {
             AIClassificationCallLogDetailSheet(
                 repoPath: repoPath,
                 callLogID: route.callLogID,
-                feature: .tags
+                feature: .tags,
+                lister: aiDependencies.aiCallLogLister,
+                errorMapper: errorMapper
             ) {
                 callLogRoute = nil
             }
         }
         .sheet(item: $privacyRuleRoute) { route in
-            AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath, ruleID: route.ruleID) {
+            AIClassificationPrivacyRuleReferenceSheet(
+                repoPath: repoPath,
+                ruleID: route.ruleID,
+                bridge: aiDependencies.aiPrivacyRulesManager,
+                errorMapper: errorMapper
+            ) {
                 privacyRuleRoute = nil
             }
         }

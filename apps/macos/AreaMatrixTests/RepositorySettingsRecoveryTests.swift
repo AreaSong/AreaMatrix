@@ -9,7 +9,13 @@ final class RepositorySettingsRecoveryTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: RecordingConfigurationLoader(results: []),
+            updater: NoopConfigurationUpdater(),
+            repositoryOpener: RepoSettingsRepositoryOpener(
+                result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo"))
+            ),
+            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             diagnosticsCollector: collector,
+            coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 

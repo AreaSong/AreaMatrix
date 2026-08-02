@@ -71,7 +71,7 @@ enum RemotePrivacyGateAction: Equatable {
 
 @MainActor
 final class RemotePrivacyGateModel: ObservableObject {
-    @Published private(set) var snapshot: AiPrivacyRulesSnapshot?
+    @Published private(set) var snapshot: AIPrivacyRulesSnapshot?
     @Published private(set) var failure: AISettingsError?
     @Published private(set) var pendingAction: RemotePrivacyGateAction?
     @Published private(set) var isSaving = false
@@ -82,8 +82,8 @@ final class RemotePrivacyGateModel: ObservableObject {
 
     init(
         repoPath: String,
-        bridge: any CoreAIPrivacyRulesManaging = CoreBridge(),
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        bridge: any CoreAIPrivacyRulesManaging,
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.bridge = bridge
@@ -186,7 +186,7 @@ final class RemotePrivacyGateModel: ObservableObject {
         }
     }
 
-    private func currentSnapshot() async throws -> AiPrivacyRulesSnapshot {
+    private func currentSnapshot() async throws -> AIPrivacyRulesSnapshot {
         if let snapshot { return snapshot }
         let loaded = try await bridge.loadAIPrivacyRules(repoPath: repoPath)
         snapshot = loaded
@@ -194,7 +194,7 @@ final class RemotePrivacyGateModel: ObservableObject {
     }
 
     private func handleUpdatedSnapshot(
-        _ updated: AiPrivacyRulesSnapshot,
+        _ updated: AIPrivacyRulesSnapshot,
         expectedGate: Bool,
         action: RemotePrivacyGateAction,
         message: LocalizedMessage,
@@ -231,23 +231,23 @@ final class RemotePrivacyGateModel: ObservableObject {
     }
 }
 
-private extension AiPrivacyRulesSnapshot {
+private extension AIPrivacyRulesSnapshot {
     func privacyGateUpdateRequest(
         enabled: Bool,
         providerConfig: RemoteProviderConfigState
-    ) -> AiPrivacyRulesUpdateRequest {
-        AiPrivacyRulesUpdateRequest(
+    ) -> AIPrivacyRulesUpdateRequestSnapshot {
+        AIPrivacyRulesUpdateRequestSnapshot(
             privacyGateEnabled: enabled,
-            rules: rules.map(AiPrivacyRuleInput.init(record:)),
-            remoteAllowedFields: remoteAllowedFields.map(AiPrivacyFieldRule.init(fieldState:)),
-            providerScope: AiPrivacyProviderScopeSnapshot(providerConfig: providerConfig),
+            rules: rules.map(AIPrivacyRuleInputSnapshot.init(record:)),
+            remoteAllowedFields: remoteAllowedFields.map(AIPrivacyFieldRuleSnapshot.init(fieldState:)),
+            providerScope: AIPrivacyProviderScopeSnapshot(providerConfig: providerConfig),
             confirmed: true
         )
     }
 }
 
-private extension AiPrivacyRuleInput {
-    init(record: AiPrivacyRuleRecord) {
+private extension AIPrivacyRuleInputSnapshot {
+    init(record: AIPrivacyRuleRecordSnapshot) {
         self.init(
             ruleId: record.ruleId,
             name: record.name,
@@ -260,19 +260,19 @@ private extension AiPrivacyRuleInput {
     }
 }
 
-private extension AiPrivacyFieldRule {
-    init(fieldState: AiPrivacyFieldState) {
+private extension AIPrivacyFieldRuleSnapshot {
+    init(fieldState: AIPrivacyFieldStateSnapshot) {
         self.init(field: fieldState.field, allowRemote: fieldState.allowRemote)
     }
 }
 
-private extension AiPrivacyProviderScopeSnapshot {
+private extension AIPrivacyProviderScopeSnapshot {
     init(providerConfig: RemoteProviderConfigState) {
         self.init(
             providerConfigured: providerConfig.providerConfigured,
             providerVerified: providerConfig.providerVerified,
             remoteProviderEnabled: providerConfig.remoteProviderEnabled,
-            featureScope: providerConfig.featureScope.map(AiFeatureKind.init(snapshotFeature:))
+            featureScope: providerConfig.featureScope
         )
     }
 }

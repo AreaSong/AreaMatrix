@@ -6,7 +6,7 @@ struct AISummaryEditorContentState {
     private(set) var savedProvenance: AISummaryProvenance?
     private(set) var baselineText: String?
     private(set) var provenance: AISummaryProvenance?
-    private(set) var draftOwnership: AiContentOwnership = .generated
+    private(set) var draftOwnership: AIContentOwnershipState = .generated
     private(set) var expectedContentRevision: Int64 = 0
     private(set) var status: AISummaryEditorStatus = .empty
 
@@ -77,7 +77,7 @@ struct AISummaryEditorContentState {
         }
     }
 
-    mutating func apply(_ draft: AiSummaryDraft) {
+    mutating func apply(_ draft: AISummaryDraftSnapshot) {
         provenance = AISummaryProvenance(draft: draft)
         draftOwnership = .generated
         switch draft.status {
@@ -93,7 +93,7 @@ struct AISummaryEditorContentState {
         }
     }
 
-    mutating func apply(_ skip: AISummaryPrivacySkip, draft: AiSummaryDraft) {
+    mutating func apply(_ skip: AISummaryPrivacySkip, draft: AISummaryDraftSnapshot) {
         provenance = AISummaryProvenance(draft: draft)
         status = skip.editorStatus
     }
@@ -127,7 +127,7 @@ struct AISummaryEditorContentState {
         status = .saved
     }
 
-    mutating func acceptSaveReport(_ report: AiSummarySaveReport) {
+    mutating func acceptSaveReport(_ report: AISummarySaveReportSnapshot) {
         let saved = AISummaryProvenance(report: report)
         savedText = report.savedSummary
         draftText = report.savedSummary
@@ -165,7 +165,7 @@ struct AISummaryEditorContentState {
         status = .dirty
     }
 
-    mutating func clear(_ report: AiSummaryClearReport) {
+    mutating func clear(_ report: AISummaryClearReportSnapshot) {
         reset()
         expectedContentRevision = report.contentRevision
     }
@@ -181,7 +181,7 @@ struct AISummaryEditorContentState {
         status = snapshot.status
     }
 
-    func replacementReview(candidate: AiSummaryDraft) -> AISummaryReplacementReview? {
+    func replacementReview(candidate: AISummaryDraftSnapshot) -> AISummaryReplacementReview? {
         guard candidate.status == .draft,
               let savedText,
               let savedProvenance,
@@ -216,27 +216,27 @@ struct AISummaryEditorContentState {
         )
     }
 
-    func saveRequest(fileID: Int64, confirmReplaceUserOwned: Bool) -> AiSummarySaveRequest? {
+    func saveRequest(fileID: Int64, confirmReplaceUserOwned: Bool) -> AISummarySaveRequestSnapshot? {
         guard let operationID = provenance?.operationID,
               let contentLocale = provenance?.contentLocale,
               let formatContractVersion = provenance?.formatContractVersion
         else {
             return nil
         }
-        return AiSummarySaveRequest(
-            fileId: fileID,
+        return AISummarySaveRequestSnapshot(
+            fileID: fileID,
             expectedContentRevision: expectedContentRevision,
             confirmReplaceUserOwned: confirmReplaceUserOwned,
             summaryText: draftText,
-            draftId: provenance?.draftID,
+            draftID: provenance?.draftID,
             route: provenance?.route,
             modelName: provenance?.modelName,
             generatedAt: provenance?.generatedAt,
             usedContext: provenance?.usedContext ?? [],
-            privacyRuleId: provenance?.privacyRuleID,
-            callLogId: provenance?.callLogID,
+            privacyRuleID: provenance?.privacyRuleID,
+            callLogID: provenance?.callLogID,
             ownership: draftOwnership,
-            operationId: operationID,
+            operationID: operationID,
             contentLocale: contentLocale,
             formatContractVersion: formatContractVersion
         )

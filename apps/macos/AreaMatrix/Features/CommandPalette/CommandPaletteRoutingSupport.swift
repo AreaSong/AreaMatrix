@@ -132,8 +132,8 @@ extension MainRepositoryContentView {
         }
     }
 
-    func commandPaletteContext() -> CommandIndexContext {
-        CommandIndexContext.commandPalette(
+    func commandPaletteContext() -> CommandIndexRequestSnapshot {
+        CommandIndexRequestSnapshot.commandPalette(
             query: fileListModel.commandPaletteQuery,
             selectedFileIDs: selectedFileIDs,
             currentPath: selectedSidebarRow.pathFilterPrefix

@@ -6,8 +6,14 @@ struct AreaMatrixApp: App {
     @NSApplicationDelegateAdaptor(AreaMatrixDockOpenAppDelegate.self) private var appDelegate
     @StateObject private var localizer: AppLocalizer
     @StateObject private var languageStore: AppLanguageStore
+    @StateObject private var commandRouter = AppCommandRouter.shared
+    private let dependencies = AppDependencyContainer.live
 
     init() {
+        let commandRouter = AppCommandRouter.shared
+        commandRouter.installFeatureExtensionRegistry(
+            FeatureManifestRegistry.makeRuntimeRegistry(commandRouter: commandRouter)
+        )
         let isRunningTests = ProcessInfo.processInfo.environment["XCTestBundlePath"] != nil
         if !isRunningTests {
             ObservabilityRuntimeAssembly.shared.start()
@@ -36,23 +42,23 @@ struct AreaMatrixApp: App {
             CommandGroup(after: .sidebar) {
                 Button(localizer.string("app.command.import")) {
                     AppLogger.shared.logUIAction("app.command.import.triggered")
-                    AreaMatrixImportCommandRelay.publish()
+                    commandRouter.publish(.importRequested)
                 }
                 .keyboardShortcut("i", modifiers: [.command])
                 Button(localizer.string("app.command.settings")) {
                     AppLogger.shared.logUIAction("app.command.settings.triggered")
-                    AreaMatrixSettingsCommandRelay.publish()
+                    commandRouter.publish(.settingsRequested)
                 }
                 .keyboardShortcut(",", modifiers: [.command])
                 Divider()
                 Button(localizer.string("app.command.commandPalette")) {
                     AppLogger.shared.logUIAction("app.command.command_palette.triggered")
-                    AreaMatrixCommandPaletteCommandRelay.publish()
+                    commandRouter.publish(.commandPaletteRequested)
                 }
                 .keyboardShortcut("k", modifiers: [.command])
                 Button(localizer.string("app.command.undoHistory")) {
                     AppLogger.shared.logUIAction("app.command.undo_history.triggered")
-                    AreaMatrixUndoHistoryCommandRelay.publish()
+                    commandRouter.publish(.undoHistoryRequested)
                 }
                 .keyboardShortcut("z", modifiers: [.command, .option])
             }
@@ -62,75 +68,58 @@ struct AreaMatrixApp: App {
     @ViewBuilder
     private var rootContent: some View {
         #if DEBUG
-        if let scenario = AreaMatrixDeveloperScenario.current {
-            AreaMatrixDeveloperScenarioView(scenario: scenario)
+        if let configuration = AreaMatrixDeveloperScenario.current {
+            AreaMatrixDeveloperScenarioView(configuration: configuration)
         } else {
-            MainWindow()
+            MainWindow(dependencies: dependencies, commandRouter: commandRouter)
         }
         #else
-        MainWindow()
+        MainWindow(dependencies: dependencies, commandRouter: commandRouter)
         #endif
     }
 }
 
 @MainActor
 enum AreaMatrixImportCommandRelay {
-    static let notification = Notification.Name("AreaMatrixImportCommandRelay.notification")
-
     static func publish() {
-        NotificationCenter.default.post(name: notification, object: nil)
+        AppCommandRouter.shared.publish(.importRequested)
     }
 }
 
 @MainActor
 enum AreaMatrixSettingsCommandRelay {
-    static let notification = Notification.Name("AreaMatrixSettingsCommandRelay.notification")
-
     static func publish() {
-        NotificationCenter.default.post(name: notification, object: nil)
+        AppCommandRouter.shared.publish(.settingsRequested)
     }
 }
 
 @MainActor
 enum AreaMatrixCommandPaletteCommandRelay {
-    static let notification = Notification.Name("AreaMatrixCommandPaletteCommandRelay.notification")
-
     static func publish() {
-        NotificationCenter.default.post(name: notification, object: nil)
+        AppCommandRouter.shared.publish(.commandPaletteRequested)
     }
 }
 
 @MainActor
 enum AreaMatrixUndoHistoryCommandRelay {
-    static let notification = Notification.Name("AreaMatrixUndoHistoryCommandRelay.notification")
-
     static func publish() {
-        NotificationCenter.default.post(name: notification, object: nil)
+        AppCommandRouter.shared.publish(.undoHistoryRequested)
     }
 }
 
 @MainActor
 enum AreaMatrixDockOpenRelay {
-    static let notification = Notification.Name("AreaMatrixDockOpenRelay.notification")
-    private static var pendingBatches: [[URL]] = []
-
     static func publish(_ urls: [URL]) {
-        pendingBatches.append(urls)
-        NotificationCenter.default.post(name: notification, object: nil)
+        AppCommandRouter.shared.publishDockOpen(urls)
     }
 
     static func takePendingBatches() -> [[URL]] {
-        let batches = pendingBatches
-        pendingBatches.removeAll()
-        return batches
+        AppCommandRouter.shared.takePendingDockOpenBatches()
     }
 }
 
 @MainActor
 enum AreaMatrixExternalCreatedFileRelay {
-    static let notification = Notification.Name("AreaMatrixExternalCreatedFileRelay.notification")
-    private static var pendingWindows: [MainExternalSyncWindow] = []
-
     static func publish(
         kind: MainExternalSyncEventKind = .created,
         repoPath: String,
@@ -166,20 +155,11 @@ enum AreaMatrixExternalCreatedFileRelay {
     }
 
     static func publish(_ window: MainExternalSyncWindow) {
-        if let index = pendingWindows.firstIndex(where: { existing in
-            existing.repoPath == window.repoPath && existing.cursorWatermark == window.cursorWatermark
-        }), let merged = pendingWindows[index].merging(window) {
-            pendingWindows[index] = merged
-        } else {
-            pendingWindows.append(window)
-        }
-        NotificationCenter.default.post(name: notification, object: nil)
+        AppCommandRouter.shared.publishExternalSync(window)
     }
 
     static func takePendingSignals() -> [MainExternalCreatedFileSignal] {
-        let windows = pendingWindows
-        pendingWindows.removeAll()
-        return windows.flatMap(\.signals)
+        takePendingWindows(matchingRepoPath: nil).flatMap(\.signals)
     }
 
     static func takePendingSignals(matchingRepoPath repoPath: String?) -> [MainExternalCreatedFileSignal] {
@@ -187,19 +167,7 @@ enum AreaMatrixExternalCreatedFileRelay {
     }
 
     static func takePendingWindows(matchingRepoPath repoPath: String?) -> [MainExternalSyncWindow] {
-        guard let repoPath, !repoPath.isEmpty else { return [] }
-
-        let normalizedRepoPath = URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL.path
-        var matchingWindows: [MainExternalSyncWindow] = []
-        pendingWindows.removeAll { window in
-            guard window.repoPath == normalizedRepoPath else { return false }
-            matchingWindows.append(window)
-            return true
-        }
-        return matchingWindows.enumerated().sorted { lhs, rhs in
-            if lhs.element.cursorWatermark == rhs.element.cursorWatermark { return lhs.offset < rhs.offset }
-            return lhs.element.cursorWatermark < rhs.element.cursorWatermark
-        }.map(\.element)
+        AppCommandRouter.shared.takePendingExternalWindows(matchingRepoPath: repoPath)
     }
 }
 
@@ -235,11 +203,11 @@ final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_: NSApplication, open urls: [URL]) {
-        AreaMatrixDockOpenRelay.publish(urls)
+        AppCommandRouter.shared.publishDockOpen(urls)
     }
 
     func application(_ sender: NSApplication, openFiles filenames: [String]) {
-        AreaMatrixDockOpenRelay.publish(filenames.map(URL.init(fileURLWithPath:)))
+        AppCommandRouter.shared.publishDockOpen(filenames.map(URL.init(fileURLWithPath:)))
         sender.reply(toOpenOrPrint: .success)
     }
 

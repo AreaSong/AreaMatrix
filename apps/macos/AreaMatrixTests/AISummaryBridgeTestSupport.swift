@@ -107,20 +107,20 @@ enum AISummaryIntegrationSummaryEvent: Equatable {
 }
 
 actor AISummaryIntegrationSummaryBridge: CoreAISummaryManaging {
-    private var draftQueue: TestResultQueue<AiSummaryDraft>
+    private var draftQueue: TestResultQueue<AISummaryDraftSnapshot>
     private let savedSummary: AISummarySavedSnapshot?
     private var recorded: [AISummaryIntegrationSummaryEvent] = []
     private var generationOperationLinks: [(operationID: String, retryOf: String?)] = []
     private var saveReplacementConfirmations: [Bool] = []
 
-    init(drafts: [AiSummaryDraft], savedSummary: AISummarySavedSnapshot? = nil) {
+    init(drafts: [AISummaryDraftSnapshot], savedSummary: AISummarySavedSnapshot? = nil) {
         draftQueue = TestResultQueue(results: drafts.map { .success($0) }) {
             .failure(CoreError.Internal(message: "missing ai-summary draft"))
         }
         self.savedSummary = savedSummary
     }
 
-    init(draftResults: [Result<AiSummaryDraft, Error>], savedSummary: AISummarySavedSnapshot? = nil) {
+    init(draftResults: [Result<AISummaryDraftSnapshot, Error>], savedSummary: AISummarySavedSnapshot? = nil) {
         draftQueue = TestResultQueue(results: draftResults) {
             .failure(CoreError.Internal(message: "missing ai-summary draft"))
         }
@@ -132,8 +132,9 @@ actor AISummaryIntegrationSummaryBridge: CoreAISummaryManaging {
         return savedSummary
     }
 
-    func generateAISummary(repoPath _: String, request: AiSummaryGenerationRequest) async throws -> AiSummaryDraft {
-        generationOperationLinks.append((request.operationId, request.retryOfOperationId))
+    func generateAISummary(repoPath _: String,
+                           request: AISummaryGenerationRequestSnapshot) async throws -> AISummaryDraftSnapshot {
+        generationOperationLinks.append((request.operationID, request.retryOfOperationID))
         recorded.append(.generate(
             regenerate: request.regenerateExisting,
             privacyPolicyRef: request.privacyPolicyRef
@@ -141,15 +142,16 @@ actor AISummaryIntegrationSummaryBridge: CoreAISummaryManaging {
         return try draftQueue.next()
     }
 
-    func saveAISummary(repoPath _: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport {
+    func saveAISummary(repoPath _: String,
+                       request: AISummarySaveRequestSnapshot) async throws -> AISummarySaveReportSnapshot {
         saveReplacementConfirmations.append(request.confirmReplaceUserOwned)
         recorded.append(.save(
             text: request.summaryText,
             edited: request.ownership == .userOwned,
-            callLogID: request.callLogId
+            callLogID: request.callLogID
         ))
-        return AiSummarySaveReport(
-            fileId: request.fileId,
+        return AISummarySaveReportSnapshot(
+            fileID: request.fileID,
             contentRevision: request.expectedContentRevision + 1,
             ownership: request.ownership,
             savedSummary: request.summaryText,
@@ -158,19 +160,20 @@ actor AISummaryIntegrationSummaryBridge: CoreAISummaryManaging {
             modelName: request.modelName,
             generatedAt: request.generatedAt,
             usedContext: request.usedContext,
-            privacyRuleId: request.privacyRuleId,
-            callLogId: request.callLogId,
-            operationId: request.operationId,
+            privacyRuleID: request.privacyRuleID,
+            callLogID: request.callLogID,
+            operationID: request.operationID,
             contentLocale: request.contentLocale,
             formatContractVersion: request.formatContractVersion,
             characterCount: Int64(request.summaryText.count)
         )
     }
 
-    func clearAISummary(repoPath _: String, request: AiSummaryClearRequest) async throws -> AiSummaryClearReport {
+    func clearAISummary(repoPath _: String,
+                        request: AISummaryClearRequestSnapshot) async throws -> AISummaryClearReportSnapshot {
         recorded.append(.clear(confirmed: request.confirmed))
-        return AiSummaryClearReport(
-            fileId: request.fileId,
+        return AISummaryClearReportSnapshot(
+            fileID: request.fileID,
             cleared: true,
             contentRevision: request.expectedContentRevision + 1,
             clearedAt: 1_700_000_200
@@ -223,15 +226,15 @@ actor AISummaryIntegrationSummaryBridge: CoreAISummaryManaging {
 }
 
 actor AISummaryIntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
-    private let report: AiPrivacyEvaluationReport
-    private var recordedRoutes: [AiPrivacyEvaluationRoute] = []
+    private let report: AIPrivacyEvaluationReportSnapshot
+    private var recordedRoutes: [AIPrivacyEvaluationRouteState] = []
 
-    init(report: AiPrivacyEvaluationReport = .aiSummaryAllowed()) {
+    init(report: AIPrivacyEvaluationReportSnapshot = .aiSummaryAllowed()) {
         self.report = report
     }
 
-    func loadAIPrivacyRules(repoPath _: String) async throws -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot.testFixture(
+    func loadAIPrivacyRules(repoPath _: String) async throws -> AIPrivacyRulesSnapshot {
+        AIPrivacyRulesSnapshot.testFixture(
             privacyGateEnabled: true,
             providerScope: .testFixture(
                 featureScope: [.autoSummaries]
@@ -241,14 +244,14 @@ actor AISummaryIntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
 
     func evaluateAIPrivacy(
         repoPath _: String,
-        request: AiPrivacyEvaluationRequest
-    ) async throws -> AiPrivacyEvaluationReport {
+        request: AIPrivacyEvaluationRequestSnapshot
+    ) async throws -> AIPrivacyEvaluationReportSnapshot {
         recordedRoutes.append(request.route)
         return report
     }
 
     func assertEvaluatedRoutes(
-        _ expectedRoutes: [AiPrivacyEvaluationRoute],
+        _ expectedRoutes: [AIPrivacyEvaluationRouteState],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -258,16 +261,16 @@ actor AISummaryIntegrationPrivacyBridge: CoreAIPrivacyEvaluating {
 
 actor AISummaryConflictBridge: CoreAISummaryManaging {
     private var stateQueue: TestResultQueue<AISummaryPersistedStateSnapshot>
-    private var saveQueue: TestResultQueue<AiSummarySaveReport>
-    private var clearQueue: TestResultQueue<AiSummaryClearReport>
+    private var saveQueue: TestResultQueue<AISummarySaveReportSnapshot>
+    private var clearQueue: TestResultQueue<AISummaryClearReportSnapshot>
     private var expectedRevisions: [Int64] = []
     private var confirmations: [Bool] = []
     private var clearExpectedRevisions: [Int64] = []
 
     init(
         states: [AISummaryPersistedStateSnapshot],
-        saveResults: [Result<AiSummarySaveReport, Error>] = [],
-        clearResults: [Result<AiSummaryClearReport, Error>] = []
+        saveResults: [Result<AISummarySaveReportSnapshot, Error>] = [],
+        clearResults: [Result<AISummaryClearReportSnapshot, Error>] = []
     ) {
         stateQueue = TestResultQueue(results: states.map { .success($0) }) {
             .failure(CoreError.Internal(message: "missing AI summary state"))
@@ -291,17 +294,20 @@ actor AISummaryConflictBridge: CoreAISummaryManaging {
         try stateQueue.next().summary
     }
 
-    func generateAISummary(repoPath _: String, request _: AiSummaryGenerationRequest) async throws -> AiSummaryDraft {
+    func generateAISummary(repoPath _: String,
+                           request _: AISummaryGenerationRequestSnapshot) async throws -> AISummaryDraftSnapshot {
         throw CoreError.Internal(message: "generation is not expected")
     }
 
-    func saveAISummary(repoPath _: String, request: AiSummarySaveRequest) async throws -> AiSummarySaveReport {
+    func saveAISummary(repoPath _: String,
+                       request: AISummarySaveRequestSnapshot) async throws -> AISummarySaveReportSnapshot {
         expectedRevisions.append(request.expectedContentRevision)
         confirmations.append(request.confirmReplaceUserOwned)
         return try saveQueue.next()
     }
 
-    func clearAISummary(repoPath _: String, request: AiSummaryClearRequest) async throws -> AiSummaryClearReport {
+    func clearAISummary(repoPath _: String,
+                        request: AISummaryClearRequestSnapshot) async throws -> AISummaryClearReportSnapshot {
         clearExpectedRevisions.append(request.expectedContentRevision)
         return try clearQueue.next()
     }

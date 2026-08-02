@@ -39,11 +39,11 @@ final class RepositorySettingsModel: ObservableObject {
 
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
-        repositoryOpener: any CoreEmptyRepositoryOpening = AppCoreServices.emptyRepositoryOpener,
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
+        repositoryOpener: any CoreEmptyRepositoryOpening,
         fileLister: (any CoreFileListing)? = nil,
-        scanSessionReader: any CoreScanSessionReading = AppCoreServices.scanSessionReader,
+        scanSessionReader: any CoreScanSessionReading,
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             RepositorySettingsPlatformServices.metadataReader,
         metadataPresenceChecker: any RepoMetadataPresenceChecking =
@@ -52,9 +52,9 @@ final class RepositorySettingsModel: ObservableObject {
         pathCopier: any RepositoryPathCopying = RepositorySettingsPlatformServices.pathCopier,
         generatedOverviewRevealer: any RepositoryFileRevealing =
             RepositorySettingsPlatformServices.generatedOverviewRevealer,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
-        coreVersionLoader: any CoreVersionLoading = AppCoreServices.coreVersionLoader,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        diagnosticsCollector: any CoreDiagnosticsCollecting,
+        coreVersionLoader: any CoreVersionLoading,
+        errorMapper: any CoreErrorMapping,
         accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
     ) {
         self.repoPath = repoPath

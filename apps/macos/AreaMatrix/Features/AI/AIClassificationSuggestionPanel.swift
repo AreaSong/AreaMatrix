@@ -11,6 +11,8 @@ struct AIClassificationSuggestionRouteView: View {
     let onPreview: (Int64, String) -> Void
     let onApply: (AIClassificationSuggestionApplyRequest) -> Void
     let onOpenAIRecoverySettings: () -> Void
+    let aiDependencies: AIFeatureDependencies
+    let errorMapper: any CoreErrorMapping
     @State private var presentedRecoverySheet: AIClassificationRecoverySheet?
     @State private var callLogRoute: AIClassificationCallLogRoute?
     @StateObject private var model: AIClassificationSuggestionPanelModel
@@ -24,7 +26,9 @@ struct AIClassificationSuggestionRouteView: View {
         onBeginChange: @escaping (Int64, String?) -> Void,
         onPreview: @escaping (Int64, String) -> Void = { _, _ in },
         onApply: @escaping (AIClassificationSuggestionApplyRequest) -> Void = { _ in },
-        onOpenAIRecoverySettings: @escaping () -> Void
+        onOpenAIRecoverySettings: @escaping () -> Void,
+        aiDependencies: AIFeatureDependencies,
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.file = file
@@ -35,12 +39,17 @@ struct AIClassificationSuggestionRouteView: View {
         self.onPreview = onPreview
         self.onApply = onApply
         self.onOpenAIRecoverySettings = onOpenAIRecoverySettings
+        self.aiDependencies = aiDependencies
+        self.errorMapper = errorMapper
         _model = StateObject(wrappedValue: AIClassificationSuggestionPanelModel(
             repoPath: repoPath,
             request: AIClassificationSuggestionRequestState(
                 fileID: file?.id ?? 0,
                 contextPolicy: .limitedTextSummary
-            )
+            ),
+            suggester: aiDependencies.aiClassificationSuggester,
+            fallbackReader: aiDependencies.aiClassificationFallbackReader,
+            errorMapper: errorMapper
         ))
     }
 
@@ -60,7 +69,9 @@ struct AIClassificationSuggestionRouteView: View {
                     onViewCall: { callLogRoute = AIClassificationCallLogRoute(callLogID: $0) },
                     onOpenAISettings: onOpenAIRecoverySettings,
                     onOpenLocalModelStatus: { presentedRecoverySheet = .localModelStatus },
-                    onConfigureRemoteAI: { presentedRecoverySheet = .remoteConfig }
+                    onConfigureRemoteAI: { presentedRecoverySheet = .remoteConfig },
+                    aiDependencies: aiDependencies,
+                    errorMapper: errorMapper
                 )
             } else {
                 MissingFileActionContext(onCancel: onCancel)
@@ -71,6 +82,8 @@ struct AIClassificationSuggestionRouteView: View {
             AIClassificationCallLogDetailSheet(
                 repoPath: repoPath,
                 callLogID: route.callLogID,
+                lister: aiDependencies.aiCallLogLister,
+                errorMapper: errorMapper,
                 onClose: {
                     callLogRoute = nil
                 }
@@ -83,13 +96,29 @@ struct AIClassificationSuggestionRouteView: View {
         switch sheet {
         case .localModelStatus:
             LocalModelStatusView(
-                model: LocalModelStatusModel(repoPath: repoPath),
+                model: LocalModelStatusModel(
+                    repoPath: repoPath,
+                    statusReader: aiDependencies.localModelStatusReader,
+                    errorMapper: errorMapper
+                ),
                 onClose: { presentedRecoverySheet = nil }
             )
         case .remoteConfig:
-            RemoteModelConfigSheet(model: RemoteProviderConfigModel(repoPath: repoPath), onClose: {
-                presentedRecoverySheet = nil
-            })
+            RemoteModelConfigSheet(
+                model: RemoteProviderConfigModel(
+                    repoPath: repoPath,
+                    bridge: aiDependencies.remoteProviderConfigurer,
+                    errorMapper: errorMapper
+                ),
+                privacyModel: RemotePrivacyGateModel(
+                    repoPath: repoPath,
+                    bridge: aiDependencies.aiPrivacyRulesManager,
+                    errorMapper: errorMapper
+                ),
+                onClose: {
+                    presentedRecoverySheet = nil
+                }
+            )
         }
     }
 
@@ -155,6 +184,8 @@ struct AIClassificationSuggestionPanel: View {
     var onOpenAISettings: () -> Void = {}
     var onOpenLocalModelStatus: () -> Void = {}
     var onConfigureRemoteAI: () -> Void = {}
+    var aiDependencies: AIFeatureDependencies?
+    var errorMapper: (any CoreErrorMapping)?
     @State var privacyRuleRoute: AIPrivacyRulesRoute?
     @State var rememberRule = false
     @State var rejectedFeedback: AIClassificationSuggestionRejectedFeedback?
@@ -191,9 +222,22 @@ struct AIClassificationSuggestionPanel: View {
         .background(.background)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
         .sheet(item: $privacyRuleRoute) { route in
-            AIPrivacyRulesRouteSheet(repoPath: model.repoPath, focus: route.focus, onClose: {
-                privacyRuleRoute = nil
-            })
+            if let aiDependencies, let errorMapper {
+                AIPrivacyRulesRouteSheet(
+                    repoPath: model.repoPath,
+                    featureDependencies: aiDependencies,
+                    errorMapper: errorMapper,
+                    registryReader: aiDependencies.privacyRuleRegistryReader,
+                    focus: route.focus,
+                    onClose: {
+                        privacyRuleRoute = nil
+                    }
+                )
+            } else {
+                Text(L10n.string("AI provider is unavailable."))
+                    .padding(24)
+                    .frame(width: 560)
+            }
         }
     }
 
@@ -226,7 +270,7 @@ struct AIClassificationSuggestionPanel: View {
         return .primary
     }
 
-    private func fallbackContent(_ status: AiFallbackStatus) -> some View {
+    private func fallbackContent(_ status: AIFallbackStatusSnapshot) -> some View {
         AIClassificationFallbackStatusRegion(
             status: status,
             isResolving: model.isResolvingFallbackStatus,
@@ -249,20 +293,20 @@ struct AIClassificationSuggestionPanel: View {
         .accessibilityIdentifier("ai-category-suggestion-ai-classification-suggestion-error")
     }
 
-    func performFallbackAction(_ action: AiFallbackAction) {
+    func performFallbackAction(_ action: AIFallbackActionSnapshot) {
         switch action {
         case .retry:
             Task { await model.retryFallbackSuggestion() }
-        case .openAiSettings:
+        case .openAISettings:
             onOpenAISettings()
         case .openLocalModelStatus:
             onOpenLocalModelStatus()
-        case .configureRemoteAi:
+        case .configureRemoteAI:
             onConfigureRemoteAI()
         case .viewPrivacyRule:
-            privacyRuleRoute = aiPrivacyRulesPrivacyRuleRoute(ruleID: model.fallbackStatus?.privacyRuleId)
+            privacyRuleRoute = aiPrivacyRulesPrivacyRuleRoute(ruleID: model.fallbackStatus?.privacyRuleID)
         case .viewCallLog:
-            if let callLogID = model.fallbackStatus?.callLogId {
+            if let callLogID = model.fallbackStatus?.callLogID {
                 onViewCall(callLogID)
             }
         case .classifyManually:
@@ -278,24 +322,24 @@ struct AIClassificationSuggestionPanel: View {
         return AIPrivacyRulesRoute(repoPath: model.repoPath, focus: .rule(ruleID: normalizedRuleID))
     }
 
-    func isFallbackActionDisabled(_ action: AiFallbackAction) -> Bool {
+    func isFallbackActionDisabled(_ action: AIFallbackActionSnapshot) -> Bool {
         switch action {
         case .retry:
             model.fallbackStatus?.retryable != true
         case .viewPrivacyRule:
-            model.fallbackStatus?.privacyRuleId?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false
+            model.fallbackStatus?.privacyRuleID?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false
         case .viewCallLog:
-            model.fallbackStatus?.callLogId == nil
-        case .openAiSettings, .openLocalModelStatus, .configureRemoteAi, .classifyManually:
+            model.fallbackStatus?.callLogID == nil
+        case .openAISettings, .openLocalModelStatus, .configureRemoteAI, .classifyManually:
             false
         case .retryLater, .buildSemanticIndex, .useNormalSearch:
             true
         }
     }
 
-    private func isFallbackActionVisible(_ action: AiFallbackAction) -> Bool {
+    private func isFallbackActionVisible(_ action: AIFallbackActionSnapshot) -> Bool {
         switch action {
-        case .retry, .retryLater, .openAiSettings, .openLocalModelStatus, .configureRemoteAi, .viewPrivacyRule,
+        case .retry, .retryLater, .openAISettings, .openLocalModelStatus, .configureRemoteAI, .viewPrivacyRule,
              .viewCallLog, .classifyManually:
             true
         case .buildSemanticIndex, .useNormalSearch:
@@ -303,13 +347,13 @@ struct AIClassificationSuggestionPanel: View {
         }
     }
 
-    private func actionTitle(for action: AiFallbackAction) -> String {
+    private func actionTitle(for action: AIFallbackActionSnapshot) -> String {
         switch action {
         case .retry: L10n.string("Retry")
         case .retryLater: L10n.string("Retry later")
-        case .openAiSettings: L10n.string("Open AI settings")
+        case .openAISettings: L10n.string("Open AI settings")
         case .openLocalModelStatus: L10n.string("Open local model status")
-        case .configureRemoteAi: L10n.string("Configure remote AI")
+        case .configureRemoteAI: L10n.string("Configure remote AI")
         case .viewPrivacyRule: L10n.string("View privacy rule")
         case .viewCallLog: L10n.string("View call log")
         case .buildSemanticIndex: L10n.string("Build semantic index")
@@ -318,13 +362,13 @@ struct AIClassificationSuggestionPanel: View {
         }
     }
 
-    private func actionAccessibilitySuffix(for action: AiFallbackAction) -> String {
+    private func actionAccessibilitySuffix(for action: AIFallbackActionSnapshot) -> String {
         switch action {
         case .retry: "retry"
         case .retryLater: "retry-later"
-        case .openAiSettings: "open-ai-settings"
+        case .openAISettings: "open-ai-settings"
         case .openLocalModelStatus: "open-local-model-status"
-        case .configureRemoteAi: "configure-remote-ai"
+        case .configureRemoteAI: "configure-remote-ai"
         case .viewPrivacyRule: "view-privacy-rule"
         case .viewCallLog: "view-call-log"
         case .buildSemanticIndex: "build-semantic-index"

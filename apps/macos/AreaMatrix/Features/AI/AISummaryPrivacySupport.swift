@@ -1,12 +1,12 @@
 import Foundation
 
-extension AiPrivacyFieldRule {
-    init(state: AiPrivacyFieldState) {
+extension AIPrivacyFieldRuleSnapshot {
+    init(state: AIPrivacyFieldStateSnapshot) {
         self.init(field: state.field, allowRemote: state.allowRemote)
     }
 }
 
-func aiPrivacyInputFieldLabel(_ field: AiPrivacyInputField) -> String {
+func aiPrivacyInputFieldLabel(_ field: AIPrivacyInputFieldState) -> String {
     switch field {
     case .fileName: L10n.string("filename")
     case .repoRelativePath: L10n.string("repo-relative path")
@@ -18,22 +18,22 @@ func aiPrivacyInputFieldLabel(_ field: AiPrivacyInputField) -> String {
     }
 }
 
-func privacySentFields(_ fields: [AiPrivacyInputField]) -> String {
+func privacySentFields(_ fields: [AIPrivacyInputFieldState]) -> String {
     fields.isEmpty ? L10n.string("none") : fields.map(aiPrivacyInputFieldLabel).joined(separator: ", ")
 }
 
-func summaryUsedFields(_ fields: [AiSummaryInputField]) -> String {
+func summaryUsedFields(_ fields: [AISummaryInputFieldState]) -> String {
     fields.isEmpty ? L10n.string("none") : fields.map(aiSummaryInputFieldLabel).joined(separator: ", ")
 }
 
-func aiSummaryRouteLabel(_ route: AiSummaryRoute) -> String {
+func aiSummaryRouteLabel(_ route: AISummaryRouteState) -> String {
     switch route {
     case .local: L10n.string("Generated locally")
     case .remote: L10n.string("Generated remotely")
     }
 }
 
-func aiSummaryInputFieldLabel(_ field: AiSummaryInputField) -> String {
+func aiSummaryInputFieldLabel(_ field: AISummaryInputFieldState) -> String {
     switch field {
     case .fileName: L10n.string("filename")
     case .repoRelativePath: L10n.string("repo-relative path")
@@ -44,7 +44,7 @@ func aiSummaryInputFieldLabel(_ field: AiSummaryInputField) -> String {
     }
 }
 
-func aiSummarySkipReasonLabel(_ reason: AiSummarySkipReason) -> String {
+func aiSummarySkipReasonLabel(_ reason: AISummarySkipReasonState) -> String {
     switch reason {
     case .aiDisabled: L10n.string("AI summaries are off")
     case .featureDisabled: L10n.string("Auto summaries are off")
@@ -87,8 +87,8 @@ struct AISummaryPrivacyContext: Equatable {
         )
     }
 
-    var coreContext: AiPrivacyEvaluationContext {
-        AiPrivacyEvaluationContext(
+    var coreContext: AIPrivacyEvaluationContextSnapshot {
+        AIPrivacyEvaluationContextSnapshot(
             fileId: nil,
             repoRelativePath: repoRelativePath,
             fileName: fileName,
@@ -109,15 +109,15 @@ struct AISummaryPrivacyContext: Equatable {
 }
 
 struct AISummaryPrivacySkip: Equatable {
-    var decision: AiPrivacyDecision
+    var decision: AIPrivacyDecisionState
     var message: String
-    var skippedReason: AiPrivacySkippedReason?
-    var providerGateReason: AiPrivacyProviderGateReason?
+    var skippedReason: AIPrivacySkippedReasonState?
+    var providerGateReason: AIPrivacyProviderGateReasonState?
     var ruleID: String?
-    var matchedField: AiPrivacyInputField?
-    var sentFields: [AiPrivacyInputField]
+    var matchedField: AIPrivacyInputFieldState?
+    var sentFields: [AIPrivacyInputFieldState]
 
-    init(report: AiPrivacyEvaluationReport) {
+    init(report: AIPrivacyEvaluationReportSnapshot) {
         decision = report.decision
         message = report.message
         skippedReason = report.skippedReason
@@ -127,7 +127,7 @@ struct AISummaryPrivacySkip: Equatable {
         sentFields = report.sentFields
     }
 
-    init(summaryReason: AiSummarySkipReason) {
+    init(summaryReason: AISummarySkipReasonState) {
         decision = .skipped
         message = aiSummarySkipReasonLabel(summaryReason)
         providerGateReason = summaryReason == .providerUnavailable ? .providerNotConfigured : nil
@@ -177,7 +177,7 @@ struct AISummaryPrivacySkip: Equatable {
         return "block:privacy-rule"
     }
 
-    private var summaryDraftStatus: AiSummaryDraftStatus {
+    private var summaryDraftStatus: AISummaryDraftStatusState {
         switch skippedReason {
         case .providerNotConfigured, .providerNotVerified, .providerDisabled,
              .scopeNotAllowed, .privacyGateDisabled:
@@ -187,7 +187,7 @@ struct AISummaryPrivacySkip: Equatable {
         }
     }
 
-    private var summarySkipReason: AiSummarySkipReason? {
+    private var summarySkipReason: AISummarySkipReasonState? {
         switch skippedReason {
         case .privacyRule, .fieldRule:
             skippedReason == .privacyRule ? .privacyRule : .noEligibleInput
@@ -202,8 +202,8 @@ struct AISummaryPrivacySkip: Equatable {
     }
 }
 
-extension AiPrivacyEvaluationRoute {
-    init(summaryProviderScope: AiSummaryProviderScope) {
+extension AIPrivacyEvaluationRouteState {
+    init(summaryProviderScope: AISummaryProviderScopeState) {
         switch summaryProviderScope {
         case .localOnly, .localPreferred:
             self = .local
@@ -213,8 +213,8 @@ extension AiPrivacyEvaluationRoute {
     }
 }
 
-extension AiPrivacyRuleInput {
-    init(summaryRule record: AiPrivacyRuleRecord) {
+extension AIPrivacyRuleInputSnapshot {
+    init(summaryRule record: AIPrivacyRuleRecordSnapshot) {
         self.init(
             ruleId: record.ruleId,
             name: record.name,
@@ -227,7 +227,7 @@ extension AiPrivacyRuleInput {
     }
 }
 
-private extension AiPrivacyProviderGateReason {
+private extension AIPrivacyProviderGateReasonState {
     var summaryPrivacyReasonLabel: String {
         switch self {
         case .privacyGateDisabled: L10n.string("Privacy gate is disabled for remote summaries.")
@@ -239,7 +239,7 @@ private extension AiPrivacyProviderGateReason {
     }
 }
 
-private extension AiPrivacySkippedReason {
+private extension AIPrivacySkippedReasonState {
     var summaryPrivacyReasonLabel: String {
         switch self {
         case .privacyGateDisabled: L10n.string("Privacy gate is disabled for remote summaries.")

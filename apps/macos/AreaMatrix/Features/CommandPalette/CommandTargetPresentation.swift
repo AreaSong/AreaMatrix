@@ -3,7 +3,7 @@ import Foundation
 enum CommandTargetPresentation {
     // Stable Core target IDs are intentionally mapped explicitly for localization.
     // swiftlint:disable:next cyclomatic_complexity
-    static func title(for target: CommandTarget) -> String {
+    static func title(for target: CoreCommandTargetSnapshot) -> String {
         switch normalizedID(target.id) {
         case "command.import-files": L10n.string("Import files...")
         case "command.open-repository": L10n.string("Open repository...")
@@ -28,7 +28,7 @@ enum CommandTargetPresentation {
 
     // Stable Core target IDs are intentionally mapped explicitly for localization.
     // swiftlint:disable:next cyclomatic_complexity
-    static func subtitle(for target: CommandTarget) -> String? {
+    static func subtitle(for target: CoreCommandTargetSnapshot) -> String? {
         guard let subtitle = target.subtitle else { return nil }
         switch normalizedID(target.id) {
         case "command.import-files": return L10n.string("Open the import sheet")
@@ -63,7 +63,7 @@ enum CommandTargetPresentation {
         }
     }
 
-    static func disabledReason(for target: CommandTarget) -> String? {
+    static func disabledReason(for target: CoreCommandTargetSnapshot) -> String? {
         guard let reason = target.disabledReason else { return nil }
         return switch reason {
         case "Redo stack is unavailable.": L10n.string("Redo stack is unavailable.")

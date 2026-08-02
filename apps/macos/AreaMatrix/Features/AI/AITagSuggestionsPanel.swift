@@ -2,6 +2,8 @@ import SwiftUI
 
 struct AITagSuggestionsPanel: View {
     let repoPath: String
+    let aiDependencies: AIFeatureDependencies
+    let errorMapper: any CoreErrorMapping
     let file: FileEntrySnapshot
     let existingTags: [TagRecordSnapshot]
     let state: AITagSuggestionState
@@ -42,10 +44,21 @@ struct AITagSuggestionsPanel: View {
         .padding(16)
         .frame(width: 520, alignment: .topLeading)
         .sheet(item: $callLogRoute) { route in
-            AIClassificationCallLogDetailSheet(repoPath: repoPath, callLogID: route.callLogID) { callLogRoute = nil }
+            AIClassificationCallLogDetailSheet(
+                repoPath: repoPath,
+                callLogID: route.callLogID,
+                feature: .tags,
+                lister: aiDependencies.aiCallLogLister,
+                errorMapper: errorMapper
+            ) { callLogRoute = nil }
         }
         .sheet(item: $privacyRuleRoute) { route in
-            AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath, ruleID: route.ruleID) {
+            AIClassificationPrivacyRuleReferenceSheet(
+                repoPath: repoPath,
+                ruleID: route.ruleID,
+                bridge: aiDependencies.aiPrivacyRulesManager,
+                errorMapper: errorMapper
+            ) {
                 privacyRuleRoute = nil
             }
         }
@@ -82,7 +95,7 @@ struct AITagSuggestionsPanel: View {
         }
     }
 
-    func traceLinks(_ report: AiTagSuggestionReport) -> some View {
+    func traceLinks(_ report: AITagSuggestionReportSnapshot) -> some View {
         HStack {
             if report.skippedReason == .aiDisabled || report.skippedReason == .featureDisabled {
                 Button(L10n.string("Open AI settings"), action: onOpenAISettings)
@@ -99,7 +112,7 @@ struct AITagSuggestionsPanel: View {
         }
     }
 
-    func privacyRuleID(for report: AiTagSuggestionReport) -> String? {
+    func privacyRuleID(for report: AITagSuggestionReportSnapshot) -> String? {
         guard report.skippedReason == .privacyRule else { return nil }
         return normalizedAITagPrivacyRuleID(from: report.privacyRuleId)
     }

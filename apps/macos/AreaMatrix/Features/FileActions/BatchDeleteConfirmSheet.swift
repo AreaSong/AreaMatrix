@@ -169,26 +169,31 @@ struct BatchDeleteConfirmSheet: View {
     }
 
     private var actionButtons: some View {
-        HStack {
-            Button(L10n.string("Retry failed")) { Task { await retryFailed() } }
-                .disabled(!BatchDeleteValidation.canRetryFailed(report: result, isApplying: isApplying))
-            Spacer()
-            Button(L10n.string("Cancel"), action: onClose)
-                .keyboardShortcut(.cancelAction)
-                .disabled(isApplying)
-            if shouldShowRemoveFromIndex {
-                Button(removeFromIndexTitle) {
-                    Task { await apply(mode: .removeFromIndex) }
+        VStack(alignment: .trailing, spacing: 8) {
+            HStack {
+                Button(L10n.string("Retry failed")) { Task { await retryFailed() } }
+                    .disabled(!BatchDeleteValidation.canRetryFailed(report: result, isApplying: isApplying))
+                Spacer()
+            }
+            HStack {
+                Spacer()
+                Button(L10n.string("Cancel"), action: onClose)
+                    .keyboardShortcut(.cancelAction)
+                    .disabled(isApplying)
+                if shouldShowRemoveFromIndex {
+                    Button(removeFromIndexTitle) {
+                        Task { await apply(mode: .removeFromIndex) }
+                    }
+                    .disabled(!canApplyMode(.removeFromIndex))
+                    .accessibilityIdentifier("batch-delete-batch-delete-trash-remove-from-index")
                 }
-                .disabled(!canApplyMode(.removeFromIndex))
-                .accessibilityIdentifier("batch-delete-batch-delete-trash-remove-from-index")
+                Button(primaryTitle, role: .destructive) {
+                    Task { await apply(mode: .moveToTrash) }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(!canApplyMode(.moveToTrash))
+                .accessibilityIdentifier("batch-delete-batch-delete-trash-move-to-trash")
             }
-            Button(primaryTitle, role: .destructive) {
-                Task { await apply(mode: .moveToTrash) }
-            }
-            .keyboardShortcut(.defaultAction)
-            .disabled(!canApplyMode(.moveToTrash))
-            .accessibilityIdentifier("batch-delete-batch-delete-trash-move-to-trash")
         }
     }
 

@@ -224,7 +224,7 @@ extension BatchAITagSuggestionSheet {
 
     func reportSection(
         file: FileEntrySnapshot,
-        report: AiTagSuggestionReport,
+        report: AITagSuggestionReportSnapshot,
         review: AITagBatchSuggestionReview
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -255,7 +255,7 @@ extension BatchAITagSuggestionSheet {
     }
 
     func suggestionRow(
-        _ suggestion: AiTagSuggestion,
+        _ suggestion: AITagSuggestionSnapshot,
         fileID: Int64,
         review: AITagBatchSuggestionReview
     ) -> some View {
@@ -320,7 +320,7 @@ extension BatchAITagSuggestionSheet {
         .disabled(state.isApplying)
     }
 
-    func aiOffNotice(_ reason: AiTagSuggestionSkipReason) -> some View {
+    func aiOffNotice(_ reason: AITagSuggestionSkipReasonSnapshot) -> some View {
         NeutralSummaryPanel {
             VStack(alignment: .leading, spacing: 6) {
                 Text(skipReasonText(reason))
@@ -339,7 +339,7 @@ extension BatchAITagSuggestionSheet {
         }
     }
 
-    func reportTraceLinks(_ report: AiTagSuggestionReport) -> some View {
+    func reportTraceLinks(_ report: AITagSuggestionReportSnapshot) -> some View {
         HStack {
             if let ruleID = privacyRuleID(for: report) {
                 Button(L10n.string("View privacy rule")) {

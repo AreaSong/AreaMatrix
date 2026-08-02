@@ -183,6 +183,7 @@ private func makeSyncConflictReviewDetailPane(
         detailTagUndoToast: model.detailTagUndoToast, detailTabRequest: model.detailTabRequest,
         selectedImportProgressRow: nil, semanticDetail: nil,
         repoPath: opening.config.repoPath,
+        aiDependencies: AIFeatureDependencies.live,
         batchTagStore: CoreBridge(),
         batchTagUndoStore: CoreBridge(),
         batchTagErrorMapper: model.errorMapper,

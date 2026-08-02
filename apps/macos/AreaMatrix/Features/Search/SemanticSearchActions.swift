@@ -42,8 +42,8 @@ enum SemanticIndexBuildState: Equatable {
 enum SemanticPrivacyGateState: Equatable {
     case idle
     case checking(request: SearchQueryRequestSnapshot)
-    case allowed(request: SearchQueryRequestSnapshot, report: AiPrivacyEvaluationReport)
-    case blocked(request: SearchQueryRequestSnapshot, report: AiPrivacyEvaluationReport)
+    case allowed(request: SearchQueryRequestSnapshot, report: AIPrivacyEvaluationReportSnapshot)
+    case blocked(request: SearchQueryRequestSnapshot, report: AIPrivacyEvaluationReportSnapshot)
     case failed(request: SearchQueryRequestSnapshot, CoreErrorMappingSnapshot)
 
     var allowsIndexBuild: Bool {
@@ -62,7 +62,7 @@ enum SemanticPrivacyGateState: Equatable {
         return ruleID
     }
 
-    var report: AiPrivacyEvaluationReport? {
+    var report: AIPrivacyEvaluationReportSnapshot? {
         switch self {
         case let .allowed(_, report), let .blocked(_, report):
             report
@@ -89,10 +89,10 @@ enum SemanticPrivacyGateState: Equatable {
 enum SemanticFallbackState: Equatable {
     case idle
     case loading(request: SearchQueryRequestSnapshot)
-    case loaded(request: SearchQueryRequestSnapshot, status: AiFallbackStatus)
+    case loaded(request: SearchQueryRequestSnapshot, status: AIFallbackStatusSnapshot)
     case failed(request: SearchQueryRequestSnapshot, CoreErrorMappingSnapshot)
 
-    var status: AiFallbackStatus? {
+    var status: AIFallbackStatusSnapshot? {
         guard case let .loaded(_, status) = self else { return nil }
         return status
     }
@@ -252,9 +252,9 @@ extension MainFileListModel {
 
     private func semanticPrivacyEvaluationRequest(
         for request: SearchQueryRequestSnapshot,
-        snapshot: AiPrivacyRulesSnapshot
-    ) -> AiPrivacyEvaluationRequest {
-        AiPrivacyEvaluationRequest(
+        snapshot: AIPrivacyRulesSnapshot
+    ) -> AIPrivacyEvaluationRequestSnapshot {
+        AIPrivacyEvaluationRequestSnapshot(
             feature: .semanticSearch,
             route: semanticPrivacyRouteForCurrentPage(),
             requestedFields: [
@@ -263,18 +263,18 @@ extension MainFileListModel {
             ],
             privacyGateEnabled: snapshot.privacyGateEnabled,
             providerScope: snapshot.providerScope,
-            rules: snapshot.rules.map(AiPrivacyRuleInput.init(summaryRule:)),
-            remoteAllowedFields: snapshot.remoteAllowedFields.map(AiPrivacyFieldRule.init(state:)),
+            rules: snapshot.rules.map(AIPrivacyRuleInputSnapshot.init(summaryRule:)),
+            remoteAllowedFields: snapshot.remoteAllowedFields.map(AIPrivacyFieldRuleSnapshot.init(state:)),
             context: semanticPrivacyContext(for: request)
         )
     }
 
-    private func semanticPrivacyRouteForCurrentPage() -> AiPrivacyEvaluationRoute {
+    private func semanticPrivacyRouteForCurrentPage() -> AIPrivacyEvaluationRouteState {
         searchState.page?.semanticPage?.route == .remote ? .remote : .local
     }
 
-    private func semanticPrivacyContext(for request: SearchQueryRequestSnapshot) -> AiPrivacyEvaluationContext {
-        AiPrivacyEvaluationContext(
+    private func semanticPrivacyContext(for request: SearchQueryRequestSnapshot) -> AIPrivacyEvaluationContextSnapshot {
+        AIPrivacyEvaluationContextSnapshot(
             fileId: nil,
             repoRelativePath: request.currentPath,
             fileName: request.query,
@@ -292,28 +292,27 @@ extension MainFileListModel {
         return value.trimmingCharacters(in: CharacterSet(charactersIn: ".")).lowercased()
     }
 
-    private func semanticFallbackRequest(for _: SearchQueryRequestSnapshot) -> AiFallbackStatusRequest {
+    private func semanticFallbackRequest(for _: SearchQueryRequestSnapshot) -> AIFallbackStatusRequestSnapshot {
         let semanticPage = searchState.page?.semanticPage
         let providerError = semanticProviderError(for: semanticPage?.fallbackReason)
-        return AiFallbackStatusRequest(
+        return AIFallbackStatusRequestSnapshot(
             operation: .semanticSearch,
-            route: semanticPage?.route.map(AiCallLogRoute.init(snapshotRoute:)),
+            route: semanticPage?.route.map(AICallLogRouteSnapshot.init),
             providerError: providerError,
             providerErrorCode: semanticProviderErrorCode(for: providerError),
             privacyDecision: privacyDecision(for: semanticPage?.fallbackReason),
             privacySkippedReason: privacySkippedReason(for: semanticPage?.fallbackReason),
             categorySkippedReason: nil,
-            semanticFallbackReason: semanticPage?.fallbackReason
-                .map(SemanticSearchFallbackReason.init(snapshotReason:)),
+            semanticFallbackReason: semanticPage?.fallbackReason,
             callLogStatus: semanticCallLogStatus(for: semanticPage?.fallbackReason),
-            callLogId: semanticPage?.callLogID,
-            privacyRuleId: semanticPage?.privacyRuleID,
+            callLogID: semanticPage?.callLogID,
+            privacyRuleID: semanticPage?.privacyRuleID,
             retryAfter: nil
         )
     }
 
     private func semanticProviderError(for reason: SemanticSearchFallbackReasonSnapshot?)
-        -> AiFallbackProviderErrorKind? {
+        -> AIFallbackProviderErrorKindSnapshot? {
         switch reason {
         case .providerUnavailable:
             .providerUnavailable
@@ -329,7 +328,7 @@ extension MainFileListModel {
         }
     }
 
-    private func semanticProviderErrorCode(for providerError: AiFallbackProviderErrorKind?) -> String? {
+    private func semanticProviderErrorCode(for providerError: AIFallbackProviderErrorKindSnapshot?) -> String? {
         switch providerError {
         case .providerUnavailable:
             "ProviderUnavailable"
@@ -344,15 +343,16 @@ extension MainFileListModel {
         }
     }
 
-    private func privacyDecision(for reason: SemanticSearchFallbackReasonSnapshot?) -> AiPrivacyDecision? {
+    private func privacyDecision(for reason: SemanticSearchFallbackReasonSnapshot?) -> AIPrivacyDecisionSnapshot? {
         reason == .privacyRule ? .skipped : nil
     }
 
-    private func privacySkippedReason(for reason: SemanticSearchFallbackReasonSnapshot?) -> AiPrivacySkippedReason? {
+    private func privacySkippedReason(for reason: SemanticSearchFallbackReasonSnapshot?)
+        -> AIPrivacySkippedReasonSnapshot? {
         reason == .privacyRule ? .privacyRule : nil
     }
 
-    private func semanticCallLogStatus(for reason: SemanticSearchFallbackReasonSnapshot?) -> AiCallLogStatus? {
+    private func semanticCallLogStatus(for reason: SemanticSearchFallbackReasonSnapshot?) -> AICallLogStatusSnapshot? {
         switch reason {
         case .privacyRule:
             .skipped
@@ -365,40 +365,13 @@ extension MainFileListModel {
     }
 }
 
-extension AiCallLogRoute {
-    init(snapshotRoute: SemanticSearchRouteSnapshot) {
-        switch snapshotRoute {
+private extension AICallLogRouteSnapshot {
+    init(_ route: SemanticSearchRouteSnapshot) {
+        switch route {
         case .local:
             self = .local
         case .remote:
             self = .remote
-        }
-    }
-}
-
-extension SemanticSearchFallbackReason {
-    init(snapshotReason: SemanticSearchFallbackReasonSnapshot) {
-        switch snapshotReason {
-        case .aiDisabled:
-            self = .aiDisabled
-        case .featureDisabled:
-            self = .featureDisabled
-        case .providerUnavailable:
-            self = .providerUnavailable
-        case .privacyRule:
-            self = .privacyRule
-        case .semanticIndexNotReady:
-            self = .semanticIndexNotReady
-        case .callLogUnavailable:
-            self = .callLogUnavailable
-        case .noEligibleInput:
-            self = .noEligibleInput
-        case .normalSearchUnavailable:
-            self = .normalSearchUnavailable
-        case .rateLimited:
-            self = .rateLimited
-        case .timeout:
-            self = .timeout
         }
     }
 }

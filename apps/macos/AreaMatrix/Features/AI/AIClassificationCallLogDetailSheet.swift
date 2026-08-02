@@ -3,7 +3,7 @@ import SwiftUI
 enum AIClassificationCallLogDetailState: Equatable {
     case idle
     case loading
-    case loaded(AiCallLogRecord)
+    case loaded(AICallLogRecordSnapshot)
     case notFound(Int64)
     case failed(AISettingsError)
 }
@@ -14,16 +14,16 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
 
     let repoPath: String
     let callLogID: Int64
-    let feature: AiCallLogFeature
+    let feature: AICallLogFeatureSnapshot
     private let lister: any CoreAICallLogListing
     private let errorMapper: any CoreErrorMapping
 
     init(
         repoPath: String,
         callLogID: Int64,
-        feature: AiCallLogFeature = .classification,
-        lister: any CoreAICallLogListing = AppCoreServices.aiCallLogLister,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        feature: AICallLogFeatureSnapshot = .classification,
+        lister: any CoreAICallLogListing,
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.callLogID = callLogID
@@ -32,7 +32,7 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
         self.errorMapper = errorMapper
     }
 
-    var record: AiCallLogRecord? {
+    var record: AICallLogRecordSnapshot? {
         guard case let .loaded(record) = state else { return nil }
         return record
     }
@@ -43,7 +43,7 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
         do {
             let page = try await lister.listAICalls(
                 repoPath: repoPath,
-                filter: AiCallLogFilter(
+                filter: AICallLogFilterSnapshot(
                     feature: feature,
                     route: nil,
                     status: nil,
@@ -51,7 +51,7 @@ final class AIClassificationCallLogDetailModel: ObservableObject {
                     occurredBefore: nil,
                     searchQuery: nil
                 ),
-                pagination: AiCallLogPagination(limit: 100, offset: 0)
+                pagination: AICallLogPaginationSnapshot(limit: 100, offset: 0)
             )
             if let record = page.records.first(where: { $0.id == callLogID }) {
                 state = .loaded(record)
@@ -87,9 +87,9 @@ struct AIClassificationCallLogDetailSheet: View {
     init(
         repoPath: String,
         callLogID: Int64,
-        feature: AiCallLogFeature = .classification,
-        lister: any CoreAICallLogListing = AppCoreServices.aiCallLogLister,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        feature: AICallLogFeatureSnapshot = .classification,
+        lister: any CoreAICallLogListing,
+        errorMapper: any CoreErrorMapping,
         onClose: @escaping () -> Void = {}
     ) {
         _model = StateObject(wrappedValue: AIClassificationCallLogDetailModel(
@@ -143,7 +143,7 @@ struct AIClassificationCallLogDetailSheet: View {
         }
     }
 
-    private func loadedContent(_ record: AiCallLogRecord) -> some View {
+    private func loadedContent(_ record: AICallLogRecordSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             callRow("Feature", aiCallLogFeatureLabel(record.feature))
             callRow(L10n.string("Route"), record.route.map(aiCallLogRouteLabel) ?? L10n.string("Not recorded"))

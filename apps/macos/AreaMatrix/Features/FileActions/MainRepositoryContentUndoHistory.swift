@@ -2,9 +2,8 @@ import SwiftUI
 
 extension MainRepositoryContentView {
     func applyMainRepositoryUndoHistoryMenuCommandRelay(to content: some View) -> some View {
-        content.onReceive(NotificationCenter.default.publisher(
-            for: AreaMatrixUndoHistoryCommandRelay.notification
-        )) { _ in
+        content.onReceive(commandRouter.commands) { command in
+            guard command == .undoHistoryRequested else { return }
             openUndoHistoryFromMenu()
         }
     }

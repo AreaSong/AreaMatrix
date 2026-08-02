@@ -195,6 +195,7 @@ private func makeRepositorySettingsModel(
     RepositorySettingsModel(
         repoPath: urls.repoURL.path,
         loader: bridge,
+        updater: bridge,
         repositoryOpener: bridge,
         fileLister: bridge,
         scanSessionReader: bridge,
@@ -202,6 +203,7 @@ private func makeRepositorySettingsModel(
         finderOpener: doubles.finder,
         pathCopier: doubles.copier,
         diagnosticsCollector: doubles.diagnostics,
+        coreVersionLoader: bridge,
         errorMapper: bridge,
         accessibilityAnnouncer: doubles.announcer
     )

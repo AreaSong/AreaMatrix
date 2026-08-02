@@ -164,6 +164,39 @@ final class OnboardingModel: ObservableObject {
         self.directoryPicker = directoryPicker
         self.importPicker = importPicker
     }
+
+    @MainActor
+    convenience init(dependencies: AppDependencyContainer) {
+        self.init(
+            settingsReader: dependencies.platform.settingsReader,
+            settingsWriter: dependencies.platform.settingsWriter,
+            pathValidator: dependencies.onboarding.pathValidator,
+            initializedPathValidator: dependencies.onboarding.initializedPathValidator,
+            repositoryInitializer: dependencies.onboarding.repositoryInitializer,
+            emptyRepositoryOpener: dependencies.onboarding.emptyRepositoryOpener,
+            importProgressImporter: dependencies.onboarding.importProgressImporter,
+            importResultChangeLister: dependencies.onboarding.importResultChangeLister,
+            startupRecoverer: dependencies.onboarding.startupRecoverer,
+            externalChangesSyncer: dependencies.onboarding.externalChangesSyncer,
+            repositoryWriteCoordinator: dependencies.onboarding.repositoryWriteCoordinator,
+            existingRepositoryMetadataReader: dependencies.platform.existingRepositoryMetadataReader,
+            scanSessionReader: dependencies.onboarding.scanSessionReader,
+            diagnosticsCollector: dependencies.onboarding.diagnosticsCollector,
+            errorMapper: dependencies.onboarding.errorMapper,
+            finderOpener: dependencies.platform.finderOpener,
+            fileRevealer: dependencies.platform.fileRevealer,
+            fileOpener: dependencies.platform.fileOpener,
+            pathCopier: dependencies.platform.pathCopier,
+            importResultExporter: dependencies.platform.importResultExporter,
+            importBatchSessionStore: dependencies.platform.importBatchSessionStore,
+            systemCapabilityChecker: dependencies.onboarding.systemCapabilityChecker,
+            importProgressControlState: dependencies.onboarding.importProgressControlState,
+            accessibilityAnnouncer: dependencies.platform.accessibilityAnnouncer,
+            helpOpener: dependencies.platform.helpOpener,
+            directoryPicker: dependencies.platform.directoryPicker,
+            importPicker: dependencies.platform.importPicker
+        )
+    }
 }
 
 extension OnboardingModel {

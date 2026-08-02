@@ -14,13 +14,91 @@ from .core_sdk_artifact import verify_core_sdk_pointer
 from .macos import run_macos_tests
 
 DEVELOPER_SCENARIOS = (
+    "launcher",
     "ui-catalog",
-    "ui-catalog-dark",
+    "command-palette",
+    "detail-log",
+    "detail-note",
+    "detail-pane",
+    "detail-multi-selection",
+    "diagnostics-console",
+    "diagnostics-package-preview",
+    "diagnostics-settings",
     "onboarding",
-    "onboarding-dark",
+    "onboarding-confirm",
+    "onboarding-database-repair",
+    "onboarding-done",
+    "onboarding-failed",
+    "onboarding-initializing",
+    "onboarding-recovery",
+    "onboarding-validate-path",
+    "loading",
+    "repository-empty",
+    "repository-ready",
+    "permission-failure",
+    "database-corrupt",
+    "icloud-placeholder",
+    "import-conflict",
+    "import-entry",
+    "import-folder-preview",
+    "import-progress",
+    "import-result",
+    "main-repository-content",
+    "sync-conflict",
+    "sync-conflicts-icloud-list",
+    "sync-conflicts-icloud-minimal",
+    "sync-conflicts-entry",
+    "sync-conflicts-replace-confirmation",
+    "sync-conflicts-review",
+    "ai-unavailable",
+    "ai-call-log",
+    "ai-classification-suggestion",
+    "ai-privacy-rules",
+    "ai-settings",
+    "ai-summary-editor",
+    "ai-tag-suggestions",
+    "ai-local-model-status",
+    "ai-remote-model-config",
+    "disabled",
+    "stale-data",
+    "long-content",
+    "large-data",
+    "search-query-error",
+    "search-saved-search",
+    "search-empty",
+    "search-index-status",
+    "search-semantic-results",
+    "search-smart-list",
+    "file-actions-batch-add-tags",
+    "file-actions-batch-change-category",
+    "file-actions-batch-delete",
+    "file-actions-batch-rename",
+    "file-actions-change-category",
+    "file-actions-classifier-impact",
+    "file-actions-delete",
+    "file-actions-rename",
+    "file-actions-replace",
+    "file-actions-tag-suggestions",
+    "file-actions-undo-history",
+    "settings-about",
+    "settings-advanced",
+    "settings-classifier",
+    "settings-general",
+    "settings-integrations",
     "settings-language",
-    "settings-language-dark",
+    "settings-platform-differences",
+    "settings-repository",
 )
+
+DEVELOPER_SCENARIO_ALIASES = {
+    "ui-catalog-dark": ("ui-catalog", "dark"),
+    "onboarding-dark": ("onboarding", "dark"),
+    "settings-language-dark": ("settings-language", "dark"),
+}
+
+DEVELOPER_SCENARIO_THEMES = ("light", "dark")
+DEVELOPER_SCENARIO_LOCALES = ("en", "zh-Hans")
+DEVELOPER_SCENARIO_VIEWPORTS = ("compact", "standard", "wide")
 
 PYTHON_DEVELOPER_TEST_MODULES = (
     "scripts.dev_tools.test_build_tools",
@@ -210,14 +288,29 @@ def run_macos_developer_scenario(
     root: Path,
     *,
     scenario: str,
+    theme: str = "light",
+    locale: str = "en",
+    viewport: str = "standard",
     derived_data_path: str | Path | None = None,
     no_build: bool = False,
     build_only: bool = False,
 ) -> int:
     """Build and launch one deterministic DEBUG-only macOS UI scenario."""
 
-    if scenario not in DEVELOPER_SCENARIOS:
+    alias = DEVELOPER_SCENARIO_ALIASES.get(scenario)
+    if scenario not in DEVELOPER_SCENARIOS and alias is None:
         fail(f"unknown developer scenario {scenario!r}; choose from {', '.join(DEVELOPER_SCENARIOS)}")
+    if alias is not None:
+        scenario, theme = alias
+    if theme not in DEVELOPER_SCENARIO_THEMES:
+        fail(f"unknown developer scenario theme {theme!r}; choose from {', '.join(DEVELOPER_SCENARIO_THEMES)}")
+    if locale not in DEVELOPER_SCENARIO_LOCALES:
+        fail(f"unknown developer scenario locale {locale!r}; choose from {', '.join(DEVELOPER_SCENARIO_LOCALES)}")
+    if viewport not in DEVELOPER_SCENARIO_VIEWPORTS:
+        fail(
+            f"unknown developer scenario viewport {viewport!r}; "
+            f"choose from {', '.join(DEVELOPER_SCENARIO_VIEWPORTS)}"
+        )
     derived_data = Path(derived_data_path) if derived_data_path else root / ".build/derived-data/macos-run"
     if not derived_data.is_absolute():
         derived_data = root / derived_data
@@ -248,12 +341,18 @@ def run_macos_developer_scenario(
     executable = derived_data / "Build/Products/Debug/AreaMatrix.app/Contents/MacOS/AreaMatrix"
     if not executable.is_file():
         fail(f"Debug AreaMatrix executable not found at {executable}")
-    print(f"Developer scenario: READY ({scenario})")
+    print(
+        "Developer scenario: READY "
+        f"({scenario}, theme={theme}, locale={locale}, viewport={viewport})"
+    )
     print(f"- executable: {executable}")
     if build_only:
         return 0
     env = os.environ.copy()
     env["AREAMATRIX_SCENARIO"] = scenario
+    env["AREAMATRIX_SCENARIO_THEME"] = theme
+    env["AREAMATRIX_SCENARIO_LOCALE"] = locale
+    env["AREAMATRIX_SCENARIO_VIEWPORT"] = viewport
     try:
         return subprocess.run([str(executable)], cwd=root, env=env, check=False).returncode
     except KeyboardInterrupt:

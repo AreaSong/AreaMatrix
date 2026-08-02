@@ -1,7 +1,7 @@
 import SwiftUI
 
-extension AiFallbackStatus {
-    static let aiFallbackResolvingClassificationStatus = AiFallbackStatus(
+extension AIFallbackStatusSnapshot {
+    static let aiFallbackResolvingClassificationStatus = AIFallbackStatusSnapshot(
         operation: .classificationSuggestion,
         kind: .internalFailure,
         category: .unavailable,
@@ -11,22 +11,22 @@ extension AiFallbackStatus {
         retryDisabledReason: L10n.string("Recovery actions are disabled until status mapping completes."),
         primaryAction: .retry,
         secondaryAction: nil,
-        nonAiFallbackAction: .classifyManually,
+        nonAIFallbackAction: .classifyManually,
         route: nil,
-        callLogId: nil,
-        privacyRuleId: nil,
+        callLogID: nil,
+        privacyRuleID: nil,
         retryAfter: nil
     )
 }
 
 struct AIClassificationFallbackStatusRegion: View {
-    var status: AiFallbackStatus
+    var status: AIFallbackStatusSnapshot
     var isResolving: Bool
-    var actionTitle: (AiFallbackAction) -> String
-    var actionID: (AiFallbackAction) -> String
-    var isActionDisabled: (AiFallbackAction) -> Bool
-    var isActionVisible: (AiFallbackAction) -> Bool
-    var onAction: (AiFallbackAction) -> Void
+    var actionTitle: (AIFallbackActionSnapshot) -> String
+    var actionID: (AIFallbackActionSnapshot) -> String
+    var isActionDisabled: (AIFallbackActionSnapshot) -> Bool
+    var isActionVisible: (AIFallbackActionSnapshot) -> Bool
+    var onAction: (AIFallbackActionSnapshot) -> Void
 
     var body: some View {
         ReasonStatusCard(
@@ -63,11 +63,11 @@ struct AIClassificationFallbackStatusRegion: View {
         }
     }
 
-    private var fallbackActions: [AiFallbackAction] {
+    private var fallbackActions: [AIFallbackActionSnapshot] {
         [
             status.primaryAction == .retry ? nil : status.primaryAction,
             status.secondaryAction,
-            status.nonAiFallbackAction
+            status.nonAIFallbackAction
         ].compactMap { $0 }.reduce(into: []) { actions, action in
             if isActionVisible(action), !actions.contains(action) {
                 actions.append(action)
@@ -75,7 +75,7 @@ struct AIClassificationFallbackStatusRegion: View {
         }
     }
 
-    private func actionButton(_ action: AiFallbackAction) -> some View {
+    private func actionButton(_ action: AIFallbackActionSnapshot) -> some View {
         Button(actionTitle(action)) {
             onAction(action)
         }
@@ -83,7 +83,7 @@ struct AIClassificationFallbackStatusRegion: View {
         .accessibilityIdentifier("ai-fallback-ai-classification-suggestion-action-\(actionID(action))")
     }
 
-    private func resolvingActionButton(_ action: AiFallbackAction) -> some View {
+    private func resolvingActionButton(_ action: AIFallbackActionSnapshot) -> some View {
         Button(actionTitle(action)) {}
             .disabled(true)
             .accessibilityIdentifier("ai-fallback-ai-classification-suggestion-action-\(actionID(action))-resolving")

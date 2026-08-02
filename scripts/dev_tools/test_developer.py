@@ -10,10 +10,17 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.dev_tools import checks, developer
+from scripts.dev_tools.cli import _build_parser
 from scripts.dev_tools.common import ToolError
 
 
 class DeveloperWorkflowTest(unittest.TestCase):
+    def test_cli_parser_supports_governance_affected_check_alias(self) -> None:
+        args = _build_parser().parse_args(["check", "affected", "--list"])
+
+        self.assertEqual(args.target, "affected")
+        self.assertTrue(args.list)
+
     def test_developer_workflow_contract_keeps_cli_swift_and_docs_aligned(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -46,6 +53,22 @@ class DeveloperWorkflowTest(unittest.TestCase):
             checks._check_developer_workflow_contract(root, failures)
 
             self.assertEqual(failures.count, 0)
+
+    def test_swift_scenario_parser_ignores_later_enum_cases(self) -> None:
+        source = '\n'.join([
+            'enum AreaMatrixDeveloperScenario: String {',
+            '    case catalog',
+            '    case catalogDark = "catalog-dark"',
+            '}',
+            'enum AreaMatrixDeveloperSurfaceFeature: String {',
+            '    case artificialIntelligence = "AI"',
+            '}',
+        ])
+
+        self.assertEqual(
+            checks._swift_developer_scenario_ids(source),
+            ["catalog", "catalog-dark"],
+        )
 
     def test_changed_layers_are_deduplicated_and_ordered(self) -> None:
         layers = developer._changed_test_layers(
@@ -143,6 +166,185 @@ class DeveloperWorkflowTest(unittest.TestCase):
     def test_unknown_scenario_fails_before_build(self) -> None:
         with self.assertRaisesRegex(ToolError, "unknown developer scenario"):
             developer.run_macos_developer_scenario(Path("/repo"), scenario="unknown")
+
+    def test_all_settings_pages_are_available_as_cli_scenarios(self) -> None:
+        self.assertEqual(
+            tuple(scenario for scenario in developer.DEVELOPER_SCENARIOS if scenario.startswith("settings-")),
+            (
+                "settings-about",
+                "settings-advanced",
+                "settings-classifier",
+                "settings-general",
+                "settings-integrations",
+                "settings-language",
+                "settings-platform-differences",
+                "settings-repository",
+            ),
+        )
+
+    def test_all_onboarding_pages_are_available_as_cli_scenarios(self) -> None:
+        self.assertEqual(
+            tuple(
+                scenario
+                for scenario in developer.DEVELOPER_SCENARIOS
+                if scenario == "onboarding" or scenario.startswith("onboarding-")
+            ),
+            (
+                "onboarding",
+                "onboarding-confirm",
+                "onboarding-database-repair",
+                "onboarding-done",
+                "onboarding-failed",
+                "onboarding-initializing",
+                "onboarding-recovery",
+                "onboarding-validate-path",
+            ),
+        )
+
+    def test_all_search_pages_are_available_as_cli_scenarios(self) -> None:
+        self.assertEqual(
+            tuple(scenario for scenario in developer.DEVELOPER_SCENARIOS if scenario.startswith("search-")),
+            (
+                "search-query-error",
+                "search-saved-search",
+                "search-empty",
+                "search-index-status",
+                "search-semantic-results",
+                "search-smart-list",
+            ),
+        )
+
+    def test_all_file_action_pages_are_available_as_cli_scenarios(self) -> None:
+        self.assertEqual(
+            tuple(scenario for scenario in developer.DEVELOPER_SCENARIOS if scenario.startswith("file-actions-")),
+            (
+                "file-actions-batch-add-tags",
+                "file-actions-batch-change-category",
+                "file-actions-batch-delete",
+                "file-actions-batch-rename",
+                "file-actions-change-category",
+                "file-actions-classifier-impact",
+                "file-actions-delete",
+                "file-actions-rename",
+                "file-actions-replace",
+                "file-actions-tag-suggestions",
+                "file-actions-undo-history",
+            ),
+        )
+
+    def test_all_ai_pages_are_available_as_cli_scenarios(self) -> None:
+        self.assertEqual(
+            tuple(
+                scenario
+                for scenario in developer.DEVELOPER_SCENARIOS
+                if scenario.startswith("ai-") and scenario != "ai-unavailable"
+            ),
+            (
+                "ai-call-log",
+                "ai-classification-suggestion",
+                "ai-privacy-rules",
+                "ai-settings",
+                "ai-summary-editor",
+                "ai-tag-suggestions",
+                "ai-local-model-status",
+                "ai-remote-model-config",
+            ),
+        )
+
+    def test_all_import_pages_are_available_as_cli_scenarios(self) -> None:
+        self.assertEqual(
+            tuple(
+                scenario
+                for scenario in developer.DEVELOPER_SCENARIOS
+                if scenario.startswith("import-") and scenario != "import-conflict"
+            ),
+            (
+                "import-entry",
+                "import-folder-preview",
+                "import-progress",
+                "import-result",
+            ),
+        )
+
+    def test_command_palette_and_detail_pages_are_available_as_cli_scenarios(self) -> None:
+        self.assertEqual(
+            developer.DEVELOPER_SCENARIOS[2:7],
+            (
+                "command-palette",
+                "detail-log",
+                "detail-note",
+                "detail-pane",
+                "detail-multi-selection",
+            ),
+        )
+
+    def test_diagnostics_pages_are_available_as_cli_scenarios(self) -> None:
+        self.assertEqual(
+            tuple(scenario for scenario in developer.DEVELOPER_SCENARIOS if scenario.startswith("diagnostics-")),
+            (
+                "diagnostics-console",
+                "diagnostics-package-preview",
+                "diagnostics-settings",
+            ),
+        )
+
+    def test_main_list_page_is_available_as_cli_scenario(self) -> None:
+        self.assertIn("main-repository-content", developer.DEVELOPER_SCENARIOS)
+
+    def test_sync_conflict_pages_are_available_as_cli_scenarios(self) -> None:
+        self.assertEqual(
+            tuple(
+                scenario for scenario in developer.DEVELOPER_SCENARIOS if scenario.startswith("sync-conflicts-")
+            ),
+            (
+                "sync-conflicts-icloud-list",
+                "sync-conflicts-icloud-minimal",
+                "sync-conflicts-entry",
+                "sync-conflicts-replace-confirmation",
+                "sync-conflicts-review",
+            ),
+        )
+
+    def test_scenario_axes_are_forwarded_to_debug_process(self) -> None:
+        root = Path("/repo")
+        completed = subprocess.CompletedProcess(args=[], returncode=0)
+        with (
+            patch.object(Path, "is_file", return_value=True),
+            patch("scripts.dev_tools.developer.subprocess.run", return_value=completed) as run,
+        ):
+            result = developer.run_macos_developer_scenario(
+                root,
+                scenario="sync-conflict",
+                theme="dark",
+                locale="zh-Hans",
+                viewport="compact",
+                no_build=True,
+            )
+
+        self.assertEqual(result, 0)
+        environment = run.call_args.kwargs["env"]
+        self.assertEqual(environment["AREAMATRIX_SCENARIO"], "sync-conflict")
+        self.assertEqual(environment["AREAMATRIX_SCENARIO_THEME"], "dark")
+        self.assertEqual(environment["AREAMATRIX_SCENARIO_LOCALE"], "zh-Hans")
+        self.assertEqual(environment["AREAMATRIX_SCENARIO_VIEWPORT"], "compact")
+
+    def test_legacy_dark_scenario_alias_preserves_compatibility(self) -> None:
+        root = Path("/repo")
+        completed = subprocess.CompletedProcess(args=[], returncode=0)
+        with (
+            patch.object(Path, "is_file", return_value=True),
+            patch("scripts.dev_tools.developer.subprocess.run", return_value=completed) as run,
+        ):
+            result = developer.run_macos_developer_scenario(
+                root,
+                scenario="ui-catalog-dark",
+                no_build=True,
+            )
+
+        self.assertEqual(result, 0)
+        environment = run.call_args.kwargs["env"]
+        self.assertEqual(environment["AREAMATRIX_SCENARIO"], "ui-catalog")
+        self.assertEqual(environment["AREAMATRIX_SCENARIO_THEME"], "dark")
 
     def test_foreground_scenario_stops_cleanly_on_keyboard_interrupt(self) -> None:
         root = Path("/repo")

@@ -122,7 +122,7 @@ extension AISummaryEditorModel {
         }
     }
 
-    func saveRequest() -> AiSummarySaveRequest? {
+    func saveRequest() -> AISummarySaveRequestSnapshot? {
         contentState.saveRequest(fileID: fileID, confirmReplaceUserOwned: confirmedReplacement)
     }
 
@@ -133,8 +133,8 @@ extension AISummaryEditorModel {
 
 enum AISummaryEditorStatus: Equatable {
     case empty, draft, saved, dirty
-    case skipped(AiSummarySkipReason?)
-    case unavailable(AiSummarySkipReason?)
+    case skipped(AISummarySkipReasonState?)
+    case unavailable(AISummarySkipReasonState?)
 
     var label: String {
         switch self {
@@ -150,37 +150,37 @@ enum AISummaryEditorStatus: Equatable {
 
 struct AISummaryProvenance: Equatable {
     var operationID: String?
-    var contentLocale: ContentLocale?
+    var contentLocale: ContentLocaleState?
     var formatContractVersion: Int64?
     var contentRevision: Int64
-    var ownership: AiContentOwnership
+    var ownership: AIContentOwnershipState
     var draftID: String?
-    var route: AiSummaryRoute?
+    var route: AISummaryRouteState?
     var modelName: String?
     var generatedAt: Int64?
-    var usedContext: [AiSummaryInputField]
+    var usedContext: [AISummaryInputFieldState]
     var privacyRuleID: String?
     var callLogID: Int64?
     var characterCount: Int64
 
-    init(draft: AiSummaryDraft) {
-        operationID = draft.operationId
+    init(draft: AISummaryDraftSnapshot) {
+        operationID = draft.operationID
         contentLocale = draft.contentLocale
         formatContractVersion = draft.formatContractVersion
         contentRevision = 0
         ownership = .generated
-        draftID = draft.draftId
+        draftID = draft.draftID
         route = draft.route
         modelName = draft.modelName
         generatedAt = draft.generatedAt
         usedContext = draft.usedContext
-        privacyRuleID = draft.privacyRuleId
-        callLogID = draft.callLogId
+        privacyRuleID = draft.privacyRuleID
+        callLogID = draft.callLogID
         characterCount = draft.characterCount
     }
 
-    init(report: AiSummarySaveReport) {
-        operationID = report.operationId
+    init(report: AISummarySaveReportSnapshot) {
+        operationID = report.operationID
         contentLocale = report.contentLocale
         formatContractVersion = report.formatContractVersion
         contentRevision = report.contentRevision
@@ -190,8 +190,8 @@ struct AISummaryProvenance: Equatable {
         modelName = report.modelName
         generatedAt = report.generatedAt
         usedContext = report.usedContext
-        privacyRuleID = report.privacyRuleId
-        callLogID = report.callLogId
+        privacyRuleID = report.privacyRuleID
+        callLogID = report.callLogID
         characterCount = report.characterCount
     }
 
@@ -218,7 +218,7 @@ struct AISummaryEditorSnapshot {
     var savedProvenance: AISummaryProvenance?
     var baselineText: String?
     var provenance: AISummaryProvenance?
-    var draftOwnership: AiContentOwnership
+    var draftOwnership: AIContentOwnershipState
     var expectedContentRevision: Int64
     var status: AISummaryEditorStatus
 }
@@ -330,7 +330,7 @@ struct AISummaryCallLogRoute: Identifiable, Equatable {
 
 struct AISummaryGenerationRequestFactory {
     let fileID: Int64
-    let providerScope: AiSummaryProviderScope
+    let providerScope: AISummaryProviderScopeState
     let privacyContext: AISummaryPrivacyContext
 
     func makeGenerationRequest(
@@ -338,30 +338,30 @@ struct AISummaryGenerationRequestFactory {
         contentLocale: String,
         attempt: AISummaryGenerationAttempt,
         privacyPolicyRef: String? = nil
-    ) throws -> AiSummaryGenerationRequest {
-        try AiSummaryGenerationRequest(
-            operationId: attempt.operationID,
-            retryOfOperationId: attempt.retryOfOperationID,
-            fileId: fileID,
+    ) throws -> AISummaryGenerationRequestSnapshot {
+        try AISummaryGenerationRequestSnapshot(
+            operationID: attempt.operationID,
+            retryOfOperationID: attempt.retryOfOperationID,
+            fileID: fileID,
             providerScope: providerScope,
             contextPolicy: .metadataAndExtractedText,
             privacyPolicyRef: privacyPolicyRef,
             regenerateExisting: regenerate,
-            contentLocale: ContentLocale(snapshotValue: contentLocale)
+            contentLocale: ContentLocaleState(snapshotValue: contentLocale)
         )
     }
 
-    func makePrivacyEvaluationRequest(snapshot: AiPrivacyRulesSnapshot) -> AiPrivacyEvaluationRequest {
+    func makePrivacyEvaluationRequest(snapshot: AIPrivacyRulesSnapshot) -> AIPrivacyEvaluationRequestSnapshot {
         var context = privacyContext.coreContext
         context.fileId = fileID
-        return AiPrivacyEvaluationRequest(
+        return AIPrivacyEvaluationRequestSnapshot(
             feature: .autoSummaries,
-            route: AiPrivacyEvaluationRoute(summaryProviderScope: providerScope),
+            route: AIPrivacyEvaluationRouteState(summaryProviderScope: providerScope),
             requestedFields: [.fileName, .repoRelativePath, .extractedTextExcerpt],
             privacyGateEnabled: snapshot.privacyGateEnabled,
             providerScope: snapshot.providerScope,
-            rules: snapshot.rules.map(AiPrivacyRuleInput.init(summaryRule:)),
-            remoteAllowedFields: snapshot.remoteAllowedFields.map(AiPrivacyFieldRule.init(state:)),
+            rules: snapshot.rules.map(AIPrivacyRuleInputSnapshot.init(summaryRule:)),
+            remoteAllowedFields: snapshot.remoteAllowedFields.map(AIPrivacyFieldRuleSnapshot.init(state:)),
             context: context
         )
     }
@@ -372,7 +372,7 @@ struct AISummaryGenerationRequestFactory {
         repoPath: String,
         contentLocale: String,
         attempt: AISummaryGenerationAttempt
-    ) async throws -> AiSummaryDraft {
+    ) async throws -> AISummaryDraftSnapshot {
         guard let policyRef = skip.privacyPolicyRefForSummaryLog else {
             throw AppSemanticError(appErrorMapping: .internalFailure(
                 rawContext: "AI summary privacy skip is not loggable"

@@ -69,6 +69,26 @@ inventory，新增业务 View / State / Action 不得回流这些目录。
 当前 12 个 Feature 目录由 `MacOSFeatureOwnershipGovernanceTests` 精确登记职责、风险边界和验证重点。
 新增 Feature 目录必须先补 owner inventory；跨 feature 公共能力仍需至少两个真实调用方后再抽取。
 
+### Feature manifest 与依赖图
+
+每个 Feature 在自身目录提供 `FeatureManifestProvider`，App 只负责按启动组合顺序收集这些 manifest；App
+不得重新声明 Feature 的 owner、职责或风险元数据。`AreaMatrixCoreContracts.FeatureManifestGraph` 是
+manifest 依赖图的共享合同，统一检查重复 ID、空元数据、重复依赖、未知依赖和循环依赖。App registry 的
+治理测试与 Swift Package 合同测试都调用同一校验器，新增模块不能通过手工维护的中央 switch 绕过这些门禁。
+
+依赖可以指向另一个已登记 Feature 或明确命名的基础设施边界（例如 `CoreBridge`、`PlatformServices`、
+`DesignSystem`）；基础设施 ID 由 App 组合层声明，不在 Feature 内隐式创建。依赖图只表达编译期和装配期
+边界，不替代高风险写操作的 `RepositoryWriteCoordinator`、文件安全合同或 Core API。
+
+`AreaMatrixCoreBridgeContract` 是已接入 Xcode target 的 Swift Package 合同模块，持有稳定的
+`CoreBridgeBoundary` 操作枚举；`CoreBridge` actor、snapshot 转换和 UniFFI 生成绑定仍集中在
+`AreaMatrix/Bridge/`，因此 Feature 只依赖协议和快照，不直接导入生成 binding。后续把运行时适配拆为
+独立模块时，先以该合同模块和 Bridge 边界测试为迁移锚点，不改变用户文件和 Core API 语义。
+
+主资料库列表使用 `MainListFeatureDependencies` 作为单一显式依赖范围，由 App 组合层创建并传入
+`MainFileListModel`；生产模型不再通过 `.live` 默认值解析 Core 或平台服务。测试便利构造只存在于测试
+support 中，并将 fixture 覆盖项重新组装为同一个依赖范围，避免测试调用方式成为生产隐式装配的后门。
+
 ### Typed route 合同
 
 - 互斥的页面、sheet 或导航 destination 使用 feature-owned `enum` / `struct` route，不使用字符串标识。
@@ -234,6 +254,8 @@ classification、tags、summary 的 local / remote runtime，以及 semantic sea
 ## 架构演进规则
 
 - Feature owner、职责、风险边界和验证重点由 `MacOSFeatureOwnershipGovernanceTests` 维护。
+- Feature manifest 依赖图由 `AreaMatrixCoreContracts.FeatureManifestGraph` 校验；出现循环或未知依赖时，
+  先修正模块边界和 owner，再增加实现代码。
 - 受控迁移区的文件、owner 和退出条件由 `MacOSMigrationZoneGovernanceTests` 维护。
 - 触达平台副作用时收敛到 `PlatformServices/`，或在治理测试中保留明确的风险归属与退出条件。
 - 共享 state、action、routing 或 validation 支撑至少应有两个真实调用方，不按迁移排期预先抽象。

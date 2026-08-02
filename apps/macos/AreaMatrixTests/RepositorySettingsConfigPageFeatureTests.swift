@@ -37,6 +37,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
         let updater = RecordingConfigurationUpdater(result: .success(()))
         let model = RepositorySettingsConfigModel(
             repoPath: "/tmp/repo",
+            loader: StaticConfigurationLoader(config: current),
             updater: updater,
             errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
@@ -61,6 +62,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
         let announcer = RecordingAccessibilityAnnouncer()
         let model = RepositorySettingsConfigModel(
             repoPath: "/tmp/repo",
+            loader: StaticConfigurationLoader(config: current),
             updater: updater,
             errorMapper: RecordingCoreErrorMapper.repositorySettings(),
             accessibilityAnnouncer: announcer
@@ -100,6 +102,7 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
         let announcer = RecordingAccessibilityAnnouncer()
         let model = RepositorySettingsConfigModel(
             repoPath: "/tmp/repo",
+            loader: StaticConfigurationLoader(config: current),
             updater: updater,
             errorMapper: mapper,
             accessibilityAnnouncer: announcer

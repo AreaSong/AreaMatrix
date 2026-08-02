@@ -81,9 +81,9 @@ extension SearchResultPageSnapshot {
     }
 }
 
-extension AiFallbackStatus {
-    static func semanticSearchSemanticIndexNotReady() -> AiFallbackStatus {
-        AiFallbackStatus(
+extension AIFallbackStatusSnapshot {
+    static func semanticSearchSemanticIndexNotReady() -> AIFallbackStatusSnapshot {
+        AIFallbackStatusSnapshot(
             operation: .semanticSearch,
             kind: .semanticIndexNotReady,
             category: .unavailable,
@@ -93,10 +93,10 @@ extension AiFallbackStatus {
             retryDisabledReason: "Build the semantic index or use normal search.",
             primaryAction: .buildSemanticIndex,
             secondaryAction: .viewCallLog,
-            nonAiFallbackAction: .useNormalSearch,
+            nonAIFallbackAction: .useNormalSearch,
             route: .remote,
-            callLogId: 308,
-            privacyRuleId: nil,
+            callLogID: 308,
+            privacyRuleID: nil,
             retryAfter: nil
         )
     }

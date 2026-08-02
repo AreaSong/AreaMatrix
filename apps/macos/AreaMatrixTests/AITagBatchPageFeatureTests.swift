@@ -165,7 +165,7 @@ final class AITagBatchPageFeatureTests: XCTestCase {
     @MainActor
     func testAITagSuggestionAIPrivacyRulesCoreProviderScopeAndRemoteGateBlockBeforeAITagSuggestion() async {
         // swiftlint:disable:next large_tuple
-        let cases: [(Int64, AiPrivacySkippedReason, AiPrivacyProviderGateReason)] = [
+        let cases: [(Int64, AIPrivacySkippedReasonState, AIPrivacyProviderGateReasonState)] = [
             (730, .providerNotVerified, .providerNotVerified),
             (731, .scopeNotAllowed, .scopeNotAllowed),
             (732, .providerDisabled, .providerDisabled)

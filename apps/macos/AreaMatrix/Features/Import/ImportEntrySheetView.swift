@@ -11,7 +11,7 @@ struct ImportEntrySheetView: View {
         ImportSingleFileStorageMode,
         String,
         String,
-        DuplicateStrategy
+        ImportDuplicateStrategySnapshot
     ) -> Void
     let onImportFailed: (String, CoreErrorMappingSnapshot) -> Void
     let onBatchImportProgress: ImportBatchProgressHandler
@@ -43,7 +43,7 @@ struct ImportEntrySheetView: View {
             ImportSingleFileStorageMode,
             String,
             String,
-            DuplicateStrategy
+            ImportDuplicateStrategySnapshot
         ) -> Void = { _, _, _, _, _, _ in },
         onImportFailed: @escaping (String, CoreErrorMappingSnapshot) -> Void = { _, _ in },
         onBatchImportProgress: @escaping ImportBatchProgressHandler = { _ in },
@@ -52,17 +52,20 @@ struct ImportEntrySheetView: View {
         importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
         onImported: @escaping (String, FileEntrySnapshot) -> Void = { _, _ in },
         onShowExistingFile: @escaping (String) -> Void = { _ in },
-        categoryPredictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
-        fileImporter: any CoreFileImporting = CoreBridge(),
-        batchFileImporter: any CoreBatchCopyImporting = CoreBridge(),
-        batchConflictBatcher: any CoreImportConflictBatching = CoreBridge(),
-        batchDuplicatePrechecker: any ImportBatchDuplicatePrechecking = CoreImportBatchDuplicatePrechecker(),
-        batchNameConflictPrechecker: any ImportBatchNameConflictPrechecking = CoreImportBatchNameConflictPrechecker(),
-        folderScanner: any ImportFolderScanning = ImportPlatformServices.folderScanner,
-        preflight: any ImportSingleFilePreflighting = CoreImportSingleFilePreflight(),
-        placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
-        batchSessionStore: any ImportBatchSessionPersisting = AppPlatformServices.importBatchSessionStore
+        categoryPredictor: any CoreCategoryPredicting,
+        batchFileLoader: any ImportBatchCoreFileLoading,
+        fileImporter: any CoreFileImporting,
+        batchFileImporter: any CoreBatchCopyImporting,
+        batchConflictBatcher: any CoreImportConflictBatching,
+        undoActionStore: any CoreUndoActionLogging,
+        batchDuplicatePrechecker: (any ImportBatchDuplicatePrechecking)? = nil,
+        batchNameConflictPrechecker: (any ImportBatchNameConflictPrechecking)? = nil,
+        folderConflictPrechecker: (any ImportFolderConflictPrechecking)? = nil,
+        folderScanner: any ImportFolderScanning,
+        preflight: (any ImportSingleFilePreflighting)? = nil,
+        placeholderDownloader: any ICloudPlaceholderDownloading,
+        errorMapper: any CoreErrorMapping,
+        batchSessionStore: any ImportBatchSessionPersisting
     ) {
         self.request = request
         self.onCancel = onCancel
@@ -76,22 +79,33 @@ struct ImportEntrySheetView: View {
         self.importProgressControlState = importProgressControlState
         self.onImported = onImported
         self.onShowExistingFile = onShowExistingFile
+        let resolvedPreflight = preflight ?? CoreImportSingleFilePreflight(
+            fileLoader: batchFileLoader,
+            sourceInspector: ImportPlatformServices.sourcePreflightInspector
+        )
+        let resolvedBatchDuplicatePrechecker = batchDuplicatePrechecker ??
+            CoreImportBatchDuplicatePrechecker(fileLoader: batchFileLoader)
+        let resolvedBatchNameConflictPrechecker = batchNameConflictPrechecker ??
+            CoreImportBatchNameConflictPrechecker(fileLoader: batchFileLoader)
+        let resolvedFolderConflictPrechecker = folderConflictPrechecker ??
+            CoreImportFolderConflictPrechecker(fileLoader: batchFileLoader)
         _previewModel = StateObject(wrappedValue: ImportSingleFilePreviewModel(
             predictor: categoryPredictor,
             importer: fileImporter,
-            preflight: preflight,
+            preflight: resolvedPreflight,
             placeholderDownloader: placeholderDownloader,
             errorMapper: errorMapper
         ))
         _batchPreviewModel = StateObject(wrappedValue: ImportBatchPreviewModel(
             predictor: categoryPredictor,
-            duplicatePrechecker: batchDuplicatePrechecker,
-            nameConflictPrechecker: batchNameConflictPrechecker
+            duplicatePrechecker: resolvedBatchDuplicatePrechecker,
+            nameConflictPrechecker: resolvedBatchNameConflictPrechecker
         ))
         _batchImportModel = StateObject(wrappedValue: ImportBatchCopyImportModel(
             importer: batchFileImporter,
             errorMapper: errorMapper,
             conflictBatcher: batchConflictBatcher,
+            undoActionStore: undoActionStore,
             sessionStore: batchSessionStore,
             placeholderDownloader: placeholderDownloader
         ))
@@ -99,6 +113,7 @@ struct ImportEntrySheetView: View {
             predictor: categoryPredictor,
             importer: batchFileImporter,
             errorMapper: errorMapper,
+            conflictPrechecker: resolvedFolderConflictPrechecker,
             scanner: folderScanner,
             placeholderDownloader: placeholderDownloader
         ))

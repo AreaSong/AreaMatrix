@@ -56,6 +56,8 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
             repoPath: "/tmp/advancedSettings-broken-repo",
             loader: RecordingConfigurationLoader(result: .failure(CoreError.Config(reason: "invalid repo_config"))),
             updater: NoopConfigurationUpdater(),
+            diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            coreVersionReader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: CoreBridge()
         )
 

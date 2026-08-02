@@ -32,9 +32,9 @@ struct AIPrivacyRuleTestFileContext: Equatable {
         normalizedPath.isEmpty
     }
 
-    var evaluationContext: AiPrivacyEvaluationContext {
+    var evaluationContext: AIPrivacyEvaluationContextSnapshot {
         let path = normalizedPath
-        return AiPrivacyEvaluationContext(
+        return AIPrivacyEvaluationContextSnapshot(
             fileId: nil,
             repoRelativePath: path,
             fileName: (path as NSString).lastPathComponent,
@@ -51,8 +51,8 @@ struct AIPrivacyRuleTestFileContext: Equatable {
 }
 
 struct AIPrivacyRuleFeatureEvaluation: Equatable, Identifiable {
-    var feature: AiFeatureKind
-    var report: AiPrivacyEvaluationReport
+    var feature: AISettingsFeatureKind
+    var report: AIPrivacyEvaluationReportSnapshot
 
     var id: String {
         feature.aiPrivacyRulesLabel
@@ -63,7 +63,7 @@ enum AIPrivacyRuleExitAction: Equatable {
     case close
     case cancelEditor
     case openAddEditor
-    case switchRule(AiPrivacyRuleRecord)
+    case switchRule(AIPrivacyRuleRecordSnapshot)
 }
 
 enum AIPrivacyRuleEditorMode: Equatable {
@@ -74,20 +74,20 @@ enum AIPrivacyRuleEditorMode: Equatable {
 struct AIPrivacyRuleEditorDraft: Equatable {
     var originalRuleID: String?
     var originalName: String?
-    var originalKind = AiPrivacyRuleKind.folder
+    var originalKind = AIPrivacyRuleKindState.folder
     var originalPattern = ""
-    var originalAppliesTo = AiPrivacyRuleAppliesTo.remoteAi
+    var originalAppliesTo = AIPrivacyRuleAppliesToState.remoteAi
     var originalDescription: String?
     var originalEnabled = true
-    var kind = AiPrivacyRuleKind.folder
+    var kind = AIPrivacyRuleKindState.folder
     var pattern = ""
-    var appliesTo = AiPrivacyRuleAppliesTo.remoteAi
+    var appliesTo = AIPrivacyRuleAppliesToState.remoteAi
     var description = ""
     var enabled = true
 
     init() {}
 
-    init(record: AiPrivacyRuleRecord) {
+    init(record: AIPrivacyRuleRecordSnapshot) {
         originalRuleID = record.ruleId
         originalName = record.name
         originalKind = record.kind
@@ -114,8 +114,8 @@ struct AIPrivacyRuleEditorDraft: Equatable {
             trimmedDescription != originalDescription || enabled != originalEnabled
     }
 
-    var input: AiPrivacyRuleInput {
-        AiPrivacyRuleInput(
+    var input: AIPrivacyRuleInputSnapshot {
+        AIPrivacyRuleInputSnapshot(
             ruleId: originalRuleID,
             name: generatedName,
             kind: kind,
@@ -187,10 +187,10 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
         }
     }
 
-    var ruleInput: AiPrivacyRuleInput {
+    var ruleInput: AIPrivacyRuleInputSnapshot {
         switch self {
         case .privateFinanceFolders:
-            AiPrivacyRuleInput(
+            AIPrivacyRuleInputSnapshot(
                 ruleId: nil,
                 name: title,
                 kind: .folder,
@@ -200,7 +200,7 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
                 description: L10n.string("Blocks finance/private from remote AI.")
             )
         case .secretsAndKeyFiles:
-            AiPrivacyRuleInput(
+            AIPrivacyRuleInputSnapshot(
                 ruleId: nil,
                 name: title,
                 kind: .extension,
@@ -210,7 +210,7 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
                 description: L10n.string("Blocks key files from remote AI.")
             )
         case .confidentialKeywords:
-            AiPrivacyRuleInput(
+            AIPrivacyRuleInputSnapshot(
                 ruleId: nil,
                 name: title,
                 kind: .keyword,
@@ -223,8 +223,8 @@ enum AIPrivacyRuleTemplate: String, CaseIterable, Identifiable {
     }
 }
 
-extension AiPrivacyRuleInput {
-    init(aiPrivacyRulesRecord record: AiPrivacyRuleRecord) {
+extension AIPrivacyRuleInputSnapshot {
+    init(aiPrivacyRulesRecord record: AIPrivacyRuleRecordSnapshot) {
         self.init(
             ruleId: record.ruleId,
             name: record.name,
@@ -237,7 +237,7 @@ extension AiPrivacyRuleInput {
     }
 }
 
-extension AiPrivacyRuleRecord {
+extension AIPrivacyRuleRecordSnapshot {
     var aiPrivacyRulesLastMatchedText: String {
         lastMatchedAt.map { L10n.format("ai.privacy.lastMatched", $0) }
             ?? L10n.string("ai.privacy.lastMatchedUnknown")
@@ -255,28 +255,28 @@ extension AiPrivacyRuleRecord {
     }
 }
 
-extension AiPrivacyRulesSnapshot {
-    var ruleInputs: [AiPrivacyRuleInput] {
-        rules.map(AiPrivacyRuleInput.init(aiPrivacyRulesRecord:))
+extension AIPrivacyRulesSnapshot {
+    var ruleInputs: [AIPrivacyRuleInputSnapshot] {
+        rules.map(AIPrivacyRuleInputSnapshot.init(aiPrivacyRulesRecord:))
     }
 
-    var fieldRules: [AiPrivacyFieldRule] {
-        remoteAllowedFields.map(AiPrivacyFieldRule.init(state:))
+    var fieldRules: [AIPrivacyFieldRuleSnapshot] {
+        remoteAllowedFields.map(AIPrivacyFieldRuleSnapshot.init(state:))
     }
 
     func aiPrivacyRulesEvaluationRequests(
         context: AIPrivacyRuleTestFileContext
-    ) -> [AiPrivacyEvaluationRequest] {
-        AiFeatureKind.aiPrivacyRulesCases.map { feature in
+    ) -> [AIPrivacyEvaluationRequestSnapshot] {
+        AISettingsFeatureKind.aiPrivacyRulesCases.map { feature in
             aiPrivacyRulesEvaluationRequest(feature: feature, context: context)
         }
     }
 
     private func aiPrivacyRulesEvaluationRequest(
-        feature: AiFeatureKind,
+        feature: AISettingsFeatureKind,
         context: AIPrivacyRuleTestFileContext
-    ) -> AiPrivacyEvaluationRequest {
-        AiPrivacyEvaluationRequest(
+    ) -> AIPrivacyEvaluationRequestSnapshot {
+        AIPrivacyEvaluationRequestSnapshot(
             feature: feature,
             route: .remote,
             requestedFields: remoteAllowedFields.map(\.field),
@@ -289,8 +289,8 @@ extension AiPrivacyRulesSnapshot {
     }
 }
 
-extension AiFeatureKind {
-    static let aiPrivacyRulesCases: [AiFeatureKind] = [
+extension AISettingsFeatureKind {
+    static let aiPrivacyRulesCases: [AISettingsFeatureKind] = [
         .classificationSuggestions,
         .autoSummaries,
         .autoTags,
@@ -307,8 +307,8 @@ extension AiFeatureKind {
     }
 }
 
-extension AiPrivacyRuleKind {
-    static let aiPrivacyRulesCases: [AiPrivacyRuleKind] = [.folder, .category, .keyword, .extension, .tag]
+extension AIPrivacyRuleKindState {
+    static let aiPrivacyRulesCases: [AIPrivacyRuleKindState] = [.folder, .category, .keyword, .extension, .tag]
 
     var aiPrivacyRulesLabel: String {
         switch self {
@@ -321,7 +321,7 @@ extension AiPrivacyRuleKind {
     }
 }
 
-extension AiPrivacyRuleAppliesTo {
+extension AIPrivacyRuleAppliesToState {
     var aiPrivacyRulesLabel: String {
         switch self {
         case .remoteAi: L10n.string("Remote AI")
@@ -330,7 +330,7 @@ extension AiPrivacyRuleAppliesTo {
     }
 }
 
-extension AiPrivacyDecision {
+extension AIPrivacyDecisionState {
     var aiPrivacyRulesLabel: String {
         switch self {
         case .allowed: L10n.string("Allowed")
@@ -340,7 +340,7 @@ extension AiPrivacyDecision {
     }
 }
 
-extension AiPrivacySkippedReason {
+extension AIPrivacySkippedReasonState {
     var aiPrivacyRulesLabel: String {
         switch self {
         case .privacyGateDisabled: L10n.string("privacy gate disabled")
@@ -355,7 +355,7 @@ extension AiPrivacySkippedReason {
     }
 }
 
-extension AiPrivacyProviderGateReason {
+extension AIPrivacyProviderGateReasonState {
     var aiPrivacyRulesLabel: String {
         switch self {
         case .privacyGateDisabled: "privacy_gate_disabled"

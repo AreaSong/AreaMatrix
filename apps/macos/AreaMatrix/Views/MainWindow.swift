@@ -5,22 +5,31 @@ struct MainWindow: View {
     @StateObject private var model: OnboardingModel
     @StateObject private var externalCreatedFileWatcher: MainExternalCreatedFileWatcher
     @ObservedObject private var observabilityRuntime: ObservabilityRuntimeAssembly
+    @ObservedObject private var commandRouter: AppCommandRouter
+    private let dependencies: AppDependencyContainer
     private let importProgressControlState: ImportProgressControlState
     private let windowCloser: any WindowClosing
 
     @MainActor
     init(
-        model: OnboardingModel = OnboardingModel(),
+        model: OnboardingModel? = nil,
+        dependencies: AppDependencyContainer,
         observabilityRuntime: ObservabilityRuntimeAssembly? = nil,
-        windowCloser: any WindowClosing = AppPlatformServices.windowCloser
+        commandRouter: AppCommandRouter? = nil,
+        windowCloser: (any WindowClosing)? = nil
     ) {
-        _model = StateObject(wrappedValue: model)
+        let resolvedDependencies = dependencies
+        let resolvedModel = model ?? OnboardingModel(dependencies: resolvedDependencies)
+        let resolvedWindowCloser = windowCloser ?? resolvedDependencies.platform.windowCloser
+        self.dependencies = dependencies
+        _model = StateObject(wrappedValue: resolvedModel)
         _externalCreatedFileWatcher = StateObject(wrappedValue: MainExternalCreatedFileWatcher(
-            cursorStore: model.externalChangesSyncer
+            cursorStore: resolvedModel.externalChangesSyncer
         ))
-        importProgressControlState = model.importProgressControlState
+        importProgressControlState = resolvedModel.importProgressControlState
         _observabilityRuntime = ObservedObject(wrappedValue: observabilityRuntime ?? .shared)
-        self.windowCloser = windowCloser
+        _commandRouter = ObservedObject(wrappedValue: commandRouter ?? .shared)
+        self.windowCloser = resolvedWindowCloser
     }
 }
 
@@ -28,7 +37,12 @@ extension MainWindow {
     var body: some View {
         _ = localizer.resourceLocaleIdentifier
         return ZStack(alignment: .top) {
-            MainWindowRouteContent(model: model, windowCloser: windowCloser)
+            MainWindowRouteContent(
+                model: model,
+                dependencies: dependencies,
+                commandRouter: commandRouter,
+                windowCloser: windowCloser
+            )
 
             if let toastMessage = model.toastMessage {
                 Text(localizer.resolve(toastMessage))
@@ -57,6 +71,7 @@ extension MainWindow {
             minHeight: minWindowHeight,
             maxHeight: maxWindowHeight
         )
+        .environment(\.areaMatrixInteractionFeedback, dependencies.platform.interactionFeedback)
         .background {
             if case .welcome = model.route {
                 Color.clear
@@ -106,22 +121,23 @@ extension MainWindow {
             await model.bootstrapIfNeeded()
             model.consumePendingDockOpenRequests()
         }
-        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixDockOpenRelay.notification)) { _ in
-            model.consumePendingDockOpenRequests()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixImportCommandRelay.notification)) { _ in
-            model.handleImportMenuCommand()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: AreaMatrixSettingsCommandRelay.notification)) { _ in
-            model.handleSettingsMenuCommand()
+        .onReceive(commandRouter.commands) { command in
+            switch command {
+            case .dockOpenRequested:
+                model.consumePendingDockOpenRequests()
+            case .importRequested:
+                model.handleImportMenuCommand()
+            case .settingsRequested:
+                model.handleSettingsMenuCommand()
+            case .externalSyncRequested:
+                model.consumePendingExternalSyncWindows(repoPath: activeMainRepositoryPath)
+            default:
+                break
+            }
         }
         .sheet(isPresented: $model.isAppLanguageSettingsPresented) {
             AppLanguageSettingsSheet(onClose: model.closeAppLanguageSettings)
         }
-        .onReceive(
-            NotificationCenter.default.publisher(for: AreaMatrixExternalCreatedFileRelay.notification),
-            perform: handleExternalCreatedFileRelayNotification
-        )
         .task(id: activeMainRepositoryPath) {
             guard let activeMainRepositoryPath else {
                 externalCreatedFileWatcher.stop()
@@ -151,6 +167,15 @@ extension MainWindow {
                     }
                 },
                 onShowExistingFile: model.showImportEntryExistingFile,
+                categoryPredictor: dependencies.feature.`import`.categoryPredictor,
+                batchFileLoader: dependencies.feature.`import`.batchFileLoader,
+                fileImporter: dependencies.feature.`import`.fileImporter,
+                batchFileImporter: dependencies.feature.`import`.batchFileImporter,
+                batchConflictBatcher: dependencies.feature.`import`.conflictBatcher,
+                undoActionStore: dependencies.feature.`import`.undoActionStore,
+                folderScanner: ImportPlatformServices.folderScanner,
+                placeholderDownloader: LocalICloudPlaceholderDownloader(),
+                errorMapper: dependencies.feature.shared.errorMapper,
                 batchSessionStore: model.importBatchSessionStore
             )
         }
@@ -241,17 +266,13 @@ extension MainWindow {
         }
     }
 
-    private func handleExternalCreatedFileRelayNotification(_: Notification) {
-        model.consumePendingExternalSyncWindows(repoPath: activeMainRepositoryPath)
-    }
-
     private func importRetryContextHandler(for request: ImportEntryRequest) -> (
         String,
         String,
         ImportSingleFileStorageMode,
         String,
         String,
-        DuplicateStrategy
+        ImportDuplicateStrategySnapshot
     ) -> Void {
         { currentPath, sourcePath, storageMode, overrideCategory, overrideFilename, duplicateStrategy in
             model.beginImportEntryProgress(

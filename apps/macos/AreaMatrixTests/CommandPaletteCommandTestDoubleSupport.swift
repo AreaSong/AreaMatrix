@@ -3,26 +3,29 @@ import XCTest
 
 struct CommandPaletteCommandIndexRequest: Equatable {
     var repoPath: String
-    var context: CommandIndexContext
+    var context: CommandIndexRequestSnapshot
 }
 
 actor CommandPaletteCommandIndexStore: CoreCommandIndexing {
-    private var resultQueue: TestResultQueue<CommandIndex>
+    private var resultQueue: TestResultQueue<CoreCommandIndexSnapshot>
     private var requestLog = TestRequestLog<CommandPaletteCommandIndexRequest>()
 
-    init(results: [Swift.Result<CommandIndex, Error>]) {
+    init(results: [Swift.Result<CoreCommandIndexSnapshot, Error>]) {
         resultQueue = TestResultQueue(results: results) {
             .success(.commandPaletteFixture())
         }
     }
 
-    func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex {
+    func listCommandTargets(
+        repoPath: String,
+        context: CommandIndexRequestSnapshot
+    ) async throws -> CoreCommandIndexSnapshot {
         requestLog.append(.init(repoPath: repoPath, context: context))
         return try resultQueue.next()
     }
 
     func assertRequestContexts(
-        _ expectedContexts: [CommandIndexContext],
+        _ expectedContexts: [CommandIndexRequestSnapshot],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {

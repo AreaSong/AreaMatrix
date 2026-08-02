@@ -51,8 +51,8 @@ extension SearchResultPageSnapshot {
     }
 }
 
-extension AiPrivacyRulesSnapshot {
-    static func semanticSearchPrivacyRules() -> AiPrivacyRulesSnapshot {
+extension AIPrivacyRulesSnapshot {
+    static func semanticSearchPrivacyRules() -> AIPrivacyRulesSnapshot {
         testFixture(
             remoteAllowedFields: [
                 .testFixture(field: .fileName),
@@ -67,9 +67,9 @@ extension AiPrivacyRulesSnapshot {
     }
 }
 
-extension AiPrivacyEvaluationReport {
-    static func semanticSearchAllowed() -> AiPrivacyEvaluationReport {
-        AiPrivacyEvaluationReport(
+extension AIPrivacyEvaluationReportSnapshot {
+    static func semanticSearchAllowed() -> AIPrivacyEvaluationReportSnapshot {
+        AIPrivacyEvaluationReportSnapshot(
             decision: .allowed,
             skippedReason: nil,
             providerGateReason: nil,
@@ -82,13 +82,13 @@ extension AiPrivacyEvaluationReport {
         )
     }
 
-    static func semanticSearchBlocked() -> AiPrivacyEvaluationReport {
-        AiPrivacyEvaluationReport(
+    static func semanticSearchBlocked() -> AIPrivacyEvaluationReportSnapshot {
+        AIPrivacyEvaluationReportSnapshot(
             decision: .skipped,
             skippedReason: .privacyRule,
             providerGateReason: nil,
             matchedRules: [
-                AiPrivacyRuleMatch(
+                AIPrivacyRuleMatchSnapshot(
                     ruleId: "rule-confidential",
                     name: "Block confidential",
                     kind: .keyword,

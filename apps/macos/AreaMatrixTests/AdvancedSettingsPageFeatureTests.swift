@@ -13,6 +13,8 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             loader: loader,
             updater: RecordingConfigurationUpdater(result: .success(())),
+            diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            coreVersionReader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: RecordingCoreErrorMapper.advancedSettings()
         )
 
@@ -203,7 +205,14 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         defer { removeTestTemporaryItems(repoURL) }
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
-        let model = AdvancedSettingsModel(repoPath: repoURL.path, loader: bridge, updater: bridge)
+        let model = AdvancedSettingsModel(
+            repoPath: repoURL.path,
+            loader: bridge,
+            updater: bridge,
+            diagnosticsCollector: bridge,
+            coreVersionReader: bridge,
+            errorMapper: bridge
+        )
 
         await model.load()
         await model.requestOverviewOutput(.rootAreaMatrixFile)
@@ -231,7 +240,14 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
         let bridge = CoreBridge()
         try await bridge.initializeEmptyRepository(repoPath: repoURL.path)
         try "user readme\n".write(to: readmeURL, atomically: true, encoding: .utf8)
-        let model = AdvancedSettingsModel(repoPath: repoURL.path, loader: bridge, updater: bridge)
+        let model = AdvancedSettingsModel(
+            repoPath: repoURL.path,
+            loader: bridge,
+            updater: bridge,
+            diagnosticsCollector: bridge,
+            coreVersionReader: bridge,
+            errorMapper: bridge
+        )
 
         await model.load()
         await model.requestOverviewOutput(.rootAreaMatrixFile)
@@ -266,6 +282,8 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
             loader: RecordingConfigurationLoader(result: .success(config)),
             updater: updater,
             rootOverviewInspector: inspector,
+            diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            coreVersionReader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: RecordingCoreErrorMapper.advancedSettings()
         )
         await model.load()

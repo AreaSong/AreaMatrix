@@ -21,6 +21,9 @@
 ```bash
 ./dev test changed --list
 ./dev test changed
+# `check affected` is the governance-oriented alias for the same affected-path plan.
+./dev check affected --list
+./dev check affected
 ```
 
 | 变更层 | 当前执行内容 |
@@ -30,6 +33,8 @@
 | macOS client | localization contract + 复用持久 DerivedData 的 `./dev test macos` |
 | iOS client | `swift build --package-path apps/ios`，不误跑 macOS XCTest |
 | docs / governance | `./dev check docs` + `./dev check governance` |
+
+`./dev check affected` 与 `./dev test changed` 使用同一套受影响路径解析；前者适合治理和 CI 脚本，后者适合日常开发。
 
 该入口按层去重并按稳定顺序执行，适合开发反馈；跨层、高风险或最终收口仍需组合下方完整门禁，不能把
 changed-path 选择当成 release 或 merge evidence。

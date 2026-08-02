@@ -137,7 +137,7 @@ final class AICategorySuggestionVerifyTests: XCTestCase {
     @MainActor
     func testViewAICallLoadsClassificationLogDetailThroughCoreBridgeContract() async {
         let record = aiCategorySuggestionCallLogRecord(id: 304)
-        let lister = AICategorySuggestionCallLogLister(page: AiCallLogPage(
+        let lister = AICategorySuggestionCallLogLister(page: AICallLogPageSnapshot(
             totalCount: 1,
             records: [record],
             limit: 100,
@@ -278,8 +278,8 @@ private func aiCategorySuggestionCorrection(updatedFile: FileEntrySnapshot) -> C
     )
 }
 
-private func aiCategorySuggestionCallLogRecord(id: Int64) -> AiCallLogRecord {
-    AiCallLogRecord(
+private func aiCategorySuggestionCallLogRecord(id: Int64) -> AICallLogRecordSnapshot {
+    AICallLogRecordSnapshot(
         id: id,
         occurredAt: 1_700_000_000,
         feature: .classification,

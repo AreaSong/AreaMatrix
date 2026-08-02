@@ -61,7 +61,10 @@ protocol CoreCategoryPredicting: Sendable {
 }
 
 protocol CoreCommandIndexing: Sendable {
-    func listCommandTargets(repoPath: String, context: CommandIndexContext) async throws -> CommandIndex
+    func listCommandTargets(
+        repoPath: String,
+        context: CommandIndexRequestSnapshot
+    ) async throws -> CoreCommandIndexSnapshot
 }
 
 extension ContentLocale {

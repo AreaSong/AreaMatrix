@@ -97,7 +97,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
     @MainActor
     func testAISummaryPrivacyRulesCreateSkippedSummaryCallLogTrace() async {
         // swiftlint:disable:next large_tuple
-        let cases: [(Int64, AiPrivacySkippedReason, String, AISummaryEditorStatus)] = [
+        let cases: [(Int64, AIPrivacySkippedReasonState, String, AISummaryEditorStatus)] = [
             (621, .privacyRule, "block:rule-confidential", .skipped(.privacyRule)),
             (640, .fieldRule, "block:privacy-rule", .skipped(.noEligibleInput))
         ]
@@ -124,7 +124,7 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
     func testAISummaryPrivacyBlocksWithoutSummaryLogWhenNoCallShouldBeRecorded() async {
         let gate = aiSummaryReport(.providerNotVerified, providerGateReason: .providerNotVerified)
         // swiftlint:disable:next large_tuple
-        let cases: [(Int64, AiPrivacyEvaluationReport, AISummaryEditorStatus, AiPrivacySkippedReason)] = [
+        let cases: [(Int64, AIPrivacyEvaluationReportSnapshot, AISummaryEditorStatus, AIPrivacySkippedReasonState)] = [
             (630, gate, .unavailable(.providerUnavailable), .providerNotVerified),
             (641, aiSummaryReport(.noEligibleInput), .skipped(.noEligibleInput), .noEligibleInput)
         ]
@@ -177,8 +177,8 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
                     expectedRevision: 1,
                     currentRevision: 2
                 )),
-                .success(AiSummaryClearReport(
-                    fileId: 724,
+                .success(AISummaryClearReportSnapshot(
+                    fileID: 724,
                     cleared: true,
                     contentRevision: 3,
                     clearedAt: 1_700_000_500
@@ -218,8 +218,8 @@ final class AISummaryAISummaryPrivacyRuleTests: XCTestCase {
 @MainActor
 private func aiSummaryModel(
     fileID: Int64,
-    report: AiPrivacyEvaluationReport,
-    scope: AiSummaryProviderScope,
+    report: AIPrivacyEvaluationReportSnapshot,
+    scope: AISummaryProviderScopeState,
     privacyContext: AISummaryPrivacyContext = AISummaryPrivacyContext(),
     summary: AISummaryPrivacySummaryBridge = AISummaryPrivacySummaryBridge(),
     mapper: (any CoreErrorMapping)? = nil,
@@ -240,14 +240,14 @@ private func aiSummaryModel(
     return (model, summary, privacy)
 }
 
-extension AiSummaryDraft {
-    static func aiSummaryPrivacyDraft(request: AiSummaryGenerationRequest) -> AiSummaryDraft {
-        AiSummaryDraft(
-            operationId: request.operationId,
+extension AISummaryDraftSnapshot {
+    static func aiSummaryPrivacyDraft(request: AISummaryGenerationRequestSnapshot) -> AISummaryDraftSnapshot {
+        AISummaryDraftSnapshot(
+            operationID: request.operationID,
             contentLocale: request.contentLocale,
             formatContractVersion: 1,
-            fileId: request.fileId,
-            draftId: "draft-aiSummary",
+            fileID: request.fileID,
+            draftID: "draft-aiSummary",
             status: .draft,
             summaryText: "Quarterly invoice with payment status and vendor context.",
             route: .local,
@@ -255,23 +255,23 @@ extension AiSummaryDraft {
             generatedAt: 1_700_000_000,
             usedContext: [.fileName, .extractedTextExcerpt],
             skippedReason: nil,
-            privacyRuleId: nil,
-            callLogId: 306,
+            privacyRuleID: nil,
+            callLogID: 306,
             requiresUserSave: true,
             characterCount: 58
         )
     }
 
     static func aiSummaryPrivacySkippedDraft(
-        request: AiSummaryGenerationRequest,
+        request: AISummaryGenerationRequestSnapshot,
         privacyPolicyRef: String
-    ) -> AiSummaryDraft {
-        AiSummaryDraft(
-            operationId: request.operationId,
+    ) -> AISummaryDraftSnapshot {
+        AISummaryDraftSnapshot(
+            operationID: request.operationID,
             contentLocale: request.contentLocale,
             formatContractVersion: 1,
-            fileId: request.fileId,
-            draftId: nil,
+            fileID: request.fileID,
+            draftID: nil,
             status: .skipped,
             summaryText: nil,
             route: nil,
@@ -279,26 +279,26 @@ extension AiSummaryDraft {
             generatedAt: nil,
             usedContext: [],
             skippedReason: privacyPolicyRef == "block:privacy-rule" ? .noEligibleInput : .privacyRule,
-            privacyRuleId: privacyPolicyRef,
-            callLogId: request.fileId,
+            privacyRuleID: privacyPolicyRef,
+            callLogID: request.fileID,
             requiresUserSave: false,
             characterCount: 0
         )
     }
 }
 
-private extension AiPrivacyEvaluationReport {
+private extension AIPrivacyEvaluationReportSnapshot {
     static func aiSummary(
-        _ reason: AiPrivacySkippedReason?,
-        providerGateReason: AiPrivacyProviderGateReason? = nil,
+        _ reason: AIPrivacySkippedReasonState?,
+        providerGateReason: AIPrivacyProviderGateReasonState? = nil,
         fields: Bool = false
-    ) -> AiPrivacyEvaluationReport {
+    ) -> AIPrivacyEvaluationReportSnapshot {
         let allowed = reason == nil
         let matchedRules = reason == .privacyRule ? [aiSummaryRuleMatch()] : []
-        let blockedFields: [AiPrivacyInputField] = allowed ? [.extractedTextExcerpt] : [
+        let blockedFields: [AIPrivacyInputFieldState] = allowed ? [.extractedTextExcerpt] : [
             .fileName, .repoRelativePath, .extractedTextExcerpt
         ]
-        return AiPrivacyEvaluationReport(
+        return AIPrivacyEvaluationReportSnapshot(
             decision: allowed ? .allowed : (reason == .fieldRule ? .denied : .skipped),
             skippedReason: reason,
             providerGateReason: providerGateReason,
@@ -311,8 +311,8 @@ private extension AiPrivacyEvaluationReport {
         )
     }
 
-    private static func aiSummaryRuleMatch() -> AiPrivacyRuleMatch {
-        AiPrivacyRuleMatch(
+    private static func aiSummaryRuleMatch() -> AIPrivacyRuleMatchSnapshot {
+        AIPrivacyRuleMatchSnapshot(
             ruleId: "rule-confidential",
             name: "Block confidential",
             kind: .keyword,
@@ -324,15 +324,15 @@ private extension AiPrivacyEvaluationReport {
 }
 
 private func aiSummaryReport(
-    _ reason: AiPrivacySkippedReason?,
-    providerGateReason: AiPrivacyProviderGateReason? = nil,
+    _ reason: AIPrivacySkippedReasonState?,
+    providerGateReason: AIPrivacyProviderGateReasonState? = nil,
     fields: Bool = false
-) -> AiPrivacyEvaluationReport {
+) -> AIPrivacyEvaluationReportSnapshot {
     .aiSummary(reason, providerGateReason: providerGateReason, fields: fields)
 }
 
-extension AiPrivacyRulesSnapshot {
-    static func aiSummaryPrivacyRules() -> AiPrivacyRulesSnapshot {
+extension AIPrivacyRulesSnapshot {
+    static func aiSummaryPrivacyRules() -> AIPrivacyRulesSnapshot {
         testFixture(
             providerScope: .testFixture(
                 featureScope: [.autoSummaries]

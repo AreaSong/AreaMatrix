@@ -38,7 +38,7 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     init(
         predictor: any CoreCategoryPredicting,
         importer: any CoreFileImporting,
-        preflight: any ImportSingleFilePreflighting = CoreImportSingleFilePreflight(),
+        preflight: any ImportSingleFilePreflighting,
         placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
         errorMapper: any CoreErrorMapping
     ) {
@@ -298,7 +298,7 @@ private extension ImportSingleFilePreviewModel {
         sourceURL: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy: DuplicateStrategy
+        duplicateStrategy: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         switch selectedStorageMode {
         case .copy:

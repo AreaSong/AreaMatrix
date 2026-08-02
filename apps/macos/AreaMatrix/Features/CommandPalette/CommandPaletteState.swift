@@ -2,9 +2,9 @@ import Foundation
 
 enum CommandPaletteLoadState: Equatable {
     case idle
-    case loading(CommandIndexContext)
+    case loading(CommandIndexRequestSnapshot)
     case loaded(CommandPaletteSnapshot)
-    case failed(CommandIndexContext, CommandPaletteSnapshot?, CoreErrorMappingSnapshot)
+    case failed(CommandIndexRequestSnapshot, CommandPaletteSnapshot?, CoreErrorMappingSnapshot)
 
     var snapshot: CommandPaletteSnapshot? {
         switch self {
@@ -39,7 +39,7 @@ struct CommandPaletteSectionSnapshot: Equatable, Identifiable {
     var title: String
     var targets: [CommandTargetSnapshot]
 
-    init(title: String, targets: [CommandTarget]) {
+    init(title: String, targets: [CoreCommandTargetSnapshot]) {
         self.title = title
         self.targets = targets.map(CommandTargetSnapshot.init(coreTarget:))
     }
@@ -69,20 +69,20 @@ struct CommandTargetSnapshot: Equatable, Identifiable {
     var fileID: Int64?
     var savedSearchID: Int64?
 
-    init(coreTarget: CommandTarget) {
+    init(coreTarget: CoreCommandTargetSnapshot) {
         id = coreTarget.id
         title = CommandTargetPresentation.title(for: coreTarget)
         subtitle = CommandTargetPresentation.subtitle(for: coreTarget)
-        group = CommandTargetGroupSnapshot(coreGroup: coreTarget.group)
-        kind = CommandTargetKindSnapshot(coreKind: coreTarget.kind)
-        action = CommandTargetActionSnapshot(coreAction: coreTarget.action)
+        group = coreTarget.group
+        kind = coreTarget.kind
+        action = coreTarget.action
         route = coreTarget.route
         shortcut = coreTarget.shortcut
         disabled = coreTarget.disabled
         disabledReason = CommandTargetPresentation.disabledReason(for: coreTarget)
         requiresConfirmation = coreTarget.requiresConfirmation
-        fileID = coreTarget.fileId
-        savedSearchID = coreTarget.savedSearchId
+        fileID = coreTarget.fileID
+        savedSearchID = coreTarget.savedSearchID
     }
 
     init(
@@ -133,14 +133,7 @@ enum CommandPaletteTargetRoute: Equatable {
     case unsupported
 }
 
-enum CommandTargetGroupSnapshot: String, Equatable {
-    case commands = "Commands"
-    case navigation = "Navigation"
-    case currentSelection = "Current Selection"
-    case recent = "Recent"
-    case smartLists = "Smart Lists"
-    case fileCandidates = "File Candidates"
-
+extension CommandTargetGroupSnapshot {
     var displayName: String {
         switch self {
         case .commands: L10n.string("Commands")
@@ -151,57 +144,9 @@ enum CommandTargetGroupSnapshot: String, Equatable {
         case .fileCandidates: L10n.string("File Candidates")
         }
     }
-
-    init(coreGroup: CommandTargetGroup) {
-        switch coreGroup {
-        case .commands:
-            self = .commands
-        case .navigation:
-            self = .navigation
-        case .currentSelection:
-            self = .currentSelection
-        case .recent:
-            self = .recent
-        case .smartLists:
-            self = .smartLists
-        case .fileCandidates:
-            self = .fileCandidates
-        }
-    }
 }
 
-enum CommandTargetKindSnapshot: String, Equatable {
-    case command = "Command"
-    case navigation = "Navigation"
-    case smartList = "Smart List"
-    case fileCandidate = "File Candidate"
-    case recentCommand = "Recent Command"
-
-    init(coreKind: CommandTargetKind) {
-        switch coreKind {
-        case .command:
-            self = .command
-        case .navigation:
-            self = .navigation
-        case .smartList:
-            self = .smartList
-        case .fileCandidate:
-            self = .fileCandidate
-        case .recentCommand:
-            self = .recentCommand
-        }
-    }
-}
-
-enum CommandTargetActionSnapshot: String, Equatable {
-    case navigate = "Navigate"
-    case openSheet = "Open Sheet"
-    case openConfirmation = "Open Confirmation"
-    case runSmartList = "Run Smart List"
-    case focusFile = "Focus File"
-    case openSearch = "Open Search"
-    case lowRiskAction = "Low Risk Action"
-
+extension CommandTargetActionSnapshot {
     var displayName: String {
         switch self {
         case .navigate: L10n.string("Navigate")
@@ -211,25 +156,6 @@ enum CommandTargetActionSnapshot: String, Equatable {
         case .focusFile: L10n.string("Focus File")
         case .openSearch: L10n.string("Open Search")
         case .lowRiskAction: L10n.string("Low Risk Action")
-        }
-    }
-
-    init(coreAction: CommandTargetAction) {
-        switch coreAction {
-        case .navigate:
-            self = .navigate
-        case .openSheet:
-            self = .openSheet
-        case .openConfirmation:
-            self = .openConfirmation
-        case .runSmartList:
-            self = .runSmartList
-        case .focusFile:
-            self = .focusFile
-        case .openSearch:
-            self = .openSearch
-        case .lowRiskAction:
-            self = .lowRiskAction
         }
     }
 }
@@ -337,17 +263,17 @@ enum CommandPaletteSmartListRouting {
     }
 }
 
-extension CommandIndexContext {
+extension CommandIndexRequestSnapshot {
     static func commandPalette(
         query: String,
         selectedFileIDs: Set<Int64>,
         currentPath: String?,
         includeFileCandidates: Bool = true
-    ) -> CommandIndexContext {
+    ) -> CommandIndexRequestSnapshot {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        return CommandIndexContext(
+        return CommandIndexRequestSnapshot(
             query: trimmed.isEmpty ? nil : trimmed,
-            selectedFileIds: selectedFileIDs.sorted(),
+            selectedFileIDs: selectedFileIDs.sorted(),
             currentPath: currentPath,
             includeFileCandidates: includeFileCandidates
         )
@@ -355,7 +281,7 @@ extension CommandIndexContext {
 }
 
 extension CommandPaletteSnapshot {
-    init(coreIndex: CommandIndex) {
+    init(coreIndex: CoreCommandIndexSnapshot) {
         generatedAt = coreIndex.generatedAt
         sections = [
             CommandPaletteSectionSnapshot(
@@ -393,7 +319,7 @@ extension MainFileListModel {
         selectedFileIDs: Set<Int64>,
         currentPath: String?
     ) async {
-        let context = CommandIndexContext.commandPalette(
+        let context = CommandIndexRequestSnapshot.commandPalette(
             query: query,
             selectedFileIDs: selectedFileIDs,
             currentPath: currentPath

@@ -2,11 +2,11 @@
 
 func aiTagSuggestionAITagReport(
     fileID: Int64,
-    status: AiTagSuggestionReportStatus = .suggested,
-    skippedReason: AiTagSuggestionSkipReason? = nil,
-    suggestions: [AiTagSuggestion] = []
-) -> AiTagSuggestionReport {
-    AiTagSuggestionReport(
+    status: AITagSuggestionReportStatusSnapshot = .suggested,
+    skippedReason: AITagSuggestionSkipReasonSnapshot? = nil,
+    suggestions: [AITagSuggestionSnapshot] = []
+) -> AITagSuggestionReportSnapshot {
+    AITagSuggestionReportSnapshot(
         fileId: fileID,
         status: status,
         suggestions: suggestions,
@@ -31,12 +31,12 @@ func aiTagSuggestionAITagSuggestion(
     confidence: Float,
     selectedByDefault: Bool = true,
     displayName: String? = nil,
-    status: AiTagSuggestionCandidateStatus = .suggested,
-    mergeAction: AiTagSuggestionMergeAction = .createTag,
+    status: AITagSuggestionCandidateStatusSnapshot = .suggested,
+    mergeAction: AITagSuggestionMergeActionSnapshot = .createTag,
     matchedExistingSlug: String? = nil,
     disabledReason: String? = nil
-) -> AiTagSuggestion {
-    AiTagSuggestion(
+) -> AITagSuggestionSnapshot {
+    AITagSuggestionSnapshot(
         suggestionId: id,
         slug: slug,
         displayName: displayName ?? slug.prefix(1).uppercased() + slug.dropFirst(),
@@ -50,24 +50,24 @@ func aiTagSuggestionAITagSuggestion(
     )
 }
 
-func aiTagSuggestionApplyReport(fileID: Int64) -> AiTagSuggestionApplyReport {
+func aiTagSuggestionApplyReport(fileID: Int64) -> AITagSuggestionApplyReportSnapshot {
     let tag = aiTagSuggestionTag("finance")
-    return AiTagSuggestionApplyReport(
+    return AITagSuggestionApplyReportSnapshot(
         fileId: fileID,
         requestedCount: 1,
         appliedCount: 1,
         skippedCount: 0,
         failedCount: 0,
         itemResults: [
-            AiTagSuggestionApplyItemResult(
+            AITagSuggestionApplyItemResultSnapshot(
                 suggestionId: "ai-tag-finance",
                 slug: "finance",
                 status: .applied,
                 error: nil
             )
         ],
-        tagSet: TagSet(
-            fileId: fileID,
+        tagSet: TagSetSnapshot.testFixture(
+            fileID: fileID,
             fileTags: [tag],
             availableTags: [tag],
             recentTags: [tag],
@@ -83,27 +83,27 @@ func aiTagSuggestionBatchApplyReport(
     fileID: Int64,
     suggestionID: String,
     slug: String,
-    status: AiTagSuggestionApplyStatus = .applied,
+    status: AITagSuggestionApplyStatusSnapshot = .applied,
     error: String? = nil
-) -> AiTagSuggestionApplyReport {
+) -> AITagSuggestionApplyReportSnapshot {
     let tag = aiTagSuggestionTag(slug)
-    return AiTagSuggestionApplyReport(
+    return AITagSuggestionApplyReportSnapshot(
         fileId: fileID,
         requestedCount: 1,
-        appliedCount: status == AiTagSuggestionApplyStatus.applied ? 1 : 0,
-        skippedCount: status == AiTagSuggestionApplyStatus.alreadyAdded ? 1 : 0,
-        failedCount: status == AiTagSuggestionApplyStatus.failed ? 1 : 0,
+        appliedCount: status == AITagSuggestionApplyStatusSnapshot.applied ? 1 : 0,
+        skippedCount: status == AITagSuggestionApplyStatusSnapshot.alreadyAdded ? 1 : 0,
+        failedCount: status == AITagSuggestionApplyStatusSnapshot.failed ? 1 : 0,
         itemResults: [
-            AiTagSuggestionApplyItemResult(
+            AITagSuggestionApplyItemResultSnapshot(
                 suggestionId: suggestionID,
                 slug: slug,
                 status: status,
                 error: error
             )
         ],
-        tagSet: TagSet(
-            fileId: fileID,
-            fileTags: status == AiTagSuggestionApplyStatus.applied ? [tag] : [],
+        tagSet: TagSetSnapshot.testFixture(
+            fileID: fileID,
+            fileTags: status == AITagSuggestionApplyStatusSnapshot.applied ? [tag] : [],
             availableTags: [tag],
             recentTags: [tag],
             updatedAt: 1_700_000_350
@@ -114,8 +114,8 @@ func aiTagSuggestionBatchApplyReport(
     )
 }
 
-func aiTagSuggestionTag(_ value: String) -> TagRecord {
-    TagRecord(
+func aiTagSuggestionTag(_ value: String) -> TagRecordSnapshot {
+    TagRecordSnapshot.testFixture(
         value: value,
         label: value.prefix(1).uppercased() + value.dropFirst(),
         fileCount: 1,
@@ -126,10 +126,10 @@ func aiTagSuggestionTag(_ value: String) -> TagRecord {
 }
 
 func aiTagSuggestionProviderGateReport(
-    skippedReason: AiPrivacySkippedReason,
-    providerGateReason: AiPrivacyProviderGateReason
-) -> AiPrivacyEvaluationReport {
-    AiPrivacyEvaluationReport(
+    skippedReason: AIPrivacySkippedReasonState,
+    providerGateReason: AIPrivacyProviderGateReasonState
+) -> AIPrivacyEvaluationReportSnapshot {
+    AIPrivacyEvaluationReportSnapshot(
         decision: .skipped,
         skippedReason: skippedReason,
         providerGateReason: providerGateReason,

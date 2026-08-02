@@ -11,23 +11,18 @@ final class GeneratedCoreBoundaryGovernanceTests: MacOSGovernanceTestCase {
         "Features/FileActions/MainFileCategoryMoveActions.swift:mapCoreError:4",
         "Features/FileActions/MainFileDeleteActions.swift:mapCoreError:1",
         "Features/FileActions/MainFileRenameActions.swift:mapCoreError:1",
-        "Features/Import/ImportBatchConflictActions.swift:applyImportConflictBatch:1",
         "Features/Import/ImportBatchDuplicatePrecheck.swift:listFiles:1",
-        "Features/Import/ImportSingleFilePreviewModel.swift:importFile:2",
+        "Features/Import/ImportSingleFilePreviewModel.swift:importFile:1",
         "Features/MainList/MainFileListBatchAITagActions.swift:mapCoreError:2",
         "Features/MainList/MainFileListDetailActions.swift:mapCoreError:2",
-        "Features/MainList/MainFileListDetailSupport.swift:mapCoreError:1",
         "Features/MainList/MainFileListDiagnosticsActions.swift:mapCoreError:1",
         "Features/MainList/MainFileListExternalSyncActions.swift:mapCoreError:5",
-        "Features/MainList/MainFileListExternalSyncActions.swift:syncExternalChanges:2",
+        "Features/MainList/MainFileListExternalSyncActions.swift:syncExternalChanges:1",
         "Features/MainList/MainFileListLoadingActions.swift:mapCoreError:2",
         "Features/MainList/MainFileListModel.swift:mapCoreError:1",
-        "Features/Onboarding/StartupRecoveryModels.swift:recoverOnStartup:1",
         "Features/Search/MainSearchModelSupport.swift:mapCoreError:3",
         "Features/Search/SemanticSearchActions.swift:mapCoreError:3",
         "Features/Search/SmartListActions.swift:mapCoreError:1",
-        "Features/Settings/ClassifierRuleEditorActions.swift:createClassifierRule:1",
-        "Features/SyncConflicts/ICloudConflictMinimalValidation.swift:mapCoreError:1",
         "Features/SyncConflicts/MainICloudConflictRoutingActions.swift:mapCoreError:3"
     ]
 
@@ -74,7 +69,7 @@ final class GeneratedCoreBoundaryGovernanceTests: MacOSGovernanceTestCase {
             .joined(separator: "|")
         let actual = try countedRegexMatches(
             in: productionSwiftFiles().filter { !relativeProductionPath(for: $0).hasPrefix("Bridge/") },
-            pattern: #"(?<![.A-Za-z0-9_])(?:"# + alternation + #")(?=\s*\()"#
+            pattern: #"(?<!func )(?<![.A-Za-z0-9_])(?:"# + alternation + #")(?=\s*\()"#
         )
 
         XCTAssertEqual(

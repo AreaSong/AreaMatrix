@@ -12,20 +12,50 @@ struct AdvancedSettingsPane: View {
 extension AdvancedSettingsPane {
     init(
         repoPath: String,
+        featureDependencies: SettingsFeatureDependencies,
+        sharedDependencies: SharedFeatureDependencies,
         onOpenRecoveryTools: @escaping () -> Void = {},
         onOpenDiagnostics: @escaping () -> Void = {},
         onReturnToWelcome: @escaping () -> Void = {},
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
+        rootOverviewInspector: any RootOverviewFileInspecting = AdvancedSettingsPlatformServices.rootOverviewInspector,
+        appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
+        metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
+        summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
+            AdvancedSettingsPlatformServices.diagnosticSummaryCopier
+    ) {
+        self.init(
+            repoPath: repoPath,
+            onOpenRecoveryTools: onOpenRecoveryTools,
+            onOpenDiagnostics: onOpenDiagnostics,
+            onReturnToWelcome: onReturnToWelcome,
+            loader: featureDependencies.configurationLoader,
+            updater: featureDependencies.configurationUpdater,
+            rootOverviewInspector: rootOverviewInspector,
+            diagnosticsCollector: sharedDependencies.diagnosticsCollector,
+            appVersionReader: appVersionReader,
+            coreVersionReader: featureDependencies.coreVersionReader,
+            metadataReader: metadataReader,
+            summaryCopier: summaryCopier,
+            errorMapper: sharedDependencies.errorMapper
+        )
+    }
+
+    init(
+        repoPath: String,
+        onOpenRecoveryTools: @escaping () -> Void = {},
+        onOpenDiagnostics: @escaping () -> Void = {},
+        onReturnToWelcome: @escaping () -> Void = {},
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
         rootOverviewInspector: any RootOverviewFileInspecting =
             AdvancedSettingsPlatformServices.rootOverviewInspector,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
+        diagnosticsCollector: any CoreDiagnosticsCollecting,
         appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
-        coreVersionReader: any CoreVersionReading = AppCoreServices.coreVersionReader,
+        coreVersionReader: any CoreVersionReading,
         metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
         summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
             AdvancedSettingsPlatformServices.diagnosticSummaryCopier,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        errorMapper: any CoreErrorMapping
     ) {
         _model = StateObject(wrappedValue: AdvancedSettingsModel(
             repoPath: repoPath,

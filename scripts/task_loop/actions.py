@@ -125,6 +125,7 @@ _ACTION_SPECS = (
     ActionSpec("check", command="check", shortcuts=("c",), group="tool", label_key="action.check.label", note_key="action.check.note", passthrough=True),
     ActionSpec("wording", command="wording", group="tool", label_key="action.wording.label", note_key="action.wording.note", passthrough=True),
     ActionSpec("build", command="build", group="tool", label_key="action.build.label", note_key="action.build.note", passthrough=True),
+    ActionSpec("cache", command="cache", group="tool", label_key="action.cache.label", note_key="action.cache.note", passthrough=True),
     ActionSpec("test", command="test", group="tool", label_key="action.test.label", note_key="action.test.note", passthrough=True),
     ActionSpec("run", command="run", group="tool", label_key="action.run.label", note_key="action.run.note", passthrough=True),
     ActionSpec("doctor", command="doctor", group="tool", label_key="action.doctor.label", note_key="action.doctor.note", passthrough=True),
@@ -169,6 +170,7 @@ MENUS = {
         "submenu.tools.title",
         (
             "check",
+            "cache",
             "run",
             "doctor",
             "wording",
@@ -227,6 +229,7 @@ REQUIRED_COMMANDS = (
     "check",
     "wording",
     "build",
+    "cache",
     "test",
     "run",
     "doctor",

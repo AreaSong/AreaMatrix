@@ -25,6 +25,7 @@ struct WelcomeTitlebar: View {
 private struct WelcomeLanguageCycleButton: View {
     @EnvironmentObject private var languageStore: AppLanguageStore
     @EnvironmentObject private var localizer: AppLocalizer
+    @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
     @State private var isHovered = false
 
     var body: some View {
@@ -45,7 +46,7 @@ private struct WelcomeLanguageCycleButton: View {
         .animation(.areaMatrixQuickFade, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
-            AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+            interactionFeedback.setPointingCursor(active: hovering)
         }
     }
 

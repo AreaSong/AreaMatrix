@@ -1,8 +1,8 @@
 @testable import AreaMatrix
 
-extension AiPrivacyEvaluationReport {
-    static func remoteProviderConfigAllowedPrivacyEvaluation() -> AiPrivacyEvaluationReport {
-        AiPrivacyEvaluationReport(
+extension AIPrivacyEvaluationReportSnapshot {
+    static func remoteProviderConfigAllowedPrivacyEvaluation() -> AIPrivacyEvaluationReportSnapshot {
+        AIPrivacyEvaluationReportSnapshot(
             decision: .allowed,
             skippedReason: nil,
             providerGateReason: nil,
@@ -15,13 +15,13 @@ extension AiPrivacyEvaluationReport {
         )
     }
 
-    static func remoteProviderConfigAIPrivacyFinanceFolderBlocked() -> AiPrivacyEvaluationReport {
-        AiPrivacyEvaluationReport(
+    static func remoteProviderConfigAIPrivacyFinanceFolderBlocked() -> AIPrivacyEvaluationReportSnapshot {
+        AIPrivacyEvaluationReportSnapshot(
             decision: .skipped,
             skippedReason: .privacyRule,
             providerGateReason: nil,
             matchedRules: [
-                AiPrivacyRuleMatch(
+                AIPrivacyRuleMatchSnapshot(
                     ruleId: "rule-finance-folder",
                     name: "Private finance folders",
                     kind: .folder,
@@ -38,13 +38,13 @@ extension AiPrivacyEvaluationReport {
         )
     }
 
-    static func aiTagSuggestionPrivacyRuleBlocked() -> AiPrivacyEvaluationReport {
-        AiPrivacyEvaluationReport(
+    static func aiTagSuggestionPrivacyRuleBlocked() -> AIPrivacyEvaluationReportSnapshot {
+        AIPrivacyEvaluationReportSnapshot(
             decision: .skipped,
             skippedReason: .privacyRule,
             providerGateReason: nil,
             matchedRules: [
-                AiPrivacyRuleMatch(
+                AIPrivacyRuleMatchSnapshot(
                     ruleId: "rule-confidential",
                     name: "Block confidential",
                     kind: .keyword,
@@ -62,14 +62,14 @@ extension AiPrivacyEvaluationReport {
     }
 }
 
-extension AiPrivacyProviderScopeSnapshot {
+extension AIPrivacyProviderScopeSnapshot {
     static func testFixture(
         providerConfigured: Bool = true,
         providerVerified: Bool = true,
         remoteProviderEnabled: Bool = true,
-        featureScope: [AiFeatureKind] = [.autoSummaries]
-    ) -> AiPrivacyProviderScopeSnapshot {
-        AiPrivacyProviderScopeSnapshot(
+        featureScope: [AISettingsFeatureKind] = [.autoSummaries]
+    ) -> AIPrivacyProviderScopeSnapshot {
+        AIPrivacyProviderScopeSnapshot(
             providerConfigured: providerConfigured,
             providerVerified: providerVerified,
             remoteProviderEnabled: remoteProviderEnabled,
@@ -78,16 +78,16 @@ extension AiPrivacyProviderScopeSnapshot {
     }
 }
 
-extension AiPrivacyRulesSnapshot {
+extension AIPrivacyRulesSnapshot {
     static func testFixture(
         privacyGateEnabled: Bool = true,
-        rules: [AiPrivacyRuleRecord] = [],
-        remoteAllowedFields: [AiPrivacyFieldState] = [],
-        providerScope: AiPrivacyProviderScopeSnapshot = .testFixture(),
+        rules: [AIPrivacyRuleRecordSnapshot] = [],
+        remoteAllowedFields: [AIPrivacyFieldStateSnapshot] = [],
+        providerScope: AIPrivacyProviderScopeSnapshot = .testFixture(),
         updatedAt: Int64? = nil,
         remoteBlockedByDefault: Bool = true
-    ) -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot(
+    ) -> AIPrivacyRulesSnapshot {
+        AIPrivacyRulesSnapshot(
             privacyGateEnabled: privacyGateEnabled,
             rules: rules,
             remoteAllowedFields: remoteAllowedFields,
@@ -99,8 +99,8 @@ extension AiPrivacyRulesSnapshot {
 
     static func remoteProviderConfigPrivacyRules(
         privacyGateEnabled: Bool = false,
-        featureScope: [AiFeatureKind] = [.autoSummaries]
-    ) -> AiPrivacyRulesSnapshot {
+        featureScope: [AISettingsFeatureKind] = [.autoSummaries]
+    ) -> AIPrivacyRulesSnapshot {
         testFixture(
             privacyGateEnabled: privacyGateEnabled,
             rules: [.remoteProviderConfigRuleRecord()],
@@ -117,11 +117,11 @@ extension AiPrivacyRulesSnapshot {
         )
     }
 
-    static func remoteProviderConfigAIPrivacyRules(privacyGateEnabled: Bool) -> AiPrivacyRulesSnapshot {
+    static func remoteProviderConfigAIPrivacyRules(privacyGateEnabled: Bool) -> AIPrivacyRulesSnapshot {
         testFixture(
             privacyGateEnabled: privacyGateEnabled,
             rules: [
-                AiPrivacyRuleRecord(
+                AIPrivacyRuleRecordSnapshot(
                     ruleId: "rule-finance-folder",
                     name: "Private finance folders",
                     kind: .folder,
@@ -145,11 +145,11 @@ extension AiPrivacyRulesSnapshot {
         )
     }
 
-    func applyingPrivacyGateRequest(_ request: AiPrivacyRulesUpdateRequest) -> AiPrivacyRulesSnapshot {
-        AiPrivacyRulesSnapshot.testFixture(
+    func applyingPrivacyGateRequest(_ request: AIPrivacyRulesUpdateRequestSnapshot) -> AIPrivacyRulesSnapshot {
+        AIPrivacyRulesSnapshot.testFixture(
             privacyGateEnabled: request.privacyGateEnabled,
-            rules: request.rules.map(AiPrivacyRuleRecord.init(input:)),
-            remoteAllowedFields: request.remoteAllowedFields.map(AiPrivacyFieldState.init(rule:)),
+            rules: request.rules.map(AIPrivacyRuleRecordSnapshot.init(input:)),
+            remoteAllowedFields: request.remoteAllowedFields.map(AIPrivacyFieldStateSnapshot.init(rule:)),
             providerScope: request.providerScope,
             updatedAt: 902,
             remoteBlockedByDefault: remoteBlockedByDefault
@@ -157,9 +157,9 @@ extension AiPrivacyRulesSnapshot {
     }
 }
 
-extension AiPrivacyRuleRecord {
-    static func remoteProviderConfigRuleRecord() -> AiPrivacyRuleRecord {
-        AiPrivacyRuleRecord(
+extension AIPrivacyRuleRecordSnapshot {
+    static func remoteProviderConfigRuleRecord() -> AIPrivacyRuleRecordSnapshot {
+        AIPrivacyRuleRecordSnapshot(
             ruleId: "rule-confidential",
             name: "Block confidential",
             kind: .keyword,
@@ -172,7 +172,7 @@ extension AiPrivacyRuleRecord {
         )
     }
 
-    init(input: AiPrivacyRuleInput) {
+    init(input: AIPrivacyRuleInputSnapshot) {
         self.init(
             ruleId: input.ruleId ?? "generated-rule",
             name: input.name,
@@ -187,20 +187,20 @@ extension AiPrivacyRuleRecord {
     }
 }
 
-extension AiPrivacyFieldState {
+extension AIPrivacyFieldStateSnapshot {
     static func testFixture(
-        field: AiPrivacyInputField,
+        field: AIPrivacyInputFieldState,
         allowRemote: Bool = true,
         lastMatchedCount: Int64 = 0
-    ) -> AiPrivacyFieldState {
-        AiPrivacyFieldState(
+    ) -> AIPrivacyFieldStateSnapshot {
+        AIPrivacyFieldStateSnapshot(
             field: field,
             allowRemote: allowRemote,
             lastMatchedCount: lastMatchedCount
         )
     }
 
-    init(rule: AiPrivacyFieldRule) {
+    init(rule: AIPrivacyFieldRuleSnapshot) {
         self.init(field: rule.field, allowRemote: rule.allowRemote, lastMatchedCount: 0)
     }
 }

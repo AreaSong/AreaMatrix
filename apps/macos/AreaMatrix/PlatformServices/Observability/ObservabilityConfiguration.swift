@@ -2,21 +2,35 @@ import Foundation
 
 final class ObservabilityConfigurationStore: @unchecked Sendable {
     private let lock = NSLock()
-    private let defaults: UserDefaults
+    private let defaults: UserDefaults?
+    private var inMemoryConfiguration: AppObservabilityConfiguration?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        inMemoryConfiguration = nil
+    }
+
+    init(inMemory configuration: AppObservabilityConfiguration) {
+        defaults = nil
+        inMemoryConfiguration = configuration
     }
 
     func load() -> AppObservabilityConfiguration {
         withLock {
-            ObservabilityHubPolicy.loadConfiguration(defaults: defaults)
+            if let defaults {
+                return ObservabilityHubPolicy.loadConfiguration(defaults: defaults)
+            }
+            return inMemoryConfiguration ?? .standard
         }
     }
 
     func save(_ configuration: AppObservabilityConfiguration) {
         withLock {
-            ObservabilityHubPolicy.saveConfiguration(configuration, defaults: defaults)
+            if let defaults {
+                ObservabilityHubPolicy.saveConfiguration(configuration, defaults: defaults)
+            } else {
+                inMemoryConfiguration = configuration
+            }
         }
     }
 
@@ -37,7 +51,7 @@ enum AppObservabilityMode: String, Codable, CaseIterable {
         self != .disabled
     }
 
-    var coreMode: ObservabilityMode {
+    var coreSnapshot: CoreObservabilityModeSnapshot {
         switch self {
         case .disabled: .disabled
         case .standard: .standard
@@ -50,8 +64,8 @@ enum AppObservabilityMode: String, Codable, CaseIterable {
         self == .diagnostic || self == .developer
     }
 
-    init(coreMode: ObservabilityMode) {
-        switch coreMode {
+    init(coreSnapshot: CoreObservabilityModeSnapshot) {
+        switch coreSnapshot {
         case .disabled: self = .disabled
         case .standard: self = .standard
         case .diagnostic: self = .diagnostic

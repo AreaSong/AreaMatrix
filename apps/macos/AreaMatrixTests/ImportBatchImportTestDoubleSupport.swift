@@ -7,7 +7,7 @@ struct ImportBatchBatchImportRequest: Equatable {
     var destination: ImportEntryDestination
     var suggestedCategory: String?
     var overrideFilename: String
-    var duplicateStrategy: DuplicateStrategy
+    var duplicateStrategy: ImportDuplicateStrategySnapshot
 }
 
 actor ImportBatchRecordingBatchImporter: CoreBatchCopyImporting {
@@ -83,7 +83,7 @@ actor ImportBatchRecordingBatchImporter: CoreBatchCopyImporting {
     }
 
     func assertImportedDuplicateStrategies(
-        _ expectedStrategies: [DuplicateStrategy],
+        _ expectedStrategies: [ImportDuplicateStrategySnapshot],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -155,7 +155,7 @@ actor ImportBatchSequenceBatchImporter: CoreBatchCopyImporting {
     }
 
     func assertImportedDuplicateStrategies(
-        _ expectedStrategies: [DuplicateStrategy],
+        _ expectedStrategies: [ImportDuplicateStrategySnapshot],
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -200,7 +200,7 @@ private func assertImportBatchImportedOverrideFilenames(
 
 private func assertImportBatchImportedDuplicateStrategies(
     _ requests: [ImportBatchBatchImportRequest],
-    _ expectedStrategies: [DuplicateStrategy],
+    _ expectedStrategies: [ImportDuplicateStrategySnapshot],
     file: StaticString,
     line: UInt
 ) {

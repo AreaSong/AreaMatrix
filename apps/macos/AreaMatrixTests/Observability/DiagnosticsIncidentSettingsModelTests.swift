@@ -87,7 +87,7 @@ private struct DiagnosticsIncidentSettingsFixture {
     }
 }
 
-extension ObservabilityHealth {
+extension CoreObservabilityHealthSnapshot {
     static let diagnosticsIncidentTestHealthy = Self(
         initialized: true,
         mode: .developer,

@@ -29,6 +29,15 @@ extension MacOSGovernanceTestCase {
             .appendingPathComponent("AreaMatrix", isDirectory: true)
     }
 
+    func packageSourceDirectory(_ target: String) -> URL {
+        testsDirectory().deletingLastPathComponent()
+            .appendingPathComponent("Packages/AreaMatrixModules/Sources/\(target)", isDirectory: true)
+    }
+
+    func packageSwiftFiles(_ target: String) throws -> [URL] {
+        try swiftFiles(in: packageSourceDirectory(target))
+    }
+
     func productionFeatureDirectories() throws -> [String] {
         let featuresDirectory = productionDirectory().appendingPathComponent("Features", isDirectory: true)
         let entries = try FileManager.default.contentsOfDirectory(
@@ -77,6 +86,10 @@ extension MacOSGovernanceTestCase {
     }
 
     func relativeProductionPath(for fileURL: URL) -> String {
+        let packageMarker = "/AreaMatrixModules/Sources/"
+        if let range = fileURL.path.range(of: packageMarker, options: .backwards) {
+            return "Packages/AreaMatrixModules/Sources/\(fileURL.path[range.upperBound...])"
+        }
         let marker = "/AreaMatrix/"
         guard let range = fileURL.path.range(of: marker, options: .backwards) else {
             return fileURL.lastPathComponent

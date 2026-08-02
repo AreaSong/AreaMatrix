@@ -147,7 +147,7 @@ struct SQLiteAISummaryMetadataReader {
         return sqlite3_column_int64(statement, index)
     }
 
-    private static func decodeRoute(_ value: String?) throws -> AiSummaryRoute? {
+    private static func decodeRoute(_ value: String?) throws -> AISummaryRouteState? {
         guard let value else { return nil }
         switch value {
         case "local":
@@ -159,7 +159,7 @@ struct SQLiteAISummaryMetadataReader {
         }
     }
 
-    private static func decodeOwnership(_ value: String) throws -> AiContentOwnership {
+    private static func decodeOwnership(_ value: String) throws -> AIContentOwnershipState {
         switch value {
         case "generated": .generated
         case "user_owned": .userOwned
@@ -167,21 +167,21 @@ struct SQLiteAISummaryMetadataReader {
         }
     }
 
-    private static func decodeContentLocale(_ value: String?) throws -> ContentLocale? {
+    private static func decodeContentLocale(_ value: String?) throws -> ContentLocaleState? {
         guard let value else { return nil }
         switch value {
-        case "zh-Hans": return ContentLocale.zhHans
-        case "en": return ContentLocale.en
+        case "zh-Hans": return .zhHans
+        case "en": return .en
         default: throw CoreError.Db(message: "unknown AI summary content locale: \(value)")
         }
     }
 
-    private static func decodeUsedContext(_ json: String) throws -> [AiSummaryInputField] {
+    private static func decodeUsedContext(_ json: String) throws -> [AISummaryInputFieldState] {
         let names = try JSONDecoder().decode([String].self, from: Data(json.utf8))
         return try names.map(decodeUsedContextField)
     }
 
-    private static func decodeUsedContextField(_ value: String) throws -> AiSummaryInputField {
+    private static func decodeUsedContextField(_ value: String) throws -> AISummaryInputFieldState {
         switch value {
         case "filename":
             return .fileName

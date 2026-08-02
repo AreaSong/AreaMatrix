@@ -61,6 +61,7 @@ struct AreaMatrixEmptyStateView: View {
     var secondaryTitle: String?
     var secondaryAction: (() -> Void)?
 
+    @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
     @State private var entered = false
     @State private var isPrimaryHovered = false
     @State private var shimmerPhase: CGFloat = -1.5
@@ -116,7 +117,7 @@ struct AreaMatrixEmptyStateView: View {
                     .buttonStyle(.plain)
                     .onHover { hovering in
                         isPrimaryHovered = hovering
-                        AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+                        interactionFeedback.setPointingCursor(active: hovering)
                     }
                 }
             }

@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct SemanticSearchFallbackActionPresentation: Identifiable, Equatable {
-    var action: AiFallbackAction
+    var action: AIFallbackActionSnapshot
     var title: LocalizedMessage
     var accessibilityID: String
 
-    var id: AiFallbackAction {
+    var id: AIFallbackActionSnapshot {
         action
     }
 
@@ -21,18 +21,18 @@ struct SemanticSearchFallbackStatus {
     var badgeTint: Color
     var retryable: Bool
     var retryDisabledReason: LocalizedMessage?
-    var primaryAction: AiFallbackAction?
-    var secondaryAction: AiFallbackAction?
-    var nonAiFallbackAction: AiFallbackAction
+    var primaryAction: AIFallbackActionSnapshot?
+    var secondaryAction: AIFallbackActionSnapshot?
+    var nonAIFallbackAction: AIFallbackActionSnapshot
     var callLogID: Int64?
     var privacyRuleID: String?
     var canBuildSemanticIndex: Bool
 
-    var actions: [AiFallbackAction] {
+    var actions: [AIFallbackActionSnapshot] {
         [
             primaryAction == .retry ? nil : primaryAction,
             secondaryAction,
-            nonAiFallbackAction
+            nonAIFallbackAction
         ].compactMap { $0 }.reduce(into: []) { actions, action in
             if isVisible(action), !actions.contains(action) { actions.append(action) }
         }
@@ -42,7 +42,7 @@ struct SemanticSearchFallbackStatus {
         actions.map(presentation(for:))
     }
 
-    static func fromCoreStatus(_ status: AiFallbackStatus) -> SemanticSearchFallbackStatus {
+    static func fromCoreStatus(_ status: AIFallbackStatusSnapshot) -> SemanticSearchFallbackStatus {
         SemanticSearchFallbackStatus(
             title: titleMessage(kind: status.kind),
             message: bodyMessage(kind: status.kind),
@@ -52,9 +52,9 @@ struct SemanticSearchFallbackStatus {
             retryDisabledReason: retryDisabledReasonMessage(kind: status.kind, retryable: status.retryable),
             primaryAction: status.primaryAction,
             secondaryAction: status.secondaryAction,
-            nonAiFallbackAction: status.nonAiFallbackAction,
-            callLogID: status.callLogId,
-            privacyRuleID: status.privacyRuleId,
+            nonAIFallbackAction: status.nonAIFallbackAction,
+            callLogID: status.callLogID,
+            privacyRuleID: status.privacyRuleID,
             canBuildSemanticIndex: status.primaryAction == .buildSemanticIndex ||
                 status.secondaryAction == .buildSemanticIndex
         )
@@ -71,16 +71,16 @@ struct SemanticSearchFallbackStatus {
             retryDisabledReason: reason.retryDisabledReason,
             primaryAction: reason.primaryAction,
             secondaryAction: reason.secondaryAction(callLogID: page.callLogID),
-            nonAiFallbackAction: .useNormalSearch,
+            nonAIFallbackAction: .useNormalSearch,
             callLogID: page.callLogID,
             privacyRuleID: page.privacyRuleID,
             canBuildSemanticIndex: page.canBuildIndex && reason == .semanticIndexNotReady
         )
     }
 
-    func isVisible(_ action: AiFallbackAction) -> Bool {
+    func isVisible(_ action: AIFallbackActionSnapshot) -> Bool {
         switch action {
-        case .retry, .retryLater, .openAiSettings, .openLocalModelStatus, .configureRemoteAi,
+        case .retry, .retryLater, .openAISettings, .openLocalModelStatus, .configureRemoteAI,
              .viewPrivacyRule, .viewCallLog, .buildSemanticIndex, .useNormalSearch:
             true
         case .classifyManually:
@@ -88,13 +88,13 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    func title(for action: AiFallbackAction) -> LocalizedMessage {
+    func title(for action: AIFallbackActionSnapshot) -> LocalizedMessage {
         switch action {
         case .retry: L10n.message("Retry")
         case .retryLater: L10n.message("Retry later")
-        case .openAiSettings: L10n.message("Open AI settings")
+        case .openAISettings: L10n.message("Open AI settings")
         case .openLocalModelStatus: L10n.message("Open local model status")
-        case .configureRemoteAi: L10n.message("Configure remote AI")
+        case .configureRemoteAI: L10n.message("Configure remote AI")
         case .viewPrivacyRule: L10n.message("View privacy rule")
         case .viewCallLog: L10n.message("View call log")
         case .buildSemanticIndex: L10n.message("Build semantic index")
@@ -103,13 +103,13 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    func accessibilityID(for action: AiFallbackAction) -> String {
+    func accessibilityID(for action: AIFallbackActionSnapshot) -> String {
         switch action {
         case .retry: "retry"
         case .retryLater: "retry-later"
-        case .openAiSettings: "open-ai-settings"
+        case .openAISettings: "open-ai-settings"
         case .openLocalModelStatus: "open-local-model-status"
-        case .configureRemoteAi: "configure-remote-ai"
+        case .configureRemoteAI: "configure-remote-ai"
         case .viewPrivacyRule: "view-privacy-rule"
         case .viewCallLog: "view-call-log"
         case .buildSemanticIndex: "build-semantic-index"
@@ -118,7 +118,7 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    func presentation(for action: AiFallbackAction) -> SemanticSearchFallbackActionPresentation {
+    func presentation(for action: AIFallbackActionSnapshot) -> SemanticSearchFallbackActionPresentation {
         SemanticSearchFallbackActionPresentation(
             action: action,
             title: title(for: action),
@@ -126,7 +126,7 @@ struct SemanticSearchFallbackStatus {
         )
     }
 
-    private static func badgeText(kind: AiFallbackKind) -> LocalizedMessage {
+    private static func badgeText(kind: AIFallbackKindSnapshot) -> LocalizedMessage {
         switch kind {
         case .aiDisabled: L10n.message("AI disabled")
         case .featureDisabled: L10n.message("Feature disabled")
@@ -141,7 +141,7 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    private static func secondaryBadgeText(kind: AiFallbackKind) -> LocalizedMessage {
+    private static func secondaryBadgeText(kind: AIFallbackKindSnapshot) -> LocalizedMessage {
         switch kind {
         case .noEligibleInput: L10n.message("No eligible input")
         case .callLogUnavailable: L10n.message("Call log unavailable")
@@ -155,7 +155,7 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    private static func titleMessage(kind: AiFallbackKind) -> LocalizedMessage {
+    private static func titleMessage(kind: AIFallbackKindSnapshot) -> LocalizedMessage {
         switch kind {
         case .aiDisabled: L10n.message("AI is off")
         case .featureDisabled: L10n.message("AI feature is off")
@@ -170,7 +170,7 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    private static func secondaryTitleMessage(kind: AiFallbackKind) -> LocalizedMessage {
+    private static func secondaryTitleMessage(kind: AIFallbackKindSnapshot) -> LocalizedMessage {
         switch kind {
         case .noEligibleInput: L10n.message("No eligible AI input")
         case .normalSearchUnavailable: L10n.message("Normal search is unavailable")
@@ -184,7 +184,7 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    private static func bodyMessage(kind: AiFallbackKind) -> LocalizedMessage {
+    private static func bodyMessage(kind: AIFallbackKindSnapshot) -> LocalizedMessage {
         switch kind {
         case .privacySkipped: L10n.message("This item matches a privacy rule, so no AI content was sent.")
         case .semanticIndexNotReady: L10n.message("Semantic index is not ready yet.")
@@ -200,7 +200,7 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    private static func secondaryBodyMessage(kind: AiFallbackKind) -> LocalizedMessage {
+    private static func secondaryBodyMessage(kind: AIFallbackKindSnapshot) -> LocalizedMessage {
         switch kind {
         case .remoteNotConfigured: L10n.message("Remote AI must be configured before this route can run.")
         case .providerUnavailable: L10n.message("No AI provider route is currently available.")
@@ -215,7 +215,7 @@ struct SemanticSearchFallbackStatus {
     }
 
     private static func retryDisabledReasonMessage(
-        kind: AiFallbackKind,
+        kind: AIFallbackKindSnapshot,
         retryable: Bool
     ) -> LocalizedMessage? {
         guard !retryable else { return nil }
@@ -236,7 +236,7 @@ struct SemanticSearchFallbackStatus {
         }
     }
 
-    private static func badgeTint(category: AiFallbackCategory) -> Color {
+    private static func badgeTint(category: AIFallbackCategorySnapshot) -> Color {
         switch category {
         case .skipped: .blue
         case .disabled, .unavailable: .orange
@@ -345,10 +345,10 @@ private extension SemanticSearchFallbackReasonSnapshot {
         }
     }
 
-    var primaryAction: AiFallbackAction? {
+    var primaryAction: AIFallbackActionSnapshot? {
         switch self {
         case .aiDisabled, .featureDisabled:
-            .openAiSettings
+            .openAISettings
         case .providerUnavailable, .timeout:
             .retry
         case .privacyRule:
@@ -364,7 +364,7 @@ private extension SemanticSearchFallbackReasonSnapshot {
         }
     }
 
-    func secondaryAction(callLogID: Int64?) -> AiFallbackAction? {
+    func secondaryAction(callLogID: Int64?) -> AIFallbackActionSnapshot? {
         switch self {
         case .providerUnavailable, .timeout, .callLogUnavailable:
             callLogID == nil ? nil : .viewCallLog

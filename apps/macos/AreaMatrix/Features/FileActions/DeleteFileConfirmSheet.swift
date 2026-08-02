@@ -145,7 +145,7 @@ extension BatchAITagSuggestionSheet {
         return (review.selectedIDsByFileID[file.id]?.isEmpty == false) ? "pending" : "rejected"
     }
 
-    func routeLabel(_ route: AiTagSuggestionRoute?) -> String {
+    func routeLabel(_ route: AITagSuggestionRouteSnapshot?) -> String {
         switch route {
         case .local:
             L10n.string("Local")
@@ -156,7 +156,7 @@ extension BatchAITagSuggestionSheet {
         }
     }
 
-    func aiOffReason(in review: AITagBatchSuggestionReview) -> AiTagSuggestionSkipReason? {
+    func aiOffReason(in review: AITagBatchSuggestionReview) -> AITagSuggestionSkipReasonSnapshot? {
         review.reports.values.compactMap { report in
             switch report.skippedReason {
             case .aiDisabled, .featureDisabled:
@@ -167,16 +167,16 @@ extension BatchAITagSuggestionSheet {
         }.first
     }
 
-    func privacyRuleID(for report: AiTagSuggestionReport) -> String? {
+    func privacyRuleID(for report: AITagSuggestionReportSnapshot) -> String? {
         guard report.skippedReason == .privacyRule else { return nil }
         return normalizedAITagPrivacyRuleID(from: report.privacyRuleId)
     }
 
-    func usedContextText(_ fields: [AiTagSuggestionInputField]) -> String {
+    func usedContextText(_ fields: [AITagSuggestionInputFieldSnapshot]) -> String {
         fields.isEmpty ? L10n.string("none") : fields.map(aiTagInputFieldText).joined(separator: ", ")
     }
 
-    func aiTagInputFieldText(_ field: AiTagSuggestionInputField) -> String {
+    func aiTagInputFieldText(_ field: AITagSuggestionInputFieldSnapshot) -> String {
         switch field {
         case .fileName:
             L10n.string("filename")
@@ -195,7 +195,7 @@ extension BatchAITagSuggestionSheet {
         }
     }
 
-    func mergeText(_ suggestion: AiTagSuggestion) -> String {
+    func mergeText(_ suggestion: AITagSuggestionSnapshot) -> String {
         switch suggestion.mergeAction {
         case .createTag:
             L10n.format("file-actions.tag-suggestion.will-create", suggestion.slug)
@@ -212,7 +212,7 @@ extension BatchAITagSuggestionSheet {
         }
     }
 
-    func candidateStatusText(_ suggestion: AiTagSuggestion) -> String {
+    func candidateStatusText(_ suggestion: AITagSuggestionSnapshot) -> String {
         if let reason = suggestion.disabledReason { return reason }
         switch suggestion.status {
         case .suggested:
@@ -228,7 +228,7 @@ extension BatchAITagSuggestionSheet {
         }
     }
 
-    func skipReasonText(_ reason: AiTagSuggestionSkipReason) -> String {
+    func skipReasonText(_ reason: AITagSuggestionSkipReasonSnapshot) -> String {
         switch reason {
         case .aiDisabled:
             L10n.string("AI tag suggestions are off")

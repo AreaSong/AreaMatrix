@@ -5,17 +5,6 @@ struct PlatformDifferencesView: View {
     private let onOpenRepositorySettings: () -> Void
     private let onClose: () -> Void
 
-    @MainActor
-    init(
-        repositoryText: String? = nil,
-        onOpenRepositorySettings: @escaping () -> Void = {},
-        onClose: @escaping () -> Void = {}
-    ) {
-        _model = StateObject(wrappedValue: PlatformDifferencesModel(repositoryText: repositoryText))
-        self.onOpenRepositorySettings = onOpenRepositorySettings
-        self.onClose = onClose
-    }
-
     init(
         model: PlatformDifferencesModel,
         onOpenRepositorySettings: @escaping () -> Void = {},

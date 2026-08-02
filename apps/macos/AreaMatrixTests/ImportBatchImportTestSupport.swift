@@ -125,6 +125,68 @@ func importBatchCopyImportModel(
     )
 }
 
+extension ImportBatchCopyImportModel {
+    convenience init(
+        importer: any CoreBatchCopyImporting,
+        errorMapper: any CoreErrorMapping
+    ) {
+        self.init(
+            importer: importer,
+            errorMapper: errorMapper,
+            conflictBatcher: ImportConflictBatcher(previews: []),
+            undoActionStore: NoopUndoActionStore(),
+            sessionStore: StaticImportBatchSessionStore(session: nil),
+            placeholderDownloader: ImportSingleFileStaticICloudDownloader()
+        )
+    }
+
+    convenience init(
+        importer: any CoreBatchCopyImporting,
+        errorMapper: any CoreErrorMapping,
+        sessionStore: any ImportBatchSessionPersisting
+    ) {
+        self.init(
+            importer: importer,
+            errorMapper: errorMapper,
+            conflictBatcher: ImportConflictBatcher(previews: []),
+            undoActionStore: NoopUndoActionStore(),
+            sessionStore: sessionStore,
+            placeholderDownloader: ImportSingleFileStaticICloudDownloader()
+        )
+    }
+
+    convenience init(
+        importer: any CoreBatchCopyImporting,
+        errorMapper: any CoreErrorMapping,
+        conflictBatcher: any CoreImportConflictBatching
+    ) {
+        self.init(
+            importer: importer,
+            errorMapper: errorMapper,
+            conflictBatcher: conflictBatcher,
+            undoActionStore: NoopUndoActionStore(),
+            sessionStore: StaticImportBatchSessionStore(session: nil),
+            placeholderDownloader: ImportSingleFileStaticICloudDownloader()
+        )
+    }
+
+    convenience init(
+        importer: any CoreBatchCopyImporting,
+        errorMapper: any CoreErrorMapping,
+        conflictBatcher: any CoreImportConflictBatching,
+        undoActionStore: any CoreUndoActionLogging
+    ) {
+        self.init(
+            importer: importer,
+            errorMapper: errorMapper,
+            conflictBatcher: conflictBatcher,
+            undoActionStore: undoActionStore,
+            sessionStore: StaticImportBatchSessionStore(session: nil),
+            placeholderDownloader: ImportSingleFileStaticICloudDownloader()
+        )
+    }
+}
+
 func importBatchProgress(
     completed: Int,
     failed: Int = 0,

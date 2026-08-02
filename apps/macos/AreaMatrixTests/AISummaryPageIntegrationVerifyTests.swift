@@ -116,7 +116,7 @@ final class AISummaryPageIntegrationVerifyTests: XCTestCase {
 
     @MainActor
     func testRetryGenerationCreatesLinkedNewOperationIdentity() async {
-        let draft = AiSummaryDraft.aiSummaryIntegrationDraft(
+        let draft = AISummaryDraftSnapshot.aiSummaryIntegrationDraft(
             fileID: 722,
             text: "Retry succeeded.",
             draftID: "retry",
@@ -418,9 +418,9 @@ private func makeAISummarySaveConflictContext() -> (
     return (bridge, model)
 }
 
-private func makeAISummaryFinalReport(observed: AISummarySavedSnapshot) -> AiSummarySaveReport {
-    AiSummarySaveReport(
-        fileId: 723,
+private func makeAISummaryFinalReport(observed: AISummarySavedSnapshot) -> AISummarySaveReportSnapshot {
+    AISummarySaveReportSnapshot(
+        fileID: 723,
         contentRevision: 3,
         ownership: .userOwned,
         savedSummary: "My retained local draft.",
@@ -429,9 +429,9 @@ private func makeAISummaryFinalReport(observed: AISummarySavedSnapshot) -> AiSum
         modelName: observed.modelName,
         generatedAt: observed.generatedAt,
         usedContext: observed.usedContext,
-        privacyRuleId: observed.privacyRuleID,
-        callLogId: observed.callLogID,
-        operationId: observed.operationID ?? "saved-operation-723",
+        privacyRuleID: observed.privacyRuleID,
+        callLogID: observed.callLogID,
+        operationID: observed.operationID ?? "saved-operation-723",
         contentLocale: observed.contentLocale ?? .en,
         formatContractVersion: observed.formatContractVersion ?? 1,
         characterCount: Int64("My retained local draft.".count)

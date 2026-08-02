@@ -7,7 +7,7 @@ final class CoreObservabilitySinkAdapterTests: XCTestCase {
         let probe = AdapterProbe()
         let adapter = makeAdapter(probe: probe, capacity: 4)
 
-        adapter.onEvent(event: coreEvent(id: 7, includeDetails: true))
+        adapter.onEvent(coreEvent(id: 7, includeDetails: true))
         await adapter.finishAndDrain()
 
         let snapshot = await probe.snapshot()
@@ -49,10 +49,10 @@ final class CoreObservabilitySinkAdapterTests: XCTestCase {
         let probe = AdapterProbe(blocksFirstEvent: true)
         let adapter = makeAdapter(probe: probe, capacity: 1)
 
-        adapter.onEvent(event: coreEvent(id: 1))
+        adapter.onEvent(coreEvent(id: 1))
         await probe.waitUntilFirstEventEntered()
-        adapter.onEvent(event: coreEvent(id: 2))
-        adapter.onEvent(event: coreEvent(id: 3))
+        adapter.onEvent(coreEvent(id: 2))
+        adapter.onEvent(coreEvent(id: 3))
         await probe.waitUntilDropRecorded()
 
         let completion = AdapterCompletionCounter()
@@ -84,11 +84,11 @@ final class CoreObservabilitySinkAdapterTests: XCTestCase {
         let probe = AdapterProbe(blocksFirstEvent: true)
         let adapter = makeAdapter(probe: probe, capacity: 2)
 
-        adapter.onEvent(event: coreEvent(id: 1, severity: .info))
+        adapter.onEvent(coreEvent(id: 1, severity: .info))
         await probe.waitUntilFirstEventEntered()
-        adapter.onEvent(event: coreEvent(id: 2, severity: .error))
-        adapter.onEvent(event: coreEvent(id: 3, severity: .warn))
-        adapter.onEvent(event: coreEvent(id: 4, severity: .trace))
+        adapter.onEvent(coreEvent(id: 2, severity: .error))
+        adapter.onEvent(coreEvent(id: 3, severity: .warn))
+        adapter.onEvent(coreEvent(id: 4, severity: .trace))
 
         await probe.releaseFirstEvent()
         await adapter.finishAndDrain()
@@ -103,14 +103,14 @@ final class CoreObservabilitySinkAdapterTests: XCTestCase {
         let probe = AdapterProbe(blocksFirstEvent: true, blocksFirstDropReport: true)
         let adapter = makeAdapter(probe: probe, capacity: 1)
 
-        adapter.onEvent(event: coreEvent(id: 1))
+        adapter.onEvent(coreEvent(id: 1))
         await probe.waitUntilFirstEventEntered()
-        adapter.onEvent(event: coreEvent(id: 2))
-        adapter.onEvent(event: coreEvent(id: 3))
+        adapter.onEvent(coreEvent(id: 2))
+        adapter.onEvent(coreEvent(id: 3))
         await probe.waitUntilDropReportEntered()
 
         for id in 4 ... 10003 {
-            adapter.onEvent(event: coreEvent(id: id))
+            adapter.onEvent(coreEvent(id: id))
         }
         let blockedReport = await probe.snapshot()
         XCTAssertEqual(blockedReport.activeDropReportCount, 1)
@@ -135,7 +135,7 @@ final class CoreObservabilitySinkAdapterTests: XCTestCase {
         let adapter = makeAdapter(probe: probe, capacity: 1)
 
         adapter.closeIngress()
-        adapter.onEvent(event: coreEvent(id: 1))
+        adapter.onEvent(coreEvent(id: 1))
         await adapter.finishAndDrain()
 
         let snapshot = await probe.snapshot()
@@ -149,7 +149,7 @@ final class CoreObservabilitySinkAdapterTests: XCTestCase {
         let adapter = makeAdapter(probe: probe, capacity: 256)
 
         DispatchQueue.concurrentPerform(iterations: 200) { index in
-            adapter.onEvent(event: coreEvent(id: index))
+            adapter.onEvent(coreEvent(id: index))
         }
         await adapter.finishAndDrain()
 
@@ -292,50 +292,50 @@ private actor AdapterLatch {
 private func coreEvent(
     id: Int,
     includeDetails: Bool = false,
-    severity: ObservabilitySeverity = .info
-) -> CoreObservabilityEvent {
-    CoreObservabilityEvent(
+    severity: AppObservabilitySeverity = .info
+) -> ObservabilityEventSnapshot {
+    ObservabilityEventSnapshot(
         schemaVersion: 2,
-        eventId: "event-\(id)",
-        wallTimestampMs: Int64(id),
-        monotonicTimestampNs: UInt64(id),
+        eventID: "event-\(id)",
+        wallTimestampMilliseconds: Int64(id),
+        monotonicTimestampNanoseconds: UInt64(id),
         sequenceNumber: UInt64(id),
-        sessionId: "session",
-        incidentId: includeDetails ? "incident" : nil,
-        traceId: "trace",
-        spanId: "span-\(id)",
-        parentSpanId: includeDetails ? "parent" : nil,
-        operationId: includeDetails ? "operation" : nil,
-        retryOfOperationId: includeDetails ? "retry" : nil,
-        actionId: "repository.import.validation",
-        componentId: "core.storage.import",
-        layer: .core,
+        sessionID: "session",
+        incidentID: includeDetails ? "incident" : nil,
+        traceID: "trace",
+        spanID: "span-\(id)",
+        parentSpanID: includeDetails ? "parent" : nil,
+        operationID: includeDetails ? "operation" : nil,
+        retryOfOperationID: includeDetails ? "retry" : nil,
+        actionID: "repository.import.validation",
+        componentID: "core.storage.import",
+        layer: "core",
         phase: includeDetails ? "completed" : "event",
         severity: includeDetails ? .warn : severity,
-        outcome: includeDetails ? .failed : .succeeded,
-        durationMs: includeDetails ? 42 : nil,
-        resourceRefs: includeDetails ? [CoreObservabilityResourceRef(
-            resourceId: "resource",
+        outcome: includeDetails ? "failed" : "succeeded",
+        durationMilliseconds: includeDetails ? 42 : nil,
+        resources: includeDetails ? [ObservabilityResourceSnapshot(
+            resourceID: "resource",
             alias: "alias",
-            extension: "txt",
+            pathExtension: "txt",
             sizeBucket: "small",
             storageMode: "copy"
         )] : [],
-        error: includeDetails ? CoreObservabilityError(
+        error: includeDetails ? ObservabilityErrorSnapshot(
             code: "test-error",
             kind: "io",
             technicalDetails: "details"
         ) : nil,
-        attributes: includeDetails ? [CoreObservabilityAttribute(
+        attributes: includeDetails ? [ObservabilityAttributeSnapshot(
             key: "attempt",
             value: "1",
-            privacy: .public
+            privacy: "public"
         )] : [],
-        privacyLevel: includeDetails ? .pseudonymous : .public,
+        privacy: includeDetails ? "pseudonymous" : "public",
         message: includeDetails ? "message" : nil,
         target: includeDetails ? "target" : nil,
         threadName: includeDetails ? "worker" : nil,
-        buildContext: ObservabilityBuildContext(
+        buildContext: ObservabilityBuildContextSnapshot(
             producer: "area_matrix_core",
             version: "0.1.0",
             build: nil,

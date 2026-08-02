@@ -6,7 +6,7 @@ enum ImportProgressDuplicateStrategy: String, Equatable {
     case keepBoth
     case ask
 
-    init(coreStrategy: DuplicateStrategy) {
+    init(coreStrategy: ImportDuplicateStrategySnapshot) {
         switch coreStrategy {
         case .skip:
             self = .skip
@@ -19,7 +19,7 @@ enum ImportProgressDuplicateStrategy: String, Equatable {
         }
     }
 
-    var coreStrategy: DuplicateStrategy {
+    var coreStrategy: ImportDuplicateStrategySnapshot {
         switch self {
         case .skip:
             .skip

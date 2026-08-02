@@ -132,7 +132,7 @@ enum ObservabilityHubPolicy {
 
     static func makeHealth(
         state: ObservabilityHubHealthState,
-        core: ObservabilityHealth?
+        core: CoreObservabilityHealthSnapshot?
     ) -> AppObservabilityHealth {
         let droppedTrace = core?.droppedTrace ?? 0
         let droppedDebug = core?.droppedDebug ?? 0
@@ -312,7 +312,7 @@ private extension ObservabilityHubPolicy {
 
     static func healthIssues(
         state: ObservabilityHubHealthState,
-        core: ObservabilityHealth?
+        core: CoreObservabilityHealthSnapshot?
     ) -> [ObservabilityHealthIssue] {
         var issues: [ObservabilityHealthIssue] = []
         appendIssue(state.catalogFailureReason, source: .catalog, to: &issues)
@@ -326,7 +326,7 @@ private extension ObservabilityHubPolicy {
         if core?.initialized != true {
             appendIssue("core-not-initialized", source: .core, to: &issues)
         }
-        if let core, AppObservabilityMode(coreMode: core.mode) != state.configuration.mode {
+        if let core, AppObservabilityMode(coreSnapshot: core.mode) != state.configuration.mode {
             appendIssue("mode-mismatch", source: .core, to: &issues)
         }
         return issues

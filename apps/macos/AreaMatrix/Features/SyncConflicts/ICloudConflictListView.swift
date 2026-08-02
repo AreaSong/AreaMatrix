@@ -142,15 +142,16 @@ struct ICloudConflictListView: View {
     let onResolve: (ICloudConflictPairSnapshot) -> Void
     let systemCapabilityChecker: any OnboardingSystemCapabilityChecking
     let onCollectDiagnostics: () -> Void
+    let makeResolutionModel: @MainActor (ICloudConflictMinimalRouteContext) -> ICloudConflictMinimalModel
 
     init(
         model: ICloudConflictListModel,
         pageContext: ICloudConflictListPageContext = .iCloudConflictListList,
-        systemCapabilityChecker: any OnboardingSystemCapabilityChecking =
-            AppPlatformServices.systemCapabilityChecker,
+        systemCapabilityChecker: any OnboardingSystemCapabilityChecking,
         onClose: @escaping () -> Void,
         onResolve: @escaping (ICloudConflictPairSnapshot) -> Void,
-        onCollectDiagnostics: @escaping () -> Void = {}
+        onCollectDiagnostics: @escaping () -> Void = {},
+        makeResolutionModel: @escaping @MainActor (ICloudConflictMinimalRouteContext) -> ICloudConflictMinimalModel
     ) {
         _model = StateObject(wrappedValue: model)
         self.pageContext = pageContext
@@ -158,6 +159,7 @@ struct ICloudConflictListView: View {
         self.onResolve = onResolve
         self.systemCapabilityChecker = systemCapabilityChecker
         self.onCollectDiagnostics = onCollectDiagnostics
+        self.makeResolutionModel = makeResolutionModel
     }
 
     var body: some View {
@@ -176,12 +178,7 @@ struct ICloudConflictListView: View {
         }
         .sheet(item: resolvingRouteBinding) { route in
             ICloudConflictMinimalSheet(
-                model: ICloudConflictMinimalModel(
-                    repoPath: route.repoPath,
-                    conflictID: route.conflict.conflictID,
-                    originalVersion: route.originalVersion,
-                    conflictedCopyVersion: route.conflictedCopyVersion
-                ),
+                model: makeResolutionModel(route),
                 resolutionCapability: route.resolutionCapability,
                 isTrashAvailable: systemCapabilityChecker.isTrashAvailable(),
                 onCancel: model.closeResolvingConflict,

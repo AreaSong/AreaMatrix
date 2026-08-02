@@ -64,11 +64,11 @@ enum ObservabilityRuntimePolicy {
     static func coreConfiguration(
         _ configuration: AppObservabilityConfiguration,
         sessionID: String
-    ) -> ObservabilityConfig {
-        ObservabilityConfig(
-            sessionId: sessionID,
-            mode: configuration.mode.coreMode,
-            minimumSeverity: configuration.minimumSeverity.coreSeverity,
+    ) -> CoreObservabilityConfigurationSnapshot {
+        CoreObservabilityConfigurationSnapshot(
+            sessionID: sessionID,
+            mode: configuration.mode.coreSnapshot,
+            minimumSeverity: configuration.minimumSeverity.coreSnapshot,
             queueCapacity: 4096,
             includeSensitive: configuration.includeSensitive
         )

@@ -27,7 +27,7 @@ enum AISummaryEditorPresentationSupport {
         )
     }
 
-    static func notice(for reason: AiSummarySkipReason) -> AISummaryEditorNotice {
+    static func notice(for reason: AISummarySkipReasonState) -> AISummaryEditorNotice {
         switch reason {
         case .aiDisabled:
             .aiDisabled()
@@ -91,7 +91,7 @@ enum AISummaryEditorPresentationSupport {
         opensAISettings: Bool,
         capability: String = "ai-summary-core",
         privacyRuleID: String? = nil,
-        privacyField: AiPrivacyInputField? = nil
+        privacyField: AIPrivacyInputFieldState? = nil
     ) -> AISummaryEditorNotice {
         AISummaryEditorNotice(
             title: title,

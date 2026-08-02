@@ -88,7 +88,7 @@ final class ObservabilityHubAndStoreTests: XCTestCase {
         XCTAssertEqual(event.operationID, "operation-id")
         XCTAssertEqual(event.retryOfOperationID, "previous-operation-id")
 
-        let coreHealth = ObservabilityHealth(
+        let coreHealth = CoreObservabilityHealthSnapshot(
             initialized: true,
             mode: .disabled,
             queueDepth: 0,

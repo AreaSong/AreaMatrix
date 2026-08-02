@@ -42,21 +42,23 @@ actor DiagnosticsIncidentCoreStub: CoreObservabilityControlling {
     }
 
     func initializeObservability(
-        config _: ObservabilityConfig,
-        sink _: any CoreObservabilitySink
-    ) async throws -> ObservabilityHealth {
+        config _: CoreObservabilityConfigurationSnapshot,
+        sink _: any CoreObservabilityEventSinking
+    ) async throws -> CoreObservabilityHealthSnapshot {
         .diagnosticsIncidentTestHealthy
     }
 
-    func updateObservability(config _: ObservabilityConfig) async throws -> ObservabilityHealth {
+    func updateObservability(
+        config _: CoreObservabilityConfigurationSnapshot
+    ) async throws -> CoreObservabilityHealthSnapshot {
         .diagnosticsIncidentTestHealthy
     }
 
-    func observabilityHealth() async -> ObservabilityHealth {
+    func observabilityHealth() async -> CoreObservabilityHealthSnapshot {
         .diagnosticsIncidentTestHealthy
     }
 
-    func flushObservability(deadlineMilliseconds _: UInt64) async throws -> ObservabilityHealth {
+    func flushObservability(deadlineMilliseconds _: UInt64) async throws -> CoreObservabilityHealthSnapshot {
         .diagnosticsIncidentTestHealthy
     }
 }
@@ -90,7 +92,7 @@ actor ImportTraceRecordingFileImporter: CoreObservedFileImporting {
         sourceURL _: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy _: DuplicateStrategy
+        duplicateStrategy _: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         FileEntrySnapshot.importSingleFileFixture(currentName: overrideFilename, category: overrideCategory)
     }
@@ -100,7 +102,7 @@ actor ImportTraceRecordingFileImporter: CoreObservedFileImporting {
         sourceURL _: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy _: DuplicateStrategy
+        duplicateStrategy _: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         FileEntrySnapshot.importSingleFileFixture(
             currentName: overrideFilename,
@@ -114,7 +116,7 @@ actor ImportTraceRecordingFileImporter: CoreObservedFileImporting {
         sourceURL _: URL,
         overrideCategory: String,
         overrideFilename: String,
-        duplicateStrategy _: DuplicateStrategy
+        duplicateStrategy _: ImportDuplicateStrategySnapshot
     ) async throws -> FileEntrySnapshot {
         FileEntrySnapshot.importSingleFileFixture(
             currentName: overrideFilename,

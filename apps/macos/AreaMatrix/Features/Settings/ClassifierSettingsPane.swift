@@ -7,12 +7,34 @@ struct ClassifierSettingsPane: View {
 }
 
 extension ClassifierSettingsPane {
+    init(model: ClassifierSettingsModel) {
+        _model = StateObject(wrappedValue: model)
+    }
+
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
-        predictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        featureDependencies: SettingsFeatureDependencies,
+        sharedDependencies: SharedFeatureDependencies,
+        onSavedCategory: ((String) -> Void)? = nil
+    ) {
+        self.init(
+            repoPath: repoPath,
+            loader: featureDependencies.configurationLoader,
+            updater: featureDependencies.configurationUpdater,
+            predictor: featureDependencies.categoryPredictor,
+            ruleEditor: featureDependencies.classifierRuleEditor,
+            errorMapper: sharedDependencies.errorMapper,
+            onSavedCategory: onSavedCategory
+        )
+    }
+
+    init(
+        repoPath: String,
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
+        predictor: any CoreCategoryPredicting,
+        ruleEditor: any CoreClassifierRuleEditing,
+        errorMapper: any CoreErrorMapping,
         onSavedCategory: ((String) -> Void)? = nil
     ) {
         let settingsModel = ClassifierSettingsModel(
@@ -20,6 +42,7 @@ extension ClassifierSettingsPane {
             loader: loader,
             updater: updater,
             predictor: predictor,
+            ruleEditor: ruleEditor,
             errorMapper: errorMapper,
             onSavedCategory: onSavedCategory
         )

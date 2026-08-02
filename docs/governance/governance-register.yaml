@@ -1129,6 +1129,16 @@ repo_domains:
     paths:
       - apps/macos/AreaMatrix.xcodeproj/
       - apps/macos/AreaMatrix-Functional.xctestplan
+      - apps/macos/Config/
+  - domain: macos-swift-packages
+    owner: "@AreaSong"
+    status: active
+    authority: code
+    verification: swift test --package-path apps/macos/Packages/AreaMatrixModules plus Xcode build
+    review_triggers:
+      - swift-package-module-or-contract-changed
+    paths:
+      - apps/macos/Packages/
   - domain: ios-port
     owner: "@AreaSong"
     status: active

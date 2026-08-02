@@ -14,7 +14,7 @@ struct AIPrivacyRulesRoute: Identifiable, Equatable {
 
 enum AIPrivacyRulesRouteFocus: Equatable {
     case rule(ruleID: String)
-    case field(AiPrivacyInputField)
+    case field(AIPrivacyInputFieldState)
 
     var targetID: String {
         switch self {
@@ -39,7 +39,7 @@ enum AIPrivacyRulesRouteFocus: Equatable {
         return normalizedRuleID(focusedRuleID) == normalizedRuleID(ruleID)
     }
 
-    func matches(field: AiPrivacyInputField) -> Bool {
+    func matches(field: AIPrivacyInputFieldState) -> Bool {
         self == .field(field)
     }
 
@@ -69,26 +69,54 @@ extension AISummaryEditorNotice {
 
 struct AIPrivacyRulesRouteSheet: View {
     let route: AIPrivacyRulesRoute
+    let registryReader: any AIPrivacyRuleRegistryReading
     let onConfigureRemoteAI: () -> Void
     let onClose: () -> Void
     @StateObject private var model: AISettingsModel
+    @StateObject private var providerModel: AIPrivacyRemoteProviderStateModel
+    @StateObject private var privacyModel: AIPrivacyRulesModel
 
     init(
         repoPath: String,
+        featureDependencies: AIFeatureDependencies,
+        errorMapper: any CoreErrorMapping,
+        registryReader: any AIPrivacyRuleRegistryReading,
         focus: AIPrivacyRulesRouteFocus? = nil,
         onConfigureRemoteAI: @escaping () -> Void = {},
         onClose: @escaping () -> Void = {}
     ) {
         route = AIPrivacyRulesRoute(repoPath: repoPath, focus: focus)
+        self.registryReader = registryReader
         self.onConfigureRemoteAI = onConfigureRemoteAI
         self.onClose = onClose
-        _model = StateObject(wrappedValue: AISettingsModel(repoPath: repoPath))
+        let settingsModel = AISettingsModel(
+            repoPath: repoPath,
+            loader: featureDependencies.aiSettingsLoader,
+            updater: featureDependencies.aiSettingsUpdater,
+            errorMapper: errorMapper
+        )
+        _model = StateObject(wrappedValue: settingsModel)
+        _providerModel = StateObject(wrappedValue: AIPrivacyRemoteProviderStateModel(
+            repoPath: repoPath,
+            providerReader: featureDependencies.remoteProviderConfigurer,
+            errorMapper: errorMapper
+        ))
+        _privacyModel = StateObject(wrappedValue: AIPrivacyRulesModel(
+            repoPath: repoPath,
+            rulesManager: featureDependencies.aiPrivacyRulesManager,
+            evaluator: featureDependencies.aiPrivacyRules,
+            errorMapper: errorMapper,
+            settingsSync: settingsModel
+        ))
     }
 
     var body: some View {
         AIPrivacyRulesRouteView(
             route: route,
             model: model,
+            registryReader: registryReader,
+            providerModel: providerModel,
+            privacyModel: privacyModel,
             onConfigureRemoteAI: onConfigureRemoteAI,
             onClose: onClose
         )
@@ -98,7 +126,9 @@ struct AIPrivacyRulesRouteSheet: View {
 struct AIPrivacyRulesRouteView: View {
     let route: AIPrivacyRulesRoute
     @ObservedObject var model: AISettingsModel
-    var registryReader: any AIPrivacyRuleRegistryReading = CoreAIPrivacyRuleRegistryReader()
+    let registryReader: any AIPrivacyRuleRegistryReading
+    let providerModel: AIPrivacyRemoteProviderStateModel
+    let privacyModel: AIPrivacyRulesModel
     let onConfigureRemoteAI: () -> Void
     let onClose: () -> Void
 
@@ -121,6 +151,8 @@ struct AIPrivacyRulesRouteView: View {
             case .loaded:
                 AIPrivacyRulesView(
                     model: model,
+                    providerModel: providerModel,
+                    privacyModel: privacyModel,
                     registry: registry,
                     initialFocus: route.focus,
                     onConfigureRemoteAI: onConfigureRemoteAI,

@@ -5,6 +5,24 @@ final class SwiftFileSizeGovernanceTests: MacOSGovernanceTestCase {
     private let hardLimit = 500
     private let nearLimitInventory: [NearLimitSwiftFile] = [
         NearLimitSwiftFile(
+            path: "AreaMatrix/Features/AI/AISettingsPane.swift",
+            owner: "AI settings route and feature dependency composition",
+            rationale: "Keeps the settings route state, sheet composition, and AI-specific presentation sections "
+                + "under one feature owner while dependency injection is completed.",
+            splitTrigger: "Before any growth beyond the current inventory, extract AISettingsPaneDependencies "
+                + "and route sheet composition into dedicated support files.",
+            maximumLineCount: 470
+        ),
+        NearLimitSwiftFile(
+            path: "AreaMatrix/Features/AI/AISummaryEditorView.swift",
+            owner: "AI summary editor presentation and recovery route",
+            rationale: "Keeps summary editing, privacy confirmation, and call-log recovery presentation under "
+                + "the AI feature owner while the summary workflow remains a single user-facing surface.",
+            splitTrigger: "Before any growth beyond the current inventory, extract summary recovery sheet "
+                + "composition into a dedicated AI summary route support file.",
+            maximumLineCount: 461
+        ),
+        NearLimitSwiftFile(
             path: "AreaMatrix/App/ObservabilityRuntimeAssembly.swift",
             owner: "application observability runtime lifecycle",
             rationale: "Keeps startup, session recovery, mode lease, mutation ordering, and coordinated stop "
@@ -12,6 +30,15 @@ final class SwiftFileSizeGovernanceTests: MacOSGovernanceTestCase {
             splitTrigger: "Before any growth beyond the current inventory, extract the ordered stop state and "
                 + "deadline race into a dedicated runtime stop coordinator.",
             maximumLineCount: 451
+        ),
+        NearLimitSwiftFile(
+            path: "AreaMatrixTests/AreaMatrixDeveloperScenarioTests.swift",
+            owner: "developer scenario and preview coverage contract tests",
+            rationale: "Keeps the scenario inventory, language matrix, and in-memory scenario smoke assertions "
+                + "together so the debug UI surface remains covered by one governance owner.",
+            splitTrigger: "Before any growth beyond the current inventory, move scenario fixture smoke assertions "
+                + "into a dedicated AreaMatrixDeveloperScenarioFixtureTests.swift file.",
+            maximumLineCount: 460
         ),
         NearLimitSwiftFile(
             path: "AreaMatrixTests/DetailMetaPageFeatureTests.swift",
@@ -30,6 +57,15 @@ final class SwiftFileSizeGovernanceTests: MacOSGovernanceTestCase {
             splitTrigger: "Before any growth beyond the current inventory, move pagination listers and "
                 + "fixture builders into a feature-local support file.",
             maximumLineCount: 497
+        ),
+        NearLimitSwiftFile(
+            path: "AreaMatrixTests/MacOSArchitectureBoundaryGovernanceTests.swift",
+            owner: "macOS architecture and platform-boundary governance tests",
+            rationale: "Keeps the cross-layer source inventories and their regression assertions together so "
+                + "new boundary violations fail from one governance surface.",
+            splitTrigger: "Before any growth beyond the current inventory, extract platform-boundary scans "
+                + "into a dedicated governance test support file.",
+            maximumLineCount: 454
         )
     ]
 

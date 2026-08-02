@@ -254,8 +254,8 @@ private func generalSettingsImportDefaultErrorMapper() -> StaticCoreErrorMapper 
     ))
 }
 
-private func aiCallLogPage(records: [AiCallLogRecord]) -> AiCallLogPage {
-    AiCallLogPage(
+private func aiCallLogPage(records: [AICallLogRecordSnapshot]) -> AICallLogPageSnapshot {
+    AICallLogPageSnapshot(
         totalCount: Int64(records.count),
         records: records,
         limit: 100,
@@ -268,10 +268,10 @@ private func aiCallLogPage(records: [AiCallLogRecord]) -> AiCallLogPage {
 
 private func aiCallLogRecord(
     id: Int64,
-    feature: AiCallLogFeature = .classification,
-    status: AiCallLogStatus = .success
-) -> AiCallLogRecord {
-    AiCallLogRecord(
+    feature: AICallLogFeatureSnapshot = .classification,
+    status: AICallLogStatusSnapshot = .success
+) -> AICallLogRecordSnapshot {
+    AICallLogRecordSnapshot(
         id: id,
         occurredAt: 1_700_000_000 + id,
         feature: feature,

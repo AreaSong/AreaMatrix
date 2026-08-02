@@ -1,5 +1,145 @@
 import Foundation
 
+struct CommandIndexRequestSnapshot: Equatable {
+    var query: String?
+    var selectedFileIDs: [Int64]
+    var currentPath: String?
+    var includeFileCandidates: Bool
+}
+
+struct CoreCommandIndexSnapshot: Equatable {
+    var commands: [CoreCommandTargetSnapshot]
+    var navigationTargets: [CoreCommandTargetSnapshot]
+    var currentSelectionTargets: [CoreCommandTargetSnapshot]
+    var recentTargets: [CoreCommandTargetSnapshot]
+    var smartLists: [CoreCommandTargetSnapshot]
+    var fileCandidates: [CoreCommandTargetSnapshot]
+    var generatedAt: Int64
+}
+
+struct CoreCommandTargetSnapshot: Equatable {
+    var id: String
+    var title: String
+    var subtitle: String?
+    var group: CommandTargetGroupSnapshot
+    var kind: CommandTargetKindSnapshot
+    var action: CommandTargetActionSnapshot
+    var route: String?
+    var shortcut: String?
+    var disabled: Bool
+    var disabledReason: String?
+    var requiresConfirmation: Bool
+    var fileID: Int64?
+    var savedSearchID: Int64?
+}
+
+enum CommandTargetGroupSnapshot: String, Equatable {
+    case commands = "Commands"
+    case navigation = "Navigation"
+    case currentSelection = "Current Selection"
+    case recent = "Recent"
+    case smartLists = "Smart Lists"
+    case fileCandidates = "File Candidates"
+}
+
+enum CommandTargetKindSnapshot: String, Equatable {
+    case command = "Command"
+    case navigation = "Navigation"
+    case smartList = "Smart List"
+    case fileCandidate = "File Candidate"
+    case recentCommand = "Recent Command"
+}
+
+enum CommandTargetActionSnapshot: String, Equatable {
+    case navigate = "Navigate"
+    case openSheet = "Open Sheet"
+    case openConfirmation = "Open Confirmation"
+    case runSmartList = "Run Smart List"
+    case focusFile = "Focus File"
+    case openSearch = "Open Search"
+    case lowRiskAction = "Low Risk Action"
+}
+
+extension CoreCommandIndexSnapshot {
+    init(coreIndex: CommandIndex) {
+        commands = coreIndex.commands.map(CoreCommandTargetSnapshot.init(coreTarget:))
+        navigationTargets = coreIndex.navigationTargets.map(CoreCommandTargetSnapshot.init(coreTarget:))
+        currentSelectionTargets = coreIndex.currentSelectionTargets.map(CoreCommandTargetSnapshot.init(coreTarget:))
+        recentTargets = coreIndex.recentTargets.map(CoreCommandTargetSnapshot.init(coreTarget:))
+        smartLists = coreIndex.smartLists.map(CoreCommandTargetSnapshot.init(coreTarget:))
+        fileCandidates = coreIndex.fileCandidates.map(CoreCommandTargetSnapshot.init(coreTarget:))
+        generatedAt = coreIndex.generatedAt
+    }
+}
+
+private extension CoreCommandTargetSnapshot {
+    init(coreTarget: CommandTarget) {
+        id = coreTarget.id
+        title = coreTarget.title
+        subtitle = coreTarget.subtitle
+        group = CommandTargetGroupSnapshot(coreGroup: coreTarget.group)
+        kind = CommandTargetKindSnapshot(coreKind: coreTarget.kind)
+        action = CommandTargetActionSnapshot(coreAction: coreTarget.action)
+        route = coreTarget.route
+        shortcut = coreTarget.shortcut
+        disabled = coreTarget.disabled
+        disabledReason = coreTarget.disabledReason
+        requiresConfirmation = coreTarget.requiresConfirmation
+        fileID = coreTarget.fileId
+        savedSearchID = coreTarget.savedSearchId
+    }
+}
+
+private extension CommandTargetGroupSnapshot {
+    init(coreGroup: CommandTargetGroup) {
+        switch coreGroup {
+        case .commands: self = .commands
+        case .navigation: self = .navigation
+        case .currentSelection: self = .currentSelection
+        case .recent: self = .recent
+        case .smartLists: self = .smartLists
+        case .fileCandidates: self = .fileCandidates
+        }
+    }
+}
+
+private extension CommandTargetKindSnapshot {
+    init(coreKind: CommandTargetKind) {
+        switch coreKind {
+        case .command: self = .command
+        case .navigation: self = .navigation
+        case .smartList: self = .smartList
+        case .fileCandidate: self = .fileCandidate
+        case .recentCommand: self = .recentCommand
+        }
+    }
+}
+
+private extension CommandTargetActionSnapshot {
+    init(coreAction: CommandTargetAction) {
+        switch coreAction {
+        case .navigate: self = .navigate
+        case .openSheet: self = .openSheet
+        case .openConfirmation: self = .openConfirmation
+        case .runSmartList: self = .runSmartList
+        case .focusFile: self = .focusFile
+        case .openSearch: self = .openSearch
+        case .lowRiskAction: self = .lowRiskAction
+        }
+    }
+}
+
+extension CommandIndexContext {
+    init(snapshot: CommandIndexRequestSnapshot) {
+        self.init(
+            query: snapshot.query,
+            selectedFileIds: snapshot.selectedFileIDs,
+            currentPath: snapshot.currentPath,
+            includeFileCandidates: snapshot.includeFileCandidates
+        )
+    }
+}
+
 enum ClassifyReasonSnapshot: String, Equatable {
     case keyword = "Keyword"
     case `extension` = "Extension"

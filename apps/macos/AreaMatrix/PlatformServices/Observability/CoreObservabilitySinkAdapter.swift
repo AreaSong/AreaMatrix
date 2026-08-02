@@ -1,6 +1,6 @@
 import Foundation
 
-final class CoreObservabilitySinkAdapter: CoreObservabilitySink, @unchecked Sendable {
+final class CoreObservabilitySinkAdapter: CoreObservabilityEventSinking, @unchecked Sendable {
     private let deliverySignal: AsyncStream<Void>.Continuation
     private let dropSignal: AsyncStream<Void>.Continuation
     private let consumerTask: Task<Void, Never>
@@ -52,8 +52,8 @@ final class CoreObservabilitySinkAdapter: CoreObservabilitySink, @unchecked Send
         dropSignal.finish()
     }
 
-    func onEvent(event: CoreObservabilityEvent) {
-        let result = state.enqueue(ObservabilityEventSnapshot(coreEvent: event))
+    func onEvent(_ event: ObservabilityEventSnapshot) {
+        let result = state.enqueue(event)
         if result.shouldWakeConsumer { deliverySignal.yield(()) }
         if result.recordedDrop { dropSignal.yield(()) }
     }

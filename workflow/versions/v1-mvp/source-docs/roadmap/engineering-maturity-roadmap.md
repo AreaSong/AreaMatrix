@@ -34,13 +34,13 @@
 
 | 完成条件 | 权威实现 / 规则 | 自动化或验收证据 | 当前状态 |
 |---|---|---|---|
-| 新功能先找到 feature owner | `apps/macos/AGENTS.md`、`Features/*` | `MacOSFeatureOwnershipGovernanceTests` 精确 inventory 11 个 owner | 已证明 |
+| 新功能先找到 feature owner | `apps/macos/AGENTS.md`、`Features/*` | `MacOSFeatureOwnershipGovernanceTests` 精确 inventory 12 个 owner | 已证明 |
 | 新功能以 feature-local 改动为主 | migration zone inventory、feature owner 规则 | `MacOSMigrationZoneGovernanceTests` 禁止旧区新增文件；PR 模板记录 owner / 跨 feature 理由；`feature-evolution-evidence.json` 及 governance check 核验治理基线后的 3 轮真实演进批次 | 已证明 |
 | SwiftUI View 不直接做平台 IO | `macos-frontend-architecture.md`、`PlatformServices/` | `testSwiftUIViewFilesDoNotOwnPlatformIO`、platform capability inventory | 已证明 |
 | Swift 调用 Core 只走手写 Bridge | `Bridge/`、`AppCoreServices` | `testGeneratedCoreCallsStayInsideBridge`、`MacOSDefaultCoreServicesGovernanceTests` | 已证明 |
 | Generated / UniFFI 保持纯生成 | `Bridge/Generated/`、`Bridge/UniFFI/` | generated artifact governance、`./dev bindings verify`、macOS CI bindings gate | 已证明 |
 | 平台能力进入 PlatformServices 或有迁移路径 | `PlatformServices/`、受控 App adapter | platform capability / default adapter / NSWorkspace / SQLite governance tests | 已证明 |
-| 主要功能域有稳定落点 | 11 个 `Features/<Owner>/` | feature owner inventory 记录 responsibility、risk、validation | 已证明 |
+| 主要功能域有稳定落点 | 12 个 `Features/<Owner>/` | feature owner inventory 记录 responsibility、risk、validation | 已证明 |
 | 通用 UI、async 与 recovery 模式可复用 | DesignSystem、feature-owned routing、Settings diagnostics generation、FileActions undo support | Repository / Advanced / About 共享 diagnostics generation；Batch Rename / Delete / Change Category 共享 undo 后处理，均有多调用方 XCTest | 已证明 |
 | 高风险用户文件边界有固定口径 | `CODE_REVIEW.md`、file-safety 规则、Import / repair / conflict tests | forbidden-touch、失败恢复和真实临时 repo 证据充分；真实 iCloud placeholder 与正式分发证据由 residual ledger 独立阻断，不降低工程边界成熟度 | 已证明 |
 | 测试支撑可复用 | shared queues、temporary FS、fixtures、test doubles | `TestSupportNamingGovernanceTests` 与多个 feature 真实调用方 | 已证明 |
@@ -68,7 +68,9 @@
 | E. 自动化守边界 | 75%-90% | 关键边界可被本地检查、CI 或 review checklist 发现漂移 | 非 Bridge 直接 UniFFI、SwiftUI 平台副作用、生成绑定手写逻辑、Core API / UDL drift 有检查或明确 review gate |
 | F. 长期演进稳定 | 90%-100% | 新功能默认局部落地，跨层改动有证据，稳定公共能力可按需模块化 | 连续多个 feature 在不扩大旧迁移区的情况下完成；可考虑稳定能力 Swift Package 化或更强 CI 门禁 |
 
-当前成熟度已进入 D 前段，并开始建立 E 的自动化基础：主架构与 feature owner 已基本归位，
+> 旧版按阶段的“D 前段”描述仅保留为演进记录，不再作为当前总进度。当前状态以“当前治理进度（证据口径）”表为准。
+
+当前工程已经完成大量局部治理：主架构与 feature owner 已基本归位，
 MainList、FileActions、Import、Settings、Onboarding、AI、SyncConflicts 等主要功能域已有稳定落点；
 TestSupport 请求日志与结果队列已在多个 feature 复用，Bridge、生成绑定、平台能力和默认服务也已有治理测试。
 FileActions、Search、SmartList 与 SyncConflicts 的 sheet host 已归回各自 feature，通用 lifecycle 只保留顺序组合。
@@ -84,7 +86,7 @@ feature-owned 值类型，Search debounce / facets task host 也已归回 Search
 450 行近阈值精确清单与 500 行硬限制。Import progress 的动态 presentation、selection state、detail
 projection 与互斥 relay 已由 Import owner 承载；MainList error 的 retry / diagnostics fallback 也已合并为
 MainList-owned recovery contract。`RepoConfigSnapshot` fixture family 与 Local File URL platform adapter family
-也已完成自然拆分；当前 450 行近阈值清单只登记 459 行的
+也已完成自然拆分；当前 450 行近阈值清单只登记 454 行的
 `MacOSArchitectureBoundaryGovernanceTests.swift`，并冻结其继续增长。macOS CI 也已从“目录缺失时跳过”升级为
 工程 / 源码缺失即失败，并由本地 governance check 防止 skip guard 回流。Import session persistence 已迁入
 `PlatformServices`；AI remote provider probe 已切换为 Core prepare / complete 两阶段合同，并由共享
@@ -95,10 +97,10 @@ Core 的 classification / tags / summary runtime 响应脱敏已收敛到
 kill / wait、stdout 上限与 stderr 丢弃策略。旧 probe shell/runtime、Core curl/TCP fallback 和进程级 probe
 环境变量合同已经删除，TOCTOU 路径竞态不再存在。接下来继续治理长期隐私、credential lifecycle 和发布证据。旧
 `Models` / `Views` 迁移区也已建立精确 inventory，
-新增业务文件回流会被 XCTest / CI 阻断。11 个 Feature 目录也已建立 owner、风险和验证 inventory，
+新增业务文件回流会被 XCTest / CI 阻断。12 个 Feature 目录也已建立 owner、风险和验证 inventory，
 新增 Feature 必须先明确 owner 才能进入代码面。
 
-## 当前进度口径
+## 当前治理进度（证据口径）
 
 当前状态：
 
@@ -107,7 +109,7 @@ kill / wait、stdout 上限与 stderr 丢弃策略。旧 probe shell/runtime、C
 - macOS 前端落点规则：已基本稳定。当前主要落点包括 `Features/MainList/`、
   `Features/FileActions/`、`Features/Import/`、`Features/Settings/`、
   `Features/Onboarding/`、`Features/AI/`、`Features/SyncConflicts/`、
-  `Features/Search/`、`Features/Detail/`、`Features/CommandPalette/`、
+  `Features/Search/`、`Features/Detail/`、`Features/CommandPalette/`、`Features/Diagnostics/`、
   `Features/RepositoryLifecycle/` 和 `PlatformServices/`。
 - 旧迁移区收缩：`Models/` 当前已为空；`Views/Onboarding/` 当前无 Swift 文件；
   `Views/Main/` 主要剩 shell / lifecycle / sidebar / toolbar 文件；`Views/Settings/`
@@ -129,6 +131,7 @@ kill / wait、stdout 上限与 stderr 丢弃策略。旧 probe shell/runtime、C
   Bridge 文件执行 50% 门槛；生成绑定不计入手写覆盖率，target / 文件清单缺失、空集合和 direct
   `xctest` fallback 均不能形成 coverage PASS。
 - 当前治理重点：继续补强 AI credential lifecycle、隐私与发布证据，使复用与自动化检查成为新增功能的默认路径。
+- Import 高风险读写路径已完成一轮依赖隔离：预检器不再隐式构造 `CoreBridgeBatchFileLoader`，由 App 组合根提供 `ImportFeatureDependencies.batchFileLoader`；批量导入的 conflict batcher、undo store、session store 和占位符下载器现在都是组合边界的必传能力，生产 sheet 统一从同一 scope 接收。后续仍需清理其他 Feature 中仅供 Preview / 旧调用点的 `.live` 便利默认值，并保持真实 Core 与文件安全验证。
 - Import session persistence 已有真实临时目录的 save / load / missing / corrupt / clear / permission
   回归证据，并已迁入 `PlatformServices/ImportBatchSessionPlatformServices.swift`；后续演进不得改变
   app-owned metadata 路径或失败不阻断导入的语义。
@@ -140,8 +143,21 @@ kill / wait、stdout 上限与 stderr 丢弃策略。旧 probe shell/runtime、C
 - 分发证据、外部冒烟或决策类 residual 仍以 residual ledger 为准；它们不改变本文的工程成熟度百分比，
   但会阻止把项目表述为正式分发状态已完全闭合。
 
-因此当前工程成熟度按本文口径约为 65%-70%。这不是功能完成度，也不是分发状态，
-而是 macOS 前端与跨层工程治理成熟度。
+当前不能再用“65%-70%”或“缺少54%”作为全项目结论：前者与上方 11/11 已证明矩阵冲突，后者也没有对应的权重和验收证据。
+本项目至少要同时看以下维度；只有每一行都满足关闭条件，才能声明“全量长期治理 100%”。
+
+| 维度 | 当前状态 | 直接证据 | 仍需满足的 100% 条件 |
+|---|---|---|---|
+| 工程成熟度矩阵 | 100%（11/11） | 本文“100% 成熟度账本”、`./dev check governance`、macOS governance XCTest | 保持证据随真实演进批次更新 |
+| Cargo / CoreSDK 构建治理 | 已落地 | `.build/cargo/*` lane、Xcode dependency file、`./dev doctor build`、CoreSDK verify | 持续监控 cache 命中率和跨 lane 锁等待 |
+| UI 反馈与场景化开发 | 已落地 | `#Preview`、developer scenario launcher、Python/Swift scenario inventory、Preview xcconfig | 为新增页面持续补齐状态/语言/窗口场景 |
+| Swift 物理模块化 | 进行中 | `AreaMatrixCoreContracts`、`AreaMatrixCoreBridgeContract`、`AreaMatrixUIFoundation`、`AreaMatrixPlatformKit` 已作为 Swift Package 被 App target 真实链接；`CoreBridgeBoundary` 已独立并有 Package/Xcode 双重验证，运行时 CoreBridge、UniFFI 适配和 Feature 仍在 App target | 提取稳定的 CoreBridge runtime/适配边界并迁移 Feature 模块组；保持按能力分组，不创建一页一个 Package |
+| Feature 依赖隔离 | 部分完成（生产 Feature scope 已显式化） | `AppCommandRouter`、App 组合 assembly、feature-local `FeatureManifest` 和 `FeatureManifestGraph` 已落地；Import 的 batch file loader、single-file preflight、batch/folder conflict prechecker 和 undo store 已由 `ImportFeatureDependencies` 经 `MainWindow` 显式传入；Feature `.live` 便利入口已移出生产 target，测试兼容入口只存在于 `AreaMatrixTests` | 继续把低风险平台 adapter 默认值按真实调用方收口到 App composition；高风险 CoreBridge 例外保持单独登记，不以万能容器隐藏风险 |
+| 扩展注册机制 | 已落地（内置扩展） | Feature-owned manifest 已由 App registry 组合；`AreaMatrixCoreContracts` 提供 command / import-source / AI-provider 的 typed registry、依赖和 owner 校验；App runtime registry 对每个内置扩展执行 contract-version、未知 ID、缺失 registration 和重复 registration 门禁 | 继续随模块演进维护 manifest 与 registration；第三方运行时插件仍属于非目标，须另行完成签名、沙箱、权限和 API 兼容模型后再评估 |
+| 本地验证与 CI | 部分完成 | changed validation、CoreSDK/绑定/治理门禁已存在 | `./dev test changed`、macOS 全量测试、远端 CI 和 branch protection 都有新鲜证据 |
+| 正式发布与外部治理 | 未闭合（外部阻断） | residual：`v1-rl-002`、`v1-rl-003`、`v1-rl-004`、`v1-rl-006`、`v2-risk-001`、`v2-dep-003`、`v2-dep-004` | 真实 iCloud、Developer ID/公证/clean Mac、release decision、独立复核、remote CI/branch protection 证据闭合 |
+
+因此，“还缺少 54%”不是当前有效结论。准确说法是：**工程成熟度矩阵已经达到本文定义的 100%，但全量长期治理仍未达到 100%，因为模块化、依赖隔离以及外部发布/治理证据仍未闭合；这些项不能用一个未经定义的百分比相加替代。**
 
 最近同步依据：
 
@@ -166,7 +182,7 @@ kill / wait、stdout 上限与 stderr 丢弃策略。旧 probe shell/runtime、C
   Import Conflict 的共享 preview fixture 现在保留 blocked item，apply report 也按实际策略统计。
 - `SwiftFileSizeGovernanceTests` 已精确盘点所有达到 450 行的手写 Swift 文件并冻结其当前行数上界；
   `ConfigurationFixtures.swift` 与 `AppPlatformServiceAdapters.swift` 已分别按完整 fixture / platform adapter
-  family 拆分；当前近阈值 inventory 只包含 459 行的 `MacOSArchitectureBoundaryGovernanceTests.swift`；
+  family 拆分；当前近阈值 inventory 只包含 454 行的 `MacOSArchitectureBoundaryGovernanceTests.swift`；
   `MacOSArchitectureBoundaryGovernanceTests.swift` 的通用文件扫描 helper 已提取到
   `MacOSGovernanceFileSystemTestSupport.swift`；当前新增的 remote provider platform contract 扫描仍保持在同一
   architecture governance owner 下，并要求下一次增长前继续提取独立扫描族或 shared assertion helper。
@@ -402,7 +418,7 @@ TestSupport 当前边界记录：
 | 共享底座 | `AreaMatrixShellTestDoubleSupport.swift` 已承担 shell 级 fixture、route requirement、settings/general/main-list/onboarding builder；`CoreErrorMappingTestDoubleSupport.swift`、`TestTemporaryDirectoryFileSystemTestSupport.swift`、`TestMirrorDescriptionSupport.swift` 已形成 error / temp / mirror shared support | 保持为 shared support 基线，只放跨多个 feature 共用且不携带业务语义的录制器、fixture builder、temp repo helper |
 | feature-local 导入支撑 | `ImportSingleFileTestSupport.swift`、`ImportBatchImportTestSupport.swift`、`ImportProgressTestSupport.swift`、`ImportResultTestSupport.swift`、`ImportFolderTestSupport.swift` 与配套 fixtures / test double 已表达 single / folder / batch / progress / result 局部支撑 | 归入 Import feature-local support，避免复制 temp repo / downloader / preflight / scanner helper |
 | feature-local settings / onboarding 支撑 | `RepositorySettingsTestSupport.swift`、`ConfigurationTestDoubleSupport.swift`、`RemoteProviderConfigTestSupport.swift`、`RepositoryInitializationTestDoubleSupport.swift`、`RepositoryPathValidationTestDoubleSupport.swift`、`StartupRecoveryTestDoubleSupport.swift` 等已分别对应 settings、remote provider、init / validate path / startup recovery 场景 | 这些应作为 feature-local support 或子域 support，继续按 Settings / Onboarding owner 归位 |
-| 过大测试文件 | 当前 `AreaMatrixTests` 下没有超过 500 行的手写 Swift 文件；459 行的 `MacOSArchitectureBoundaryGovernanceTests.swift` 已进入近阈值 inventory，`RepoConfigSnapshot` 完整 fixture family 已迁入 `RepositoryConfigFixtures.swift`，`ConfigurationFixtures.swift` 降至阈值以下 | 保持 450 行精确清单和冻结上界；架构治理文件下一次增长前提取独立扫描族或 shared assertion helper，fixture 后续仍按完整语义族迁出 |
+| 过大测试文件 | 当前 `AreaMatrixTests` 下没有超过 500 行的手写 Swift 文件；454 行的 `MacOSArchitectureBoundaryGovernanceTests.swift` 已进入近阈值 inventory，`RepoConfigSnapshot` 完整 fixture family 已迁入 `RepositoryConfigFixtures.swift`，`ConfigurationFixtures.swift` 降至阈值以下 | 保持 450 行精确清单和冻结上界；架构治理文件下一次增长前提取独立扫描族或 shared assertion helper，fixture 后续仍按完整语义族迁出 |
 | 剩余重复 | 内联 recorder inventory 已清零；少量局部 file-system helper 和近阈值 fixture 仍需按触达场景治理 | 把真正跨 feature 可复用的 builder 抽到 shared support，其余只保留 feature-local helpers，不为目录整齐扩大迁移面 |
 | 风险边界 | test support 会影响用户文件安全、temp repo 行为、import/recovery 证据、settings write / repair、startup recovery、iCloud / placeholder 相关验证 | 任何收口都不能删除必要的高风险验证；共享 support 只能复用构造，不得模糊风险证据或替代真实路径验证 |
 
@@ -460,7 +476,7 @@ macOS project / sources 缺失会直接阻断 build/test、SwiftLint 与 SwiftFo
 也不再把缺失工程视为可跳过状态；`SwiftFileSizeGovernanceTests` 已覆盖手写 Swift 近阈值 inventory、
 冻结上界和 500 行硬限制；`MacOSMigrationZoneGovernanceTests` 精确冻结顶层 `Models`、根 `Views`、
 `Views/Main`、`Views/Onboarding` 与 `Views/Settings` 的当前保留文件、owner 和退出条件；
-`MacOSFeatureOwnershipGovernanceTests` 精确冻结 11 个 Feature 目录及其职责、风险和验证重点；
+`MacOSFeatureOwnershipGovernanceTests` 精确冻结 12 个 Feature 目录及其职责、风险和验证重点；
 生成绑定明确排除并由独立门禁治理。`./dev check governance` 同时核对所有 macOS governance XCTest
 与 `AreaMatrixTests` Sources membership，避免门禁文件存在但未进入测试 target 的静默失效；macOS
 runner 对本地 Xcode system content mismatch 也返回明确 blocked 状态，避免无 XCTest 证据时误报 PASS；

@@ -1467,11 +1467,25 @@ def _python_developer_scenario_ids(source: str) -> list[str]:
 
 
 def _swift_developer_scenario_ids(source: str) -> list[str]:
+    declaration = re.search(r"\benum\s+AreaMatrixDeveloperScenario\b[^\{]*\{", source)
+    if declaration is None:
+        return []
+    depth = 1
+    end = declaration.end()
+    while end < len(source) and depth:
+        if source[end] == "{":
+            depth += 1
+        elif source[end] == "}":
+            depth -= 1
+        end += 1
+    if depth:
+        return []
+    enum_source = source[declaration.end():end - 1]
     pattern = re.compile(
         r'^\s*case\s+(?P<name>[a-z][A-Za-z0-9_]*)(?:\s*=\s*"(?P<raw>[^"]+)")?\s*$',
         re.MULTILINE,
     )
-    return [match.group("raw") or match.group("name") for match in pattern.finditer(source)]
+    return [match.group("raw") or match.group("name") for match in pattern.finditer(enum_source)]
 
 
 def _check_developer_workflow_contract(root: Path, failures: FailureCollector) -> None:

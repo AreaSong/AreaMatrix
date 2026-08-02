@@ -3,19 +3,51 @@ import SwiftUI
 struct AboutSettingsPane: View {
     @EnvironmentObject private var localizer: AppLocalizer
     @StateObject private var model: AboutSettingsModel
+    private let platformDifferencesModel: PlatformDifferencesModel
     private let onOpenRepositorySettings: () -> Void
     private let onOpenDiagnostics: () -> Void
     private let onClose: () -> Void
 
     init(
         repoPath: String,
+        featureDependencies: SettingsFeatureDependencies,
+        sharedDependencies: SharedFeatureDependencies,
         appVersionReader: any AppVersionReading = AboutSettingsPlatformServices.appVersionReader,
-        coreVersionReader: any CoreVersionReading = AppCoreServices.coreVersionReader,
         metadataReader: any ExistingRepositoryMetadataReading = AboutSettingsPlatformServices.metadataReader,
         externalLinkOpener: any AboutExternalLinkOpening = AboutSettingsPlatformServices.externalLinkOpener,
         stringCopier: any AboutStringCopying = AboutSettingsPlatformServices.stringCopier,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
         accessibilityAnnouncer: any AccessibilityAnnouncing = AboutSettingsPlatformServices.accessibilityAnnouncer,
+        platformDifferencesModel: PlatformDifferencesModel,
+        onOpenRepositorySettings: @escaping () -> Void = {},
+        onOpenDiagnostics: @escaping () -> Void = {},
+        onClose: @escaping () -> Void = {}
+    ) {
+        self.init(
+            repoPath: repoPath,
+            appVersionReader: appVersionReader,
+            coreVersionReader: featureDependencies.coreVersionReader,
+            metadataReader: metadataReader,
+            externalLinkOpener: externalLinkOpener,
+            stringCopier: stringCopier,
+            errorMapper: sharedDependencies.errorMapper,
+            accessibilityAnnouncer: accessibilityAnnouncer,
+            platformDifferencesModel: platformDifferencesModel,
+            onOpenRepositorySettings: onOpenRepositorySettings,
+            onOpenDiagnostics: onOpenDiagnostics,
+            onClose: onClose
+        )
+    }
+
+    init(
+        repoPath: String,
+        appVersionReader: any AppVersionReading = AboutSettingsPlatformServices.appVersionReader,
+        coreVersionReader: any CoreVersionReading,
+        metadataReader: any ExistingRepositoryMetadataReading = AboutSettingsPlatformServices.metadataReader,
+        externalLinkOpener: any AboutExternalLinkOpening = AboutSettingsPlatformServices.externalLinkOpener,
+        stringCopier: any AboutStringCopying = AboutSettingsPlatformServices.stringCopier,
+        errorMapper: any CoreErrorMapping,
+        accessibilityAnnouncer: any AccessibilityAnnouncing = AboutSettingsPlatformServices.accessibilityAnnouncer,
+        platformDifferencesModel: PlatformDifferencesModel,
         onOpenRepositorySettings: @escaping () -> Void = {},
         onOpenDiagnostics: @escaping () -> Void = {},
         onClose: @escaping () -> Void = {}
@@ -30,6 +62,7 @@ struct AboutSettingsPane: View {
             errorMapper: errorMapper,
             accessibilityAnnouncer: accessibilityAnnouncer
         ))
+        self.platformDifferencesModel = platformDifferencesModel
         self.onOpenRepositorySettings = onOpenRepositorySettings
         self.onOpenDiagnostics = onOpenDiagnostics
         self.onClose = onClose
@@ -53,11 +86,7 @@ struct AboutSettingsPane: View {
                     versionInfo: model.versionInfo,
                     onCopyVersions: model.copyVersionSummary
                 )
-                PlatformDifferencesView(
-                    repositoryText: model.repoPath,
-                    onOpenRepositorySettings: onOpenRepositorySettings,
-                    onClose: onClose
-                )
+                platformDifferences
                 AboutSettingsLicenseSection()
                 AboutSettingsLinksSection(
                     onOpenLink: model.openExternalLink,
@@ -72,6 +101,15 @@ struct AboutSettingsPane: View {
         .task {
             await model.load()
         }
+    }
+
+    @ViewBuilder
+    private var platformDifferences: some View {
+        PlatformDifferencesView(
+            model: platformDifferencesModel,
+            onOpenRepositorySettings: onOpenRepositorySettings,
+            onClose: onClose
+        )
     }
 
     @ViewBuilder

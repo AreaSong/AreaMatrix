@@ -5,6 +5,8 @@ struct MainRepositoryMultiSelectionActions: View {
     let summary: MultiSelectionDetailSummary
     let detailErrorMapping: CoreErrorMappingSnapshot?
     let repoPath: String
+    let aiDependencies: AIFeatureDependencies
+    let aiErrorMapper: any CoreErrorMapping
     let categoryRows: [RepositorySidebarRowSnapshot]
     let batchTagStore: any CoreTagCRUD
     let batchTagUndoStore: any CoreUndoActionLogging
@@ -63,6 +65,8 @@ struct MainRepositoryMultiSelectionActions: View {
             )
             BatchAITagSuggestionTrigger(
                 repoPath: repoPath,
+                aiDependencies: aiDependencies,
+                errorMapper: aiErrorMapper,
                 selectedFiles: defaultContext.selectedFiles,
                 selectedCount: defaultContext.selectedCount,
                 disabledReason: defaultContext.disabledReason,

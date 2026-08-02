@@ -84,6 +84,8 @@ extension MainRepositoryDetailPane {
             summary: multiSelectionSummary,
             detailErrorMapping: detailErrorMapping,
             repoPath: repoPath,
+            aiDependencies: aiDependencies,
+            aiErrorMapper: batchTagErrorMapper,
             categoryRows: categoryRows,
             batchTagStore: batchTagStore,
             batchTagUndoStore: batchTagUndoStore,

@@ -350,7 +350,11 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
                 opening: .syncConflictReviewFixture(repoPath: "/tmp/syncConflictReview-repo", files: [docsFile]),
                 fileLister: lister,
                 fileDetailer: RecordingFileDetailer(results: [.success(docsFile)]),
-                errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
+                errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping()),
+                aiDependencies: AppDependencyContainer.live.feature.ai,
+                fileActionsDependencies: AppDependencyContainer.live.feature.fileActions,
+                settingsDependencies: AppDependencyContainer.live.feature.settings,
+                syncConflictsDependencies: AppDependencyContainer.live.feature.syncConflicts
             ),
             onImport: {},
             onDropImport: { _, _ in }

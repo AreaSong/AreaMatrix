@@ -1,9 +1,21 @@
 import SwiftUI
 
+private struct AreaMatrixInteractionFeedbackKey: EnvironmentKey {
+    static let defaultValue: any AppInteractionFeedbackPerforming = AppPlatformServices.interactionFeedback
+}
+
+extension EnvironmentValues {
+    var areaMatrixInteractionFeedback: any AppInteractionFeedbackPerforming {
+        get { self[AreaMatrixInteractionFeedbackKey.self] }
+        set { self[AreaMatrixInteractionFeedbackKey.self] = newValue }
+    }
+}
+
 struct AreaMatrixThemeToggleButton: View {
     @Binding var themeOverride: ColorScheme?
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
     @State private var isHovered = false
     @State private var spin: Double = 0
 
@@ -26,7 +38,7 @@ struct AreaMatrixThemeToggleButton: View {
         .animation(.areaMatrixQuickFade, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
-            AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+            interactionFeedback.setPointingCursor(active: hovering)
         }
     }
 
@@ -36,7 +48,7 @@ struct AreaMatrixThemeToggleButton: View {
 
     private func toggleTheme() {
         withAnimation(.areaMatrixThemeToggle) {
-            AppPlatformServices.interactionFeedback.performHaptic(.alignment)
+            interactionFeedback.performHaptic(.alignment)
             if themeOverride == nil {
                 themeOverride = colorScheme == .dark ? .light : .dark
             } else {
@@ -61,7 +73,7 @@ struct AreaMatrixThemeToggleButton: View {
         case .light: .light
         default: .system
         }
-        AppPlatformServices.interactionFeedback.applyAppearance(preference)
+        interactionFeedback.applyAppearance(preference)
     }
 }
 
@@ -206,6 +218,8 @@ struct AreaMatrixPrimaryActionLabel: View {
 }
 
 struct AreaMatrixPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
+
     var accent: Color = AreaMatrixTheme.Colors.tealBright
     @State private var isHovered = false
 
@@ -230,12 +244,14 @@ struct AreaMatrixPrimaryButtonStyle: ButtonStyle {
             .animation(.areaMatrixQuickFade, value: isHovered)
             .onHover { hovering in
                 isHovered = hovering
-                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+                interactionFeedback.setPointingCursor(active: hovering)
             }
     }
 }
 
 struct AreaMatrixSecondaryButtonStyle: ButtonStyle {
+    @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
+
     @State private var isHovered = false
 
     func makeBody(configuration: Configuration) -> some View {
@@ -251,7 +267,7 @@ struct AreaMatrixSecondaryButtonStyle: ButtonStyle {
             .animation(.areaMatrixQuickFade, value: isHovered)
             .onHover { hovering in
                 isHovered = hovering
-                AppPlatformServices.interactionFeedback.setPointingCursor(active: hovering)
+                interactionFeedback.setPointingCursor(active: hovering)
             }
     }
 }

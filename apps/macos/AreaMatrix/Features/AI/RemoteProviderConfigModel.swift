@@ -42,9 +42,9 @@ final class RemoteProviderConfigModel: ObservableObject {
 
     init(
         repoPath: String,
-        bridge: any CoreRemoteProviderConfiguring = CoreBridge(),
+        bridge: any CoreRemoteProviderConfiguring,
         credentialStore: any RemoteProviderCredentialStoring = RemoteProviderKeychainCredentialStore(),
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.bridge = bridge

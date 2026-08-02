@@ -20,8 +20,8 @@ final class AIPrivacyRemoteProviderStateModel: ObservableObject {
 
     init(
         repoPath: String,
-        providerReader: any CoreRemoteProviderConfiguring = AppCoreServices.remoteProviderConfigurer,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        providerReader: any CoreRemoteProviderConfiguring,
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.providerReader = providerReader

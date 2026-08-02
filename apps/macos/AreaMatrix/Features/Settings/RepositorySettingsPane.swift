@@ -14,21 +14,51 @@ struct RepositorySettingsPane: View {
 extension RepositorySettingsPane {
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
-        repositoryOpener: any CoreEmptyRepositoryOpening = AppCoreServices.emptyRepositoryOpener,
+        featureDependencies: SettingsFeatureDependencies,
+        sharedDependencies: SharedFeatureDependencies,
+        appVersion: String? = nil,
+        appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
+        onChangeRepository: @escaping () -> Void = {},
+        onOpenPlatformCapabilities: @escaping () -> Void = {},
+        onOpenLanguageSettings: @escaping () -> Void = {},
+        onOpenRecoveryTools: @escaping () -> Void = {}
+    ) {
+        self.init(
+            repoPath: repoPath,
+            loader: featureDependencies.configurationLoader,
+            updater: featureDependencies.configurationUpdater,
+            repositoryOpener: featureDependencies.emptyRepositoryOpener,
+            scanSessionReader: featureDependencies.scanSessionReader,
+            diagnosticsCollector: sharedDependencies.diagnosticsCollector,
+            coreVersionLoader: featureDependencies.coreVersionLoader,
+            capabilityLoader: featureDependencies.platformCapabilityLoader,
+            appVersion: appVersion,
+            appVersionReader: appVersionReader,
+            errorMapper: sharedDependencies.errorMapper,
+            onChangeRepository: onChangeRepository,
+            onOpenPlatformCapabilities: onOpenPlatformCapabilities,
+            onOpenLanguageSettings: onOpenLanguageSettings,
+            onOpenRecoveryTools: onOpenRecoveryTools
+        )
+    }
+
+    init(
+        repoPath: String,
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
+        repositoryOpener: any CoreEmptyRepositoryOpening,
         fileLister: (any CoreFileListing)? = nil,
-        scanSessionReader: any CoreScanSessionReading = AppCoreServices.scanSessionReader,
+        scanSessionReader: any CoreScanSessionReading,
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             RepositorySettingsPlatformServices.metadataReader,
         finderOpener: any RepositoryFinderOpening = RepositorySettingsPlatformServices.finderOpener,
         pathCopier: any RepositoryPathCopying = RepositorySettingsPlatformServices.pathCopier,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
-        coreVersionLoader: any CoreVersionLoading = AppCoreServices.coreVersionLoader,
-        capabilityLoader: any CorePlatformCapabilitiesLoading = AppCoreServices.platformCapabilityLoader,
+        diagnosticsCollector: any CoreDiagnosticsCollecting,
+        coreVersionLoader: any CoreVersionLoading,
+        capabilityLoader: any CorePlatformCapabilitiesLoading,
         appVersion: String? = nil,
         appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        errorMapper: any CoreErrorMapping,
         accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer,
         onChangeRepository: @escaping () -> Void = {},
         onOpenPlatformCapabilities: @escaping () -> Void = {},

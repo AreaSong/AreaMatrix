@@ -31,14 +31,14 @@ struct AIPrivacyRuleEditorView: View {
     var body: some View {
         AdvancedSettingsSection(title: title) {
             Picker(L10n.string("Type"), selection: $draft.kind) {
-                ForEach(AiPrivacyRuleKind.aiPrivacyRulesCases, id: \.self) { Text($0.aiPrivacyRulesLabel).tag($0) }
+                ForEach(AIPrivacyRuleKindState.aiPrivacyRulesCases, id: \.self) { Text($0.aiPrivacyRulesLabel).tag($0) }
             }
             .pickerStyle(.segmented)
             TextField(L10n.string("Pattern"), text: $draft.pattern)
                 .textFieldStyle(.roundedBorder)
             Picker(L10n.string("Applies to"), selection: $draft.appliesTo) {
-                Text(L10n.string("Remote AI")).tag(AiPrivacyRuleAppliesTo.remoteAi)
-                Text(L10n.string("Local and remote AI")).tag(AiPrivacyRuleAppliesTo.localAndRemoteAi)
+                Text(L10n.string("Remote AI")).tag(AIPrivacyRuleAppliesToState.remoteAi)
+                Text(L10n.string("Local and remote AI")).tag(AIPrivacyRuleAppliesToState.localAndRemoteAi)
             }
             .pickerStyle(.segmented)
             TextField(L10n.string("Description"), text: $draft.description)
@@ -146,7 +146,7 @@ struct AIPrivacyRuleTestResultView: View {
         .accessibilityElement(children: .contain)
     }
 
-    private func providerGateText(_ report: AiPrivacyEvaluationReport) -> String {
+    private func providerGateText(_ report: AIPrivacyEvaluationReportSnapshot) -> String {
         report.providerGateReason?.aiPrivacyRulesLabel ?? L10n.string("None")
     }
 }

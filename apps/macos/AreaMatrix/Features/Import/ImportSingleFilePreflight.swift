@@ -247,7 +247,7 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
     private let sourceInspector: any SourcePreflightInspecting
 
     init(
-        fileLoader: any ImportBatchCoreFileLoading = CoreBridgeBatchFileLoader(),
+        fileLoader: any ImportBatchCoreFileLoading,
         sourceInspector: any SourcePreflightInspecting = ImportPlatformServices.sourcePreflightInspector
     ) {
         self.fileLoader = fileLoader

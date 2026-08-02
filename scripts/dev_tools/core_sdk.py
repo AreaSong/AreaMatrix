@@ -29,6 +29,7 @@ APPLE_TARGETS = (
     "aarch64-apple-ios-sim",
     "x86_64-apple-ios",
 )
+CORE_SDK_LAST_USED_MARKER = ".last-used"
 
 
 def _capture_version(argv: list[str]) -> str:
@@ -185,6 +186,97 @@ def _publish_sdk_pointers(root: Path, artifact_dir: Path) -> None:
     _replace_symlink(ios_pointer, artifact_dir)
 
 
+def _record_sdk_use(artifact_dir: Path) -> None:
+    try:
+        (artifact_dir / CORE_SDK_LAST_USED_MARKER).touch()
+    except OSError as error:
+        print(f"CoreSDK cache: WARNING unable to update LRU metadata: {error}")
+
+
+def _artifact_size_bytes(artifact_dir: Path) -> int:
+    total = 0
+    for path in artifact_dir.rglob("*"):
+        if path.is_symlink() or not path.is_file():
+            continue
+        total += path.stat().st_size
+    return total
+
+
+def _artifact_last_used(artifact_dir: Path) -> float:
+    marker = artifact_dir / CORE_SDK_LAST_USED_MARKER
+    fallback = artifact_dir / "manifest.json"
+    candidate = marker if marker.is_file() else fallback
+    return candidate.stat().st_mtime if candidate.exists() else artifact_dir.stat().st_mtime
+
+
+def _is_fingerprint_name(value: str) -> bool:
+    return len(value) == 64 and all(character in "0123456789abcdef" for character in value)
+
+
+def run_core_sdk_cache_prune(
+    root: Path | None = None,
+    *,
+    max_bytes: int,
+    keep_recent: int = 1,
+    apply: bool = False,
+) -> int:
+    """Plan or apply an explicit LRU prune without deleting the active CoreSDK."""
+
+    if max_bytes < 0:
+        fail("CoreSDK cache --max-bytes must be non-negative.")
+    if keep_recent < 0:
+        fail("CoreSDK cache --keep-recent must be non-negative.")
+
+    root = (root or project_root()).resolve()
+    sdk_root = root / ".build/core-sdk"
+    if not sdk_root.is_dir():
+        print("CoreSDK cache: empty")
+        return 0
+
+    entries = [
+        path
+        for path in sdk_root.iterdir()
+        if path.is_dir() and not path.is_symlink() and _is_fingerprint_name(path.name)
+    ]
+    entries.sort(key=_artifact_last_used, reverse=True)
+    current = sdk_root / "current"
+    current_target = current.resolve() if current.is_symlink() else None
+    protected = set(entries[:keep_recent])
+    if current_target is not None and current_target.parent == sdk_root.resolve():
+        protected.add(current_target)
+
+    sizes = {entry: _artifact_size_bytes(entry) for entry in entries}
+    total = sum(sizes.values())
+    remaining = total
+    removals: list[Path] = []
+    for entry in reversed(entries):
+        if remaining <= max_bytes:
+            break
+        if entry in protected:
+            continue
+        removals.append(entry)
+        remaining -= sizes[entry]
+
+    mode = "APPLY" if apply else "PREVIEW"
+    print(
+        f"CoreSDK cache prune: {mode} total_bytes={total} max_bytes={max_bytes} "
+        f"protected={len(protected)} candidates={len(removals)}"
+    )
+    for entry in removals:
+        action = "remove" if apply else "would-remove"
+        print(f"- {action} {entry.name} bytes={sizes[entry]}")
+        if apply:
+            shutil.rmtree(entry)
+    if remaining > max_bytes:
+        print(
+            "CoreSDK cache prune: capacity remains exceeded because protected artifacts "
+            f"consume {remaining} bytes"
+        )
+    else:
+        print(f"CoreSDK cache prune: resulting_bytes={remaining}")
+    return 0
+
+
 def _replace_artifact_atomically(staged_artifact: Path, artifact_dir: Path) -> None:
     if not artifact_dir.exists():
         os.replace(staged_artifact, artifact_dir)
@@ -239,6 +331,7 @@ def _run_core_sdk_build_inner(
     artifact_dir = sdk_root / fingerprint
     if not force and _sdk_artifact_complete(artifact_dir, fingerprint):
         _publish_sdk_pointers(root, artifact_dir)
+        _record_sdk_use(artifact_dir)
         if dependency_file:
             _write_sdk_dependency_file(root, dependency_file, sdk_root / "current/manifest.json")
         cache = "hit-after-wait" if _lock_acquired else "hit"
@@ -354,6 +447,7 @@ def _run_core_sdk_build_inner(
         _replace_artifact_atomically(package, artifact_dir)
 
     _publish_sdk_pointers(root, artifact_dir)
+    _record_sdk_use(artifact_dir)
     if dependency_file:
         _write_sdk_dependency_file(root, dependency_file, sdk_root / "current/manifest.json")
     print(f"CoreSDK cache: MISS -> BUILT ({fingerprint[:12]})")

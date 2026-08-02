@@ -20,9 +20,12 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/AreaMatrixRepo",
             loader: loader,
+            updater: NoopConfigurationUpdater(),
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
+            diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
@@ -64,9 +67,12 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
+            updater: NoopConfigurationUpdater(),
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
+            diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
@@ -88,6 +94,13 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: loader,
+            updater: NoopConfigurationUpdater(),
+            repositoryOpener: RepoSettingsRepositoryOpener(
+                result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo"))
+            ),
+            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
+            diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: mapper
         )
 
@@ -106,7 +119,7 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
     }
 
     @MainActor
-    func testLoadUsesCurrentConnectionPathWithoutWritingRepositoryConfig() async throws {
+    func testLoadSynchronizesCurrentConnectionPathWithoutCreatingManagedRootFiles() async throws {
         let repoURL = try temporaryRepositorySettingsRepo()
         defer { removeTestTemporaryItems(repoURL) }
         let metadataPresenceChecker = RecordingRepoMetadataPresenceChecker(
@@ -118,9 +131,11 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
 
         var config = AppRepoConfigSnapshot.shellFixture(repoPath: "/tmp/stale-repo")
         config.overviewOutput = "RootAreaMatrixFile"
-        var expected = config
-        expected.repoPath = repoURL.path
+        let expectedUpdate = config.withRepositoryPath(repoURL.path)
+        var expected = expectedUpdate
+        expected.revision = config.revision + 1
         let loader = RecordingConfigurationLoader(results: [.success(config)])
+        let updater = RecordingConfigurationUpdater()
         let metadataReader = RepoSettingsMetadataReader(results: [
             .success(.testFixture(
                 schemaVersion: 1,
@@ -134,16 +149,22 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: loader,
+            updater: updater,
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
             metadataPresenceChecker: metadataPresenceChecker,
+            diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 
         await model.load()
 
         metadataPresenceChecker.assertRepoPaths([repoURL.path])
+        await updater.assertConfigurationUpdateRequests([
+            RecordingConfigurationUpdater.Request(repoPath: repoURL.path, config: expectedUpdate)
+        ])
         XCTAssertEqual(model.loadedConfig, expected)
         XCTAssertEqual(model.summary?.location, repoURL.path)
         XCTAssertEqual(model.summary?.repositoryName, repoURL.lastPathComponent)
@@ -160,6 +181,11 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: bridge,
+            updater: bridge,
+            repositoryOpener: bridge,
+            scanSessionReader: bridge,
+            diagnosticsCollector: bridge,
+            coreVersionLoader: bridge,
             errorMapper: bridge
         )
 
@@ -192,10 +218,13 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: repoURL.path,
             loader: bridge,
+            updater: bridge,
             repositoryOpener: bridge,
             scanSessionReader: bridge,
             existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
             generatedOverviewRevealer: revealer,
+            diagnosticsCollector: bridge,
+            coreVersionLoader: bridge,
             errorMapper: bridge
         )
 
@@ -224,7 +253,14 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         let model = RepositorySettingsModel(
             repoPath: "/tmp/repo",
             loader: RecordingConfigurationLoader(results: []),
+            updater: NoopConfigurationUpdater(),
+            repositoryOpener: RepoSettingsRepositoryOpener(
+                result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo"))
+            ),
+            scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             generatedOverviewRevealer: revealer,
+            diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
             errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
 

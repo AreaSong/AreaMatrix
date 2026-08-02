@@ -161,7 +161,9 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             repoPath: repoURL.path,
             originalVersion: .original(path: originalURL.path),
             conflictedCopyVersion: .conflictedCopy(path: conflictedURL.path),
-            conflictReviewer: nil
+            pathValidator: CoreBridge(),
+            conflictReviewer: nil,
+            errorMapper: CoreErrorSnapshotMapper()
         )
 
         await model.validateRepositoryPath()
@@ -282,7 +284,9 @@ final class ICloudConflictMinimalValidationTests: XCTestCase {
             conflictID: "docs/report (Alice's conflicted copy).pdf",
             originalVersion: .original(path: originalURL.path),
             conflictedCopyVersion: .conflictedCopy(path: conflictedURL.path),
-            conflictReviewer: CoreBridge()
+            pathValidator: CoreBridge(),
+            conflictReviewer: CoreBridge(),
+            errorMapper: CoreErrorSnapshotMapper()
         )
 
         await model.validateRepositoryPath()

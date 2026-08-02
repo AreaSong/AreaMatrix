@@ -274,18 +274,24 @@ struct ChangeCategorySheet: View {
 struct ClassifierRuleEditorRouteView: View {
     let repoPath: String
     let context: BatchChangeCategoryReturnContext?
+    let settingsDependencies: SettingsFeatureDependencies
+    let errorMapper: any CoreErrorMapping
     let onCancelFromBatchCategory: (BatchChangeCategoryReturnContext) -> Void
     let onAcceptedCategoryFromBatchCategory: (String, BatchChangeCategoryReturnContext) -> Void
 
     init(
         repoPath: String,
         context: BatchChangeCategoryReturnContext?,
+        settingsDependencies: SettingsFeatureDependencies,
+        errorMapper: any CoreErrorMapping,
         onCancelFromBatchCategory: @escaping (BatchChangeCategoryReturnContext) -> Void = { _ in },
         onAcceptedCategoryFromBatchCategory: @escaping (String, BatchChangeCategoryReturnContext)
             -> Void = { _, _ in }
     ) {
         self.repoPath = repoPath
         self.context = context
+        self.settingsDependencies = settingsDependencies
+        self.errorMapper = errorMapper
         self.onCancelFromBatchCategory = onCancelFromBatchCategory
         self.onAcceptedCategoryFromBatchCategory = onAcceptedCategoryFromBatchCategory
     }
@@ -294,6 +300,11 @@ struct ClassifierRuleEditorRouteView: View {
         VStack(spacing: 0) {
             ClassifierSettingsPane(
                 repoPath: repoPath,
+                loader: settingsDependencies.configurationLoader,
+                updater: settingsDependencies.configurationUpdater,
+                predictor: settingsDependencies.categoryPredictor,
+                ruleEditor: settingsDependencies.classifierRuleEditor,
+                errorMapper: errorMapper,
                 onSavedCategory: acceptSavedCategory
             )
             if let context {

@@ -219,19 +219,19 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
     }
 }
 
-extension AiFallbackStatus {
-    static func aiCategorySuggestionAiDisabled() -> AiFallbackStatus {
+extension AIFallbackStatusSnapshot {
+    static func aiCategorySuggestionAiDisabled() -> AIFallbackStatusSnapshot {
         aiCategorySuggestionRecoveryStatus(
             kind: .aiDisabled,
             category: .disabled,
             title: "AI classification suggestions are off",
             message: "AI category suggestions are disabled for this repository.",
             retryDisabledReason: "Open AI settings before asking for another suggestion.",
-            primaryAction: .openAiSettings
+            primaryAction: .openAISettings
         )
     }
 
-    static func aiCategorySuggestionLocalModelNotReady() -> AiFallbackStatus {
+    static func aiCategorySuggestionLocalModelNotReady() -> AIFallbackStatusSnapshot {
         aiCategorySuggestionRecoveryStatus(
             kind: .localModelNotReady,
             category: .unavailable,
@@ -242,27 +242,27 @@ extension AiFallbackStatus {
         )
     }
 
-    static func aiCategorySuggestionRemoteNotConfigured() -> AiFallbackStatus {
+    static func aiCategorySuggestionRemoteNotConfigured() -> AIFallbackStatusSnapshot {
         aiCategorySuggestionRecoveryStatus(
             kind: .remoteNotConfigured,
             category: .disabled,
             title: "Remote AI is not configured",
             message: "Remote AI must be configured before it can suggest a category.",
             retryDisabledReason: "Configure remote AI before retrying.",
-            primaryAction: .configureRemoteAi
+            primaryAction: .configureRemoteAI
         )
     }
 
     // swiftlint:disable:next function_parameter_count
     static func aiCategorySuggestionRecoveryStatus(
-        kind: AiFallbackKind,
-        category: AiFallbackCategory,
+        kind: AIFallbackKindSnapshot,
+        category: AIFallbackCategorySnapshot,
         title: String,
         message: String,
         retryDisabledReason: String,
-        primaryAction: AiFallbackAction
-    ) -> AiFallbackStatus {
-        AiFallbackStatus(
+        primaryAction: AIFallbackActionSnapshot
+    ) -> AIFallbackStatusSnapshot {
+        AIFallbackStatusSnapshot(
             operation: .classificationSuggestion,
             kind: kind,
             category: category,
@@ -272,10 +272,10 @@ extension AiFallbackStatus {
             retryDisabledReason: retryDisabledReason,
             primaryAction: primaryAction,
             secondaryAction: nil,
-            nonAiFallbackAction: .classifyManually,
+            nonAIFallbackAction: .classifyManually,
             route: nil,
-            callLogId: nil,
-            privacyRuleId: nil,
+            callLogID: nil,
+            privacyRuleID: nil,
             retryAfter: nil
         )
     }

@@ -45,7 +45,7 @@ struct ImportEntrySingleFileImportRunner {
         ImportSingleFileStorageMode,
         String,
         String,
-        DuplicateStrategy
+        ImportDuplicateStrategySnapshot
     ) -> Void
     let onImportFailed: (String, CoreErrorMappingSnapshot) -> Void
     let onImported: (String, FileEntrySnapshot) -> Void

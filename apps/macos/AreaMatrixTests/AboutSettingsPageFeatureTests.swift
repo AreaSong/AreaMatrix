@@ -58,6 +58,7 @@ final class AboutSettingsPageFeatureTests: XCTestCase {
             metadataReader: StaticExistingRepositoryMetadataReader(result: .failure(CoreError.Db(message: "missing"))),
             externalLinkOpener: RecordingAboutExternalLinkOpener(),
             stringCopier: RecordingAboutStringCopier(),
+            errorMapper: RecordingCoreErrorMapper.aboutSettings(),
             accessibilityAnnouncer: RecordingAccessibilityAnnouncer()
         )
 

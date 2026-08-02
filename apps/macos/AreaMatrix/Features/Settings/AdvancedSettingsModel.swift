@@ -36,17 +36,17 @@ final class AdvancedSettingsModel: ObservableObject {
 
     init(
         repoPath: String,
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
         rootOverviewInspector: any RootOverviewFileInspecting =
             AdvancedSettingsPlatformServices.rootOverviewInspector,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
+        diagnosticsCollector: any CoreDiagnosticsCollecting,
         appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
-        coreVersionReader: any CoreVersionReading = AppCoreServices.coreVersionReader,
+        coreVersionReader: any CoreVersionReading,
         metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
         summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
             AdvancedSettingsPlatformServices.diagnosticSummaryCopier,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.loader = loader

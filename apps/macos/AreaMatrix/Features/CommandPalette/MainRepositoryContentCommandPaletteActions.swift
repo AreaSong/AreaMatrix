@@ -2,9 +2,8 @@ import SwiftUI
 
 extension MainRepositoryContentView {
     func applyMainRepositoryCommandPaletteMenuCommandRelay(to content: some View) -> some View {
-        content.onReceive(NotificationCenter.default.publisher(
-            for: AreaMatrixCommandPaletteCommandRelay.notification
-        )) { _ in
+        content.onReceive(commandRouter.commands) { command in
+            guard command == .commandPaletteRequested else { return }
             toggleCommandPalette()
         }
     }

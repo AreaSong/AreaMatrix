@@ -4,19 +4,12 @@ final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
     func testRemainingDirectCoreBridgeDefaultsStayInventoriedForSpecializedRiskWork() throws {
         let expected = [
             "App/AppShellModel.swift:CoreBridge(:4",
-            "Features/AI/AIPrivacyRulesModel.swift:CoreBridge(:1",
-            "Features/AI/RemoteProviderConfigModel.swift:CoreBridge(:1",
-            "Features/AI/RemoteProviderConfigState.swift:CoreBridge(:1",
-            "Features/Import/ImportBatchCopyImportModel.swift:CoreBridge(:1",
-            "Features/Import/ImportEntrySheetView.swift:CoreBridge(:3",
-            "Features/Onboarding/DatabaseRepairConfirmModel.swift:CoreBridge(:1",
-            "Features/Onboarding/DatabaseRepairConfirmView.swift:CoreBridge(:3",
-            "Features/SyncConflicts/SyncConflictReviewModel.swift:CoreBridge(:1"
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles().filter { fileURL in
                 let path = relativeProductionPath(for: fileURL)
                 return path != "App/AppCoreServices.swift"
+                    && path != "Bridge/CoreBridge.swift"
                     && path != "App/AreaMatrixAppSmokeTests.swift"
             },
             pattern: #"\bCoreBridge\s*\("#
@@ -25,8 +18,8 @@ final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertEqual(
             actual,
             expected,
-            "Direct default CoreBridge construction should not grow; remaining entries are specialized " +
-                "startup, import, repair, remote AI, privacy, or conflict-resolution risk work."
+            "Direct default CoreBridge construction is restricted to the App composition root's " +
+                "startup/import/recovery lifecycle defaults. Feature code must resolve through its own dependency scope."
         )
     }
 
@@ -42,17 +35,10 @@ final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
                 #"\bbatchConflictBatcher: any CoreImportConflictBatching\s*=\s*CoreBridge\s*\("#
             ].joined(separator: "|")
         )
-        let importEntryPrefix = "Features/Import/ImportEntrySheetView.swift:"
-
         XCTAssertEqual(
             actual,
-            [
-                importEntryPrefix + "fileImporter: any CoreFileImporting = CoreBridge(",
-                importEntryPrefix + "batchFileImporter: any CoreBatchCopyImporting = CoreBridge(",
-                importEntryPrefix + "batchConflictBatcher: any CoreImportConflictBatching = CoreBridge("
-            ],
-            "ImportEntrySheetView may keep direct CoreBridge defaults only for high-risk import write paths; " +
-                "low-risk prediction, error mapping, platform, and session defaults should stay centralized."
+            [],
+            "ImportEntrySheetView must resolve all Core write capabilities through ImportFeatureDependencies."
         )
     }
 
@@ -67,16 +53,10 @@ final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
                 #"\bstartupRecoverer: any CoreStartupRecovering\s*=\s*CoreBridge\s*\("#
             ].joined(separator: "|")
         )
-        let repairConfirmPrefix = "Features/Onboarding/DatabaseRepairConfirmView.swift:"
-
         XCTAssertEqual(
             actual,
-            [
-                repairConfirmPrefix + "metadataRepairer: any CoreMetadataRepairing = CoreBridge(",
-                repairConfirmPrefix + "startupRecoverer: any CoreStartupRecovering = CoreBridge("
-            ],
-            "DB repair may keep direct CoreBridge defaults only for metadata repair and startup recovery; " +
-                "diagnostics and error mapping defaults should stay centralized."
+            [],
+            "DB repair must resolve Core capabilities through OnboardingFeatureDependencies."
         )
     }
 
@@ -164,13 +144,8 @@ final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
 
         XCTAssertEqual(
             actual,
-            [
-                "Features/AI/AIPrivacyRulesModel.swift:rulesManager: any CoreAIPrivacyRulesManaging = CoreBridge(",
-                "Features/AI/RemoteProviderConfigModel.swift:bridge: any CoreRemoteProviderConfiguring = CoreBridge(",
-                "Features/AI/RemoteProviderConfigState.swift:bridge: any CoreAIPrivacyRulesManaging = CoreBridge("
-            ],
-            "Remote AI and privacy-rule write defaults should stay explicit and limited; " +
-                "read-only AI defaults should stay centralized through AppCoreServices."
+            [],
+            "Remote AI and privacy-rule write defaults must resolve through AIFeatureDependencies."
         )
     }
 
@@ -239,6 +214,55 @@ final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
             [],
             "AIPrivacyRemoteProviderStateModel must stay read-only; remote provider test/enable/disable " +
                 "paths remain separately governed."
+        )
+    }
+
+    func testSearchRouteViewsDoNotConstructHiddenLiveDependencies() throws {
+        let guardedPaths = Set([
+            "Features/Search/SavedSearchSheetRouteView.swift",
+            "Features/Search/SmartListManagementSheet.swift"
+        ])
+        let violations = try productionSwiftFiles()
+            .filter { guardedPaths.contains(relativeProductionPath(for: $0)) }
+            .flatMap {
+                try sourceRegexViolations(
+                    in: $0,
+                    pattern: #"\b(?:SearchFeatureDependencies|SharedFeatureDependencies)\.live\b"#
+                )
+            }
+            .sorted()
+
+        XCTAssertEqual(
+            violations,
+            [],
+            "Search route views must receive saved-search and query dependencies from App composition " +
+                "or an explicit Preview/Test fixture."
+        )
+    }
+
+    func testSyncConflictModelsDoNotConstructHiddenLiveDependencies() throws {
+        let guardedPaths = Set([
+            "Features/SyncConflicts/ICloudConflictListModel.swift",
+            "Features/SyncConflicts/ICloudConflictMinimalValidation.swift",
+            "Features/SyncConflicts/SyncConflictEntryModel.swift",
+            "Features/SyncConflicts/SyncConflictReviewModel.swift",
+            "Features/SyncConflicts/ICloudConflictListView.swift"
+        ])
+        let violations = try productionSwiftFiles()
+            .filter { guardedPaths.contains(relativeProductionPath(for: $0)) }
+            .flatMap {
+                try sourceRegexViolations(
+                    in: $0,
+                    pattern: #"\bSyncConflictsFeatureDependencies\.live\b|\bSharedFeatureDependencies\.live\b"#
+                )
+            }
+            .sorted()
+
+        XCTAssertEqual(
+            violations,
+            [],
+            "SyncConflicts models and route views must receive Core and error-mapping capabilities " +
+                "through the feature composition boundary."
         )
     }
 
@@ -324,12 +348,30 @@ final class ImportCoreServiceGovernanceTests: MacOSGovernanceTestCase {
 
         XCTAssertEqual(
             actual,
-            [
-                "Features/Import/ImportBatchCopyImportModel.swift:" +
-                    "conflictBatcher: any CoreImportConflictBatching = CoreBridge("
-            ],
-            "ImportBatchCopyImportModel may keep a direct CoreBridge default only for batch conflict " +
-                "preview/apply work; session, undo, error mapping, and platform defaults should stay centralized."
+            [],
+            "ImportBatchCopyImportModel must resolve conflict batching through ImportFeatureDependencies."
+        )
+    }
+
+    func testImportBatchCollaboratorsAreRequiredAtCompositionBoundary() throws {
+        let batchCopyFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "Features/Import/ImportBatchCopyImportModel.swift"
+        })
+        let actual = try sourceRegexMatches(
+            in: batchCopyFile,
+            pattern: [
+                #"\bconflictBatcher: any CoreImportConflictBatching\s*=\s*"#,
+                #"\bundoActionStore: any CoreUndoActionLogging\s*=\s*"#,
+                #"\bsessionStore: any ImportBatchSessionPersisting\s*=\s*"#,
+                #"\bplaceholderDownloader: any ICloudPlaceholderDownloading\s*=\s*"#
+            ].joined(separator: "|")
+        )
+
+        XCTAssertEqual(
+            actual,
+            [],
+            "Batch import must receive Core, persistence, and platform collaborators from App composition " +
+                "instead of constructing hidden production defaults."
         )
     }
 }
@@ -380,12 +422,8 @@ final class SyncConflictCoreServiceGovernanceTests: MacOSGovernanceTestCase {
 
         XCTAssertEqual(
             actual,
-            [
-                "Features/SyncConflicts/SyncConflictReviewModel.swift:" +
-                    "conflictResolver: any CoreSyncConflictResolving = CoreBridge("
-            ],
-            "SyncConflictReviewModel may keep a direct CoreBridge default only for preview/resolve write work; " +
-                "conflict detection and error mapping defaults should stay centralized through AppCoreServices."
+            [],
+            "SyncConflictReviewModel must resolve conflict writes through SyncConflictsFeatureDependencies."
         )
     }
 }

@@ -48,9 +48,9 @@ final class PlatformDifferencesModel: ObservableObject {
         repositoryText: String? = nil,
         selectedTargetPlatform: BindingTargetPlatformSnapshot = .swift,
         bindingVersion: Int64 = 1,
-        contractInspector: any CoreBindingContractInspecting = AppCoreServices.bindingContractInspector,
-        capabilityLoader: any CorePlatformCapabilitiesLoading = AppCoreServices.platformCapabilityLoader,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        contractInspector: any CoreBindingContractInspecting,
+        capabilityLoader: any CorePlatformCapabilitiesLoading,
+        errorMapper: any CoreErrorMapping
     ) {
         self.hostPlatform = hostPlatform
         self.appVersion = appVersion ?? appVersionReader.appVersion()

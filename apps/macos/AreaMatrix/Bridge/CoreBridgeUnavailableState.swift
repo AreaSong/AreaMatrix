@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
 protocol ExistingRepositoryMetadataReading: Sendable {
@@ -137,59 +138,7 @@ struct ConfigLoadFailure: Equatable {
     }
 }
 
-enum CoreBridgeBoundary: String, CaseIterable, Equatable {
-    case getVersion = "get_version"
-    case initLogging = "init_logging"
-    case inspectBindingContract = "inspect_binding_contract"
-    case getPlatformCapabilities = "get_platform_capabilities"
-    case validateRepoPath = "validate_repo_path"
-    case validateInitializedRepoPath = "validate_initialized_repo_path"
-    case initRepo = "init_repo"
-    case loadConfig = "load_config"
-    case updateConfig = "update_config"
-    case recoverOnStartup = "recover_on_startup"
-    case reindexFromFilesystem = "reindex_from_filesystem"
-    case createDiagnosticsSnapshot = "create_diagnostics_snapshot"
-    case repairMetadata = "repair_metadata"
-    case getLatestScanSession = "get_latest_scan_session"
-    case resumeScanSession = "resume_scan_session"
-    case predictCategory = "predict_category"
-    case previewImport = "preview_import"
-    case importFile = "import_file"
-    case deleteFile = "delete_file"
-    case renameFile = "rename_file"
-    case previewMoveToCategory = "preview_move_to_category"
-    case moveToCategory = "move_to_category"
-    case previewBatchDelete = "preview_batch_delete"
-    case batchDeleteToTrash = "batch_delete_to_trash"
-    case listFiles = "list_files"
-    case searchFiles = "search_files"
-    case semanticSearch = "semantic_search"
-    case buildEmbeddingIndex = "build_embedding_index"
-    case getAiFallbackStatus = "get_ai_fallback_status"
-    case listFilterFacets = "list_filter_facets"
-    case saveClassifierRule = "save_classifier_rule"
-    case createSavedSearch = "create_saved_search"
-    case updateSavedSearch = "update_saved_search"
-    case deleteSavedSearch = "delete_saved_search"
-    case listSavedSearches = "list_saved_searches"
-    case runSmartList = "run_smart_list"
-    case getFile = "get_file"
-    case listChanges = "list_changes"
-    case listTreeJSON = "list_tree_json"
-    case listICloudConflicts = "list_icloud_conflicts"
-    case previewConflictVersions = "preview_conflict_versions"
-    case resolveICloudConflict = "resolve_icloud_conflict"
-    case detectSyncConflicts = "detect_sync_conflicts"
-    case previewSyncConflictResolution = "preview_sync_conflict_resolution"
-    case resolveSyncConflict = "resolve_sync_conflict"
-    case readNote = "read_note"
-    case writeNote = "write_note"
-    case syncExternalChanges = "sync_external_changes"
-    case getFSEventCursor = "get_fs_event_cursor"
-    case setFSEventCursor = "set_fs_event_cursor"
-    case mapCoreError = "map_core_error"
-}
+typealias CoreBridgeBoundary = AreaMatrixCoreBridgeContract.CoreBridgeBoundary
 
 struct CoreBridgeUnavailableState: Equatable {
     let statusLabel: LocalizedMessage

@@ -115,9 +115,9 @@ final class DatabaseRepairConfirmModel: ObservableObject {
         mapping: CoreErrorMappingSnapshot?,
         lastOpenedAt: Int64?,
         metadataRepairer: any CoreMetadataRepairing,
-        repositoryReindexer: any CoreRepositoryReindexing = CoreBridge(),
+        repositoryReindexer: any CoreRepositoryReindexing,
         startupRecoverer: any CoreStartupRecovering,
-        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
+        repositoryWriteCoordinator: RepositoryWriteCoordinator,
         diagnosticsCollector: any CoreDiagnosticsCollecting,
         errorMapper: any CoreErrorMapping
     ) {

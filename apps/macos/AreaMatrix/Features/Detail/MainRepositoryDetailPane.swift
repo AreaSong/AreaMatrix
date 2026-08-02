@@ -20,6 +20,7 @@ struct MainRepositoryDetailPane: View {
     let selectedImportProgressRow: ImportProgressListRow?
     let semanticDetail: SemanticSearchDetailPresentation?
     let repoPath: String
+    let aiDependencies: AIFeatureDependencies
     let batchTagStore: any CoreTagCRUD
     let batchTagUndoStore: any CoreUndoActionLogging
     let batchTagErrorMapper: any CoreErrorMapping
@@ -133,6 +134,8 @@ extension MainRepositoryDetailPane {
             tagSuggestionPresentationRequest: tagSuggestionPresentationRequest,
             detailTagUndoToast: detailTagUndoToast,
             repoPath: repoPath,
+            aiDependencies: aiDependencies,
+            errorMapper: batchTagErrorMapper,
             tagActions: tagActions,
             onRequestTabChange: requestDetailTabChange,
             onRetrySelectedFileDetail: onRetrySelectedFileDetail,

@@ -380,7 +380,7 @@ extension ObservabilityHub {
         }
     }
 
-    func health(core: ObservabilityHealth?) -> AppObservabilityHealth {
+    func health(core: CoreObservabilityHealthSnapshot?) -> AppObservabilityHealth {
         let timestamp = ObservabilityHubPolicy.milliseconds(now())
         return ObservabilityHubPolicy.makeHealth(state: ObservabilityHubHealthState(
             configuration: configuration,

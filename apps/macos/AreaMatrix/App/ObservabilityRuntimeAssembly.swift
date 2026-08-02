@@ -74,7 +74,7 @@ final class ObservabilityRuntimeAssembly: ObservableObject {
 
     func health() async -> AppObservabilityHealth {
         if state == .starting { await startupTask?.value }
-        let coreHealth: ObservabilityHealth? = if state == .idle {
+        let coreHealth: CoreObservabilityHealthSnapshot? = if state == .idle {
             nil
         } else {
             await core.observabilityHealth()

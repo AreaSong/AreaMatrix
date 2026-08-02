@@ -15,7 +15,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
     @MainActor
     func testCommandPaletteCommandIndexCoreLoadsCommandIndexAndKeepsQuerySeparateFromFileSearch() async {
         let searcher = MainListRecordingSearchQuerying(results: [])
-        let target = CommandTarget.commandPaletteFixture(
+        let target = CoreCommandTargetSnapshot.commandPaletteFixture(
             id: "selection.delete",
             title: "Delete selected files...",
             action: .openConfirmation,
@@ -178,7 +178,7 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
     func testCommandPalettePageIntegrationWiresEntryCloseCommandIndexAndSmartListRun() async {
         let saved = SavedSearchSnapshot.commandPaletteCommandPaletteFixture()
         let resultFile = FileEntrySnapshot.commandPaletteCommandFileFixture(id: 88, currentName: "finance.pdf")
-        let indexTarget = CommandTarget.commandPaletteFixture(
+        let indexTarget = CoreCommandTargetSnapshot.commandPaletteFixture(
             id: "smart-list:77",
             title: "Finance",
             action: .runSmartList,

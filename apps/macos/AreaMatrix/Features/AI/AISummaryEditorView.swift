@@ -5,6 +5,8 @@ struct AISummaryEditor: View {
     private let repoPath: String
     private let fileID: Int64
     private let privacyContext: AISummaryPrivacyContext
+    private let aiDependencies: AIFeatureDependencies
+    private let errorMapper: any CoreErrorMapping
     private let exitController: AISummaryEditorExitController?
     private let onOpenAISettings: () -> Void
     private let onBackToDetail: () -> Void
@@ -16,18 +18,27 @@ struct AISummaryEditor: View {
     init(
         repoPath: String,
         fileID: Int64,
+        aiDependencies: AIFeatureDependencies,
+        errorMapper: any CoreErrorMapping,
         privacyContext: AISummaryPrivacyContext = AISummaryPrivacyContext(),
         exitController: AISummaryEditorExitController? = nil,
+        model: AISummaryEditorModel? = nil,
         onOpenAISettings: @escaping () -> Void = {},
         onBackToDetail: @escaping () -> Void = {}
     ) {
         self.repoPath = repoPath; self.fileID = fileID; self.privacyContext = privacyContext
+        self.aiDependencies = aiDependencies
+        self.errorMapper = errorMapper
         self.exitController = exitController
         self.onOpenAISettings = onOpenAISettings
         self.onBackToDetail = onBackToDetail
-        _model = StateObject(wrappedValue: AISummaryEditorModel(
+        _model = StateObject(wrappedValue: model ?? AISummaryEditorModel(
             repoPath: repoPath,
             fileID: fileID,
+            summaryStore: aiDependencies.aiSummaryStore,
+            contentLocaleSnapshotter: aiDependencies.contentLocaleSnapshotter,
+            privacyRules: aiDependencies.aiPrivacyRules,
+            errorMapper: errorMapper,
             privacyContext: privacyContext
         ))
     }
@@ -60,15 +71,24 @@ struct AISummaryEditor: View {
             Text(confirmation?.message ?? "")
         }
         .sheet(item: $privacyRuleRoute) { route in
-            AIPrivacyRulesRouteSheet(repoPath: repoPath, focus: route.focus, onClose: {
+            AIPrivacyRulesRouteSheet(
+                repoPath: repoPath,
+                featureDependencies: aiDependencies,
+                errorMapper: errorMapper,
+                registryReader: aiDependencies.privacyRuleRegistryReader,
+                focus: route.focus,
+                onClose: {
                 privacyRuleRoute = nil
-            })
+                }
+            )
         }
         .sheet(item: $callLogRoute) { route in
             AIClassificationCallLogDetailSheet(
                 repoPath: repoPath,
                 callLogID: route.callLogID,
                 feature: .summary,
+                lister: aiDependencies.aiCallLogLister,
+                errorMapper: errorMapper,
                 onClose: {
                     callLogRoute = nil
                 }
@@ -431,11 +451,11 @@ private extension AISummaryEditor {
         }
     }
 
-    private func summaryOwnershipLabel(_ ownership: AiContentOwnership) -> String {
+    private func summaryOwnershipLabel(_ ownership: AIContentOwnershipState) -> String {
         ownership == .userOwned ? L10n.string("User-owned") : L10n.string("Generated")
     }
 
-    private func summaryLocaleLabel(_ locale: ContentLocale) -> String {
+    private func summaryLocaleLabel(_ locale: ContentLocaleState) -> String {
         locale == .zhHans ? L10n.string("简体中文") : L10n.string("English")
     }
 }

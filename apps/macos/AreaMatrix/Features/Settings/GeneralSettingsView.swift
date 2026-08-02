@@ -8,6 +8,10 @@ struct GeneralSettingsView: View {
     let onChangeRepository: () -> Void
     let onOpenRepositoryRecovery: () -> Void
     let onReturnToWelcome: () -> Void
+    private let featureDependencies: SettingsFeatureDependencies
+    private let aiDependencies: AIFeatureDependencies
+    private let sharedDependencies: SharedFeatureDependencies
+    private let syncConflictsDependencies: SyncConflictsFeatureDependencies
 }
 
 extension GeneralSettingsView {
@@ -18,15 +22,19 @@ extension GeneralSettingsView {
         onChangeRepository: @escaping () -> Void = {},
         onOpenRepositoryRecovery: @escaping () -> Void = {},
         onReturnToWelcome: @escaping () -> Void = {},
-        loader: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        updater: any CoreConfigurationUpdating = AppCoreServices.configurationUpdater,
+        featureDependencies: SettingsFeatureDependencies,
+        aiDependencies: AIFeatureDependencies,
+        sharedDependencies: SharedFeatureDependencies,
+        syncConflictsDependencies: SyncConflictsFeatureDependencies,
+        loader: any CoreConfigurationLoading,
+        updater: any CoreConfigurationUpdating,
         rootOverviewInspector: any RootOverviewFileInspecting =
             GeneralSettingsPlatformServices.rootOverviewInspector,
         rootOverviewRevealer: any RepositoryFileRevealing =
             GeneralSettingsPlatformServices.rootOverviewRevealer,
         ignoreRulesManager: any RepositoryIgnoreRulesManaging =
             GeneralSettingsPlatformServices.ignoreRulesManager,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper
+        errorMapper: any CoreErrorMapping
     ) {
         _model = StateObject(wrappedValue: GeneralSettingsModel(
             repoPath: repoPath,
@@ -42,6 +50,10 @@ extension GeneralSettingsView {
         self.onChangeRepository = onChangeRepository
         self.onOpenRepositoryRecovery = onOpenRepositoryRecovery
         self.onReturnToWelcome = onReturnToWelcome
+        self.featureDependencies = featureDependencies
+        self.aiDependencies = aiDependencies
+        self.sharedDependencies = sharedDependencies
+        self.syncConflictsDependencies = syncConflictsDependencies
     }
 
     var body: some View {
@@ -124,10 +136,16 @@ extension GeneralSettingsView {
     private var content: some View {
         switch selectedTab {
         case "language":
-            LanguageSettingsPane(repoPath: model.repoPath)
+            LanguageSettingsPane(
+                repoPath: model.repoPath,
+                featureDependencies: featureDependencies,
+                sharedDependencies: sharedDependencies
+            )
         case "repository":
             RepositorySettingsPane(
                 repoPath: model.repoPath,
+                featureDependencies: featureDependencies,
+                sharedDependencies: sharedDependencies,
                 onChangeRepository: onChangeRepository,
                 onOpenPlatformCapabilities: {
                     selectedTab = "about"
@@ -138,11 +156,24 @@ extension GeneralSettingsView {
                 onOpenRecoveryTools: onOpenRepositoryRecovery
             )
         case "classifier":
-            ClassifierSettingsPane(repoPath: model.repoPath)
+            ClassifierSettingsPane(
+                repoPath: model.repoPath,
+                featureDependencies: featureDependencies,
+                sharedDependencies: sharedDependencies
+            )
         case "ai":
-            AISettingsPane(repoPath: model.repoPath)
+            AISettingsPane(
+                repoPath: model.repoPath,
+                featureDependencies: aiDependencies,
+                sharedDependencies: sharedDependencies
+            )
         case "integrations":
-            IntegrationsSettingsPane(repoPath: model.repoPath)
+            IntegrationsSettingsPane(
+                repoPath: model.repoPath,
+                featureDependencies: featureDependencies,
+                sharedDependencies: sharedDependencies,
+                syncConflictsDependencies: syncConflictsDependencies
+            )
         case "diagnostics":
             DiagnosticsSettingsPane(repositoryURL: URL(
                 fileURLWithPath: model.repoPath,
@@ -151,6 +182,8 @@ extension GeneralSettingsView {
         case "advanced":
             AdvancedSettingsPane(
                 repoPath: model.repoPath,
+                featureDependencies: featureDependencies,
+                sharedDependencies: sharedDependencies,
                 onOpenRecoveryTools: onOpenRepositoryRecovery,
                 onOpenDiagnostics: { selectedTab = "diagnostics" },
                 onReturnToWelcome: onReturnToWelcome
@@ -158,6 +191,14 @@ extension GeneralSettingsView {
         case "about":
             AboutSettingsPane(
                 repoPath: model.repoPath,
+                featureDependencies: featureDependencies,
+                sharedDependencies: sharedDependencies,
+                platformDifferencesModel: PlatformDifferencesModel(
+                    repositoryText: model.repoPath,
+                    contractInspector: featureDependencies.bindingContractInspector,
+                    capabilityLoader: featureDependencies.platformCapabilityLoader,
+                    errorMapper: sharedDependencies.errorMapper
+                ),
                 onOpenRepositorySettings: {
                     selectedTab = "repository"
                 },

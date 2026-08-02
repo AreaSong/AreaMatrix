@@ -11,10 +11,18 @@ struct DiagnosticsSettingsPane: View {
     @State private var isFileNamePackageConfirmationPresented = false
     @State private var isFullPathPackageConfirmationPresented = false
     @State private var isMetadataSnapshotConfirmationPresented = false
+    private let loadsAutomatically: Bool
 
     @MainActor
     init(repositoryURL: URL) {
         _model = StateObject(wrappedValue: DiagnosticsSettingsModel(repositoryURL: repositoryURL))
+        loadsAutomatically = true
+    }
+
+    @MainActor
+    init(model: DiagnosticsSettingsModel, loadsAutomatically: Bool = true) {
+        _model = StateObject(wrappedValue: model)
+        self.loadsAutomatically = loadsAutomatically
     }
 
     var body: some View {
@@ -65,7 +73,10 @@ struct DiagnosticsSettingsPane: View {
                 }
             }
         }
-        .task { await model.load() }
+        .task {
+            guard loadsAutomatically else { return }
+            await model.load()
+        }
         .sheet(isPresented: $model.isConsolePresented) { liveConsole }
         .sheet(isPresented: packagePreviewBinding) { packagePreviewSheet }
         .sheet(isPresented: offlineInspectionBinding) { offlineConsole }

@@ -89,10 +89,14 @@ target 和 deployment target 计算内容指纹；命中 `.build/core-sdk/<finge
 ./dev build core-sdk
 ./dev build core-sdk --verify-only   # 只校验恢复后的 symlink、manifest 与 XCFramework slices
 ./dev build core-sdk --force         # 原子替换同一 fingerprint 的生成缓存，用于诊断
+./dev cache core-sdk prune --max-bytes 10737418240  # 预览 10 GiB LRU 清理计划
+./dev cache core-sdk prune --max-bytes 10737418240 --apply
 ```
 
 自定义 `--macos-deployment-target` / `--ios-deployment-target` 会同时进入 Cargo 环境、fingerprint 和
 生成的 `Package.swift` platform 声明，不能出现二进制与 Swift Package 最低系统版本不一致。
+CoreSDK 清理永不自动执行；默认只输出 LRU 计划，只有显式 `--apply` 才删除非活动 fingerprint，且始终保护
+`current` 指针和最近缓存。即使容量低于受保护缓存的大小，也只报告超限，不删除受保护 artifact。
 
 ---
 
@@ -176,12 +180,14 @@ fn main() {
 
 ## Xcode 集成
 
-当前 `apps/macos/AreaMatrix.xcodeproj` 已配置好 CoreSDK XCFramework 和 tracked UniFFI bindings：
+当前 `apps/macos/AreaMatrix.xcodeproj` 已配置好 CoreSDK XCFramework、Bridge 合同模块和 tracked UniFFI bindings：
 
 - `Frameworks` Build Phase 链接 `.build/core-sdk/current/AreaMatrixCoreFFI.xcframework`，不再链接裸
   `core/target` 或手写 `-L`/`-larea_matrix_core`。
 - `Prepare CoreSDK` Build Phase 调用 `./dev build core-sdk`；Rust/UDL 和打包器未变化时由 Xcode
   依赖分析跳过，即使执行命令也只发生 fingerprint cache hit。
+- 本地 Swift Package `AreaMatrixCoreBridgeContract` 真实链接到 App target，独立测试稳定的
+  `CoreBridgeBoundary` 合同；它不包含生成绑定或用户文件写入逻辑。
 - 该 Build Phase 启用 dependency analysis，以 Cargo/UDL/构建脚本为输入、CoreSDK manifest 为输出，并由
   dependency file 补齐递归 Rust 源文件；不再使用 Always Out Of Date。
 - Swift source 引用 `AreaMatrix/Bridge/UniFFI/area_matrix.swift`。
@@ -248,6 +254,24 @@ metadata probe 直接以只读方式打开 SQLite，不经过 Core 写路径。
 
 启用所有优化，体积小。
 
+### Xcode 配置文件
+
+`apps/macos/Config/` 集中维护 `Base`、`Debug`、`Preview`、`Test` 和 `Release` 配置。Debug、Test
+和 Release 已绑定到现有 Xcode 配置；Preview 作为覆盖层使用，不需要复制一套 Scheme：
+
+```bash
+xcodebuild -project apps/macos/AreaMatrix.xcodeproj \
+  -scheme AreaMatrix \
+  -configuration Debug \
+  -xcconfig apps/macos/Config/Preview.xcconfig \
+  -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO
+```
+
+配置文件统一声明 CoreSDK、Cargo lane 和本地 DerivedData 路径。`AREAMATRIX_CARGO_TARGET_DIR` 默认指向
+`sdk` lane；Xcode 的 CoreSDK Build Phase 与验证 lane 仍由各自脚本显式选择目标目录，不能通过临时环境变量
+把它们重新指向同一个 Cargo artifact 目录。Canvas 使用 Preview 覆盖层，普通 Swift-only 修改继续直接
+使用 Debug 增量构建。
+
 ### 尺寸优化（CI 发布版）
 
 `Cargo.toml` 加：
@@ -269,6 +293,7 @@ panic = "abort"
 
 ```bash
 ./dev test changed --list   # 先查看受影响验证层
+./dev check affected --list # 治理入口：查看受影响验证层
 ./dev build core-sdk        # 可选预热；Xcode 也会在 fingerprint miss 时构建一次
 ```
 
@@ -292,31 +317,122 @@ UDL 是公开合同变化：除 CoreSDK 失效外，还必须更新 Xcode 实际
 
 ### SwiftUI 可视化开发
 
-单个组件优先使用 Xcode Canvas 中的 `#Preview`。设计令牌和通用组件可以从
-`AreaMatrixPreviewSupport.swift` 中的 light/dark UI Catalog 预览集中查看，不会启动资料库、
-Repository 或 Core service。
+单个组件优先使用 Xcode Canvas 中的 `#Preview`。`AreaMatrixPreviewSupport.swift` 提供 light/dark
+UI Catalog 和 Scenario Launcher 三个 Canvas 入口。Launcher 可以在一个 Canvas 内切换场景、主题、
+`en` / `zh-Hans` 和 compact / standard / wide 窗口，不启动资料库或 Core service，也不读取或写入用户文件。
+
+Launcher 的场景清单覆盖 Loading、Empty、Success、Failed、Disabled、Blocked、Stale 和 Unavailable，
+并包含欢迎页、空资料库、权限失败、DB 损坏、iCloud placeholder、导入冲突、同步冲突、AI unavailable、
+AI 设置与建议页面、长文案和 120 行数据集。先在 Canvas 调整布局，再用同一场景 ID 启动真实 Debug
+窗口验证滚动、焦点和交互。
 
 需要验证真实窗口、滚动和控件交互时，使用统一开发入口。它复用
 `.build/derived-data/macos-run/`，避免每个场景重新创建 DerivedData：
 
 ```bash
+./dev run macos --scenario launcher
 ./dev run macos --scenario ui-catalog
-./dev run macos --scenario ui-catalog-dark
+./dev run macos --scenario command-palette
+./dev run macos --scenario detail-log
+./dev run macos --scenario detail-note
+./dev run macos --scenario detail-pane
+./dev run macos --scenario detail-multi-selection
+./dev run macos --scenario diagnostics-console
+./dev run macos --scenario diagnostics-package-preview
+./dev run macos --scenario diagnostics-settings
 ./dev run macos --scenario onboarding
-./dev run macos --scenario onboarding-dark
+./dev run macos --scenario onboarding-confirm
+./dev run macos --scenario onboarding-database-repair
+./dev run macos --scenario onboarding-done
+./dev run macos --scenario onboarding-failed
+./dev run macos --scenario onboarding-initializing
+./dev run macos --scenario onboarding-recovery
+./dev run macos --scenario onboarding-validate-path
+./dev run macos --scenario loading
+./dev run macos --scenario repository-empty
+./dev run macos --scenario repository-ready
+./dev run macos --scenario permission-failure
+./dev run macos --scenario database-corrupt
+./dev run macos --scenario icloud-placeholder
+./dev run macos --scenario import-conflict
+./dev run macos --scenario import-entry
+./dev run macos --scenario import-folder-preview
+./dev run macos --scenario import-progress
+./dev run macos --scenario import-result
+./dev run macos --scenario main-repository-content
+./dev run macos --scenario sync-conflict
+./dev run macos --scenario sync-conflicts-icloud-list
+./dev run macos --scenario sync-conflicts-icloud-minimal
+./dev run macos --scenario sync-conflicts-entry
+./dev run macos --scenario sync-conflicts-replace-confirmation
+./dev run macos --scenario sync-conflicts-review
+./dev run macos --scenario ai-unavailable
+./dev run macos --scenario ai-call-log
+./dev run macos --scenario ai-classification-suggestion
+./dev run macos --scenario ai-privacy-rules
+./dev run macos --scenario ai-settings
+./dev run macos --scenario ai-summary-editor
+./dev run macos --scenario ai-tag-suggestions
+./dev run macos --scenario ai-local-model-status
+./dev run macos --scenario ai-remote-model-config
+./dev run macos --scenario disabled
+./dev run macos --scenario stale-data
+./dev run macos --scenario long-content
+./dev run macos --scenario large-data
+./dev run macos --scenario search-query-error
+./dev run macos --scenario search-saved-search
+./dev run macos --scenario search-empty
+./dev run macos --scenario search-index-status
+./dev run macos --scenario search-semantic-results
+./dev run macos --scenario search-smart-list
+./dev run macos --scenario file-actions-batch-add-tags
+./dev run macos --scenario file-actions-batch-change-category
+./dev run macos --scenario file-actions-batch-delete
+./dev run macos --scenario file-actions-batch-rename
+./dev run macos --scenario file-actions-change-category
+./dev run macos --scenario file-actions-classifier-impact
+./dev run macos --scenario file-actions-delete
+./dev run macos --scenario file-actions-rename
+./dev run macos --scenario file-actions-replace
+./dev run macos --scenario file-actions-tag-suggestions
+./dev run macos --scenario file-actions-undo-history
+./dev run macos --scenario settings-about
+./dev run macos --scenario settings-advanced
+./dev run macos --scenario settings-classifier
+./dev run macos --scenario settings-general
+./dev run macos --scenario settings-integrations
 ./dev run macos --scenario settings-language
-./dev run macos --scenario settings-language-dark
+./dev run macos --scenario settings-platform-differences
+./dev run macos --scenario settings-repository
 ```
 
-未知场景名 fail closed 到正常应用根视图。这些入口只在 `DEBUG` 编译中存在，不进入
-Release 产品路径，也不能替代真实 feature 测试。已有 Debug 产品可使用 `--no-build`；只验证构建产物而不
-启动窗口可使用 `--build-only`。
+`AreaMatrixDeveloperSurfaceInventory` 是稳定产品页面的机器源事实：登记的 61 个页面不能通过删除条目来抬高
+覆盖率。当前 `61/61` 个稳定页面均有全页 Scenario，覆盖 AI、CommandPalette、Detail、Diagnostics、
+FileActions、Import、MainList、Onboarding、Search、Settings 和 SyncConflicts。
+其余组件、状态和压力场景仍保留，但不会冒充全页覆盖。每次增加全页 Scenario 时必须同时更新 inventory、
+Swift/CLI 场景清单、本节命令和专项测试。会自动加载数据的页面显式注入进程内 fixture；AI 场景还隔离网络、
+Keychain 和平台副作用，Diagnostics、MainList 与 SyncConflicts 也隔离日志、Finder、Trash、iCloud 和 CoreBridge。
+它们不访问真实 Core、DB 或用户文件，
+因此不能替代真实 Search/Core、AI 隐私、远程 Provider、Import 或文件安全集成测试。
+
+主题、语言和窗口尺寸是独立轴，不再为每个组合复制场景：
+
+```bash
+./dev run macos --scenario sync-conflict --theme dark --locale zh-Hans --viewport compact
+./dev run macos --scenario large-data --theme light --locale en --viewport wide --no-build
+```
+
+`ui-catalog-dark`、`onboarding-dark` 和 `settings-language-dark` 仍作为兼容别名解析为对应场景的 dark 轴。
+未知场景名在 CLI 中直接失败；直接设置未知 `AREAMATRIX_SCENARIO` 时 fail closed 到正常应用根视图。
+这些入口只在 `DEBUG` 编译中存在，不进入 Release 产品路径，也不能替代真实 feature 测试。已有 Debug 产品
+可使用 `--no-build`；只验证构建产物而不启动窗口可使用 `--build-only`。
 
 ### 高频诊断与按变更验证
 
 ```bash
 ./dev doctor build        # Cargo lanes、lock metadata、Xcode 增量输入输出和 CoreSDK 完整性
 ./dev test changed --list # 只显示当前工作树将触发的验证层
+./dev check affected --list # 治理入口：只显示当前工作树将触发的验证层
 ./dev test changed        # 执行对应 developer tools / Rust / macOS / iOS / docs-governance 门禁
 ```
 

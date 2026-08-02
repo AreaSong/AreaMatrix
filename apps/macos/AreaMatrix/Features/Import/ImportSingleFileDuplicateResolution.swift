@@ -31,7 +31,7 @@ enum SingleFileDuplicateResolutionStrategy: String, CaseIterable, Identifiable, 
         }
     }
 
-    var coreStrategy: DuplicateStrategy {
+    var coreStrategy: ImportDuplicateStrategySnapshot {
         switch self {
         case .skip:
             .skip
@@ -126,7 +126,7 @@ extension ImportSingleFilePreviewModel {
         return duplicateResolution == .skip ? existingPath : nil
     }
 
-    var resolvedDuplicateStrategy: DuplicateStrategy {
+    var resolvedDuplicateStrategy: ImportDuplicateStrategySnapshot {
         guard let result = currentPreflightResult else { return .ask }
 
         switch result.conflict {

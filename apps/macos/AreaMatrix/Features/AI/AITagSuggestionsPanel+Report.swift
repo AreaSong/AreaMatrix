@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension AITagSuggestionsPanel {
-    func reportView(_ report: AiTagSuggestionReport) -> some View {
+    func reportView(_ report: AITagSuggestionReportSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(L10n.format(
                 "ai.tagSuggestion.confidenceThreshold",
@@ -29,7 +29,7 @@ extension AITagSuggestionsPanel {
         }
     }
 
-    func suggestionRow(_ suggestion: AiTagSuggestion) -> some View {
+    func suggestionRow(_ suggestion: AITagSuggestionSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Button(
@@ -80,7 +80,7 @@ extension AITagSuggestionsPanel {
         }
     }
 
-    func applySummary(_ report: AiTagSuggestionApplyReport) -> some View {
+    func applySummary(_ report: AITagSuggestionApplyReportSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Applied \(report.appliedCount), skipped \(report.skippedCount), failed \(report.failedCount).")
             if report.failedCount > 0 { Button(L10n.string("Retry apply"), action: onRetryFailed) }
@@ -88,7 +88,7 @@ extension AITagSuggestionsPanel {
         .font(.caption)
     }
 
-    func routeLabel(_ route: AiTagSuggestionRoute?) -> String {
+    func routeLabel(_ route: AITagSuggestionRouteSnapshot?) -> String {
         switch route {
         case .local: L10n.string("Local")
         case .remote: L10n.string("Remote")
@@ -96,11 +96,11 @@ extension AITagSuggestionsPanel {
         }
     }
 
-    func usedContextText(_ fields: [AiTagSuggestionInputField]) -> String {
+    func usedContextText(_ fields: [AITagSuggestionInputFieldSnapshot]) -> String {
         fields.isEmpty ? L10n.string("none") : fields.map(aiTagInputFieldText).joined(separator: ", ")
     }
 
-    func aiTagInputFieldText(_ field: AiTagSuggestionInputField) -> String {
+    func aiTagInputFieldText(_ field: AITagSuggestionInputFieldSnapshot) -> String {
         switch field {
         case .fileName: L10n.string("filename")
         case .repoRelativePath: L10n.string("repo-relative path")
@@ -112,7 +112,7 @@ extension AITagSuggestionsPanel {
         }
     }
 
-    func skipReasonText(_ reason: AiTagSuggestionSkipReason) -> String {
+    func skipReasonText(_ reason: AITagSuggestionSkipReasonSnapshot) -> String {
         switch reason {
         case .aiDisabled: L10n.string("AI tag suggestions are off")
         case .featureDisabled: L10n.string("Auto tags are off")
@@ -123,7 +123,7 @@ extension AITagSuggestionsPanel {
         }
     }
 
-    func candidateStatusText(_ suggestion: AiTagSuggestion) -> String {
+    func candidateStatusText(_ suggestion: AITagSuggestionSnapshot) -> String {
         if let reason = suggestion.disabledReason { return reason }
         return switch suggestion.status {
         case .suggested: L10n.string("Suggested")
@@ -134,7 +134,7 @@ extension AITagSuggestionsPanel {
         }
     }
 
-    func mergeText(_ suggestion: AiTagSuggestion) -> String {
+    func mergeText(_ suggestion: AITagSuggestionSnapshot) -> String {
         switch suggestion.mergeAction {
         case .createTag: L10n.format("ai.tagSuggestion.merge.create", suggestion.slug)
         case .useExistingTag:

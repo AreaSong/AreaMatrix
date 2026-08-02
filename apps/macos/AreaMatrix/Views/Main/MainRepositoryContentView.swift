@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 enum MainRepositoryContentState: Equatable { case empty, list }
 struct MainRepositoryContentView: View {
     @EnvironmentObject var localizer: AppLocalizer
+    @ObservedObject var commandRouter: AppCommandRouter
     let opening: RepositoryOpeningResult
     let state: MainRepositoryContentState
     let onImport: () -> Void
@@ -24,6 +25,10 @@ struct MainRepositoryContentView: View {
     let batchRenamer: any CoreBatchRenaming
     let systemCapabilityChecker: any OnboardingSystemCapabilityChecking
     let errorMapper: any CoreErrorMapping
+    let aiDependencies: AIFeatureDependencies
+    let fileActionsDependencies: FileActionsFeatureDependencies
+    let settingsDependencies: SettingsFeatureDependencies
+    let syncConflictsDependencies: SyncConflictsFeatureDependencies
     let externalSyncWindows: [MainExternalSyncWindow]
     let onExternalSyncWindowCompleted: (MainExternalSyncWindow) -> Void
     let pendingTagSuggestionFocus: TagSuggestionPresentationRequest?
@@ -58,10 +63,12 @@ struct MainRepositoryContentView: View {
     @State var summarySelectionExitState = AISummarySelectionExitState()
     @State var observedInterfaceLocaleIdentifier: String?
 
+    @MainActor
     init(
         opening: RepositoryOpeningResult,
         state: MainRepositoryContentState,
         assembly: MainRepositoryContentAssembly,
+        commandRouter: AppCommandRouter? = nil,
         onImport: @escaping () -> Void,
         onDropImport: @escaping ([URL], ImportEntryDestination) -> Void,
         onOpenSettings: @escaping () -> Void = {},
@@ -82,6 +89,7 @@ struct MainRepositoryContentView: View {
         importProgressPresentation: ImportProgressListPresentation = .empty
     ) {
         self.opening = opening; self.state = state
+        _commandRouter = ObservedObject(wrappedValue: commandRouter ?? .shared)
         self.onImport = onImport; self.onDropImport = onDropImport
         self.onOpenSettings = onOpenSettings; self.onOpenAISettings = onOpenAISettings
         self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp
@@ -95,6 +103,10 @@ struct MainRepositoryContentView: View {
         batchRenamer = assembly.batchRenamer
         systemCapabilityChecker = assembly.systemCapabilityChecker
         errorMapper = assembly.errorMapper
+        aiDependencies = assembly.aiDependencies
+        fileActionsDependencies = assembly.fileActionsDependencies
+        settingsDependencies = assembly.settingsDependencies
+        syncConflictsDependencies = assembly.syncConflictsDependencies
         self.externalSyncWindows = externalSyncWindows
         self.onExternalSyncWindowCompleted = onExternalSyncWindowCompleted
         self.pendingTagSuggestionFocus = pendingTagSuggestionFocus

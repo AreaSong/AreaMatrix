@@ -1,5 +1,108 @@
 import Foundation
 
+enum AIFallbackOperationSnapshot: Equatable {
+    case classificationSuggestion
+    case semanticSearch
+    case embeddingIndexBuild
+}
+
+enum AIFallbackActionSnapshot: Equatable, Hashable {
+    case retry
+    case retryLater
+    case openAISettings
+    case openLocalModelStatus
+    case configureRemoteAI
+    case viewPrivacyRule
+    case viewCallLog
+    case buildSemanticIndex
+    case useNormalSearch
+    case classifyManually
+}
+
+enum AIFallbackCategorySnapshot: Equatable {
+    case disabled
+    case skipped
+    case unavailable
+    case error
+}
+
+enum AIFallbackKindSnapshot: Equatable {
+    case aiDisabled
+    case featureDisabled
+    case localModelNotReady
+    case remoteNotConfigured
+    case remoteFailed
+    case providerUnavailable
+    case privacySkipped
+    case semanticIndexNotReady
+    case noEligibleInput
+    case normalSearchUnavailable
+    case callLogUnavailable
+    case rateLimited
+    case timeout
+    case internalFailure
+}
+
+enum AIFallbackProviderErrorKindSnapshot: Equatable {
+    case localModelNotReady
+    case remoteNotConfigured
+    case remoteFailed
+    case providerUnavailable
+    case rateLimited
+    case timeout
+    case callLogUnavailable
+    case internalFailure
+}
+
+enum AIPrivacyDecisionSnapshot: Equatable {
+    case allowed
+    case denied
+    case skipped
+}
+
+enum AIPrivacySkippedReasonSnapshot: Equatable {
+    case privacyGateDisabled
+    case scopeNotAllowed
+    case providerNotConfigured
+    case providerNotVerified
+    case providerDisabled
+    case privacyRule
+    case fieldRule
+    case noEligibleInput
+}
+
+struct AIFallbackStatusRequestSnapshot: Equatable {
+    var operation: AIFallbackOperationSnapshot
+    var route: AICallLogRouteSnapshot?
+    var providerError: AIFallbackProviderErrorKindSnapshot?
+    var providerErrorCode: String?
+    var privacyDecision: AIPrivacyDecisionSnapshot?
+    var privacySkippedReason: AIPrivacySkippedReasonSnapshot?
+    var categorySkippedReason: AIClassificationSuggestionSkipReasonState?
+    var semanticFallbackReason: SemanticSearchFallbackReasonSnapshot?
+    var callLogStatus: AICallLogStatusSnapshot?
+    var callLogID: Int64?
+    var privacyRuleID: String?
+    var retryAfter: Int64?
+}
+
+struct AIFallbackStatusSnapshot: Equatable {
+    var operation: AIFallbackOperationSnapshot
+    var kind: AIFallbackKindSnapshot
+    var category: AIFallbackCategorySnapshot
+    var title: String
+    var message: String
+    var retryable: Bool
+    var retryDisabledReason: String?
+    var primaryAction: AIFallbackActionSnapshot?
+    var secondaryAction: AIFallbackActionSnapshot?
+    var nonAIFallbackAction: AIFallbackActionSnapshot
+    var route: AICallLogRouteSnapshot?
+    var callLogID: Int64?
+    var privacyRuleID: String?
+    var retryAfter: Int64?
+}
+
 protocol CoreRemoteProviderConfiguring: Sendable {
     func loadRemoteProviderConfig(repoPath: String) async throws -> RemoteProviderConfigState
     func testRemoteProvider(
@@ -17,11 +120,11 @@ protocol CoreRemoteProviderConfiguring: Sendable {
 }
 
 protocol CoreAIPrivacyRulesManaging: Sendable {
-    func loadAIPrivacyRules(repoPath: String) async throws -> AiPrivacyRulesSnapshot
+    func loadAIPrivacyRules(repoPath: String) async throws -> AIPrivacyRulesSnapshot
     func updateAIPrivacyRules(
         repoPath: String,
-        request: AiPrivacyRulesUpdateRequest
-    ) async throws -> AiPrivacyRulesSnapshot
+        request: AIPrivacyRulesUpdateRequestSnapshot
+    ) async throws -> AIPrivacyRulesSnapshot
 }
 
 protocol CoreAIClassificationSuggesting: Sendable {
@@ -35,23 +138,23 @@ protocol CoreAIClassificationSuggesting: Sendable {
 protocol CoreAIClassificationFallbackStatusReading: Sendable {
     func classificationFallbackStatus(
         repoPath: String,
-        request: AiFallbackStatusRequest
-    ) async throws -> AiFallbackStatus
+        request: AIFallbackStatusRequestSnapshot
+    ) async throws -> AIFallbackStatusSnapshot
 }
 
 protocol CoreAICallLogListing: Sendable {
     func listAICalls(
         repoPath: String,
-        filter: AiCallLogFilter,
-        pagination: AiCallLogPagination
-    ) async throws -> AiCallLogPage
+        filter: AICallLogFilterSnapshot,
+        pagination: AICallLogPaginationSnapshot
+    ) async throws -> AICallLogPageSnapshot
 }
 
 protocol CoreAICallLogClearing: Sendable {
     func clearAICallLog(
         repoPath: String,
-        request: AiCallLogClearRequest
-    ) async throws -> AiCallLogClearReport
+        request: AICallLogClearRequestSnapshot
+    ) async throws -> AICallLogClearReportSnapshot
 }
 
 extension CoreBridge: CoreRemoteProviderConfiguring {
@@ -115,34 +218,6 @@ extension CoreBridge: CoreRemoteProviderConfiguring {
     }
 }
 
-extension CoreBridge: CoreAIPrivacyRulesManaging {
-    func loadAIPrivacyRules(repoPath: String) async throws -> AiPrivacyRulesSnapshot {
-        try await Task.detached(priority: .userInitiated) {
-            try listAiPrivacyRules(repoPath: repoPath)
-        }.value
-    }
-
-    func updateAIPrivacyRules(
-        repoPath: String,
-        request: AiPrivacyRulesUpdateRequest
-    ) async throws -> AiPrivacyRulesSnapshot {
-        try await Task.detached(priority: .userInitiated) {
-            try updateAiPrivacyRules(repoPath: repoPath, request: request)
-        }.value
-    }
-}
-
-extension CoreBridge: CoreAIPrivacyEvaluating {
-    func evaluateAIPrivacy(
-        repoPath: String,
-        request: AiPrivacyEvaluationRequest
-    ) async throws -> AiPrivacyEvaluationReport {
-        try await Task.detached(priority: .userInitiated) {
-            try evaluateAiPrivacy(repoPath: repoPath, request: request)
-        }.value
-    }
-}
-
 extension CoreBridge: CoreAIClassificationSuggesting {
     func suggestCategoryWithAI(
         repoPath: String,
@@ -162,33 +237,165 @@ extension CoreBridge: CoreAIClassificationSuggesting {
 extension CoreBridge: CoreAIClassificationFallbackStatusReading {
     func classificationFallbackStatus(
         repoPath: String,
-        request: AiFallbackStatusRequest
-    ) async throws -> AiFallbackStatus {
+        request: AIFallbackStatusRequestSnapshot
+    ) async throws -> AIFallbackStatusSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            try getAiFallbackStatus(repoPath: repoPath, request: request)
+            try AIFallbackStatusSnapshot(getAiFallbackStatus(
+                repoPath: repoPath,
+                request: AiFallbackStatusRequest(request)
+            ))
         }.value
     }
 }
 
-extension CoreBridge: CoreAICallLogListing {
-    func listAICalls(
-        repoPath: String,
-        filter: AiCallLogFilter,
-        pagination: AiCallLogPagination
-    ) async throws -> AiCallLogPage {
-        try await Task.detached(priority: .userInitiated) {
-            try listAiCalls(repoPath: repoPath, filter: filter, pagination: pagination)
-        }.value
+extension AIFallbackStatusSnapshot {
+    init(_ status: AiFallbackStatus) {
+        self.init(
+            operation: AIFallbackOperationSnapshot(status.operation),
+            kind: AIFallbackKindSnapshot(status.kind),
+            category: AIFallbackCategorySnapshot(status.category),
+            title: status.title,
+            message: status.message,
+            retryable: status.retryable,
+            retryDisabledReason: status.retryDisabledReason,
+            primaryAction: status.primaryAction.map(AIFallbackActionSnapshot.init),
+            secondaryAction: status.secondaryAction.map(AIFallbackActionSnapshot.init),
+            nonAIFallbackAction: AIFallbackActionSnapshot(status.nonAiFallbackAction),
+            route: status.route.map(AICallLogRouteSnapshot.init),
+            callLogID: status.callLogId,
+            privacyRuleID: status.privacyRuleId,
+            retryAfter: status.retryAfter
+        )
     }
 }
 
-extension CoreBridge: CoreAICallLogClearing {
-    func clearAICallLog(
-        repoPath: String,
-        request: AiCallLogClearRequest
-    ) async throws -> AiCallLogClearReport {
-        try await Task.detached(priority: .userInitiated) {
-            try clearAiCallLog(repoPath: repoPath, request: request)
-        }.value
+extension AiFallbackStatusRequest {
+    init(_ request: AIFallbackStatusRequestSnapshot) {
+        self.init(
+            operation: request.operation.coreValue,
+            route: request.route?.coreValue,
+            providerError: request.providerError?.coreValue,
+            providerErrorCode: request.providerErrorCode,
+            privacyDecision: request.privacyDecision?.coreValue,
+            privacySkippedReason: request.privacySkippedReason?.coreValue,
+            categorySkippedReason: request.categorySkippedReason.map { AiCategorySuggestionSkipReason($0) },
+            semanticFallbackReason: request.semanticFallbackReason.map(SemanticSearchFallbackReason.init),
+            callLogStatus: request.callLogStatus?.coreValue,
+            callLogId: request.callLogID,
+            privacyRuleId: request.privacyRuleID,
+            retryAfter: request.retryAfter
+        )
+    }
+}
+
+private extension AIFallbackOperationSnapshot {
+    init(_ operation: AiFallbackOperation) {
+        switch operation {
+        case .classificationSuggestion: self = .classificationSuggestion
+        case .semanticSearch: self = .semanticSearch
+        case .embeddingIndexBuild: self = .embeddingIndexBuild
+        }
+    }
+
+    var coreValue: AiFallbackOperation {
+        switch self {
+        case .classificationSuggestion: .classificationSuggestion
+        case .semanticSearch: .semanticSearch
+        case .embeddingIndexBuild: .embeddingIndexBuild
+        }
+    }
+}
+
+private extension AIFallbackActionSnapshot {
+    init(_ action: AiFallbackAction) {
+        switch action {
+        case .retry: self = .retry
+        case .retryLater: self = .retryLater
+        case .openAiSettings: self = .openAISettings
+        case .openLocalModelStatus: self = .openLocalModelStatus
+        case .configureRemoteAi: self = .configureRemoteAI
+        case .viewPrivacyRule: self = .viewPrivacyRule
+        case .viewCallLog: self = .viewCallLog
+        case .buildSemanticIndex: self = .buildSemanticIndex
+        case .useNormalSearch: self = .useNormalSearch
+        case .classifyManually: self = .classifyManually
+        }
+    }
+}
+
+private extension AIFallbackKindSnapshot {
+    init(_ kind: AiFallbackKind) {
+        switch kind {
+        case .aiDisabled: self = .aiDisabled
+        case .featureDisabled: self = .featureDisabled
+        case .localModelNotReady: self = .localModelNotReady
+        case .remoteNotConfigured: self = .remoteNotConfigured
+        case .remoteFailed: self = .remoteFailed
+        case .providerUnavailable: self = .providerUnavailable
+        case .privacySkipped: self = .privacySkipped
+        case .semanticIndexNotReady: self = .semanticIndexNotReady
+        case .noEligibleInput: self = .noEligibleInput
+        case .normalSearchUnavailable: self = .normalSearchUnavailable
+        case .callLogUnavailable: self = .callLogUnavailable
+        case .rateLimited: self = .rateLimited
+        case .timeout: self = .timeout
+        case .internalFailure: self = .internalFailure
+        }
+    }
+}
+
+private extension AIFallbackCategorySnapshot {
+    init(_ category: AiFallbackCategory) {
+        switch category {
+        case .disabled: self = .disabled
+        case .skipped: self = .skipped
+        case .unavailable: self = .unavailable
+        case .error: self = .error
+        }
+    }
+}
+
+private extension AIFallbackProviderErrorKindSnapshot {
+    var coreValue: AiFallbackProviderErrorKind {
+        switch self {
+        case .localModelNotReady: .localModelNotReady
+        case .remoteNotConfigured: .remoteNotConfigured
+        case .remoteFailed: .remoteFailed
+        case .providerUnavailable: .providerUnavailable
+        case .rateLimited: .rateLimited
+        case .timeout: .timeout
+        case .callLogUnavailable: .callLogUnavailable
+        case .internalFailure: .internalFailure
+        }
+    }
+}
+
+private extension AiCategorySuggestionSkipReason {
+    init(_ reason: AIClassificationSuggestionSkipReasonState) {
+        switch reason {
+        case .aiDisabled: self = .aiDisabled
+        case .featureDisabled: self = .featureDisabled
+        case .ruleResultConfident: self = .ruleResultConfident
+        case .noEligibleContext: self = .noEligibleContext
+        case .privacyRule: self = .privacyRule
+        case .providerUnavailable: self = .providerUnavailable
+        }
+    }
+}
+
+private extension SemanticSearchFallbackReason {
+    init(_ reason: SemanticSearchFallbackReasonSnapshot) {
+        switch reason {
+        case .aiDisabled: self = .aiDisabled
+        case .featureDisabled: self = .featureDisabled
+        case .providerUnavailable: self = .providerUnavailable
+        case .privacyRule: self = .privacyRule
+        case .semanticIndexNotReady: self = .semanticIndexNotReady
+        case .callLogUnavailable: self = .callLogUnavailable
+        case .noEligibleInput: self = .noEligibleInput
+        case .normalSearchUnavailable: self = .normalSearchUnavailable
+        case .rateLimited: self = .rateLimited
+        case .timeout: self = .timeout
+        }
     }
 }

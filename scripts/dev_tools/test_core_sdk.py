@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import plistlib
 import re
 import subprocess
@@ -316,6 +317,55 @@ class CoreSDKTest(unittest.TestCase):
 
             self.assertEqual(core_sdk.verify_core_sdk_pointer(restored), 0)
             self.assertTrue((restored / ".build/core-sdk/current").is_symlink())
+
+    def test_cache_prune_preview_uses_lru_and_preserves_current(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            oldest = self.write_artifact(root, "1" * 64)
+            current = self.write_artifact(root, "2" * 64)
+            newest = self.write_artifact(root, "3" * 64)
+            (root / ".build/core-sdk/current").symlink_to(current.relative_to(root / ".build/core-sdk"))
+            for timestamp, artifact in enumerate((oldest, current, newest), start=1):
+                marker = artifact / core_sdk.CORE_SDK_LAST_USED_MARKER
+                marker.touch()
+                os.utime(marker, (timestamp, timestamp))
+
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = core_sdk.run_core_sdk_cache_prune(
+                    root,
+                    max_bytes=0,
+                    keep_recent=1,
+                )
+
+            self.assertEqual(result, 0)
+            self.assertTrue(oldest.is_dir())
+            self.assertTrue(current.is_dir())
+            self.assertTrue(newest.is_dir())
+            self.assertIn(f"would-remove {oldest.name}", output.getvalue())
+            self.assertNotIn(f"would-remove {current.name}", output.getvalue())
+            self.assertNotIn(f"would-remove {newest.name}", output.getvalue())
+
+    def test_cache_prune_apply_removes_only_planned_fingerprint_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            removable = self.write_artifact(root, "4" * 64)
+            current = self.write_artifact(root, "5" * 64)
+            unrelated = root / ".build/core-sdk/manual-notes"
+            unrelated.mkdir()
+            (root / ".build/core-sdk/current").symlink_to(current.relative_to(root / ".build/core-sdk"))
+
+            result = core_sdk.run_core_sdk_cache_prune(
+                root,
+                max_bytes=0,
+                keep_recent=0,
+                apply=True,
+            )
+
+            self.assertEqual(result, 0)
+            self.assertFalse(removable.exists())
+            self.assertTrue(current.is_dir())
+            self.assertTrue(unrelated.is_dir())
 
 
 if __name__ == "__main__":

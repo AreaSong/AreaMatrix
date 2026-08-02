@@ -4,6 +4,12 @@ protocol CoreErrorMapping {
     func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot
 }
 
+struct CoreErrorSnapshotMapper: CoreErrorMapping {
+    func mapCoreError(_ error: CoreError) async -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(coreMapping: mapCoreErrorFromCore(error))
+    }
+}
+
 protocol AppErrorMappingProviding {
     var appErrorMapping: CoreErrorMappingSnapshot { get }
 }
@@ -343,6 +349,17 @@ extension CoreErrorMappingSnapshot {
         )))
     }
 
+    static func fileNotFound(rawContext: String) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(coreMapping: mapCoreError(input: ErrorMappingInput(
+            kind: .fileNotFound,
+            path: rawContext,
+            reason: nil,
+            message: nil,
+            expectedRevision: nil,
+            currentRevision: nil
+        )))
+    }
+
     static func database(rawContext: String) -> CoreErrorMappingSnapshot {
         CoreErrorMappingSnapshot(coreMapping: mapCoreError(input: ErrorMappingInput(
             kind: .db,
@@ -410,6 +427,10 @@ extension AppSemanticError {
 
     static func invalidPath(rawContext: String) -> AppSemanticError {
         AppSemanticError(appErrorMapping: .invalidPath(rawContext: rawContext))
+    }
+
+    static func fileNotFound(rawContext: String) -> AppSemanticError {
+        AppSemanticError(appErrorMapping: .fileNotFound(rawContext: rawContext))
     }
 
     static func conflict(rawContext: String) -> AppSemanticError {

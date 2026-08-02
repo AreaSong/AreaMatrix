@@ -4,14 +4,73 @@ import SwiftUI
 struct AISettingsPane: View {
     @EnvironmentObject private var localizer: AppLocalizer
     @StateObject fileprivate var model: AISettingsModel
+    private let dependencies: AISettingsPaneDependencies
     @State fileprivate var isLocalModelStatusPresented = false
     @State fileprivate var isRemoteConfigPresented = false
     @State fileprivate var isCallLogPresented = false
     @State fileprivate var returnsToPrivacyRulesAfterRemoteConfig = false
     @State fileprivate var privacyRulesRoute: AIPrivacyRulesRoute?
 
-    init(repoPath: String) {
-        _model = StateObject(wrappedValue: AISettingsModel(repoPath: repoPath))
+    init(
+        repoPath: String,
+        featureDependencies: AIFeatureDependencies,
+        sharedDependencies: SharedFeatureDependencies
+    ) {
+        let model = AISettingsModel(
+            repoPath: repoPath,
+            loader: featureDependencies.aiSettingsLoader,
+            updater: featureDependencies.aiSettingsUpdater,
+            errorMapper: sharedDependencies.errorMapper
+        )
+        _model = StateObject(wrappedValue: model)
+        dependencies = AISettingsPaneDependencies(
+            makeLocalModelStatus: { path in
+                LocalModelStatusModel(
+                    repoPath: path,
+                    statusReader: featureDependencies.localModelStatusReader,
+                    errorMapper: sharedDependencies.errorMapper
+                )
+            },
+            makeRemoteProviderConfig: { path in
+                RemoteProviderConfigModel(
+                    repoPath: path,
+                    bridge: featureDependencies.remoteProviderConfigurer,
+                    errorMapper: sharedDependencies.errorMapper
+                )
+            },
+            makeRemotePrivacyGate: { path in
+                RemotePrivacyGateModel(
+                    repoPath: path,
+                    bridge: featureDependencies.aiPrivacyRulesManager,
+                    errorMapper: sharedDependencies.errorMapper
+                )
+            },
+            makePrivacyProviderState: { path in
+                AIPrivacyRemoteProviderStateModel(
+                    repoPath: path,
+                    providerReader: featureDependencies.remoteProviderConfigurer,
+                    errorMapper: sharedDependencies.errorMapper
+                )
+            },
+            makePrivacyRules: { path, settingsModel in
+                AIPrivacyRulesModel(
+                    repoPath: path,
+                    rulesManager: featureDependencies.aiPrivacyRulesManager,
+                    evaluator: featureDependencies.aiPrivacyRules,
+                    errorMapper: sharedDependencies.errorMapper,
+                    settingsSync: settingsModel
+                )
+            },
+            privacyRegistryReader: featureDependencies.privacyRuleRegistryReader,
+            callLogLister: featureDependencies.aiCallLogLister,
+            callLogClearer: featureDependencies.aiCallLogClearer,
+            errorMapper: sharedDependencies.errorMapper
+        )
+    }
+
+    init(model: AISettingsModel, dependencies: AISettingsPaneDependencies) {
+        _model = StateObject(wrappedValue: model)
+        self.dependencies = dependencies
     }
 
     var body: some View {
@@ -26,13 +85,14 @@ struct AISettingsPane: View {
         }
         .task { await model.load() }
         .sheet(isPresented: $isLocalModelStatusPresented) {
-            LocalModelStatusView(model: LocalModelStatusModel(repoPath: model.repoPath)) {
+            LocalModelStatusView(model: dependencies.makeLocalModelStatus(model.repoPath)) {
                 isLocalModelStatusPresented = false
             }
         }
         .sheet(isPresented: $isRemoteConfigPresented) {
             RemoteModelConfigSheet(
-                model: RemoteProviderConfigModel(repoPath: model.repoPath),
+                model: dependencies.makeRemoteProviderConfig(model.repoPath),
+                privacyModel: dependencies.makeRemotePrivacyGate(model.repoPath),
                 onOpenPrivacyRules: openPrivacyRules
             ) {
                 isRemoteConfigPresented = false
@@ -46,12 +106,22 @@ struct AISettingsPane: View {
             AIPrivacyRulesRouteView(
                 route: route,
                 model: model,
+                registryReader: dependencies.privacyRegistryReader,
+                providerModel: dependencies.makePrivacyProviderState(model.repoPath),
+                privacyModel: dependencies.makePrivacyRules(model.repoPath, model),
                 onConfigureRemoteAI: configureRemoteAIFromPrivacyRules,
                 onClose: closePrivacyRules
             )
         }
         .sheet(isPresented: $isCallLogPresented) {
-            AICallLogView(repoPath: model.repoPath) { isCallLogPresented = false }
+            AICallLogView(
+                repoPath: model.repoPath,
+                lister: dependencies.callLogLister,
+                clearer: dependencies.callLogClearer,
+                errorMapper: dependencies.errorMapper
+            ) {
+                isCallLogPresented = false
+            }
         }
     }
 
@@ -62,6 +132,19 @@ struct AISettingsPane: View {
             }
         }
     }
+}
+
+@MainActor
+struct AISettingsPaneDependencies {
+    var makeLocalModelStatus: (String) -> LocalModelStatusModel
+    var makeRemoteProviderConfig: (String) -> RemoteProviderConfigModel
+    var makeRemotePrivacyGate: (String) -> RemotePrivacyGateModel
+    var makePrivacyProviderState: (String) -> AIPrivacyRemoteProviderStateModel
+    var makePrivacyRules: (String, AISettingsModel) -> AIPrivacyRulesModel
+    var privacyRegistryReader: any AIPrivacyRuleRegistryReading
+    var callLogLister: any CoreAICallLogListing
+    var callLogClearer: any CoreAICallLogClearing
+    var errorMapper: any CoreErrorMapping
 }
 
 private extension AISettingsPane {
