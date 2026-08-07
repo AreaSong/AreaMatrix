@@ -253,7 +253,7 @@ extension ClassifierSettingsModel {
         case .zhHans: return ClassifierEditingLocale.zhHans
         case .en: return ClassifierEditingLocale.en
         case .followInterface:
-            return AppLanguageRuntime.shared.resolvedIdentifier() == "zh-Hans" ? .zhHans : .en
+            return interfaceLocaleIdentifierProvider() == "zh-Hans" ? .zhHans : .en
         case .unsupported: return nil
         }
     }

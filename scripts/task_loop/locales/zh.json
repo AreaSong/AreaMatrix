@@ -60,6 +60,8 @@
   "action.recommended-next.note": "只展示行动链，不自动执行命令",
   "action.release.label": "release",
   "action.release.note": "运行发布签名/公证预检",
+  "action.governance.label": "governance",
+  "action.governance.note": "审计企业治理与远端合并门禁",
   "action.run.label": "run",
   "action.run.note": "启动确定性的开发场景",
   "action.recovery-menu.label": "恢复与收尾",

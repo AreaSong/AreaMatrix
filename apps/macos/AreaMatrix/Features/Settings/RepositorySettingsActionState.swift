@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Combine
 import Foundation
 
@@ -79,12 +80,11 @@ final class LocalModelStatusModel: ObservableObject {
         repoPath: String,
         modelID: String = LocalModelStatusModel.defaultModelID,
         storageLocation: String? = nil,
-        storageLocationProvider: any LocalModelStorageLocationProviding =
-            LocalModelStatusPlatformServices.storageLocationProvider,
+        storageLocationProvider: any LocalModelStorageLocationProviding,
         statusReader: any CoreLocalModelStatusReading,
-        installHelpOpener: any LocalModelInstallHelpOpening = LocalModelStatusPlatformServices.installHelpOpener,
-        folderOpener: any LocalModelFolderOpening = LocalModelStatusPlatformServices.folderOpener,
-        diagnosticsCopier: any LocalModelDiagnosticsCopying = LocalModelStatusPlatformServices.diagnosticsCopier,
+        installHelpOpener: any LocalModelInstallHelpOpening,
+        folderOpener: any LocalModelFolderOpening,
+        diagnosticsCopier: any LocalModelDiagnosticsCopying,
         errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath

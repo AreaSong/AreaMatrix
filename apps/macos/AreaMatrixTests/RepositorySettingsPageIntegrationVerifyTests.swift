@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
 import XCTest
 
@@ -200,8 +201,10 @@ private func makeRepositorySettingsModel(
         fileLister: bridge,
         scanSessionReader: bridge,
         existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+        metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
         finderOpener: doubles.finder,
         pathCopier: doubles.copier,
+        generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
         diagnosticsCollector: doubles.diagnostics,
         coreVersionLoader: bridge,
         errorMapper: bridge,

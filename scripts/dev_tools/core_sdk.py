@@ -480,7 +480,10 @@ def run_core_sdk_build(
             macos_deployment_target=macos_deployment_target,
             ios_deployment_target=ios_deployment_target,
         )
-        return verify_core_sdk_pointer(root, expected_fingerprint=fingerprint)
+        result = verify_core_sdk_pointer(root, expected_fingerprint=fingerprint)
+        if result == 0 and dependency_file:
+            _write_sdk_dependency_file(root, dependency_file, root / ".build/core-sdk/current/manifest.json")
+        return result
 
     started_at = time.monotonic()
     result: int | None = None

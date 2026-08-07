@@ -10,6 +10,7 @@ let package = Package(
     products: [
         .library(name: "AreaMatrixCoreContracts", targets: ["AreaMatrixCoreContracts"]),
         .library(name: "AreaMatrixCoreBridgeContract", targets: ["AreaMatrixCoreBridgeContract"]),
+        .library(name: "AreaMatrixCoreBridgeRuntime", targets: ["AreaMatrixCoreBridgeRuntime"]),
         .library(name: "AreaMatrixUIFoundation", targets: ["AreaMatrixUIFoundation"]),
         .library(name: "AreaMatrixPlatformKit", targets: ["AreaMatrixPlatformKit"])
     ],
@@ -20,7 +21,13 @@ let package = Package(
         ),
         .target(
             name: "AreaMatrixCoreBridgeContract",
+            dependencies: ["AreaMatrixCoreContracts"],
             path: "Sources/AreaMatrixCoreBridgeContract"
+        ),
+        .target(
+            name: "AreaMatrixCoreBridgeRuntime",
+            dependencies: ["AreaMatrixCoreBridgeContract"],
+            path: "Sources/AreaMatrixCoreBridgeRuntime"
         ),
         .target(
             name: "AreaMatrixUIFoundation",
@@ -37,8 +44,13 @@ let package = Package(
         ),
         .testTarget(
             name: "AreaMatrixCoreBridgeContractTests",
-            dependencies: ["AreaMatrixCoreBridgeContract"],
+            dependencies: ["AreaMatrixCoreBridgeContract", "AreaMatrixCoreContracts"],
             path: "Tests/AreaMatrixCoreBridgeContractTests"
+        ),
+        .testTarget(
+            name: "AreaMatrixCoreBridgeRuntimeTests",
+            dependencies: ["AreaMatrixCoreBridgeRuntime", "AreaMatrixCoreBridgeContract"],
+            path: "Tests/AreaMatrixCoreBridgeRuntimeTests"
         ),
         .testTarget(
             name: "AreaMatrixUIFoundationTests",

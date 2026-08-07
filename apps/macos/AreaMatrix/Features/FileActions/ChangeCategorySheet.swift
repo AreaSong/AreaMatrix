@@ -305,6 +305,10 @@ struct ClassifierRuleEditorRouteView: View {
                 predictor: settingsDependencies.categoryPredictor,
                 ruleEditor: settingsDependencies.classifierRuleEditor,
                 errorMapper: errorMapper,
+                fileOpener: settingsDependencies.classifierFileOpener,
+                fileRevealer: settingsDependencies.classifierFileRevealer,
+                finderOpener: settingsDependencies.classifierFinderOpener,
+                accessibilityAnnouncer: settingsDependencies.classifierAccessibilityAnnouncer,
                 onSavedCategory: acceptSavedCategory
             )
             if let context {

@@ -20,8 +20,8 @@ final class MainExternalCreatedFileWatcher: ObservableObject {
     private let flushDelay: Duration
 
     init(
-        cursorStore: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer,
-        inFlightTracker: any InFlightFileChangeTracking = InFlightFileChangeTracker.shared,
+        cursorStore: any CoreExternalChangesSyncing,
+        inFlightTracker: any InFlightFileChangeTracking,
         flushDelay: Duration = .milliseconds(200)
     ) {
         self.cursorStore = cursorStore

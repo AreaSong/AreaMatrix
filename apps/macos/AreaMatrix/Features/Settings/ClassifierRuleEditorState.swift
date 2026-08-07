@@ -26,6 +26,7 @@ struct ClassifierRuleEditorModelState: Equatable {
     var loadState = LoadState.idle
     var saveState = SaveState.idle
     var recoveryState = RecoveryState.idle
+    var interfaceLocaleIdentifier = "en"
     var rules: [ClassifierRuleRecordSnapshot] = []
     var repositoryLocalePolicy = ""
     var editingLocale: ClassifierEditingLocale?
@@ -90,6 +91,10 @@ struct ClassifierRuleEditorModelState: Equatable {
     var conflictReview: ClassifierRuleConflictReview? {
         guard case let .conflict(review) = saveState else { return nil }
         return review
+    }
+
+    init(interfaceLocaleIdentifier: String = "en") {
+        self.interfaceLocaleIdentifier = interfaceLocaleIdentifier
     }
 }
 
@@ -375,7 +380,7 @@ extension ClassifierRuleEditorModelState {
         case .zhHans: return .zhHans
         case .en: return .en
         case .followInterface:
-            return AppLanguageRuntime.shared.resolvedIdentifier() == "zh-Hans" ? .zhHans : .en
+            return interfaceLocaleIdentifier == "zh-Hans" ? .zhHans : .en
         case .unsupported: return nil
         }
     }

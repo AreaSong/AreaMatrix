@@ -45,6 +45,7 @@ from .developer import (
     run_changed_tests,
     run_macos_developer_scenario,
 )
+from .governance_status import run_governance_status
 from .macos import run_macos_tests
 from .middle_layer import run_workflow_middle
 from .release import (
@@ -63,6 +64,7 @@ from .release_status import (
     run_release_status,
     run_task05_release_review_audit,
 )
+from .remote_governance import run_remote_governance_audit
 from .tasks import TASK_KINDS, TASK_LAYERS, TASK_PRIORITIES, TASK_RISKS, run_tasks_command
 from .workflow_baseline import run_workflow_baseline
 from .workflow_init import run_workflow_init
@@ -129,6 +131,40 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     check.add_argument("--list", action="store_true", help="Print the affected-path validation plan without executing it")
     check.add_argument("task_label", nargs="?", help="Task label for './dev check task', for example 4-1/task-15")
+
+    governance = subparsers.add_parser("governance", help="Run explicit enterprise governance audits")
+    governance_sub = governance.add_subparsers(dest="governance_command", required=True)
+    remote_governance = governance_sub.add_parser(
+        "remote-audit",
+        help="Read-only audit of GitHub Actions, branch protection, required checks, and CODEOWNERS",
+    )
+    remote_governance.add_argument("--remote", default="origin", help="Git remote to inspect; defaults to origin")
+    remote_governance.add_argument("--branch", help="Branch to inspect; defaults to the current branch or main")
+    remote_governance.add_argument(
+        "--recent-runs",
+        type=int,
+        default=10,
+        help="Number of recent GitHub Actions runs to inspect; defaults to 10",
+    )
+    remote_governance.add_argument("--json", action="store_true", help="Print machine-readable audit evidence")
+    governance_status = governance_sub.add_parser(
+        "status",
+        help="Aggregate local, module, remote, and release governance readiness",
+    )
+    governance_status.add_argument("--remote", default="origin", help="Git remote to inspect; defaults to origin")
+    governance_status.add_argument("--branch", help="Branch to inspect; defaults to the current branch or main")
+    governance_status.add_argument(
+        "--recent-runs",
+        type=int,
+        default=10,
+        help="Number of recent GitHub Actions runs to inspect; defaults to 10",
+    )
+    governance_status.add_argument(
+        "--notary-profile",
+        default=DEFAULT_NOTARY_PROFILE,
+        help=f"Keychain profile for release preflight; defaults to {DEFAULT_NOTARY_PROFILE}",
+    )
+    governance_status.add_argument("--json", action="store_true", help="Print machine-readable status")
 
     wording = subparsers.add_parser("wording", help="Audit long-term source wording")
     wording_sub = wording.add_subparsers(dest="wording_command", required=True)
@@ -217,6 +253,24 @@ def _build_parser() -> argparse.ArgumentParser:
         "--coverage-gate",
         action="store_true",
         help="Enforce documented Swift Watcher and Bridge coverage thresholds from the result bundle",
+    )
+    mode = macos.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--build-for-testing",
+        action="store_true",
+        help="Build the XCTest bundle once without running tests; reuse the same DerivedData with --test-without-building",
+    )
+    mode.add_argument(
+        "--test-without-building",
+        action="store_true",
+        help="Run tests from an existing build-for-testing DerivedData without rebuilding the app",
+    )
+    macos.add_argument(
+        "--test-plan",
+        help=(
+            "XCTest plan name, for example AreaMatrix-Unit or AreaMatrix-Integration; "
+            "defaults to the scheme's Functional plan"
+        ),
     )
     macos.add_argument(
         "--only-testing",
@@ -915,6 +969,23 @@ def main(argv: Sequence[str] | None = None) -> int:
                 if not args.task_label:
                     parser.error("'./dev check task' requires a task label")
                 return run_task_check(args.task_label, root)
+        if args.command == "governance" and args.governance_command == "remote-audit":
+            return run_remote_governance_audit(
+                root,
+                branch=args.branch,
+                remote=args.remote,
+                recent_runs=args.recent_runs,
+                json_output=args.json,
+            )
+        if args.command == "governance" and args.governance_command == "status":
+            return run_governance_status(
+                root,
+                branch=args.branch,
+                remote=args.remote,
+                recent_runs=args.recent_runs,
+                notary_profile=args.notary_profile,
+                json_output=args.json,
+            )
         if args.command == "wording" and args.wording_command == "audit":
             return run_wording_audit(root, args)
         if args.command == "build" and args.build_target == "core":
@@ -967,6 +1038,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 disable_parallel_testing=args.disable_parallel_testing,
                 enable_code_coverage=args.enable_code_coverage,
                 coverage_gate=args.coverage_gate,
+                build_for_testing=args.build_for_testing,
+                test_without_building=args.test_without_building,
+                test_plan=args.test_plan,
             )
         if args.command == "test" and args.test_target == "changed":
             return run_changed_tests(root, list_only=args.list)

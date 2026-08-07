@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
 
 actor RecordingDiagnosticsCollector: CoreDiagnosticsCollecting, RepoPathRequestRecording {

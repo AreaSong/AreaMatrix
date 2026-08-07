@@ -125,7 +125,8 @@ final class MacOSFeatureOwnershipGovernanceTests: MacOSGovernanceTestCase {
         let registrations = FeatureManifestRegistry.extensions.map { extensionManifest in
             FeatureExtensionRuntimeRegistration(
                 id: extensionManifest.id,
-                contractVersion: extensionManifest.id == "command.palette" ? "2.0.0" : extensionManifest.contractVersion,
+                contractVersion: extensionManifest.id == "command.palette" ? "2.0.0" : extensionManifest
+                    .contractVersion,
                 execute: {}
             )
         }

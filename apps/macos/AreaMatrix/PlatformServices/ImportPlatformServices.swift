@@ -1,21 +1,13 @@
 import CryptoKit
 import Foundation
 
-enum ImportPlatformServices {
-    static var folderScanner: any ImportFolderScanning {
-        LocalImportFolderScanner()
-    }
-
-    static var sourcePreflightInspector: any SourcePreflightInspecting {
-        LocalSourcePreflightInspector()
-    }
-
-    static func isDirectory(_ url: URL) -> Bool {
+struct LocalImportFileResourceAccess: ImportFileResourceAccessing {
+    func isDirectory(_ url: URL) -> Bool {
         var isDirectory: ObjCBool = false
         return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
     }
 
-    static func isICloudPlaceholder(_ url: URL) -> Bool {
+    func isICloudPlaceholder(_ url: URL) -> Bool {
         if url.path.hasSuffix(".icloud") || url.path.contains(".icloud/") {
             return true
         }
@@ -27,11 +19,11 @@ enum ImportPlatformServices {
         return values.isUbiquitousItem == true && values.ubiquitousItemDownloadingStatus == .notDownloaded
     }
 
-    static func fileSizeBytes(_ url: URL) -> Int64? {
+    func fileSizeBytes(_ url: URL) -> Int64? {
         (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init)
     }
 
-    static func sha256Hex(for fileURL: URL) throws -> String {
+    func sha256Hex(for fileURL: URL) throws -> String {
         let handle = try FileHandle(forReadingFrom: fileURL)
         defer { try? handle.close() }
 
@@ -40,6 +32,36 @@ enum ImportPlatformServices {
             hasher.update(data: data)
         }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+enum ImportPlatformServices {
+    static var folderScanner: any ImportFolderScanning {
+        LocalImportFolderScanner()
+    }
+
+    static var fileResourceAccess: any ImportFileResourceAccessing {
+        LocalImportFileResourceAccess()
+    }
+
+    static var sourcePreflightInspector: any SourcePreflightInspecting {
+        LocalSourcePreflightInspector()
+    }
+
+    static func isDirectory(_ url: URL) -> Bool {
+        fileResourceAccess.isDirectory(url)
+    }
+
+    static func isICloudPlaceholder(_ url: URL) -> Bool {
+        fileResourceAccess.isICloudPlaceholder(url)
+    }
+
+    static func fileSizeBytes(_ url: URL) -> Int64? {
+        fileResourceAccess.fileSizeBytes(url)
+    }
+
+    static func sha256Hex(for fileURL: URL) throws -> String {
+        try fileResourceAccess.sha256Hex(for: fileURL)
     }
 }
 
@@ -206,7 +228,11 @@ private struct ImportFolderScanAccumulator {
             return
         }
 
-        let row = ImportFolderPreviewRow.loading(fileURL: url, rootURL: rootURL)
+        let row = ImportFolderPreviewRow.loading(
+            fileURL: url,
+            rootURL: rootURL,
+            sizeBytes: ImportPlatformServices.fileSizeBytes(url)
+        )
         rows.append(ImportPlatformServices.isICloudPlaceholder(url)
             ? row.withStatus(.iCloudPlaceholder(path: url.path))
             : row)

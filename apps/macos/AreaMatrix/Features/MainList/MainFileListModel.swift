@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Combine
 import Foundation
 
@@ -89,6 +90,7 @@ final class MainFileListModel: ObservableObject {
     let repoPath: String
     let isReadOnly: Bool
     let writeLockedFileIDs: Set<Int64>
+    let fileResourceAccess: any ImportFileResourceAccessing
     let fileLister: any CoreFileListing
     let fileDetailer: any CoreFileDetailing
     let missingFileRecoverer: any CoreMissingFileRecovering
@@ -139,6 +141,7 @@ final class MainFileListModel: ObservableObject {
         repoPath = opening.config.repoPath
         isReadOnly = opening.isReadOnly
         writeLockedFileIDs = opening.writeLockedFileIDs
+        fileResourceAccess = dependencies.fileResourceAccess
         files = opening.currentCategoryFiles
         nextFilePageOffset = Int64(opening.currentCategoryFiles.count)
         hasMore = opening.currentCategoryFiles.count == Int(Self.fileListPageSize)

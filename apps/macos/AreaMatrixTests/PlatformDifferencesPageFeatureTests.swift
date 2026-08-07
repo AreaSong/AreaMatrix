@@ -1,4 +1,6 @@
 @testable import AreaMatrix
+@testable import AreaMatrixCoreBridgeContract
+@testable import AreaMatrixCoreContracts
 import XCTest
 
 private let platformDifferencesDefaultTestAppVersion = "1"

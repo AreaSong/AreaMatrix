@@ -123,14 +123,16 @@ final class ObservabilityHubAndStoreTests: XCTestCase {
 
         await logger.recordUIAction(
             actionID: "repository.import.retry.confirmed",
-            componentID: "macos.import.progress",
-            traceID: "trace-id",
-            operationID: "operation-id",
-            retryOfOperationID: "previous-operation-id"
+            context: AppUIActionContext(
+                traceID: "trace-id",
+                operationID: "operation-id",
+                retryOfOperationID: "previous-operation-id",
+                componentID: "macos.import.progress"
+            )
         )
         await logger.recordUIAction(
             actionID: "app.command.settings.triggered",
-            traceID: "default-operation-trace"
+            context: AppUIActionContext(traceID: "default-operation-trace")
         )
 
         let events = await hub.recentEvents(limit: 2)

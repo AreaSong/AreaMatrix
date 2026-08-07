@@ -19,7 +19,7 @@ enum FeatureManifestRegistry {
         ImportFeatureManifestProvider.manifest,
         MainListFeatureManifestProvider.manifest,
         OnboardingFeatureManifestProvider.manifest,
-        RepositoryLifecycleFeatureManifestProvider.manifest,
+        RepositoryLifecycleManifestProvider.manifest,
         SearchFeatureManifestProvider.manifest,
         SettingsFeatureManifestProvider.manifest,
         SyncConflictsFeatureManifestProvider.manifest
@@ -88,12 +88,6 @@ struct FeatureExtensionRuntimeRegistration {
     let id: String
     let contractVersion: String
     let execute: () -> Void
-
-    init(id: String, contractVersion: String, execute: @escaping () -> Void) {
-        self.id = id
-        self.contractVersion = contractVersion
-        self.execute = execute
-    }
 }
 
 @MainActor
@@ -114,13 +108,13 @@ struct FeatureExtensionRuntimeRegistry {
         registrations: [FeatureExtensionRuntimeRegistration]
     ) {
         self.manifestRegistry = manifestRegistry
-        self.registrationsByID = Dictionary(
+        registrationsByID = Dictionary(
             grouping: registrations,
             by: \.id
         ).reduce(into: [:]) { result, entry in
             result[entry.key] = entry.value.first
         }
-        self.duplicateRegistrationIDs = Dictionary(grouping: registrations, by: \.id)
+        duplicateRegistrationIDs = Dictionary(grouping: registrations, by: \.id)
             .filter { $0.value.count > 1 }
             .map(\.key)
             .sorted()

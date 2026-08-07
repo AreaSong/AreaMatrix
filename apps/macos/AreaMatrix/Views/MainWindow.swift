@@ -14,8 +14,8 @@ struct MainWindow: View {
     init(
         model: OnboardingModel? = nil,
         dependencies: AppDependencyContainer,
-        observabilityRuntime: ObservabilityRuntimeAssembly? = nil,
-        commandRouter: AppCommandRouter? = nil,
+        observabilityRuntime: ObservabilityRuntimeAssembly,
+        commandRouter: AppCommandRouter,
         windowCloser: (any WindowClosing)? = nil
     ) {
         let resolvedDependencies = dependencies
@@ -24,11 +24,12 @@ struct MainWindow: View {
         self.dependencies = dependencies
         _model = StateObject(wrappedValue: resolvedModel)
         _externalCreatedFileWatcher = StateObject(wrappedValue: MainExternalCreatedFileWatcher(
-            cursorStore: resolvedModel.externalChangesSyncer
+            cursorStore: resolvedModel.externalChangesSyncer,
+            inFlightTracker: resolvedDependencies.platform.inFlightFileChangeTracker
         ))
         importProgressControlState = resolvedModel.importProgressControlState
-        _observabilityRuntime = ObservedObject(wrappedValue: observabilityRuntime ?? .shared)
-        _commandRouter = ObservedObject(wrappedValue: commandRouter ?? .shared)
+        _observabilityRuntime = ObservedObject(wrappedValue: observabilityRuntime)
+        _commandRouter = ObservedObject(wrappedValue: commandRouter)
         self.windowCloser = resolvedWindowCloser
     }
 }
@@ -167,16 +168,19 @@ extension MainWindow {
                     }
                 },
                 onShowExistingFile: model.showImportEntryExistingFile,
-                categoryPredictor: dependencies.feature.`import`.categoryPredictor,
-                batchFileLoader: dependencies.feature.`import`.batchFileLoader,
-                fileImporter: dependencies.feature.`import`.fileImporter,
-                batchFileImporter: dependencies.feature.`import`.batchFileImporter,
-                batchConflictBatcher: dependencies.feature.`import`.conflictBatcher,
-                undoActionStore: dependencies.feature.`import`.undoActionStore,
-                folderScanner: ImportPlatformServices.folderScanner,
-                placeholderDownloader: LocalICloudPlaceholderDownloader(),
+                fileResourceAccess: dependencies.feature.import.fileResourceAccess,
+                categoryPredictor: dependencies.feature.import.categoryPredictor,
+                batchFileLoader: dependencies.feature.import.batchFileLoader,
+                fileImporter: dependencies.feature.import.fileImporter,
+                batchFileImporter: dependencies.feature.import.batchFileImporter,
+                batchConflictBatcher: dependencies.feature.import.conflictBatcher,
+                undoActionStore: dependencies.feature.import.undoActionStore,
+                folderScanner: dependencies.feature.import.folderScanner,
+                sourcePreflightInspector: dependencies.feature.import.sourcePreflightInspector,
+                placeholderDownloader: dependencies.feature.import.placeholderDownloader,
                 errorMapper: dependencies.feature.shared.errorMapper,
-                batchSessionStore: model.importBatchSessionStore
+                batchSessionStore: model.importBatchSessionStore,
+                actionLogger: dependencies.feature.import.actionLogger
             )
         }
     }

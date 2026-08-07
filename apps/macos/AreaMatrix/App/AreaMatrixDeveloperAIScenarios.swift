@@ -223,7 +223,7 @@ private struct DeveloperAISummaryScenario: View {
         AISummaryEditor(
             repoPath: DeveloperAIScenarioFixture.repoPath,
             fileID: DeveloperAIScenarioFixture.fileID,
-            aiDependencies: AppDependencyContainer.live.feature.ai,
+            aiDependencies: AppDependencyContainer.live.feature.aiFeature,
             errorMapper: CoreErrorSnapshotMapper(),
             model: model
         )
@@ -239,7 +239,7 @@ private struct DeveloperAITagSuggestionsScenario: View {
     var body: some View {
         AITagSuggestionsPanel(
             repoPath: DeveloperAIScenarioFixture.repoPath,
-            aiDependencies: AppDependencyContainer.live.feature.ai,
+            aiDependencies: AppDependencyContainer.live.feature.aiFeature,
             errorMapper: CoreErrorSnapshotMapper(),
             file: DeveloperAIScenarioFixture.file,
             existingTags: DeveloperAIScenarioFixture.existingTags,

@@ -30,6 +30,7 @@ private struct DeveloperImportEntryScenario: View {
         ImportEntrySheetView(
             request: DeveloperImportScenarioFixture.singleFileRequest,
             onCancel: {},
+            fileResourceAccess: services,
             categoryPredictor: services,
             batchFileLoader: services,
             fileImporter: services,
@@ -39,10 +40,12 @@ private struct DeveloperImportEntryScenario: View {
             batchDuplicatePrechecker: services,
             batchNameConflictPrechecker: services,
             folderScanner: services,
+            sourcePreflightInspector: services,
             preflight: services,
             placeholderDownloader: services,
             errorMapper: CoreErrorSnapshotMapper(),
-            batchSessionStore: sessionStore
+            batchSessionStore: sessionStore,
+            actionLogger: NoopAppUIActionLogger()
         )
         .background(.background)
     }
@@ -62,7 +65,9 @@ private struct DeveloperImportFolderPreviewScenario: View {
             errorMapper: CoreErrorSnapshotMapper(),
             conflictPrechecker: services,
             scanner: services,
-            placeholderDownloader: services
+            placeholderDownloader: services,
+            resourceAccess: services,
+            actionLogger: NoopAppUIActionLogger()
         ))
     }
 

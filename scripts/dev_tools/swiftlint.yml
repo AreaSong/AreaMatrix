@@ -5,6 +5,7 @@ excluded:
   - ../../apps/macos/AreaMatrix/Bridge/Generated
   - ../../apps/macos/AreaMatrix/Bridge/UniFFI
   - ../../apps/macos/DerivedData
+  - ../../apps/macos/Packages/AreaMatrixModules/.build
 
 line_length: 120
 file_length: 500

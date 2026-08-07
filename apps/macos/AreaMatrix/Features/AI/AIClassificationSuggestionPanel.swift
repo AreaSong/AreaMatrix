@@ -98,7 +98,11 @@ struct AIClassificationSuggestionRouteView: View {
             LocalModelStatusView(
                 model: LocalModelStatusModel(
                     repoPath: repoPath,
+                    storageLocationProvider: aiDependencies.localModelStorageLocationProvider,
                     statusReader: aiDependencies.localModelStatusReader,
+                    installHelpOpener: aiDependencies.localModelInstallHelpOpener,
+                    folderOpener: aiDependencies.localModelFolderOpener,
+                    diagnosticsCopier: aiDependencies.localModelDiagnosticsCopier,
                     errorMapper: errorMapper
                 ),
                 onClose: { presentedRecoverySheet = nil }
@@ -108,6 +112,7 @@ struct AIClassificationSuggestionRouteView: View {
                 model: RemoteProviderConfigModel(
                     repoPath: repoPath,
                     bridge: aiDependencies.remoteProviderConfigurer,
+                    credentialStore: aiDependencies.remoteProviderCredentialStore,
                     errorMapper: errorMapper
                 ),
                 privacyModel: RemotePrivacyGateModel(

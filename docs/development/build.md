@@ -190,10 +190,13 @@ fn main() {
   `CoreBridgeBoundary` 合同；它不包含生成绑定或用户文件写入逻辑。
 - 该 Build Phase 启用 dependency analysis，以 Cargo/UDL/构建脚本为输入、CoreSDK manifest 为输出，并由
   dependency file 补齐递归 Rust 源文件；不再使用 Always Out Of Date。
+- `AREAMATRIX_CORE_SDK_VERIFY_ONLY=1` 只校验已恢复的 fingerprinted artifact，但仍会写出同一份 dependency
+  file；Build Phase 会先创建 `DERIVED_FILE_DIR`，因此 clean DerivedData 的首次 Build/Test 不会因依赖文件父目录
+  尚未存在而失败。
 - Swift source 引用 `AreaMatrix/Bridge/UniFFI/area_matrix.swift`。
 - Bridging header 引用 `Bridge/UniFFI/area_matrixFFI.h`。
-- `apps/ios/Package.swift` 的 `Carea_matrixFFI` binary target 消费同一个 XCFramework，不再硬编码
-  本机 Cargo debug 路径。
+- `apps/ios/Package.swift` 只依赖 `.core-sdk` 生成的 `AreaMatrixCoreSDK` Swift Package；XCFramework 的
+  `Carea_matrixFFI` binary target 由 CoreSDK 包唯一持有，iOS 不再重复声明或硬编码本机 Cargo debug 路径。
 
 ### 更新 tracked bindings
 

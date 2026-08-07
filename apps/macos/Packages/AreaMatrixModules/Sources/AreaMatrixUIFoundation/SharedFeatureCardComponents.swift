@@ -1,21 +1,49 @@
 import SwiftUI
 
-struct AreaMatrixFeatureCardSpec<ID: Hashable>: Identifiable {
-    let id: ID
-    let icon: AreaMatrixLucideIcon.IconName
-    let title: String
-    let description: String
-    let accentColor: Color
-    let entranceDelay: Double
+public struct AreaMatrixFeatureCardSpec<ID: Hashable>: Identifiable {
+    public let id: ID
+    public let icon: AreaMatrixLucideIcon.IconName
+    public let title: String
+    public let description: String
+    public let accentColor: Color
+    public let entranceDelay: Double
+
+    public init(
+        id: ID,
+        icon: AreaMatrixLucideIcon.IconName,
+        title: String,
+        description: String,
+        accentColor: Color,
+        entranceDelay: Double
+    ) {
+        self.id = id
+        self.icon = icon
+        self.title = title
+        self.description = description
+        self.accentColor = accentColor
+        self.entranceDelay = entranceDelay
+    }
 }
 
-struct AreaMatrixFeatureCardGroup<ID: Hashable>: View {
-    let cards: [AreaMatrixFeatureCardSpec<ID>]
-    let activeID: ID?
-    var spacing: CGFloat = 20
-    let onHoverChanged: (ID, Bool) -> Void
+public struct AreaMatrixFeatureCardGroup<ID: Hashable>: View {
+    public let cards: [AreaMatrixFeatureCardSpec<ID>]
+    public let activeID: ID?
+    public var spacing: CGFloat
+    public let onHoverChanged: (ID, Bool) -> Void
 
-    var body: some View {
+    public init(
+        cards: [AreaMatrixFeatureCardSpec<ID>],
+        activeID: ID?,
+        spacing: CGFloat = 20,
+        onHoverChanged: @escaping (ID, Bool) -> Void
+    ) {
+        self.cards = cards
+        self.activeID = activeID
+        self.spacing = spacing
+        self.onHoverChanged = onHoverChanged
+    }
+
+    public var body: some View {
         HStack(spacing: spacing) {
             ForEach(cards) { card in
                 AreaMatrixFeatureCard(
@@ -40,15 +68,35 @@ struct AreaMatrixFeatureCardGroup<ID: Hashable>: View {
     }
 }
 
-struct AreaMatrixFeatureCard: View {
-    let icon: AreaMatrixLucideIcon.IconName
-    let title: String
-    let description: String
-    let accentColor: Color
-    let isHovered: Bool
-    let entranceDelay: Double
-    let anyCardHovered: Bool
-    let onHoverChanged: (Bool) -> Void
+public struct AreaMatrixFeatureCard: View {
+    public let icon: AreaMatrixLucideIcon.IconName
+    public let title: String
+    public let description: String
+    public let accentColor: Color
+    public let isHovered: Bool
+    public let entranceDelay: Double
+    public let anyCardHovered: Bool
+    public let onHoverChanged: (Bool) -> Void
+
+    public init(
+        icon: AreaMatrixLucideIcon.IconName,
+        title: String,
+        description: String,
+        accentColor: Color,
+        isHovered: Bool,
+        entranceDelay: Double,
+        anyCardHovered: Bool,
+        onHoverChanged: @escaping (Bool) -> Void
+    ) {
+        self.icon = icon
+        self.title = title
+        self.description = description
+        self.accentColor = accentColor
+        self.isHovered = isHovered
+        self.entranceDelay = entranceDelay
+        self.anyCardHovered = anyCardHovered
+        self.onHoverChanged = onHoverChanged
+    }
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
@@ -57,7 +105,7 @@ struct AreaMatrixFeatureCard: View {
     @FocusState private var isFocused: Bool
     @State private var idleGlarePhase: CGFloat = -0.5
 
-    var body: some View {
+    public var body: some View {
         GeometryReader { proxy in
             ZStack {
                 stableHitArea(in: proxy.size)
@@ -240,206 +288,5 @@ struct AreaMatrixFeatureCard: View {
                 onHoverChanged(false)
             }
         }
-    }
-}
-
-// MARK: - Lucide Icons
-
-struct AreaMatrixLucideIcon: View {
-    enum IconName {
-        case folder
-        case shieldCheck
-        case files
-        case arrowRight
-        case arrowLeft
-        case globe
-        case info
-        case checkCircle
-        case xCircle
-        case alertTriangle
-        case moreHorizontal
-        case hardDrive
-        case folderCog
-        case cloud
-        case refreshCcw
-        case clock
-        case filePlus2
-        case folderOpen
-    }
-
-    let name: IconName
-    var lineWidth: CGFloat = 2.0
-
-    var body: some View {
-        GeometryReader { geometry in
-            let scale = min(geometry.size.width, geometry.size.height) / 24.0
-
-            renderedShape
-                .scaleEffect(scale, anchor: .topLeading)
-                .offset(
-                    x: (geometry.size.width - 24 * scale) / 2,
-                    y: (geometry.size.height - 24 * scale) / 2
-                )
-        }
-        .aspectRatio(1, contentMode: .fit)
-    }
-
-    @ViewBuilder
-    private var renderedShape: some View {
-        let style = StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
-        switch name {
-        case .folder:
-            LucideFolderShape().stroke(style: style)
-        case .shieldCheck:
-            LucideShieldCheckShape().stroke(style: style)
-        case .files:
-            LucideFilesShape().stroke(style: style)
-        case .arrowRight:
-            LucideArrowRightShape().stroke(style: style)
-        case .arrowLeft:
-            LucideArrowLeftShape().stroke(style: style)
-        case .globe:
-            LucideGlobeShape().stroke(style: style)
-        case .info:
-            LucideInfoShape().stroke(style: style)
-        case .checkCircle:
-            LucideCheckCircleShape().stroke(style: style)
-        case .xCircle:
-            LucideXCircleShape().stroke(style: style)
-        case .alertTriangle:
-            LucideAlertTriangleShape().stroke(style: style)
-        case .moreHorizontal:
-            LucideMoreHorizontalShape().stroke(style: style)
-        case .hardDrive:
-            LucideHardDriveShape().stroke(style: style)
-        case .folderCog:
-            LucideFolderCogShape().stroke(style: style)
-        case .cloud:
-            LucideCloudShape().stroke(style: style)
-        case .refreshCcw:
-            LucideRefreshCcw().stroke(style: style)
-        case .clock:
-            LucideClock().stroke(style: style)
-        case .filePlus2:
-            LucideFilePlus2().stroke(style: style)
-        case .folderOpen:
-            LucideFolderOpen().stroke(style: style)
-        }
-    }
-}
-
-private struct LucideFolderShape: Shape {
-    func path(in _: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 20, y: 20))
-        path.addArc(tangent1End: CGPoint(x: 22, y: 20), tangent2End: CGPoint(x: 22, y: 18), radius: 2)
-        path.addLine(to: CGPoint(x: 22, y: 8))
-        path.addArc(tangent1End: CGPoint(x: 22, y: 6), tangent2End: CGPoint(x: 20, y: 6), radius: 2)
-        path.addLine(to: CGPoint(x: 12.1, y: 6))
-
-        path.addLine(to: CGPoint(x: 10.41, y: 4.1))
-        path.addArc(tangent1End: CGPoint(x: 9.6, y: 3.9), tangent2End: CGPoint(x: 7.93, y: 3), radius: 2)
-        path.addLine(to: CGPoint(x: 4, y: 3))
-        path.addArc(tangent1End: CGPoint(x: 2, y: 3), tangent2End: CGPoint(x: 2, y: 5), radius: 2)
-        path.addLine(to: CGPoint(x: 2, y: 18))
-        path.addArc(tangent1End: CGPoint(x: 2, y: 20), tangent2End: CGPoint(x: 4, y: 20), radius: 2)
-        path.closeSubpath()
-        return path
-    }
-}
-
-private struct LucideShieldCheckShape: Shape {
-    func path(in _: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 12, y: 22))
-        path.addCurve(to: CGPoint(x: 20, y: 12), control1: CGPoint(x: 20, y: 18), control2: CGPoint(x: 20, y: 12))
-        path.addLine(to: CGPoint(x: 20, y: 5))
-        path.addLine(to: CGPoint(x: 12, y: 2))
-        path.addLine(to: CGPoint(x: 4, y: 5))
-        path.addLine(to: CGPoint(x: 4, y: 12))
-        path.addCurve(to: CGPoint(x: 12, y: 22), control1: CGPoint(x: 4, y: 18), control2: CGPoint(x: 12, y: 22))
-
-        path.move(to: CGPoint(x: 9, y: 12))
-        path.addLine(to: CGPoint(x: 11, y: 14))
-        path.addLine(to: CGPoint(x: 15, y: 10))
-        return path
-    }
-}
-
-private struct LucideFilesShape: Shape {
-    func path(in _: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 15.5, y: 2))
-        path.addLine(to: CGPoint(x: 8.6, y: 2))
-        path.addQuadCurve(to: CGPoint(x: 7, y: 3.6), control: CGPoint(x: 7, y: 2))
-        path.addLine(to: CGPoint(x: 7, y: 16.4))
-        path.addQuadCurve(to: CGPoint(x: 8.6, y: 18), control: CGPoint(x: 7, y: 18))
-        path.addLine(to: CGPoint(x: 18.4, y: 18))
-        path.addQuadCurve(to: CGPoint(x: 20, y: 16.4), control: CGPoint(x: 20, y: 18))
-        path.addLine(to: CGPoint(x: 20, y: 6.5))
-        path.closeSubpath()
-
-        path.move(to: CGPoint(x: 15, y: 2))
-        path.addLine(to: CGPoint(x: 15, y: 7))
-        path.addLine(to: CGPoint(x: 20, y: 7))
-
-        path.move(to: CGPoint(x: 3, y: 7.6))
-        path.addLine(to: CGPoint(x: 3, y: 20.4))
-        path.addQuadCurve(to: CGPoint(x: 4.6, y: 22), control: CGPoint(x: 3, y: 22))
-        path.addLine(to: CGPoint(x: 14.4, y: 22))
-        return path
-    }
-}
-
-private struct LucideArrowRightShape: Shape {
-    func path(in _: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 5, y: 12))
-        path.addLine(to: CGPoint(x: 19, y: 12))
-        path.move(to: CGPoint(x: 12, y: 5))
-        path.addLine(to: CGPoint(x: 19, y: 12))
-        path.move(to: CGPoint(x: 12, y: 19))
-        path.addLine(to: CGPoint(x: 19, y: 12))
-        return path
-    }
-}
-
-private struct LucideArrowLeftShape: Shape {
-    func path(in _: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 19, y: 12))
-        path.addLine(to: CGPoint(x: 5, y: 12))
-        path.move(to: CGPoint(x: 12, y: 5))
-        path.addLine(to: CGPoint(x: 5, y: 12))
-        path.move(to: CGPoint(x: 12, y: 19))
-        path.addLine(to: CGPoint(x: 5, y: 12))
-        return path
-    }
-}
-
-private struct LucideGlobeShape: Shape {
-    func path(in _: CGRect) -> Path {
-        var path = Path()
-        path.addEllipse(in: CGRect(x: 2, y: 2, width: 20, height: 20))
-        path.move(to: CGPoint(x: 2, y: 12))
-        path.addLine(to: CGPoint(x: 22, y: 12))
-
-        let ellipse = Path { ellipsePath in
-            ellipsePath.addEllipse(in: CGRect(x: 6, y: 2, width: 12, height: 20))
-        }
-        path.addPath(ellipse)
-        return path
-    }
-}
-
-private struct LucideInfoShape: Shape {
-    func path(in _: CGRect) -> Path {
-        var path = Path()
-        path.addEllipse(in: CGRect(x: 2, y: 2, width: 20, height: 20))
-        path.move(to: CGPoint(x: 12, y: 16))
-        path.addLine(to: CGPoint(x: 12, y: 12))
-        path.move(to: CGPoint(x: 12, y: 8))
-        path.addLine(to: CGPoint(x: 12.01, y: 8))
-        return path
     }
 }

@@ -1,62 +1,6 @@
+import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
 import XCTest
-
-/// Test-only compatibility defaults. Production feature entry points receive
-/// their dependency scopes from App composition; tests may still opt into the
-/// live graph when a scenario intentionally exercises real platform adapters.
-extension SharedFeatureDependencies {
-    static var live: Self {
-        AppDependencyContainer.live.feature.shared
-    }
-}
-
-extension AIFeatureDependencies {
-    static var live: Self {
-        AppDependencyContainer.live.feature.ai
-    }
-}
-
-extension OnboardingFeatureDependencies {
-    static var live: Self {
-        AppDependencyContainer.live.feature.onboarding
-    }
-}
-
-extension FileActionsFeatureDependencies {
-    static var live: Self {
-        AppDependencyContainer.live.feature.fileActions
-    }
-}
-
-extension ImportFeatureDependencies {
-    static var live: Self {
-        AppDependencyContainer.live.feature.import
-    }
-}
-
-extension MainListFeatureDependencies {
-    static var live: Self {
-        AppDependencyContainer.live.feature.mainList
-    }
-}
-
-extension SearchFeatureDependencies {
-    static var live: Self {
-        AppDependencyContainer.live.feature.search
-    }
-}
-
-extension SettingsFeatureDependencies {
-    static var live: Self {
-        AppDependencyContainer.live.feature.settings
-    }
-}
-
-extension SyncConflictsFeatureDependencies {
-    static var live: Self {
-        AppDependencyContainer.live.feature.syncConflicts
-    }
-}
 
 typealias ShellStaticSettingsReader = StaticSettingsReader
 

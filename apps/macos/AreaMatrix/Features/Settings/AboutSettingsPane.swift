@@ -12,11 +12,11 @@ struct AboutSettingsPane: View {
         repoPath: String,
         featureDependencies: SettingsFeatureDependencies,
         sharedDependencies: SharedFeatureDependencies,
-        appVersionReader: any AppVersionReading = AboutSettingsPlatformServices.appVersionReader,
-        metadataReader: any ExistingRepositoryMetadataReading = AboutSettingsPlatformServices.metadataReader,
-        externalLinkOpener: any AboutExternalLinkOpening = AboutSettingsPlatformServices.externalLinkOpener,
-        stringCopier: any AboutStringCopying = AboutSettingsPlatformServices.stringCopier,
-        accessibilityAnnouncer: any AccessibilityAnnouncing = AboutSettingsPlatformServices.accessibilityAnnouncer,
+        appVersionReader: (any AppVersionReading)? = nil,
+        metadataReader: (any ExistingRepositoryMetadataReading)? = nil,
+        externalLinkOpener: (any AboutExternalLinkOpening)? = nil,
+        stringCopier: (any AboutStringCopying)? = nil,
+        accessibilityAnnouncer: (any AccessibilityAnnouncing)? = nil,
         platformDifferencesModel: PlatformDifferencesModel,
         onOpenRepositorySettings: @escaping () -> Void = {},
         onOpenDiagnostics: @escaping () -> Void = {},
@@ -24,13 +24,13 @@ struct AboutSettingsPane: View {
     ) {
         self.init(
             repoPath: repoPath,
-            appVersionReader: appVersionReader,
+            appVersionReader: appVersionReader ?? featureDependencies.appVersionReader,
             coreVersionReader: featureDependencies.coreVersionReader,
-            metadataReader: metadataReader,
-            externalLinkOpener: externalLinkOpener,
-            stringCopier: stringCopier,
+            metadataReader: metadataReader ?? featureDependencies.existingRepositoryMetadataReader,
+            externalLinkOpener: externalLinkOpener ?? featureDependencies.aboutExternalLinkOpener,
+            stringCopier: stringCopier ?? featureDependencies.aboutStringCopier,
             errorMapper: sharedDependencies.errorMapper,
-            accessibilityAnnouncer: accessibilityAnnouncer,
+            accessibilityAnnouncer: accessibilityAnnouncer ?? featureDependencies.accessibilityAnnouncer,
             platformDifferencesModel: platformDifferencesModel,
             onOpenRepositorySettings: onOpenRepositorySettings,
             onOpenDiagnostics: onOpenDiagnostics,
@@ -40,13 +40,13 @@ struct AboutSettingsPane: View {
 
     init(
         repoPath: String,
-        appVersionReader: any AppVersionReading = AboutSettingsPlatformServices.appVersionReader,
+        appVersionReader: any AppVersionReading,
         coreVersionReader: any CoreVersionReading,
-        metadataReader: any ExistingRepositoryMetadataReading = AboutSettingsPlatformServices.metadataReader,
-        externalLinkOpener: any AboutExternalLinkOpening = AboutSettingsPlatformServices.externalLinkOpener,
-        stringCopier: any AboutStringCopying = AboutSettingsPlatformServices.stringCopier,
+        metadataReader: any ExistingRepositoryMetadataReading,
+        externalLinkOpener: any AboutExternalLinkOpening,
+        stringCopier: any AboutStringCopying,
         errorMapper: any CoreErrorMapping,
-        accessibilityAnnouncer: any AccessibilityAnnouncing = AboutSettingsPlatformServices.accessibilityAnnouncer,
+        accessibilityAnnouncer: any AccessibilityAnnouncing,
         platformDifferencesModel: PlatformDifferencesModel,
         onOpenRepositorySettings: @escaping () -> Void = {},
         onOpenDiagnostics: @escaping () -> Void = {},
@@ -103,7 +103,6 @@ struct AboutSettingsPane: View {
         }
     }
 
-    @ViewBuilder
     private var platformDifferences: some View {
         PlatformDifferencesView(
             model: platformDifferencesModel,

@@ -223,6 +223,7 @@ private func makeSyncConflictReviewDetailNoteModel(repoPath: String) -> DetailNo
     DetailNoteModel(
         repoPath: repoPath,
         noteStore: NoopNoteStore(),
-        errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
+        errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping()),
+        inFlightTracker: InFlightFileChangeTracker()
     )
 }

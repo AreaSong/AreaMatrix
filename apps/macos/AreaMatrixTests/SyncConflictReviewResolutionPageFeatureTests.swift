@@ -343,21 +343,16 @@ final class SyncConflictReviewIntegrationTests: XCTestCase {
             currentName: "report.pdf"
         )
         let lister = MainListRecordingFileLister(results: [.success([docsFile]), .success([])])
-        let content = MainRepositoryContentView(
-            opening: .syncConflictReviewFixture(repoPath: "/tmp/syncConflictReview-repo", files: [docsFile]),
+        let opening = RepositoryOpeningResult.syncConflictReviewFixture(
+            repoPath: "/tmp/syncConflictReview-repo",
+            files: [docsFile]
+        )
+        let content = makeMainRepositoryContentViewForTests(
+            opening: opening,
             state: .list,
-            assembly: .make(
-                opening: .syncConflictReviewFixture(repoPath: "/tmp/syncConflictReview-repo", files: [docsFile]),
-                fileLister: lister,
-                fileDetailer: RecordingFileDetailer(results: [.success(docsFile)]),
-                errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping()),
-                aiDependencies: AppDependencyContainer.live.feature.ai,
-                fileActionsDependencies: AppDependencyContainer.live.feature.fileActions,
-                settingsDependencies: AppDependencyContainer.live.feature.settings,
-                syncConflictsDependencies: AppDependencyContainer.live.feature.syncConflicts
-            ),
-            onImport: {},
-            onDropImport: { _, _ in }
+            fileLister: lister,
+            fileDetailer: RecordingFileDetailer(results: [.success(docsFile)]),
+            errorMapper: StaticCoreErrorMapper(mapping: .syncConflictReviewMapping())
         )
 
         await content.fileListModel.loadCurrentCategory("docs")

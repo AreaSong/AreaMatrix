@@ -138,9 +138,15 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
             updater: bridge,
             repositoryOpener: bridge,
             scanSessionReader: bridge,
+            existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
+            generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
             diagnosticsCollector: bridge,
             coreVersionLoader: bridge,
-            errorMapper: bridge
+            errorMapper: bridge,
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -187,9 +193,14 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
             repositoryOpener: bridge,
             scanSessionReader: bridge,
             existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
+            generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
             diagnosticsCollector: bridge,
             coreVersionLoader: bridge,
-            errorMapper: bridge
+            errorMapper: bridge,
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -224,9 +235,14 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
+            generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
             diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
             coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
-            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -260,6 +276,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         let loader = RepoSettingsCapabilityLoader(result: .success(capabilities))
         let model = RepoPlatformCapabilitiesModel(
             appVersion: "4.3.159",
+            appVersionReader: StaticAppVersionReader(version: "4.3.159"),
             capabilityLoader: loader,
             errorMapper: RecordingCoreErrorMapper.repositorySettings()
         )
@@ -269,7 +286,7 @@ final class RepositorySettingsHealthFeatureTests: XCTestCase {
         await loader.assertPlatformCapabilityRequests([
             RepositorySettingsCapabilityRequest(platform: .macos, appVersion: "4.3.159")
         ])
-        XCTAssertEqual(model.state, .loaded(capabilities))
+        XCTAssertEqual(model.state, RepositorySettingsCapabilityState.loaded(capabilities))
         XCTAssertEqual(capabilities.repositorySettingsRows.map(\.label), [
             "Watcher",
             "Trash / Recycle Bin",

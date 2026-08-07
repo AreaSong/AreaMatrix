@@ -180,8 +180,13 @@ private func measureHostlessFirstScreenFallback(repoPath: String) async throws -
     let runtime = AppLanguageRuntime(selection: .en)
     let localizer = AppLocalizer(runtime: runtime)
     let hostingView = NSHostingView(
-        rootView: MainWindow(model: model, dependencies: .live)
-            .environmentObject(localizer)
+        rootView: MainWindow(
+            model: model,
+            dependencies: .live,
+            observabilityRuntime: .shared,
+            commandRouter: .shared
+        )
+        .environmentObject(localizer)
     )
     hostingView.frame = NSRect(x: 0, y: 0, width: 900, height: 620)
     hostingView.layoutSubtreeIfNeeded()

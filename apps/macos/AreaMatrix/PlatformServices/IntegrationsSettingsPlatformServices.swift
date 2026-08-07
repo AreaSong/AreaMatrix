@@ -2,16 +2,16 @@ import AppKit
 import Foundation
 
 enum IntegrationsSettingsPlatformServices {
-    static var statusDetector: any ICloudStatusDetecting {
+    static func makeStatusDetector() -> any ICloudStatusDetecting {
         LocalICloudStatusDetector()
     }
 
-    static var finderOpener: any RepositoryFinderOpening {
-        AppPlatformServices.finderOpener
-    }
-
-    static var helpOpener: any ICloudHelpOpening {
-        NSWorkspaceICloudHelpOpener()
+    static func makeHelpOpener(
+        externalURLOpener: any ExternalURLStringOpening
+    ) -> any ICloudHelpOpening {
+        NSWorkspaceICloudHelpOpener(
+            externalURLOpener: externalURLOpener
+        )
     }
 }
 
@@ -90,7 +90,7 @@ struct NSWorkspaceICloudHelpOpener: ICloudHelpOpening {
 
     private let externalURLOpener: any ExternalURLStringOpening
 
-    init(externalURLOpener: any ExternalURLStringOpening = AppPlatformServices.externalURLStringOpener) {
+    init(externalURLOpener: any ExternalURLStringOpening) {
         self.externalURLOpener = externalURLOpener
     }
 

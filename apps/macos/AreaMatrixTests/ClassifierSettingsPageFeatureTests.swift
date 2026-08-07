@@ -18,7 +18,11 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             updater: updater,
             predictor: ClassifierSettingsSequencePredictor(),
             ruleEditor: ClassifierSettingsRecordingRuleEditor(),
-            errorMapper: RecordingCoreErrorMapper.classifierSettings()
+            errorMapper: RecordingCoreErrorMapper.classifierSettings(),
+            fileOpener: RecordingRepositoryFileOpener(),
+            fileRevealer: RecordingRepositoryFileRevealer(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -214,6 +218,9 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             predictor: predictor,
             ruleEditor: ClassifierSettingsRecordingRuleEditor(),
             errorMapper: RecordingCoreErrorMapper.classifierSettings(),
+            fileOpener: RecordingRepositoryFileOpener(),
+            fileRevealer: RecordingRepositoryFileRevealer(),
+            finderOpener: RecordingRepositoryFinderOpener(),
             accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
@@ -242,7 +249,11 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             updater: bridge,
             predictor: bridge,
             ruleEditor: bridge,
-            errorMapper: bridge
+            errorMapper: bridge,
+            fileOpener: RecordingRepositoryFileOpener(),
+            fileRevealer: RecordingRepositoryFileRevealer(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -276,7 +287,11 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             updater: bridge,
             predictor: bridge,
             ruleEditor: bridge,
-            errorMapper: bridge
+            errorMapper: bridge,
+            fileOpener: RecordingRepositoryFileOpener(),
+            fileRevealer: RecordingRepositoryFileRevealer(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -298,7 +313,7 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
         predictor: any CoreCategoryPredicting = CoreBridge(),
         config: AppRepoConfigSnapshot = .classifierSettingsFixture(repoPath: "/tmp/repo"),
         ruleEditor: any CoreClassifierRuleEditing = CoreBridge(),
-        fileOpener: any RepositoryFileOpening = NSWorkspaceRepositoryFileOpener(),
+        fileOpener: (any RepositoryFileOpening)? = nil,
         accessibilityAnnouncer: any AccessibilityAnnouncing = NoopAccessibilityAnnouncer()
     ) async -> ClassifierSettingsModel {
         let model = ClassifierSettingsModel(
@@ -308,7 +323,9 @@ final class ClassifierSettingsPageFeatureTests: XCTestCase {
             predictor: predictor,
             ruleEditor: ruleEditor,
             errorMapper: RecordingCoreErrorMapper.classifierSettings(),
-            fileOpener: fileOpener,
+            fileOpener: fileOpener ?? RecordingRepositoryFileOpener(),
+            fileRevealer: RecordingRepositoryFileRevealer(),
+            finderOpener: RecordingRepositoryFinderOpener(),
             accessibilityAnnouncer: accessibilityAnnouncer
         )
         await model.load()

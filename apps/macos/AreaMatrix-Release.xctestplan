@@ -1,0 +1,36 @@
+{
+  "configurations" : [
+    {
+      "id" : "A71C6E72-0E5E-43D4-A4BF-9FE3A1E50A15",
+      "name" : "Release",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:AreaMatrix.xcodeproj",
+      "identifier" : "0A0000000000000000000040",
+      "name" : "AreaMatrix"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "selectedTests" : [
+        "AreaMatrixShellTests/testBridgeUsesGeneratedBindings",
+        "AreaMatrixShellTests/testOnboardingShowsWelcomeWhenNoRepoPathIsConfigured",
+        "AreaMatrixDeveloperScenarioTests/testDeveloperScenarioInventoryCoversRequiredCriticalStates",
+        "AreaMatrixDeveloperScenarioTests/testEveryDeveloperScenarioBodyCanBeConstructedWithoutRepositoryIO"
+      ],
+      "target" : {
+        "containerPath" : "container:AreaMatrix.xcodeproj",
+        "identifier" : "0A0000000000000000000041",
+        "name" : "AreaMatrixTests"
+      }
+    }
+  ],
+  "version" : 1
+}

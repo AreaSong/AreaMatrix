@@ -1,6 +1,7 @@
 import SwiftUI
 
-extension AnyTransition {
+/// Shared route transition used by the app shell and feature-owned scenes.
+public extension AnyTransition {
     static var areaMatrixScene: AnyTransition {
         .asymmetric(
             insertion: .modifier(
@@ -28,11 +29,12 @@ private struct AreaMatrixSceneTransitionModifier: ViewModifier {
     }
 }
 
-enum AreaMatrixSceneVisibility: Equatable {
+/// Visibility state shared by the scene switcher and its reusable dioramas.
+public enum AreaMatrixSceneVisibility: Equatable, Sendable {
     case enter(isVisible: Bool)
     case exit(isVisible: Bool)
 
-    var isVisible: Bool {
+    public var isVisible: Bool {
         switch self {
         case let .enter(isVisible), let .exit(isVisible):
             isVisible
@@ -48,19 +50,21 @@ private struct AreaMatrixSceneParallaxKey: EnvironmentKey {
     static let defaultValue = AreaMatrixParallax.zero
 }
 
-extension EnvironmentValues {
+public extension EnvironmentValues {
+    /// Scene visibility supplied by a feature-owned scene switcher.
     var areaMatrixSceneVisibility: AreaMatrixSceneVisibility {
         get { self[AreaMatrixSceneVisibilityKey.self] }
         set { self[AreaMatrixSceneVisibilityKey.self] = newValue }
     }
 
+    /// Pointer-derived parallax supplied by the active scene host.
     var areaMatrixSceneParallax: AreaMatrixParallax {
         get { self[AreaMatrixSceneParallaxKey.self] }
         set { self[AreaMatrixSceneParallaxKey.self] = newValue }
     }
 }
 
-extension AreaMatrixParallax {
+public extension AreaMatrixParallax {
     init(pointerLocation location: CGPoint, in size: CGSize) {
         let width = max(size.width, 1)
         let height = max(size.height, 1)
@@ -80,11 +84,14 @@ extension AreaMatrixParallax {
     }
 }
 
-struct AreaMatrixSceneVisualMotionModifier: ViewModifier {
+/// Reusable visual transform for scene content entering, leaving, and tracking the pointer.
+public struct AreaMatrixSceneVisualMotionModifier: ViewModifier {
     @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
     @Environment(\.areaMatrixSceneParallax) private var parallax
 
-    func body(content: Content) -> some View {
+    public init() {}
+
+    public func body(content: Content) -> some View {
         content
             .opacity(sceneVisibility.isVisible ? 1 : 0)
             .offset(y: sceneVisibility.isVisible ? 0 : verticalOffset)
@@ -139,11 +146,16 @@ struct AreaMatrixSceneVisualMotionModifier: ViewModifier {
     }
 }
 
-struct AreaMatrixSceneTextMotionModifier: ViewModifier {
+/// Reusable text entrance transform for scene copy.
+public struct AreaMatrixSceneTextMotionModifier: ViewModifier {
     let delay: Double
     @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
 
-    func body(content: Content) -> some View {
+    public init(delay: Double) {
+        self.delay = delay
+    }
+
+    public func body(content: Content) -> some View {
         content
             .opacity(sceneVisibility.isVisible ? 1 : 0)
             .offset(y: sceneVisibility.isVisible ? 0 : offsetValue)
@@ -165,5 +177,15 @@ struct AreaMatrixSceneTextMotionModifier: ViewModifier {
         case .exit:
             .timingCurve(0.16, 1, 0.3, 1, duration: 0.4)
         }
+    }
+}
+
+public extension View {
+    func areaMatrixSceneVisualMotion() -> some View {
+        modifier(AreaMatrixSceneVisualMotionModifier())
+    }
+
+    func areaMatrixSceneTextMotion(delay: Double) -> some View {
+        modifier(AreaMatrixSceneTextMotionModifier(delay: delay))
     }
 }

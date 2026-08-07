@@ -5,10 +5,10 @@ struct ImportSingleFileSource: Equatable {
     var sourcePath: String
     var sizeBytes: Int64?
 
-    init(url: URL) {
+    init(url: URL, sizeBytes: Int64? = nil) {
         fileName = url.lastPathComponent
         sourcePath = (url.path as NSString).abbreviatingWithTildeInPath
-        sizeBytes = ImportPlatformServices.fileSizeBytes(url)
+        self.sizeBytes = sizeBytes
     }
 }
 

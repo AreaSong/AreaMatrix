@@ -1742,7 +1742,9 @@ repo_domains:
                 ".codex/references/index.md": "./dev check quality\n./dev check wording\n",
                 ".codex/references/codex-workflow-and-tools.md": "已有 10 个 AreaMatrix skills\n",
                 "tasks/backlog/codex-operating-layer-boundary-regression.md": "现有 10 个 repo-local skills\n",
-                "docs/development/ci-governance.md": "./dev check quality\n./dev check wording\n",
+                "docs/development/ci-governance.md": (
+                    "./dev check quality\n./dev check wording\n./dev governance status\n"
+                ),
                 ".github/workflows/governance-ci.yml": "./dev check quality\n./dev check wording\n",
                 ".codex/skills-src/areamatrix-validation-driver/SKILL.md": "macOS app\n",
                 ".codex/skills-src/areamatrix-doc-sync/SKILL.md": "Core API and UDL\n",

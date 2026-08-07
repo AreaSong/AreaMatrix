@@ -13,8 +13,12 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             loader: loader,
             updater: RecordingConfigurationUpdater(result: .success(())),
+            rootOverviewInspector: StaticRootOverviewFileInspector(status: .missing),
             diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            appVersionReader: StaticAppVersionReader(version: "1.0.0"),
             coreVersionReader: StaticCoreVersionReader(version: "0.1.0"),
+            metadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            summaryCopier: RecordingAdvancedDiagnosticCopier(),
             errorMapper: RecordingCoreErrorMapper.advancedSettings()
         )
 
@@ -209,8 +213,12 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
             repoPath: repoURL.path,
             loader: bridge,
             updater: bridge,
+            rootOverviewInspector: LocalRootOverviewFileInspector(),
             diagnosticsCollector: bridge,
+            appVersionReader: BundleAppVersionReader(),
             coreVersionReader: bridge,
+            metadataReader: SQLiteExistingRepositoryMetadataReader(),
+            summaryCopier: RecordingAdvancedDiagnosticCopier(),
             errorMapper: bridge
         )
 
@@ -244,8 +252,12 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
             repoPath: repoURL.path,
             loader: bridge,
             updater: bridge,
+            rootOverviewInspector: LocalRootOverviewFileInspector(),
             diagnosticsCollector: bridge,
+            appVersionReader: BundleAppVersionReader(),
             coreVersionReader: bridge,
+            metadataReader: SQLiteExistingRepositoryMetadataReader(),
+            summaryCopier: RecordingAdvancedDiagnosticCopier(),
             errorMapper: bridge
         )
 
@@ -283,7 +295,10 @@ final class AdvancedSettingsPageFeatureTests: XCTestCase {
             updater: updater,
             rootOverviewInspector: inspector,
             diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            appVersionReader: StaticAppVersionReader(version: "1.0.0"),
             coreVersionReader: StaticCoreVersionReader(version: "0.1.0"),
+            metadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            summaryCopier: RecordingAdvancedDiagnosticCopier(),
             errorMapper: RecordingCoreErrorMapper.advancedSettings()
         )
         await model.load()

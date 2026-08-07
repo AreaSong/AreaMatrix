@@ -445,7 +445,8 @@ Overlay 使用 0.8 秒级 motion token、material、阴影和淡入/移除；toa
 
 ### 通用 Motion Tokens
 
-`apps/macos/AreaMatrix/Views/DesignSystem/Effects/AreaMatrixMotionTokens.swift:3-63` 定义统一节奏：
+`apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/AreaMatrixMotionTokens.swift:3-63`
+定义统一节奏；App target 的 `Views/DesignSystem/Effects/AreaMatrixMotionTokens.swift` 只保留兼容别名：
 
 | Token | 数值 | 用途 |
 |---|---:|---|
@@ -480,6 +481,12 @@ Overlay 使用 0.8 秒级 motion token、material、阴影和淡入/移除；toa
 
 `apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixAmbientBackground.swift:13-123` 实现四个渐变 blob 的呼吸、偏移、缩放和 60 秒 orbit，并叠加 blur、blend mode、noise 和 vignette。颜色和位置会随 scene 变化：onboarding 较鲜明，workspace/settings 更低对比。场景选择位于 `apps/macos/AreaMatrix/Views/MainWindow.swift:45-62,171-181`。
 
+### 共享品牌场景原语
+
+`apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedBrandAssetComponents.swift:1-257`
+承载 `AreaMatrixTrafficLights`、`AreaMatrixMiniWindow`、四类场景 Shape 与 `AreaMatrixNoiseOverlay`；这些
+无业务语义组件由 Welcome / onboarding 的五个真实设计场景复用，App target 仅保留场景组合与文案装配。
+
 ### 普通页面 Shell
 
 `apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixPageShell.swift:3-39,54-127,148-170` 提供：
@@ -511,7 +518,8 @@ Welcome 是单独设计的动态体验。`WelcomeSceneSwitcher.swift:25-34` 定�
 
 ### 卡片与指针交互
 
-`AreaMatrixFeatureCard.swift:59-116,119-220` 和 `WelcomeStepView.swift:85-135` 实现：
+`apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedFeatureCardComponents.swift:3-294`
+和 `WelcomeStepView.swift:85-135` 实现：
 
 - 四张 Feature Card staggered entrance。
 - 鼠标移动产生 ±12° 视差和卡片 3D 倾斜。
@@ -572,8 +580,9 @@ Swift Package 包含 library、Share Extension、executable 和 test target；�
 
 iOS 没有 macOS Welcome 那套 blobs、视差、Diorama 或 deep-dive；当前视觉主要依赖系统 List、NavigationStack、sheet、ProgressView 和 SF Symbols。
 
-Core 接入：`Package.swift` 的 `Carea_matrixFFI` binary target 消费由 `./dev build core-sdk` 生成的
-macOS/iOS 共用 XCFramework，不再固定到仓库内 debug Cargo 路径。iOS 仍属于实验客户端，正式支持状态
+Core 接入：`apps/ios/Package.swift` 依赖由 `./dev build core-sdk` 生成的 `AreaMatrixCoreSDK` Swift
+Package；其中唯一的 `Carea_matrixFFI` binary target 与 macOS 共用同一 XCFramework，不再固定到仓库内
+debug Cargo 路径。iOS 仍属于实验客户端，正式支持状态
 取决于签名、归档、真机和发布证据，而不是本地 SwiftPM 编译结果。
 
 ### Windows

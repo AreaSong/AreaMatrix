@@ -28,8 +28,10 @@ final class ImportSingleFilePreviewModel: ObservableObject {
     private let predictor: any CoreCategoryPredicting
     private let importer: any CoreFileImporting
     private let preflight: any ImportSingleFilePreflighting
+    private let resourceAccess: any ImportFileResourceAccessing
     private let placeholderDownloader: any ICloudPlaceholderDownloading
     private let errorMapper: any CoreErrorMapping
+    private let actionLogger: any AppUIActionLogging
     private var request: ImportEntryRequest?
     private var generation = 0
     private var isLoadingRequest = false
@@ -39,14 +41,48 @@ final class ImportSingleFilePreviewModel: ObservableObject {
         predictor: any CoreCategoryPredicting,
         importer: any CoreFileImporting,
         preflight: any ImportSingleFilePreflighting,
-        placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
-        errorMapper: any CoreErrorMapping
+        resourceAccess: any ImportFileResourceAccessing,
+        placeholderDownloader: any ICloudPlaceholderDownloading,
+        errorMapper: any CoreErrorMapping,
+        actionLogger: any AppUIActionLogging = NoopAppUIActionLogger()
     ) {
         self.predictor = predictor
         self.importer = importer
         self.preflight = preflight
+        self.resourceAccess = resourceAccess
         self.placeholderDownloader = placeholderDownloader
         self.errorMapper = errorMapper
+        self.actionLogger = actionLogger
+    }
+
+    func applyConflictRecoveryUpdate(_ update: ImportSingleFileConflictRecoveryUpdate) {
+        switch update {
+        case let .blockImport(message):
+            importStatus = .blocked(message)
+        case let .pendingReplaceConfirmation(context):
+            pendingReplaceConfirmation = context
+        case let .replaceConfirmationFailure(message):
+            replaceConfirmationErrorMessage = message
+            replaceConfirmationDiagnosticsMessage = nil
+        case .collectReplaceConfirmationDiagnostics:
+            replaceConfirmationDiagnosticsMessage = L10n.message(
+                "import.replace-confirmation.diagnostics-collected"
+            )
+        case .clearReplaceConfirmationRecovery:
+            replaceConfirmationErrorMessage = nil
+            replaceConfirmationDiagnosticsMessage = nil
+        case let .markReplaceConfirmed(isConfirmed):
+            isReplaceConfirmed = isConfirmed
+        case .resetReplaceState:
+            isReplaceConfirmed = false
+            pendingReplaceConfirmation = nil
+            replaceConfirmationErrorMessage = nil
+            replaceConfirmationDiagnosticsMessage = nil
+        case let .nameConflictResolution(resolution):
+            nameConflictResolution = resolution
+        case .resetNameConflictResolution:
+            nameConflictResolution = .keepBoth
+        }
     }
 }
 
@@ -156,7 +192,7 @@ extension ImportSingleFilePreviewModel {
             )
         } ?? .singleFile()
         lastImportTraceContext = traceContext
-        await AppLogger.shared.recordUIAction(traceContext: traceContext)
+        await actionLogger.recordUIAction(traceContext: traceContext)
         importStatus = .importing(selectedStorageMode)
         do {
             let entry = try await importFile(
@@ -360,7 +396,10 @@ private extension ImportSingleFilePreviewModel {
     }
 
     private func resetForNewSingleFileRequest(_ request: ImportEntryRequest, sourceURL: URL) {
-        source = ImportSingleFileSource(url: sourceURL)
+        source = ImportSingleFileSource(
+            url: sourceURL,
+            sizeBytes: resourceAccess.fileSizeBytes(sourceURL)
+        )
         prediction = nil
         preflightStatus = .idle
         status = .loading
@@ -403,47 +442,5 @@ private extension ImportSingleFilePreviewModel {
             conflict: .duplicate(existingPath: existingPath),
             keepBothTargetRelativePath: currentPreflightResult?.keepBothTargetRelativePath
         ))
-    }
-}
-
-extension ImportSingleFilePreviewModel {
-    func blockImportForDuplicateResolution(_ message: AppDisplayText) {
-        importStatus = .blocked(message)
-    }
-
-    func setPendingReplaceConfirmation(_ context: SingleFileReplaceConfirmationContext?) {
-        pendingReplaceConfirmation = context
-    }
-
-    func setReplaceConfirmationFailure(_ message: LocalizedMessage) {
-        replaceConfirmationErrorMessage = message
-        replaceConfirmationDiagnosticsMessage = nil
-    }
-
-    func collectReplaceConfirmationDiagnostics() {
-        replaceConfirmationDiagnosticsMessage = L10n.message("import.replace-confirmation.diagnostics-collected")
-    }
-
-    func clearReplaceConfirmationRecovery() {
-        replaceConfirmationErrorMessage = nil
-        replaceConfirmationDiagnosticsMessage = nil
-    }
-
-    func markReplaceConfirmed(_ isConfirmed: Bool) {
-        isReplaceConfirmed = isConfirmed
-    }
-
-    func resetReplaceStateForPreflight() {
-        isReplaceConfirmed = false
-        pendingReplaceConfirmation = nil
-        clearReplaceConfirmationRecovery()
-    }
-
-    func setNameConflictResolution(_ resolution: ImportSingleFileNameConflictResolution) {
-        nameConflictResolution = resolution
-    }
-
-    func resetNameConflictResolutionForPreflight() {
-        nameConflictResolution = .keepBoth
     }
 }

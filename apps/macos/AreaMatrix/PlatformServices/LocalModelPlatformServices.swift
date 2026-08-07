@@ -2,20 +2,28 @@ import AppKit
 import Foundation
 
 enum LocalModelStatusPlatformServices {
-    static var storageLocationProvider: any LocalModelStorageLocationProviding {
+    static func makeStorageLocationProvider() -> any LocalModelStorageLocationProviding {
         LocalModelStorageProvider()
     }
 
-    static var installHelpOpener: any LocalModelInstallHelpOpening {
-        NSWorkspaceLocalModelInstallHelpOpener()
+    static func makeInstallHelpOpener(
+        externalURLOpener: any ExternalURLStringOpening
+    ) -> any LocalModelInstallHelpOpening {
+        NSWorkspaceLocalModelInstallHelpOpener(
+            externalURLOpener: externalURLOpener
+        )
     }
 
-    static var folderOpener: any LocalModelFolderOpening {
-        NSWorkspaceLocalModelFolderOpener()
+    static func makeFolderOpener(
+        localURLOpener: any LocalFileURLOpening
+    ) -> any LocalModelFolderOpening {
+        NSWorkspaceLocalModelFolderOpener(localURLOpener: localURLOpener)
     }
 
-    static var diagnosticsCopier: any LocalModelDiagnosticsCopying {
-        NSPasteboardLocalModelDiagnosticsCopier()
+    static func makeDiagnosticsCopier(
+        writer: any PasteboardStringWriting
+    ) -> any LocalModelDiagnosticsCopying {
+        NSPasteboardLocalModelDiagnosticsCopier(writer: writer)
     }
 }
 
@@ -36,7 +44,7 @@ struct NSWorkspaceLocalModelInstallHelpOpener: LocalModelInstallHelpOpening {
 
     private let externalURLOpener: any ExternalURLStringOpening
 
-    init(externalURLOpener: any ExternalURLStringOpening = AppPlatformServices.externalURLStringOpener) {
+    init(externalURLOpener: any ExternalURLStringOpening) {
         self.externalURLOpener = externalURLOpener
     }
 
@@ -60,7 +68,7 @@ struct NSWorkspaceLocalModelInstallHelpOpener: LocalModelInstallHelpOpening {
 struct NSWorkspaceLocalModelFolderOpener: LocalModelFolderOpening {
     private let localURLOpener: any LocalFileURLOpening
 
-    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+    init(localURLOpener: any LocalFileURLOpening) {
         self.localURLOpener = localURLOpener
     }
 
@@ -81,7 +89,7 @@ struct NSWorkspaceLocalModelFolderOpener: LocalModelFolderOpening {
 struct NSPasteboardLocalModelDiagnosticsCopier: LocalModelDiagnosticsCopying {
     private let writer: any PasteboardStringWriting
 
-    init(writer: any PasteboardStringWriting = AppPlatformServices.pasteboardStringWriter) {
+    init(writer: any PasteboardStringWriting) {
         self.writer = writer
     }
 

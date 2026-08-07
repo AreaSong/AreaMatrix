@@ -38,15 +38,15 @@ enum AppPlatformServices {
     }
 
     static var finderOpener: any RepositoryFinderOpening {
-        NSWorkspaceRepositoryFinderOpener()
+        NSWorkspaceRepositoryFinderOpener(localURLOpener: localFileURLOpener)
     }
 
     static var fileRevealer: any RepositoryFileRevealing {
-        NSWorkspaceRepositoryFileRevealer()
+        NSWorkspaceRepositoryFileRevealer(localURLOpener: localFileURLOpener)
     }
 
     static var fileOpener: any RepositoryFileOpening {
-        NSWorkspaceRepositoryFileOpener()
+        NSWorkspaceRepositoryFileOpener(localURLOpener: localFileURLOpener)
     }
 
     static var localFileURLOpener: any LocalFileURLOpening {
@@ -58,7 +58,7 @@ enum AppPlatformServices {
     }
 
     static var pathCopier: any RepositoryPathCopying {
-        NSPasteboardRepositoryPathCopier()
+        NSPasteboardRepositoryPathCopier(writer: pasteboardStringWriter)
     }
 
     static var pasteboardStringWriter: any PasteboardStringWriting {
@@ -78,7 +78,7 @@ enum AppPlatformServices {
     }
 
     static var helpOpener: any WelcomeHelpOpening {
-        WelcomeHelpOpener()
+        WelcomeHelpOpener(externalURLOpener: externalURLStringOpener)
     }
 
     static var directoryPicker: any RepositoryDirectoryPicking {

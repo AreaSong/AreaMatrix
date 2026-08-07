@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Combine
 import Foundation
 
@@ -44,18 +45,15 @@ final class RepositorySettingsModel: ObservableObject {
         repositoryOpener: any CoreEmptyRepositoryOpening,
         fileLister: (any CoreFileListing)? = nil,
         scanSessionReader: any CoreScanSessionReading,
-        existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
-            RepositorySettingsPlatformServices.metadataReader,
-        metadataPresenceChecker: any RepoMetadataPresenceChecking =
-            RepositorySettingsPlatformServices.metadataPresenceChecker,
-        finderOpener: any RepositoryFinderOpening = RepositorySettingsPlatformServices.finderOpener,
-        pathCopier: any RepositoryPathCopying = RepositorySettingsPlatformServices.pathCopier,
-        generatedOverviewRevealer: any RepositoryFileRevealing =
-            RepositorySettingsPlatformServices.generatedOverviewRevealer,
+        existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading,
+        metadataPresenceChecker: any RepoMetadataPresenceChecking,
+        finderOpener: any RepositoryFinderOpening,
+        pathCopier: any RepositoryPathCopying,
+        generatedOverviewRevealer: any RepositoryFileRevealing,
         diagnosticsCollector: any CoreDiagnosticsCollecting,
         coreVersionLoader: any CoreVersionLoading,
         errorMapper: any CoreErrorMapping,
-        accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
+        accessibilityAnnouncer: any AccessibilityAnnouncing
     ) {
         self.repoPath = repoPath
         self.loader = loader

@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -68,7 +69,7 @@ struct MainRepositoryContentView: View {
         opening: RepositoryOpeningResult,
         state: MainRepositoryContentState,
         assembly: MainRepositoryContentAssembly,
-        commandRouter: AppCommandRouter? = nil,
+        commandRouter: AppCommandRouter,
         onImport: @escaping () -> Void,
         onDropImport: @escaping ([URL], ImportEntryDestination) -> Void,
         onOpenSettings: @escaping () -> Void = {},
@@ -89,7 +90,7 @@ struct MainRepositoryContentView: View {
         importProgressPresentation: ImportProgressListPresentation = .empty
     ) {
         self.opening = opening; self.state = state
-        _commandRouter = ObservedObject(wrappedValue: commandRouter ?? .shared)
+        _commandRouter = ObservedObject(wrappedValue: commandRouter)
         self.onImport = onImport; self.onDropImport = onDropImport
         self.onOpenSettings = onOpenSettings; self.onOpenAISettings = onOpenAISettings
         self.onOpenRepository = onOpenRepository; self.onOpenHelp = onOpenHelp

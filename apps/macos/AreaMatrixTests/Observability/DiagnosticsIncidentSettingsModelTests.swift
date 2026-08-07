@@ -13,7 +13,9 @@ final class DiagnosticsIncidentSettingsModelTests: XCTestCase {
         ])
         let model = DiagnosticsSettingsModel(
             runtime: fixture.runtime,
-            incidentManager: incidentManager
+            incidentManager: incidentManager,
+            packagePreviewer: DiagnosticsPackagePreviewerSpy(),
+            packageHandler: DiagnosticsPackageHandlerSpy()
         )
 
         await model.load()
@@ -43,7 +45,9 @@ final class DiagnosticsIncidentSettingsModelTests: XCTestCase {
         )
         let model = DiagnosticsSettingsModel(
             runtime: fixture.runtime,
-            incidentManager: incidentManager
+            incidentManager: incidentManager,
+            packagePreviewer: DiagnosticsPackagePreviewerSpy(),
+            packageHandler: DiagnosticsPackageHandlerSpy()
         )
 
         await model.load()
@@ -78,7 +82,13 @@ private struct DiagnosticsIncidentSettingsFixture {
             rootURL: rootURL.appendingPathComponent("Logs", isDirectory: true),
             sessionID: "diagnostics-incident-settings-tests"
         )
-        runtime = ObservabilityRuntimeAssembly(hub: hub, core: DiagnosticsIncidentCoreStub())
+        runtime = ObservabilityRuntimeAssembly(
+            hub: hub,
+            core: DiagnosticsIncidentCoreStub(),
+            resourceIdentityProvider: .shared,
+            sessionID: "diagnostics-incident-settings-tests",
+            scheduler: .live
+        )
     }
 
     func cleanup() {

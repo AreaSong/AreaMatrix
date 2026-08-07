@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+@testable import AreaMatrixCoreContracts
 
 extension PlatformCapabilitySupportSnapshot {
     static func testFixture(

@@ -1,35 +1,13 @@
+import AppKit
 import SwiftUI
 
-struct AreaMatrixCrossfadeAssetImage: View {
-    let darkName: String
-    let lightName: String
-    let width: CGFloat?
-    let height: CGFloat?
-
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        ZStack {
-            assetImage(lightName)
-                .opacity(colorScheme == .dark ? 0 : 1)
-            assetImage(darkName)
-                .opacity(colorScheme == .dark ? 1 : 0)
-        }
-        .animation(.easeInOut(duration: 0.6), value: colorScheme)
-    }
-
-    private func assetImage(_ name: String) -> some View {
-        Image(name)
-            .resizable()
-            .scaledToFit()
-            .frame(width: width, height: height)
-    }
-}
-
-struct AreaMatrixTrafficLights: View {
+/// Small AppKit-inspired visual primitives shared by the onboarding dioramas.
+public struct AreaMatrixTrafficLights: View {
     @State private var isHovered = false
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         HStack(spacing: 7) {
             trafficLight(color: Color(red: 1, green: 0.373, blue: 0.337), symbol: "xmark")
             trafficLight(color: Color(red: 1, green: 0.741, blue: 0.18), symbol: "minus")
@@ -55,16 +33,31 @@ struct AreaMatrixTrafficLights: View {
     }
 }
 
-struct AreaMatrixMiniWindow<Content: View>: View {
-    let title: String
-    let width: CGFloat
-    let height: CGFloat
-    var useDarkBackground = false
-    @ViewBuilder let content: () -> Content
+/// Presents a compact window illustration for a design-system scene.
+public struct AreaMatrixMiniWindow<Content: View>: View {
+    public let title: String
+    public let width: CGFloat
+    public let height: CGFloat
+    public var useDarkBackground: Bool
+    @ViewBuilder public let content: () -> Content
 
     @Environment(\.colorScheme) private var colorScheme
 
-    var body: some View {
+    public init(
+        title: String,
+        width: CGFloat,
+        height: CGFloat,
+        useDarkBackground: Bool = false,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.width = width
+        self.height = height
+        self.useDarkBackground = useDarkBackground
+        self.content = content
+    }
+
+    public var body: some View {
         VStack(spacing: 0) {
             titlebar
             content()
@@ -98,10 +91,14 @@ struct AreaMatrixMiniWindow<Content: View>: View {
     }
 }
 
-struct AreaMatrixBottomCornersShape: Shape {
-    var radius: CGFloat = .infinity
+public struct AreaMatrixBottomCornersShape: Shape {
+    public var radius: CGFloat
 
-    func path(in rect: CGRect) -> Path {
+    public init(radius: CGFloat = .infinity) {
+        self.radius = radius
+    }
+
+    public func path(in rect: CGRect) -> Path {
         var path = Path()
         path.move(to: CGPoint(x: 0, y: 0))
         path.addLine(to: CGPoint(x: rect.width, y: 0))
@@ -126,8 +123,10 @@ struct AreaMatrixBottomCornersShape: Shape {
     }
 }
 
-struct AreaMatrixHexagonShape: Shape {
-    func path(in rect: CGRect) -> Path {
+public struct AreaMatrixHexagonShape: Shape {
+    public init() {}
+
+    public func path(in rect: CGRect) -> Path {
         let radius = min(rect.width, rect.height) / 2
         let center = CGPoint(x: rect.midX, y: rect.midY)
         var path = Path()
@@ -151,42 +150,76 @@ struct AreaMatrixHexagonShape: Shape {
     }
 }
 
-struct AreaMatrixFolderShape: Shape {
-    let tabWidth: CGFloat
-    let tabHeight: CGFloat
-    let cornerRadius: CGFloat
+public struct AreaMatrixFolderShape: Shape {
+    public let tabWidth: CGFloat
+    public let tabHeight: CGFloat
+    public let cornerRadius: CGFloat
 
-    func path(in rect: CGRect) -> Path {
+    public init(tabWidth: CGFloat, tabHeight: CGFloat, cornerRadius: CGFloat) {
+        self.tabWidth = tabWidth
+        self.tabHeight = tabHeight
+        self.cornerRadius = cornerRadius
+    }
+
+    public func path(in rect: CGRect) -> Path {
         let tabRadius = min(cornerRadius, tabWidth / 2, tabHeight / 2)
         let bodyRadius = cornerRadius
         var path = Path()
 
         path.move(to: CGPoint(x: 0, y: tabRadius))
-        path.addArc(center: CGPoint(x: tabRadius, y: tabRadius), radius: tabRadius,
-                    startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
+        path.addArc(
+            center: CGPoint(x: tabRadius, y: tabRadius),
+            radius: tabRadius,
+            startAngle: .degrees(180),
+            endAngle: .degrees(270),
+            clockwise: false
+        )
         path.addLine(to: CGPoint(x: tabWidth - tabRadius, y: 0))
-        path.addArc(center: CGPoint(x: tabWidth - tabRadius, y: tabRadius), radius: tabRadius,
-                    startAngle: .degrees(270), endAngle: .degrees(0), clockwise: false)
+        path.addArc(
+            center: CGPoint(x: tabWidth - tabRadius, y: tabRadius),
+            radius: tabRadius,
+            startAngle: .degrees(270),
+            endAngle: .degrees(0),
+            clockwise: false
+        )
         path.addLine(to: CGPoint(x: tabWidth, y: tabHeight))
         path.addLine(to: CGPoint(x: rect.width - bodyRadius, y: tabHeight))
-        path.addArc(center: CGPoint(x: rect.width - bodyRadius, y: tabHeight + bodyRadius), radius: bodyRadius,
-                    startAngle: .degrees(270), endAngle: .degrees(0), clockwise: false)
+        path.addArc(
+            center: CGPoint(x: rect.width - bodyRadius, y: tabHeight + bodyRadius),
+            radius: bodyRadius,
+            startAngle: .degrees(270),
+            endAngle: .degrees(0),
+            clockwise: false
+        )
         path.addLine(to: CGPoint(x: rect.width, y: rect.height - bodyRadius))
-        path.addArc(center: CGPoint(x: rect.width - bodyRadius, y: rect.height - bodyRadius), radius: bodyRadius,
-                    startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
+        path.addArc(
+            center: CGPoint(x: rect.width - bodyRadius, y: rect.height - bodyRadius),
+            radius: bodyRadius,
+            startAngle: .degrees(0),
+            endAngle: .degrees(90),
+            clockwise: false
+        )
         path.addLine(to: CGPoint(x: bodyRadius, y: rect.height))
-        path.addArc(center: CGPoint(x: bodyRadius, y: rect.height - bodyRadius), radius: bodyRadius,
-                    startAngle: .degrees(90), endAngle: .degrees(180), clockwise: false)
+        path.addArc(
+            center: CGPoint(x: bodyRadius, y: rect.height - bodyRadius),
+            radius: bodyRadius,
+            startAngle: .degrees(90),
+            endAngle: .degrees(180),
+            clockwise: false
+        )
         path.closeSubpath()
 
         return path
     }
 }
 
-struct AreaMatrixNoiseOverlay: View {
+/// Adds a lightweight tiled noise layer without owning application state.
+public struct AreaMatrixNoiseOverlay: View {
     @State private var noiseImage: Image?
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Group {
             if let noiseImage {
                 noiseImage
@@ -219,6 +252,6 @@ struct AreaMatrixNoiseOverlay: View {
             bitmapInfo: CGImageAlphaInfo.none.rawValue
         ) else { return nil }
         guard let cgImage = context.makeImage() else { return nil }
-        return Image(cgImage, scale: 1, label: Text(L10n.string("Noise")))
+        return Image(cgImage, scale: 1, label: Text(verbatim: ""))
     }
 }

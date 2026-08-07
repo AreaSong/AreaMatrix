@@ -2,29 +2,18 @@ import AppKit
 import Foundation
 
 enum AdvancedSettingsPlatformServices {
-    static var rootOverviewInspector: any RootOverviewFileInspecting {
-        AppPlatformServices.rootOverviewInspector
+    static func makeDiagnosticSummaryCopier(
+        writer: any PasteboardStringWriting
+    ) -> any AdvancedSettingsDiagnosticSummaryCopying {
+        AdvancedSettingsDiagnosticCopier(writer: writer)
     }
 
-    static var appVersionReader: any AppVersionReading {
-        AppPlatformServices.appVersionReader
-    }
-
-    static var metadataReader: any ExistingRepositoryMetadataReading {
-        AppPlatformServices.existingRepositoryMetadataReader
-    }
-
-    static var diagnosticSummaryCopier: any AdvancedSettingsDiagnosticSummaryCopying {
-        AdvancedSettingsDiagnosticCopier()
-    }
-
-    @MainActor
-    static var diagnosticsPackageHandler: any DiagnosticsPackageHandling {
-        DiagnosticsPackageHandler()
-    }
-
-    static var diagnosticsPackagePreviewer: any DiagnosticsPackagePreviewing {
-        DiagnosticsPackagePreviewService()
+    static func diagnosticsPackagePreviewer(
+        interfaceLocaleIdentifier: @escaping @Sendable () -> String
+    ) -> any DiagnosticsPackagePreviewing {
+        DiagnosticsPackagePreviewService(
+            exporter: DiagnosticPackageExporter(interfaceLocaleIdentifier: interfaceLocaleIdentifier)
+        )
     }
 }
 
@@ -48,7 +37,7 @@ struct BundleAppVersionReader: AppVersionReading {
 struct AdvancedSettingsDiagnosticCopier: AdvancedSettingsDiagnosticSummaryCopying {
     private let writer: any PasteboardStringWriting
 
-    init(writer: any PasteboardStringWriting = AppPlatformServices.pasteboardStringWriter) {
+    init(writer: any PasteboardStringWriting) {
         self.writer = writer
     }
 
@@ -68,6 +57,25 @@ protocol DiagnosticsPackageHandling {
     ) throws -> URL?
 
     func openPackage() throws -> DiagnosticPackageInspection?
+}
+
+struct DefaultDiagnosticsPackageHandler: DiagnosticsPackageHandling {
+    // The App composition root is synchronous; only the protocol operations require the main actor.
+    // swiftlint:disable:next unneeded_synthesized_initializer
+    nonisolated init() {}
+
+    @MainActor
+    func export(
+        _ preview: DiagnosticPackagePreview,
+        suggestedFileName: String
+    ) throws -> URL? {
+        try DiagnosticsPackageHandler().export(preview, suggestedFileName: suggestedFileName)
+    }
+
+    @MainActor
+    func openPackage() throws -> DiagnosticPackageInspection? {
+        try DiagnosticsPackageHandler().openPackage()
+    }
 }
 
 protocol DiagnosticsPackagePreviewing: Sendable {

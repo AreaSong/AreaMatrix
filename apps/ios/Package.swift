@@ -13,14 +13,15 @@ let package = Package(
         .library(name: "AreaMatrixShareExtension", targets: ["AreaMatrixShareExtension"]),
         .executable(name: "AreaMatrixIOSApp", targets: ["AreaMatrixIOSApp"])
     ],
+    dependencies: [
+        .package(path: ".core-sdk")
+    ],
     targets: [
-        .binaryTarget(
-            name: "Carea_matrixFFI",
-            path: ".core-sdk/AreaMatrixCoreFFI.xcframework"
-        ),
         .target(
             name: "AreaMatrixIOS",
-            dependencies: ["Carea_matrixFFI"],
+            dependencies: [
+                .product(name: "AreaMatrixCoreSDK", package: ".core-sdk")
+            ],
             path: "AreaMatrix"
         ),
         .executableTarget(

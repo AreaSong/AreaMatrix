@@ -1,4 +1,58 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
+
+/// Dependencies consumed by the content shell itself and its supporting routes.
+struct MainRepositoryContentSupportDeps {
+    let treeLister: any CoreRepositoryTreeListing
+    let savedSearchStore: any CoreSavedSearchCRUD
+    let batchRenamer: any CoreBatchRenaming
+    let systemCapabilityChecker: any OnboardingSystemCapabilityChecking
+    let errorMapper: any CoreErrorMapping
+    let syncConflictDetector: any CoreSyncConflictDetecting
+    let noteStore: any CoreNoteReadingWriting
+    let inFlightFileChangeTracker: any InFlightFileChangeTracking
+    let dropCategoryPredictor: any CoreCategoryPredicting
+}
+
+/// Core collaborators used to construct the main list model.
+struct MainRepositoryContentListDependencies {
+    let fileLister: any CoreFileListing
+    let fileDetailer: any CoreFileDetailing
+    let missingFileRecoverer: any CoreMissingFileRecovering
+    let missingFilePicker: any RepositoryMissingFilePicking
+    let searchQuerying: any CoreSearchQuerying
+    let semanticSearching: any CoreSemanticSearching
+    let semanticFallbackReader: any CoreSemanticFallbackStatusReading
+    let searchFiltering: any CoreSearchFiltering
+    let commandIndexer: any CoreCommandIndexing
+    let fileRenamer: any CoreFileRenaming
+    let fileDeleter: any CoreFileDeleting
+    let fileCategoryMover: any CoreFileCategoryMoving
+    let categoryPredictor: any CoreCategoryPredicting
+    let batchDeleter: any CoreBatchDeleting
+    let batchCategoryChanger: any CoreBatchCategoryChanging
+    let iCloudConflictResolver: any ICloudConflictResolving
+    let tagStore: any CoreTagCRUD
+    let aiSettingsLoader: any CoreAISettingsLoading
+    let aiTagSuggestionStore: any CoreAITagSuggestionManaging
+    let aiPrivacyRules: any CoreAIPrivacyEvaluating
+    let undoActionStore: any CoreUndoActionLogging
+    let redoActionStore: any CoreRedoActionLogging
+    let changeLogLister: any CoreChangeLogListing
+    let externalChangesSyncer: any CoreExternalChangesSyncing
+    let repositoryWriteCoordinator: RepositoryWriteCoordinator
+    let errorMapper: any CoreErrorMapping
+    let diagnosticsCollector: any CoreDiagnosticsCollecting
+    let fileResourceAccess: any ImportFileResourceAccessing
+}
+
+/// Feature-owned scopes passed to the content shell.
+struct MainRepositoryContentFeatureDependencies {
+    let aiFeature: AIFeatureDependencies
+    let fileActions: FileActionsFeatureDependencies
+    let settings: SettingsFeatureDependencies
+    let syncConflicts: SyncConflictsFeatureDependencies
+}
 
 @MainActor
 struct MainRepositoryContentAssembly {
@@ -17,15 +71,28 @@ struct MainRepositoryContentAssembly {
     let makeDetailNoteModel: () -> DetailNoteModel
     let makeSummaryExitController: () -> AISummaryEditorExitController
 
-    static func live(
+    /// Composes the production assembly from the App-owned dependency graph.
+    ///
+    /// The explicit name keeps this boundary distinct from test factories and
+    /// prevents `.live` convenience calls from becoming a feature dependency
+    /// escape hatch.
+    static func makeForProduction(
         opening: RepositoryOpeningResult,
         dependencies: AppDependencyContainer
     ) -> Self {
         let core = dependencies.mainList
-        return make(
-            opening: opening,
+        let supporting = MainRepositoryContentSupportDeps(
             treeLister: core.treeLister,
             savedSearchStore: core.savedSearchStore,
+            batchRenamer: core.batchRenamer,
+            systemCapabilityChecker: dependencies.onboarding.systemCapabilityChecker,
+            errorMapper: core.errorMapper,
+            syncConflictDetector: core.syncConflictDetector,
+            noteStore: core.noteStore,
+            inFlightFileChangeTracker: dependencies.platform.inFlightFileChangeTracker,
+            dropCategoryPredictor: core.categoryPredictor
+        )
+        let list = MainRepositoryContentListDependencies(
             fileLister: core.fileLister,
             fileDetailer: core.fileDetailer,
             missingFileRecoverer: core.missingFileRecoverer,
@@ -38,12 +105,9 @@ struct MainRepositoryContentAssembly {
             fileRenamer: core.fileRenamer,
             fileDeleter: core.fileDeleter,
             fileCategoryMover: core.fileCategoryMover,
-            fileListCategoryPredictor: core.categoryPredictor,
+            categoryPredictor: core.categoryPredictor,
             batchDeleter: core.batchDeleter,
             batchCategoryChanger: core.batchCategoryChanger,
-            batchRenamer: core.batchRenamer,
-            systemCapabilityChecker: dependencies.onboarding.systemCapabilityChecker,
-            syncConflictDetector: core.syncConflictDetector,
             iCloudConflictResolver: core.iCloudConflictResolver,
             tagStore: core.tagStore,
             aiSettingsLoader: core.aiSettingsLoader,
@@ -54,189 +118,102 @@ struct MainRepositoryContentAssembly {
             changeLogLister: core.changeLogLister,
             externalChangesSyncer: core.externalChangesSyncer,
             repositoryWriteCoordinator: dependencies.onboarding.repositoryWriteCoordinator,
-            noteStore: core.noteStore,
-            dropCategoryPredictor: core.categoryPredictor,
             errorMapper: core.errorMapper,
             diagnosticsCollector: core.diagnosticsCollector,
-            aiDependencies: dependencies.feature.ai,
-            fileActionsDependencies: dependencies.feature.fileActions,
-            settingsDependencies: dependencies.feature.settings,
-            syncConflictsDependencies: dependencies.feature.syncConflicts
+            fileResourceAccess: dependencies.feature.import.fileResourceAccess
         )
+        let features = MainRepositoryContentFeatureDependencies(
+            aiFeature: dependencies.feature.aiFeature,
+            fileActions: dependencies.feature.fileActions,
+            settings: dependencies.feature.settings,
+            syncConflicts: dependencies.feature.syncConflicts
+        )
+        return make(opening: opening, supporting: supporting, list: list, features: features)
     }
 
-    // swiftlint:disable:next function_body_length
     static func make(
         opening: RepositoryOpeningResult,
-        treeLister: any CoreRepositoryTreeListing = AppCoreServices.treeLister,
-        savedSearchStore: any CoreSavedSearchCRUD = AppCoreServices.savedSearchStore,
-        fileLister: any CoreFileListing = AppCoreServices.fileLister,
-        fileDetailer: any CoreFileDetailing = AppCoreServices.fileDetailer,
-        missingFileRecoverer: any CoreMissingFileRecovering = AppCoreServices.missingFileRecoverer,
-        missingFilePicker: any RepositoryMissingFilePicking = AppPlatformServices.missingFilePicker,
-        searchQuerying: any CoreSearchQuerying = AppCoreServices.searchQuerying,
-        semanticSearching: any CoreSemanticSearching = AppCoreServices.semanticSearching,
-        semanticFallbackReader: any CoreSemanticFallbackStatusReading = AppCoreServices.semanticFallbackReader,
-        searchFiltering: any CoreSearchFiltering = AppCoreServices.searchFiltering,
-        commandIndexer: any CoreCommandIndexing = AppCoreServices.commandIndexer,
-        fileRenamer: any CoreFileRenaming = AppCoreServices.fileRenamer,
-        fileDeleter: any CoreFileDeleting = AppCoreServices.fileDeleter,
-        fileCategoryMover: any CoreFileCategoryMoving = AppCoreServices.fileCategoryMover,
-        fileListCategoryPredictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
-        batchDeleter: any CoreBatchDeleting = AppCoreServices.batchDeleter,
-        batchCategoryChanger: any CoreBatchCategoryChanging = AppCoreServices.batchCategoryChanger,
-        batchRenamer: any CoreBatchRenaming = AppCoreServices.batchRenamer,
-        systemCapabilityChecker: any OnboardingSystemCapabilityChecking = AppPlatformServices.systemCapabilityChecker,
-        syncConflictDetector: any CoreSyncConflictDetecting = AppCoreServices.syncConflictDetector,
-        iCloudConflictResolver: any ICloudConflictResolving = AppCoreServices.iCloudConflictResolver,
-        tagStore: any CoreTagCRUD = AppCoreServices.tagStore,
-        aiSettingsLoader: any CoreAISettingsLoading = AppCoreServices.aiSettingsLoader,
-        aiTagSuggestionStore: any CoreAITagSuggestionManaging = AppCoreServices.aiTagSuggestionStore,
-        aiPrivacyRules: any CoreAIPrivacyEvaluating = AppCoreServices.aiPrivacyRules,
-        undoActionStore: any CoreUndoActionLogging = AppCoreServices.undoActionStore,
-        redoActionStore: any CoreRedoActionLogging = AppCoreServices.redoActionStore,
-        changeLogLister: any CoreChangeLogListing = AppCoreServices.changeLogLister,
-        externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer,
-        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
-        noteStore: any CoreNoteReadingWriting = AppCoreServices.noteStore,
-        dropCategoryPredictor: any CoreCategoryPredicting = AppCoreServices.categoryPredictor,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
-        aiDependencies: AIFeatureDependencies,
-        fileActionsDependencies: FileActionsFeatureDependencies,
-        settingsDependencies: SettingsFeatureDependencies,
-        syncConflictsDependencies: SyncConflictsFeatureDependencies
+        supporting: MainRepositoryContentSupportDeps,
+        list: MainRepositoryContentListDependencies,
+        features: MainRepositoryContentFeatureDependencies
     ) -> Self {
         Self(
-            treeLister: treeLister,
-            savedSearchStore: savedSearchStore,
-            batchRenamer: batchRenamer,
-            systemCapabilityChecker: systemCapabilityChecker,
-            errorMapper: errorMapper,
-            aiDependencies: aiDependencies,
-            fileActionsDependencies: fileActionsDependencies,
-            settingsDependencies: settingsDependencies,
-            syncConflictsDependencies: syncConflictsDependencies,
+            treeLister: supporting.treeLister,
+            savedSearchStore: supporting.savedSearchStore,
+            batchRenamer: supporting.batchRenamer,
+            systemCapabilityChecker: supporting.systemCapabilityChecker,
+            errorMapper: supporting.errorMapper,
+            aiDependencies: features.aiFeature,
+            fileActionsDependencies: features.fileActions,
+            settingsDependencies: features.settings,
+            syncConflictsDependencies: features.syncConflicts,
             makeFileListModel: fileListModelFactory(
                 opening: opening,
-                fileLister: fileLister,
-                fileDetailer: fileDetailer,
-                missingFileRecoverer: missingFileRecoverer,
-                missingFilePicker: missingFilePicker,
-                searchQuerying: searchQuerying,
-                semanticSearching: semanticSearching,
-                semanticFallbackReader: semanticFallbackReader,
-                searchFiltering: searchFiltering,
-                commandIndexer: commandIndexer,
-                fileRenamer: fileRenamer,
-                fileDeleter: fileDeleter,
-                fileCategoryMover: fileCategoryMover,
-                categoryPredictor: fileListCategoryPredictor,
-                batchDeleter: batchDeleter,
-                batchCategoryChanger: batchCategoryChanger,
-                iCloudConflictResolver: iCloudConflictResolver,
-                tagStore: tagStore,
-                aiSettingsLoader: aiSettingsLoader,
-                aiTagSuggestionStore: aiTagSuggestionStore,
-                aiPrivacyRules: aiPrivacyRules,
-                undoActionStore: undoActionStore,
-                redoActionStore: redoActionStore,
-                changeLogLister: changeLogLister,
-                externalChangesSyncer: externalChangesSyncer,
-                repositoryWriteCoordinator: repositoryWriteCoordinator,
-                errorMapper: errorMapper,
-                diagnosticsCollector: diagnosticsCollector
+                dependencies: list
             ),
             makeSyncConflictEntryModel: {
                 SyncConflictEntryModel(
                     repoPath: opening.config.repoPath,
-                    conflictDetector: syncConflictDetector,
-                    errorMapper: errorMapper
+                    conflictDetector: supporting.syncConflictDetector,
+                    errorMapper: supporting.errorMapper
                 )
             },
             makeDropPreviewModel: {
                 ImportDropPreviewModel(
                     repoPath: opening.config.repoPath,
-                    predictor: dropCategoryPredictor
+                    predictor: supporting.dropCategoryPredictor,
+                    resourceAccess: list.fileResourceAccess
                 )
             },
             makeDetailNoteModel: {
                 DetailNoteModel(
                     repoPath: opening.config.repoPath,
-                    noteStore: noteStore,
-                    errorMapper: errorMapper
+                    noteStore: supporting.noteStore,
+                    errorMapper: supporting.errorMapper,
+                    inFlightTracker: supporting.inFlightFileChangeTracker
                 )
             },
             makeSummaryExitController: AISummaryEditorExitController.init
         )
     }
 
-    // swiftlint:disable:next function_parameter_count
     private static func fileListModelFactory(
         opening: RepositoryOpeningResult,
-        fileLister: any CoreFileListing,
-        fileDetailer: any CoreFileDetailing,
-        missingFileRecoverer: any CoreMissingFileRecovering,
-        missingFilePicker: any RepositoryMissingFilePicking,
-        searchQuerying: any CoreSearchQuerying,
-        semanticSearching: any CoreSemanticSearching,
-        semanticFallbackReader: any CoreSemanticFallbackStatusReading,
-        searchFiltering: any CoreSearchFiltering,
-        commandIndexer: any CoreCommandIndexing,
-        fileRenamer: any CoreFileRenaming,
-        fileDeleter: any CoreFileDeleting,
-        fileCategoryMover: any CoreFileCategoryMoving,
-        categoryPredictor: any CoreCategoryPredicting,
-        batchDeleter: any CoreBatchDeleting,
-        batchCategoryChanger: any CoreBatchCategoryChanging,
-        iCloudConflictResolver: any ICloudConflictResolving,
-        tagStore: any CoreTagCRUD,
-        aiSettingsLoader: any CoreAISettingsLoading,
-        aiTagSuggestionStore: any CoreAITagSuggestionManaging,
-        aiPrivacyRules: any CoreAIPrivacyEvaluating,
-        undoActionStore: any CoreUndoActionLogging,
-        redoActionStore: any CoreRedoActionLogging,
-        changeLogLister: any CoreChangeLogListing,
-        externalChangesSyncer: any CoreExternalChangesSyncing,
-        repositoryWriteCoordinator: RepositoryWriteCoordinator,
-        errorMapper: any CoreErrorMapping,
-        diagnosticsCollector: any CoreDiagnosticsCollecting
+        dependencies: MainRepositoryContentListDependencies
     ) -> () -> MainFileListModel {
-        let dependencies = MainListFeatureDependencies(
-            fileLister: fileLister,
-            fileDetailer: fileDetailer,
-            aiPrivacyRules: aiPrivacyRules,
-            aiSettingsLoader: aiSettingsLoader,
-            aiTagSuggestionStore: aiTagSuggestionStore,
-            batchCategoryChanger: batchCategoryChanger,
-            batchDeleter: batchDeleter,
-            categoryPredictor: categoryPredictor,
-            changeLogLister: changeLogLister,
-            commandIndexer: commandIndexer,
-            externalChangesSyncer: externalChangesSyncer,
-            fileCategoryMover: fileCategoryMover,
-            fileDeleter: fileDeleter,
-            fileRenamer: fileRenamer,
-            iCloudConflictResolver: iCloudConflictResolver,
-            missingFileRecoverer: missingFileRecoverer,
-            missingFilePicker: missingFilePicker,
-            redoActionStore: redoActionStore,
-            searchFiltering: searchFiltering,
-            searchQuerying: searchQuerying,
-            semanticFallbackReader: semanticFallbackReader,
-            semanticSearching: semanticSearching,
-            tagStore: tagStore,
-            undoActionStore: undoActionStore,
-            repositoryWriteCoordinator: repositoryWriteCoordinator,
-            errorMapper: errorMapper,
-            diagnosticsCollector: diagnosticsCollector
+        let featureDependencies = MainListFeatureDependencies(
+            fileResourceAccess: dependencies.fileResourceAccess,
+            fileLister: dependencies.fileLister,
+            fileDetailer: dependencies.fileDetailer,
+            aiPrivacyRules: dependencies.aiPrivacyRules,
+            aiSettingsLoader: dependencies.aiSettingsLoader,
+            aiTagSuggestionStore: dependencies.aiTagSuggestionStore,
+            batchCategoryChanger: dependencies.batchCategoryChanger,
+            batchDeleter: dependencies.batchDeleter,
+            categoryPredictor: dependencies.categoryPredictor,
+            changeLogLister: dependencies.changeLogLister,
+            commandIndexer: dependencies.commandIndexer,
+            externalChangesSyncer: dependencies.externalChangesSyncer,
+            fileCategoryMover: dependencies.fileCategoryMover,
+            fileDeleter: dependencies.fileDeleter,
+            fileRenamer: dependencies.fileRenamer,
+            iCloudConflictResolver: dependencies.iCloudConflictResolver,
+            missingFileRecoverer: dependencies.missingFileRecoverer,
+            missingFilePicker: dependencies.missingFilePicker,
+            redoActionStore: dependencies.redoActionStore,
+            searchFiltering: dependencies.searchFiltering,
+            searchQuerying: dependencies.searchQuerying,
+            semanticFallbackReader: dependencies.semanticFallbackReader,
+            semanticSearching: dependencies.semanticSearching,
+            tagStore: dependencies.tagStore,
+            undoActionStore: dependencies.undoActionStore,
+            repositoryWriteCoordinator: dependencies.repositoryWriteCoordinator,
+            errorMapper: dependencies.errorMapper,
+            diagnosticsCollector: dependencies.diagnosticsCollector
         )
 
         return {
-            MainFileListModel(
-                opening: opening,
-                dependencies: dependencies
-            )
+            MainFileListModel(opening: opening, dependencies: featureDependencies)
         }
     }
 }

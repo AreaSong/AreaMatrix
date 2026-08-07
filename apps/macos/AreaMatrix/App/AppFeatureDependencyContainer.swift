@@ -8,29 +8,31 @@ import Foundation
 struct AppFeatureDependencyContainer {
     let shared: SharedFeatureDependencies
     let onboarding: OnboardingFeatureDependencies
-    let ai: AIFeatureDependencies
+    let aiFeature: AIFeatureDependencies
     let fileActions: FileActionsFeatureDependencies
     let `import`: ImportFeatureDependencies
     let mainList: MainListFeatureDependencies
     let search: SearchFeatureDependencies
     let settings: SettingsFeatureDependencies
     let syncConflicts: SyncConflictsFeatureDependencies
+    let diagnostics: DiagnosticsFeatureDependencies
 
     static let live = AppFeatureDependencyContainer(
         shared: SharedFeatureDependencies(
             errorMapper: AppCoreServices.errorMapper,
             diagnosticsCollector: AppCoreServices.diagnosticsCollector,
-            repositoryWriteCoordinator: AppCoreServices.repositoryWriteCoordinator
+            repositoryWriteCoordinator: AppCoreServices.repositoryWriteCoordinator,
+            actionLogger: AppLogger.shared
         ),
         onboarding: OnboardingFeatureDependencies(
-            metadataRepairer: CoreBridgeRuntime.shared,
-            repositoryReindexer: CoreBridgeRuntime.shared,
+            metadataRepairer: AppCoreServices.metadataRepairer,
+            repositoryReindexer: AppCoreServices.repositoryReindexer,
             startupRecoverer: AppCoreServices.startupRecoverer,
             repositoryWriteCoordinator: AppCoreServices.repositoryWriteCoordinator,
             diagnosticsCollector: AppCoreServices.diagnosticsCollector,
             errorMapper: AppCoreServices.errorMapper
         ),
-        ai: AIFeatureDependencies(
+        aiFeature: AIFeatureDependencies(
             aiCallLogLister: AppCoreServices.aiCallLogLister,
             aiCallLogClearer: AppCoreServices.aiCallLogClearer,
             aiClassificationSuggester: AppCoreServices.aiClassificationSuggester,
@@ -43,7 +45,18 @@ struct AppFeatureDependencyContainer {
             aiTagSuggestionStore: AppCoreServices.aiTagSuggestionStore,
             classifierRuleEditor: AppCoreServices.classifierRuleEditor,
             localModelStatusReader: AppCoreServices.localModelStatusReader,
+            localModelStorageLocationProvider: LocalModelStatusPlatformServices.makeStorageLocationProvider(),
+            localModelInstallHelpOpener: LocalModelStatusPlatformServices.makeInstallHelpOpener(
+                externalURLOpener: AppPlatformServices.externalURLStringOpener
+            ),
+            localModelFolderOpener: LocalModelStatusPlatformServices.makeFolderOpener(
+                localURLOpener: AppPlatformServices.localFileURLOpener
+            ),
+            localModelDiagnosticsCopier: LocalModelStatusPlatformServices.makeDiagnosticsCopier(
+                writer: AppPlatformServices.pasteboardStringWriter
+            ),
             remoteProviderConfigurer: AppCoreServices.remoteProviderConfigurer,
+            remoteProviderCredentialStore: RemoteProviderKeychainCredentialStore(),
             contentLocaleSnapshotter: AppCoreServices.repositoryContentLocaleSnapshotter,
             searchFiltering: AppCoreServices.searchFiltering,
             privacyRuleRegistryReader: CoreAIPrivacyRuleRegistryReader(
@@ -58,16 +71,22 @@ struct AppFeatureDependencyContainer {
             repositoryPathValidator: AppCoreServices.repositoryPathValidator
         ),
         import: ImportFeatureDependencies(
+            actionLogger: AppLogger.shared,
+            fileResourceAccess: ImportPlatformServices.fileResourceAccess,
             categoryPredictor: AppCoreServices.categoryPredictor,
             batchFileLoader: CoreBridgeBatchFileLoader(fileLister: AppCoreServices.fileLister),
             fileImporter: AppCoreServices.importProgressImporter,
-            batchFileImporter: CoreBridgeRuntime.shared,
-            conflictBatcher: CoreBridgeRuntime.shared,
+            batchFileImporter: AppCoreServices.batchFileImporter,
+            conflictBatcher: AppCoreServices.conflictBatcher,
             fileLister: AppCoreServices.fileLister,
             undoActionStore: AppCoreServices.undoActionStore,
-            batchSessionStore: AppPlatformServices.importBatchSessionStore
+            batchSessionStore: AppPlatformServices.importBatchSessionStore,
+            folderScanner: ImportPlatformServices.folderScanner,
+            sourcePreflightInspector: ImportPlatformServices.sourcePreflightInspector,
+            placeholderDownloader: LocalICloudPlaceholderDownloader()
         ),
         mainList: MainListFeatureDependencies(
+            fileResourceAccess: ImportPlatformServices.fileResourceAccess,
             fileLister: AppCoreServices.fileLister,
             fileDetailer: AppCoreServices.fileDetailer,
             aiPrivacyRules: AppCoreServices.aiPrivacyRules,
@@ -106,6 +125,7 @@ struct AppFeatureDependencyContainer {
             bindingContractInspector: AppCoreServices.bindingContractInspector,
             categoryPredictor: AppCoreServices.categoryPredictor,
             classifierRuleEditor: AppCoreServices.classifierRuleEditor,
+            interfaceLocaleIdentifier: { AppLanguageRuntime.shared.resolvedIdentifier() },
             configurationLoader: AppCoreServices.configurationLoader,
             configurationUpdater: AppCoreServices.configurationUpdater,
             coreVersionLoader: AppCoreServices.coreVersionLoader,
@@ -113,16 +133,55 @@ struct AppFeatureDependencyContainer {
             emptyRepositoryOpener: AppCoreServices.emptyRepositoryOpener,
             localModelStatusReader: AppCoreServices.localModelStatusReader,
             overviewRegenerator: AppCoreServices.overviewRegenerator,
+            overviewRegenerationCoordinator: AppCoreServices.overviewRegenerationCoordinator,
             platformCapabilityLoader: AppCoreServices.platformCapabilityLoader,
-            scanSessionReader: AppCoreServices.scanSessionReader
+            scanSessionReader: AppCoreServices.scanSessionReader,
+            appVersionReader: AppPlatformServices.appVersionReader,
+            classifierFileOpener: AppPlatformServices.fileOpener,
+            classifierFileRevealer: AppPlatformServices.fileRevealer,
+            classifierFinderOpener: AppPlatformServices.finderOpener,
+            classifierAccessibilityAnnouncer: AppPlatformServices.accessibilityAnnouncer,
+            existingRepositoryMetadataReader: AppPlatformServices.existingRepositoryMetadataReader,
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: AppPlatformServices.finderOpener,
+            pathCopier: AppPlatformServices.pathCopier,
+            generatedOverviewRevealer: AppPlatformServices.fileRevealer,
+            accessibilityAnnouncer: AppPlatformServices.accessibilityAnnouncer,
+            rootOverviewInspector: AppPlatformServices.rootOverviewInspector,
+            rootOverviewRevealer: AppPlatformServices.fileRevealer,
+            ignoreRulesManager: GeneralSettingsPlatformServices.makeIgnoreRulesManager(
+                localURLOpener: AppPlatformServices.localFileURLOpener
+            ),
+            iCloudStatusDetector: IntegrationsSettingsPlatformServices.makeStatusDetector(),
+            iCloudHelpOpener: IntegrationsSettingsPlatformServices.makeHelpOpener(
+                externalURLOpener: AppPlatformServices.externalURLStringOpener
+            ),
+            aboutExternalLinkOpener: AboutSettingsPlatformServices.makeExternalLinkOpener(
+                externalURLOpener: AppPlatformServices.externalURLStringOpener
+            ),
+            aboutStringCopier: AboutSettingsPlatformServices.makeStringCopier(
+                writer: AppPlatformServices.pasteboardStringWriter
+            ),
+            diagnosticSummaryCopier: AdvancedSettingsPlatformServices.makeDiagnosticSummaryCopier(
+                writer: AppPlatformServices.pasteboardStringWriter
+            )
         ),
         syncConflicts: SyncConflictsFeatureDependencies(
             iCloudConflictLister: AppCoreServices.iCloudConflictLister,
             iCloudConflictReviewer: AppCoreServices.iCloudConflictReviewer,
             repositoryPathValidator: AppCoreServices.repositoryPathValidator,
+            repositoryFinderOpener: AppPlatformServices.finderOpener,
+            fileRevealer: AppPlatformServices.fileRevealer,
             systemCapabilityChecker: AppPlatformServices.systemCapabilityChecker,
             syncConflictDetector: AppCoreServices.syncConflictDetector,
-            conflictResolver: CoreBridgeRuntime.shared
+            conflictResolver: AppCoreServices.syncConflictResolver
+        ),
+        diagnostics: DiagnosticsFeatureDependencies(
+            runtime: { ObservabilityRuntimeAssembly.shared },
+            packagePreviewer: AdvancedSettingsPlatformServices.diagnosticsPackagePreviewer(
+                interfaceLocaleIdentifier: { AppLanguageRuntime.shared.resolvedIdentifier() }
+            ),
+            packageHandler: DefaultDiagnosticsPackageHandler()
         )
     )
 }

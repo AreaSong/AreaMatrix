@@ -3,8 +3,6 @@ import Foundation
 
 @MainActor
 final class ObservabilityRuntimeAssembly: ObservableObject {
-    static let shared = ObservabilityRuntimeAssembly()
-
     @Published private(set) var state: State = .idle
     @Published private(set) var recoveryNotice: ObservabilityRecoveryNotice?
 
@@ -28,12 +26,12 @@ final class ObservabilityRuntimeAssembly: ObservableObject {
     private var currentStopStage: ObservabilityStopReport.Stage?
 
     init(
-        hub: ObservabilityHub = .shared,
-        core: any CoreObservabilityControlling = AppCoreServices.observabilityController,
-        resourceIdentityProvider: ObservabilityResourceIdentityProvider = .shared,
+        hub: ObservabilityHub,
+        core: any CoreObservabilityControlling,
+        resourceIdentityProvider: ObservabilityResourceIdentityProvider,
         sessionStore: ObservabilitySessionLifecycleStore? = nil,
         sessionID: String = ObservabilityProcessIdentity.sessionID,
-        scheduler: ObservabilityRuntimeScheduler = .live
+        scheduler: ObservabilityRuntimeScheduler
     ) {
         self.hub = hub
         self.core = core

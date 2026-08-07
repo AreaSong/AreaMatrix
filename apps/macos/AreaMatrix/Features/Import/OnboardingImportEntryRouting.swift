@@ -36,7 +36,10 @@ extension OnboardingModel {
             source: source,
             destination: destination,
             urls: fileURLs,
-            kind: ImportEntryKind.resolved(for: fileURLs),
+            kind: ImportEntryKind.resolved(
+                for: fileURLs,
+                isDirectory: importFileResourceAccess.isDirectory
+            ),
             availableCategories: resolvedImportCategories(opening: opening, destination: destination),
             defaultStorageMode: ImportSingleFileStorageMode(coreSnapshotValue: opening.config.defaultMode),
             allowReplaceDuringImport: opening.config.allowReplaceDuringImport,

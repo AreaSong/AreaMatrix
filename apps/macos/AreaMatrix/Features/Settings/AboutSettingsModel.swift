@@ -121,13 +121,13 @@ final class AboutSettingsModel: ObservableObject {
 
     init(
         repoPath: String,
-        appVersionReader: any AppVersionReading = AboutSettingsPlatformServices.appVersionReader,
+        appVersionReader: any AppVersionReading,
         coreVersionReader: any CoreVersionReading,
-        metadataReader: any ExistingRepositoryMetadataReading = AboutSettingsPlatformServices.metadataReader,
-        externalLinkOpener: any AboutExternalLinkOpening = AboutSettingsPlatformServices.externalLinkOpener,
-        stringCopier: any AboutStringCopying = AboutSettingsPlatformServices.stringCopier,
+        metadataReader: any ExistingRepositoryMetadataReading,
+        externalLinkOpener: any AboutExternalLinkOpening,
+        stringCopier: any AboutStringCopying,
         errorMapper: any CoreErrorMapping,
-        accessibilityAnnouncer: any AccessibilityAnnouncing = AboutSettingsPlatformServices.accessibilityAnnouncer
+        accessibilityAnnouncer: any AccessibilityAnnouncing
     ) {
         self.repoPath = repoPath
         self.appVersionReader = appVersionReader

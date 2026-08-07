@@ -241,10 +241,13 @@ def run_build_doctor(root: Path) -> int:
     project = root / "apps/macos/AreaMatrix.xcodeproj/project.pbxproj"
     project_text = project.read_text(encoding="utf-8") if project.is_file() else ""
     xcode_requirements = {
+        "alwaysOutOfDate = 0;": "incremental script phase",
+        "basedOnDependencyAnalysis = 1;": "dependency analysis",
         'dependencyFile = "$(DERIVED_FILE_DIR)/AreaMatrixCoreSDK.d";': "dependency file",
         '"$(SRCROOT)/../../.build/core-sdk/current/manifest.json",': "manifest output",
         '"$(SRCROOT)/../../scripts/dev_tools/core_sdk_artifact.py",': "artifact validator input",
         "build core-sdk --dependency-file": "fingerprinted CoreSDK build command",
+        "build core-sdk --verify-only --dependency-file": "verify-only dependency file",
     }
     for term, label in xcode_requirements.items():
         if term not in project_text:

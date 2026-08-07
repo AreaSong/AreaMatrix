@@ -127,7 +127,8 @@ final class ChangeCategoryPageIntegrationVerifyTests: XCTestCase {
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/repo",
                 noteStore: NoopNoteStore(),
-                errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryConflict())
+                errorMapper: StaticCoreErrorMapper(mapping: .changeCategoryConflict()),
+                inFlightTracker: InFlightFileChangeTracker()
             )
         )
         assertChangeCategoryDetailActions(of: pane.body, detail: file)

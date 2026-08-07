@@ -6,13 +6,16 @@ import UniformTypeIdentifiers
 struct DiagnosticPackageExporter {
     private let metadataCapture: any RepositoryMetadataSnapshotCapturing
     private let writer: DiagnosticPackageWriter
+    private let interfaceLocaleIdentifier: @Sendable () -> String
 
     init(
         metadataCapture: any RepositoryMetadataSnapshotCapturing = RepositoryMetadataSnapshotCapture(),
         stagingRootURL: URL? = nil,
-        publishOperations: DiagnosticPackagePublishOperations = .live
+        publishOperations: DiagnosticPackagePublishOperations = .live,
+        interfaceLocaleIdentifier: @escaping @Sendable () -> String = { "en" }
     ) {
         self.metadataCapture = metadataCapture
+        self.interfaceLocaleIdentifier = interfaceLocaleIdentifier
         writer = DiagnosticPackageWriter(
             stagingRootURL: stagingRootURL,
             operations: publishOperations
@@ -146,7 +149,7 @@ private extension DiagnosticPackageExporter {
         let encoder = DiagnosticPackageEncoding.makeEncoder()
         let manifestData = try encoder.encode(manifest)
         let eventsData = try encodeJSONLines(events)
-        let environmentData = try encoder.encode(Self.environment())
+        let environmentData = try encoder.encode(environment())
         let privacyReportData = try encoder.encode(report)
         let summaryData = try Data(DiagnosticPackageRedactor.sanitizedSummary(summary).utf8)
         let covered = DiagnosticPackageEncoding.coveredPayloads(
@@ -233,12 +236,12 @@ private extension DiagnosticPackageExporter {
         }
     }
 
-    private static func environment() -> DiagnosticEnvironment {
+    private func environment() -> DiagnosticEnvironment {
         DiagnosticEnvironment(
             appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
             operatingSystemVersion: ProcessInfo.processInfo.operatingSystemVersionString,
             architecture: DiagnosticPackageEncoding.architecture(),
-            interfaceLanguage: AppLanguageRuntime.shared.resolvedIdentifier()
+            interfaceLanguage: interfaceLocaleIdentifier()
         )
     }
 }

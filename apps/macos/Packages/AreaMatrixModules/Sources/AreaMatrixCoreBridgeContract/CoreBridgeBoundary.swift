@@ -28,6 +28,7 @@ public enum CoreBridgeBoundary: String, CaseIterable, Equatable, Sendable {
     case previewBatchDelete = "preview_batch_delete"
     case batchDeleteToTrash = "batch_delete_to_trash"
     case listFiles = "list_files"
+    case listCommandTargets = "list_command_targets"
     case searchFiles = "search_files"
     case semanticSearch = "semantic_search"
     case buildEmbeddingIndex = "build_embedding_index"

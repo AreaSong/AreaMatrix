@@ -1,3 +1,5 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixCoreContracts
 import Combine
 import Foundation
 
@@ -44,7 +46,7 @@ final class PlatformDifferencesModel: ObservableObject {
     init(
         hostPlatform: PlatformIdSnapshot = .macos,
         appVersion: String? = nil,
-        appVersionReader: any AppVersionReading = PlatformDifferencesPlatformServices.appVersionReader,
+        appVersionReader: any AppVersionReading,
         repositoryText: String? = nil,
         selectedTargetPlatform: BindingTargetPlatformSnapshot = .swift,
         bindingVersion: Int64 = 1,

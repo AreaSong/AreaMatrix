@@ -2,37 +2,23 @@ import AppKit
 import Foundation
 
 enum AboutSettingsPlatformServices {
-    static var appVersionReader: any AppVersionReading {
-        AppPlatformServices.appVersionReader
+    static func makeExternalLinkOpener(
+        externalURLOpener: any ExternalURLStringOpening
+    ) -> any AboutExternalLinkOpening {
+        NSWorkspaceAboutExternalLinkOpener(
+            externalURLOpener: externalURLOpener
+        )
     }
 
-    static var metadataReader: any ExistingRepositoryMetadataReading {
-        AppPlatformServices.existingRepositoryMetadataReader
-    }
-
-    static var externalLinkOpener: any AboutExternalLinkOpening {
-        NSWorkspaceAboutExternalLinkOpener()
-    }
-
-    static var stringCopier: any AboutStringCopying {
-        NSPasteboardAboutStringCopier()
-    }
-
-    static var accessibilityAnnouncer: any AccessibilityAnnouncing {
-        AppPlatformServices.accessibilityAnnouncer
-    }
-}
-
-enum PlatformDifferencesPlatformServices {
-    static var appVersionReader: any AppVersionReading {
-        AppPlatformServices.appVersionReader
+    static func makeStringCopier(writer: any PasteboardStringWriting) -> any AboutStringCopying {
+        NSPasteboardAboutStringCopier(writer: writer)
     }
 }
 
 struct NSWorkspaceAboutExternalLinkOpener: AboutExternalLinkOpening {
     private let externalURLOpener: any ExternalURLStringOpening
 
-    init(externalURLOpener: any ExternalURLStringOpening = AppPlatformServices.externalURLStringOpener) {
+    init(externalURLOpener: any ExternalURLStringOpening) {
         self.externalURLOpener = externalURLOpener
     }
 
@@ -57,7 +43,7 @@ struct NSWorkspaceAboutExternalLinkOpener: AboutExternalLinkOpening {
 struct NSPasteboardAboutStringCopier: AboutStringCopying {
     private let writer: any PasteboardStringWriting
 
-    init(writer: any PasteboardStringWriting = AppPlatformServices.pasteboardStringWriter) {
+    init(writer: any PasteboardStringWriting) {
         self.writer = writer
     }
 

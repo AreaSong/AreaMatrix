@@ -10,6 +10,10 @@
 
 CI 是合并前的最低共同质量线。它不能替代 review，但可以阻止明显不完整、不可复现或不可追溯的改动进入主线。
 
+所有 workflow 都显式声明 `contents: read`，并以 workflow/ref 为键启用并发取消；同一分支的新提交会取消
+仍在排队或执行的旧构建，减少重复的 Cargo、Xcode 和测试消耗。只有 Governance CI 的 secret scan job
+额外声明 `security-events: write`，用于上传 gitleaks 结果；其他 job 不获得写权限。
+
 企业治理检查同时验证 `ASW-EWF-001@1.0.0` 的 AreaMatrix 适配基线、G0-G8、L0-L4、治理登记册和 authoring-only 权限边界。CI 不能把外部签名、公证、独立复核、测试参与者或 AreaFlow execution 标记为完成。
 
 ## 必跑矩阵
@@ -17,14 +21,21 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 | Workflow | 目的 | 触发 |
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
-| `macos-ci.yml` | CoreSDK artifact、tracked Swift bindings drift、Xcode build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
+| `macos-ci.yml` | CoreSDK artifact、tracked Swift bindings drift、Xcode build/test、iOS Swift package build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
 | `governance-ci.yml` | governance files、文档链接与导航、skills、quality smoke、品牌资产、Codex OS、wording audit、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
+| `remote-governance.yml` | 只读审计远端 Actions、Branch Protection、Required Checks、Required Reviews 与远端 CODEOWNERS | 手动触发、每周定时 |
+| `release-evidence.yml` | 只读运行发布签名/公证预检、release evidence audit 和 release status，并上传机器可读快照 | 手动触发 |
 
 macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.yml` 必须先显式检查工程和源码目录；
 任一目录缺失都应立即失败，不得通过条件表达式跳过 build/test、SwiftLint 或 SwiftFormat。
 CoreSDK job 只构建一次 fingerprinted XCFramework，验证 tracked bindings 和生成的 Swift Package 后上传
 artifact；Xcode build/test job 下载并恢复完整 `.build/core-sdk/` 缓存条目与 `current` 指针。这保证
 macOS 验证消费的是已验证制品，而不是在 Xcode Pre-Test Build Gate 内再启动一次 Cargo。
+同一 workflow 的 `ios-package` job 也只消费该已验证 artifact：恢复后先执行
+`./dev build core-sdk --verify-only`，再建立 `apps/ios/.core-sdk` 的工作区指针，最后运行
+`swift build --package-path apps/ios` 和 `swift test --package-path apps/ios`。iOS 不得在下游 job
+重新运行 Cargo 或自行生成另一份 FFI；macOS、iOS device 和 iOS simulator 必须来自同一个
+fingerprint、manifest 和 XCFramework。
 恢复后运行 `./dev build core-sdk --verify-only`，解析 manifest 并验证 fingerprint、schema、symlink
 边界，以及 macOS、iOS device、iOS simulator 三个 XCFramework slice 的 architecture 和实际文件。
 Xcode build/test job 同样安装 Rust toolchain，使 `--verify-only` 能用当前源码、Rust 与 Xcode 版本重新计算
@@ -59,14 +70,42 @@ H1 后紧跟的摘要引用、代码块语言与闭合、`## Related` 章节和�
 ./dev check prompts
 ./dev check diff
 ./dev check secrets          # 默认 diff 模式：未提交变更 + 领先 origin/main 的 commit
+./dev governance remote-audit --json  # 显式只读审计 GitHub Actions / branch protection / CODEOWNERS
+./dev governance status --json       # 汇总本地、模块、远端和正式发布门禁
 ./dev build core-sdk
 ./dev bindings verify        # 只读比较当前 UDL 与 Xcode tracked Swift bindings
+swift build --package-path apps/ios
+swift test --package-path apps/ios
 python3 -m venv .brand-venv
 .brand-venv/bin/pip install --requirement scripts/brand/requirements.txt
 .brand-venv/bin/python scripts/brand/validate_assets.py
 ```
 
 发布状态、证据审计、签名、公证、DMG 和外部测试属于发布门禁，不是普通 PR 的 CI 结果。CI 不安装或替换 `/Applications/AreaMatrix.app`，也不能把只读产物探针当作分发证据；正式发布统一遵循 [发布流程](release.md)。
+
+### Remote governance audit
+
+`./dev governance remote-audit` 是显式、只读的远端治理审计。它通过 GitHub CLI 检查当前仓库的：
+
+`./dev governance status` 是汇总入口：它同时运行本地治理和 Build doctor，读取工程成熟度与 Swift 物理模块化
+路线图行，调用远端只读审计，并聚合正式发布 residual 与签名预检。它只有在所有维度都有新鲜 PASS 证据时才返回
+`PASS`；当前不会发明一个全局加权百分比，工程成熟度百分比仍单独报告。`--json` 输出可直接作为 CI 或发布
+dashboard 的输入。
+
+- 最近 GitHub Actions workflow 是否存在且最新一次已成功完成；
+- 当前分支是否启用 branch protection；
+- required status checks 和 required pull request approvals；
+- 远端分支上的 `.github/CODEOWNERS`，以及本地 PR 模板中的 review ownership 字段。
+
+未安装 `gh`、未登录 GitHub、网络不可用、API 权限不足、没有 branch protection 或最近 workflow 未通过时，
+命令返回 `BLOCKED` 和明确原因。该命令不创建 PR、tag、release，不修改 branch protection，不触发 workflow，
+也不关闭 `v2-dep-004` 或 `v2-risk-001`；远端结果仍需作为真实 merge/review evidence 由治理登记册和人工 review 采纳。
+
+`remote-governance.yml` 在 GitHub Actions 中通过只读 `GITHUB_TOKEN` 运行同一审计，并上传机器可读证据。
+审计只接受以下三条产品主工作流各自最近一次已完成成功的记录：`Core CI`、`Governance CI` 和
+`macOS App CI`；当前审计工作流自身或其他无关工作流不能掩盖主工作流失败。Actions 令牌只用于读取
+GitHub API，不会创建 PR、修改分支保护或触发发布。即使该 workflow 通过，也只能证明远端策略和 CI
+状态在该时刻可查询，仍不能替代合格独立 reviewer、正式发布签名、公证、真实 iCloud 或 clean Mac 证据。
 
 `./dev check codex-os` 会覆盖 Codex OS flow 编排入口的 CLI smoke，包括
 `go`、`flow`、`start-flow`、`now`、`run-validation --profile auto/full`、`repair-plan`、
@@ -95,9 +134,12 @@ cd apps/macos && swiftlint lint --strict --config ../../scripts/dev_tools/swiftl
 cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore
 ```
 
-`./dev test macos` 会优先执行标准 `xcodebuild test`。只有本地沙箱阻断
-`testmanagerd` 通信时，才改用 `xcrun xctest` 执行已构建的 XCTest bundle；CI
-仍以 `.github/workflows/macos-ci.yml` 中的同一 Python 入口为远端门禁。
+`./dev test macos` 会优先执行标准 `xcodebuild test`。日常或 CI 需要分片时，先用
+`./dev test macos --build-for-testing` 构建一次 XCTest bundle，再用
+`./dev test macos --test-without-building --test-plan <AreaMatrix-...>` 复用同一 DerivedData。
+只有本地沙箱阻断 `testmanagerd` 通信时，才改用 `xcrun xctest` 执行已构建的 XCTest bundle；CI
+仍以 `.github/workflows/macos-ci.yml` 中的同一 Python 入口为远端门禁，并明确保留
+Unit、Feature、Integration 和 Functional coverage 四个执行分片。
 
 `AreaMatrixPerfTests` 是独立 performance gate，默认不参加普通 PR 全量
 `./dev test macos`，避免共享 GitHub macOS runner 的 wall-clock / resident memory

@@ -40,6 +40,21 @@
             reference = "container:AreaMatrix-Functional.xctestplan"
             default = "YES">
          </TestPlanReference>
+         <TestPlanReference
+            reference = "container:AreaMatrix-Unit.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:AreaMatrix-Feature.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:AreaMatrix-Integration.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:AreaMatrix-Performance.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:AreaMatrix-Release.xctestplan">
+         </TestPlanReference>
       </TestPlans>
    </TestAction>
    <LaunchAction

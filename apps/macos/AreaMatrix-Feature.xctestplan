@@ -1,0 +1,36 @@
+{
+  "configurations" : [
+    {
+      "id" : "7B4BDE62-E7D3-4B48-9DB2-479D2C1F0A12",
+      "name" : "Feature",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:AreaMatrix.xcodeproj",
+      "identifier" : "0A0000000000000000000040",
+      "name" : "AreaMatrix"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "selectedTests" : [
+        "GeneralSettingsPageFeatureTests/testLoadUsesRepositoryConfigCoreConfigSnapshotForVisibleGeneralSettings",
+        "MainListFilesTests/testMainListLoadsSelectedCategoryThroughListFilesCoreListFiles",
+        "ImportDropPreviewModelTests/testAutoClassifyHoverCallsInjectedCoreCategoryPredictor",
+        "AreaMatrixDeveloperScenarioTests/testLanguageFixturesCoverFourUniqueResolvedCombinations"
+      ],
+      "target" : {
+        "containerPath" : "container:AreaMatrix.xcodeproj",
+        "identifier" : "0A0000000000000000000041",
+        "name" : "AreaMatrixTests"
+      }
+    }
+  ],
+  "version" : 1
+}

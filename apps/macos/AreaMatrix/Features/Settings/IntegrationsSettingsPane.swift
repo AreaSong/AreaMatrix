@@ -12,9 +12,9 @@ struct IntegrationsSettingsPane: View {
         featureDependencies: SettingsFeatureDependencies,
         sharedDependencies: SharedFeatureDependencies,
         syncConflictsDependencies: SyncConflictsFeatureDependencies,
-        statusDetector: any ICloudStatusDetecting = IntegrationsSettingsPlatformServices.statusDetector,
-        finderOpener: any RepositoryFinderOpening = IntegrationsSettingsPlatformServices.finderOpener,
-        helpOpener: any ICloudHelpOpening = IntegrationsSettingsPlatformServices.helpOpener
+        statusDetector: (any ICloudStatusDetecting)? = nil,
+        finderOpener: (any RepositoryFinderOpening)? = nil,
+        helpOpener: (any ICloudHelpOpening)? = nil
     ) {
         self.init(
             repoPath: repoPath,
@@ -22,9 +22,9 @@ struct IntegrationsSettingsPane: View {
             updater: featureDependencies.configurationUpdater,
             errorMapper: sharedDependencies.errorMapper,
             syncConflictsDependencies: syncConflictsDependencies,
-            statusDetector: statusDetector,
-            finderOpener: finderOpener,
-            helpOpener: helpOpener
+            statusDetector: statusDetector ?? featureDependencies.iCloudStatusDetector,
+            finderOpener: finderOpener ?? featureDependencies.finderOpener,
+            helpOpener: helpOpener ?? featureDependencies.iCloudHelpOpener
         )
     }
 
@@ -34,9 +34,9 @@ struct IntegrationsSettingsPane: View {
         updater: any CoreConfigurationUpdating,
         errorMapper: any CoreErrorMapping,
         syncConflictsDependencies: SyncConflictsFeatureDependencies,
-        statusDetector: any ICloudStatusDetecting = IntegrationsSettingsPlatformServices.statusDetector,
-        finderOpener: any RepositoryFinderOpening = IntegrationsSettingsPlatformServices.finderOpener,
-        helpOpener: any ICloudHelpOpening = IntegrationsSettingsPlatformServices.helpOpener
+        statusDetector: any ICloudStatusDetecting,
+        finderOpener: any RepositoryFinderOpening,
+        helpOpener: any ICloudHelpOpening
     ) {
         _model = StateObject(wrappedValue: IntegrationsSettingsModel(
             repoPath: repoPath,
@@ -65,7 +65,9 @@ struct IntegrationsSettingsPane: View {
                 model: ICloudConflictListModel(
                     repoPath: model.repoPath,
                     conflictLister: syncConflictsDependencies.iCloudConflictLister,
-                    errorMapper: errorMapper
+                    errorMapper: errorMapper,
+                    repositoryFinderOpener: syncConflictsDependencies.repositoryFinderOpener,
+                    fileRevealer: syncConflictsDependencies.fileRevealer
                 ),
                 pageContext: .iCloudConflictVisualConflictVisual,
                 systemCapabilityChecker: syncConflictsDependencies.systemCapabilityChecker,

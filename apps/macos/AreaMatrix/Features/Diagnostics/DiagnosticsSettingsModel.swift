@@ -60,25 +60,23 @@ final class DiagnosticsSettingsModel: ObservableObject {
     private var preparedPreview: DiagnosticPackagePreview?
 
     init(
-        runtime: ObservabilityRuntimeAssembly? = nil,
-        incidentManager: (any DiagnosticsIncidentManaging)? = nil,
-        packagePreviewer: any DiagnosticsPackagePreviewing =
-            AdvancedSettingsPlatformServices.diagnosticsPackagePreviewer,
-        packageHandler: (any DiagnosticsPackageHandling)? = nil,
+        runtime: ObservabilityRuntimeAssembly,
+        incidentManager: any DiagnosticsIncidentManaging,
+        packagePreviewer: any DiagnosticsPackagePreviewing,
+        packageHandler: any DiagnosticsPackageHandling,
         repositoryURL: URL? = nil,
         nowMilliseconds: @escaping @Sendable () -> Int64 = {
             Int64(Date().timeIntervalSince1970 * 1000)
         },
         sessionID: String? = nil
     ) {
-        let resolvedRuntime = runtime ?? .shared
-        self.runtime = resolvedRuntime
-        self.incidentManager = incidentManager ?? ObservabilityRuntimeIncidentAdapter(runtime: resolvedRuntime)
+        self.runtime = runtime
+        self.incidentManager = incidentManager
         self.packagePreviewer = packagePreviewer
-        self.packageHandler = packageHandler ?? AdvancedSettingsPlatformServices.diagnosticsPackageHandler
+        self.packageHandler = packageHandler
         self.repositoryURL = repositoryURL
         self.nowMilliseconds = nowMilliseconds
-        self.sessionID = sessionID ?? resolvedRuntime.sessionIDSnapshot()
+        self.sessionID = sessionID ?? runtime.sessionIDSnapshot()
     }
 
     var selectedIncident: ObservabilityIncidentSnapshot? {

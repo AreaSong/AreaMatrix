@@ -183,6 +183,9 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         let model = LocalModelStatusModel(
             repoPath: "/tmp/localModelStatus",
             storageLocation: "/tmp/localModelStatus-models",
+            storageLocationProvider: RecordingLocalModelStorageProvider(
+                defaultLocation: "/tmp/localModelStatus-models"
+            ),
             statusReader: reader,
             installHelpOpener: RecordingInstallHelpOpener(),
             folderOpener: LocalModelStatusRecordingFolderOpener(),
@@ -220,6 +223,9 @@ final class ClassifierRuleEditorCoreBridgeTests: XCTestCase {
         let model = LocalModelStatusModel(
             repoPath: "/tmp/localModelStatus",
             storageLocation: "/tmp/localModelStatus-models",
+            storageLocationProvider: RecordingLocalModelStorageProvider(
+                defaultLocation: "/tmp/localModelStatus-models"
+            ),
             statusReader: reader,
             installHelpOpener: RecordingInstallHelpOpener(),
             folderOpener: folderOpener,

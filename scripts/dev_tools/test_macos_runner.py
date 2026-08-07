@@ -19,15 +19,18 @@ from scripts.dev_tools.macos import (
     _handle_release_app_launch_probe_result,
     _parallel_xcodebuild_retry_allowed,
     _products_dir_for_test_bundle,
+    _normalise_test_plan,
     _resolve_derived_data_dir,
     run_macos_tests,
     _run_sandbox_fallback,
     _run_macos_tests_inner,
     _test_base_args,
+    _test_plan_selected_tests,
     _validate_localization_compiler_keys,
     _xcodebuild_tests_passed_before_sandbox_teardown,
     _xcode_system_content_failure,
     _xcode_test_env,
+    _build_for_testing_base_args,
 )
 from scripts.dev_tools.common import ToolError
 from scripts.dev_tools.macos_release_probe import (
@@ -80,6 +83,51 @@ class MacOSTestRunnerTest(unittest.TestCase):
                 self.tmp_path / "explicit-derived-data",
                 temporary=True,
             )
+
+    def test_test_plan_name_accepts_name_or_xctestplan_filename(self) -> None:
+        root = self.tmp_path / "workspace"
+        plan = root / "apps/macos/AreaMatrix-Unit.xctestplan"
+        plan.parent.mkdir(parents=True)
+        plan.write_text('{"testTargets": [{"selectedTests": []}]}', encoding="utf-8")
+
+        self.assertEqual(_normalise_test_plan(root, "AreaMatrix-Unit"), "AreaMatrix-Unit")
+        self.assertEqual(_normalise_test_plan(root, "AreaMatrix-Unit.xctestplan"), "AreaMatrix-Unit")
+
+    def test_test_plan_name_rejects_unknown_or_missing_plan(self) -> None:
+        root = self.tmp_path / "workspace"
+        with self.assertRaises(ToolError):
+            _normalise_test_plan(root, "AreaMatrix-Unknown")
+
+        plan = root / "apps/macos/AreaMatrix-Unit.xctestplan"
+        plan.parent.mkdir(parents=True)
+        with self.assertRaises(ToolError):
+            _normalise_test_plan(root, "AreaMatrix-Unit")
+
+    def test_test_plan_selected_tests_are_available_for_hostless_fallback(self) -> None:
+        root = self.tmp_path / "workspace"
+        plan = root / "apps/macos/AreaMatrix-Unit.xctestplan"
+        plan.parent.mkdir(parents=True)
+        plan.write_text(
+            json.dumps(
+                {
+                    "testTargets": [
+                        {
+                            "selectedTests": [
+                                "AreaMatrixTests/AppLanguageTests/testSystemLanguageResolutionSupportsEnglishAndSimplifiedChinese"
+                            ]
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        self.assertEqual(
+            _test_plan_selected_tests(root, "AreaMatrix-Unit"),
+            [
+                "AreaMatrixTests/AppLanguageTests/testSystemLanguageResolutionSupportsEnglishAndSimplifiedChinese"
+            ],
+        )
 
     def test_outer_runner_reports_persistent_derived_data_metrics(self) -> None:
         root = self.tmp_path / "workspace"
@@ -421,6 +469,13 @@ class MacOSTestRunnerTest(unittest.TestCase):
                 "AREAMATRIX_RUN_PERF_TESTS": "1",
             },
         )
+        self.assertEqual(
+            _xcode_test_env([], "AreaMatrix-Performance"),
+            {
+                "AREAMATRIX_TEST_MODE": "1",
+                "AREAMATRIX_RUN_PERF_TESTS": "1",
+            },
+        )
 
     def test_nested_test_bundle_resolves_host_app_products_directory(self) -> None:
         products = self.tmp_path / "Build/Products/Debug"
@@ -478,13 +533,12 @@ class MacOSTestRunnerTest(unittest.TestCase):
         self.assertLess(flag_index, args.index("-only-testing:AreaMatrixTests/BatchChangeCategoryPageIntegrationVerifyTests"))
 
     def test_parallel_testing_flag_is_omitted_by_default(self) -> None:
-        args = _test_base_args(
+        args = _build_for_testing_base_args(
             self.tmp_path / "AreaMatrix.xcodeproj",
             "AreaMatrix",
             "platform=macOS,arch=arm64",
             self.tmp_path / "DerivedData",
-            None,
-            [],
+            enable_code_coverage=True,
         )
 
         self.assertNotIn("-parallel-testing-enabled", args)
@@ -500,6 +554,104 @@ class MacOSTestRunnerTest(unittest.TestCase):
         )
 
         self.assertEqual(args[args.index("-testLanguage") + 1], "en")
+
+    def test_test_plan_is_forwarded_to_xcodebuild_test_action(self) -> None:
+        args = _test_base_args(
+            self.tmp_path / "AreaMatrix.xcodeproj",
+            "AreaMatrix",
+            "platform=macOS,arch=arm64",
+            self.tmp_path / "DerivedData",
+            None,
+            [],
+            test_plan="AreaMatrix-Unit",
+        )
+
+        self.assertIn("-testPlan", args)
+        self.assertEqual(args[args.index("-testPlan") + 1], "AreaMatrix-Unit")
+
+    def test_build_for_testing_runs_only_build_action(self) -> None:
+        project = self.tmp_path / "AreaMatrix.xcodeproj"
+        project.mkdir()
+        plan = self.tmp_path / "apps/macos/AreaMatrix-Unit.xctestplan"
+        plan.parent.mkdir(parents=True)
+        plan.write_text('{"testTargets": [{"selectedTests": []}]}', encoding="utf-8")
+        invocations: list[list[str]] = []
+
+        def fake_run_and_tee(argv, _log_path, env=None):
+            del env
+            invocations.append(list(argv))
+            return 0
+
+        with patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee), \
+            patch("scripts.dev_tools.macos._validate_localization_compiler_keys"):
+            result = _run_macos_tests_inner(
+                self.tmp_path,
+                project,
+                "AreaMatrix",
+                "AreaMatrixTests.xctest",
+                "platform=macOS,arch=arm64",
+                self.tmp_path,
+                self.tmp_path / "test.log",
+                self.tmp_path / "build.log",
+                None,
+                [],
+                build_for_testing=True,
+                test_plan="AreaMatrix-Unit",
+            )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(len(invocations), 1)
+        self.assertEqual(invocations[0][0:2], ["xcodebuild", "build-for-testing"])
+        self.assertIn("-testPlan", invocations[0])
+        self.assertEqual(invocations[0][invocations[0].index("-testPlan") + 1], "AreaMatrix-Unit")
+        self.assertNotIn("test-without-building", invocations[0])
+
+    def test_build_for_testing_forwards_code_coverage_instrumentation(self) -> None:
+        args = _build_for_testing_base_args(
+            self.tmp_path / "AreaMatrix.xcodeproj",
+            "AreaMatrix",
+            "platform=macOS,arch=arm64",
+            self.tmp_path / "DerivedData",
+            enable_code_coverage=True,
+        )
+
+        self.assertIn("-enableCodeCoverage", args)
+        self.assertEqual(args[args.index("-enableCodeCoverage") + 1], "YES")
+
+    def test_test_without_building_forwards_plan_without_building(self) -> None:
+        project = self.tmp_path / "AreaMatrix.xcodeproj"
+        project.mkdir()
+        plan = self.tmp_path / "apps/macos/AreaMatrix-Unit.xctestplan"
+        plan.parent.mkdir(parents=True)
+        plan.write_text('{"testTargets": [{"selectedTests": []}]}', encoding="utf-8")
+        invocations: list[list[str]] = []
+
+        def fake_run_and_tee(argv, _log_path, env=None):
+            del env
+            invocations.append(list(argv))
+            return 0
+
+        with patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee), \
+            patch("scripts.dev_tools.macos._validate_localization_compiler_keys"):
+            result = _run_macos_tests_inner(
+                self.tmp_path,
+                project,
+                "AreaMatrix",
+                "AreaMatrixTests.xctest",
+                "platform=macOS,arch=arm64",
+                self.tmp_path,
+                self.tmp_path / "test.log",
+                self.tmp_path / "build.log",
+                None,
+                [],
+                test_without_building=True,
+                test_plan="AreaMatrix-Unit",
+            )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(invocations[0][0:2], ["xcodebuild", "test-without-building"])
+        self.assertIn("-testPlan", invocations[0])
+        self.assertEqual(invocations[0][invocations[0].index("-testPlan") + 1], "AreaMatrix-Unit")
 
     def test_code_coverage_flag_is_explicit(self) -> None:
         args = _test_base_args(
@@ -563,6 +715,37 @@ class MacOSTestRunnerTest(unittest.TestCase):
                     "files": [self.coverage_file(source_root / "Bridge/CoreBridge.swift", 1, 1)],
                 }]},
             )
+
+    def test_swift_coverage_gate_allows_declaration_only_bridge_adapter_without_xccov_row(self) -> None:
+        source_root = self.tmp_path / "apps/macos/AreaMatrix"
+        watcher_files = [
+            "PlatformServices/InFlightFileChangeTracker.swift",
+            "PlatformServices/MainExternalCreatedFileWatcher.swift",
+            "PlatformServices/MainExternalSyncEvents.swift",
+        ]
+        bridge_files = [
+            "Bridge/CoreBridge.swift",
+            "Bridge/CoreFileListing.swift",
+            "Bridge/CoreBridgeRuntime.swift",
+        ]
+        for relative in [*watcher_files, *bridge_files]:
+            path = source_root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("// fixture\n", encoding="utf-8")
+        files = [
+            self.coverage_file(source_root / watcher_files[0], 6, 10),
+            self.coverage_file(source_root / watcher_files[1], 30, 50),
+            self.coverage_file(source_root / watcher_files[2], 24, 40),
+            self.coverage_file(source_root / bridge_files[0], 1, 1),
+            self.coverage_file(source_root / bridge_files[1], 49, 99),
+        ]
+
+        result = _evaluate_swift_coverage_report(
+            self.tmp_path,
+            {"targets": [{"name": "AreaMatrix.app", "files": files}]},
+        )
+
+        self.assertEqual(result, 0)
 
     def test_sandbox_fallback_passes_when_only_release_launch_is_locally_blocked(self) -> None:
         bundle = self.tmp_path / "AreaMatrixTests.xctest"

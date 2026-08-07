@@ -8,7 +8,8 @@ func makeImportFolderPreviewModel(
     errorMapper: any CoreErrorMapping = RecordingCoreErrorMapper.importSingleFile(),
     conflictPrechecker: any ImportFolderConflictPrechecking = ImportFolderNoopConflictPrechecker(),
     scanner: any ImportFolderScanning = ImportPlatformServices.folderScanner,
-    placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
+    placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader(),
+    resourceAccess: any ImportFileResourceAccessing = ImportPlatformServices.fileResourceAccess
 ) -> ImportFolderPreviewModel {
     ImportFolderPreviewModel(
         predictor: predictor,
@@ -16,7 +17,8 @@ func makeImportFolderPreviewModel(
         errorMapper: errorMapper,
         conflictPrechecker: conflictPrechecker,
         scanner: scanner,
-        placeholderDownloader: placeholderDownloader
+        placeholderDownloader: placeholderDownloader,
+        resourceAccess: resourceAccess
     )
 }
 

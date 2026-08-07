@@ -21,6 +21,21 @@ class DeveloperWorkflowTest(unittest.TestCase):
         self.assertEqual(args.target, "affected")
         self.assertTrue(args.list)
 
+    def test_cli_parser_supports_layered_macos_test_modes_and_plan(self) -> None:
+        parser = _build_parser()
+        build = parser.parse_args(["test", "macos", "--build-for-testing", "--test-plan", "AreaMatrix-Unit"])
+        self.assertTrue(build.build_for_testing)
+        self.assertFalse(build.test_without_building)
+        self.assertEqual(build.test_plan, "AreaMatrix-Unit")
+
+        run = parser.parse_args(["test", "macos", "--test-without-building", "--test-plan", "AreaMatrix-Integration"])
+        self.assertFalse(run.build_for_testing)
+        self.assertTrue(run.test_without_building)
+        self.assertEqual(run.test_plan, "AreaMatrix-Integration")
+
+        with self.assertRaises(SystemExit):
+            parser.parse_args(["test", "macos", "--build-for-testing", "--test-without-building"])
+
     def test_developer_workflow_contract_keeps_cli_swift_and_docs_aligned(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -149,10 +164,13 @@ class DeveloperWorkflowTest(unittest.TestCase):
             project.write_text(
                 "\n".join(
                     [
+                        "alwaysOutOfDate = 0;",
+                        "basedOnDependencyAnalysis = 1;",
                         'dependencyFile = "$(DERIVED_FILE_DIR)/AreaMatrixCoreSDK.d";',
                         '"$(SRCROOT)/../../.build/core-sdk/current/manifest.json",',
                         '"$(SRCROOT)/../../scripts/dev_tools/core_sdk_artifact.py",',
                         "build core-sdk --dependency-file",
+                        "build core-sdk --verify-only --dependency-file",
                     ]
                 ),
                 encoding="utf-8",

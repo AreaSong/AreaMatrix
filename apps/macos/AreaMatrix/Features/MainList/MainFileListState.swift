@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
 enum DetailPaneTab: String, CaseIterable, Identifiable {

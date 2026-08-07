@@ -1,5 +1,53 @@
 import SwiftUI
 
+private struct ImportEntryPrecheckDependencies {
+    let preflight: any ImportSingleFilePreflighting
+    let batchDuplicate: any ImportBatchDuplicatePrechecking
+    let batchNameConflict: any ImportBatchNameConflictPrechecking
+    let folderConflict: any ImportFolderConflictPrechecking
+
+    init(
+        fileResourceAccess: any ImportFileResourceAccessing,
+        batchFileLoader: any ImportBatchCoreFileLoading,
+        sourcePreflightInspector: any SourcePreflightInspecting,
+        preflight: (any ImportSingleFilePreflighting)?,
+        batchDuplicatePrechecker: (any ImportBatchDuplicatePrechecking)?,
+        batchNameConflictPrechecker: (any ImportBatchNameConflictPrechecking)?,
+        folderConflictPrechecker: (any ImportFolderConflictPrechecking)?
+    ) {
+        self.preflight = preflight ?? CoreImportSingleFilePreflight(
+            fileLoader: batchFileLoader,
+            sourceInspector: sourcePreflightInspector,
+            resourceAccess: fileResourceAccess
+        )
+        batchDuplicate = batchDuplicatePrechecker ?? CoreImportBatchDuplicatePrechecker(
+            fileLoader: batchFileLoader,
+            resourceAccess: fileResourceAccess
+        )
+        batchNameConflict = batchNameConflictPrechecker ??
+            CoreImportBatchNameConflictPrechecker(fileLoader: batchFileLoader)
+        folderConflict = folderConflictPrechecker ?? CoreImportFolderConflictPrechecker(
+            fileLoader: batchFileLoader,
+            resourceAccess: fileResourceAccess
+        )
+    }
+}
+
+private struct ImportEntryModelDependencies {
+    let categoryPredictor: any CoreCategoryPredicting
+    let fileImporter: any CoreFileImporting
+    let batchFileImporter: any CoreBatchCopyImporting
+    let batchConflictBatcher: any CoreImportConflictBatching
+    let undoActionStore: any CoreUndoActionLogging
+    let folderScanner: any ImportFolderScanning
+    let placeholderDownloader: any ICloudPlaceholderDownloading
+    let errorMapper: any CoreErrorMapping
+    let batchSessionStore: any ImportBatchSessionPersisting
+    let actionLogger: any AppUIActionLogging
+    let fileResourceAccess: any ImportFileResourceAccessing
+    let prechecks: ImportEntryPrecheckDependencies
+}
+
 struct ImportEntrySheetView: View {
     let request: ImportEntryRequest
     let onCancel: () -> Void
@@ -52,6 +100,7 @@ struct ImportEntrySheetView: View {
         importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
         onImported: @escaping (String, FileEntrySnapshot) -> Void = { _, _ in },
         onShowExistingFile: @escaping (String) -> Void = { _ in },
+        fileResourceAccess: any ImportFileResourceAccessing,
         categoryPredictor: any CoreCategoryPredicting,
         batchFileLoader: any ImportBatchCoreFileLoading,
         fileImporter: any CoreFileImporting,
@@ -62,10 +111,12 @@ struct ImportEntrySheetView: View {
         batchNameConflictPrechecker: (any ImportBatchNameConflictPrechecking)? = nil,
         folderConflictPrechecker: (any ImportFolderConflictPrechecking)? = nil,
         folderScanner: any ImportFolderScanning,
+        sourcePreflightInspector: any SourcePreflightInspecting,
         preflight: (any ImportSingleFilePreflighting)? = nil,
         placeholderDownloader: any ICloudPlaceholderDownloading,
         errorMapper: any CoreErrorMapping,
-        batchSessionStore: any ImportBatchSessionPersisting
+        batchSessionStore: any ImportBatchSessionPersisting,
+        actionLogger: any AppUIActionLogging = NoopAppUIActionLogger()
     ) {
         self.request = request
         self.onCancel = onCancel
@@ -79,44 +130,81 @@ struct ImportEntrySheetView: View {
         self.importProgressControlState = importProgressControlState
         self.onImported = onImported
         self.onShowExistingFile = onShowExistingFile
-        let resolvedPreflight = preflight ?? CoreImportSingleFilePreflight(
-            fileLoader: batchFileLoader,
-            sourceInspector: ImportPlatformServices.sourcePreflightInspector
+        let prechecks = ImportEntryPrecheckDependencies(
+            fileResourceAccess: fileResourceAccess,
+            batchFileLoader: batchFileLoader,
+            sourcePreflightInspector: sourcePreflightInspector,
+            preflight: preflight,
+            batchDuplicatePrechecker: batchDuplicatePrechecker,
+            batchNameConflictPrechecker: batchNameConflictPrechecker,
+            folderConflictPrechecker: folderConflictPrechecker
         )
-        let resolvedBatchDuplicatePrechecker = batchDuplicatePrechecker ??
-            CoreImportBatchDuplicatePrechecker(fileLoader: batchFileLoader)
-        let resolvedBatchNameConflictPrechecker = batchNameConflictPrechecker ??
-            CoreImportBatchNameConflictPrechecker(fileLoader: batchFileLoader)
-        let resolvedFolderConflictPrechecker = folderConflictPrechecker ??
-            CoreImportFolderConflictPrechecker(fileLoader: batchFileLoader)
-        _previewModel = StateObject(wrappedValue: ImportSingleFilePreviewModel(
-            predictor: categoryPredictor,
-            importer: fileImporter,
-            preflight: resolvedPreflight,
-            placeholderDownloader: placeholderDownloader,
-            errorMapper: errorMapper
-        ))
-        _batchPreviewModel = StateObject(wrappedValue: ImportBatchPreviewModel(
-            predictor: categoryPredictor,
-            duplicatePrechecker: resolvedBatchDuplicatePrechecker,
-            nameConflictPrechecker: resolvedBatchNameConflictPrechecker
-        ))
-        _batchImportModel = StateObject(wrappedValue: ImportBatchCopyImportModel(
-            importer: batchFileImporter,
-            errorMapper: errorMapper,
-            conflictBatcher: batchConflictBatcher,
+        let modelDependencies = ImportEntryModelDependencies(
+            categoryPredictor: categoryPredictor,
+            fileImporter: fileImporter,
+            batchFileImporter: batchFileImporter,
+            batchConflictBatcher: batchConflictBatcher,
             undoActionStore: undoActionStore,
-            sessionStore: batchSessionStore,
-            placeholderDownloader: placeholderDownloader
-        ))
-        _folderPreviewModel = StateObject(wrappedValue: ImportFolderPreviewModel(
-            predictor: categoryPredictor,
-            importer: batchFileImporter,
+            folderScanner: folderScanner,
+            placeholderDownloader: placeholderDownloader,
             errorMapper: errorMapper,
-            conflictPrechecker: resolvedFolderConflictPrechecker,
-            scanner: folderScanner,
-            placeholderDownloader: placeholderDownloader
-        ))
+            batchSessionStore: batchSessionStore,
+            actionLogger: actionLogger,
+            fileResourceAccess: fileResourceAccess,
+            prechecks: prechecks
+        )
+        _previewModel = StateObject(wrappedValue: Self.makePreviewModel(modelDependencies))
+        _batchPreviewModel = StateObject(wrappedValue: Self.makeBatchPreviewModel(modelDependencies))
+        _batchImportModel = StateObject(wrappedValue: Self.makeBatchImportModel(modelDependencies))
+        _folderPreviewModel = StateObject(wrappedValue: Self.makeFolderPreviewModel(modelDependencies))
+    }
+}
+
+private extension ImportEntrySheetView {
+    static func makePreviewModel(_ dependencies: ImportEntryModelDependencies) -> ImportSingleFilePreviewModel {
+        ImportSingleFilePreviewModel(
+            predictor: dependencies.categoryPredictor,
+            importer: dependencies.fileImporter,
+            preflight: dependencies.prechecks.preflight,
+            resourceAccess: dependencies.fileResourceAccess,
+            placeholderDownloader: dependencies.placeholderDownloader,
+            errorMapper: dependencies.errorMapper,
+            actionLogger: dependencies.actionLogger
+        )
+    }
+
+    static func makeBatchPreviewModel(_ dependencies: ImportEntryModelDependencies) -> ImportBatchPreviewModel {
+        ImportBatchPreviewModel(
+            predictor: dependencies.categoryPredictor,
+            duplicatePrechecker: dependencies.prechecks.batchDuplicate,
+            nameConflictPrechecker: dependencies.prechecks.batchNameConflict,
+            resourceAccess: dependencies.fileResourceAccess
+        )
+    }
+
+    static func makeBatchImportModel(_ dependencies: ImportEntryModelDependencies) -> ImportBatchCopyImportModel {
+        ImportBatchCopyImportModel(
+            importer: dependencies.batchFileImporter,
+            errorMapper: dependencies.errorMapper,
+            conflictBatcher: dependencies.batchConflictBatcher,
+            undoActionStore: dependencies.undoActionStore,
+            sessionStore: dependencies.batchSessionStore,
+            placeholderDownloader: dependencies.placeholderDownloader,
+            actionLogger: dependencies.actionLogger
+        )
+    }
+
+    static func makeFolderPreviewModel(_ dependencies: ImportEntryModelDependencies) -> ImportFolderPreviewModel {
+        ImportFolderPreviewModel(
+            predictor: dependencies.categoryPredictor,
+            importer: dependencies.batchFileImporter,
+            errorMapper: dependencies.errorMapper,
+            conflictPrechecker: dependencies.prechecks.folderConflict,
+            scanner: dependencies.folderScanner,
+            placeholderDownloader: dependencies.placeholderDownloader,
+            resourceAccess: dependencies.fileResourceAccess,
+            actionLogger: dependencies.actionLogger
+        )
     }
 }
 

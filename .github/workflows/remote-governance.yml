@@ -1,0 +1,55 @@
+name: Remote Governance Evidence
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * 1"
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+  administration: read
+
+concurrency:
+  group: areamatrix-remote-governance
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: remote governance audit
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select protected branch
+        id: branch
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.branch }}" ]; then
+            echo "name=${{ github.event.inputs.branch }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.repository.default_branch }}" ]; then
+            echo "name=${{ github.event.repository.default_branch }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=main" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run read-only remote governance audit
+        run: |
+          ./dev governance remote-audit \
+            --branch "${{ steps.branch.outputs.name }}" \
+            --recent-runs 30 \
+            --json | tee remote-governance.json
+
+      - name: Upload remote governance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remote-governance-evidence
+          path: remote-governance.json
+          if-no-files-found: error
+          retention-days: 30

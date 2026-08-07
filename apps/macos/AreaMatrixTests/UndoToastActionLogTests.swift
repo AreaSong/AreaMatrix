@@ -6,19 +6,14 @@ final class UndoToastActionLogTests: XCTestCase {
     func testUndoToastViewHistoryRequestBuildsSharedUndoHistoryPanelRoute() {
         let action = UndoActionRecordSnapshot.undoToastHistoryFixture()
         let request = UndoToastHistoryRequest(source: .viewHistory, state: .ready(action), actionLogRefreshFailure: nil)
-        let content = MainRepositoryContentView(
-            opening: .importSingleFileFixture(repoPath: importProgressRepoPath()),
+        let dependencies = AppDependencyContainer.live
+        let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
+        let content = makeMainRepositoryContentViewForTests(
+            opening: opening,
             state: .list,
-            assembly: .make(
-                opening: .importSingleFileFixture(repoPath: importProgressRepoPath()),
-                errorMapper: StaticCoreErrorMapper(mapping: .undoActionLogHistoryFailure),
-                aiDependencies: AppDependencyContainer.live.feature.ai,
-                fileActionsDependencies: AppDependencyContainer.live.feature.fileActions,
-                settingsDependencies: AppDependencyContainer.live.feature.settings,
-                syncConflictsDependencies: AppDependencyContainer.live.feature.syncConflicts
-            ),
-            onImport: {},
-            onDropImport: { _, _ in }
+            fileLister: dependencies.mainList.fileLister,
+            fileDetailer: dependencies.mainList.fileDetailer,
+            errorMapper: StaticCoreErrorMapper(mapping: .undoActionLogHistoryFailure)
         )
 
         assertTestMirrorDescription(

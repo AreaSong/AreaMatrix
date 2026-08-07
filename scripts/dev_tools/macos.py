@@ -26,7 +26,22 @@ SWIFT_WATCHER_COVERAGE_FILES = {
     "PlatformServices/MainExternalCreatedFileWatcher.swift",
     "PlatformServices/MainExternalSyncEvents.swift",
 }
+# 仅包含协议一致性扩展的适配器可能没有可执行行，因此不会出现在 xccov 报告中。
+# 这类文件不计入加权 Bridge 比率，但其余有可执行行的 Bridge 源文件仍必须逐一出现。
+SWIFT_BRIDGE_COVERAGE_EXCLUDED_FILES = {
+    "Bridge/CoreBridgeRuntime.swift",
+}
 PERFORMANCE_TEST_SUITES = frozenset({"AreaMatrixPerfTests", "ObservabilityPerformanceTests"})
+MACOS_TEST_PLAN_NAMES = frozenset(
+    {
+        "AreaMatrix-Functional",
+        "AreaMatrix-Unit",
+        "AreaMatrix-Feature",
+        "AreaMatrix-Integration",
+        "AreaMatrix-Performance",
+        "AreaMatrix-Release",
+    }
+)
 
 
 def _run_and_tee(argv: Sequence[str], log_path: Path, *, env: Mapping[str, str] | None = None) -> int:
@@ -165,6 +180,10 @@ def _includes_release_perf_tests(only_testing: Sequence[str]) -> bool:
     )
 
 
+def _includes_release_probe(only_testing: Sequence[str], test_plan: str | None) -> bool:
+    return test_plan == "AreaMatrix-Release" or _includes_release_perf_tests(only_testing)
+
+
 def _performance_test_ids(only_testing: Sequence[str]) -> list[str]:
     return [
         test_id
@@ -178,11 +197,47 @@ def _includes_performance_tests(only_testing: Sequence[str]) -> bool:
     return bool(_performance_test_ids(only_testing))
 
 
-def _xcode_test_env(only_testing: Sequence[str]) -> dict[str, str] | None:
+def _xcode_test_env(only_testing: Sequence[str], test_plan: str | None = None) -> dict[str, str] | None:
     env = {"AREAMATRIX_TEST_MODE": "1"}
-    if _includes_performance_tests(only_testing):
+    if test_plan == "AreaMatrix-Performance" or _includes_performance_tests(only_testing):
         env["AREAMATRIX_RUN_PERF_TESTS"] = "1"
     return env
+
+
+def _normalise_test_plan(root: Path, test_plan: str | None) -> str | None:
+    if not test_plan:
+        return None
+    normalised = Path(test_plan).name
+    if normalised.endswith(".xctestplan"):
+        normalised = normalised[: -len(".xctestplan")]
+    if normalised not in MACOS_TEST_PLAN_NAMES:
+        expected = ", ".join(sorted(MACOS_TEST_PLAN_NAMES))
+        fail(f"unknown macOS test plan {test_plan!r}; expected one of: {expected}.")
+    plan_path = root / "apps/macos" / f"{normalised}.xctestplan"
+    if not plan_path.is_file():
+        fail(f"macOS test plan not found at {plan_path}.")
+    return normalised
+
+
+def _test_plan_selected_tests(root: Path, test_plan: str | None) -> list[str]:
+    if not test_plan:
+        return []
+    plan_path = root / "apps/macos" / f"{test_plan}.xctestplan"
+    try:
+        payload = json.loads(plan_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        fail(f"macOS test plan is invalid JSON: {plan_path}: {error}.")
+    if not isinstance(payload, dict):
+        fail(f"macOS test plan must be a JSON object: {plan_path}.")
+    targets = payload.get("testTargets", [])
+    if not isinstance(targets, list) or len(targets) != 1 or not isinstance(targets[0], dict):
+        fail(f"macOS test plan must contain exactly one test target: {plan_path}.")
+    selected = targets[0].get("selectedTests", [])
+    if selected is None:
+        return []
+    if not isinstance(selected, list) or any(not isinstance(item, str) for item in selected):
+        fail(f"macOS test plan selectedTests must be a string list: {plan_path}.")
+    return list(selected)
 
 
 def _handle_release_app_launch_probe_result(probe_rc: int) -> int:
@@ -201,8 +256,9 @@ def _run_release_probe_when_requested(
     build_base: Sequence[str],
     build_log_path: Path,
     only_testing: Sequence[str],
+    test_plan: str | None = None,
 ) -> int:
-    if not _includes_release_perf_tests(only_testing):
+    if not _includes_release_probe(only_testing, test_plan):
         return 0
 
     probe_rc = run_release_app_launch_probe(
@@ -268,6 +324,7 @@ def _test_base_args(
     only_testing: Sequence[str],
     disable_parallel_testing: bool = False,
     enable_code_coverage: bool = False,
+    test_plan: str | None = None,
 ) -> list[str]:
     base = [
         "-project",
@@ -287,6 +344,8 @@ def _test_base_args(
         base.extend(["-parallel-testing-enabled", "NO"])
     if enable_code_coverage:
         base.extend(["-enableCodeCoverage", "YES"])
+    if test_plan:
+        base.extend(["-testPlan", test_plan])
     for test_id in only_testing:
         base.append(f"-only-testing:{test_id}")
     base.append("CODE_SIGNING_ALLOWED=NO")
@@ -298,8 +357,10 @@ def _build_for_testing_base_args(
     scheme: str,
     destination: str,
     derived_data_dir: Path,
+    test_plan: str | None = None,
+    enable_code_coverage: bool = False,
 ) -> list[str]:
-    return [
+    base = [
         "-project",
         str(project_path),
         "-scheme",
@@ -310,6 +371,11 @@ def _build_for_testing_base_args(
         str(derived_data_dir),
         "CODE_SIGNING_ALLOWED=NO",
     ]
+    if test_plan:
+        base.extend(["-testPlan", test_plan])
+    if enable_code_coverage:
+        base.extend(["-enableCodeCoverage", "YES"])
+    return base
 
 
 def _find_or_build_test_bundle(
@@ -346,25 +412,38 @@ def _run_sandbox_fallback(
     build_base: Sequence[str],
     build_log_path: Path,
     only_testing: Sequence[str],
+    *,
+    build_if_missing: bool = True,
+    fallback_only_testing: Sequence[str] | None = None,
+    test_plan: str | None = None,
 ) -> int:
     print()
     print("==> xcodebuild test was blocked by local sandboxed testmanagerd access.")
     print("    Reusing the built XCTest bundle for direct XCTest execution.")
     try:
-        test_bundle = _find_or_build_test_bundle(
-            derived_data_dir,
-            test_bundle_name,
-            build_base,
-            build_log_path,
-        )
+        if build_if_missing:
+            test_bundle = _find_or_build_test_bundle(
+                derived_data_dir,
+                test_bundle_name,
+                build_base,
+                build_log_path,
+            )
+        else:
+            test_bundle = _find_test_bundle(derived_data_dir, test_bundle_name)
+            if test_bundle is None:
+                fail(
+                    "test-without-building could not find the prebuilt XCTest bundle "
+                    f"under {derived_data_dir}."
+                )
     except ToolExit as error:
         return error.code
 
-    if only_testing:
-        rc = _run_filtered_xctest_bundle(test_bundle, scheme, only_testing)
+    selected_tests = list(fallback_only_testing or only_testing)
+    if selected_tests:
+        rc = _run_filtered_xctest_bundle(test_bundle, scheme, selected_tests)
     else:
         rc = _run_xctest_bundle(test_bundle, scheme)
-    if rc == 0 and _includes_release_perf_tests(only_testing):
+    if rc == 0 and _includes_release_probe(selected_tests, test_plan):
         probe_rc = run_release_app_launch_probe(
             root,
             derived_data_dir,
@@ -466,12 +545,16 @@ def run_macos_tests(
     disable_parallel_testing: bool = False,
     enable_code_coverage: bool = False,
     coverage_gate: bool = False,
+    build_for_testing: bool = False,
+    test_without_building: bool = False,
+    test_plan: str | None = None,
 ) -> int:
     started_at = time.monotonic()
     result: int | None = None
     root = (root or project_root()).resolve()
     project_path = root / "apps/macos/AreaMatrix.xcodeproj"
     scheme = scheme or os.environ.get("XCODE_SCHEME", "AreaMatrix")
+    test_plan = _normalise_test_plan(root, test_plan or os.environ.get("XCODE_TEST_PLAN"))
     test_bundle_name = test_bundle_name or os.environ.get("XCODE_TEST_BUNDLE_NAME", "AreaMatrixTests.xctest")
     destination = destination or os.environ.get("XCODE_DESTINATION", f"platform=macOS,arch={platform.machine()}")
     keep = keep_derived_data if keep_derived_data is not None else os.environ.get("KEEP_DERIVED_DATA", "0") == "1"
@@ -482,6 +565,10 @@ def run_macos_tests(
     )
     test_log_path, build_log_path = _resolve_log_paths(derived_data_dir, test_log, build_log)
     result_bundle = result_bundle_path or os.environ.get("XCODE_RESULT_BUNDLE_PATH")
+    if build_for_testing and test_without_building:
+        fail("--build-for-testing cannot be combined with --test-without-building.")
+    if build_for_testing and (result_bundle or coverage_gate):
+        fail("--build-for-testing cannot be combined with a test result bundle or coverage gate.")
     if coverage_gate and not result_bundle:
         fail("macOS coverage gate requires --result-bundle-path.")
     if coverage_gate:
@@ -507,6 +594,9 @@ def run_macos_tests(
             disable_parallel_testing,
             enable_code_coverage,
             coverage_gate,
+            build_for_testing,
+            test_without_building,
+            test_plan,
         )
         return result
     finally:
@@ -534,7 +624,12 @@ def _run_macos_tests_inner(
     disable_parallel_testing: bool = False,
     enable_code_coverage: bool = False,
     coverage_gate: bool = False,
+    build_for_testing: bool = False,
+    test_without_building: bool = False,
+    test_plan: str | None = None,
 ) -> int:
+    plan_selected_tests = _test_plan_selected_tests(root, test_plan)
+    fallback_only_testing = list(only_testing) if only_testing else plan_selected_tests
     base = _test_base_args(
         project_path,
         scheme,
@@ -544,10 +639,27 @@ def _run_macos_tests_inner(
         only_testing,
         disable_parallel_testing,
         enable_code_coverage,
+        test_plan,
     )
-    build_base = _build_for_testing_base_args(project_path, scheme, destination, derived_data_dir)
-    print("==> xcodebuild test")
-    rc = _run_and_tee(["xcodebuild", "test", *base], test_log_path, env=_xcode_test_env(only_testing))
+    build_base = _build_for_testing_base_args(
+        project_path,
+        scheme,
+        destination,
+        derived_data_dir,
+        test_plan,
+        enable_code_coverage,
+    )
+    if build_for_testing:
+        print("==> xcodebuild build-for-testing")
+        rc = _run_and_tee(["xcodebuild", "build-for-testing", *build_base], build_log_path)
+        if rc == 0:
+            _validate_localization_compiler_keys(root, derived_data_dir)
+            print("macOS tests: xcodebuild build-for-testing passed.")
+        return rc
+
+    xcode_action = "test-without-building" if test_without_building else "test"
+    print(f"==> xcodebuild {xcode_action}")
+    rc = _run_and_tee(["xcodebuild", xcode_action, *base], test_log_path, env=_xcode_test_env(only_testing, test_plan))
     if rc == 0:
         performance_rc = _run_explicit_performance_tests(
             derived_data_dir,
@@ -564,6 +676,7 @@ def _run_macos_tests_inner(
             build_base,
             build_log_path,
             only_testing,
+            test_plan,
         )
         if handled_rc != 0:
             return handled_rc
@@ -571,7 +684,7 @@ def _run_macos_tests_inner(
             return _run_swift_coverage_gate(root, Path(result_bundle))
         print("macOS tests: xcodebuild test passed.")
         return 0
-    if _xcodebuild_tests_passed_before_sandbox_teardown(test_log_path, only_testing):
+    if _xcodebuild_tests_passed_before_sandbox_teardown(test_log_path, fallback_only_testing):
         performance_rc = _run_explicit_performance_tests(
             derived_data_dir,
             scheme,
@@ -586,7 +699,8 @@ def _run_macos_tests_inner(
             derived_data_dir,
             build_base,
             build_log_path,
-            only_testing,
+            fallback_only_testing,
+            test_plan,
         )
         if handled_rc != 0:
             return handled_rc
@@ -618,6 +732,9 @@ def _run_macos_tests_inner(
                 True,
                 enable_code_coverage,
                 coverage_gate,
+                build_for_testing,
+                test_without_building,
+                test_plan,
             )
         fail(f"xcodebuild test failed for a non-sandbox reason. See {test_log_path}.", rc)
 
@@ -631,6 +748,9 @@ def _run_macos_tests_inner(
         build_base,
         build_log_path,
         only_testing,
+        build_if_missing=not test_without_building,
+        fallback_only_testing=fallback_only_testing,
+        test_plan=test_plan,
     )
 
 
@@ -675,7 +795,9 @@ def _evaluate_swift_coverage_report(root: Path, report: object) -> int:
     expected_bridge_files = {
         path.relative_to(source_root).as_posix()
         for path in (source_root / "Bridge").rglob("*.swift")
-        if "Generated" not in path.parts and "UniFFI" not in path.parts
+        if "Generated" not in path.parts
+        and "UniFFI" not in path.parts
+        and path.relative_to(source_root).as_posix() not in SWIFT_BRIDGE_COVERAGE_EXCLUDED_FILES
     }
     if not expected_bridge_files:
         fail("Swift Bridge coverage source inventory is empty.")

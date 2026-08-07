@@ -1,6 +1,74 @@
 import XCTest
 
 final class MacOSFeatureDependencyGovernanceTests: MacOSGovernanceTestCase {
+    private static let explicitCollaboratorRequirements: [String: [String]] = [
+        "Features/AI/AISummaryEditorView.swift": [
+            "summaryStore: aiDependencies.aiSummaryStore",
+            "contentLocaleSnapshotter: aiDependencies.contentLocaleSnapshotter",
+            "privacyRules: aiDependencies.aiPrivacyRules",
+            "lister: aiDependencies.aiCallLogLister"
+        ],
+        "Features/AI/AITagSuggestionsPanel.swift": [
+            "lister: aiDependencies.aiCallLogLister",
+            "bridge: aiDependencies.aiPrivacyRulesManager"
+        ],
+        "Features/Detail/DetailTagSection.swift": [
+            "aiDependencies: aiDependencies",
+            "errorMapper: errorMapper"
+        ],
+        "Features/FileActions/BatchRenameTrigger.swift": [
+            "lister: aiDependencies.aiCallLogLister",
+            "bridge: aiDependencies.aiPrivacyRulesManager"
+        ],
+        "Features/Search/SemanticSearchMainContentSupport.swift": [
+            "bridge: aiDependencies.aiPrivacyRulesManager",
+            "lister: aiDependencies.aiCallLogLister",
+            "aiDependencies: aiDependencies"
+        ],
+        "Features/Search/SemanticSearchFallbackStatusRegion.swift": [
+            "statusReader: aiDependencies.localModelStatusReader",
+            "bridge: aiDependencies.remoteProviderConfigurer",
+            "credentialStore: aiDependencies.remoteProviderCredentialStore",
+            "errorMapper: errorMapper"
+        ],
+        "Features/AI/AISettingsPane.swift": [
+            "credentialStore: featureDependencies.remoteProviderCredentialStore"
+        ],
+        "Features/AI/AIClassificationSuggestionPanel.swift": [
+            "credentialStore: aiDependencies.remoteProviderCredentialStore"
+        ],
+        "Features/Settings/LanguageSettingsPane.swift": [
+            "overviewRegenerationCoordinator: featureDependencies.overviewRegenerationCoordinator"
+        ],
+        "Features/Settings/AboutSettingsPane.swift": [
+            "platformDifferencesModel: platformDifferencesModel"
+        ],
+        "Features/Settings/GeneralSettingsView.swift": [
+            "contractInspector: featureDependencies.bindingContractInspector",
+            "capabilityLoader: featureDependencies.platformCapabilityLoader",
+            "errorMapper: sharedDependencies.errorMapper"
+        ]
+    ]
+
+    private static let forbiddenDefaultCallSites: [String: [String]] = [
+        "Features/AI/AITagSuggestionsPanel.swift": [
+            "AIClassificationCallLogDetailSheet(repoPath: repoPath",
+            "AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath"
+        ],
+        "Features/FileActions/BatchRenameTrigger.swift": [
+            "AIClassificationCallLogDetailSheet(repoPath: repoPath",
+            "AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath"
+        ],
+        "Features/Search/SemanticSearchMainContentSupport.swift": [
+            "AIClassificationCallLogDetailSheet(repoPath: opening.config.repoPath,",
+            "AIClassificationPrivacyRuleReferenceSheet(repoPath: opening.config.repoPath,"
+        ],
+        "Features/Search/SemanticSearchFallbackStatusRegion.swift": [
+            "LocalModelStatusModel(repoPath: repoPath)",
+            "RemoteProviderConfigModel(repoPath: repoPath)"
+        ]
+    ]
+
     func testFeatureLiveConvenienceEntriesStayOutsideProductionTarget() throws {
         let defaultsFile = try XCTUnwrap(productionSwiftFiles().first {
             relativeProductionPath(for: $0) == "App/FeatureDependencyDefaults.swift"
@@ -24,7 +92,9 @@ final class MacOSFeatureDependencyGovernanceTests: MacOSGovernanceTestCase {
             .flatMap {
                 try sourceRegexViolations(
                     in: $0,
-                    pattern: #"\b(?:ImportFeatureDependencies|OnboardingFeatureDependencies|SharedFeatureDependencies)\.live\b"#
+                    pattern: #"\b(?:"# +
+                        #"ImportFeatureDependencies|OnboardingFeatureDependencies|SharedFeatureDependencies)"# +
+                        #"\.live\b"#
                 )
             }
             .sorted()
@@ -67,7 +137,8 @@ final class MacOSFeatureDependencyGovernanceTests: MacOSGovernanceTestCase {
             .flatMap {
                 try sourceRegexViolations(
                     in: $0,
-                    pattern: #"\b(?:AIFeatureDependencies|SharedFeatureDependencies)\.live\b|AISettingsModel\s*\(\s*repoPath:\s*repoPath\s*\)"#
+                    pattern: #"\b(?:AIFeatureDependencies|SharedFeatureDependencies)"# +
+                        #"\.live\b|AISettingsModel\s*\(\s*repoPath:\s*repoPath\s*\)"#
                 )
             }
             .sorted()
@@ -81,46 +152,7 @@ final class MacOSFeatureDependencyGovernanceTests: MacOSGovernanceTestCase {
     }
 
     func testProductionAIAndSearchRecoveryRoutesUseExplicitCollaborators() throws {
-        let requiredSourceTerms: [String: [String]] = [
-            "Features/AI/AISummaryEditorView.swift": [
-                "summaryStore: aiDependencies.aiSummaryStore",
-                "contentLocaleSnapshotter: aiDependencies.contentLocaleSnapshotter",
-                "privacyRules: aiDependencies.aiPrivacyRules",
-                "lister: aiDependencies.aiCallLogLister"
-            ],
-            "Features/AI/AITagSuggestionsPanel.swift": [
-                "lister: aiDependencies.aiCallLogLister",
-                "bridge: aiDependencies.aiPrivacyRulesManager"
-            ],
-            "Features/Detail/DetailTagSection.swift": [
-                "aiDependencies: aiDependencies",
-                "errorMapper: errorMapper"
-            ],
-            "Features/FileActions/BatchRenameTrigger.swift": [
-                "lister: aiDependencies.aiCallLogLister",
-                "bridge: aiDependencies.aiPrivacyRulesManager"
-            ],
-            "Features/Search/SemanticSearchMainContentSupport.swift": [
-                "bridge: aiDependencies.aiPrivacyRulesManager",
-                "lister: aiDependencies.aiCallLogLister",
-                "aiDependencies: aiDependencies"
-            ],
-            "Features/Search/SemanticSearchFallbackStatusRegion.swift": [
-                "statusReader: aiDependencies.localModelStatusReader",
-                "bridge: aiDependencies.remoteProviderConfigurer",
-                "errorMapper: errorMapper"
-            ],
-            "Features/Settings/AboutSettingsPane.swift": [
-                "platformDifferencesModel: platformDifferencesModel"
-            ],
-            "Features/Settings/GeneralSettingsView.swift": [
-                "contractInspector: featureDependencies.bindingContractInspector",
-                "capabilityLoader: featureDependencies.platformCapabilityLoader",
-                "errorMapper: sharedDependencies.errorMapper"
-            ]
-        ]
-
-        for (relativePath, terms) in requiredSourceTerms {
+        for (relativePath, terms) in Self.explicitCollaboratorRequirements {
             let file = try XCTUnwrap(productionSwiftFiles().first {
                 relativeProductionPath(for: $0) == relativePath
             })
@@ -133,26 +165,7 @@ final class MacOSFeatureDependencyGovernanceTests: MacOSGovernanceTestCase {
             }
         }
 
-        let forbiddenDefaultCallSites: [String: [String]] = [
-            "Features/AI/AITagSuggestionsPanel.swift": [
-                "AIClassificationCallLogDetailSheet(repoPath: repoPath",
-                "AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath"
-            ],
-            "Features/FileActions/BatchRenameTrigger.swift": [
-                "AIClassificationCallLogDetailSheet(repoPath: repoPath",
-                "AIClassificationPrivacyRuleReferenceSheet(repoPath: repoPath"
-            ],
-            "Features/Search/SemanticSearchMainContentSupport.swift": [
-                "AIClassificationCallLogDetailSheet(repoPath: opening.config.repoPath,",
-                "AIClassificationPrivacyRuleReferenceSheet(repoPath: opening.config.repoPath,"
-            ],
-            "Features/Search/SemanticSearchFallbackStatusRegion.swift": [
-                "LocalModelStatusModel(repoPath: repoPath)",
-                "RemoteProviderConfigModel(repoPath: repoPath)"
-            ]
-        ]
-
-        for (relativePath, terms) in forbiddenDefaultCallSites {
+        for (relativePath, terms) in Self.forbiddenDefaultCallSites {
             let file = try XCTUnwrap(productionSwiftFiles().first {
                 relativeProductionPath(for: $0) == relativePath
             })

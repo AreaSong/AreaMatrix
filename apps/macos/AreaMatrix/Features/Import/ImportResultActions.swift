@@ -167,7 +167,7 @@ extension OnboardingModel {
             componentID: "macos.import.result"
         )
         let updatedRetryContext = context.replacingTraceContext(traceContext)
-        await AppLogger.shared.recordUIAction(traceContext: traceContext)
+        await actionLogger.recordUIAction(traceContext: traceContext)
         do {
             let entry = try await retryCopiedImport(updatedRetryContext, traceContext: traceContext)
             return ImportResultRetryOutcome(

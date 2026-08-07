@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Combine
 import Foundation
 
@@ -84,6 +85,7 @@ final class OnboardingModel: ObservableObject {
     let scanSessionReader: any CoreScanSessionReading
     let diagnosticsCollector: any CoreDiagnosticsCollecting
     let errorMapper: any CoreErrorMapping
+    let actionLogger: any AppUIActionLogging
     let finderOpener: any RepositoryFinderOpening
     let fileRevealer: any RepositoryFileRevealing
     let fileOpener: any RepositoryFileOpening
@@ -96,6 +98,7 @@ final class OnboardingModel: ObservableObject {
     let helpOpener: any WelcomeHelpOpening
     let directoryPicker: any RepositoryDirectoryPicking
     let importPicker: any RepositoryImportPicking
+    let importFileResourceAccess: any ImportFileResourceAccessing
     var didBootstrap = false
     var queuedDockImportBatches: [[URL]] = []
     var validatePathReturnRoute: Route = .choosePath
@@ -108,16 +111,16 @@ final class OnboardingModel: ObservableObject {
         pathValidator: any CoreRepositoryPathValidating = AppCoreServices.repositoryPathValidator,
         initializedPathValidator: any CoreInitializedRepositoryPathValidating =
             AppCoreServices.initializedRepositoryPathValidator,
-        repositoryInitializer: any CoreRepositoryInitializing = CoreBridge(),
+        repositoryInitializer: any CoreRepositoryInitializing = AppCoreServices.repositoryInitializer,
         emptyRepositoryOpener: any CoreEmptyRepositoryOpening = AppCoreServices.emptyRepositoryOpener,
-        importProgressImporter: any CoreFileImporting = CoreBridge(),
+        importProgressImporter: any CoreFileImporting = AppCoreServices.importProgressImporter,
         importResultChangeLister: any CoreChangeLogListing = AppCoreServices.changeLogLister,
         mainLoadingTreeLister: (any CoreRepositoryTreeListing)? = nil,
-        startupRecoverer: any CoreStartupRecovering = CoreBridge(),
-        externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge(),
+        startupRecoverer: any CoreStartupRecovering = AppCoreServices.startupRecoverer,
+        externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer,
         repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
-            OnboardingPlatformServices.metadataReader,
+            AppPlatformServices.existingRepositoryMetadataReader,
         scanSessionReader: any CoreScanSessionReading = AppCoreServices.scanSessionReader,
         diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
         errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
@@ -130,10 +133,12 @@ final class OnboardingModel: ObservableObject {
         systemCapabilityChecker: any OnboardingSystemCapabilityChecking =
             AppPlatformServices.systemCapabilityChecker,
         importProgressControlState: ImportProgressControlState = ImportProgressControlState(),
-        accessibilityAnnouncer: any AccessibilityAnnouncing = OnboardingPlatformServices.accessibilityAnnouncer,
+        accessibilityAnnouncer: any AccessibilityAnnouncing = AppPlatformServices.accessibilityAnnouncer,
         helpOpener: any WelcomeHelpOpening = AppPlatformServices.helpOpener,
         directoryPicker: any RepositoryDirectoryPicking = AppPlatformServices.directoryPicker,
-        importPicker: any RepositoryImportPicking = AppPlatformServices.importPicker
+        importPicker: any RepositoryImportPicking = AppPlatformServices.importPicker,
+        importFileResourceAccess: any ImportFileResourceAccessing = ImportPlatformServices.fileResourceAccess,
+        actionLogger: any AppUIActionLogging = NoopAppUIActionLogger()
     ) {
         self.settingsReader = settingsReader
         self.settingsWriter = settingsWriter
@@ -151,6 +156,7 @@ final class OnboardingModel: ObservableObject {
         self.scanSessionReader = scanSessionReader
         self.diagnosticsCollector = diagnosticsCollector
         self.errorMapper = errorMapper
+        self.actionLogger = actionLogger
         self.finderOpener = finderOpener
         self.fileRevealer = fileRevealer
         self.fileOpener = fileOpener
@@ -163,6 +169,7 @@ final class OnboardingModel: ObservableObject {
         self.helpOpener = helpOpener
         self.directoryPicker = directoryPicker
         self.importPicker = importPicker
+        self.importFileResourceAccess = importFileResourceAccess
     }
 
     @MainActor
@@ -194,7 +201,9 @@ final class OnboardingModel: ObservableObject {
             accessibilityAnnouncer: dependencies.platform.accessibilityAnnouncer,
             helpOpener: dependencies.platform.helpOpener,
             directoryPicker: dependencies.platform.directoryPicker,
-            importPicker: dependencies.platform.importPicker
+            importPicker: dependencies.platform.importPicker,
+            importFileResourceAccess: dependencies.feature.import.fileResourceAccess,
+            actionLogger: dependencies.onboarding.actionLogger
         )
     }
 }

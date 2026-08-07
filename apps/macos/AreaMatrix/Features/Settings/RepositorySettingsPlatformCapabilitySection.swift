@@ -1,3 +1,4 @@
+import AreaMatrixCoreContracts
 import SwiftUI
 
 struct RepoPlatformCapabilitySection: View {

@@ -126,13 +126,13 @@ public struct FeatureExtensionRegistry: Equatable, Sendable {
         featureManifests: [FeatureManifest],
         infrastructureIDs: Set<String> = []
     ) {
-        self.featureIDs = Set(featureManifests.map(\.id))
+        featureIDs = Set(featureManifests.map(\.id))
         self.infrastructureIDs = infrastructureIDs
-        self.all = featureManifests
+        all = featureManifests
             .flatMap(\.extensions)
             .sorted { $0.id < $1.id }
 
-        self.expectedOwnerByExtensionID = featureManifests.reduce(into: [String: String]()) { result, feature in
+        expectedOwnerByExtensionID = featureManifests.reduce(into: [String: String]()) { result, feature in
             for extensionManifest in feature.extensions where result[extensionManifest.id] == nil {
                 result[extensionManifest.id] = feature.id
             }

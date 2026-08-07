@@ -69,7 +69,8 @@ private struct DeveloperDetailNoteScenario: View {
         _model = StateObject(wrappedValue: DetailNoteModel(
             repoPath: fixture.repoPath,
             noteStore: DeveloperDetailNoteStore(),
-            errorMapper: CoreErrorSnapshotMapper()
+            errorMapper: CoreErrorSnapshotMapper(),
+            inFlightTracker: InFlightFileChangeTracker()
         ))
     }
 
@@ -99,7 +100,8 @@ private struct DeveloperDetailPaneScenario: View {
         _noteModel = StateObject(wrappedValue: DetailNoteModel(
             repoPath: fixture.repoPath,
             noteStore: DeveloperDetailNoteStore(),
-            errorMapper: CoreErrorSnapshotMapper()
+            errorMapper: CoreErrorSnapshotMapper(),
+            inFlightTracker: InFlightFileChangeTracker()
         ))
     }
 
@@ -130,7 +132,7 @@ private struct DeveloperDetailPaneScenario: View {
             selectedImportProgressRow: nil,
             semanticDetail: nil,
             repoPath: fixture.repoPath,
-            aiDependencies: AppDependencyContainer.live.feature.ai,
+            aiDependencies: AppDependencyContainer.live.feature.aiFeature,
             batchTagStore: core,
             batchTagUndoStore: core,
             batchTagErrorMapper: CoreErrorSnapshotMapper(),

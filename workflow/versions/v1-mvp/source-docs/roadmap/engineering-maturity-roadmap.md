@@ -86,8 +86,8 @@ feature-owned 值类型，Search debounce / facets task host 也已归回 Search
 450 行近阈值精确清单与 500 行硬限制。Import progress 的动态 presentation、selection state、detail
 projection 与互斥 relay 已由 Import owner 承载；MainList error 的 retry / diagnostics fallback 也已合并为
 MainList-owned recovery contract。`RepoConfigSnapshot` fixture family 与 Local File URL platform adapter family
-也已完成自然拆分；当前 450 行近阈值清单只登记 454 行的
-`MacOSArchitectureBoundaryGovernanceTests.swift`，并冻结其继续增长。macOS CI 也已从“目录缺失时跳过”升级为
+也已完成自然拆分；`MacOSArchitectureBoundaryGovernanceTests.swift` 已拆分至 431 行，当前不再进入
+450 行近阈值清单。macOS CI 也已从“目录缺失时跳过”升级为
 工程 / 源码缺失即失败，并由本地 governance check 防止 skip guard 回流。Import session persistence 已迁入
 `PlatformServices`；AI remote provider probe 已切换为 Core prepare / complete 两阶段合同，并由共享
 `RemoteProviderProbeService` actor 使用 Keychain 与 headers-only URLSession 执行，禁止 redirect，只回传净化 observation。
@@ -127,11 +127,12 @@ kill / wait、stdout 上限与 stderr 丢弃策略。旧 probe shell/runtime、C
   tracked Swift bindings 已有本地与 CI
   exact drift gate；手写 Swift 文件达到 450 行后必须登记 owner、理由与拆分触发条件，且不得继续增长，
   500 行仍是硬上限，UniFFI 生成绑定由独立清单与 drift gate 管理。
-- macOS CI 已显式开启 Xcode coverage，并对 Swift Watcher 精确文件清单执行 60% 门槛、对全部手写
-  Bridge 文件执行 50% 门槛；生成绑定不计入手写覆盖率，target / 文件清单缺失、空集合和 direct
-  `xctest` fallback 均不能形成 coverage PASS。
+- macOS CI 已显式开启 Xcode coverage，并对 Swift Watcher 精确文件清单执行 60% 门槛、对全部有可执行行的手写
+  Bridge 文件执行 50% 门槛；只包含协议一致性扩展、没有可执行行的声明型适配器
+  （当前为 `Bridge/CoreBridgeRuntime.swift`）不计入加权比率。生成绑定不计入手写覆盖率，target / 文件清单缺失、
+  空集合和 direct `xctest` fallback 均不能形成 coverage PASS。
 - 当前治理重点：继续补强 AI credential lifecycle、隐私与发布证据，使复用与自动化检查成为新增功能的默认路径。
-- Import 高风险读写路径已完成一轮依赖隔离：预检器不再隐式构造 `CoreBridgeBatchFileLoader`，由 App 组合根提供 `ImportFeatureDependencies.batchFileLoader`；批量导入的 conflict batcher、undo store、session store 和占位符下载器现在都是组合边界的必传能力，生产 sheet 统一从同一 scope 接收。后续仍需清理其他 Feature 中仅供 Preview / 旧调用点的 `.live` 便利默认值，并保持真实 Core 与文件安全验证。
+- Import 高风险读写路径已完成一轮依赖隔离：预检器不再隐式构造 `CoreBridgeBatchFileLoader`，由 App 组合根提供 `ImportFeatureDependencies.batchFileLoader`；批量导入的 conflict batcher、undo store、session store 和占位符下载器现在都是组合边界的必传能力，生产 sheet 统一从同一 scope 接收。生产 `Features/**` 已不再解析 `AppCoreServices`、`AppPlatformServices`、`CoreBridge()` 或 Feature `.live` 默认值；`MacOSFeatureDependencyGovernanceTests` 固定高风险入口、MainList、AI / Search recovery 和显式 collaborator 规则。后续只保持新增依赖经 App composition 和同一治理门禁，并继续保留真实 Core 与文件安全验证。
 - Import session persistence 已有真实临时目录的 save / load / missing / corrupt / clear / permission
   回归证据，并已迁入 `PlatformServices/ImportBatchSessionPlatformServices.swift`；后续演进不得改变
   app-owned metadata 路径或失败不阻断导入的语义。
@@ -151,10 +152,10 @@ kill / wait、stdout 上限与 stderr 丢弃策略。旧 probe shell/runtime、C
 | 工程成熟度矩阵 | 100%（11/11） | 本文“100% 成熟度账本”、`./dev check governance`、macOS governance XCTest | 保持证据随真实演进批次更新 |
 | Cargo / CoreSDK 构建治理 | 已落地 | `.build/cargo/*` lane、Xcode dependency file、`./dev doctor build`、CoreSDK verify | 持续监控 cache 命中率和跨 lane 锁等待 |
 | UI 反馈与场景化开发 | 已落地 | `#Preview`、developer scenario launcher、Python/Swift scenario inventory、Preview xcconfig | 为新增页面持续补齐状态/语言/窗口场景 |
-| Swift 物理模块化 | 进行中 | `AreaMatrixCoreContracts`、`AreaMatrixCoreBridgeContract`、`AreaMatrixUIFoundation`、`AreaMatrixPlatformKit` 已作为 Swift Package 被 App target 真实链接；`CoreBridgeBoundary` 已独立并有 Package/Xcode 双重验证，运行时 CoreBridge、UniFFI 适配和 Feature 仍在 App target | 提取稳定的 CoreBridge runtime/适配边界并迁移 Feature 模块组；保持按能力分组，不创建一页一个 Package |
-| Feature 依赖隔离 | 部分完成（生产 Feature scope 已显式化） | `AppCommandRouter`、App 组合 assembly、feature-local `FeatureManifest` 和 `FeatureManifestGraph` 已落地；Import 的 batch file loader、single-file preflight、batch/folder conflict prechecker 和 undo store 已由 `ImportFeatureDependencies` 经 `MainWindow` 显式传入；Feature `.live` 便利入口已移出生产 target，测试兼容入口只存在于 `AreaMatrixTests` | 继续把低风险平台 adapter 默认值按真实调用方收口到 App composition；高风险 CoreBridge 例外保持单独登记，不以万能容器隐藏风险 |
+| Swift 物理模块化 | 进行中 | `AreaMatrixCoreContracts`、`AreaMatrixCoreBridgeContract`、`AreaMatrixCoreBridgeRuntime`、`AreaMatrixUIFoundation`、`AreaMatrixPlatformKit` 已作为 Swift Package 被 App target 真实链接；UIFoundation 已承载主题、路径、状态、步骤头、页面玻璃面板 / 工作区壳层、通用动作控件、Feature Card、品牌场景原语、主题资源表面、Lucide 图标路径、场景转场 / 视差环境、场景进入动效和解码文字，并由 Onboarding、Import、MainList、Settings、RepositoryLifecycle、主窗口路由和多组场景 Diorama 真实调用；PlatformKit 已承载 HTTPS 外链与 LocalFileURL 平台合同及默认实现，并由 Package/Xcode 双重测试覆盖；`CoreBridgeBoundary`、runtime coordinator 和 `CoreBridgeGeneratedAdapter` 的 boundary guard 已有 Package/Xcode 双重验证；平台能力、绑定合同 snapshot、稳定 Bridge capability protocol 与 diagnostics snapshot / collector contract 已迁入 `AreaMatrixCoreContracts` / `AreaMatrixCoreBridgeContract`，Bridge 仅保留生成 DTO 转换和本地化显示扩展；所有已迁移的生成调用都经实例化适配器和声明边界校验；真正依赖 UniFFI 的 CoreBridge 实现、生成适配器和 Feature 仍在 App target | 继续按能力分组迁移稳定的 Bridge contract / snapshot 与 Feature 模块组，并为保留的 App-owned UniFFI 适配器登记退出条件；保持按能力分组，不创建一页一个 Package |
+| Feature 依赖隔离 | 已证明（生产 Feature scope 全部显式化） | `AppCommandRouter`、App 组合 assembly、feature-local `FeatureManifest` 和 `FeatureManifestGraph` 已落地；Import 的 batch file loader、single-file preflight、batch/folder conflict prechecker 和 undo store 已由 `ImportFeatureDependencies` 经 `MainWindow` 显式传入；生产 `Features/**` 不直接解析 App 全局服务、`CoreBridge()` 或 Feature `.live`；`MacOSFeatureDependencyGovernanceTests` 5 项专项测试通过，测试便利入口仅存在于 `AreaMatrixTests` | 新增 Feature 继续通过 App composition 注入依赖并受同一治理门禁；高风险 CoreBridge 例外保持单独登记，不以万能容器隐藏风险 |
 | 扩展注册机制 | 已落地（内置扩展） | Feature-owned manifest 已由 App registry 组合；`AreaMatrixCoreContracts` 提供 command / import-source / AI-provider 的 typed registry、依赖和 owner 校验；App runtime registry 对每个内置扩展执行 contract-version、未知 ID、缺失 registration 和重复 registration 门禁 | 继续随模块演进维护 manifest 与 registration；第三方运行时插件仍属于非目标，须另行完成签名、沙箱、权限和 API 兼容模型后再评估 |
-| 本地验证与 CI | 部分完成 | changed validation、CoreSDK/绑定/治理门禁已存在 | `./dev test changed`、macOS 全量测试、远端 CI 和 branch protection 都有新鲜证据 |
+| 本地验证与 CI | 部分完成（本地分层验证已闭合） | changed validation、CoreSDK/绑定/治理门禁、一次 `build-for-testing` 后复用 DerivedData 的 Unit / Feature / Integration / Functional coverage 分片已落地；iOS 继续消费同一 CoreSDK artifact | `./dev test changed`、macOS 全量测试、远端 CI 和 branch protection 都有新鲜证据 |
 | 正式发布与外部治理 | 未闭合（外部阻断） | residual：`v1-rl-002`、`v1-rl-003`、`v1-rl-004`、`v1-rl-006`、`v2-risk-001`、`v2-dep-003`、`v2-dep-004` | 真实 iCloud、Developer ID/公证/clean Mac、release decision、独立复核、remote CI/branch protection 证据闭合 |
 
 因此，“还缺少 54%”不是当前有效结论。准确说法是：**工程成熟度矩阵已经达到本文定义的 100%，但全量长期治理仍未达到 100%，因为模块化、依赖隔离以及外部发布/治理证据仍未闭合；这些项不能用一个未经定义的百分比相加替代。**

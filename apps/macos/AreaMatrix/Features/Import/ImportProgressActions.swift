@@ -14,7 +14,7 @@ extension OnboardingModel {
             componentID: "macos.import.progress"
         )
         let retryContext = context.replacingTraceContext(traceContext)
-        await AppLogger.shared.recordUIAction(traceContext: traceContext)
+        await actionLogger.recordUIAction(traceContext: traceContext)
         do {
             let entry = try await importCurrentProgressItem(retryContext, traceContext: traceContext)
             await finishRetriedImportProgressItem(entry, from: state, context: retryContext)

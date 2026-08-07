@@ -83,7 +83,10 @@ struct ChangeLogEntrySnapshot: Equatable, Identifiable {
 extension CoreBridge: CoreChangeLogListing {
     func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot] {
         try await Task.detached(priority: .userInitiated) {
-            try listCoreChanges(repoPath: repoPath, filter: ChangeFilter(filter)).map(ChangeLogEntrySnapshot.init)
+            try self.generatedAdapter.listChanges(
+                repoPath: repoPath,
+                filter: ChangeFilter(filter)
+            ).map(ChangeLogEntrySnapshot.init)
         }.value
     }
 }
@@ -150,8 +153,4 @@ private enum ChangeLogDetailSummary {
         let name = (path as NSString).lastPathComponent
         return name.isEmpty ? "redacted path" : ".../\(name)"
     }
-}
-
-private func listCoreChanges(repoPath: String, filter: ChangeFilter) throws -> [ChangeLogEntry] {
-    try listChanges(repoPath: repoPath, filter: filter)
 }

@@ -96,9 +96,14 @@ enum ImportBatchNameConflictPrecheckResult: Equatable {
 
 struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
     private let fileLoader: any ImportBatchCoreFileLoading
+    private let resourceAccess: any ImportFileResourceAccessing
 
-    init(fileLoader: any ImportBatchCoreFileLoading) {
+    init(
+        fileLoader: any ImportBatchCoreFileLoading,
+        resourceAccess: any ImportFileResourceAccessing
+    ) {
         self.fileLoader = fileLoader
+        self.resourceAccess = resourceAccess
     }
 
     func precheckDuplicates(
@@ -109,7 +114,7 @@ struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
         let placeholderResults = sourceURLs.reduce(
             into: [String: ImportBatchDuplicatePrecheckResult]()
         ) { results, sourceURL in
-            if ImportPlatformServices.isICloudPlaceholder(sourceURL) {
+            if resourceAccess.isICloudPlaceholder(sourceURL) {
                 results[sourceURL.path] = .iCloudPlaceholder(path: sourceURL.path)
             }
         }
@@ -140,7 +145,7 @@ struct CoreImportBatchDuplicatePrechecker: ImportBatchDuplicatePrechecking {
         against files: [FileEntrySnapshot]
     ) -> ImportBatchDuplicatePrecheckResult? {
         do {
-            let sourceHash = try ImportSingleFileHasher.sha256Hex(for: sourceURL)
+            let sourceHash = try resourceAccess.sha256Hex(for: sourceURL)
             guard let duplicate = files.first(where: { $0.hashSha256 == sourceHash }) else {
                 return nil
             }

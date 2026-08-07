@@ -182,3 +182,97 @@ func assertSyncConflictReplaceResolutionApplyExit(
     XCTAssertEqual(resolvedReports, [.syncConflictReviewResolveFixture(resolution: .useIncoming)])
     XCTAssertEqual(model.applyDisabledReason, "Resolution has already been applied.")
 }
+
+@MainActor
+func makeMainRepositoryContentViewForTests(
+    opening: RepositoryOpeningResult,
+    state: MainRepositoryContentState,
+    fileLister: any CoreFileListing,
+    fileDetailer: any CoreFileDetailing,
+    errorMapper: any CoreErrorMapping
+) -> MainRepositoryContentView {
+    let dependencies = AppDependencyContainer.live
+    let supporting = makeMainRepositorySupportDependencies(
+        dependencies: dependencies,
+        errorMapper: errorMapper
+    )
+    let list = makeMainRepositoryListDependencies(
+        dependencies: dependencies,
+        fileLister: fileLister,
+        fileDetailer: fileDetailer,
+        errorMapper: errorMapper
+    )
+    let features = MainRepositoryContentFeatureDependencies(
+        aiFeature: dependencies.feature.aiFeature,
+        fileActions: dependencies.feature.fileActions,
+        settings: dependencies.feature.settings,
+        syncConflicts: dependencies.feature.syncConflicts
+    )
+    return MainRepositoryContentView(
+        opening: opening,
+        state: state,
+        assembly: .make(opening: opening, supporting: supporting, list: list, features: features),
+        commandRouter: .shared,
+        onImport: {},
+        onDropImport: { _, _ in }
+    )
+}
+
+@MainActor
+private func makeMainRepositorySupportDependencies(
+    dependencies: AppDependencyContainer,
+    errorMapper: any CoreErrorMapping
+) -> MainRepositoryContentSupportDeps {
+    let core = dependencies.mainList
+    return MainRepositoryContentSupportDeps(
+        treeLister: core.treeLister,
+        savedSearchStore: core.savedSearchStore,
+        batchRenamer: core.batchRenamer,
+        systemCapabilityChecker: dependencies.onboarding.systemCapabilityChecker,
+        errorMapper: errorMapper,
+        syncConflictDetector: core.syncConflictDetector,
+        noteStore: core.noteStore,
+        inFlightFileChangeTracker: dependencies.platform.inFlightFileChangeTracker,
+        dropCategoryPredictor: core.categoryPredictor
+    )
+}
+
+@MainActor
+private func makeMainRepositoryListDependencies(
+    dependencies: AppDependencyContainer,
+    fileLister: any CoreFileListing,
+    fileDetailer: any CoreFileDetailing,
+    errorMapper: any CoreErrorMapping
+) -> MainRepositoryContentListDependencies {
+    let core = dependencies.mainList
+    return MainRepositoryContentListDependencies(
+        fileLister: fileLister,
+        fileDetailer: fileDetailer,
+        missingFileRecoverer: core.missingFileRecoverer,
+        missingFilePicker: dependencies.platform.missingFilePicker,
+        searchQuerying: core.searchQuerying,
+        semanticSearching: core.semanticSearching,
+        semanticFallbackReader: core.semanticFallbackReader,
+        searchFiltering: core.searchFiltering,
+        commandIndexer: core.commandIndexer,
+        fileRenamer: core.fileRenamer,
+        fileDeleter: core.fileDeleter,
+        fileCategoryMover: core.fileCategoryMover,
+        categoryPredictor: core.categoryPredictor,
+        batchDeleter: core.batchDeleter,
+        batchCategoryChanger: core.batchCategoryChanger,
+        iCloudConflictResolver: core.iCloudConflictResolver,
+        tagStore: core.tagStore,
+        aiSettingsLoader: core.aiSettingsLoader,
+        aiTagSuggestionStore: core.aiTagSuggestionStore,
+        aiPrivacyRules: core.aiPrivacyRules,
+        undoActionStore: core.undoActionStore,
+        redoActionStore: core.redoActionStore,
+        changeLogLister: core.changeLogLister,
+        externalChangesSyncer: core.externalChangesSyncer,
+        repositoryWriteCoordinator: dependencies.onboarding.repositoryWriteCoordinator,
+        errorMapper: errorMapper,
+        diagnosticsCollector: core.diagnosticsCollector,
+        fileResourceAccess: dependencies.feature.import.fileResourceAccess
+    )
+}

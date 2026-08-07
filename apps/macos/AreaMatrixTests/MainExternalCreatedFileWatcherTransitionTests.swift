@@ -58,7 +58,11 @@ final class ExternalWatcherTransitionTests: XCTestCase {
         )
         try Data("nested".utf8).write(to: nestedFile)
         let syncer = RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 600)
-        let watcher = MainExternalCreatedFileWatcher(cursorStore: syncer, flushDelay: .milliseconds(1))
+        let watcher = MainExternalCreatedFileWatcher(
+            cursorStore: syncer,
+            inFlightTracker: InFlightFileChangeTracker(),
+            flushDelay: .milliseconds(1)
+        )
 
         await watcher.start(repoPath: repoA.path)
         let staleContext = try XCTUnwrap(watcher.activeCallbackContext)

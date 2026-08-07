@@ -48,16 +48,21 @@ protocol CoreObservedFileImporting: CoreFileImporting {
 }
 
 struct CoreImportObservabilityRecorder {
-    static let live = Self(
-        traceContextProvider: SharedCoreImportTraceContextProvider(),
-        logger: .shared,
-        enabled: true
-    )
+    static func live(
+        makeTraceContext: @escaping @Sendable (ObservabilityTraceContextRequest) async -> CoreTraceContext,
+        logger: any AppUIActionLogging
+    ) -> Self {
+        Self(
+            traceContextProvider: ClosureCoreImportTraceContextProvider(makeTraceContext: makeTraceContext),
+            logger: logger,
+            enabled: true
+        )
+    }
 
-    /// XCTest must not inherit production Keychain and observability side effects.
-    /// The test runner sets this flag explicitly; normal app launches keep the live path.
+    /// XCTest and isolated bridge fixtures must not inherit production Keychain or observability side effects.
+    /// The process-scoped App runtime composes the live recorder explicitly.
     static var defaultForCurrentProcess: Self {
-        isTestProcess ? .testNoop : .live
+        .isolatedNoop
     }
 
     private static var isTestProcess: Bool {
@@ -72,17 +77,23 @@ struct CoreImportObservabilityRecorder {
 
     private static let testNoop = Self(
         traceContextProvider: TestCoreImportTraceContextProvider(),
-        logger: .shared,
+        logger: NoopAppUIActionLogger(),
+        enabled: false
+    )
+
+    private static let isolatedNoop = Self(
+        traceContextProvider: TestCoreImportTraceContextProvider(),
+        logger: NoopAppUIActionLogger(),
         enabled: false
     )
 
     let traceContextProvider: any CoreImportTraceContextProviding
-    let logger: AppLogger
+    let logger: any AppUIActionLogging
     let enabled: Bool
 
     init(
         traceContextProvider: any CoreImportTraceContextProviding,
-        logger: AppLogger,
+        logger: any AppUIActionLogging,
         enabled: Bool = true
     ) {
         self.traceContextProvider = traceContextProvider
@@ -111,13 +122,15 @@ struct CoreImportObservabilityRecorder {
         event.resources = coreTraceContext.resourceRefs.map(ObservabilityResourceSnapshot.init)
         event.attributes = coreTraceContext.attributes.map(ObservabilityAttributeSnapshot.init)
         event.error = error.map(observabilityErrorSnapshot)
-        await logger.record(event)
+        await logger.recordSemanticEvent(event)
     }
 }
 
-private struct SharedCoreImportTraceContextProvider: CoreImportTraceContextProviding {
+private struct ClosureCoreImportTraceContextProvider: CoreImportTraceContextProviding {
+    let makeTraceContext: @Sendable (ObservabilityTraceContextRequest) async -> CoreTraceContext
+
     func make(_ request: ObservabilityTraceContextRequest) async -> CoreTraceContext {
-        await ObservabilityRuntimeAssembly.shared.makeCoreTraceContext(request)
+        await makeTraceContext(request)
     }
 }
 

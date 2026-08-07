@@ -27,6 +27,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     let sessionStore: any ImportBatchSessionPersisting
     let errorMapper: any CoreErrorMapping
     let placeholderDownloader: any ICloudPlaceholderDownloading
+    let actionLogger: any AppUIActionLogging
     var request: ImportEntryRequest?
     var selectedDestination: ImportBatchDestinationOption = .autoClassify
     private(set) var lastFailureMapping: CoreErrorMappingSnapshot?
@@ -43,7 +44,8 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
         undoActionStore: any CoreUndoActionLogging,
         sessionStore: any ImportBatchSessionPersisting,
         placeholderDownloader: any ICloudPlaceholderDownloading,
-        initialNamingPrefix: String? = nil
+        initialNamingPrefix: String? = nil,
+        actionLogger: any AppUIActionLogging = NoopAppUIActionLogger()
     ) {
         namingPrefixOverride = initialNamingPrefix ?? L10n.editableDefault("import.batch-naming.default-prefix")
         self.importer = importer
@@ -52,6 +54,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
         self.sessionStore = sessionStore
         self.errorMapper = errorMapper
         self.placeholderDownloader = placeholderDownloader
+        self.actionLogger = actionLogger
     }
 }
 
@@ -122,7 +125,7 @@ extension ImportBatchCopyImportModel {
             componentID: "macos.import.batch"
         )
         lastFailureMapping = nil
-        await AppLogger.shared.recordUIAction(traceContext: actionContext)
+        await actionLogger.recordUIAction(traceContext: actionContext)
         await saveImportSession(
             request: request,
             completed: 0,

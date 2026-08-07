@@ -6,16 +6,18 @@ struct RepositoryOverviewSharedOperation: Equatable {
     var initiatorID: UUID?
 }
 
-@MainActor
 final class OverviewRegenerationCoordinator: ObservableObject {
     static let shared = OverviewRegenerationCoordinator()
 
-    @Published private(set) var operations: [String: RepositoryOverviewSharedOperation] = [:]
+    let objectWillChange = ObservableObjectPublisher()
+    @MainActor private(set) var operations: [String: RepositoryOverviewSharedOperation] = [:]
 
+    @MainActor
     func operation(for repoPath: String) -> RepositoryOverviewSharedOperation? {
         operations[repoPath]
     }
 
+    @MainActor
     func publish(
         _ session: CoreOverviewRegenerationSessionSnapshot,
         repoPath: String,
@@ -26,10 +28,13 @@ final class OverviewRegenerationCoordinator: ObservableObject {
             session: session,
             initiatorID: retainedInitiator
         )
+        objectWillChange.send()
     }
 
+    @MainActor
     func clear(repoPath: String) {
         operations.removeValue(forKey: repoPath)
+        objectWillChange.send()
     }
 }
 
@@ -74,13 +79,13 @@ final class RepositoryOverviewRegenerationModel: ObservableObject {
         repoPath: String,
         windowID: UUID = UUID(),
         bridge: any CoreOverviewRegenerating,
-        coordinator: OverviewRegenerationCoordinator? = nil,
+        coordinator: OverviewRegenerationCoordinator,
         errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath
         self.windowID = windowID
         self.bridge = bridge
-        self.coordinator = coordinator ?? .shared
+        self.coordinator = coordinator
         self.errorMapper = errorMapper
         coordinatorObservation = self.coordinator.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()

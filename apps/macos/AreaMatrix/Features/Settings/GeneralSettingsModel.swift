@@ -31,12 +31,9 @@ final class GeneralSettingsModel: ObservableObject {
         repoPath: String,
         loader: any CoreConfigurationLoading,
         updater: any CoreConfigurationUpdating,
-        rootOverviewInspector: any RootOverviewFileInspecting =
-            GeneralSettingsPlatformServices.rootOverviewInspector,
-        rootOverviewRevealer: any RepositoryFileRevealing =
-            GeneralSettingsPlatformServices.rootOverviewRevealer,
-        ignoreRulesManager: any RepositoryIgnoreRulesManaging =
-            GeneralSettingsPlatformServices.ignoreRulesManager,
+        rootOverviewInspector: any RootOverviewFileInspecting,
+        rootOverviewRevealer: any RepositoryFileRevealing,
+        ignoreRulesManager: any RepositoryIgnoreRulesManaging,
         errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath

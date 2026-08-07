@@ -1129,6 +1129,11 @@ repo_domains:
     paths:
       - apps/macos/AreaMatrix.xcodeproj/
       - apps/macos/AreaMatrix-Functional.xctestplan
+      - apps/macos/AreaMatrix-Unit.xctestplan
+      - apps/macos/AreaMatrix-Feature.xctestplan
+      - apps/macos/AreaMatrix-Integration.xctestplan
+      - apps/macos/AreaMatrix-Performance.xctestplan
+      - apps/macos/AreaMatrix-Release.xctestplan
       - apps/macos/Config/
   - domain: macos-swift-packages
     owner: "@AreaSong"

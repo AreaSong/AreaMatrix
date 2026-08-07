@@ -155,7 +155,10 @@ struct SearchFacetsSnapshot: Equatable {
 extension CoreBridge: CoreSearchFiltering {
     func listFilterFacets(repoPath: String, request: SearchFacetRequestSnapshot) async throws -> SearchFacetsSnapshot {
         let facets = try await Task.detached(priority: .userInitiated) {
-            try AreaMatrix.listFilterFacets(repoPath: repoPath, query: SearchFacetQuery(request))
+            try self.generatedAdapter.listFilterFacets(
+                repoPath: repoPath,
+                query: SearchFacetQuery(request)
+            )
         }.value
         return SearchFacetsSnapshot(coreFacets: facets)
     }

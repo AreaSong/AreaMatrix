@@ -23,7 +23,12 @@ extension ClassifierSettingsPane {
             updater: featureDependencies.configurationUpdater,
             predictor: featureDependencies.categoryPredictor,
             ruleEditor: featureDependencies.classifierRuleEditor,
+            interfaceLocaleIdentifier: featureDependencies.interfaceLocaleIdentifier,
             errorMapper: sharedDependencies.errorMapper,
+            fileOpener: featureDependencies.classifierFileOpener,
+            fileRevealer: featureDependencies.classifierFileRevealer,
+            finderOpener: featureDependencies.classifierFinderOpener,
+            accessibilityAnnouncer: featureDependencies.classifierAccessibilityAnnouncer,
             onSavedCategory: onSavedCategory
         )
     }
@@ -34,7 +39,12 @@ extension ClassifierSettingsPane {
         updater: any CoreConfigurationUpdating,
         predictor: any CoreCategoryPredicting,
         ruleEditor: any CoreClassifierRuleEditing,
+        interfaceLocaleIdentifier: @escaping @MainActor () -> String = { "en" },
         errorMapper: any CoreErrorMapping,
+        fileOpener: any RepositoryFileOpening,
+        fileRevealer: any RepositoryFileRevealing,
+        finderOpener: any RepositoryFinderOpening,
+        accessibilityAnnouncer: any AccessibilityAnnouncing,
         onSavedCategory: ((String) -> Void)? = nil
     ) {
         let settingsModel = ClassifierSettingsModel(
@@ -43,7 +53,12 @@ extension ClassifierSettingsPane {
             updater: updater,
             predictor: predictor,
             ruleEditor: ruleEditor,
+            interfaceLocaleIdentifier: interfaceLocaleIdentifier,
             errorMapper: errorMapper,
+            fileOpener: fileOpener,
+            fileRevealer: fileRevealer,
+            finderOpener: finderOpener,
+            accessibilityAnnouncer: accessibilityAnnouncer,
             onSavedCategory: onSavedCategory
         )
         _model = StateObject(wrappedValue: settingsModel)
@@ -57,6 +72,9 @@ extension ClassifierSettingsPane {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task {
             await model.load()
+        }
+        .onChange(of: localizer.resourceLocaleIdentifier) { _, _ in
+            model.refreshInterfaceLocaleIdentifier()
         }
         .alert(L10n.string("Revert to last valid classifier.yaml?"), isPresented: $showingRevertConfirmation) {
             Button(L10n.string("Cancel"), role: .cancel) {}

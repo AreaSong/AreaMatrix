@@ -198,7 +198,7 @@ final class RepositorySettingsConfigModel: ObservableObject {
         loader: any CoreConfigurationLoading,
         updater: any CoreConfigurationUpdating,
         errorMapper: any CoreErrorMapping,
-        accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
+        accessibilityAnnouncer: any AccessibilityAnnouncing
     ) {
         self.repoPath = repoPath
         self.loader = loader

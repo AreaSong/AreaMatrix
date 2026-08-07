@@ -21,11 +21,17 @@ def _release_launch_probe_build_base(root: Path, build_base: Sequence[str]) -> l
         "DEVELOPMENT_TEAM=",
         "OTHER_LDFLAGS=",
     )
-    release_build_base = [
-        argument
-        for argument in build_base
-        if not any(str(argument).startswith(prefix) for prefix in signing_setting_prefixes)
-    ]
+    release_build_base: list[str] = []
+    skip_next = False
+    for argument in build_base:
+        if skip_next:
+            skip_next = False
+            continue
+        if argument == "-testPlan":
+            skip_next = True
+            continue
+        if not any(str(argument).startswith(prefix) for prefix in signing_setting_prefixes):
+            release_build_base.append(argument)
     if "-configuration" not in release_build_base:
         release_build_base.extend(["-configuration", "Release"])
     release_build_base.extend([

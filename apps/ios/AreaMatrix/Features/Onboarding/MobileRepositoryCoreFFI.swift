@@ -1,4 +1,4 @@
-import Carea_matrixFFI
+import AreaMatrixCoreSDK
 import Foundation
 
 actor LiveMobileRepositoryCoreBridge: MobileRepositoryCoreBridge {
@@ -44,20 +44,13 @@ actor LiveMobileRepositoryCoreBridge: MobileRepositoryCoreBridge {
 
 struct MobileRepositoryCoreFFIClient {
     func getVersion() throws -> String {
-        try ensureCurrentContract()
-        let result = try rustCallWithCoreError {
-            uniffi_area_matrix_core_fn_func_get_version($0)
-        }
-        return try FFIReader.liftString(result)
+        AreaMatrixCoreSDK.getVersion()
     }
 
     func validateRepoPath(repoPath: String) throws -> MobileRepositoryValidation {
-        try ensureCurrentContract()
-        let path = try MobileRepositoryFFIWriter.lowerString(repoPath)
-        let result = try rustCallWithCoreError {
-            uniffi_area_matrix_core_fn_func_validate_repo_path(path, $0)
+        try withCoreError {
+            Self.mapValidation(try AreaMatrixCoreSDK.validateRepoPath(repoPath: repoPath))
         }
-        return try FFIReader.liftValidation(result)
     }
 
     func initRepo(
@@ -65,55 +58,234 @@ struct MobileRepositoryCoreFFIClient {
         mode: MobileRepositoryInitMode,
         createDefaultCategories: Bool
     ) throws {
-        try ensureCurrentContract()
-        let path = try MobileRepositoryFFIWriter.lowerString(repoPath)
-        let options = try MobileRepositoryFFIWriter.lowerRepoInitOptions(
-            mode: mode,
+        let options = AreaMatrixCoreSDK.RepoInitOptions(
+            mode: Self.mapInitMode(mode),
             createDefaultCategories: createDefaultCategories,
-            overviewOutput: .generatedOnly
+            overviewOutput: .generatedOnly,
+            localePolicy: .followInterface,
+            contentLocale: Self.mapContentLocale(MobileRepositoryLocaleSupport.preferredContentLocale())
         )
-        try rustCallVoidWithCoreError {
-            uniffi_area_matrix_core_fn_func_init_repo(path, options, $0)
+        try withCoreError {
+            try AreaMatrixCoreSDK.initRepo(repoPath: repoPath, options: options)
         }
     }
 
     func loadConfig(repoPath: String) throws -> MobileRepositoryConfig {
-        try ensureCurrentContract()
-        let path = try MobileRepositoryFFIWriter.lowerString(repoPath)
-        let result = try rustCallWithCoreError {
-            uniffi_area_matrix_core_fn_func_load_repo_config(path, $0)
+        try withCoreError {
+            Self.mapConfig(try AreaMatrixCoreSDK.loadRepoConfig(repoPath: repoPath))
         }
-        return try FFIReader.liftConfig(result)
     }
 
     func updateConfig(repoPath: String, newConfig: MobileRepositoryConfig) throws {
-        try ensureCurrentContract()
-        let path = try MobileRepositoryFFIWriter.lowerString(repoPath)
-        let patch = try MobileRepositoryFFIWriter.lowerRepoConfigPatch(newConfig)
-        let result = try rustCallWithCoreError {
-            uniffi_area_matrix_core_fn_func_update_repo_config(path, patch, $0)
+        let patch = try Self.mapConfigPatch(newConfig)
+        try withCoreError {
+            _ = try AreaMatrixCoreSDK.updateRepoConfig(repoPath: repoPath, patch: patch)
         }
-        _ = try FFIReader.liftConfig(result)
     }
 
     func contentLocale(repoPath: String) throws -> MobileRepositoryContentLocale {
-        try MobileRepositoryFFIWriter.contentLocale(for: loadConfig(repoPath: repoPath).locale)
+        try MobileRepositoryLocaleSupport.contentLocale(for: loadConfig(repoPath: repoPath).locale)
     }
 
-    private func ensureCurrentContract() throws {
-        guard ffi_area_matrix_core_uniffi_contract_version() == 26,
-              uniffi_area_matrix_core_checksum_func_get_version() == 61902,
-              uniffi_area_matrix_core_checksum_func_validate_repo_path() == 43498,
-              uniffi_area_matrix_core_checksum_func_load_repo_config() == 33004,
-              uniffi_area_matrix_core_checksum_func_update_repo_config() == 26832,
-              uniffi_area_matrix_core_checksum_func_init_repo() == 29414 else {
-            throw MobileRepositoryConnectionError.unavailable("AreaMatrix Core binding contract mismatch.")
+    private func withCoreError<T>(_ operation: () throws -> T) throws -> T {
+        do {
+            return try operation()
+        } catch {
+            throw Self.mapError(error)
         }
     }
-}
 
-enum MobileRepositoryOverviewOutput: Int32 {
-    case generatedOnly = 1
+    private static func mapValidation(
+        _ value: AreaMatrixCoreSDK.RepoPathValidation
+    ) -> MobileRepositoryValidation {
+        MobileRepositoryValidation(
+            repoPath: value.repoPath,
+            exists: value.exists,
+            isDirectory: value.isDirectory,
+            isReadable: value.isReadable,
+            isWritable: value.isWritable,
+            isEmpty: value.isEmpty,
+            isInitialized: value.isInitialized,
+            isInsideAreaMatrix: value.isInsideAreaMatrix,
+            isICloudPath: value.isIcloudPath,
+            isOneDrivePath: value.isOnedrivePath,
+            platformPathKind: mapPlatformPathKind(value.platformPathKind),
+            isCaseSensitivePath: value.isCaseSensitivePath,
+            hasUnfinishedScanSession: value.hasUnfinishedScanSession,
+            recommendedMode: value.recommendedMode.map(mapMobileRepositoryInitMode),
+            issues: value.issues.map(mapPathIssue)
+        )
+    }
+
+    private static func mapConfig(
+        _ value: AreaMatrixCoreSDK.RepoConfigSnapshot
+    ) -> MobileRepositoryConfig {
+        MobileRepositoryConfig(
+            repoPath: value.repoPath,
+            revision: value.revision,
+            defaultMode: mapStorageMode(value.defaultMode),
+            overviewOutput: mapOverviewOutput(value.overviewOutput),
+            aiEnabled: value.aiEnabled,
+            locale: value.localePolicy.rawValue,
+            iCloudWarn: value.icloudWarn,
+            enableExtensionRules: value.enableExtensionRules,
+            enableKeywordRules: value.enableKeywordRules,
+            fallbackToInbox: value.fallbackToInbox,
+            allowReplaceDuringImport: value.allowReplaceDuringImport
+        )
+    }
+
+    private static func mapConfigPatch(
+        _ value: MobileRepositoryConfig
+    ) throws -> AreaMatrixCoreSDK.RepoConfigPatch {
+        AreaMatrixCoreSDK.RepoConfigPatch(
+            expectedRevision: value.revision,
+            repoPath: value.repoPath,
+            defaultMode: mapStorageMode(value.defaultMode),
+            overviewOutput: mapOverviewOutput(value.overviewOutput),
+            aiEnabled: value.aiEnabled,
+            localePolicy: try MobileRepositoryLocaleSupport.repositoryLocalePolicy(value.locale),
+            icloudWarn: value.iCloudWarn,
+            enableExtensionRules: value.enableExtensionRules,
+            enableKeywordRules: value.enableKeywordRules,
+            fallbackToInbox: value.fallbackToInbox,
+            allowReplaceDuringImport: value.allowReplaceDuringImport
+        )
+    }
+
+    private static func mapInitMode(_ value: MobileRepositoryInitMode) -> AreaMatrixCoreSDK.RepoInitMode {
+        switch value {
+        case .createEmpty:
+            .createEmpty
+        case .adoptExisting:
+            .adoptExisting
+        }
+    }
+
+    private static func mapMobileRepositoryInitMode(
+        _ value: AreaMatrixCoreSDK.RepoInitMode
+    ) -> MobileRepositoryInitMode {
+        switch value {
+        case .createEmpty:
+            .createEmpty
+        case .adoptExisting:
+            .adoptExisting
+        }
+    }
+
+    private static func mapContentLocale(
+        _ value: MobileRepositoryContentLocale
+    ) -> AreaMatrixCoreSDK.ContentLocale {
+        switch value {
+        case .zhHans:
+            .zhHans
+        case .en:
+            .en
+        }
+    }
+
+    private static func mapPlatformPathKind(
+        _ value: AreaMatrixCoreSDK.PlatformPathKind
+    ) -> MobileRepositoryPlatformPathKind {
+        switch value {
+        case .local:
+            .local
+        case .iCloudDrive:
+            .iCloudDrive
+        case .oneDrive:
+            .oneDrive
+        case .networkShare:
+            .networkShare
+        case .unknown:
+            .unknown
+        }
+    }
+
+    private static func mapPathIssue(
+        _ value: AreaMatrixCoreSDK.RepoPathIssue
+    ) -> MobileRepositoryPathIssue {
+        switch value {
+        case .missingPath:
+            .missingPath
+        case .notDirectory:
+            .notDirectory
+        case .notReadable:
+            .notReadable
+        case .notWritable:
+            .notWritable
+        case .nonEmptyDirectory:
+            .nonEmptyDirectory
+        case .alreadyInitialized:
+            .alreadyInitialized
+        case .insideAreaMatrix:
+            .insideAreaMatrix
+        case .iCloudPath:
+            .iCloudPath
+        case .oneDrivePath:
+            .oneDrivePath
+        case .windowsReservedName:
+            .windowsReservedName
+        case .windowsCaseInsensitive:
+            .windowsCaseInsensitive
+        case .unfinishedScanSession:
+            .unfinishedScanSession
+        }
+    }
+
+    private static func mapStorageMode(_ value: AreaMatrixCoreSDK.StorageMode) -> String {
+        switch value {
+        case .moved:
+            "Moved"
+        case .copied:
+            "Copied"
+        case .indexed:
+            "Indexed"
+        }
+    }
+
+    private static func mapStorageMode(_ value: String) -> AreaMatrixCoreSDK.StorageMode {
+        switch value {
+        case "Moved":
+            .moved
+        case "Indexed":
+            .indexed
+        default:
+            .copied
+        }
+    }
+
+    private static func mapOverviewOutput(_ value: AreaMatrixCoreSDK.OverviewOutput) -> String {
+        switch value {
+        case .generatedOnly:
+            "GeneratedOnly"
+        case .rootAreaMatrixFile:
+            "RootAreaMatrixFile"
+        }
+    }
+
+    private static func mapOverviewOutput(_ value: String) -> AreaMatrixCoreSDK.OverviewOutput {
+        value == "RootAreaMatrixFile" ? .rootAreaMatrixFile : .generatedOnly
+    }
+
+    private static func mapError(_ error: Error) -> MobileRepositoryConnectionError {
+        guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
+            return (error as? MobileRepositoryConnectionError) ?? .unavailable(error.localizedDescription)
+        }
+        switch coreError {
+        case let .InvalidPath(path):
+            return MobileRepositoryConnectionError.invalidPath(path)
+        case let .ICloudPlaceholder(path):
+            return MobileRepositoryConnectionError.iCloudPlaceholder(path)
+        case let .PermissionDenied(path):
+            return MobileRepositoryConnectionError.permissionDenied(path)
+        case let .RepoNotInitialized(path):
+            return MobileRepositoryConnectionError.invalidRepository(path)
+        case let .Validation(reason), let .Config(reason):
+            return MobileRepositoryConnectionError.invalidRepository(reason)
+        default:
+            return MobileRepositoryConnectionError.unavailable(String(describing: coreError))
+        }
+    }
 }
 
 enum MobileRepositoryContentLocale: Int32 {
@@ -121,333 +293,40 @@ enum MobileRepositoryContentLocale: Int32 {
     case en = 2
 }
 
-enum MobileRepositoryCoreFFIError: LocalizedError {
-    case bufferOverflow
-    case unexpectedStatus(Int8)
-    case unexpectedEnumCase(Int32)
-    case unexpectedOptionalTag(Int8)
-    case unsupportedRepositoryLocale(String)
-    case incompleteData
-    case rustPanic(String)
-
-    var errorDescription: String? {
-        switch self {
-        case .bufferOverflow:
-            "Core response buffer ended unexpectedly."
-        case let .unexpectedStatus(code):
-            "Unexpected Core call status: \(code)."
-        case let .unexpectedEnumCase(value):
-            "Unexpected Core enum value: \(value)."
-        case let .unexpectedOptionalTag(tag):
-            "Unexpected Core optional tag: \(tag)."
-        case let .unsupportedRepositoryLocale(locale):
-            "Unsupported repository locale policy: \(locale)."
-        case .incompleteData:
-            "Core response buffer contained trailing data."
-        case let .rustPanic(message):
-            message
-        }
-    }
-}
-
-private func rustCallWithCoreError(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> RustBuffer) throws
-    -> RustBuffer {
-    var status = RustCallStatus()
-    let result = callback(&status)
-    try checkStatus(status)
-    return result
-}
-
-private func rustCallVoidWithCoreError(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> Void) throws {
-    var status = RustCallStatus()
-    callback(&status)
-    try checkStatus(status)
-}
-
-private func checkStatus(_ status: RustCallStatus) throws {
-    switch status.code {
-    case 0:
-        return
-    case 1:
-        throw try FFIReader.liftCoreError(status.errorBuf)
-    case 2:
-        if status.errorBuf.len > 0 {
-            throw try MobileRepositoryCoreFFIError.rustPanic(FFIReader.liftString(status.errorBuf))
-        }
-        try FFIReader.deallocate(status.errorBuf)
-        throw MobileRepositoryCoreFFIError.rustPanic("Rust panic")
-    default:
-        try FFIReader.deallocate(status.errorBuf)
-        throw MobileRepositoryCoreFFIError.unexpectedStatus(status.code)
-    }
-}
-
-private enum FFIReader {
-    static func liftValidation(_ buffer: RustBuffer) throws -> MobileRepositoryValidation {
-        var reader = Reader(buffer: buffer)
-        let validation = try MobileRepositoryValidation(
-            repoPath: reader.readString(),
-            exists: reader.readBool(),
-            isDirectory: reader.readBool(),
-            isReadable: reader.readBool(),
-            isWritable: reader.readBool(),
-            isEmpty: reader.readBool(),
-            isInitialized: reader.readBool(),
-            isInsideAreaMatrix: reader.readBool(),
-            isICloudPath: reader.readBool(),
-            isOneDrivePath: reader.readBool(),
-            platformPathKind: reader.readPlatformPathKind(),
-            isCaseSensitivePath: reader.readBool(),
-            hasUnfinishedScanSession: reader.readBool(),
-            recommendedMode: reader.readOptionalInitMode(),
-            issues: reader.readPathIssues()
-        )
-        try reader.finish()
-        return validation
+enum MobileRepositoryLocaleSupport {
+    static func preferredContentLocale() -> MobileRepositoryContentLocale {
+        Locale.preferredLanguages.first?.lowercased().hasPrefix("zh") == true ? .zhHans : .en
     }
 
-    static func liftConfig(_ buffer: RustBuffer) throws -> MobileRepositoryConfig {
-        var reader = Reader(buffer: buffer)
-        let config = try MobileRepositoryConfig(
-            repoPath: reader.readString(),
-            revision: reader.readInt64(),
-            defaultMode: reader.readStorageMode(),
-            overviewOutput: reader.readOverviewOutput(),
-            aiEnabled: reader.readBool(),
-            locale: reader.readRepositoryLocalePolicy(),
-            iCloudWarn: reader.readBool(),
-            enableExtensionRules: reader.readBool(),
-            enableKeywordRules: reader.readBool(),
-            fallbackToInbox: reader.readBool(),
-            allowReplaceDuringImport: reader.readBool()
-        )
-        try reader.finish()
-        return config
-    }
-
-    static func liftCoreError(_ buffer: RustBuffer) throws -> MobileRepositoryConnectionError {
-        var reader = Reader(buffer: buffer)
-        let variant = try reader.readInt32()
-        let error: MobileRepositoryConnectionError = switch variant {
-        case 13:
-            try .invalidRepository(reader.readString())
-        case 14:
-            try .invalidPath(reader.readString())
-        case 15:
-            try .iCloudPlaceholder(reader.readString())
-        case 17:
-            try .permissionDenied(reader.readString())
+    static func contentLocale(for policy: String) throws -> MobileRepositoryContentLocale {
+        switch policy.lowercased() {
+        case "follow-interface", "system":
+            preferredContentLocale()
+        case "zh-hans":
+            .zhHans
+        case "en":
+            .en
         default:
-            try .unavailable(reader.readCoreErrorPayload(variant: variant))
-        }
-        try reader.finish()
-        return error
-    }
-
-    static func liftString(_ buffer: RustBuffer) throws -> String {
-        defer { try? deallocate(buffer) }
-        guard let data = buffer.data else { return "" }
-        return String(decoding: UnsafeBufferPointer(start: data, count: Int(buffer.len)), as: UTF8.self)
-    }
-
-    static func deallocate(_ buffer: RustBuffer) throws {
-        var status = RustCallStatus()
-        ffi_area_matrix_core_rustbuffer_free(buffer, &status)
-        guard status.code == 0 else {
-            throw MobileRepositoryCoreFFIError.unexpectedStatus(status.code)
+            throw MobileRepositoryConnectionError.unavailable(
+                "Unsupported repository locale policy: \(policy)"
+            )
         }
     }
 
-    private struct Reader {
-        private let buffer: RustBuffer
-        private let data: Data
-        private var offset: Data.Index = 0
-
-        init(buffer: RustBuffer) {
-            self.buffer = buffer
-            if let pointer = buffer.data {
-                data = Data(bytes: pointer, count: Int(buffer.len))
-            } else {
-                data = Data()
-            }
-        }
-
-        mutating func finish() throws {
-            defer { try? FFIReader.deallocate(buffer) }
-            guard offset == data.count else {
-                throw MobileRepositoryCoreFFIError.incompleteData
-            }
-        }
-
-        mutating func readString() throws -> String {
-            let count = try Int(readInt32())
-            guard count >= 0, data.count >= offset + count else {
-                throw MobileRepositoryCoreFFIError.bufferOverflow
-            }
-            defer { offset += count }
-            return String(decoding: data[offset ..< offset + count], as: UTF8.self)
-        }
-
-        mutating func readBool() throws -> Bool {
-            try readInt8() != 0
-        }
-
-        mutating func readOptionalInitMode() throws -> MobileRepositoryInitMode? {
-            let tag = try readInt8()
-            switch tag {
-            case 0:
-                return nil
-            case 1:
-                return try readInitMode()
-            default:
-                throw MobileRepositoryCoreFFIError.unexpectedOptionalTag(tag)
-            }
-        }
-
-        mutating func readPathIssues() throws -> [MobileRepositoryPathIssue] {
-            let count = try Int(readInt32())
-            guard count >= 0 else {
-                throw MobileRepositoryCoreFFIError.bufferOverflow
-            }
-            var issues: [MobileRepositoryPathIssue] = []
-            issues.reserveCapacity(count)
-            for _ in 0 ..< count {
-                try issues.append(readPathIssue())
-            }
-            return issues
-        }
-
-        mutating func readPlatformPathKind() throws -> MobileRepositoryPlatformPathKind {
-            switch try readInt32() {
-            case 1:
-                return .local
-            case 2:
-                return .iCloudDrive
-            case 3:
-                return .oneDrive
-            case 4:
-                return .networkShare
-            case 5:
-                return .unknown
-            case let value:
-                throw MobileRepositoryCoreFFIError.unexpectedEnumCase(value)
-            }
-        }
-
-        mutating func readStorageMode() throws -> String {
-            switch try readInt32() {
-            case 1:
-                return "Moved"
-            case 2:
-                return "Copied"
-            case 3:
-                return "Indexed"
-            case let value:
-                throw MobileRepositoryCoreFFIError.unexpectedEnumCase(value)
-            }
-        }
-
-        mutating func readRepositoryLocalePolicy() throws -> String {
-            let state = try readInt32()
-            guard (1 ... 5).contains(state) else {
-                throw MobileRepositoryCoreFFIError.unexpectedEnumCase(state)
-            }
-            return try readString()
-        }
-
-        mutating func readCoreErrorPayload(variant: Int32) throws -> String {
-            switch variant {
-            case 1 ... 8, 10 ... 18:
-                return try readString()
-            case 9:
-                let resource = try readString()
-                let expected = try readInt64()
-                let current = try readInt64()
-                return "\(resource): expected revision \(expected), current revision \(current)"
-            default:
-                throw MobileRepositoryCoreFFIError.unexpectedEnumCase(variant)
-            }
-        }
-
-        private mutating func readInitMode() throws -> MobileRepositoryInitMode {
-            switch try readInt32() {
-            case 1:
-                return .createEmpty
-            case 2:
-                return .adoptExisting
-            case let value:
-                throw MobileRepositoryCoreFFIError.unexpectedEnumCase(value)
-            }
-        }
-
-        private mutating func readPathIssue() throws -> MobileRepositoryPathIssue {
-            switch try readInt32() {
-            case 1:
-                return .missingPath
-            case 2:
-                return .notDirectory
-            case 3:
-                return .notReadable
-            case 4:
-                return .notWritable
-            case 5:
-                return .nonEmptyDirectory
-            case 6:
-                return .alreadyInitialized
-            case 7:
-                return .insideAreaMatrix
-            case 8:
-                return .iCloudPath
-            case 9:
-                return .oneDrivePath
-            case 10:
-                return .windowsReservedName
-            case 11:
-                return .windowsCaseInsensitive
-            case 12:
-                return .unfinishedScanSession
-            case let value:
-                throw MobileRepositoryCoreFFIError.unexpectedEnumCase(value)
-            }
-        }
-
-        mutating func readOverviewOutput() throws -> String {
-            switch try readInt32() {
-            case 1:
-                return "GeneratedOnly"
-            case 2:
-                return "RootAreaMatrixFile"
-            case let value:
-                throw MobileRepositoryCoreFFIError.unexpectedEnumCase(value)
-            }
-        }
-
-        private mutating func readInt8() throws -> Int8 {
-            guard data.count >= offset + 1 else {
-                throw MobileRepositoryCoreFFIError.bufferOverflow
-            }
-            defer { offset += 1 }
-            return Int8(bitPattern: data[offset])
-        }
-
-        mutating func readInt32() throws -> Int32 {
-            guard data.count >= offset + 4 else {
-                throw MobileRepositoryCoreFFIError.bufferOverflow
-            }
-            defer { offset += 4 }
-            var value: Int32 = 0
-            _ = withUnsafeMutableBytes(of: &value) { data.copyBytes(to: $0, from: offset ..< offset + 4) }
-            return value.bigEndian
-        }
-
-        mutating func readInt64() throws -> Int64 {
-            guard data.count >= offset + 8 else {
-                throw MobileRepositoryCoreFFIError.bufferOverflow
-            }
-            defer { offset += 8 }
-            var value: Int64 = 0
-            _ = withUnsafeMutableBytes(of: &value) { data.copyBytes(to: $0, from: offset ..< offset + 8) }
-            return value.bigEndian
+    static func repositoryLocalePolicy(
+        _ value: String
+    ) throws -> AreaMatrixCoreSDK.RepositoryLocalePolicy {
+        switch value.lowercased() {
+        case "follow-interface", "system":
+            .followInterface
+        case "zh-hans":
+            .zhHans
+        case "en":
+            .en
+        default:
+            throw MobileRepositoryConnectionError.unavailable(
+                "Unsupported repository locale policy: \(value)"
+            )
         }
     }
 }

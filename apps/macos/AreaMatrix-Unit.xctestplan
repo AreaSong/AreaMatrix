@@ -1,0 +1,36 @@
+{
+  "configurations" : [
+    {
+      "id" : "4F7A9B01-1E5A-4D91-9C32-0CDA7D3E0A11",
+      "name" : "Unit",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:AreaMatrix.xcodeproj",
+      "identifier" : "0A0000000000000000000040",
+      "name" : "AreaMatrix"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "selectedTests" : [
+        "AppLanguageTests/testSystemLanguageResolutionSupportsEnglishAndSimplifiedChinese",
+        "AppCommandRouterTests/testPublishesTypedCommands",
+        "ExternalURLPolicyTests/testValidatedHTTPSURLRejectsNonHTTPSAndMissingHost",
+        "CoreBridgeBoundaryGovernanceTests/testCoreBridgeGeneratedCallsStayBehindPhysicalAdapter"
+      ],
+      "target" : {
+        "containerPath" : "container:AreaMatrix.xcodeproj",
+        "identifier" : "0A0000000000000000000041",
+        "name" : "AreaMatrixTests"
+      }
+    }
+  ],
+  "version" : 1
+}

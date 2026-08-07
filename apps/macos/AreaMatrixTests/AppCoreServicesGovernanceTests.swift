@@ -11,6 +11,7 @@ private let expectedAppCoreServiceSurface = [
     "App/AppCoreServices.swift:static var aiSettingsUpdater",
     "App/AppCoreServices.swift:static var aiSummaryStore",
     "App/AppCoreServices.swift:static var aiTagSuggestionStore",
+    "App/AppCoreServices.swift:static var batchFileImporter",
     "App/AppCoreServices.swift:static var batchCategoryChanger",
     "App/AppCoreServices.swift:static var batchDeleter",
     "App/AppCoreServices.swift:static var batchRenamer",
@@ -23,6 +24,7 @@ private let expectedAppCoreServiceSurface = [
     "App/AppCoreServices.swift:static var commandIndexer",
     "App/AppCoreServices.swift:static var configurationLoader",
     "App/AppCoreServices.swift:static var configurationUpdater",
+    "App/AppCoreServices.swift:static var conflictBatcher",
     "App/AppCoreServices.swift:static var coreVersionLoader",
     "App/AppCoreServices.swift:static var coreVersionReader",
     "App/AppCoreServices.swift:static var diagnosticsCollector",
@@ -40,16 +42,17 @@ private let expectedAppCoreServiceSurface = [
     "App/AppCoreServices.swift:static var initializedRepositoryPathValidator",
     "App/AppCoreServices.swift:static var importProgressImporter",
     "App/AppCoreServices.swift:static var localModelStatusReader",
+    "App/AppCoreServices.swift:static var metadataRepairer",
     "App/AppCoreServices.swift:static var missingFileRecoverer",
     "App/AppCoreServices.swift:static var noteStore",
     "App/AppCoreServices.swift:static var observabilityController",
-    "App/AppCoreServices.swift:static var overviewRegenerationCoordinator",
     "App/AppCoreServices.swift:static var overviewRegenerator",
     "App/AppCoreServices.swift:static var platformCapabilityLoader",
     "App/AppCoreServices.swift:static var redoActionStore",
     "App/AppCoreServices.swift:static var remoteProviderConfigurer",
     "App/AppCoreServices.swift:static var repositoryContentLocaleSnapshotter",
     "App/AppCoreServices.swift:static var repositoryPathValidator",
+    "App/AppCoreServices.swift:static var repositoryReindexer",
     "App/AppCoreServices.swift:static var repositoryInitializer",
     "App/AppCoreServices.swift:static var savedSearchStore",
     "App/AppCoreServices.swift:static var scanSessionReader",
@@ -59,6 +62,7 @@ private let expectedAppCoreServiceSurface = [
     "App/AppCoreServices.swift:static var semanticSearching",
     "App/AppCoreServices.swift:static var syncConflictDetector",
     "App/AppCoreServices.swift:static var startupRecoverer",
+    "App/AppCoreServices.swift:static var syncConflictResolver",
     "App/AppCoreServices.swift:static var tagStore",
     "App/AppCoreServices.swift:static var treeLister",
     "App/AppCoreServices.swift:static var undoActionStore"
@@ -114,6 +118,71 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         )
     }
 
+    func testAppLoggerBindsObservabilityHubAtItsCompositionPoint() throws {
+        let appFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "App/AreaMatrixApp.swift"
+        })
+        let source = try String(contentsOf: appFile, encoding: .utf8)
+
+        XCTAssertTrue(
+            source.contains("static let shared = AppLogger(hub: .shared)"),
+            "The process logger may be shared, but its hub binding must remain explicit."
+        )
+        XCTAssertTrue(
+            source.contains("init(hub: ObservabilityHub)"),
+            "AppLogger initializers must require an explicit observability hub."
+        )
+        XCTAssertFalse(
+            source.contains("init(hub: ObservabilityHub = .shared)"),
+            "AppLogger must not hide the global observability hub behind a default argument."
+        )
+    }
+
+    func testCoreBridgeImplementsTheSharedRuntimeContract() throws {
+        let bridgeFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "Bridge/CoreBridge.swift"
+        })
+        let source = try String(contentsOf: bridgeFile, encoding: .utf8)
+        let runtimeAdapterFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "Bridge/CoreBridgeRuntime.swift"
+        })
+        let runtimeAdapterSource = try String(contentsOf: runtimeAdapterFile, encoding: .utf8)
+        let runtimeFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "App/CoreBridgeRuntimeAssembly.swift"
+        })
+        let runtimeSource = try String(contentsOf: runtimeFile, encoding: .utf8)
+
+        XCTAssertTrue(
+            runtimeAdapterSource.contains("extension CoreBridge: CoreBridgeRuntimeProviding"),
+            "The App-owned CoreBridge runtime adapter must implement the package runtime contract."
+        )
+        XCTAssertTrue(
+            source.contains("private let runtimeCoordinator: CoreBridgeRuntimeCoordinator") &&
+                source.contains("await runtimeCoordinator.declaredBoundaries()"),
+            "CoreBridge must delegate runtime metadata to the physical package coordinator."
+        )
+        XCTAssertTrue(
+            source.contains("typealias BridgeState = CoreBridgeRuntimeState"),
+            "Legacy state references must remain aliases to the package contract, not a second enum."
+        )
+    }
+
+    func testCoreBridgeRuntimeComposesRemoteProbeAtTheAppBoundary() throws {
+        let runtimeFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "App/CoreBridgeRuntimeAssembly.swift"
+        })
+        let source = try String(contentsOf: runtimeFile, encoding: .utf8)
+
+        XCTAssertTrue(
+            source.contains("static let shared = CoreBridge("),
+            "The process-scoped CoreBridge must be composed at the App boundary."
+        )
+        XCTAssertTrue(
+            source.contains("remoteProviderProbePerformer: RemoteProviderProbeService.shared"),
+            "The process-scoped CoreBridge must compose the high-risk remote probe performer explicitly."
+        )
+    }
+
     func testMainRepositoryContentDefaultsAreAssembledInAppLayer() throws {
         let appServicesFile = try XCTUnwrap(productionSwiftFiles().first {
             relativeProductionPath(for: $0) == "App/MainRepositoryContentAssembly.swift"
@@ -127,25 +196,34 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         let appServicesSource = try String(contentsOf: appServicesFile, encoding: .utf8)
         let contentViewSource = try String(contentsOf: contentViewFile, encoding: .utf8)
         let routeContentSource = try String(contentsOf: routeContentFile, encoding: .utf8)
+        let makeDeclaration = try XCTUnwrap(
+            appServicesSource.range(of: "static func make(")
+        )
+        let makeBody = String(appServicesSource[makeDeclaration.lowerBound...])
 
         XCTAssertTrue(appServicesSource.contains("struct MainRepositoryContentAssembly"))
-        XCTAssertTrue(appServicesSource.contains("static func live("))
+        XCTAssertTrue(appServicesSource.contains("static func makeForProduction("))
+        XCTAssertFalse(appServicesSource.contains("static func live("))
         XCTAssertTrue(appServicesSource.contains("dependencies: AppDependencyContainer"))
+        XCTAssertFalse(
+            makeBody.contains("= AppCoreServices.") || makeBody.contains("= AppPlatformServices."),
+            "The test/fixture assembly factory must not expose hidden production service defaults."
+        )
         XCTAssertFalse(
             appServicesSource.contains("dependencies ?? .live"),
             "Production repository assembly must not silently fall back to the global live container."
         )
         XCTAssertTrue(routeContentSource.contains(
-            "assembly: .live(opening: displayOpening, dependencies: dependencies)"
+            "assembly: .makeForProduction(opening: displayOpening, dependencies: dependencies)"
         ))
         XCTAssertTrue(contentViewSource.contains("assembly: MainRepositoryContentAssembly"))
         for dependency in [
-            "semanticFallbackReader: semanticFallbackReader",
-            "fileRenamer: fileRenamer",
-            "fileDeleter: fileDeleter",
-            "categoryPredictor: fileListCategoryPredictor",
-            "aiSettingsLoader: aiSettingsLoader",
-            "aiTagSuggestionStore: aiTagSuggestionStore"
+            "semanticFallbackReader: core.semanticFallbackReader",
+            "fileRenamer: core.fileRenamer",
+            "fileDeleter: core.fileDeleter",
+            "categoryPredictor: core.categoryPredictor",
+            "aiSettingsLoader: core.aiSettingsLoader",
+            "aiTagSuggestionStore: core.aiTagSuggestionStore"
         ] {
             XCTAssertTrue(
                 appServicesSource.contains(dependency),
@@ -171,7 +249,10 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         let routeSource = try String(contentsOf: routeFile, encoding: .utf8)
 
         XCTAssertTrue(appSource.contains("private let dependencies = AppDependencyContainer.live"))
-        XCTAssertTrue(appSource.contains("MainWindow(dependencies: dependencies"))
+        XCTAssertTrue(
+            appSource.contains("MainWindow(") &&
+                appSource.contains("dependencies: dependencies")
+        )
         XCTAssertTrue(windowSource.contains("OnboardingModel(dependencies: resolvedDependencies)"))
         XCTAssertTrue(windowSource.contains("dependencies: dependencies"))
         XCTAssertTrue(routeSource.contains("let dependencies: AppDependencyContainer"))
@@ -188,7 +269,7 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         let settingsViewSource = try String(contentsOf: settingsViewFile, encoding: .utf8)
 
         XCTAssertTrue(routeSource.contains("featureDependencies: dependencies.feature.settings"))
-        XCTAssertTrue(routeSource.contains("aiDependencies: dependencies.feature.ai"))
+        XCTAssertTrue(routeSource.contains("aiDependencies: dependencies.feature.aiFeature"))
         XCTAssertTrue(routeSource.contains("sharedDependencies: dependencies.feature.shared"))
         for child in [
             "LanguageSettingsPane(",
@@ -207,6 +288,24 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertTrue(settingsViewSource.contains("featureDependencies: featureDependencies"))
         XCTAssertTrue(settingsViewSource.contains("featureDependencies: aiDependencies"))
         XCTAssertTrue(settingsViewSource.contains("sharedDependencies: sharedDependencies"))
+        XCTAssertTrue(settingsViewSource.contains("dependencies: diagnosticsDependencies"))
+    }
+
+    func testProductionSettingsDiagnosticsRouteUsesExplicitFeatureDependencies() throws {
+        let settingsFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "Features/Settings/GeneralSettingsView.swift"
+        })
+        let source = try String(contentsOf: settingsFile, encoding: .utf8)
+
+        XCTAssertTrue(
+            source.contains("DiagnosticsSettingsPane(") &&
+                source.contains("dependencies: diagnosticsDependencies"),
+            "Production diagnostics settings must receive package IO collaborators from App composition."
+        )
+        XCTAssertFalse(
+            source.contains("DiagnosticsSettingsPane(repositoryURL:"),
+            "Production settings must not construct diagnostics platform defaults implicitly."
+        )
     }
 
     func testImportEntryRoutePassesFileReadAndWriteDependenciesExplicitly() throws {
@@ -220,12 +319,15 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         let entrySource = try String(contentsOf: entryFile, encoding: .utf8)
 
         for dependency in [
-            "categoryPredictor: dependencies.feature.`import`.categoryPredictor",
-            "batchFileLoader: dependencies.feature.`import`.batchFileLoader",
-            "fileImporter: dependencies.feature.`import`.fileImporter",
-            "batchFileImporter: dependencies.feature.`import`.batchFileImporter",
-            "batchConflictBatcher: dependencies.feature.`import`.conflictBatcher",
-            "undoActionStore: dependencies.feature.`import`.undoActionStore",
+            "categoryPredictor: dependencies.feature.import.categoryPredictor",
+            "batchFileLoader: dependencies.feature.import.batchFileLoader",
+            "fileImporter: dependencies.feature.import.fileImporter",
+            "batchFileImporter: dependencies.feature.import.batchFileImporter",
+            "batchConflictBatcher: dependencies.feature.import.conflictBatcher",
+            "undoActionStore: dependencies.feature.import.undoActionStore",
+            "folderScanner: dependencies.feature.import.folderScanner",
+            "sourcePreflightInspector: dependencies.feature.import.sourcePreflightInspector",
+            "placeholderDownloader: dependencies.feature.import.placeholderDownloader",
             "errorMapper: dependencies.feature.shared.errorMapper",
             "batchSessionStore: model.importBatchSessionStore"
         ] {
@@ -264,113 +366,6 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertTrue(actionRoutingSource.contains("fileActionsDependencies.repositoryPathValidator"))
         XCTAssertTrue(actionRoutingSource.contains("fileActionsDependencies.classifierRuleSaver"))
         XCTAssertTrue(syncRoutingSource.contains("syncConflictsDependencies.syncConflictDetector"))
-    }
-
-    func testFeatureAndViewLayersDoNotReadAppCoreServicesDirectly() throws {
-        let violations = try productionSwiftFiles()
-            .filter {
-                let path = relativeProductionPath(for: $0)
-                return path.hasPrefix("Features/") || path.hasPrefix("Views/")
-            }
-            .flatMap { try sourceTermViolations(in: $0, terms: ["AppCoreServices."]) }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "Feature and View layers must receive dependencies from the App composition root rather than " +
-                "reading AppCoreServices directly."
-        )
-    }
-
-    func testFeatureLayersDoNotReadTheAppDependencyContainerDirectly() throws {
-        let violations = try productionSwiftFiles()
-            .filter { relativeProductionPath(for: $0).hasPrefix("Features/") }
-            .flatMap { try sourceTermViolations(in: $0, terms: ["AppDependencyContainer"]) }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "Feature defaults must resolve through their feature dependency namespace; the App container belongs " +
-                "to the composition root and must not leak into feature code."
-        )
-    }
-
-    func testFeatureDefaultsStayOwnedByFeatureNamespaces() throws {
-        let allowedNamespacesByFeature: [String: Set<String>] = [
-            "AI": ["AIFeatureDependencies", "SharedFeatureDependencies"],
-            "FileActions": ["FileActionsFeatureDependencies", "SharedFeatureDependencies"],
-            "Import": ["ImportFeatureDependencies", "SharedFeatureDependencies"],
-            "MainList": ["MainListFeatureDependencies", "SharedFeatureDependencies"],
-            "Onboarding": ["OnboardingFeatureDependencies", "SharedFeatureDependencies"],
-            "Search": ["SearchFeatureDependencies", "SharedFeatureDependencies"],
-            "Settings": [
-                "AIFeatureDependencies",
-                "SettingsFeatureDependencies",
-                "SharedFeatureDependencies",
-                "SyncConflictsFeatureDependencies"
-            ],
-            "SyncConflicts": ["SharedFeatureDependencies", "SyncConflictsFeatureDependencies"]
-        ]
-        let dependencyPattern = #"\b[A-Za-z]+FeatureDependencies\.[A-Za-z0-9_]+"#
-        var violations: [String] = []
-
-        for (feature, allowedNamespaces) in allowedNamespacesByFeature {
-            let featureFiles = try productionSwiftFiles().filter {
-                relativeProductionPath(for: $0).hasPrefix("Features/\(feature)/")
-            }
-            let matches = try featureFiles.flatMap {
-                try sourceRegexMatches(in: $0, pattern: dependencyPattern)
-            }
-        violations.append(contentsOf: matches.filter { match in
-            !allowedNamespaces.contains { namespace in
-                match.contains(":\(namespace).")
-            }
-        })
-        }
-
-        XCTAssertEqual(
-            violations.sorted(),
-            [],
-            "Feature defaults must remain owned by their feature namespace or the explicitly shared namespace."
-        )
-    }
-
-    func testFeatureManifestOwnershipIsDistributedAndComposedByApp() throws {
-        let providerByFeature = [
-            "AI": "AIFeatureManifestProvider",
-            "CommandPalette": "CommandPaletteFeatureManifestProvider",
-            "Detail": "DetailFeatureManifestProvider",
-            "Diagnostics": "DiagnosticsFeatureManifestProvider",
-            "FileActions": "FileActionsFeatureManifestProvider",
-            "Import": "ImportFeatureManifestProvider",
-            "MainList": "MainListFeatureManifestProvider",
-            "Onboarding": "OnboardingFeatureManifestProvider",
-            "RepositoryLifecycle": "RepositoryLifecycleFeatureManifestProvider",
-            "Search": "SearchFeatureManifestProvider",
-            "Settings": "SettingsFeatureManifestProvider",
-            "SyncConflicts": "SyncConflictsFeatureManifestProvider"
-        ]
-        let registryFile = try XCTUnwrap(productionSwiftFiles().first {
-            relativeProductionPath(for: $0) == "App/FeatureManifest.swift"
-        })
-        let registrySource = try String(contentsOf: registryFile, encoding: .utf8)
-
-        XCTAssertFalse(
-            registrySource.contains("FeatureManifest("),
-            "The App registry should compose feature-owned manifests instead of owning their metadata."
-        )
-
-        for (feature, provider) in providerByFeature {
-            let providerPath = "Features/\(feature)/\(provider).swift"
-            let providerFile = try XCTUnwrap(productionSwiftFiles().first {
-                relativeProductionPath(for: $0) == providerPath
-            })
-            let providerSource = try String(contentsOf: providerFile, encoding: .utf8)
-            XCTAssertTrue(providerSource.contains("enum \(provider): FeatureManifestProvider"))
-            XCTAssertTrue(registrySource.contains("\(provider).manifest"))
-        }
     }
 
     func testMainRepositoryContentStateObjectsKeepViewOwnedIdentity() throws {

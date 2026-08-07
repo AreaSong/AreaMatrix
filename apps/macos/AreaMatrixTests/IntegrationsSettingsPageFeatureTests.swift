@@ -14,13 +14,15 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             errorMapper: RecordingCoreErrorMapper.integrationsSettings(),
             statusDetector: StaticICloudStatusDetector(
                 snapshot: .testFixture(repositoryLocation: .iCloudDrive, iCloudStatus: .available)
-            )
+            ),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            helpOpener: RecordingICloudHelpOpener()
         )
 
         await model.load()
 
         await loader.assertRequestedPaths(["/tmp/repo"])
-        XCTAssertEqual(model.loadState, .loaded)
+        XCTAssertEqual(model.loadState, IntegrationsSettingsModel.LoadState.loaded)
         XCTAssertEqual(model.summary?.repositoryLocation, .iCloudDrive)
         XCTAssertEqual(model.summary?.iCloudStatus, .available)
         XCTAssertEqual(model.summary?.iCloudWarningsEnabled, false)
@@ -81,13 +83,15 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             errorMapper: mapper,
             statusDetector: StaticICloudStatusDetector(
                 snapshot: .testFixture(repositoryLocation: .unknown, iCloudStatus: .unknown)
-            )
+            ),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            helpOpener: RecordingICloudHelpOpener()
         )
 
         await model.load()
 
         await mapper.assertMappedCoreErrors([CoreError.Config(reason: "invalid repo_config")])
-        XCTAssertEqual(model.loadState, .failed(IntegrationsSettingsError(
+        XCTAssertEqual(model.loadState, IntegrationsSettingsModel.LoadState.failed(IntegrationsSettingsError(
             message: L10n.message(
                 "error.unmapped.message",
                 fallback: "配置错误",
@@ -178,7 +182,9 @@ final class IntegrationsSettingsPageFeatureTests: XCTestCase {
             errorMapper: bridge,
             statusDetector: StaticICloudStatusDetector(
                 snapshot: .testFixture()
-            )
+            ),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            helpOpener: RecordingICloudHelpOpener()
         )
 
         await model.load()

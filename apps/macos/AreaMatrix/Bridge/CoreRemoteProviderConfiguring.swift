@@ -325,23 +325,28 @@ private extension AIFallbackActionSnapshot {
 
 private extension AIFallbackKindSnapshot {
     init(_ kind: AiFallbackKind) {
-        switch kind {
-        case .aiDisabled: self = .aiDisabled
-        case .featureDisabled: self = .featureDisabled
-        case .localModelNotReady: self = .localModelNotReady
-        case .remoteNotConfigured: self = .remoteNotConfigured
-        case .remoteFailed: self = .remoteFailed
-        case .providerUnavailable: self = .providerUnavailable
-        case .privacySkipped: self = .privacySkipped
-        case .semanticIndexNotReady: self = .semanticIndexNotReady
-        case .noEligibleInput: self = .noEligibleInput
-        case .normalSearchUnavailable: self = .normalSearchUnavailable
-        case .callLogUnavailable: self = .callLogUnavailable
-        case .rateLimited: self = .rateLimited
-        case .timeout: self = .timeout
-        case .internalFailure: self = .internalFailure
+        guard let snapshot = Self.byCoreValue[kind] else {
+            preconditionFailure("Unhandled AiFallbackKind from Core: \(kind)")
         }
+        self = snapshot
     }
+
+    private static let byCoreValue: [AiFallbackKind: Self] = [
+        .aiDisabled: .aiDisabled,
+        .featureDisabled: .featureDisabled,
+        .localModelNotReady: .localModelNotReady,
+        .remoteNotConfigured: .remoteNotConfigured,
+        .remoteFailed: .remoteFailed,
+        .providerUnavailable: .providerUnavailable,
+        .privacySkipped: .privacySkipped,
+        .semanticIndexNotReady: .semanticIndexNotReady,
+        .noEligibleInput: .noEligibleInput,
+        .normalSearchUnavailable: .normalSearchUnavailable,
+        .callLogUnavailable: .callLogUnavailable,
+        .rateLimited: .rateLimited,
+        .timeout: .timeout,
+        .internalFailure: .internalFailure
+    ]
 }
 
 private extension AIFallbackCategorySnapshot {

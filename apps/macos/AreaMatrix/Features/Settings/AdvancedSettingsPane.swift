@@ -1,3 +1,5 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct AdvancedSettingsPane: View {
@@ -7,6 +9,7 @@ struct AdvancedSettingsPane: View {
     private let onOpenRecoveryTools: () -> Void
     private let onOpenDiagnostics: () -> Void
     private let onReturnToWelcome: () -> Void
+    private let actionLogger: any AppUIActionLogging
 }
 
 extension AdvancedSettingsPane {
@@ -17,11 +20,10 @@ extension AdvancedSettingsPane {
         onOpenRecoveryTools: @escaping () -> Void = {},
         onOpenDiagnostics: @escaping () -> Void = {},
         onReturnToWelcome: @escaping () -> Void = {},
-        rootOverviewInspector: any RootOverviewFileInspecting = AdvancedSettingsPlatformServices.rootOverviewInspector,
-        appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
-        metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
-        summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
-            AdvancedSettingsPlatformServices.diagnosticSummaryCopier
+        rootOverviewInspector: (any RootOverviewFileInspecting)? = nil,
+        appVersionReader: (any AppVersionReading)? = nil,
+        metadataReader: (any ExistingRepositoryMetadataReading)? = nil,
+        summaryCopier: (any AdvancedSettingsDiagnosticSummaryCopying)? = nil
     ) {
         self.init(
             repoPath: repoPath,
@@ -30,12 +32,13 @@ extension AdvancedSettingsPane {
             onReturnToWelcome: onReturnToWelcome,
             loader: featureDependencies.configurationLoader,
             updater: featureDependencies.configurationUpdater,
-            rootOverviewInspector: rootOverviewInspector,
+            rootOverviewInspector: rootOverviewInspector ?? featureDependencies.rootOverviewInspector,
             diagnosticsCollector: sharedDependencies.diagnosticsCollector,
-            appVersionReader: appVersionReader,
+            actionLogger: sharedDependencies.actionLogger,
+            appVersionReader: appVersionReader ?? featureDependencies.appVersionReader,
             coreVersionReader: featureDependencies.coreVersionReader,
-            metadataReader: metadataReader,
-            summaryCopier: summaryCopier,
+            metadataReader: metadataReader ?? featureDependencies.existingRepositoryMetadataReader,
+            summaryCopier: summaryCopier ?? featureDependencies.diagnosticSummaryCopier,
             errorMapper: sharedDependencies.errorMapper
         )
     }
@@ -47,14 +50,13 @@ extension AdvancedSettingsPane {
         onReturnToWelcome: @escaping () -> Void = {},
         loader: any CoreConfigurationLoading,
         updater: any CoreConfigurationUpdating,
-        rootOverviewInspector: any RootOverviewFileInspecting =
-            AdvancedSettingsPlatformServices.rootOverviewInspector,
+        rootOverviewInspector: any RootOverviewFileInspecting,
         diagnosticsCollector: any CoreDiagnosticsCollecting,
-        appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
+        actionLogger: any AppUIActionLogging,
+        appVersionReader: any AppVersionReading,
         coreVersionReader: any CoreVersionReading,
-        metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
-        summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
-            AdvancedSettingsPlatformServices.diagnosticSummaryCopier,
+        metadataReader: any ExistingRepositoryMetadataReading,
+        summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying,
         errorMapper: any CoreErrorMapping
     ) {
         _model = StateObject(wrappedValue: AdvancedSettingsModel(
@@ -72,6 +74,7 @@ extension AdvancedSettingsPane {
         self.onOpenRecoveryTools = onOpenRecoveryTools
         self.onOpenDiagnostics = onOpenDiagnostics
         self.onReturnToWelcome = onReturnToWelcome
+        self.actionLogger = actionLogger
     }
 
     var body: some View {
@@ -90,7 +93,7 @@ extension AdvancedSettingsPane {
         ) {
             Button(L10n.string("Cancel"), role: .cancel, action: model.cancelDiagnosticsExport)
             Button(L10n.string("Export diagnostics")) {
-                AppLogger.shared.logUIAction("diagnostics.export.confirmed")
+                actionLogger.logUIAction("diagnostics.export.confirmed")
                 Task {
                     await model.collectDiagnostics()
                 }
@@ -115,9 +118,9 @@ extension AdvancedSettingsPane {
         ) {
             Button(L10n.string("Cancel"), role: .cancel, action: model.cancelAllowReplaceDuringImport)
             Button(L10n.string("Enable Replace")) {
-                AppLogger.shared.logUIAction(
+                actionLogger.logUIAction(
                     "repository.import.replace.enabled",
-                    severity: .warn
+                    context: AppUIActionContext(severity: .warn)
                 )
                 Task {
                     await model.confirmAllowReplaceDuringImport()

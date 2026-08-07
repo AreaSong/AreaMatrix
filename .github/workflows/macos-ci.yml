@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: areamatrix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   prompt-doctor:
     name: prompt doctor
@@ -53,9 +60,11 @@ jobs:
           retention-days: 7
 
   build:
-    name: Xcode build & test
+    name: Xcode build-for-testing & layered tests
     runs-on: macos-14
     needs: [prompt-doctor, core-sdk]
+    env:
+      AREAMATRIX_CORE_SDK_VERIFY_ONLY: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -83,16 +92,81 @@ jobs:
             -project apps/macos/AreaMatrix.xcodeproj \
             -scheme AreaMatrix
 
-      - name: Build & test
-        run: ./dev test macos --destination 'platform=macOS,arch=arm64' --result-bundle-path TestResults.xcresult --disable-parallel-testing --coverage-gate
-        env:
-          AREAMATRIX_CORE_SDK_VERIFY_ONLY: "1"
+      - name: Build XCTest products once
+        run: >-
+          ./dev test macos --build-for-testing
+          --derived-data-path .build/derived-data/macos-ci
+          --enable-code-coverage
+          --build-log .build/derived-data/macos-ci/xcodebuild-build-for-testing.log
+
+      - name: Run Unit test plan without rebuilding
+        run: >-
+          ./dev test macos --test-without-building --test-plan AreaMatrix-Unit
+          --derived-data-path .build/derived-data/macos-ci
+          --test-log .build/derived-data/macos-ci/xcodebuild-unit.log
+          --disable-parallel-testing
+
+      - name: Run Feature test plan without rebuilding
+        run: >-
+          ./dev test macos --test-without-building --test-plan AreaMatrix-Feature
+          --derived-data-path .build/derived-data/macos-ci
+          --test-log .build/derived-data/macos-ci/xcodebuild-feature.log
+          --disable-parallel-testing
+
+      - name: Run Integration test plan without rebuilding
+        run: >-
+          ./dev test macos --test-without-building --test-plan AreaMatrix-Integration
+          --derived-data-path .build/derived-data/macos-ci
+          --test-log .build/derived-data/macos-ci/xcodebuild-integration.log
+          --disable-parallel-testing
+
+      - name: Run Functional coverage plan without rebuilding
+        run: >-
+          ./dev test macos --test-without-building --test-plan AreaMatrix-Functional
+          --derived-data-path .build/derived-data/macos-ci
+          --test-log .build/derived-data/macos-ci/xcodebuild-functional.log
+          --result-bundle-path TestResults.xcresult
+          --disable-parallel-testing --coverage-gate
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: xcresult
           path: TestResults.xcresult
+
+  ios-package:
+    name: iOS Swift package build & test
+    runs-on: macos-14
+    needs: [prompt-doctor, core-sdk]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Require iOS package
+        run: test -f apps/ios/Package.swift
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-sdk
+          path: .build/artifacts
+
+      - name: Restore and verify reusable CoreSDK
+        run: |
+          tar -xzf .build/artifacts/core-sdk.tar.gz -C .build
+          ./dev build core-sdk --verify-only
+
+      - name: Link verified CoreSDK into the iOS package
+        run: ln -s ../../.build/core-sdk/current apps/ios/.core-sdk
+
+      - name: Build iOS Swift package
+        run: swift build --package-path apps/ios
+
+      - name: Test iOS Swift package
+        run: swift test --package-path apps/ios
 
   swiftlint:
     name: SwiftLint

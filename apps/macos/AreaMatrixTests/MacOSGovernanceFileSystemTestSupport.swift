@@ -38,6 +38,12 @@ extension MacOSGovernanceTestCase {
         try swiftFiles(in: packageSourceDirectory(target))
     }
 
+    func packageSourceContents(_ target: String) throws -> [String: String] {
+        try packageSwiftFiles(target).reduce(into: [String: String]()) { contents, fileURL in
+            contents[fileURL.lastPathComponent] = try String(contentsOf: fileURL, encoding: .utf8)
+        }
+    }
+
     func productionFeatureDirectories() throws -> [String] {
         let featuresDirectory = productionDirectory().appendingPathComponent("Features", isDirectory: true)
         let entries = try FileManager.default.contentsOfDirectory(

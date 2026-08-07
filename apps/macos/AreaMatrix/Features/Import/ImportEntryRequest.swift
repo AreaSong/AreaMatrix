@@ -1,5 +1,16 @@
 import Foundation
 
+/// Read-only file facts needed by import previews and conflict checks.
+///
+/// The implementation lives in PlatformServices so feature models can stay
+/// independent from FileManager, iCloud metadata and hashing details.
+protocol ImportFileResourceAccessing: Sendable {
+    func isDirectory(_ url: URL) -> Bool
+    func isICloudPlaceholder(_ url: URL) -> Bool
+    func fileSizeBytes(_ url: URL) -> Int64?
+    func sha256Hex(for fileURL: URL) throws -> String
+}
+
 enum ImportEntrySource: Equatable {
     case filePicker
     case dropZone
@@ -111,7 +122,7 @@ struct ImportEntryRequest: Equatable, Identifiable {
 extension ImportEntryKind {
     static func resolved(
         for urls: [URL],
-        isDirectory: (URL) -> Bool = ImportPlatformServices.isDirectory
+        isDirectory: (URL) -> Bool
     ) -> ImportEntryKind {
         if urls.contains(where: isDirectory) {
             return .folder

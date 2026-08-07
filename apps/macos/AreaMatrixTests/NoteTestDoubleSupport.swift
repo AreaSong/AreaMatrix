@@ -126,7 +126,7 @@ func makeDetailNoteTestModel(
         repoPath: repoPath,
         noteStore: noteStore,
         errorMapper: errorMapper ?? StaticCoreErrorMapper(mapping: .detailNoteIo()),
-        inFlightTracker: inFlightTracker ?? InFlightFileChangeTracker.shared,
+        inFlightTracker: inFlightTracker ?? InFlightFileChangeTracker(),
         debounceNanoseconds: debounceNanoseconds
     )
 }

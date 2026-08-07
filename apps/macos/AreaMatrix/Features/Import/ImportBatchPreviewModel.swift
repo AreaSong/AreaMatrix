@@ -10,17 +10,20 @@ final class ImportBatchPreviewModel: ObservableObject {
     private let predictor: any CoreCategoryPredicting
     private let duplicatePrechecker: (any ImportBatchDuplicatePrechecking)?
     private let nameConflictPrechecker: (any ImportBatchNameConflictPrechecking)?
+    private let resourceAccess: any ImportFileResourceAccessing
     private var request: ImportEntryRequest?
     private var generation = 0
 
     init(
         predictor: any CoreCategoryPredicting,
         duplicatePrechecker: (any ImportBatchDuplicatePrechecking)? = nil,
-        nameConflictPrechecker: (any ImportBatchNameConflictPrechecking)? = nil
+        nameConflictPrechecker: (any ImportBatchNameConflictPrechecking)? = nil,
+        resourceAccess: any ImportFileResourceAccessing
     ) {
         self.predictor = predictor
         self.duplicatePrechecker = duplicatePrechecker
         self.nameConflictPrechecker = nameConflictPrechecker
+        self.resourceAccess = resourceAccess
     }
 
     var destinationOptions: [ImportBatchDestinationOption] {
@@ -93,7 +96,12 @@ final class ImportBatchPreviewModel: ObservableObject {
         }
 
         selectedDestination = request.initialBatchDestination
-        rows = request.urls.map(ImportBatchPreviewRow.loading)
+        rows = request.urls.map { url in
+            ImportBatchPreviewRow.loading(
+                url: url,
+                sizeBytes: resourceAccess.fileSizeBytes(url)
+            )
+        }
         status = .loading(completed: 0, total: request.urls.count)
         await Task.yield()
         let duplicatePrecheck = await duplicatePrechecker?.precheckDuplicates(
@@ -119,14 +127,11 @@ final class ImportBatchPreviewModel: ObservableObject {
             }
         }
 
-        rows = pendingRows
-        status = .loading(completed: completed, total: request.urls.count)
-        await applyNameConflictPrecheck(repoPath: request.repoPath, generation: currentGeneration)
-        guard generation == currentGeneration else { return }
-        status = .loaded(
-            successful: successfulPreviewCount,
-            total: rows.count,
-            failed: failedPreviewCount
+        await finishLoading(
+            request: request,
+            pendingRows: pendingRows,
+            completed: completed,
+            currentGeneration: currentGeneration
         )
     }
 
@@ -153,6 +158,19 @@ final class ImportBatchPreviewModel: ObservableObject {
         await load(request: request)
     }
 
+    private func finishLoading(
+        request: ImportEntryRequest,
+        pendingRows: [ImportBatchPreviewRow],
+        completed: Int,
+        currentGeneration: Int
+    ) async {
+        rows = pendingRows
+        status = .loading(completed: completed, total: request.urls.count)
+        await applyNameConflictPrecheck(repoPath: request.repoPath, generation: currentGeneration)
+        guard generation == currentGeneration else { return }
+        status = .loaded(successful: successfulPreviewCount, total: rows.count, failed: failedPreviewCount)
+    }
+
     private func previewRow(
         url: URL,
         request: ImportEntryRequest,
@@ -166,9 +184,17 @@ final class ImportBatchPreviewModel: ObservableObject {
             if let duplicatePrecheck {
                 return row(url: url, prediction: prediction, duplicatePrecheck: duplicatePrecheck)
             }
-            return .ready(url: url, prediction: prediction)
+            return .ready(
+                url: url,
+                prediction: prediction,
+                sizeBytes: resourceAccess.fileSizeBytes(url)
+            )
         } catch {
-            return .failed(url: url, message: Self.previewMessage(for: error))
+            return .failed(
+                url: url,
+                message: Self.previewMessage(for: error),
+                sizeBytes: resourceAccess.fileSizeBytes(url)
+            )
         }
     }
 
@@ -208,15 +234,29 @@ final class ImportBatchPreviewModel: ObservableObject {
     ) -> ImportBatchPreviewRow {
         switch duplicatePrecheck {
         case let .duplicate(existingPath):
-            .duplicate(url: url, prediction: prediction, existingPath: existingPath)
+            .duplicate(
+                url: url,
+                prediction: prediction,
+                existingPath: existingPath,
+                sizeBytes: resourceAccess.fileSizeBytes(url)
+            )
         case let .nameConflict(existingPath):
-            .nameConflict(url: url, prediction: prediction, existingPath: existingPath)
+            .nameConflict(
+                url: url,
+                prediction: prediction,
+                existingPath: existingPath,
+                sizeBytes: resourceAccess.fileSizeBytes(url)
+            )
         case .iCloudPlaceholder:
-            .iCloudPlaceholder(url: url, message: L10n.display("import.icloud.downloadRequired"))
+            .iCloudPlaceholder(
+                url: url,
+                message: L10n.display("import.icloud.downloadRequired"),
+                sizeBytes: resourceAccess.fileSizeBytes(url)
+            )
         case let .blocked(message):
-            .failed(url: url, message: message)
+            .failed(url: url, message: message, sizeBytes: resourceAccess.fileSizeBytes(url))
         case let .failed(message):
-            .failed(url: url, message: message)
+            .failed(url: url, message: message, sizeBytes: resourceAccess.fileSizeBytes(url))
         }
     }
 

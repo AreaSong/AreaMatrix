@@ -20,9 +20,11 @@ final class ImportFolderPreviewModel: ObservableObject {
     private let predictor: any CoreCategoryPredicting
     let importer: any CoreBatchCopyImporting
     let errorMapper: any CoreErrorMapping
+    let actionLogger: any AppUIActionLogging
     private let conflictPrechecker: any ImportFolderConflictPrechecking
     private let scanner: any ImportFolderScanning
     private let placeholderDownloader: any ICloudPlaceholderDownloading
+    private let resourceAccess: any ImportFileResourceAccessing
     var request: ImportEntryRequest?
     private var generation = 0
     private(set) var lastFailureMapping: CoreErrorMappingSnapshot?
@@ -32,15 +34,19 @@ final class ImportFolderPreviewModel: ObservableObject {
         importer: any CoreBatchCopyImporting,
         errorMapper: any CoreErrorMapping,
         conflictPrechecker: any ImportFolderConflictPrechecking,
-        scanner: any ImportFolderScanning = ImportPlatformServices.folderScanner,
-        placeholderDownloader: any ICloudPlaceholderDownloading = LocalICloudPlaceholderDownloader()
+        scanner: any ImportFolderScanning,
+        placeholderDownloader: any ICloudPlaceholderDownloading,
+        resourceAccess: any ImportFileResourceAccessing,
+        actionLogger: any AppUIActionLogging = NoopAppUIActionLogger()
     ) {
         self.predictor = predictor
         self.importer = importer
         self.errorMapper = errorMapper
+        self.actionLogger = actionLogger
         self.conflictPrechecker = conflictPrechecker
         self.scanner = scanner
         self.placeholderDownloader = placeholderDownloader
+        self.resourceAccess = resourceAccess
     }
 }
 

@@ -60,6 +60,8 @@
   "action.recommended-next.note": "show the action chain only; does not execute commands",
   "action.release.label": "release",
   "action.release.note": "run release signing/notary preflight checks",
+  "action.governance.label": "governance",
+  "action.governance.note": "audit enterprise and remote merge controls",
   "action.run.label": "run",
   "action.run.note": "launch deterministic developer scenarios",
   "action.recovery-menu.label": "recovery and drain",

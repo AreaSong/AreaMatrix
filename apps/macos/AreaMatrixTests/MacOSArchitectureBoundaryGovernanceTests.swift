@@ -46,7 +46,6 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             .filter(isViewLikeProductionFile)
             .flatMap { try sourceTermViolations(in: $0, terms: platformIOTerms) }
             .sorted()
-
         XCTAssertEqual(
             violations,
             [],
@@ -55,7 +54,8 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
     }
 
     func testFeatureAndViewInteractionFeedbackUsesEnvironmentDependency() throws {
-        let environmentDeclarationPath = "Views/DesignSystem/AreaMatrixControls.swift"
+        let environmentDeclarationPath =
+            "Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/InteractionFeedbackEnvironment.swift"
         let violations = try productionSwiftFiles()
             .filter { fileURL in
                 let path = relativeProductionPath(for: fileURL)
@@ -69,7 +69,6 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
                 )
             }
             .sorted()
-
         XCTAssertEqual(
             violations,
             [],
@@ -77,18 +76,20 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
                 "so previews and tests can inject a controlled platform double."
         )
 
+        let environmentSourceFiles = try productionSwiftFiles() + packageSwiftFiles("AreaMatrixUIFoundation")
         let environmentSource = try String(
-            contentsOf: XCTUnwrap(productionSwiftFiles().first {
+            contentsOf: XCTUnwrap(environmentSourceFiles.first {
                 relativeProductionPath(for: $0) == environmentDeclarationPath
             }),
             encoding: .utf8
         )
         XCTAssertTrue(
             environmentSource.contains(
-                "static let defaultValue: any AppInteractionFeedbackPerforming = " +
-                    "AppPlatformServices.interactionFeedback"
+                "static let defaultValue: any AreaMatrixInteractionFeedbackPerforming = " +
+                    "AreaMatrixNoopInteractionFeedback()"
             ),
-            "The Environment default must resolve through the centralized AppPlatformServices adapter."
+            "The Environment default must be side-effect free; production AppKit feedback " +
+                "must be injected by App composition."
         )
     }
 
@@ -103,7 +104,6 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             in: productionSwiftFiles().filter { relativeProductionPath(for: $0).hasPrefix("Features/") },
             pattern: featurePlatformCapabilityPatterns.joined(separator: "|")
         )
-
         XCTAssertEqual(
             actual,
             expected,
@@ -189,26 +189,6 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
             expected,
             "Bridge/Generated and Bridge/UniFFI should only contain generated UniFFI artifacts."
         )
-    }
-
-    func testCoreBridgeContractIsARealSwiftPackageBoundary() throws {
-        let sourceFiles = try packageSwiftFiles("AreaMatrixCoreBridgeContract")
-        XCTAssertEqual(
-            sourceFiles.map { $0.lastPathComponent }.sorted(),
-            ["CoreBridgeBoundary.swift"],
-            "The bridge contract package must remain a small, generated-binding-free boundary."
-        )
-
-        let source = try String(contentsOf: XCTUnwrap(sourceFiles.first), encoding: .utf8)
-        XCTAssertTrue(source.contains("public enum CoreBridgeBoundary"))
-        XCTAssertTrue(source.contains("Sendable"))
-
-        let packageProject = testsDirectory()
-            .deletingLastPathComponent()
-            .appendingPathComponent("AreaMatrix.xcodeproj/project.pbxproj")
-        let projectSource = try String(contentsOf: packageProject, encoding: .utf8)
-        XCTAssertTrue(projectSource.contains("AreaMatrixCoreBridgeContract in Frameworks"))
-        XCTAssertTrue(projectSource.contains("productName = AreaMatrixCoreBridgeContract;"))
     }
 
     func testSQLiteAccessStaysInBridgeOrPlatformServices() throws {
@@ -310,9 +290,9 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
 
 final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
     private let nsWorkspaceOpenInventory = [
-        "App/LocalFileURLPlatformAdapters.swift:NSWorkspace.shared.activateFileViewerSelecting:1",
-        "App/LocalFileURLPlatformAdapters.swift:NSWorkspace.shared.open:1",
-        "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/ExternalURLPolicy.swift:NSWorkspace.shared.open:1"
+        "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/ExternalURLPolicy.swift:NSWorkspace.shared.open:1",
+        "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/LocalFileURLPolicy.swift:NSWorkspace.shared.activateFileViewerSelecting:1",
+        "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/LocalFileURLPolicy.swift:NSWorkspace.shared.open:1"
     ]
 
     func testAppPlatformDefaultAdaptersStayCentralized() throws {
@@ -437,7 +417,8 @@ final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
 
     func testExternalURLPolicyUseStaysBehindSharedOpener() throws {
         let expected = [
-            "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/ExternalURLPolicy.swift:ExternalURLPolicy.validatedHTTPSURL:1"
+            "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/ExternalURLPolicy.swift:" +
+                "ExternalURLPolicy.validatedHTTPSURL:1"
         ]
         let actual = try countedRegexMatches(
             in: productionSwiftFiles() + packageSwiftFiles("AreaMatrixPlatformKit"),

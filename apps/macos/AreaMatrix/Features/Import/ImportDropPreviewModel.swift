@@ -82,11 +82,17 @@ final class ImportDropPreviewModel: ObservableObject {
 
     private let repoPath: String
     private let predictor: any CoreCategoryPredicting
+    private let resourceAccess: any ImportFileResourceAccessing
     private var generation = 0
 
-    init(repoPath: String, predictor: any CoreCategoryPredicting) {
+    init(
+        repoPath: String,
+        predictor: any CoreCategoryPredicting,
+        resourceAccess: any ImportFileResourceAccessing
+    ) {
         self.repoPath = repoPath
         self.predictor = predictor
+        self.resourceAccess = resourceAccess
     }
 
     func preview(target: ImportDropTarget, urls: [URL]) async {
@@ -100,7 +106,10 @@ final class ImportDropPreviewModel: ObservableObject {
         }
 
         let warning = validURLs.count == urls.count ? nil : L10n.display("Some items cannot be imported")
-        let kind = ImportEntryKind.resolved(for: validURLs)
+        let kind = ImportEntryKind.resolved(
+            for: validURLs,
+            isDirectory: resourceAccess.isDirectory
+        )
         let shouldPredictCategory = target == .autoClassify
         presentation = ImportDropPreviewPresentation(
             target: target,

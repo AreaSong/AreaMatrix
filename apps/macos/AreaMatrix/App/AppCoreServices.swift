@@ -1,10 +1,9 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
 enum AppCoreServices {
     static let repositoryWriteCoordinator = RepositoryWriteCoordinator.shared
-    @MainActor static var overviewRegenerationCoordinator: OverviewRegenerationCoordinator {
-        .shared
-    }
+    static let overviewRegenerationCoordinator = OverviewRegenerationCoordinator()
 
     static var treeLister: any CoreRepositoryTreeListing {
         coreBridge()
@@ -42,7 +41,23 @@ enum AppCoreServices {
         coreBridge()
     }
 
+    static var batchFileImporter: any CoreBatchCopyImporting {
+        coreBridge()
+    }
+
+    static var conflictBatcher: any CoreImportConflictBatching {
+        coreBridge()
+    }
+
     static var startupRecoverer: any CoreStartupRecovering {
+        coreBridge()
+    }
+
+    static var metadataRepairer: any CoreMetadataRepairing {
+        coreBridge()
+    }
+
+    static var repositoryReindexer: any CoreRepositoryReindexing {
         coreBridge()
     }
 
@@ -131,6 +146,10 @@ enum AppCoreServices {
     }
 
     static var syncConflictDetector: any CoreSyncConflictDetecting {
+        coreBridge()
+    }
+
+    static var syncConflictResolver: any CoreSyncConflictResolving {
         coreBridge()
     }
 

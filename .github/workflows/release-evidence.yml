@@ -1,0 +1,67 @@
+name: Release Evidence Preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Release record to audit"
+        required: true
+        default: "v0.1.0"
+        type: string
+      notary_profile:
+        description: "macOS keychain profile used by release preflight"
+        required: true
+        default: "AC_PASSWORD"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: areamatrix-release-evidence-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evidence:
+    name: release evidence audit
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Release preflight
+        id: preflight
+        continue-on-error: true
+        run: |
+          ./dev release preflight \
+            --notary-profile "${{ inputs.notary_profile }}" \
+            --json | tee release-preflight.json
+
+      - name: Release evidence audit
+        id: evidence_audit
+        continue-on-error: true
+        run: ./dev release evidence-audit --json | tee release-evidence-audit.json
+
+      - name: Release status snapshot
+        id: release_status
+        continue-on-error: true
+        run: ./dev release status --json | tee release-status.json
+
+      - name: Upload release evidence snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence-${{ inputs.release }}
+          path: |
+            release-preflight.json
+            release-evidence-audit.json
+            release-status.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Keep the release gate blocking until every record passes
+        if: steps.preflight.outcome != 'success' || steps.evidence_audit.outcome != 'success' || steps.release_status.outcome != 'success'
+        run: |
+          echo "Release evidence is incomplete; snapshots were uploaded for review."
+          exit 1

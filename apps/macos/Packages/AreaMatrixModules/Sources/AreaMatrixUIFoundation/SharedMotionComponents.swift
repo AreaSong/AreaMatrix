@@ -1,6 +1,6 @@
 import SwiftUI
 
-extension Animation {
+public extension Animation {
     static var areaMatrixSpring: Animation {
         .spring(
             response: AreaMatrixMotionTokens.Spring.response,
@@ -68,7 +68,7 @@ extension Animation {
     }
 }
 
-struct AreaMatrixFeatureCardFocusModifier: ViewModifier {
+private struct AreaMatrixFeatureCardFocusModifier: ViewModifier {
     let isHovered: Bool
     let anyCardHovered: Bool
 
@@ -84,7 +84,7 @@ struct AreaMatrixFeatureCardFocusModifier: ViewModifier {
     }
 }
 
-struct AreaMatrixTextShimmerModifier: ViewModifier {
+private struct AreaMatrixTextShimmerModifier: ViewModifier {
     @State private var shimmerOffset: CGFloat = -1.0
     let primaryColor: Color
     let highlightColor: Color
@@ -111,7 +111,7 @@ struct AreaMatrixTextShimmerModifier: ViewModifier {
     }
 }
 
-struct AreaMatrixPulseAuraModifier: ViewModifier {
+private struct AreaMatrixPulseAuraModifier: ViewModifier {
     @State private var isAnimating = false
     let color: Color
     let duration: Double
@@ -136,7 +136,9 @@ struct AreaMatrixPulseAuraModifier: ViewModifier {
                         .scaleEffect(isAnimating ? maxScale : 0.9)
                         .opacity(isAnimating ? 0 : 1)
                         .animation(
-                            .easeOut(duration: duration).repeatForever(autoreverses: false).delay(duration * 0.4),
+                            .easeOut(duration: duration)
+                                .repeatForever(autoreverses: false)
+                                .delay(duration * 0.4),
                             value: isAnimating
                         )
                 }
@@ -147,7 +149,7 @@ struct AreaMatrixPulseAuraModifier: ViewModifier {
     }
 }
 
-struct AreaMatrixMagneticHoverModifier: ViewModifier {
+private struct AreaMatrixMagneticHoverModifier: ViewModifier {
     @State private var offset: CGSize = .zero
     let intensity: CGFloat
 
@@ -185,7 +187,7 @@ struct AreaMatrixMagneticHoverModifier: ViewModifier {
     }
 }
 
-struct AreaMatrixDelayedEntranceModifier: ViewModifier {
+private struct AreaMatrixDelayedEntranceModifier: ViewModifier {
     let isVisible: Bool
     let delay: Double
 
@@ -197,7 +199,7 @@ struct AreaMatrixDelayedEntranceModifier: ViewModifier {
     }
 }
 
-struct AreaMatrixScanningContentModifier: ViewModifier {
+private struct AreaMatrixScanningContentModifier: ViewModifier {
     let isScanning: Bool
 
     func body(content: Content) -> some View {
@@ -209,7 +211,7 @@ struct AreaMatrixScanningContentModifier: ViewModifier {
     }
 }
 
-struct AreaMatrixDeepDiveModifier: ViewModifier {
+private struct AreaMatrixDeepDiveModifier: ViewModifier {
     let isActive: Bool
     let scale: CGFloat
 
@@ -220,15 +222,7 @@ struct AreaMatrixDeepDiveModifier: ViewModifier {
     }
 }
 
-extension View {
-    func areaMatrixSceneVisualMotion() -> some View {
-        modifier(AreaMatrixSceneVisualMotionModifier())
-    }
-
-    func areaMatrixSceneTextMotion(delay: Double) -> some View {
-        modifier(AreaMatrixSceneTextMotionModifier(delay: delay))
-    }
-
+public extension View {
     func areaMatrixFeatureCardFocus(isHovered: Bool, anyCardHovered: Bool) -> some View {
         modifier(AreaMatrixFeatureCardFocusModifier(isHovered: isHovered, anyCardHovered: anyCardHovered))
     }
@@ -247,12 +241,14 @@ extension View {
         maxScale: CGFloat = AreaMatrixMotionTokens.Intensity.pulseAuraMaxScale,
         cornerRadius: CGFloat = 28
     ) -> some View {
-        modifier(AreaMatrixPulseAuraModifier(
-            color: color,
-            duration: duration,
-            maxScale: maxScale,
-            cornerRadius: cornerRadius
-        ))
+        modifier(
+            AreaMatrixPulseAuraModifier(
+                color: color,
+                duration: duration,
+                maxScale: maxScale,
+                cornerRadius: cornerRadius
+            )
+        )
     }
 
     func areaMatrixMagneticHover(intensity: CGFloat = AreaMatrixMotionTokens.Intensity.magneticDefault) -> some View {

@@ -1,3 +1,5 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixCoreContracts
 import Foundation
 
 #if DEBUG

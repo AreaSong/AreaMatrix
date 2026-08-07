@@ -218,7 +218,13 @@ struct SearchResultPageSnapshot: Equatable {
 extension CoreBridge: CoreSearchQuerying {
     func searchFiles(repoPath: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         let corePage = try await Task.detached(priority: .userInitiated) {
-            try searchCoreFiles(repoPath: repoPath, request: request)
+            try self.generatedAdapter.searchFiles(
+                repoPath: repoPath,
+                query: request.query,
+                filter: SearchFilter(request),
+                sort: SearchSort(request.sort),
+                pagination: SearchPagination(limit: request.limit, offset: request.offset)
+            )
         }.value
 
         var results: [SearchFileResultSnapshot] = []
@@ -326,14 +332,4 @@ extension SearchIndexStatusSnapshot {
             self = .unavailable
         }
     }
-}
-
-private func searchCoreFiles(repoPath: String, request: SearchQueryRequestSnapshot) throws -> SearchResultPage {
-    try searchFiles(
-        repoPath: repoPath,
-        query: request.query,
-        filter: SearchFilter(request),
-        sort: SearchSort(request.sort),
-        pagination: SearchPagination(limit: request.limit, offset: request.offset)
-    )
 }

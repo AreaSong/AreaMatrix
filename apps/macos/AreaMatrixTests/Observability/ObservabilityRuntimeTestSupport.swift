@@ -282,6 +282,7 @@ final class ObservabilityRuntimeFixture {
         runtime = ObservabilityRuntimeAssembly(
             hub: hub,
             core: core,
+            resourceIdentityProvider: .shared,
             sessionStore: ObservabilitySessionLifecycleStore(rootURL: sessionRootURL),
             sessionID: sessionID,
             scheduler: scheduler.runtimeScheduler

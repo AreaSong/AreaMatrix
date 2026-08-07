@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import SwiftUI
 
 struct LanguageSettingsPane: View {
@@ -13,10 +14,9 @@ struct LanguageSettingsPane: View {
         repoPath: String,
         featureDependencies: SettingsFeatureDependencies,
         sharedDependencies: SharedFeatureDependencies,
-        overviewRegenerationCoordinator: OverviewRegenerationCoordinator? = nil,
         appVersion: String? = nil,
-        appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
-        accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
+        appVersionReader: (any AppVersionReading)? = nil,
+        accessibilityAnnouncer: (any AccessibilityAnnouncing)? = nil
     ) {
         self.init(
             repoPath: repoPath,
@@ -24,11 +24,11 @@ struct LanguageSettingsPane: View {
             updater: featureDependencies.configurationUpdater,
             capabilityLoader: featureDependencies.platformCapabilityLoader,
             overviewRegenerator: featureDependencies.overviewRegenerator,
-            overviewRegenerationCoordinator: overviewRegenerationCoordinator,
+            overviewRegenerationCoordinator: featureDependencies.overviewRegenerationCoordinator,
             appVersion: appVersion,
-            appVersionReader: appVersionReader,
+            appVersionReader: appVersionReader ?? featureDependencies.appVersionReader,
             errorMapper: sharedDependencies.errorMapper,
-            accessibilityAnnouncer: accessibilityAnnouncer
+            accessibilityAnnouncer: accessibilityAnnouncer ?? featureDependencies.accessibilityAnnouncer
         )
     }
 
@@ -38,11 +38,11 @@ struct LanguageSettingsPane: View {
         updater: any CoreConfigurationUpdating,
         capabilityLoader: any CorePlatformCapabilitiesLoading,
         overviewRegenerator: any CoreOverviewRegenerating,
-        overviewRegenerationCoordinator: OverviewRegenerationCoordinator? = nil,
+        overviewRegenerationCoordinator: OverviewRegenerationCoordinator,
         appVersion: String? = nil,
-        appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
+        appVersionReader: any AppVersionReading,
         errorMapper: any CoreErrorMapping,
-        accessibilityAnnouncer: any AccessibilityAnnouncing = RepositorySettingsPlatformServices.accessibilityAnnouncer
+        accessibilityAnnouncer: any AccessibilityAnnouncing
     ) {
         _configModel = StateObject(wrappedValue: RepositorySettingsConfigModel(
             repoPath: repoPath,
@@ -86,7 +86,9 @@ struct LanguageSettingsPane: View {
             Task { await refreshOverviewStatus() }
         }
     }
+}
 
+private extension LanguageSettingsPane {
     @ViewBuilder
     private var content: some View {
         if configModel.isLoading, baseline == nil {

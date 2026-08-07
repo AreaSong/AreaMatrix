@@ -14,6 +14,9 @@ func classifierSettingsRecoveryModel(
         predictor: predictor,
         ruleEditor: editor,
         errorMapper: ClassifierSettingsRecoveryErrorMapper(),
+        fileOpener: RecordingRepositoryFileOpener(),
+        fileRevealer: RecordingRepositoryFileRevealer(),
+        finderOpener: RecordingRepositoryFinderOpener(),
         accessibilityAnnouncer: NoopAccessibilityAnnouncer()
     )
     await model.load()

@@ -245,13 +245,16 @@ enum ImportSingleFileReplaceOptionVisibility: Equatable {
 struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
     private let fileLoader: any ImportBatchCoreFileLoading
     private let sourceInspector: any SourcePreflightInspecting
+    private let resourceAccess: any ImportFileResourceAccessing
 
     init(
         fileLoader: any ImportBatchCoreFileLoading,
-        sourceInspector: any SourcePreflightInspecting = ImportPlatformServices.sourcePreflightInspector
+        sourceInspector: any SourcePreflightInspecting,
+        resourceAccess: any ImportFileResourceAccessing
     ) {
         self.fileLoader = fileLoader
         self.sourceInspector = sourceInspector
+        self.resourceAccess = resourceAccess
     }
 
     func preflightSingleFileImport(
@@ -269,7 +272,7 @@ struct CoreImportSingleFilePreflight: ImportSingleFilePreflighting {
                     conflict: .invalidFilename(validationMessage)
                 )
             }
-            let sourceHash = try ImportSingleFileHasher.sha256Hex(for: request.sourceURL)
+            let sourceHash = try resourceAccess.sha256Hex(for: request.sourceURL)
             let files = try await fileLoader.loadImportPreviewFiles(repoPath: request.repoPath, categories: [nil])
             return readyResult(
                 request: request,

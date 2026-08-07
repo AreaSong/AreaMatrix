@@ -147,6 +147,9 @@ final class BatchChangeCategoryVerifyTests: XCTestCase {
             predictor: ClassifierSettingsSequencePredictor(),
             ruleEditor: ruleEditor,
             errorMapper: RecordingCoreErrorMapper.classifierSettings(),
+            fileOpener: RecordingRepositoryFileOpener(),
+            fileRevealer: RecordingRepositoryFileRevealer(),
+            finderOpener: RecordingRepositoryFinderOpener(),
             accessibilityAnnouncer: NoopAccessibilityAnnouncer(),
             onSavedCategory: { savedCategories.append($0) }
         )

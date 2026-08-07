@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
 
 extension CoreErrorMappingSnapshot {

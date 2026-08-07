@@ -10,10 +10,44 @@ struct DeveloperMainListScenarioView: View {
         let core = DeveloperMainListCoreFixture()
         let search = DeveloperSearchCoreFixture()
         let actions = DeveloperFileActionCoreFixture()
+        let errorMapper = CoreErrorSnapshotMapper()
+        let supporting = Self.makeSupporting(core: core, search: search, actions: actions, errorMapper: errorMapper)
+        let list = Self.makeList(core: core, search: search, actions: actions, errorMapper: errorMapper)
+        let features = Self.makeFeatures()
         assembly = MainRepositoryContentAssembly.make(
             opening: DeveloperMainListScenarioFixture.opening,
+            supporting: supporting,
+            list: list,
+            features: features
+        )
+    }
+
+    private static func makeSupporting(
+        core: DeveloperMainListCoreFixture,
+        search: DeveloperSearchCoreFixture,
+        actions: DeveloperFileActionCoreFixture,
+        errorMapper: CoreErrorSnapshotMapper
+    ) -> MainRepositoryContentSupportDeps {
+        MainRepositoryContentSupportDeps(
             treeLister: core,
             savedSearchStore: search,
+            batchRenamer: actions,
+            systemCapabilityChecker: DeveloperMainListSystemCapabilityChecker(),
+            errorMapper: errorMapper,
+            syncConflictDetector: core,
+            noteStore: DeveloperDetailNoteStore(),
+            inFlightFileChangeTracker: InFlightFileChangeTracker(),
+            dropCategoryPredictor: core
+        )
+    }
+
+    private static func makeList(
+        core: DeveloperMainListCoreFixture,
+        search: DeveloperSearchCoreFixture,
+        actions: DeveloperFileActionCoreFixture,
+        errorMapper: CoreErrorSnapshotMapper
+    ) -> MainRepositoryContentListDependencies {
+        MainRepositoryContentListDependencies(
             fileLister: core,
             fileDetailer: core,
             missingFileRecoverer: core,
@@ -26,12 +60,9 @@ struct DeveloperMainListScenarioView: View {
             fileRenamer: core,
             fileDeleter: core,
             fileCategoryMover: core,
-            fileListCategoryPredictor: core,
+            categoryPredictor: core,
             batchDeleter: actions,
             batchCategoryChanger: actions,
-            batchRenamer: actions,
-            systemCapabilityChecker: DeveloperMainListSystemCapabilityChecker(),
-            syncConflictDetector: core,
             iCloudConflictResolver: DeveloperMainListICloudConflictResolver(),
             tagStore: actions,
             aiSettingsLoader: DeveloperAISettingsStore(),
@@ -42,14 +73,18 @@ struct DeveloperMainListScenarioView: View {
             changeLogLister: core,
             externalChangesSyncer: core,
             repositoryWriteCoordinator: RepositoryWriteCoordinator(),
-            noteStore: DeveloperDetailNoteStore(),
-            dropCategoryPredictor: core,
-            errorMapper: CoreErrorSnapshotMapper(),
+            errorMapper: errorMapper,
             diagnosticsCollector: core,
-            aiDependencies: AppDependencyContainer.live.feature.ai,
-            fileActionsDependencies: AppDependencyContainer.live.feature.fileActions,
-            settingsDependencies: AppDependencyContainer.live.feature.settings,
-            syncConflictsDependencies: AppDependencyContainer.live.feature.syncConflicts
+            fileResourceAccess: AppDependencyContainer.live.feature.import.fileResourceAccess
+        )
+    }
+
+    private static func makeFeatures() -> MainRepositoryContentFeatureDependencies {
+        MainRepositoryContentFeatureDependencies(
+            aiFeature: AppDependencyContainer.live.feature.aiFeature,
+            fileActions: AppDependencyContainer.live.feature.fileActions,
+            settings: AppDependencyContainer.live.feature.settings,
+            syncConflicts: AppDependencyContainer.live.feature.syncConflicts
         )
     }
 
@@ -58,6 +93,7 @@ struct DeveloperMainListScenarioView: View {
             opening: opening,
             state: .list,
             assembly: assembly,
+            commandRouter: .shared,
             onImport: {},
             onDropImport: { _, _ in }
         )

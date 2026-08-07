@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct GeneralSettingsView: View {
@@ -12,6 +13,7 @@ struct GeneralSettingsView: View {
     private let aiDependencies: AIFeatureDependencies
     private let sharedDependencies: SharedFeatureDependencies
     private let syncConflictsDependencies: SyncConflictsFeatureDependencies
+    private let diagnosticsDependencies: DiagnosticsFeatureDependencies
 }
 
 extension GeneralSettingsView {
@@ -26,23 +28,21 @@ extension GeneralSettingsView {
         aiDependencies: AIFeatureDependencies,
         sharedDependencies: SharedFeatureDependencies,
         syncConflictsDependencies: SyncConflictsFeatureDependencies,
+        diagnosticsDependencies: DiagnosticsFeatureDependencies,
         loader: any CoreConfigurationLoading,
         updater: any CoreConfigurationUpdating,
-        rootOverviewInspector: any RootOverviewFileInspecting =
-            GeneralSettingsPlatformServices.rootOverviewInspector,
-        rootOverviewRevealer: any RepositoryFileRevealing =
-            GeneralSettingsPlatformServices.rootOverviewRevealer,
-        ignoreRulesManager: any RepositoryIgnoreRulesManaging =
-            GeneralSettingsPlatformServices.ignoreRulesManager,
+        rootOverviewInspector: (any RootOverviewFileInspecting)? = nil,
+        rootOverviewRevealer: (any RepositoryFileRevealing)? = nil,
+        ignoreRulesManager: (any RepositoryIgnoreRulesManaging)? = nil,
         errorMapper: any CoreErrorMapping
     ) {
         _model = StateObject(wrappedValue: GeneralSettingsModel(
             repoPath: repoPath,
             loader: loader,
             updater: updater,
-            rootOverviewInspector: rootOverviewInspector,
-            rootOverviewRevealer: rootOverviewRevealer,
-            ignoreRulesManager: ignoreRulesManager,
+            rootOverviewInspector: rootOverviewInspector ?? featureDependencies.rootOverviewInspector,
+            rootOverviewRevealer: rootOverviewRevealer ?? featureDependencies.rootOverviewRevealer,
+            ignoreRulesManager: ignoreRulesManager ?? featureDependencies.ignoreRulesManager,
             errorMapper: errorMapper
         ))
         _selectedTab = selectedTab
@@ -54,6 +54,7 @@ extension GeneralSettingsView {
         self.aiDependencies = aiDependencies
         self.sharedDependencies = sharedDependencies
         self.syncConflictsDependencies = syncConflictsDependencies
+        self.diagnosticsDependencies = diagnosticsDependencies
     }
 
     var body: some View {
@@ -175,10 +176,10 @@ extension GeneralSettingsView {
                 syncConflictsDependencies: syncConflictsDependencies
             )
         case "diagnostics":
-            DiagnosticsSettingsPane(repositoryURL: URL(
-                fileURLWithPath: model.repoPath,
-                isDirectory: true
-            ))
+            DiagnosticsSettingsPane(
+                repositoryURL: URL(fileURLWithPath: model.repoPath, isDirectory: true),
+                dependencies: diagnosticsDependencies
+            )
         case "advanced":
             AdvancedSettingsPane(
                 repoPath: model.repoPath,
@@ -194,6 +195,7 @@ extension GeneralSettingsView {
                 featureDependencies: featureDependencies,
                 sharedDependencies: sharedDependencies,
                 platformDifferencesModel: PlatformDifferencesModel(
+                    appVersionReader: featureDependencies.appVersionReader,
                     repositoryText: model.repoPath,
                     contractInspector: featureDependencies.bindingContractInspector,
                     capabilityLoader: featureDependencies.platformCapabilityLoader,

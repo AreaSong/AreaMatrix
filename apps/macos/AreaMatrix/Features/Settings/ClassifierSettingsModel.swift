@@ -15,6 +15,7 @@ final class ClassifierSettingsModel: ObservableObject {
 
     let repoPath: String
     let ruleEditor: any CoreClassifierRuleEditing
+    let interfaceLocaleIdentifierProvider: @MainActor () -> String
 
     private let loader: any CoreConfigurationLoading
     private let updater: any CoreConfigurationUpdating
@@ -34,12 +35,12 @@ final class ClassifierSettingsModel: ObservableObject {
         updater: any CoreConfigurationUpdating,
         predictor: any CoreCategoryPredicting,
         ruleEditor: any CoreClassifierRuleEditing,
+        interfaceLocaleIdentifier: @escaping @MainActor () -> String = { "en" },
         errorMapper: any CoreErrorMapping,
-        fileOpener: any RepositoryFileOpening = ClassifierSettingsPlatformServices.fileOpener,
-        fileRevealer: any RepositoryFileRevealing = ClassifierSettingsPlatformServices.fileRevealer,
-        finderOpener: any RepositoryFinderOpening = ClassifierSettingsPlatformServices.finderOpener,
-        accessibilityAnnouncer: any AccessibilityAnnouncing =
-            ClassifierSettingsPlatformServices.accessibilityAnnouncer,
+        fileOpener: any RepositoryFileOpening,
+        fileRevealer: any RepositoryFileRevealing,
+        finderOpener: any RepositoryFinderOpening,
+        accessibilityAnnouncer: any AccessibilityAnnouncing,
         onSavedCategory: ((String) -> Void)? = nil
     ) {
         self.repoPath = repoPath
@@ -47,12 +48,14 @@ final class ClassifierSettingsModel: ObservableObject {
         self.updater = updater
         self.predictor = predictor
         self.ruleEditor = ruleEditor
+        interfaceLocaleIdentifierProvider = interfaceLocaleIdentifier
         self.errorMapper = errorMapper
         self.fileOpener = fileOpener
         self.fileRevealer = fileRevealer
         self.finderOpener = finderOpener
         self.accessibilityAnnouncer = accessibilityAnnouncer
         self.onSavedCategory = onSavedCategory
+        classifierRuleEditor.interfaceLocaleIdentifier = interfaceLocaleIdentifier()
     }
 }
 
@@ -120,6 +123,7 @@ extension ClassifierSettingsModel {
     }
 
     func load() async {
+        refreshInterfaceLocaleIdentifier()
         loadState = .loading
         saveError = nil
         pendingRetry = nil
@@ -137,13 +141,19 @@ extension ClassifierSettingsModel {
         } catch {
             savedConfig = nil
             draft = nil
-            classifierRuleEditor = ClassifierRuleEditorModelState()
+            classifierRuleEditor = ClassifierRuleEditorModelState(
+                interfaceLocaleIdentifier: interfaceLocaleIdentifierProvider()
+            )
             loadedClassifierSlugs = []
             loadState = await .failed(ClassifierSettingsErrorFactory.loadError(
                 for: error,
                 mapper: errorMapper
             ))
         }
+    }
+
+    func refreshInterfaceLocaleIdentifier() {
+        classifierRuleEditor.interfaceLocaleIdentifier = interfaceLocaleIdentifierProvider()
     }
 
     func openClassifierYaml() {

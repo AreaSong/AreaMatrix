@@ -24,9 +24,14 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
+            generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
             diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
             coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
-            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -71,9 +76,14 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             repositoryOpener: opener,
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
+            generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
             diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
             coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
-            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -99,9 +109,15 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
                 result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo"))
             ),
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
+            existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
+            generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
             diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
             coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
-            errorMapper: mapper
+            errorMapper: mapper,
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -154,9 +170,13 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
             existingRepositoryMetadataReader: metadataReader,
             metadataPresenceChecker: metadataPresenceChecker,
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
+            generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
             diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
             coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
-            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -165,6 +185,15 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
         await updater.assertConfigurationUpdateRequests([
             RecordingConfigurationUpdater.Request(repoPath: repoURL.path, config: expectedUpdate)
         ])
+        assertSynchronizedRepositorySettings(model, expected: expected, repoURL: repoURL)
+    }
+
+    @MainActor
+    private func assertSynchronizedRepositorySettings(
+        _ model: RepositorySettingsModel,
+        expected: AppRepoConfigSnapshot,
+        repoURL: URL
+    ) {
         XCTAssertEqual(model.loadedConfig, expected)
         XCTAssertEqual(model.summary?.location, repoURL.path)
         XCTAssertEqual(model.summary?.repositoryName, repoURL.lastPathComponent)
@@ -184,9 +213,15 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             updater: bridge,
             repositoryOpener: bridge,
             scanSessionReader: bridge,
+            existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
+            generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
             diagnosticsCollector: bridge,
             coreVersionLoader: bridge,
-            errorMapper: bridge
+            errorMapper: bridge,
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -222,10 +257,14 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
             repositoryOpener: bridge,
             scanSessionReader: bridge,
             existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
             generatedOverviewRevealer: revealer,
             diagnosticsCollector: bridge,
             coreVersionLoader: bridge,
-            errorMapper: bridge
+            errorMapper: bridge,
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -258,10 +297,15 @@ final class RepositorySettingsPageFeatureTests: XCTestCase {
                 result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo"))
             ),
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
+            existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
             generatedOverviewRevealer: revealer,
             diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
             coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
-            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         model.revealGeneratedOverviewInFinder()

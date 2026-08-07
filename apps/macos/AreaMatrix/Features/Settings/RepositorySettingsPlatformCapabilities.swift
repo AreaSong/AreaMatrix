@@ -1,3 +1,5 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixCoreContracts
 import Combine
 import Foundation
 
@@ -33,7 +35,7 @@ final class RepoPlatformCapabilitiesModel: ObservableObject {
     init(
         hostPlatform: PlatformIdSnapshot = .macos,
         appVersion: String? = nil,
-        appVersionReader: any AppVersionReading = RepositorySettingsPlatformServices.appVersionReader,
+        appVersionReader: any AppVersionReading,
         capabilityLoader: any CorePlatformCapabilitiesLoading,
         errorMapper: any CoreErrorMapping
     ) {

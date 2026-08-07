@@ -280,6 +280,36 @@ class CoreSDKTest(unittest.TestCase):
             ):
                 core_sdk.run_core_sdk_build(root, verify_only=True)
 
+    def test_verify_only_writes_dependency_file_for_xcode_incrementality(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            fingerprint = "a" * 64
+            artifact = self.write_artifact(root, fingerprint)
+            (root / ".build/core-sdk/current").symlink_to(
+                artifact.relative_to(root / ".build/core-sdk")
+            )
+            dependency_file = root / ".build/derived/AreaMatrixCoreSDK.d"
+
+            with (
+                patch("scripts.dev_tools.core_sdk.require_command"),
+                patch(
+                    "scripts.dev_tools.core_sdk.core_sdk_fingerprint",
+                    return_value=(fingerprint, {}),
+                ),
+            ):
+                self.assertEqual(
+                    core_sdk.run_core_sdk_build(
+                        root,
+                        dependency_file=dependency_file,
+                        verify_only=True,
+                    ),
+                    0,
+                )
+
+            dependency_text = dependency_file.read_text(encoding="utf-8")
+            self.assertIn("core/Cargo.toml", dependency_text)
+            self.assertIn(".build/core-sdk/current/manifest.json", dependency_text)
+
     def test_existing_generated_cache_entry_can_be_replaced_atomically(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

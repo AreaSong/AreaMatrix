@@ -11,6 +11,7 @@ final class DiagnosticsSettingsUIProjectionTests: XCTestCase {
         let runtime = ObservabilityRuntimeAssembly(
             hub: fixture.hub,
             core: DiagnosticsCoreSpy(),
+            resourceIdentityProvider: .shared,
             sessionID: "runtime-settings-session",
             scheduler: scheduler.runtimeScheduler
         )
@@ -28,7 +29,12 @@ final class DiagnosticsSettingsUIProjectionTests: XCTestCase {
             )
         )
         await fixture.hub.configure(expired)
-        let model = DiagnosticsSettingsModel(runtime: runtime)
+        let model = DiagnosticsSettingsModel(
+            runtime: runtime,
+            incidentManager: ObservabilityRuntimeIncidentAdapter(runtime: runtime),
+            packagePreviewer: DiagnosticsPackagePreviewerSpy(),
+            packageHandler: DiagnosticsPackageHandlerSpy()
+        )
 
         await model.load()
 
@@ -43,9 +49,17 @@ final class DiagnosticsSettingsUIProjectionTests: XCTestCase {
         let runtime = ObservabilityRuntimeAssembly(
             hub: fixture.hub,
             core: DiagnosticsCoreSpy(),
-            sessionID: "runtime-settings-session"
+            resourceIdentityProvider: .shared,
+            sessionID: "runtime-settings-session",
+            scheduler: .live
         )
-        let model = DiagnosticsSettingsModel(runtime: runtime, nowMilliseconds: { 1000 })
+        let model = DiagnosticsSettingsModel(
+            runtime: runtime,
+            incidentManager: ObservabilityRuntimeIncidentAdapter(runtime: runtime),
+            packagePreviewer: DiagnosticsPackagePreviewerSpy(),
+            packageHandler: DiagnosticsPackageHandlerSpy(),
+            nowMilliseconds: { 1000 }
+        )
         await model.load()
         model.configuration = .runtimeMode(.developer)
 
@@ -57,7 +71,15 @@ final class DiagnosticsSettingsUIProjectionTests: XCTestCase {
 
     @MainActor
     func testSelectingDiagnosticModeAppliesFortyEightHourDefaultRetention() {
+        let runtime = ObservabilityRuntimeAssembly(
+            hub: ObservabilityHub(),
+            core: DiagnosticsCoreSpy(),
+            resourceIdentityProvider: .shared,
+            scheduler: .live
+        )
         let model = DiagnosticsSettingsModel(
+            runtime: runtime,
+            incidentManager: ObservabilityRuntimeIncidentAdapter(runtime: runtime),
             packagePreviewer: DiagnosticsPackagePreviewerSpy(),
             packageHandler: DiagnosticsPackageHandlerSpy()
         )
@@ -82,10 +104,12 @@ final class DiagnosticsSettingsUIProjectionTests: XCTestCase {
         let runtime = ObservabilityRuntimeAssembly(
             hub: fixture.hub,
             core: core,
+            resourceIdentityProvider: .shared,
             scheduler: scheduler.runtimeScheduler
         )
         let model = DiagnosticsSettingsModel(
             runtime: runtime,
+            incidentManager: ObservabilityRuntimeIncidentAdapter(runtime: runtime),
             packagePreviewer: DiagnosticsPackagePreviewerSpy(),
             packageHandler: DiagnosticsPackageHandlerSpy(),
             nowMilliseconds: { 1000 },
@@ -170,10 +194,16 @@ extension DiagnosticsSettingsUIProjectionTests {
         XCTAssertEqual(acceptedEventIDs, ["package-event"])
         let handler = DiagnosticsPackageHandlerSpy()
         let previewer = DiagnosticsPackagePreviewerSpy()
-        let runtime = ObservabilityRuntimeAssembly(hub: fixture.hub, core: DiagnosticsCoreSpy())
+        let runtime = ObservabilityRuntimeAssembly(
+            hub: fixture.hub,
+            core: DiagnosticsCoreSpy(),
+            resourceIdentityProvider: .shared,
+            scheduler: .live
+        )
         let repositoryURL = try fixture.makeRepositoryMetadata()
         let model = DiagnosticsSettingsModel(
             runtime: runtime,
+            incidentManager: ObservabilityRuntimeIncidentAdapter(runtime: runtime),
             packagePreviewer: previewer,
             packageHandler: handler,
             repositoryURL: repositoryURL
@@ -224,8 +254,15 @@ extension DiagnosticsSettingsUIProjectionTests {
         XCTAssertEqual(acceptedEventIDs, ["authorization-event"])
         let repositoryURL = try fixture.makeRepositoryMetadata()
         let previewer = DiagnosticsPackagePreviewerSpy()
+        let runtime = ObservabilityRuntimeAssembly(
+            hub: fixture.hub,
+            core: DiagnosticsCoreSpy(),
+            resourceIdentityProvider: .shared,
+            scheduler: .live
+        )
         let model = DiagnosticsSettingsModel(
-            runtime: ObservabilityRuntimeAssembly(hub: fixture.hub, core: DiagnosticsCoreSpy()),
+            runtime: runtime,
+            incidentManager: ObservabilityRuntimeIncidentAdapter(runtime: runtime),
             packagePreviewer: previewer,
             packageHandler: DiagnosticsPackageHandlerSpy(),
             repositoryURL: repositoryURL

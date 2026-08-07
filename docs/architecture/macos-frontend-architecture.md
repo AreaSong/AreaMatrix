@@ -26,12 +26,32 @@
 | `Bridge/UniFFI/` | Xcode 当前消费的 tracked UniFFI binding | 手写业务逻辑 |
 | `PlatformServices/` | AppKit、FileManager、iCloud、FSEvents、open/save panel、NSWorkspace、Pasteboard、系统能力检测 | SwiftUI 视图、Core schema 语义、feature 局部状态 |
 | `Features/<FeatureName>/` | 对应业务域的 View / Model / State / Actions / Support | 无 owner 的通用工具、跨 feature 平台副作用 |
-| `Views/DesignSystem/` | 通用 UI 组件、主题、效果、控件 | 业务流程、Core 调用、文件 IO |
+| `Views/DesignSystem/` | App 组合层的页面壳、场景化视觉和兼容别名 | 业务流程、Core 调用、文件 IO；稳定跨 feature 基础组件应进入 `AreaMatrixUIFoundation` |
 | `Views/` | 现有跨 feature 入口和迁移区 | 新增复杂业务 feature |
 | `Models/` | 现有 UI state / presentation state / routing state 的迁移区 | 新增大型 feature model、平台适配实现 |
 | `Resources/` | 静态资源 | 运行时生成内容 |
 
 `PlatformServices/` 是目标落点；既有平台服务仍可能暂时留在 `App/` 或 `Models/`。触达相关代码时按风险和验证能力渐进迁移。
+
+`AreaMatrixUIFoundation` 是稳定、无业务语义 UI 基础组件的 Swift Package。当前已承载主题与动效 token，以及
+`NeutralCapsuleChip`、`NeutralSummaryPanel`、`ReasonStatusCard`、`TintedCapsuleBadge` 和状态 banner
+组件，还有 `AreaMatrixGlassCardModifier`、`AreaMatrixPathBox`、`AreaMatrixStepHeader`、
+`AreaMatrixGlassContentPanelModifier`、`AreaMatrixWorkspaceRegionShellModifier`、
+`AreaMatrixCapsuleButton`、`AreaMatrixGhostButton`、`AreaMatrixPrimaryGlowButton`、
+`AreaMatrixLinkActionLabel`、`AreaMatrixPrimaryActionLabel`、`AreaMatrixPrimaryButtonStyle`、
+`AreaMatrixSecondaryButtonStyle`、`AreaMatrixCrossfadeAssetImage`、`AreaMatrixFeatureCardSpec`、
+`AreaMatrixFeatureCardGroup`、`AreaMatrixFeatureCard`、`AreaMatrixTrafficLights`、
+`AreaMatrixMiniWindow`、`AreaMatrixBottomCornersShape`、`AreaMatrixHexagonShape`、
+`AreaMatrixFolderShape`、`AreaMatrixNoiseOverlay` 和共享 Motion modifier / Animation 扩展等路径、
+步骤页、工作区表面、动作控件、Feature Card、品牌场景原语、动效、交互反馈环境、主题资源表面和 Lucide
+图标路径；
+`Views/DesignSystem/AreaMatrixTheme.swift` 只保留 App target 的兼容别名。新增跨 feature 组件必须先满足
+至少两个真实调用方，再进入该 package，并为 package 本身补充合同测试。
+
+`AreaMatrixPlatformKit` 是稳定、无业务语义的平台能力 Package。当前承载 HTTPS 外链校验与打开合同、
+本地文件 URL 的资源快照、Finder 打开/定位能力和统一错误类型；App target 只保留兼容 typealias 与
+repository-specific facade，不能重新实现这些平台副作用。新增平台能力必须先定义可注入合同，再由
+App 组合层提供默认实现，并为 Package 本身补充合同测试。
 
 `Models/`、根 `Views/`、`Views/Main/`、`Views/Onboarding/` 与 `Views/Settings/` 由
 `MacOSMigrationZoneGovernanceTests` 作为受控迁移区精确盘点。当前 `Models/` 和
@@ -80,14 +100,23 @@ manifest 依赖图的共享合同，统一检查重复 ID、空元数据、重�
 `DesignSystem`）；基础设施 ID 由 App 组合层声明，不在 Feature 内隐式创建。依赖图只表达编译期和装配期
 边界，不替代高风险写操作的 `RepositoryWriteCoordinator`、文件安全合同或 Core API。
 
-`AreaMatrixCoreBridgeContract` 是已接入 Xcode target 的 Swift Package 合同模块，持有稳定的
-`CoreBridgeBoundary` 操作枚举；`CoreBridge` actor、snapshot 转换和 UniFFI 生成绑定仍集中在
-`AreaMatrix/Bridge/`，因此 Feature 只依赖协议和快照，不直接导入生成 binding。后续把运行时适配拆为
-独立模块时，先以该合同模块和 Bridge 边界测试为迁移锚点，不改变用户文件和 Core API 语义。
+`AreaMatrixCoreBridgeContract` 与 `AreaMatrixCoreBridgeRuntime` 是已接入 Xcode target 的 Swift Package
+边界：前者持有稳定的 `CoreBridgeBoundary`、能力协议合同和 diagnostics snapshot 合同，后者负责运行时状态、可用性和 boundary inventory 协调。
+`AreaMatrixCoreContracts` 同时承载稳定的 feature manifest、平台能力 snapshot、绑定合同 snapshot 和扩展注册合同；它不依赖
+AppKit、L10n 或 UniFFI。`CoreBridge` actor、Core/UniFFI 转换和生成绑定仍集中在 `AreaMatrix/Bridge/`，
+因为它们依赖 tracked binding；Bridge 只负责把生成 DTO 转成 package snapshot，并在 App-owned 扩展中提供
+本地化显示名。Feature 只消费 `AreaMatrixCoreContracts` 的稳定合同，不接触生成类型。进程级 `CoreBridge`
+实例由 `App/CoreBridgeRuntimeAssembly.swift` 组合；后续适配迁移继续以这些 Package 和 Bridge 边界测试为锚点，
+不改变用户文件和 Core API 语义。
 
 主资料库列表使用 `MainListFeatureDependencies` 作为单一显式依赖范围，由 App 组合层创建并传入
 `MainFileListModel`；生产模型不再通过 `.live` 默认值解析 Core 或平台服务。测试便利构造只存在于测试
 support 中，并将 fixture 覆盖项重新组装为同一个依赖范围，避免测试调用方式成为生产隐式装配的后门。
+
+Settings 页面由 `SettingsFeatureDependencies` 接收 Core 与平台能力；Diagnostics 页面另外使用
+`DiagnosticsFeatureDependencies` 接收诊断包预览和导出处理器。生产 Settings route 必须显式传入这两个范围，
+而直接初始化器只保留给 Preview、Debug scenario 和测试替身使用。诊断包的 AppKit open/save panel 仍停留在
+`PlatformServices`，不会被下沉到 Feature model 或 SwiftUI View。
 
 ### Typed route 合同
 
@@ -137,6 +166,11 @@ macOS 默认 Core 服务由 `App/AppCoreServices.swift` 集中装配。Feature m
   等高风险专项路径允许受控保留直接 `CoreBridge()` 默认构造。
 - 保留的直接 `CoreBridge()` 默认构造必须由治理测试登记；登记项变化时说明风险归属和收口条件。
 - 不为了集中化把高风险写操作伪装成通用服务；先保持风险边界可见，再按专项收口。
+
+主窗口的共享运行时依赖也由 App 根显式组合：`MainWindow` 必须接收
+`ObservabilityRuntimeAssembly` 和 `AppCommandRouter`，不会在 View initializer 中回退到
+进程级单例。进程级 `AppLogger` 只在 App 入口绑定 `ObservabilityHub.shared`，其余初始化路径必须显式
+传入 hub，确保 Preview、测试和 Debug 场景可以使用隔离的可观测性上下文。
 
 ### 受控例外治理地图
 

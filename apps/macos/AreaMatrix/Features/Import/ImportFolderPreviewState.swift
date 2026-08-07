@@ -246,13 +246,17 @@ struct ImportFolderPreviewRow: Identifiable, Equatable {
         }
     }
 
-    static func loading(fileURL: URL, rootURL: URL) -> ImportFolderPreviewRow {
+    static func loading(
+        fileURL: URL,
+        rootURL: URL,
+        sizeBytes: Int64? = nil
+    ) -> ImportFolderPreviewRow {
         ImportFolderPreviewRow(
             fileURL: fileURL,
             rootURL: rootURL,
             originalName: fileURL.lastPathComponent,
             relativePath: relativePath(for: fileURL, rootURL: rootURL),
-            sizeBytes: sizeBytes(for: fileURL),
+            sizeBytes: sizeBytes,
             predictedCategory: nil,
             suggestedName: fileURL.lastPathComponent,
             status: .loading
@@ -274,10 +278,6 @@ struct ImportFolderPreviewRow: Identifiable, Equatable {
         var row = self
         row.status = status
         return row
-    }
-
-    private static func sizeBytes(for url: URL) -> Int64? {
-        ImportPlatformServices.fileSizeBytes(url)
     }
 
     private static func relativePath(for fileURL: URL, rootURL: URL) -> String {

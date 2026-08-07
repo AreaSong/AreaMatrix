@@ -1,30 +1,14 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixCoreContracts
 import Foundation
 
-protocol CorePlatformCapabilitiesLoading: Sendable {
-    func getPlatformCapabilities(
-        platform: PlatformIdSnapshot,
-        appVersion: String
-    ) async throws -> PlatformCapabilitiesSnapshot
-}
-
-enum PlatformIdSnapshot: String, Equatable, Hashable {
-    case macos = "macOS"
-    case ios = "iOS"
-    case windows = "Windows"
-    case linux = "Linux"
-    case unknown = "Unknown"
-
+extension PlatformIdSnapshot {
     var displayName: String {
         self == .unknown ? L10n.string("Unknown") : rawValue
     }
 }
 
-enum PlatformCapabilityStatusSnapshot: String, Equatable, Hashable {
-    case available = "Available"
-    case limited = "Limited"
-    case notAvailable = "Not available"
-    case unknown = "Unknown"
-
+extension PlatformCapabilityStatusSnapshot {
     var displayName: String {
         switch self {
         case .available: L10n.string("Available")
@@ -35,52 +19,13 @@ enum PlatformCapabilityStatusSnapshot: String, Equatable, Hashable {
     }
 }
 
-struct PlatformCapabilitySupportSnapshot: Equatable {
-    var status: PlatformCapabilityStatusSnapshot
-    var uiEnabled: Bool
-    var requiresPermission: Bool
-    var reason: String?
-}
-
-struct PlatformCapabilitiesSnapshot: Equatable {
-    var platform: PlatformIdSnapshot
-    var appVersion: String
-    var watcher: PlatformCapabilitySupportSnapshot
-    var trash: PlatformCapabilitySupportSnapshot
-    var shareExtension: PlatformCapabilitySupportSnapshot
-    var cloudPlaceholder: PlatformCapabilitySupportSnapshot
-    var securityBookmark: PlatformCapabilitySupportSnapshot
-
-    static func unknown(
-        platform: PlatformIdSnapshot,
-        appVersion: String,
-        reason: String
-    ) -> PlatformCapabilitiesSnapshot {
-        let support = PlatformCapabilitySupportSnapshot(
-            status: .unknown,
-            uiEnabled: false,
-            requiresPermission: false,
-            reason: reason
-        )
-        return PlatformCapabilitiesSnapshot(
-            platform: platform,
-            appVersion: appVersion,
-            watcher: support,
-            trash: support,
-            shareExtension: support,
-            cloudPlaceholder: support,
-            securityBookmark: support
-        )
-    }
-}
-
 extension CoreBridge: CorePlatformCapabilitiesLoading {
     func getPlatformCapabilities(
         platform: PlatformIdSnapshot,
         appVersion: String
     ) async throws -> PlatformCapabilitiesSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            let capabilities = try loadCorePlatformCapabilities(
+            let capabilities = try self.generatedAdapter.loadPlatformCapabilities(
                 platform: platform.corePlatformId,
                 appVersion: appVersion
             )
@@ -91,22 +36,26 @@ extension CoreBridge: CorePlatformCapabilitiesLoading {
 
 extension PlatformCapabilitiesSnapshot {
     init(coreCapabilities: PlatformCapabilities) {
-        platform = PlatformIdSnapshot(corePlatformId: coreCapabilities.platform)
-        appVersion = coreCapabilities.appVersion
-        watcher = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.watcher)
-        trash = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.trash)
-        shareExtension = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.shareExtension)
-        cloudPlaceholder = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.cloudPlaceholder)
-        securityBookmark = PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.securityBookmark)
+        self.init(
+            platform: PlatformIdSnapshot(corePlatformId: coreCapabilities.platform),
+            appVersion: coreCapabilities.appVersion,
+            watcher: PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.watcher),
+            trash: PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.trash),
+            shareExtension: PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.shareExtension),
+            cloudPlaceholder: PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.cloudPlaceholder),
+            securityBookmark: PlatformCapabilitySupportSnapshot(coreSupport: coreCapabilities.securityBookmark)
+        )
     }
 }
 
 private extension PlatformCapabilitySupportSnapshot {
     init(coreSupport: PlatformCapabilitySupport) {
-        status = PlatformCapabilityStatusSnapshot(coreStatus: coreSupport.status)
-        uiEnabled = coreSupport.uiEnabled
-        requiresPermission = coreSupport.requiresPermission
-        reason = coreSupport.reason
+        self.init(
+            status: PlatformCapabilityStatusSnapshot(coreStatus: coreSupport.status),
+            uiEnabled: coreSupport.uiEnabled,
+            requiresPermission: coreSupport.requiresPermission,
+            reason: coreSupport.reason
+        )
     }
 }
 
@@ -155,11 +104,4 @@ private extension PlatformCapabilityStatusSnapshot {
             self = .unknown
         }
     }
-}
-
-private func loadCorePlatformCapabilities(
-    platform: PlatformId,
-    appVersion: String
-) throws -> PlatformCapabilities {
-    try getPlatformCapabilities(platform: platform, appVersion: appVersion)
 }

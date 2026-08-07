@@ -15,6 +15,8 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
             loader: loader,
             updater: RecordingConfigurationUpdater(result: .success(())),
             rootOverviewInspector: StaticRootOverviewFileInspector(status: .missing),
+            rootOverviewRevealer: RecordingRepositoryFileRevealer(),
+            ignoreRulesManager: NoopRepositoryIgnoreRulesManager(),
             errorMapper: RecordingCoreErrorMapper.generalSettings()
         )
 
@@ -214,6 +216,9 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
             repoPath: repoURL.path,
             loader: bridge,
             updater: bridge,
+            rootOverviewInspector: LocalRootOverviewFileInspector(),
+            rootOverviewRevealer: RecordingRepositoryFileRevealer(),
+            ignoreRulesManager: NoopRepositoryIgnoreRulesManager(),
             errorMapper: bridge
         )
 
@@ -242,6 +247,9 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
             repoPath: repoURL.path,
             loader: bridge,
             updater: bridge,
+            rootOverviewInspector: LocalRootOverviewFileInspector(),
+            rootOverviewRevealer: RecordingRepositoryFileRevealer(),
+            ignoreRulesManager: NoopRepositoryIgnoreRulesManager(),
             errorMapper: bridge
         )
 
@@ -281,6 +289,7 @@ final class GeneralSettingsPageFeatureTests: XCTestCase {
             updater: updater,
             rootOverviewInspector: inspector,
             rootOverviewRevealer: revealer ?? RecordingRepositoryFileRevealer(),
+            ignoreRulesManager: NoopRepositoryIgnoreRulesManager(),
             errorMapper: RecordingCoreErrorMapper.generalSettings()
         )
         await model.load()

@@ -1,7 +1,10 @@
 import Foundation
 
 enum ImportSingleFileHasher {
-    static func sha256Hex(for fileURL: URL) throws -> String {
-        try ImportPlatformServices.sha256Hex(for: fileURL)
+    static func sha256Hex(
+        for fileURL: URL,
+        resourceAccess: any ImportFileResourceAccessing
+    ) throws -> String {
+        try resourceAccess.sha256Hex(for: fileURL)
     }
 }

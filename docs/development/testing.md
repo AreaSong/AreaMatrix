@@ -66,10 +66,40 @@ Core 测试位于：
 ./dev test macos
 ```
 
-Xcode 共享 scheme 使用 `apps/macos/AreaMatrix-Functional.xctestplan` 作为默认功能测试计划。
-它固定 `AreaMatrixTests` target 和可并行执行属性，让 Xcode UI、`xcodebuild` 和 `./dev test macos`
-消费同一份可追踪计划。`AreaMatrixPerfTests` 和 `ObservabilityPerformanceTests` 继续由
-`AREAMATRIX_RUN_PERF_TESTS` fail-closed，只在下方显式 performance gate 中执行。
+Xcode 共享 scheme 注册六份可执行测试计划，并以 `apps/macos/AreaMatrix-Functional.xctestplan` 作为默认功能计划。
+每份计划固定 `AreaMatrixTests` target，且登记真实的类/方法标识，避免把空的 test plan 当成分层治理。日常开发可按
+反馈成本选择：
+
+```bash
+xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix \
+  -destination 'platform=macOS,arch=arm64' -testPlan AreaMatrix-Unit test
+xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix \
+  -destination 'platform=macOS,arch=arm64' -testPlan AreaMatrix-Feature test
+xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix \
+  -destination 'platform=macOS,arch=arm64' -testPlan AreaMatrix-Integration test
+```
+
+脚本入口也支持先构建、后复用同一 DerivedData 执行分层计划：
+
+```bash
+./dev test macos --build-for-testing \
+  --derived-data-path .build/derived-data/macos-tests
+./dev test macos --test-without-building --test-plan AreaMatrix-Unit \
+  --derived-data-path .build/derived-data/macos-tests
+./dev test macos --test-without-building --test-plan AreaMatrix-Integration \
+  --derived-data-path .build/derived-data/macos-tests
+```
+
+`--build-for-testing` 只生成 XCTest bundle，不启动测试；后续 `--test-without-building` 不会重新触发编译。
+当本机 `testmanagerd` 被沙箱阻断时，runner 会从同一 DerivedData 复用 bundle；若指定了非 Functional 计划，
+hostless fallback 会读取该计划的 `selectedTests`，不会误跑全量测试。`--test-plan` 可接受带或不带
+`.xctestplan` 后缀的计划名；未指定时使用 scheme 注册的 Functional 默认计划。
+
+`AreaMatrix-Performance.xctestplan` 由计划自身注入 `AREAMATRIX_RUN_PERF_TESTS=1`，只执行登记的性能样本；
+`AreaMatrix-Release.xctestplan` 运行启动、Scenario Launcher 和生成绑定冒烟。完整的 `./dev test macos`
+仍消费默认 Functional 计划；CI 先执行一次 `build-for-testing`，再通过 `test-without-building` 复用同一
+DerivedData 运行 Unit、Feature、Integration 和 Functional coverage 分片。Performance 与 Release 计划仍按
+显式性能 / 发布门禁运行，不把外部分发证据混入普通功能 CI。
 
 本地默认 DerivedData 位于 `.build/derived-data/macos-tests/` 并跨运行保留。需要隔离缓存时使用
 `./dev test macos --temporary-derived-data`，CI 或并行任务使用独立 `--derived-data-path`；两个显式选项
@@ -127,7 +157,9 @@ Core 专项至少覆盖：subscriber 单次安装、配置更新、source redact
 - 手写 Swift Bridge：50%。
 
 macOS coverage 从 `.xcresult` 校验实际文件清单；空集合、生成绑定或 hostless fallback 不能冒充 coverage
-PASS。
+PASS。仅包含协议一致性扩展、没有可执行行的声明型 Bridge 适配器（当前为
+`Bridge/CoreBridgeRuntime.swift`）不计入加权比率；其余手写 Bridge 源文件必须逐一出现在
+`xccov` 报告中，清单漂移直接失败。
 
 ## 文档与治理
 
@@ -213,8 +245,10 @@ cargo llvm-cov --workspace --lcov --output-path lcov.info --fail-under-lines 70
 ```
 
 macOS CI 使用 `./dev build core-sdk` 一次生产并上传 CoreSDK artifact，下游 Xcode job 恢复同一
-artifact 后执行 `./dev test macos` coverage gate；tracked bindings 由 CoreSDK job 中的
-`./dev bindings verify` 校验。SwiftLint 和 SwiftFormat 保持独立并行。治理 CI 覆盖 governance、docs、
+artifact 后执行 `./dev test macos` coverage gate；iOS package job 恢复并校验同一 artifact，建立
+`apps/ios/.core-sdk` 指针后执行 `swift build --package-path apps/ios` 与
+`swift test --package-path apps/ios`，不再启动第二条 Cargo 构建链。tracked bindings 由 CoreSDK
+job 中的 `./dev bindings verify` 校验。SwiftLint 和 SwiftFormat 保持独立并行。治理 CI 覆盖 governance、docs、
 skills、quality、品牌资产、Codex OS、wording、task-loop、prompts、diff 和 secret scan。
 
 ## 反模式

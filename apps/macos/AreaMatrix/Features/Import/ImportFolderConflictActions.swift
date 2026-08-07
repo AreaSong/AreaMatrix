@@ -16,9 +16,14 @@ enum ImportFolderConflictPrecheckResult: Equatable {
 
 struct CoreImportFolderConflictPrechecker: ImportFolderConflictPrechecking {
     private let fileLoader: any ImportBatchCoreFileLoading
+    private let resourceAccess: any ImportFileResourceAccessing
 
-    init(fileLoader: any ImportBatchCoreFileLoading) {
+    init(
+        fileLoader: any ImportBatchCoreFileLoading,
+        resourceAccess: any ImportFileResourceAccessing
+    ) {
         self.fileLoader = fileLoader
+        self.resourceAccess = resourceAccess
     }
 
     func precheckFolderConflicts(
@@ -51,7 +56,7 @@ struct CoreImportFolderConflictPrechecker: ImportFolderConflictPrechecking {
         against files: [FileEntrySnapshot]
     ) -> ImportFolderConflictPrecheckResult? {
         do {
-            let sourceHash = try ImportSingleFileHasher.sha256Hex(for: row.fileURL)
+            let sourceHash = try resourceAccess.sha256Hex(for: row.fileURL)
             if let duplicate = files.first(where: { $0.hashSha256 == sourceHash }) {
                 return .duplicate(existingPath: duplicate.path)
             }

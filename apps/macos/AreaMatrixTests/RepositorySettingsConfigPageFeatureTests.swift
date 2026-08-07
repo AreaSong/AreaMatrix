@@ -14,7 +14,8 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             loader: loader,
             updater: updater,
-            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         await model.load()
@@ -39,10 +40,11 @@ final class RepositorySettingsConfigPageFeatureTests: XCTestCase {
             repoPath: "/tmp/repo",
             loader: StaticConfigurationLoader(config: current),
             updater: updater,
-            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
-        let didSave = await model.saveContentLanguage(.en, currentConfig: current)
+        let didSave = await model.saveContentLanguage(RepositoryContentLanguage.en, currentConfig: current)
 
         XCTAssertTrue(didSave)
         await updater.assertConfigurationUpdateRequests([RecordingConfigurationUpdater.Request(

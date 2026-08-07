@@ -98,7 +98,7 @@ final class DetailNoteModel: ObservableObject {
         repoPath: String,
         noteStore: any CoreNoteReadingWriting,
         errorMapper: any CoreErrorMapping,
-        inFlightTracker: any InFlightFileChangeTracking = InFlightFileChangeTracker.shared,
+        inFlightTracker: any InFlightFileChangeTracking,
         debounceNanoseconds: UInt64 = 800_000_000
     ) {
         self.repoPath = repoPath

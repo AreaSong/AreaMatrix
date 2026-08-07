@@ -27,63 +27,21 @@ private let expectedAppPlatformServiceSurface = [
 
 private let expectedFeaturePlatformServiceFacades = [
     "PlatformServices/AboutSettingsPlatformServices.swift:enum AboutSettingsPlatformServices",
-    "PlatformServices/AboutSettingsPlatformServices.swift:enum PlatformDifferencesPlatformServices",
     "PlatformServices/AdvancedSettingsPlatformServices.swift:enum AdvancedSettingsPlatformServices",
-    "PlatformServices/ClassifierRulesPlatformServices.swift:enum ClassifierSettingsPlatformServices",
     "PlatformServices/GeneralSettingsPlatformServices.swift:enum GeneralSettingsPlatformServices",
     "PlatformServices/ImportPlatformServices.swift:enum ImportPlatformServices",
     "PlatformServices/IntegrationsSettingsPlatformServices.swift:enum IntegrationsSettingsPlatformServices",
-    "PlatformServices/LocalModelPlatformServices.swift:enum LocalModelStatusPlatformServices",
-    "PlatformServices/MainExternalSyncEvents.swift:enum ICloudConflictListPlatformServices",
-    "PlatformServices/OnboardingPlatformServices.swift:enum OnboardingPlatformServices",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:enum RepositorySettingsPlatformServices"
+    "PlatformServices/LocalModelPlatformServices.swift:enum LocalModelStatusPlatformServices"
 ]
 
 private let expectedFeaturePlatformServiceSurface = [
-    "PlatformServices/AboutSettingsPlatformServices.swift:static var accessibilityAnnouncer",
-    "PlatformServices/AboutSettingsPlatformServices.swift:static var appVersionReader",
-    "PlatformServices/AboutSettingsPlatformServices.swift:static var appVersionReader",
-    "PlatformServices/AboutSettingsPlatformServices.swift:static var externalLinkOpener",
-    "PlatformServices/AboutSettingsPlatformServices.swift:static var metadataReader",
-    "PlatformServices/AboutSettingsPlatformServices.swift:static var stringCopier",
-    "PlatformServices/AdvancedSettingsPlatformServices.swift:static var appVersionReader",
-    "PlatformServices/AdvancedSettingsPlatformServices.swift:static var diagnosticSummaryCopier",
-    "PlatformServices/AdvancedSettingsPlatformServices.swift:static var diagnosticsPackageHandler",
-    "PlatformServices/AdvancedSettingsPlatformServices.swift:static var diagnosticsPackagePreviewer",
-    "PlatformServices/AdvancedSettingsPlatformServices.swift:static var metadataReader",
-    "PlatformServices/AdvancedSettingsPlatformServices.swift:static var rootOverviewInspector",
-    "PlatformServices/ClassifierRulesPlatformServices.swift:static var accessibilityAnnouncer",
-    "PlatformServices/ClassifierRulesPlatformServices.swift:static var fileOpener",
-    "PlatformServices/ClassifierRulesPlatformServices.swift:static var fileRevealer",
-    "PlatformServices/ClassifierRulesPlatformServices.swift:static var finderOpener",
-    "PlatformServices/GeneralSettingsPlatformServices.swift:static var ignoreRulesManager",
-    "PlatformServices/GeneralSettingsPlatformServices.swift:static var rootOverviewInspector",
-    "PlatformServices/GeneralSettingsPlatformServices.swift:static var rootOverviewRevealer",
+    "PlatformServices/ImportPlatformServices.swift:static var fileResourceAccess",
     "PlatformServices/ImportPlatformServices.swift:static var folderScanner",
     "PlatformServices/ImportPlatformServices.swift:static var sourcePreflightInspector",
-    "PlatformServices/IntegrationsSettingsPlatformServices.swift:static var finderOpener",
-    "PlatformServices/IntegrationsSettingsPlatformServices.swift:static var helpOpener",
-    "PlatformServices/IntegrationsSettingsPlatformServices.swift:static var statusDetector",
-    "PlatformServices/LocalModelPlatformServices.swift:static var diagnosticsCopier",
-    "PlatformServices/LocalModelPlatformServices.swift:static var folderOpener",
-    "PlatformServices/LocalModelPlatformServices.swift:static var installHelpOpener",
-    "PlatformServices/LocalModelPlatformServices.swift:static var storageLocationProvider",
-    "PlatformServices/MainExternalSyncEvents.swift:static var fileRevealer",
-    "PlatformServices/MainExternalSyncEvents.swift:static var repositoryFinderOpener",
     "PlatformServices/Observability/DiagnosticPackageModels.swift:static var wireNames",
     "PlatformServices/Observability/DiagnosticPackageWriter.swift:static var defaultStagingRootURL",
     "PlatformServices/Observability/ObservabilityCatalog.swift:static var all",
-    "PlatformServices/Observability/ObservabilityEventWireCoding.swift:static var wireNames",
-    "PlatformServices/OnboardingPlatformServices.swift:static var accessibilityAnnouncer",
-    "PlatformServices/OnboardingPlatformServices.swift:static var metadataReader",
-    "PlatformServices/OnboardingPlatformServices.swift:static var systemCapabilityChecker",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var accessibilityAnnouncer",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var appVersionReader",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var finderOpener",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var generatedOverviewRevealer",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var metadataPresenceChecker",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var metadataReader",
-    "PlatformServices/RepositoryMetadataPresencePlatformServices.swift:static var pathCopier"
+    "PlatformServices/Observability/ObservabilityEventWireCoding.swift:static var wireNames"
 ]
 
 final class AppPlatformServicesGovernanceTests: MacOSGovernanceTestCase {
@@ -169,6 +127,52 @@ final class AppPlatformServicesGovernanceTests: MacOSGovernanceTestCase {
             expected,
             "Default accessibility announcements should be constructed once through " +
                 "AppPlatformServices.accessibilityAnnouncer; feature platform facades should reuse that shared root."
+        )
+    }
+
+    func testPlatformAdaptersRequireExplicitSharedDependencies() throws {
+        let adapterPaths = Set([
+            "App/AppPlatformServiceAdapters.swift",
+            "App/RepositoryIgnoreRulesManager.swift",
+            "PlatformServices/AboutSettingsPlatformServices.swift",
+            "PlatformServices/AdvancedSettingsPlatformServices.swift",
+            "PlatformServices/IntegrationsSettingsPlatformServices.swift",
+            "PlatformServices/LocalModelPlatformServices.swift"
+        ])
+        let violations = try productionSwiftFiles()
+            .filter { adapterPaths.contains(relativeProductionPath(for: $0)) }
+            .flatMap {
+                try sourceRegexViolations(
+                    in: $0,
+                    pattern: #"\b(?:AppPlatformServices|OnboardingPlatformServices)\."#
+                )
+            }
+            .sorted()
+
+        XCTAssertEqual(
+            violations,
+            [],
+            "Low-risk platform adapters must receive shared platform capabilities explicitly; " +
+                "initializer defaults must not reach back into AppPlatformServices."
+        )
+    }
+
+    func testPlatformServicesDoNotReachBackIntoAppComposition() throws {
+        let violations = try productionSwiftFiles()
+            .filter { relativeProductionPath(for: $0).hasPrefix("PlatformServices/") }
+            .flatMap {
+                try sourceRegexViolations(
+                    in: $0,
+                    pattern: #"\b(?:AppPlatformServices|OnboardingPlatformServices)\."#
+                )
+            }
+            .sorted()
+
+        XCTAssertEqual(
+            violations,
+            [],
+            "PlatformServices must expose implementations/factories and receive shared capabilities "
+                + "from App composition; it must not reach back into AppPlatformServices or another global facade."
         )
     }
 

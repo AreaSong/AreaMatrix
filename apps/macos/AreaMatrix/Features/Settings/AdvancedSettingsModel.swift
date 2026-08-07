@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Combine
 import Foundation
 
@@ -38,14 +39,12 @@ final class AdvancedSettingsModel: ObservableObject {
         repoPath: String,
         loader: any CoreConfigurationLoading,
         updater: any CoreConfigurationUpdating,
-        rootOverviewInspector: any RootOverviewFileInspecting =
-            AdvancedSettingsPlatformServices.rootOverviewInspector,
+        rootOverviewInspector: any RootOverviewFileInspecting,
         diagnosticsCollector: any CoreDiagnosticsCollecting,
-        appVersionReader: any AppVersionReading = AdvancedSettingsPlatformServices.appVersionReader,
+        appVersionReader: any AppVersionReading,
         coreVersionReader: any CoreVersionReading,
-        metadataReader: any ExistingRepositoryMetadataReading = AdvancedSettingsPlatformServices.metadataReader,
-        summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying =
-            AdvancedSettingsPlatformServices.diagnosticSummaryCopier,
+        metadataReader: any ExistingRepositoryMetadataReading,
+        summaryCopier: any AdvancedSettingsDiagnosticSummaryCopying,
         errorMapper: any CoreErrorMapping
     ) {
         self.repoPath = repoPath

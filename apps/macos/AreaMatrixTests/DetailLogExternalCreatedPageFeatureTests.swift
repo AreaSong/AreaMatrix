@@ -7,7 +7,8 @@ final class DetailLogExternalCreatedPageFeatureTests: XCTestCase {
         let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalCreatedWatcherTests")
         defer { removeTestTemporaryItems(repoURL) }
         let watcher = await MainExternalCreatedFileWatcher(
-            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 10)
+            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 10),
+            inFlightTracker: InFlightFileChangeTracker()
         )
 
         await watcher.start(repoPath: "  \n")

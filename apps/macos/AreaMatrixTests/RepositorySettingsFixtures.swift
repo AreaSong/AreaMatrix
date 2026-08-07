@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+@testable import AreaMatrixCoreContracts
 
 extension AppRepoConfigSnapshot {
     static func repositorySettingsConfigFixture(repoPath: String) -> AppRepoConfigSnapshot {

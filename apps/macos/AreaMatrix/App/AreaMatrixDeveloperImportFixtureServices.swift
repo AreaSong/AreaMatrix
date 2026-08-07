@@ -4,7 +4,24 @@ import Foundation
 struct DeveloperImportScenarioServices: CoreCategoryPredicting, CoreFileImporting, CoreBatchCopyImporting,
     CoreImportConflictBatching, ImportBatchDuplicatePrechecking, ImportBatchNameConflictPrechecking,
     ImportFolderScanning, ImportFolderConflictPrechecking, ImportSingleFilePreflighting,
-    ICloudPlaceholderDownloading, ImportBatchCoreFileLoading, CoreUndoActionLogging {
+    SourcePreflightInspecting, ImportFileResourceAccessing, ICloudPlaceholderDownloading,
+    ImportBatchCoreFileLoading, CoreUndoActionLogging {
+    func isDirectory(_ url: URL) -> Bool {
+        url.path.hasSuffix("/")
+    }
+
+    func isICloudPlaceholder(_ url: URL) -> Bool {
+        url.path.hasSuffix(".icloud")
+    }
+
+    func fileSizeBytes(_: URL) -> Int64? {
+        48128
+    }
+
+    func sha256Hex(for _: URL) throws -> String {
+        "developer-import-hash"
+    }
+
     func predictCategory(repoPath _: String, filename: String) async throws -> ClassifyResultSnapshot {
         DeveloperImportScenarioFixture.prediction(filename: filename)
     }
@@ -120,6 +137,10 @@ struct DeveloperImportScenarioServices: CoreCategoryPredicting, CoreFileImportin
             conflict: .none,
             keepBothTargetRelativePath: nil
         )
+    }
+
+    func inspect(sourceURL _: URL) throws -> SourcePreflightSnapshot {
+        SourcePreflightSnapshot(sizeBytes: 48128, modifiedAt: 1_778_738_400)
     }
 
     func downloadPlaceholder(at _: URL) async throws {}

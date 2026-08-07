@@ -45,6 +45,11 @@ AreaMatrix 使用 SemVer：`MAJOR.MINOR.PATCH`。
 
 仓库内的发布状态工具可以聚合或审计证据，但只读检查不能替代真实签名、公证、iCloud 环境、干净 Mac 或外部测试。历史发布记录和未关闭外部条件从 [workflow versions](../../workflow/versions/README.md) 与 [residual ledger](../../workflow/residuals/README.md) 查阅。
 
+仓库还提供手动触发的 `Release Evidence Preflight` workflow。它只运行
+`./dev release preflight`、`./dev release evidence-audit` 和 `./dev release status`，上传脱敏后的机器可读快照，
+并在任一门禁未通过时保持 workflow 失败。该 workflow 不创建 tag、GitHub Release、签名产物或公告；它的作用是
+让签名、公证、iCloud、clean Mac 和发布决策的缺口在远端持续可见，不能把预检快照当成正式分发证据。
+
 发布负责人可以使用以下只读入口检查仓库记录：
 
 ```bash

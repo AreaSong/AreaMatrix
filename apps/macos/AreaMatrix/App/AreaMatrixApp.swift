@@ -8,6 +8,7 @@ struct AreaMatrixApp: App {
     @StateObject private var languageStore: AppLanguageStore
     @StateObject private var commandRouter = AppCommandRouter.shared
     private let dependencies = AppDependencyContainer.live
+    private let observabilityRuntime = ObservabilityRuntimeAssembly.shared
 
     init() {
         let commandRouter = AppCommandRouter.shared
@@ -71,10 +72,18 @@ struct AreaMatrixApp: App {
         if let configuration = AreaMatrixDeveloperScenario.current {
             AreaMatrixDeveloperScenarioView(configuration: configuration)
         } else {
-            MainWindow(dependencies: dependencies, commandRouter: commandRouter)
+            MainWindow(
+                dependencies: dependencies,
+                observabilityRuntime: observabilityRuntime,
+                commandRouter: commandRouter
+            )
         }
         #else
-        MainWindow(dependencies: dependencies, commandRouter: commandRouter)
+        MainWindow(
+            dependencies: dependencies,
+            observabilityRuntime: observabilityRuntime,
+            commandRouter: commandRouter
+        )
         #endif
     }
 }
@@ -233,48 +242,82 @@ final class AreaMatrixDockOpenAppDelegate: NSObject, NSApplicationDelegate {
 
 import Foundation
 
-final class AppLogger: Sendable {
-    static let shared = AppLogger()
+protocol AppUIActionLogging: Sendable {
+    func logUIAction(_ actionID: String, context: AppUIActionContext)
 
-    private let hub: ObservabilityHub
+    func recordUIAction(actionID: String, context: AppUIActionContext) async
 
-    init(hub: ObservabilityHub = .shared) {
-        self.hub = hub
-    }
+    func recordUIAction(traceContext: CoreImportTraceContext) async
 
-    func logUIAction(
-        _ actionID: String,
+    func recordSemanticEvent(_ event: ObservabilitySemanticEventInput) async
+}
+
+struct AppUIActionContext {
+    let severity: AppObservabilitySeverity
+    let traceID: String
+    let operationID: String
+    let retryOfOperationID: String?
+    let componentID: String
+
+    init(
         severity: AppObservabilitySeverity = .info,
         traceID: String = UUID().uuidString.lowercased(),
         operationID: String = UUID().uuidString.lowercased(),
         retryOfOperationID: String? = nil,
         componentID: String = "macos.ui"
     ) {
-        Task {
-            await recordUIAction(
-                actionID: actionID,
-                severity: severity,
-                componentID: componentID,
-                traceID: traceID,
-                operationID: operationID,
-                retryOfOperationID: retryOfOperationID
-            )
-        }
+        self.severity = severity
+        self.traceID = traceID
+        self.operationID = operationID
+        self.retryOfOperationID = retryOfOperationID
+        self.componentID = componentID
     }
 
-    func recordUIAction(
-        actionID: String,
-        severity: AppObservabilitySeverity = .info,
-        componentID: String = "macos.ui",
-        traceID: String = UUID().uuidString.lowercased(),
-        operationID: String = UUID().uuidString.lowercased(),
-        retryOfOperationID: String? = nil
-    ) async {
-        var event = ObservabilitySemanticEventInput(actionID: actionID, componentID: componentID)
-        event.traceID = traceID
-        event.operationID = operationID
-        event.retryOfOperationID = retryOfOperationID
-        event.severity = severity
+    static var `default`: Self {
+        Self()
+    }
+}
+
+extension AppUIActionLogging {
+    func logUIAction(_ actionID: String, context: AppUIActionContext = .default) {
+        logUIAction(actionID, context: context)
+    }
+
+    func recordUIAction(actionID: String, context: AppUIActionContext = .default) async {
+        await recordUIAction(actionID: actionID, context: context)
+    }
+}
+
+/// Keeps previews and isolated test fixtures free of process-wide observability side effects.
+struct NoopAppUIActionLogger: AppUIActionLogging {
+    func logUIAction(_: String, context _: AppUIActionContext) {}
+
+    func recordUIAction(actionID _: String, context _: AppUIActionContext) async {}
+
+    func recordUIAction(traceContext _: CoreImportTraceContext) async {}
+
+    func recordSemanticEvent(_: ObservabilitySemanticEventInput) async {}
+}
+
+final class AppLogger: AppUIActionLogging {
+    static let shared = AppLogger(hub: .shared)
+
+    private let hub: ObservabilityHub
+
+    init(hub: ObservabilityHub) {
+        self.hub = hub
+    }
+
+    func logUIAction(_ actionID: String, context: AppUIActionContext) {
+        Task { await recordUIAction(actionID: actionID, context: context) }
+    }
+
+    func recordUIAction(actionID: String, context: AppUIActionContext) async {
+        var event = ObservabilitySemanticEventInput(actionID: actionID, componentID: context.componentID)
+        event.traceID = context.traceID
+        event.operationID = context.operationID
+        event.retryOfOperationID = context.retryOfOperationID
+        event.severity = context.severity
         await record(event)
     }
 
@@ -289,6 +332,10 @@ final class AppLogger: Sendable {
         event.retryOfOperationID = traceContext.retryOfOperationID
         event.phase = "started"
         event.outcome = "started"
+        await record(event)
+    }
+
+    func recordSemanticEvent(_ event: ObservabilitySemanticEventInput) async {
         await record(event)
     }
 

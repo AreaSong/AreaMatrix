@@ -12,7 +12,10 @@ final class ExternalWatcherLifecycleTests: XCTestCase {
         try FileManager.default.createDirectory(at: repoA, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: repoB, withIntermediateDirectories: true)
         let syncer = SuspendedCursorExternalChangesSyncer()
-        let watcher = MainExternalCreatedFileWatcher(cursorStore: syncer)
+        let watcher = MainExternalCreatedFileWatcher(
+            cursorStore: syncer,
+            inFlightTracker: InFlightFileChangeTracker()
+        )
 
         let startA = Task { @MainActor in await watcher.start(repoPath: repoA.path) }
         await syncer.waitUntilCursorRequested(repoPath: repoA.path)
@@ -32,7 +35,10 @@ final class ExternalWatcherLifecycleTests: XCTestCase {
         let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixExternalWatcherStopGenerationTests")
         defer { removeTestTemporaryItems(repoURL) }
         let syncer = SuspendedCursorExternalChangesSyncer()
-        let watcher = MainExternalCreatedFileWatcher(cursorStore: syncer)
+        let watcher = MainExternalCreatedFileWatcher(
+            cursorStore: syncer,
+            inFlightTracker: InFlightFileChangeTracker()
+        )
 
         let start = Task { @MainActor in await watcher.start(repoPath: repoURL.path) }
         await syncer.waitUntilCursorRequested(repoPath: repoURL.path)
@@ -50,7 +56,8 @@ final class ExternalWatcherLifecycleTests: XCTestCase {
         defer { removeTestTemporaryItems(repoURL) }
 
         let cursorWatcher = MainExternalCreatedFileWatcher(
-            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 42)
+            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 42),
+            inFlightTracker: InFlightFileChangeTracker()
         )
         await cursorWatcher.start(repoPath: repoURL.path)
 
@@ -59,7 +66,8 @@ final class ExternalWatcherLifecycleTests: XCTestCase {
         cursorWatcher.stop()
 
         let missingCursorWatcher = MainExternalCreatedFileWatcher(
-            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: nil)
+            cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: nil),
+            inFlightTracker: InFlightFileChangeTracker()
         )
         await missingCursorWatcher.start(repoPath: repoURL.path)
 
@@ -76,6 +84,7 @@ final class ExternalWatcherLifecycleTests: XCTestCase {
         defer { removeTestTemporaryItems(repoURL) }
         let watcher = MainExternalCreatedFileWatcher(
             cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 50),
+            inFlightTracker: InFlightFileChangeTracker(),
             flushDelay: .milliseconds(1)
         )
         await watcher.start(repoPath: repoURL.path)
@@ -130,6 +139,7 @@ final class ExternalWatcherLifecycleTests: XCTestCase {
 
         let watcher = MainExternalCreatedFileWatcher(
             cursorStore: RecordingExternalChangesSyncer(result: .success(.createdFixture()), cursor: 100),
+            inFlightTracker: InFlightFileChangeTracker(),
             flushDelay: .milliseconds(1)
         )
         await watcher.start(repoPath: repoURL.path)

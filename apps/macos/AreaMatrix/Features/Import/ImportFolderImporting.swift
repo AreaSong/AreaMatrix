@@ -17,7 +17,7 @@ extension ImportFolderPreviewModel {
             componentID: "macos.import.folder"
         )
         clearLastFailureMapping()
-        await AppLogger.shared.recordUIAction(traceContext: actionContext)
+        await actionLogger.recordUIAction(traceContext: actionContext)
         let state = await importReadyFolderRows(
             input: ImportFolderImportRunInput(
                 readyRowIDs: readyRowIDs,

@@ -2,14 +2,13 @@ import XCTest
 
 final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
     func testRemainingDirectCoreBridgeDefaultsStayInventoriedForSpecializedRiskWork() throws {
-        let expected = [
-            "App/AppShellModel.swift:CoreBridge(:4",
-        ]
+        let expected: [String] = []
         let actual = try countedRegexMatches(
             in: productionSwiftFiles().filter { fileURL in
                 let path = relativeProductionPath(for: fileURL)
                 return path != "App/AppCoreServices.swift"
                     && path != "Bridge/CoreBridge.swift"
+                    && path != "App/CoreBridgeRuntimeAssembly.swift"
                     && path != "App/AreaMatrixAppSmokeTests.swift"
             },
             pattern: #"\bCoreBridge\s*\("#
@@ -18,8 +17,8 @@ final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertEqual(
             actual,
             expected,
-            "Direct default CoreBridge construction is restricted to the App composition root's " +
-                "startup/import/recovery lifecycle defaults. Feature code must resolve through its own dependency scope."
+            "Direct default CoreBridge construction must stay out of production defaults; " +
+                "all lifecycle callers should resolve through an explicit dependency scope."
         )
     }
 
@@ -320,19 +319,24 @@ final class AppShellCoreServiceGovernanceTests: MacOSGovernanceTestCase {
                 #"\bexternalChangesSyncer: any CoreExternalChangesSyncing\s*=\s*CoreBridge\s*\("#
             ].joined(separator: "|")
         )
-        let appShellPrefix = "App/AppShellModel.swift:"
-
         XCTAssertEqual(
             actual,
-            [
-                appShellPrefix + "repositoryInitializer: any CoreRepositoryInitializing = CoreBridge(",
-                appShellPrefix + "importProgressImporter: any CoreFileImporting = CoreBridge(",
-                appShellPrefix + "startupRecoverer: any CoreStartupRecovering = CoreBridge(",
-                appShellPrefix + "externalChangesSyncer: any CoreExternalChangesSyncing = CoreBridge("
-            ],
-            "AppShellModel may keep direct CoreBridge defaults only for initialization, import, startup " +
-                "recovery, and external-sync lifecycle write paths; lower-risk defaults should stay centralized."
+            [],
+            "AppShellModel defaults must use the process-scoped CoreBridge runtime; tests and special " +
+                "lifecycle scenarios should inject an isolated bridge explicitly."
         )
+        let source = try String(contentsOf: appShellFile, encoding: .utf8)
+        for dependency in [
+            "repositoryInitializer: any CoreRepositoryInitializing = AppCoreServices.repositoryInitializer",
+            "importProgressImporter: any CoreFileImporting = AppCoreServices.importProgressImporter",
+            "startupRecoverer: any CoreStartupRecovering = AppCoreServices.startupRecoverer",
+            "externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer"
+        ] {
+            XCTAssertTrue(
+                source.contains(dependency),
+                "AppShellModel lifecycle defaults must resolve through AppCoreServices: \(dependency)"
+            )
+        }
     }
 }
 

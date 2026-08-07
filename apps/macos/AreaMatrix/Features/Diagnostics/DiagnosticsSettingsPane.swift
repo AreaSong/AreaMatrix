@@ -14,8 +14,15 @@ struct DiagnosticsSettingsPane: View {
     private let loadsAutomatically: Bool
 
     @MainActor
-    init(repositoryURL: URL) {
-        _model = StateObject(wrappedValue: DiagnosticsSettingsModel(repositoryURL: repositoryURL))
+    init(repositoryURL: URL, dependencies: DiagnosticsFeatureDependencies) {
+        let runtime = dependencies.runtime()
+        _model = StateObject(wrappedValue: DiagnosticsSettingsModel(
+            runtime: runtime,
+            incidentManager: ObservabilityRuntimeIncidentAdapter(runtime: runtime),
+            packagePreviewer: dependencies.packagePreviewer,
+            packageHandler: dependencies.packageHandler,
+            repositoryURL: repositoryURL
+        ))
         loadsAutomatically = true
     }
 

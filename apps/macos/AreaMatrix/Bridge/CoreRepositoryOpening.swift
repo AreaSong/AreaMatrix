@@ -273,7 +273,7 @@ extension CoreBridge: CoreEmptyRepositoryOpening, CoreRepositoryTreeListing {
     func listTree(repoPath: String, locale: String) async throws -> RepositoryTreeNodeSnapshot {
         let coreLocale = CoreRepositoryTreeLocaleResolver.resolve(
             locale,
-            interfaceLocaleIdentifier: AppLanguageRuntime.shared.resolvedIdentifier()
+            interfaceLocaleIdentifier: interfaceLocaleIdentifierProvider()
         )
         let treeJSON = try await listTreeJSON(repoPath: repoPath, locale: coreLocale)
         return try decodeOpeningTreeSnapshot(treeJSON)

@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
 import XCTest
 
@@ -49,6 +50,8 @@ extension MainFileListModel {
         opening: RepositoryOpeningResult,
         fileLister: any CoreFileListing,
         fileDetailer: any CoreFileDetailing,
+        fileResourceAccess: any ImportFileResourceAccessing =
+            MainFileListModelTestDefaults.dependencies.fileResourceAccess,
         missingFileRecoverer: any CoreMissingFileRecovering =
             MainFileListModelTestDefaults.dependencies.missingFileRecoverer,
         missingFilePicker: any RepositoryMissingFilePicking =
@@ -101,6 +104,7 @@ extension MainFileListModel {
         self.init(
             opening: opening,
             dependencies: MainListFeatureDependencies(
+                fileResourceAccess: fileResourceAccess,
                 fileLister: fileLister,
                 fileDetailer: fileDetailer,
                 aiPrivacyRules: aiPrivacyRules,

@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
 import XCTest
 
@@ -14,20 +15,26 @@ final class RepositorySettingsRecoveryTests: XCTestCase {
                 result: .success(RepositoryOpeningResult.importSingleFileFixture(repoPath: "/tmp/repo"))
             ),
             scanSessionReader: RepoSettingsScanSessionReader(result: .success(nil)),
+            existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+            metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+            finderOpener: RecordingRepositoryFinderOpener(),
+            pathCopier: ShellRecordingPathCopier(),
+            generatedOverviewRevealer: RecordingRepositoryFileRevealer(),
             diagnosticsCollector: collector,
             coreVersionLoader: StaticCoreVersionReader(version: "0.1.0"),
-            errorMapper: RecordingCoreErrorMapper.repositorySettings()
+            errorMapper: RecordingCoreErrorMapper.repositorySettings(),
+            accessibilityAnnouncer: NoopAccessibilityAnnouncer()
         )
 
         model.requestDiagnosticsExport()
         let collection = Task { await model.collectDiagnostics() }
         await collector.waitUntilStarted()
-        XCTAssertEqual(model.diagnosticsState, .collecting)
+        XCTAssertEqual(model.diagnosticsState, RepositorySettingsDiagnosticsState.collecting)
 
         model.cancelDiagnosticsExport()
         await collector.finish()
         await collection.value
 
-        XCTAssertEqual(model.diagnosticsState, .idle)
+        XCTAssertEqual(model.diagnosticsState, RepositorySettingsDiagnosticsState.idle)
     }
 }

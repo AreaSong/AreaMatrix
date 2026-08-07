@@ -200,7 +200,9 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
         XCTAssertEqual(model.statusBanner, .resolvedICloudConflict(fileID: conflictFile.id, strategy: .keepBoth))
         XCTAssertEqual(model.detailLogState.iCloudConflictMinimalLoadedFileID, conflictFile.id)
     }
+}
 
+private extension ICloudConflictMinimalIntegrationTests {
     @MainActor
     private func makeMainFileListModel(
         conflictFile: FileEntrySnapshot,
@@ -282,7 +284,8 @@ final class ICloudConflictMinimalIntegrationTests: XCTestCase {
             noteModel: DetailNoteModel(
                 repoPath: "/tmp/iCloudConflictMinimal-repo",
                 noteStore: NoopNoteStore(),
-                errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictMinimalMapping())
+                errorMapper: StaticCoreErrorMapper(mapping: .iCloudConflictMinimalMapping()),
+                inFlightTracker: InFlightFileChangeTracker()
             )
         )
 

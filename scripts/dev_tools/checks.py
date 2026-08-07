@@ -478,6 +478,45 @@ def _check_macos_governance_test_membership(root: Path, failures: FailureCollect
             failures.fail(f"macOS governance test missing AreaMatrixTests Sources membership: {source_path}")
 
 
+MACOS_TEST_PLANS = {
+    "apps/macos/AreaMatrix-Unit.xctestplan": "Unit",
+    "apps/macos/AreaMatrix-Feature.xctestplan": "Feature",
+    "apps/macos/AreaMatrix-Integration.xctestplan": "Integration",
+    "apps/macos/AreaMatrix-Performance.xctestplan": "Performance",
+    "apps/macos/AreaMatrix-Release.xctestplan": "Release",
+}
+
+
+def _check_macos_test_plans(root: Path, failures: FailureCollector) -> None:
+    target_identifier = "0A0000000000000000000041"
+    for relative_path, expected_name in MACOS_TEST_PLANS.items():
+        path = root / relative_path
+        if not path.is_file():
+            failures.fail(f"missing macOS XCTest plan: {relative_path}")
+            continue
+        try:
+            payload = json.loads(_read(path))
+        except json.JSONDecodeError as error:
+            failures.fail(f"invalid macOS XCTest plan JSON: {relative_path}: {error}")
+            continue
+
+        configurations = payload.get("configurations", [])
+        if not configurations or configurations[0].get("name") != expected_name:
+            failures.fail(f"macOS XCTest plan has unexpected configuration name: {relative_path}")
+        targets = payload.get("testTargets", [])
+        if len(targets) != 1:
+            failures.fail(f"macOS XCTest plan must contain exactly one test target: {relative_path}")
+            continue
+        target = targets[0].get("target", {})
+        if target.get("name") != "AreaMatrixTests" or target.get("identifier") != target_identifier:
+            failures.fail(f"macOS XCTest plan must target AreaMatrixTests: {relative_path}")
+        selected = targets[0].get("selectedTests", [])
+        if not selected or any(not isinstance(item, str) or "/" not in item for item in selected):
+            failures.fail(f"macOS XCTest plan must list concrete class/test identifiers: {relative_path}")
+        if len(selected) != len(set(selected)):
+            failures.fail(f"macOS XCTest plan contains duplicate selected tests: {relative_path}")
+
+
 MACOS_DISPLAY_ARGUMENT_NAMES = (
     "accessibilityHint",
     "accessibilityLabel",
@@ -1540,6 +1579,23 @@ def _check_developer_workflow_contract(root: Path, failures: FailureCollector) -
         )
 
 
+def _check_ios_core_sdk_package_contract(root: Path, failures: FailureCollector) -> None:
+    package_path = root / "apps/ios/Package.swift"
+    if not package_path.is_file():
+        failures.fail("iOS package must exist for the CoreSDK consumer contract")
+        return
+    source = _read(package_path)
+    if '.package(path: ".core-sdk")' not in source:
+        failures.fail("apps/ios/Package.swift must consume the generated .core-sdk package")
+    if '.product(name: "AreaMatrixCoreSDK", package: ".core-sdk")' not in source:
+        failures.fail("apps/ios/Package.swift must depend on the AreaMatrixCoreSDK product")
+    if ".binaryTarget(" in source or 'path: ".core-sdk/AreaMatrixCoreFFI.xcframework"' in source:
+        failures.fail(
+            "apps/ios/Package.swift must not redeclare the CoreSDK binary target; "
+            "the generated package owns Carea_matrixFFI"
+        )
+
+
 def run_governance_check(root: Path | None = None) -> int:
     root = (root or project_root()).resolve()
     failures = FailureCollector()
@@ -1574,6 +1630,7 @@ def run_governance_check(root: Path | None = None) -> int:
         _check_file(root, failures, rel_path)
 
     _check_macos_governance_test_membership(root, failures)
+    _check_macos_test_plans(root, failures)
     _check_macos_localization_contract(root, failures)
     _check_ai_runtime_environment_contract(root, failures)
     _check_feature_evolution_evidence(root, failures)
@@ -1581,6 +1638,7 @@ def run_governance_check(root: Path | None = None) -> int:
     _check_repo_domain_coverage(root, failures)
     _check_code_correspondence(root, failures)
     _check_developer_workflow_contract(root, failures)
+    _check_ios_core_sdk_package_contract(root, failures)
     _check_core_api_contract_sync(root, failures)
     _check_data_model_schema_sync(root, failures)
 
@@ -1692,6 +1750,28 @@ def run_governance_check(root: Path | None = None) -> int:
     )
     _check_workflow_has_no_paths_filter(root, failures, ".github/workflows/core-ci.yml")
     _check_workflow_has_no_paths_filter(root, failures, ".github/workflows/macos-ci.yml")
+    for workflow in ("core-ci.yml", "macos-ci.yml", "governance-ci.yml"):
+        _require_text(
+            root,
+            failures,
+            f".github/workflows/{workflow}",
+            r"^permissions:\n[ \t]+contents:[ \t]+read$",
+            f"least-privilege contents permission ({workflow})",
+        )
+        _require_text(
+            root,
+            failures,
+            f".github/workflows/{workflow}",
+            r"(?s)^concurrency:\n[ \t]+group:[ \t]+areamatrix-\$\{\{ github\.workflow \}\}-\$\{\{ github\.ref \}\}\n[ \t]+cancel-in-progress:[ \t]+true",
+            f"concurrency cancellation ({workflow})",
+        )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/governance-ci.yml",
+        r"(?s)^  governance:\n.*?^    permissions:\n\s+contents:\s+read\n\s+security-events:\s+write",
+        "gitleaks security-events permission is scoped to the governance job",
+    )
     _require_text(
         root,
         failures,
@@ -1745,6 +1825,41 @@ def run_governance_check(root: Path | None = None) -> int:
         root,
         failures,
         ".github/workflows/macos-ci.yml",
+        r"(?s)^  ios-package:\n",
+        "iOS CoreSDK consumer job",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"run: test -f apps/ios/Package\.swift$",
+        "required iOS package gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"ln -s \.\./\.\./\.build/core-sdk/current apps/ios/\.core-sdk",
+        "iOS CoreSDK pointer consumer setup",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"swift build --package-path apps/ios",
+        "iOS Swift package build gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"swift test --package-path apps/ios",
+        "iOS Swift package test gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
         r"(?s)^  build:\n(?:(?!^  [A-Za-z0-9_-]+:).)*?^      - uses: dtolnay/rust-toolchain@stable$",
         "Xcode job Rust toolchain for source-bound CoreSDK verification",
     )
@@ -1765,6 +1880,20 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(
         root,
         failures,
+        "apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+        r"alwaysOutOfDate = 0;",
+        "Xcode CoreSDK Build Phase incremental execution",
+    )
+    _require_text(
+        root,
+        failures,
+        "apps/macos/AreaMatrix.xcodeproj/project.pbxproj",
+        r"basedOnDependencyAnalysis = 1;",
+        "Xcode CoreSDK Build Phase dependency analysis",
+    )
+    _require_text(
+        root,
+        failures,
         ".github/workflows/macos-ci.yml",
         r"run: test -d apps/macos/AreaMatrix\.xcodeproj$",
         "required macOS project gate",
@@ -1777,6 +1906,34 @@ def run_governance_check(root: Path | None = None) -> int:
         "required macOS source gate",
     )
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"\./dev test macos", "macOS test gate")
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"\./dev test macos --build-for-testing",
+        "single macOS build-for-testing gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"\./dev test macos --test-without-building",
+        "reusable macOS test-without-building gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"\./dev test macos --build-for-testing[\s\S]*?--enable-code-coverage",
+        "coverage instrumentation during macOS build-for-testing",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"--test-plan AreaMatrix-(?:Unit|Feature|Integration|Functional)",
+        "layered macOS XCTest plans",
+    )
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"--coverage-gate", "Swift coverage gate")
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"swiftlint lint --strict", "SwiftLint gate")
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"swiftformat --lint", "SwiftFormat gate")
@@ -1794,6 +1951,14 @@ def run_governance_check(root: Path | None = None) -> int:
         r'"name"\s*:\s*"AreaMatrixTests"',
         "functional XCTestPlan target",
     )
+    for plan_name in ("Unit", "Feature", "Integration", "Performance", "Release"):
+        _require_text(
+            root,
+            failures,
+            "apps/macos/AreaMatrix.xcodeproj/xcshareddata/xcschemes/AreaMatrix.xcscheme",
+            rf"AreaMatrix-{plan_name}\.xctestplan",
+            f"shared macOS {plan_name.lower()} XCTestPlan",
+        )
     _forbid_text(
         root,
         failures,
@@ -2172,6 +2337,7 @@ def run_quality_check(root: Path | None = None) -> int:
     _require_text(root, failures, ".codex/references/index.md", "./dev check wording", "wording audit reference")
     _require_text(root, failures, "docs/development/ci-governance.md", "./dev check quality", "CI quality smoke docs")
     _require_text(root, failures, "docs/development/ci-governance.md", "./dev check wording", "CI wording audit docs")
+    _require_text(root, failures, "docs/development/ci-governance.md", "./dev governance status", "governance status dashboard docs")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check quality", "CI quality smoke step")
     _require_text(root, failures, ".github/workflows/governance-ci.yml", r"\./dev check wording", "CI wording audit step")
 

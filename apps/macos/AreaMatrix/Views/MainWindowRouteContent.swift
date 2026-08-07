@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct MainWindowRouteContent: View {
@@ -10,12 +11,12 @@ struct MainWindowRouteContent: View {
     init(
         model: OnboardingModel,
         dependencies: AppDependencyContainer,
-        commandRouter: AppCommandRouter? = nil,
+        commandRouter: AppCommandRouter,
         windowCloser: (any WindowClosing)? = nil
     ) {
         self.model = model
         self.dependencies = dependencies
-        self.commandRouter = commandRouter ?? .shared
+        self.commandRouter = commandRouter
         self.windowCloser = windowCloser ?? dependencies.platform.windowCloser
     }
 
@@ -292,9 +293,10 @@ private extension MainWindowRouteContent {
                 model.showWelcome()
             },
             featureDependencies: dependencies.feature.settings,
-            aiDependencies: dependencies.feature.ai,
+            aiDependencies: dependencies.feature.aiFeature,
             sharedDependencies: dependencies.feature.shared,
             syncConflictsDependencies: dependencies.feature.syncConflicts,
+            diagnosticsDependencies: dependencies.feature.diagnostics,
             loader: dependencies.feature.settings.configurationLoader,
             updater: dependencies.feature.settings.configurationUpdater,
             errorMapper: dependencies.feature.shared.errorMapper
@@ -373,7 +375,7 @@ private extension MainWindowRouteContent {
         return MainRepositoryContentView(
             opening: displayOpening,
             state: state,
-            assembly: .live(opening: displayOpening, dependencies: dependencies),
+            assembly: .makeForProduction(opening: displayOpening, dependencies: dependencies),
             commandRouter: commandRouter,
             onImport: isImportProgressReadOnly ? {} : { model.chooseImportSources(opening: opening) },
             onDropImport: { urls, destination in

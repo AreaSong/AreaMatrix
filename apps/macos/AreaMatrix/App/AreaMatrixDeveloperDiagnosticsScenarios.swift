@@ -47,7 +47,9 @@ private struct DeveloperDiagnosticsSettingsScenario: View {
         let runtime = ObservabilityRuntimeAssembly(
             hub: hub,
             core: DeveloperDiagnosticsCoreFixture(),
-            sessionID: DeveloperDiagnosticsScenarioFixture.sessionID
+            resourceIdentityProvider: .shared,
+            sessionID: DeveloperDiagnosticsScenarioFixture.sessionID,
+            scheduler: .live
         )
         self.hub = hub
         model = DiagnosticsSettingsModel(

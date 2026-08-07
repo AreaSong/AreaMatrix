@@ -1,0 +1,36 @@
+{
+  "configurations" : [
+    {
+      "id" : "D4C4F3E3-6C58-4C50-9BB9-17A4C7A10A13",
+      "name" : "Integration",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:AreaMatrix.xcodeproj",
+      "identifier" : "0A0000000000000000000040",
+      "name" : "AreaMatrix"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "selectedTests" : [
+        "CoreBridgeRepositoryTests/testCoreBridgeValidatesTemporaryRepoPathWithoutCreatingMetadata",
+        "ValidatePathRepairRegressionTests/testAdoptExistingConfirmCallsRepositoryInitializerAndSavesPath",
+        "RepoSettingsPageIntegrationTests/testRepositorySettingsCrossPlatformPageIntegrationConnectsCoreConfigCapabilitiesAndSafeActions",
+        "ImportBatchICloudPageIntegrationTests/testBatchAddTagsPageIntegrationAllowsReadOnlyEntryButBlocksApply"
+      ],
+      "target" : {
+        "containerPath" : "container:AreaMatrix.xcodeproj",
+        "identifier" : "0A0000000000000000000041",
+        "name" : "AreaMatrixTests"
+      }
+    }
+  ],
+  "version" : 1
+}

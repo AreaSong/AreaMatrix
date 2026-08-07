@@ -78,7 +78,7 @@ struct AISummaryEditor: View {
                 registryReader: aiDependencies.privacyRuleRegistryReader,
                 focus: route.focus,
                 onClose: {
-                privacyRuleRoute = nil
+                    privacyRuleRoute = nil
                 }
             )
         }

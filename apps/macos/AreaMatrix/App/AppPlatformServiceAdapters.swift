@@ -1,4 +1,5 @@
 import AppKit
+import AreaMatrixUIFoundation
 import Foundation
 import UniformTypeIdentifiers
 
@@ -65,25 +66,9 @@ protocol WindowClosing {
     func closeKeyWindow()
 }
 
-enum AppAppearancePreference {
-    case system
-    case light
-    case dark
-}
-
-enum AppHapticFeedback {
-    case alignment
-    case levelChange
-}
-
-protocol AppInteractionFeedbackPerforming {
-    @MainActor
-    func applyAppearance(_ preference: AppAppearancePreference)
-    @MainActor
-    func setPointingCursor(active: Bool)
-    @MainActor
-    func performHaptic(_ feedback: AppHapticFeedback)
-}
+typealias AppAppearancePreference = AreaMatrixAppearancePreference
+typealias AppHapticFeedback = AreaMatrixHapticFeedback
+typealias AppInteractionFeedbackPerforming = AreaMatrixInteractionFeedbackPerforming
 
 struct AppKitInteractionFeedbackPerformer: AppInteractionFeedbackPerforming {
     @MainActor
@@ -124,7 +109,7 @@ struct WelcomeHelpOpener: WelcomeHelpOpening {
 
     private let externalURLOpener: any ExternalURLStringOpening
 
-    init(externalURLOpener: any ExternalURLStringOpening = AppPlatformServices.externalURLStringOpener) {
+    init(externalURLOpener: any ExternalURLStringOpening) {
         self.externalURLOpener = externalURLOpener
     }
 
@@ -197,7 +182,7 @@ struct NSOpenPanelRepositoryMissingFilePicker: RepositoryMissingFilePicking {
 struct NSWorkspaceRepositoryFinderOpener: RepositoryFinderOpening {
     private let localURLOpener: any LocalFileURLOpening
 
-    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+    init(localURLOpener: any LocalFileURLOpening) {
         self.localURLOpener = localURLOpener
     }
 
@@ -217,7 +202,7 @@ struct NSWorkspaceRepositoryFinderOpener: RepositoryFinderOpening {
 struct NSWorkspaceRepositoryFileRevealer: RepositoryFileRevealing {
     private let localURLOpener: any LocalFileURLOpening
 
-    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+    init(localURLOpener: any LocalFileURLOpening) {
         self.localURLOpener = localURLOpener
     }
 
@@ -235,7 +220,7 @@ struct NSWorkspaceRepositoryFileRevealer: RepositoryFileRevealing {
 struct NSWorkspaceRepositoryFileOpener: RepositoryFileOpening {
     private let localURLOpener: any LocalFileURLOpening
 
-    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+    init(localURLOpener: any LocalFileURLOpening) {
         self.localURLOpener = localURLOpener
     }
 
@@ -264,7 +249,7 @@ struct NSPasteboardStringWriter: PasteboardStringWriting {
 struct NSPasteboardRepositoryPathCopier: RepositoryPathCopying {
     private let writer: any PasteboardStringWriting
 
-    init(writer: any PasteboardStringWriting = AppPlatformServices.pasteboardStringWriter) {
+    init(writer: any PasteboardStringWriting) {
         self.writer = writer
     }
 

@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
 import XCTest
 
@@ -56,8 +57,12 @@ final class AdvancedSettingsIntegrationTests: XCTestCase {
             repoPath: "/tmp/advancedSettings-broken-repo",
             loader: RecordingConfigurationLoader(result: .failure(CoreError.Config(reason: "invalid repo_config"))),
             updater: NoopConfigurationUpdater(),
+            rootOverviewInspector: StaticRootOverviewFileInspector(status: .missing),
             diagnosticsCollector: RecordingDiagnosticsCollector(snapshot: .testFixture()),
+            appVersionReader: StaticAppVersionReader(version: "1.0.0"),
             coreVersionReader: StaticCoreVersionReader(version: "0.1.0"),
+            metadataReader: StaticExistingRepositoryMetadataReader(schemaVersion: 1),
+            summaryCopier: RecordingAdvancedDiagnosticCopier(),
             errorMapper: CoreBridge()
         )
 

@@ -58,6 +58,8 @@
 		0A0B5B000000000000000015 /* ObservabilityHubStoreContractFileSystemTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5B000000000000000016 /* ObservabilityHubStoreContractFileSystemTestSupport.swift */; };
 		0A0B5C000000000000000001 /* ObservabilityEventWireCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5C000000000000000002 /* ObservabilityEventWireCoding.swift */; };
 		0A0B50000000000000000001 /* ObservabilityRuntimeAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000011 /* ObservabilityRuntimeAssembly.swift */; };
+		E10000000000000000000056 /* ObservabilityRuntimeAssemblyDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000057 /* ObservabilityRuntimeAssemblyDefaults.swift */; };
+		E10000000000000000000060 /* CoreBridgeRuntimeAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000061 /* CoreBridgeRuntimeAssembly.swift */; };
 		0A0B50000000000000000002 /* CoreObservabilityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000012 /* CoreObservabilityBridge.swift */; };
 		0A0B5F000000000000000201 /* CoreImportObservability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B5F000000000000000202 /* CoreImportObservability.swift */; };
 		0A0B50000000000000000003 /* ObservabilityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B50000000000000000013 /* ObservabilityModels.swift */; };
@@ -146,6 +148,11 @@
 		0A0000000000000000000FE6 /* AreaMatrixAppSmokeTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FE7 /* AreaMatrixAppSmokeTestDoubleSupport.swift */; };
 		0A000000000000000000109C /* AreaMatrixAppSmokeFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000109D /* AreaMatrixAppSmokeFixtures.swift */; };
 		0A0000000000000000000005 /* CoreBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000017 /* CoreBridge.swift */; };
+		E10000000000000000000041 /* CoreBridgeRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000043 /* CoreBridgeRuntime.swift */; };
+		E10000000000000000000042 /* CoreBridgeGeneratedAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000044 /* CoreBridgeGeneratedAdapter.swift */; };
+		E10000000000000000000046 /* CoreBridgeBoundaryGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000045 /* CoreBridgeBoundaryGovernanceTests.swift */; };
+		E10000000000000000000047 /* AppCoreServicesFeatureDependencyGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000048 /* AppCoreServicesFeatureDependencyGovernanceTests.swift */; };
+		E10000000000000000000049 /* MacOSCoreBridgePackageGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000050 /* MacOSCoreBridgePackageGovernanceTests.swift */; };
 		0A0000000000000000000A24 /* CoreBridgeFoundation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000A25 /* CoreBridgeFoundation.swift */; };
 		0A0000000000000000000006 /* AppShellModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000018 /* AppShellModel.swift */; };
 		0A0000000000000000000FE4 /* AppShellBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FE5 /* AppShellBootstrap.swift */; };
@@ -199,28 +206,15 @@
 		0A0000000000000000000D01 /* AreaMatrixTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D11 /* AreaMatrixTheme.swift */; };
 		0A0000000000000000000D02 /* AreaMatrixAmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D12 /* AreaMatrixAmbientBackground.swift */; };
 		0A0000000000000000000D03 /* AreaMatrixControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D13 /* AreaMatrixControls.swift */; };
-		0A0000000000000000000D04 /* AreaMatrixBrandAssets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D14 /* AreaMatrixBrandAssets.swift */; };
 		0A0000000000000000000D05 /* AreaMatrixWindowChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D15 /* AreaMatrixWindowChrome.swift */; };
-		0A0000000000000000000D06 /* AreaMatrixMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D16 /* AreaMatrixMotion.swift */; };
-		0A0000000000000000000F62 /* AreaMatrixSceneMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000F63 /* AreaMatrixSceneMotion.swift */; };
-		0A0000000000000000000D07 /* AreaMatrixTextEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D17 /* AreaMatrixTextEffects.swift */; };
 		0A0000000000000000000D08 /* AreaMatrixOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D19 /* AreaMatrixOverlays.swift */; };
 		0A0000000000000000000D09 /* AreaMatrixSceneComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1A /* AreaMatrixSceneComponents.swift */; };
-		0A0000000000000000000D0A /* AreaMatrixFeatureCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1B /* AreaMatrixFeatureCard.swift */; };
-		0A0B69000000000000000001 /* AreaMatrixLucideIconShapes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0B69000000000000000002 /* AreaMatrixLucideIconShapes.swift */; };
 		0A0000000000000000000D0B /* AreaMatrixClassificationDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1C /* AreaMatrixClassificationDiorama.swift */; };
 		0A0000000000000000000D0C /* AreaMatrixProtectionDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */; };
 		0A0000000000000000000D0D /* AreaMatrixTimelineDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */; };
 		0A0000000000000000000D0E /* AreaMatrixWorkflowDiorama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */; };
-		0A0000000000000000000D20 /* ReasonStatusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D21 /* ReasonStatusCard.swift */; };
-		0A0000000000000000000D22 /* TintedStatusBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D23 /* TintedStatusBanner.swift */; };
-		0A0000000000000000001B10 /* AreaMatrixGlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001B11 /* AreaMatrixGlassCard.swift */; };
-		0A0000000000000000001B12 /* AreaMatrixStepHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001B13 /* AreaMatrixStepHeader.swift */; };
 		0A0000000000000000001B20 /* AreaMatrixMotionTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001B21 /* AreaMatrixMotionTokens.swift */; };
 		0A0000000000000000001B22 /* AreaMatrixPageShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001B23 /* AreaMatrixPageShell.swift */; };
-		0A0000000000000000000D24 /* NeutralSummaryPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D25 /* NeutralSummaryPanel.swift */; };
-		0A0000000000000000000D26 /* NeutralCapsuleChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D27 /* NeutralCapsuleChip.swift */; };
-		0A0000000000000000000D28 /* TintedCapsuleBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D29 /* TintedCapsuleBadge.swift */; };
 		0A0000000000000000000D2A /* LocalModelStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D2B /* LocalModelStatusView.swift */; };
 		0A0000000000000000000D2C /* DetailMetadataRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D2D /* DetailMetadataRows.swift */; };
 		0A0000000000000000000D2E /* SemanticSearchDetailBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000D2F /* SemanticSearchDetailBanner.swift */; };
@@ -268,6 +262,7 @@
 		0A0000000000000000001030 /* BatchFileActionEligibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001031 /* BatchFileActionEligibilityTests.swift */; };
 		0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */; };
 		0A00000000000000000000FC /* AreaMatrixShellTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000000FD /* AreaMatrixShellTestDoubleSupport.swift */; };
+		E10000000000000000000052 /* AreaMatrixFeatureDependencyTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000053 /* AreaMatrixFeatureDependencyTestSupport.swift */; };
 		0A00000000000000000008DC /* AreaMatrixShellFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008DD /* AreaMatrixShellFixtures.swift */; };
 		0A0000000000000000001930 /* TestSupportNamingGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001931 /* TestSupportNamingGovernanceTests.swift */; };
 		0A00000000000000000019A4 /* TestSupportNamingGovernanceTerms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000019A5 /* TestSupportNamingGovernanceTerms.swift */; };
@@ -280,6 +275,7 @@
 		7F1A2B3C4D5E6F708192A010 /* MacOSGovernanceFileSystemTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A011 /* MacOSGovernanceFileSystemTestSupport.swift */; };
 		7F1A2B3C4D5E6F708192A012 /* SwiftFileSizeGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A013 /* SwiftFileSizeGovernanceTests.swift */; };
 		0A0000000000000000001982 /* MacOSDefaultCoreServicesGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001983 /* MacOSDefaultCoreServicesGovernanceTests.swift */; };
+		E10000000000000000000058 /* MacOSAppCompositionGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000059 /* MacOSAppCompositionGovernanceTests.swift */; };
 		E10000000000000000000032 /* MacOSFeatureDependencyGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000033 /* MacOSFeatureDependencyGovernanceTests.swift */; };
 		7F1A2B3C4D5E6F708192A003 /* MainRepositoryRouteHostGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B3C4D5E6F708192A004 /* MainRepositoryRouteHostGovernanceTests.swift */; };
 		0A0000000000000000001984 /* AppCoreServicesGovernanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001985 /* AppCoreServicesGovernanceTests.swift */; };
@@ -427,7 +423,6 @@
 		0A0000000000000000000810 /* RepositorySettingsConfigModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */; };
 		0A0000000000000000000FC8 /* RepositoryMetadataPresencePlatformServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FC9 /* RepositoryMetadataPresencePlatformServices.swift */; };
 		0A0000000000000000000FCA /* IntegrationsSettingsPlatformServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FCB /* IntegrationsSettingsPlatformServices.swift */; };
-		0A0000000000000000000FCC /* ClassifierRulesPlatformServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FCD /* ClassifierRulesPlatformServices.swift */; };
 		0A0000000000000000000FCE /* AdvancedSettingsPlatformServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FCF /* AdvancedSettingsPlatformServices.swift */; };
 		0A9990000000000000000000 /* GeneralSettingsPlatformServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9990000000000000000001 /* GeneralSettingsPlatformServices.swift */; };
 		0A0000000000000000000FD0 /* LocalModelPlatformServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000FD1 /* LocalModelPlatformServices.swift */; };
@@ -647,6 +642,7 @@
 		0A00000000000000000001F4 /* ImportConflictIntegrationVerifyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F5 /* ImportConflictIntegrationVerifyTests.swift */; };
 		0A00000000000000000008B6 /* ImportConflictIntegrationTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000008B7 /* ImportConflictIntegrationTestSupport.swift */; };
 		0A0000000000000000001924 /* ImportConflictIntegrationTestDoubleSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000001925 /* ImportConflictIntegrationTestDoubleSupport.swift */; };
+		0A00000000000000000001F8 /* ImportSingleFilePreviewModelConflictRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F9 /* ImportSingleFilePreviewModelConflictRecovery.swift */; };
 		0A00000000000000000001F6 /* ImportFolderCoreBridgeModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001F7 /* ImportFolderCoreBridgeModeTests.swift */; };
 		0A00000000000000000001E8 /* ImportSingleFilePreviewPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */; };
 		0A00000000000000000001EA /* ImportEntrySingleFileFooter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */; };
@@ -718,6 +714,7 @@
 		0A0000000000000000000758 /* AIPrivacyRulesRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */; };
 		0A0000000000000000000936 /* AIPrivacyRulesModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000937 /* AIPrivacyRulesModel.swift */; };
 		0A000000000000000000086A /* AISettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A000000000000000000086B /* AISettingsPane.swift */; };
+		E10000000000000000000054 /* AISettingsPaneSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000055 /* AISettingsPaneSupportViews.swift */; };
 		0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */; };
 		0A0000000000000000000870 /* AIClassificationSuggestionPanelModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000871 /* AIClassificationSuggestionPanelModel.swift */; };
 		0A0000000000000000000930 /* AIClassificationFallbackStatusRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0000000000000000000931 /* AIClassificationFallbackStatusRegion.swift */; };
@@ -912,6 +909,7 @@
 		E10000000000000000000008 /* AreaMatrixUIFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = E10000000000000000000009 /* AreaMatrixUIFoundation */; };
 		E10000000000000000000012 /* AreaMatrixPlatformKit in Frameworks */ = {isa = PBXBuildFile; productRef = E10000000000000000000013 /* AreaMatrixPlatformKit */; };
 		E10000000000000000000014 /* AreaMatrixCoreBridgeContract in Frameworks */ = {isa = PBXBuildFile; productRef = E10000000000000000000015 /* AreaMatrixCoreBridgeContract */; };
+		E10000000000000000000016 /* AreaMatrixCoreBridgeRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = E10000000000000000000022 /* AreaMatrixCoreBridgeRuntime */; };
 		E10000000000000000000006 /* FeatureDependencyDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000007 /* FeatureDependencyDefaults.swift */; };
 		E10000000000000000000017 /* AppDependencyContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000018 /* AppDependencyContainer.swift */; };
 		E10000000000000000000019 /* AppFeatureDependencyContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000000020 /* AppFeatureDependencyContainer.swift */; };
@@ -983,6 +981,8 @@
 		0A0B5B000000000000000016 /* ObservabilityHubStoreContractFileSystemTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/Observability/ObservabilityHubStoreContractFileSystemTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A0B5C000000000000000002 /* ObservabilityEventWireCoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityEventWireCoding.swift; sourceTree = SOURCE_ROOT; };
 		0A0B50000000000000000011 /* ObservabilityRuntimeAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/ObservabilityRuntimeAssembly.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000057 /* ObservabilityRuntimeAssemblyDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/ObservabilityRuntimeAssemblyDefaults.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000061 /* CoreBridgeRuntimeAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/CoreBridgeRuntimeAssembly.swift; sourceTree = SOURCE_ROOT; };
 		0A0B50000000000000000012 /* CoreObservabilityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreObservabilityBridge.swift; sourceTree = SOURCE_ROOT; };
 		0A0B5F000000000000000202 /* CoreImportObservability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreImportObservability.swift; sourceTree = SOURCE_ROOT; };
 		0A0B50000000000000000013 /* ObservabilityModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/Observability/ObservabilityModels.swift; sourceTree = SOURCE_ROOT; };
@@ -1072,6 +1072,11 @@
 		0A000000000000000000109D /* AreaMatrixAppSmokeFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixAppSmokeFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000016 /* AreaMatrixTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AreaMatrixTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A0000000000000000000017 /* CoreBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBridge.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000043 /* CoreBridgeRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBridgeRuntime.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000044 /* CoreBridgeGeneratedAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBridgeGeneratedAdapter.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000045 /* CoreBridgeBoundaryGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/CoreBridgeBoundaryGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000048 /* AppCoreServicesFeatureDependencyGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AppCoreServicesFeatureDependencyGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000050 /* MacOSCoreBridgePackageGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSCoreBridgePackageGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000A25 /* CoreBridgeFoundation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Bridge/CoreBridgeFoundation.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000018 /* AppShellModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppShellModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FE5 /* AppShellBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/App/AppShellBootstrap.swift; sourceTree = SOURCE_ROOT; };
@@ -1121,26 +1126,13 @@
 		0A0000000000000000000D11 /* AreaMatrixTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixTheme.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D12 /* AreaMatrixAmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixAmbientBackground.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D13 /* AreaMatrixControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixControls.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000D14 /* AreaMatrixBrandAssets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixBrandAssets.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D15 /* AreaMatrixWindowChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixWindowChrome.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000D16 /* AreaMatrixMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/Effects/AreaMatrixMotion.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000F63 /* AreaMatrixSceneMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/Effects/AreaMatrixSceneMotion.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000D17 /* AreaMatrixTextEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/Effects/AreaMatrixTextEffects.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D19 /* AreaMatrixOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixOverlays.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D1A /* AreaMatrixSceneComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixSceneComponents.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000D1B /* AreaMatrixFeatureCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixFeatureCard.swift; sourceTree = SOURCE_ROOT; };
-		0A0B69000000000000000002 /* AreaMatrixLucideIconShapes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixLucideIconShapes.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D1C /* AreaMatrixClassificationDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixClassificationDiorama.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixProtectionDiorama.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixTimelineDiorama.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixWorkflowDiorama.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000D21 /* ReasonStatusCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/ReasonStatusCard.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000D23 /* TintedStatusBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/TintedStatusBanner.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000D25 /* NeutralSummaryPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/NeutralSummaryPanel.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000D27 /* NeutralCapsuleChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/NeutralCapsuleChip.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000D29 /* TintedCapsuleBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/TintedCapsuleBadge.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000001B11 /* AreaMatrixGlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixGlassCard.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000001B13 /* AreaMatrixStepHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixStepHeader.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001B21 /* AreaMatrixMotionTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/Effects/AreaMatrixMotionTokens.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001B23 /* AreaMatrixPageShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Views/DesignSystem/AreaMatrixPageShell.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000D2B /* LocalModelStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/LocalModelStatusView.swift; sourceTree = SOURCE_ROOT; };
@@ -1174,6 +1166,7 @@
 		0A0000000000000000001013 /* OnboardingRouteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Onboarding/OnboardingRouteActions.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000FB /* ValidatePathErrorMappingSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ValidatePathErrorMappingSmokeTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000000FD /* AreaMatrixShellTestDoubleSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellTestDoubleSupport.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000053 /* AreaMatrixFeatureDependencyTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixFeatureDependencyTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000008DD /* AreaMatrixShellFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AreaMatrixShellFixtures.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001931 /* TestSupportNamingGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/TestSupportNamingGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		0A00000000000000000019A5 /* TestSupportNamingGovernanceTerms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/TestSupportNamingGovernanceTerms.swift; sourceTree = SOURCE_ROOT; };
@@ -1186,6 +1179,7 @@
 		7F1A2B3C4D5E6F708192A011 /* MacOSGovernanceFileSystemTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSGovernanceFileSystemTestSupport.swift; sourceTree = SOURCE_ROOT; };
 		7F1A2B3C4D5E6F708192A013 /* SwiftFileSizeGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/SwiftFileSizeGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001983 /* MacOSDefaultCoreServicesGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSDefaultCoreServicesGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000059 /* MacOSAppCompositionGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSAppCompositionGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		E10000000000000000000033 /* MacOSFeatureDependencyGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MacOSFeatureDependencyGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		7F1A2B3C4D5E6F708192A004 /* MainRepositoryRouteHostGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/MainRepositoryRouteHostGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000001985 /* AppCoreServicesGovernanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/AppCoreServicesGovernanceTests.swift; sourceTree = SOURCE_ROOT; };
@@ -1349,6 +1343,7 @@
 		0A0000000000000000000759 /* AIPrivacyRulesRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesRoute.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000937 /* AIPrivacyRulesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIPrivacyRulesModel.swift; sourceTree = SOURCE_ROOT; };
 		0A000000000000000000086B /* AISettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISettingsPane.swift; sourceTree = SOURCE_ROOT; };
+		E10000000000000000000055 /* AISettingsPaneSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AISettingsPaneSupportViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000729 /* AIClassificationSuggestionPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationSuggestionPanel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000871 /* AIClassificationSuggestionPanelModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationSuggestionPanelModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000931 /* AIClassificationFallbackStatusRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/AI/AIClassificationFallbackStatusRegion.swift; sourceTree = SOURCE_ROOT; };
@@ -1435,7 +1430,6 @@
 		0A0000000000000000000F95 /* AboutSettingsSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/AboutSettingsSupportViews.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000811 /* RepositorySettingsConfigModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/RepositorySettingsConfigModel.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000821 /* RepositorySettingsSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Settings/RepositorySettingsSummary.swift; sourceTree = SOURCE_ROOT; };
-		0A0000000000000000000FCD /* ClassifierRulesPlatformServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/ClassifierRulesPlatformServices.swift; sourceTree = SOURCE_ROOT; };
 		0A0000000000000000000FCF /* AdvancedSettingsPlatformServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/AdvancedSettingsPlatformServices.swift; sourceTree = SOURCE_ROOT; };
 		0A9990000000000000000001 /* GeneralSettingsPlatformServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/GeneralSettingsPlatformServices.swift; sourceTree = SOURCE_ROOT; };
 		0A9990000000000000000003 /* ImportPlatformServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/PlatformServices/ImportPlatformServices.swift; sourceTree = SOURCE_ROOT; };
@@ -1685,8 +1679,9 @@
 			0A00000000000000000001E9 /* ImportSingleFilePreviewPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFilePreviewPresentation.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001EB /* ImportEntrySingleFileFooter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntrySingleFileFooter.swift; sourceTree = SOURCE_ROOT; };
 			0A00000000000000000001EF /* ReplaceConfirmSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/FileActions/ReplaceConfirmSheet.swift; sourceTree = SOURCE_ROOT; };
-				0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntryReplaceConfirmationSheets.swift; sourceTree = SOURCE_ROOT; };
-				0A00000000000000000001ED /* ImportSingleFileNameConflictCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportEntryReplaceConfirmationSheets.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001F9 /* ImportSingleFilePreviewModelConflictRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrix/Features/Import/ImportSingleFilePreviewModelConflictRecovery.swift; sourceTree = SOURCE_ROOT; };
+			0A00000000000000000001ED /* ImportSingleFileNameConflictCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileNameConflictCoreTests.swift; sourceTree = SOURCE_ROOT; };
 				0A0000000000000000000189 /* ImportSingleFileFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileFixtures.swift; sourceTree = SOURCE_ROOT; };
 				0A000000000000000000106B /* ImportSingleFileErrorMappingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileErrorMappingTestSupport.swift; sourceTree = SOURCE_ROOT; };
 				0A000000000000000000190B /* ImportSingleFileErrorMappingFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaMatrixTests/ImportSingleFileErrorMappingFixtures.swift; sourceTree = SOURCE_ROOT; };
@@ -1856,6 +1851,7 @@
 				0A0C00000000000000000001 /* AreaMatrixCoreFFI.xcframework in Frameworks */,
 				E10000000000000000000001 /* AreaMatrixCoreContracts in Frameworks */,
 				E10000000000000000000014 /* AreaMatrixCoreBridgeContract in Frameworks */,
+				E10000000000000000000016 /* AreaMatrixCoreBridgeRuntime in Frameworks */,
 				E10000000000000000000008 /* AreaMatrixUIFoundation in Frameworks */,
 				E10000000000000000000012 /* AreaMatrixPlatformKit in Frameworks */,
 			);
@@ -1947,6 +1943,7 @@
 				0A0C00000000000000000024 /* AreaMatrixDeveloperSettingsScenarios.swift */,
 					0A0000000000000000000013 /* AreaMatrixApp.swift */,
 					0A0B50000000000000000011 /* ObservabilityRuntimeAssembly.swift */,
+					E10000000000000000000057 /* ObservabilityRuntimeAssemblyDefaults.swift */,
 					0A0B5F000000000000000013 /* ObservabilityRuntimeSupport.swift */,
 					0A0B5B00000000000000000C /* ObservabilityTraceContextFactory.swift */,
 					0A0B50000000000000000215 /* ObservabilityApplicationLifecycle.swift */,
@@ -1965,9 +1962,10 @@
 					0A0000000000000000000015 /* AreaMatrixAppSmokeTests.swift */,
 			0A0D00000000000000000002 /* AppCommandRouter.swift */,
 			0A0E00000000000000000002 /* FeatureManifest.swift */,
-			E10000000000000000000007 /* FeatureDependencyDefaults.swift */,
-			E10000000000000000000018 /* AppDependencyContainer.swift */,
-			E10000000000000000000020 /* AppFeatureDependencyContainer.swift */,
+				E10000000000000000000007 /* FeatureDependencyDefaults.swift */,
+				E10000000000000000000018 /* AppDependencyContainer.swift */,
+				E10000000000000000000020 /* AppFeatureDependencyContainer.swift */,
+				E10000000000000000000061 /* CoreBridgeRuntimeAssembly.swift */,
 				);
 				name = App;
 				sourceTree = "<group>";
@@ -1983,7 +1981,6 @@
 					7F1A2B3C4D5E6F708192A031 /* RepositoryWriteCoordinator.swift */,
 					7F1A2B3C4D5E6F708192A033 /* ICloudPlaceholderDownloader.swift */,
 					0A0000000000000000000243 /* InFlightFileChangeTracker.swift */,
-					0A0000000000000000000FCD /* ClassifierRulesPlatformServices.swift */,
 					0A0000000000000000001991 /* ExternalURLPolicy.swift */,
 					0A9990000000000000000001 /* GeneralSettingsPlatformServices.swift */,
 					0A0000000000000000000FCB /* IntegrationsSettingsPlatformServices.swift */,
@@ -2062,24 +2059,14 @@
 				0A0000000000000000000D11 /* AreaMatrixTheme.swift */,
 				0A0000000000000000000D12 /* AreaMatrixAmbientBackground.swift */,
 				0A0000000000000000000D13 /* AreaMatrixControls.swift */,
-				0A0000000000000000000D14 /* AreaMatrixBrandAssets.swift */,
 				0A0000000000000000000D15 /* AreaMatrixWindowChrome.swift */,
 					0A0000000000000000000D19 /* AreaMatrixOverlays.swift */,
 					0A0000000000000000000D1A /* AreaMatrixSceneComponents.swift */,
-					0A0000000000000000000D1B /* AreaMatrixFeatureCard.swift */,
-					0A0B69000000000000000002 /* AreaMatrixLucideIconShapes.swift */,
 					0A0000000000000000000D1C /* AreaMatrixClassificationDiorama.swift */,
 					0A0000000000000000000D1D /* AreaMatrixProtectionDiorama.swift */,
 					0A0000000000000000000D1E /* AreaMatrixTimelineDiorama.swift */,
 					0A0000000000000000000D1F /* AreaMatrixWorkflowDiorama.swift */,
-					0A0000000000000000001B11 /* AreaMatrixGlassCard.swift */,
-					0A0000000000000000001B13 /* AreaMatrixStepHeader.swift */,
 					0A0000000000000000001B23 /* AreaMatrixPageShell.swift */,
-					0A0000000000000000000D21 /* ReasonStatusCard.swift */,
-					0A0000000000000000000D23 /* TintedStatusBanner.swift */,
-					0A0000000000000000000D25 /* NeutralSummaryPanel.swift */,
-					0A0000000000000000000D27 /* NeutralCapsuleChip.swift */,
-					0A0000000000000000000D29 /* TintedCapsuleBadge.swift */,
 					0A0000000000000000000D18 /* Effects */,
 			);
 			name = DesignSystem;
@@ -2089,9 +2076,6 @@
 			isa = PBXGroup;
 			children = (
 				0A0000000000000000001B21 /* AreaMatrixMotionTokens.swift */,
-				0A0000000000000000000D16 /* AreaMatrixMotion.swift */,
-				0A0000000000000000000F63 /* AreaMatrixSceneMotion.swift */,
-				0A0000000000000000000D17 /* AreaMatrixTextEffects.swift */,
 			);
 			name = Effects;
 			sourceTree = "<group>";
@@ -2390,6 +2374,7 @@
 					0A00000000000000000001F3 /* ImportEntryReplaceConfirmationSheets.swift */,
 					0A0000000000000000000FE9 /* OnboardingImportEntryRouting.swift */,
 					0A000000000000000000016D /* ImportSingleFilePreviewModel.swift */,
+					0A00000000000000000001F9 /* ImportSingleFilePreviewModelConflictRecovery.swift */,
 					0A0000000000000000000187 /* ImportSingleFilePreviewModelState.swift */,
 					0A000000000000000000017B /* ImportSingleFilePreflight.swift */,
 					0A0000000000000000000FE3 /* ImportSingleFilePreflightSupport.swift */,
@@ -2561,6 +2546,7 @@
 				0A0000000000000000000937 /* AIPrivacyRulesModel.swift */,
 				0A0000000000000000000FB6 /* AISettingsModel.swift */,
 				0A000000000000000000086B /* AISettingsPane.swift */,
+				E10000000000000000000055 /* AISettingsPaneSupportViews.swift */,
 				0A0000000000000000000951 /* AISettingsInlineBanner.swift */,
 				0A0000000000000000000D2B /* LocalModelStatusView.swift */,
 				0A0000000000000000000859 /* LocalModelStatusState.swift */,
@@ -2596,6 +2582,8 @@
 			isa = PBXGroup;
 				children = (
 					0A0000000000000000000017 /* CoreBridge.swift */,
+					E10000000000000000000043 /* CoreBridgeRuntime.swift */,
+					E10000000000000000000044 /* CoreBridgeGeneratedAdapter.swift */,
 					0A0B50000000000000000012 /* CoreObservabilityBridge.swift */,
 					0A0000000000000000000A25 /* CoreBridgeFoundation.swift */,
 					0A00000000000000000000F9 /* CoreBridgeSnapshots.swift */,
@@ -2996,6 +2984,10 @@
 					7F1A2B3C4D5E6F708192A011 /* MacOSGovernanceFileSystemTestSupport.swift */,
 					7F1A2B3C4D5E6F708192A013 /* SwiftFileSizeGovernanceTests.swift */,
 					0A0000000000000000001983 /* MacOSDefaultCoreServicesGovernanceTests.swift */,
+					E10000000000000000000059 /* MacOSAppCompositionGovernanceTests.swift */,
+					E10000000000000000000045 /* CoreBridgeBoundaryGovernanceTests.swift */,
+					E10000000000000000000048 /* AppCoreServicesFeatureDependencyGovernanceTests.swift */,
+					E10000000000000000000050 /* MacOSCoreBridgePackageGovernanceTests.swift */,
 					E10000000000000000000033 /* MacOSFeatureDependencyGovernanceTests.swift */,
 					7F1A2B3C4D5E6F708192A004 /* MainRepositoryRouteHostGovernanceTests.swift */,
 					0A0000000000000000001985 /* AppCoreServicesGovernanceTests.swift */,
@@ -3046,6 +3038,7 @@
 			packageProductDependencies = (
 				E10000000000000000000003 /* AreaMatrixCoreContracts */,
 				E10000000000000000000015 /* AreaMatrixCoreBridgeContract */,
+				E10000000000000000000022 /* AreaMatrixCoreBridgeRuntime */,
 				E10000000000000000000009 /* AreaMatrixUIFoundation */,
 				E10000000000000000000013 /* AreaMatrixPlatformKit */,
 			);
@@ -3139,6 +3132,8 @@
 /* Begin PBXShellScriptBuildPhase section */
 		0A0000000000000000000054 /* Prepare CoreSDK */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 0;
+			basedOnDependencyAnalysis = 1;
 			buildActionMask = 2147483647;
 			dependencyFile = "$(DERIVED_FILE_DIR)/AreaMatrixCoreSDK.d";
 			files = (
@@ -3162,7 +3157,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\nexport PATH=\"$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\nif [ \"${AREAMATRIX_CORE_SDK_VERIFY_ONLY:-0}\" = \"1\" ]; then\n  \"${SRCROOT}/../../dev\" build core-sdk --verify-only\nelse\n  \"${SRCROOT}/../../dev\" build core-sdk --dependency-file \"${DERIVED_FILE_DIR}/AreaMatrixCoreSDK.d\"\nfi\n";
+shellScript = "set -euo pipefail\nexport PATH=\"$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"\nmkdir -p \"${DERIVED_FILE_DIR}\"\nif [ \"${AREAMATRIX_CORE_SDK_VERIFY_ONLY:-0}\" = \"1\" ]; then\n  \"${SRCROOT}/../../dev\" build core-sdk --verify-only --dependency-file \"${DERIVED_FILE_DIR}/AreaMatrixCoreSDK.d\"\nelse\n  \"${SRCROOT}/../../dev\" build core-sdk --dependency-file \"${DERIVED_FILE_DIR}/AreaMatrixCoreSDK.d\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -3203,6 +3198,8 @@
 				0A0C00000000000000000015 /* AreaMatrixPreviewSupport.swift in Sources */,
 				0A0000000000000000000002 /* AreaMatrixApp.swift in Sources */,
 				0A0B50000000000000000001 /* ObservabilityRuntimeAssembly.swift in Sources */,
+				E10000000000000000000056 /* ObservabilityRuntimeAssemblyDefaults.swift in Sources */,
+				E10000000000000000000060 /* CoreBridgeRuntimeAssembly.swift in Sources */,
 				0A0B5F000000000000000003 /* ObservabilityRuntimeSupport.swift in Sources */,
 				0A0B5B00000000000000000B /* ObservabilityTraceContextFactory.swift in Sources */,
 				0A0B50000000000000000002 /* CoreObservabilityBridge.swift in Sources */,
@@ -3262,6 +3259,8 @@
 				0A0000000000000000000003 /* MainWindow.swift in Sources */,
 				0A0000000000000000000868 /* MainWindowRouteContent.swift in Sources */,
 				0A0000000000000000000005 /* CoreBridge.swift in Sources */,
+				E10000000000000000000041 /* CoreBridgeRuntime.swift in Sources */,
+				E10000000000000000000042 /* CoreBridgeGeneratedAdapter.swift in Sources */,
 				0A0000000000000000000A24 /* CoreBridgeFoundation.swift in Sources */,
 					0A0000000000000000000006 /* AppShellModel.swift in Sources */,
 					0A0000000000000000000FE4 /* AppShellBootstrap.swift in Sources */,
@@ -3380,6 +3379,7 @@
 				0A00000000000000000001A2 /* ImportBatchNamingActions.swift in Sources */,
 				0A00000000000000000001AA /* ImportBatchNamingState.swift in Sources */,
 				0A000000000000000000016C /* ImportSingleFilePreviewModel.swift in Sources */,
+				0A00000000000000000001F8 /* ImportSingleFilePreviewModelConflictRecovery.swift in Sources */,
 				0A0000000000000000000186 /* ImportSingleFilePreviewModelState.swift in Sources */,
 				0A00000000000000000001E4 /* ImportSingleFileDuplicateResolution.swift in Sources */,
 				0A00000000000000000001E8 /* ImportSingleFilePreviewPresentation.swift in Sources */,
@@ -3395,7 +3395,6 @@
 				0A0000000000000000000FCA /* IntegrationsSettingsPlatformServices.swift in Sources */,
 				0A9990000000000000000002 /* ImportPlatformServices.swift in Sources */,
 				0A0000000000000000001A08 /* ImportBatchSessionPlatformServices.swift in Sources */,
-				0A0000000000000000000FCC /* ClassifierRulesPlatformServices.swift in Sources */,
 				0A0000000000000000000FCE /* AdvancedSettingsPlatformServices.swift in Sources */,
 				0A9990000000000000000000 /* GeneralSettingsPlatformServices.swift in Sources */,
 				0A0000000000000000000FD0 /* LocalModelPlatformServices.swift in Sources */,
@@ -3479,6 +3478,7 @@
 				0A0000000000000000000758 /* AIPrivacyRulesRoute.swift in Sources */,
 				0A0000000000000000000936 /* AIPrivacyRulesModel.swift in Sources */,
 				0A000000000000000000086A /* AISettingsPane.swift in Sources */,
+				E10000000000000000000054 /* AISettingsPaneSupportViews.swift in Sources */,
 				0A0000000000000000000950 /* AISettingsInlineBanner.swift in Sources */,
 				0A0000000000000000000D2A /* LocalModelStatusView.swift in Sources */,
 				0A0000000000000000000728 /* AIClassificationSuggestionPanel.swift in Sources */,
@@ -3593,28 +3593,15 @@
 				0A0000000000000000000D01 /* AreaMatrixTheme.swift in Sources */,
 				0A0000000000000000000D02 /* AreaMatrixAmbientBackground.swift in Sources */,
 				0A0000000000000000000D03 /* AreaMatrixControls.swift in Sources */,
-				0A0000000000000000000D04 /* AreaMatrixBrandAssets.swift in Sources */,
 				0A0000000000000000000D05 /* AreaMatrixWindowChrome.swift in Sources */,
-				0A0000000000000000000D06 /* AreaMatrixMotion.swift in Sources */,
-				0A0000000000000000000F62 /* AreaMatrixSceneMotion.swift in Sources */,
-				0A0000000000000000000D07 /* AreaMatrixTextEffects.swift in Sources */,
 					0A0000000000000000000D08 /* AreaMatrixOverlays.swift in Sources */,
 					0A0000000000000000000D09 /* AreaMatrixSceneComponents.swift in Sources */,
-					0A0000000000000000000D0A /* AreaMatrixFeatureCard.swift in Sources */,
-					0A0B69000000000000000001 /* AreaMatrixLucideIconShapes.swift in Sources */,
 					0A0000000000000000000D0B /* AreaMatrixClassificationDiorama.swift in Sources */,
 					0A0000000000000000000D0C /* AreaMatrixProtectionDiorama.swift in Sources */,
 					0A0000000000000000000D0D /* AreaMatrixTimelineDiorama.swift in Sources */,
 					0A0000000000000000000D0E /* AreaMatrixWorkflowDiorama.swift in Sources */,
-					0A0000000000000000001B10 /* AreaMatrixGlassCard.swift in Sources */,
-					0A0000000000000000001B12 /* AreaMatrixStepHeader.swift in Sources */,
 					0A0000000000000000001B20 /* AreaMatrixMotionTokens.swift in Sources */,
 					0A0000000000000000001B22 /* AreaMatrixPageShell.swift in Sources */,
-					0A0000000000000000000D20 /* ReasonStatusCard.swift in Sources */,
-					0A0000000000000000000D22 /* TintedStatusBanner.swift in Sources */,
-					0A0000000000000000000D24 /* NeutralSummaryPanel.swift in Sources */,
-					0A0000000000000000000D26 /* NeutralCapsuleChip.swift in Sources */,
-					0A0000000000000000000D28 /* TintedCapsuleBadge.swift in Sources */,
 				0A00000000000000000000F2 /* WindowCloseConfirmationObserver.swift in Sources */,
 				0A000000000000000000000E /* OnboardingInitializationProgress.swift in Sources */,
 				0A0000000000000000000F54 /* OnboardingMainLoadingRefresh.swift in Sources */,
@@ -4052,6 +4039,7 @@
 				0A00000000000000000000E2 /* AreaMatrixPerfTests.swift in Sources */,
 					0A00000000000000000000FA /* ValidatePathErrorMappingSmokeTests.swift in Sources */,
 					0A00000000000000000000FC /* AreaMatrixShellTestDoubleSupport.swift in Sources */,
+					E10000000000000000000052 /* AreaMatrixFeatureDependencyTestSupport.swift in Sources */,
 					0A00000000000000000008DC /* AreaMatrixShellFixtures.swift in Sources */,
 					0A0000000000000000001930 /* TestSupportNamingGovernanceTests.swift in Sources */,
 					0A00000000000000000019A4 /* TestSupportNamingGovernanceTerms.swift in Sources */,
@@ -4064,6 +4052,10 @@
 					7F1A2B3C4D5E6F708192A010 /* MacOSGovernanceFileSystemTestSupport.swift in Sources */,
 					7F1A2B3C4D5E6F708192A012 /* SwiftFileSizeGovernanceTests.swift in Sources */,
 					0A0000000000000000001982 /* MacOSDefaultCoreServicesGovernanceTests.swift in Sources */,
+					E10000000000000000000058 /* MacOSAppCompositionGovernanceTests.swift in Sources */,
+					E10000000000000000000046 /* CoreBridgeBoundaryGovernanceTests.swift in Sources */,
+					E10000000000000000000047 /* AppCoreServicesFeatureDependencyGovernanceTests.swift in Sources */,
+					E10000000000000000000049 /* MacOSCoreBridgePackageGovernanceTests.swift in Sources */,
 					E10000000000000000000032 /* MacOSFeatureDependencyGovernanceTests.swift in Sources */,
 					7F1A2B3C4D5E6F708192A003 /* MainRepositoryRouteHostGovernanceTests.swift in Sources */,
 					0A0000000000000000001984 /* AppCoreServicesGovernanceTests.swift in Sources */,
@@ -4406,6 +4398,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E10000000000000000000002 /* XCLocalSwiftPackageReference "AreaMatrixModules" */;
 			productName = AreaMatrixCoreBridgeContract;
+		};
+		E10000000000000000000022 /* AreaMatrixCoreBridgeRuntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E10000000000000000000002 /* XCLocalSwiftPackageReference "AreaMatrixModules" */;
+			productName = AreaMatrixCoreBridgeRuntime;
 		};
 	/* End XCSwiftPackageProductDependency section */
 	};

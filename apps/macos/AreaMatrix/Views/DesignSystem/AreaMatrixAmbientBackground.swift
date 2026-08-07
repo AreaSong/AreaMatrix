@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 private struct AreaMatrixBlobTransform: Equatable {

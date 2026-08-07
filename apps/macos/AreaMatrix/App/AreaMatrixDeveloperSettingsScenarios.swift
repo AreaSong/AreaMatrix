@@ -40,6 +40,7 @@ private struct DeveloperAboutSettingsScenario: View {
     init() {
         platformModel = PlatformDifferencesModel(
             appVersion: DeveloperSettingsScenarioFixture.appVersion,
+            appVersionReader: versionReader,
             repositoryText: AreaMatrixPreviewFixtures.repositoryPath,
             contractInspector: DeveloperBindingContractInspector(),
             capabilityLoader: DeveloperCapabilityLoader(),
@@ -66,6 +67,7 @@ private struct DeveloperAboutSettingsScenario: View {
 @MainActor
 private struct DeveloperAdvancedSettingsScenario: View {
     private let actions = DeveloperSettingsPlatformActions()
+    private let actionLogger = DeveloperSettingsActionLogger()
     private let configStore = DeveloperConfigurationStore(config: DeveloperSettingsScenarioFixture.config())
     private let diagnosticsCollector = DeveloperSettingsDiagnosticsCollector()
     private let errorMapper = CoreErrorSnapshotMapper()
@@ -79,6 +81,7 @@ private struct DeveloperAdvancedSettingsScenario: View {
             updater: configStore,
             rootOverviewInspector: actions,
             diagnosticsCollector: diagnosticsCollector,
+            actionLogger: actionLogger,
             appVersionReader: versionReader,
             coreVersionReader: versionReader,
             metadataReader: metadataReader,
@@ -87,6 +90,16 @@ private struct DeveloperAdvancedSettingsScenario: View {
         )
         .background(.background)
     }
+}
+
+private struct DeveloperSettingsActionLogger: AppUIActionLogging {
+    func logUIAction(_: String, context _: AppUIActionContext) {}
+
+    func recordUIAction(actionID _: String, context _: AppUIActionContext) async {}
+
+    func recordUIAction(traceContext _: CoreImportTraceContext) async {}
+
+    func recordSemanticEvent(_: ObservabilitySemanticEventInput) async {}
 }
 
 @MainActor
@@ -127,9 +140,10 @@ private struct DeveloperGeneralSettingsScenario: View {
             selectedTab: .constant("general"),
             onClose: {},
             featureDependencies: AppDependencyContainer.live.feature.settings,
-            aiDependencies: AppDependencyContainer.live.feature.ai,
+            aiDependencies: AppDependencyContainer.live.feature.aiFeature,
             sharedDependencies: AppDependencyContainer.live.feature.shared,
             syncConflictsDependencies: AppDependencyContainer.live.feature.syncConflicts,
+            diagnosticsDependencies: AppDependencyContainer.live.feature.diagnostics,
             loader: configStore,
             updater: configStore,
             rootOverviewInspector: actions,
@@ -166,6 +180,7 @@ private struct DeveloperLanguageSettingsScenario: View {
     private let configStore = DeveloperConfigurationStore(config: DeveloperSettingsScenarioFixture.config())
     private let capabilityLoader = DeveloperCapabilityLoader()
     private let overviewRegenerator = DeveloperOverviewRegenerator()
+    private let overviewRegenerationCoordinator = OverviewRegenerationCoordinator()
 
     var body: some View {
         LanguageSettingsPane(
@@ -174,7 +189,9 @@ private struct DeveloperLanguageSettingsScenario: View {
             updater: configStore,
             capabilityLoader: capabilityLoader,
             overviewRegenerator: overviewRegenerator,
+            overviewRegenerationCoordinator: overviewRegenerationCoordinator,
             appVersion: DeveloperSettingsScenarioFixture.appVersion,
+            appVersionReader: DeveloperSettingsVersionReader(),
             errorMapper: CoreErrorSnapshotMapper(),
             accessibilityAnnouncer: DeveloperSettingsPlatformActions()
         )
@@ -187,6 +204,7 @@ private struct DeveloperLanguageSettingsScenario: View {
 private struct DeveloperPlatformScenario: View {
     private let model = PlatformDifferencesModel(
         appVersion: DeveloperSettingsScenarioFixture.appVersion,
+        appVersionReader: DeveloperSettingsVersionReader(),
         repositoryText: AreaMatrixPreviewFixtures.repositoryPath,
         contractInspector: DeveloperBindingContractInspector(),
         capabilityLoader: DeveloperCapabilityLoader(),
@@ -209,7 +227,7 @@ private struct DeveloperRepositorySettingsScenario: View {
             featureDependencies: AppDependencyContainer.live.feature.settings,
             sharedDependencies: AppDependencyContainer.live.feature.shared
         )
-            .background(.background)
+        .background(.background)
     }
 }
 

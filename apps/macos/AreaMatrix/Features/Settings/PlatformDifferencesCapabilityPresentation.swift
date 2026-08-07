@@ -1,3 +1,5 @@
+import AreaMatrixCoreContracts
+
 struct PlatformDifferencesCapabilityDisplayRow: Equatable, Identifiable {
     var name: String
     var support: PlatformCapabilitySupportSnapshot

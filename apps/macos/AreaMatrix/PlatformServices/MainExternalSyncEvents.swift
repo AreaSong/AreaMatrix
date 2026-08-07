@@ -1,16 +1,6 @@
 import CoreServices
 import Foundation
 
-enum ICloudConflictListPlatformServices {
-    static var repositoryFinderOpener: any RepositoryFinderOpening {
-        AppPlatformServices.finderOpener
-    }
-
-    static var fileRevealer: any RepositoryFileRevealing {
-        AppPlatformServices.fileRevealer
-    }
-}
-
 enum MainExternalSyncEventKind: String, Equatable, Hashable {
     case created
     case renamed

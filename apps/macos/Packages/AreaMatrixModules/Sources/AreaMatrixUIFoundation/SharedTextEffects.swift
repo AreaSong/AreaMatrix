@@ -1,8 +1,9 @@
 import SwiftUI
 
-struct AreaMatrixDecodedText: View {
-    let text: String
-    var gradient: LinearGradient?
+/// Text reveal effect used by the onboarding scene copy.
+public struct AreaMatrixDecodedText: View {
+    public let text: String
+    public var gradient: LinearGradient?
 
     @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
     @State private var displayText: String = ""
@@ -10,7 +11,12 @@ struct AreaMatrixDecodedText: View {
 
     private let asciiCharacters = Array("!@#$%^&*()_+-=[]{}|;:',.<>?/ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
-    var body: some View {
+    public init(text: String, gradient: LinearGradient? = nil) {
+        self.text = text
+        self.gradient = gradient
+    }
+
+    public var body: some View {
         Group {
             if let gradient {
                 Text(displayText)

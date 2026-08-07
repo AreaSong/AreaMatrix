@@ -80,9 +80,8 @@ final class ICloudConflictListModel: ObservableObject {
         repoPath: String,
         conflictLister: any CoreICloudConflictListing,
         errorMapper: any CoreErrorMapping,
-        repositoryFinderOpener: any RepositoryFinderOpening =
-            ICloudConflictListPlatformServices.repositoryFinderOpener,
-        fileRevealer: any RepositoryFileRevealing = ICloudConflictListPlatformServices.fileRevealer
+        repositoryFinderOpener: any RepositoryFinderOpening,
+        fileRevealer: any RepositoryFileRevealing
     ) {
         self.repoPath = repoPath
         self.conflictLister = conflictLister

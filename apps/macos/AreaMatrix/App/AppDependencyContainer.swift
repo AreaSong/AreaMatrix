@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
 /// Application composition root for feature dependencies.
@@ -19,6 +20,7 @@ struct AppDependencyContainer {
         let scanSessionReader: any CoreScanSessionReading
         let diagnosticsCollector: any CoreDiagnosticsCollecting
         let errorMapper: any CoreErrorMapping
+        let actionLogger: any AppUIActionLogging
         let systemCapabilityChecker: any OnboardingSystemCapabilityChecking
         let importProgressControlState: ImportProgressControlState
     }
@@ -73,24 +75,13 @@ struct AppDependencyContainer {
         let missingFilePicker: any RepositoryMissingFilePicking
         let windowCloser: any WindowClosing
         let interactionFeedback: any AppInteractionFeedbackPerforming
+        let inFlightFileChangeTracker: any InFlightFileChangeTracking
     }
 
     let onboarding: Onboarding
     let mainList: MainList
     let platform: Platform
     let feature: AppFeatureDependencyContainer
-
-    init(
-        onboarding: Onboarding,
-        mainList: MainList,
-        platform: Platform,
-        feature: AppFeatureDependencyContainer
-    ) {
-        self.onboarding = onboarding
-        self.mainList = mainList
-        self.platform = platform
-        self.feature = feature
-    }
 
     static let live = AppDependencyContainer(
         onboarding: Onboarding(
@@ -106,6 +97,7 @@ struct AppDependencyContainer {
             scanSessionReader: AppCoreServices.scanSessionReader,
             diagnosticsCollector: AppCoreServices.diagnosticsCollector,
             errorMapper: AppCoreServices.errorMapper,
+            actionLogger: AppLogger.shared,
             systemCapabilityChecker: AppPlatformServices.systemCapabilityChecker,
             importProgressControlState: ImportProgressControlState()
         ),
@@ -144,20 +136,21 @@ struct AppDependencyContainer {
         platform: Platform(
             settingsReader: AppPlatformServices.settingsReader,
             settingsWriter: AppPlatformServices.settingsWriter,
-            existingRepositoryMetadataReader: OnboardingPlatformServices.metadataReader,
+            existingRepositoryMetadataReader: AppPlatformServices.existingRepositoryMetadataReader,
             finderOpener: AppPlatformServices.finderOpener,
             fileRevealer: AppPlatformServices.fileRevealer,
             fileOpener: AppPlatformServices.fileOpener,
             pathCopier: AppPlatformServices.pathCopier,
             importResultExporter: AppPlatformServices.importResultExporter,
             importBatchSessionStore: AppPlatformServices.importBatchSessionStore,
-            accessibilityAnnouncer: OnboardingPlatformServices.accessibilityAnnouncer,
+            accessibilityAnnouncer: AppPlatformServices.accessibilityAnnouncer,
             helpOpener: AppPlatformServices.helpOpener,
             directoryPicker: AppPlatformServices.directoryPicker,
             importPicker: AppPlatformServices.importPicker,
             missingFilePicker: AppPlatformServices.missingFilePicker,
             windowCloser: AppPlatformServices.windowCloser,
-            interactionFeedback: AppPlatformServices.interactionFeedback
+            interactionFeedback: AppPlatformServices.interactionFeedback,
+            inFlightFileChangeTracker: InFlightFileChangeTracker.shared
         ),
         feature: .live
     )

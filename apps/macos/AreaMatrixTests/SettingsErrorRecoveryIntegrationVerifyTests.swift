@@ -57,6 +57,9 @@ private func verifyClassifierRepositoryAndOverview(_ context: SettingsRecoveryIn
         predictor: context.bridge,
         ruleEditor: context.bridge,
         errorMapper: context.bridge,
+        fileOpener: RecordingRepositoryFileOpener(),
+        fileRevealer: RecordingRepositoryFileRevealer(),
+        finderOpener: RecordingRepositoryFinderOpener(),
         accessibilityAnnouncer: NoopAccessibilityAnnouncer()
     )
 
@@ -66,16 +69,7 @@ private func verifyClassifierRepositoryAndOverview(_ context: SettingsRecoveryIn
     XCTAssertEqual(classifier.previewResult?.category, "finance")
     XCTAssertEqual(classifier.previewResult?.reason, .keyword)
 
-    let imported = try await context.bridge.importIndexedFile(
-        repoPath: context.repoURL.path,
-        sourceURL: context.sourceURL,
-        overrideCategory: "finance",
-        overrideFilename: "Invoice_2026Q1.pdf"
-    )
-    XCTAssertEqual(imported.storageMode, "Indexed")
-    XCTAssertEqual(imported.sourcePath, context.sourceURL.path)
-    XCTAssertTrue(FileManager.default.fileExists(atPath: context.sourceURL.path))
-    XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoURL.appendingPathComponent(imported.path).path))
+    try await verifyIndexedImport(context)
 
     let generatedRevealer = RecordingRepositoryFileRevealer()
     let repository = RepositorySettingsModel(
@@ -86,10 +80,14 @@ private func verifyClassifierRepositoryAndOverview(_ context: SettingsRecoveryIn
         fileLister: context.bridge,
         scanSessionReader: context.bridge,
         existingRepositoryMetadataReader: SQLiteExistingRepositoryMetadataReader(),
+        metadataPresenceChecker: FileSystemRepoMetadataPresenceChecker(),
+        finderOpener: RecordingRepositoryFinderOpener(),
+        pathCopier: ShellRecordingPathCopier(),
         generatedOverviewRevealer: generatedRevealer,
         diagnosticsCollector: makeSettingsRecoveryDiagnosticsCollector(context),
         coreVersionLoader: context.bridge,
-        errorMapper: context.bridge
+        errorMapper: context.bridge,
+        accessibilityAnnouncer: NoopAccessibilityAnnouncer()
     )
     await repository.load()
     repository.revealGeneratedOverviewInFinder()
@@ -106,6 +104,19 @@ private func verifyClassifierRepositoryAndOverview(_ context: SettingsRecoveryIn
         repoPath: context.repoURL.path,
         relativePath: RepositorySettingsSummary.generatedOverviewRelativePath
     )])
+}
+
+private func verifyIndexedImport(_ context: SettingsRecoveryIntegrationContext) async throws {
+    let imported = try await context.bridge.importIndexedFile(
+        repoPath: context.repoURL.path,
+        sourceURL: context.sourceURL,
+        overrideCategory: "finance",
+        overrideFilename: "Invoice_2026Q1.pdf"
+    )
+    XCTAssertEqual(imported.storageMode, "Indexed")
+    XCTAssertEqual(imported.sourcePath, context.sourceURL.path)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: context.sourceURL.path))
+    XCTAssertFalse(FileManager.default.fileExists(atPath: context.repoURL.appendingPathComponent(imported.path).path))
 }
 
 @MainActor

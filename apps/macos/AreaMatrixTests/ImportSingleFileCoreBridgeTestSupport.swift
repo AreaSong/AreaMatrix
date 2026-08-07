@@ -20,7 +20,8 @@ func makeImportSingleFileNameConflictCoreModel(
         importer: bridge,
         preflight: CoreImportSingleFilePreflight(
             fileLoader: CoreBridgeBatchFileLoader(fileLister: bridge),
-            sourceInspector: ImportPlatformServices.sourcePreflightInspector
+            sourceInspector: ImportPlatformServices.sourcePreflightInspector,
+            resourceAccess: ImportPlatformServices.fileResourceAccess
         )
     )
     await model.load(request: .importSingleFileImportRequest(

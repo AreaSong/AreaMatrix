@@ -129,22 +129,26 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
         return row
     }
 
-    static func loading(url: URL) -> ImportBatchPreviewRow {
+    static func loading(url: URL, sizeBytes: Int64? = nil) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
+            sizeBytes: sizeBytes,
             predictedCategory: nil,
             suggestedName: url.lastPathComponent,
             status: .loading
         )
     }
 
-    static func ready(url: URL, prediction: ClassifyResultSnapshot) -> ImportBatchPreviewRow {
+    static func ready(
+        url: URL,
+        prediction: ClassifyResultSnapshot,
+        sizeBytes: Int64? = nil
+    ) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
+            sizeBytes: sizeBytes,
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
             status: .ready(
@@ -162,12 +166,13 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
     static func duplicate(
         url: URL,
         prediction: ClassifyResultSnapshot,
-        existingPath: String
+        existingPath: String,
+        sizeBytes: Int64? = nil
     ) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
+            sizeBytes: sizeBytes,
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
             status: .duplicate(
@@ -183,12 +188,13 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
     static func nameConflict(
         url: URL,
         prediction: ClassifyResultSnapshot,
-        existingPath: String
+        existingPath: String,
+        sizeBytes: Int64? = nil
     ) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
+            sizeBytes: sizeBytes,
             predictedCategory: prediction.category,
             suggestedName: prediction.suggestedName.isEmpty ? url.lastPathComponent : prediction.suggestedName,
             status: .nameConflict(
@@ -201,22 +207,30 @@ struct ImportBatchPreviewRow: Identifiable, Equatable {
         )
     }
 
-    static func iCloudPlaceholder(url: URL, message: AppDisplayText) -> ImportBatchPreviewRow {
+    static func iCloudPlaceholder(
+        url: URL,
+        message: AppDisplayText,
+        sizeBytes: Int64? = nil
+    ) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: nil,
+            sizeBytes: sizeBytes,
             predictedCategory: nil,
             suggestedName: url.lastPathComponent,
             status: .iCloudPlaceholder(path: url.path, reasonLabel: message)
         )
     }
 
-    static func failed(url: URL, message: AppDisplayText) -> ImportBatchPreviewRow {
+    static func failed(
+        url: URL,
+        message: AppDisplayText,
+        sizeBytes: Int64? = nil
+    ) -> ImportBatchPreviewRow {
         ImportBatchPreviewRow(
             originalName: url.lastPathComponent,
             sourcePath: (url.path as NSString).abbreviatingWithTildeInPath,
-            sizeBytes: ImportPlatformServices.fileSizeBytes(url),
+            sizeBytes: sizeBytes,
             predictedCategory: nil,
             suggestedName: url.lastPathComponent,
             status: .error(message)

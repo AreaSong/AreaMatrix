@@ -12,7 +12,7 @@ protocol RepositoryIgnoreRulesManaging: Sendable {
 struct NSWorkspaceRepositoryIgnoreRulesManager: RepositoryIgnoreRulesManaging {
     private let localURLOpener: any LocalFileURLOpening
 
-    init(localURLOpener: any LocalFileURLOpening = AppPlatformServices.localFileURLOpener) {
+    init(localURLOpener: any LocalFileURLOpening) {
         self.localURLOpener = localURLOpener
     }
 

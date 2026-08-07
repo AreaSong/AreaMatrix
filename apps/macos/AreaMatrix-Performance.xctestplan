@@ -1,0 +1,40 @@
+{
+  "configurations" : [
+    {
+      "id" : "8E2E0A94-4A0F-4E27-8F4A-6E8A2D6B0A14",
+      "name" : "Performance",
+      "options" : {
+        "environmentVariableEntries" : [
+          {
+            "key" : "AREAMATRIX_RUN_PERF_TESTS",
+            "value" : "1",
+            "isEnabled" : true
+          }
+        ]
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:AreaMatrix.xcodeproj",
+      "identifier" : "0A0000000000000000000040",
+      "name" : "AreaMatrix"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "selectedTests" : [
+        "AreaMatrixPerfTests/testTreeAndListResponseBaselineUnderReleaseThresholds",
+        "ObservabilityPerformanceTests/testSourceSanitizationThroughput"
+      ],
+      "target" : {
+        "containerPath" : "container:AreaMatrix.xcodeproj",
+        "identifier" : "0A0000000000000000000041",
+        "name" : "AreaMatrixTests"
+      }
+    }
+  ],
+  "version" : 1
+}

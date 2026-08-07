@@ -145,7 +145,7 @@ extension MainFileListModel {
                 missingFileRelinkState = .idle
                 return
             }
-            guard !ImportPlatformServices.isICloudPlaceholder(selectedURL) else {
+            guard !fileResourceAccess.isICloudPlaceholder(selectedURL) else {
                 missingFileRelinkState = .unavailable(
                     fileID: fileID,
                     message: L10n.string("Download the selected file in Finder, then choose Locate again.")
