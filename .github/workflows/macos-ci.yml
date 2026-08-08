@@ -31,6 +31,14 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: Show macOS build environment
+        run: |
+          set -euo pipefail
+          printf 'runner_arch=%s\n' "$(uname -m)"
+          uname -a
+          xcode-select -p
+          xcodebuild -showsdks | sed -n '/macOS SDKs:/,/iOS SDKs:/p'
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin,aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
@@ -95,6 +103,8 @@ jobs:
       - name: Build XCTest products once
         run: >-
           ./dev test macos --build-for-testing
+          --destination "platform=macOS,arch=$(uname -m)"
+          --test-plan AreaMatrix-Functional
           --derived-data-path .build/derived-data/macos-ci
           --enable-code-coverage
           --build-log .build/derived-data/macos-ci/xcodebuild-build-for-testing.log
@@ -123,6 +133,32 @@ jobs:
             tail -n 250 "$log"
             echo "::endgroup::"
           done <<< "$logs"
+
+      - name: Publish Xcode failure summary
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## macOS Xcode build diagnostics"
+            echo
+            echo "- runner architecture: \`$(uname -m)\`"
+            echo "- Xcode: \`$(xcodebuild -version | tr '\\n' ' ')\`"
+            echo
+            for log in .build/derived-data/macos-ci/*.log; do
+              [ -f "$log" ] || continue
+              echo "### $log"
+              echo
+              echo "#### Error markers"
+              if ! grep -Ein "error:|fatal error:|BUILD FAILED|TEST BUILD FAILED|The following build commands failed|Unable to find module dependency|Testing cancelled" "$log" | tail -n 80; then
+                echo "No standard Xcode error marker found."
+              fi
+              echo
+              echo "#### Tail"
+              tail -n 120 "$log"
+              echo
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Unit test plan without rebuilding
         run: >-
