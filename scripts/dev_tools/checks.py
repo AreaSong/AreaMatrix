@@ -706,6 +706,44 @@ def _swift_concatenated_localized_call_violations(source: str) -> list[tuple[int
     ]
 
 
+def _xcstringstool_supports_swiftui(tool: str) -> bool:
+    """Return whether the installed xcstringstool exposes the modern SwiftUI flag."""
+    result = subprocess.run(
+        [tool, "xcstringstool", "extract", "--help"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    help_text = f"{result.stdout}\n{result.stderr}"
+    return (
+        result.returncode == 0
+        and re.search(r"(?m)^\s+--SwiftUI(?:\s|$)", help_text) is not None
+    )
+
+
+def _xcstringstool_extract_command(
+    tool: str,
+    output_dir: Path,
+    swift_files: list[Path],
+    *,
+    supports_swiftui: bool,
+) -> list[str]:
+    command = [tool, "xcstringstool", "extract"]
+    if supports_swiftui:
+        command.append("--SwiftUI")
+    command.extend(
+        [
+            "--modern-localizable-strings",
+            "-s", "L10n.string", "-s", "L10n.format", "-s", "L10n.plural",
+            "-s", "L10n.message", "-s", "L10n.pluralMessage", "-s", "L10n.display",
+            "-s", "L10n.editableDefault",
+            "--output-format", "xcstrings", "--output-directory", str(output_dir),
+            *map(str, swift_files),
+        ]
+    )
+    return command
+
+
 def _check_macos_localization_contract(root: Path, failures: FailureCollector) -> None:
     catalog_path = root / "apps/macos/AreaMatrix/Localizations/Localizable.xcstrings"
     project_path = root / "apps/macos/AreaMatrix.xcodeproj/project.pbxproj"
@@ -872,14 +910,12 @@ def _check_macos_localization_contract(root: Path, failures: FailureCollector) -
         failures.fail("xcrun is required to validate the macOS localization extraction contract")
         return
     with tempfile.TemporaryDirectory(prefix="areamatrix-l10n-") as output_dir:
-        command = [
-            tool, "xcstringstool", "extract", "--SwiftUI", "--modern-localizable-strings",
-            "-s", "L10n.string", "-s", "L10n.format", "-s", "L10n.plural",
-            "-s", "L10n.message", "-s", "L10n.pluralMessage", "-s", "L10n.display",
-            "-s", "L10n.editableDefault",
-            "--output-format", "xcstrings", "--output-directory", output_dir,
-            *map(str, swift_files),
-        ]
+        command = _xcstringstool_extract_command(
+            tool,
+            Path(output_dir),
+            swift_files,
+            supports_swiftui=_xcstringstool_supports_swiftui(tool),
+        )
         result = subprocess.run(command, capture_output=True, text=True, check=False)
         extracted_path = Path(output_dir) / "Localizable.xcstrings"
         if result.returncode != 0 or not extracted_path.is_file():

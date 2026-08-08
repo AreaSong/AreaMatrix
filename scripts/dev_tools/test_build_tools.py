@@ -793,6 +793,63 @@ private var initializationResult: InitializationResult = {
         )
         self.assertFalse(checks._localization_placeholders_match("%@ %lld", "%lld %@", pattern))
 
+    def test_xcstringstool_extract_command_includes_swiftui_when_supported(self) -> None:
+        command = checks._xcstringstool_extract_command(
+            "/usr/bin/xcrun",
+            Path("/tmp/output"),
+            [Path("Sources/Example.swift")],
+            supports_swiftui=True,
+        )
+
+        self.assertIn("--SwiftUI", command)
+        self.assertIn("--modern-localizable-strings", command)
+
+    def test_xcstringstool_extract_command_omits_unsupported_swiftui_flag(self) -> None:
+        command = checks._xcstringstool_extract_command(
+            "/usr/bin/xcrun",
+            Path("/tmp/output"),
+            [Path("Sources/Example.swift")],
+            supports_swiftui=False,
+        )
+
+        self.assertNotIn("--SwiftUI", command)
+        self.assertIn("--modern-localizable-strings", command)
+
+    def test_xcstringstool_support_detection_requires_a_standalone_swiftui_option(self) -> None:
+        completed = type(
+            "Completed",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "  --SwiftUI-Text\n",
+                "stderr": "",
+            },
+        )()
+
+        with patch("scripts.dev_tools.checks.subprocess.run", return_value=completed) as run:
+            self.assertFalse(checks._xcstringstool_supports_swiftui("/usr/bin/xcrun"))
+
+        run.assert_called_once_with(
+            ["/usr/bin/xcrun", "xcstringstool", "extract", "--help"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def test_xcstringstool_support_detection_accepts_supported_help_output(self) -> None:
+        completed = type(
+            "Completed",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "  --SwiftUI\n  --SwiftUI-Text\n",
+                "stderr": "",
+            },
+        )()
+
+        with patch("scripts.dev_tools.checks.subprocess.run", return_value=completed):
+            self.assertTrue(checks._xcstringstool_supports_swiftui("/usr/bin/xcrun"))
+
     def test_swift_l10n_calls_extracts_multiline_descriptor_keys(self) -> None:
         source = '''
         let first = L10n.message(
