@@ -1,50 +1,11 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
-protocol CoreChangeLogListing: Sendable {
-    func listChanges(repoPath: String, filter: ChangeFilterSnapshot) async throws -> [ChangeLogEntrySnapshot]
-}
+typealias CoreChangeLogListing = AreaMatrixCoreBridgeContract.CoreChangeLogListing
+typealias ChangeFilterSnapshot = AreaMatrixCoreBridgeContract.ChangeFilterSnapshot
+typealias ChangeLogEntrySnapshot = AreaMatrixCoreBridgeContract.ChangeLogEntrySnapshot
 
-struct ChangeFilterSnapshot: Equatable {
-    var fileID: Int64?
-    var category: String?
-    var action: String?
-    var since: Int64?
-    var until: Int64?
-    var limit: Int64
-    var offset: Int64
-
-    static let importResultRecent = ChangeFilterSnapshot(
-        fileID: nil,
-        category: nil,
-        action: "imported",
-        since: nil,
-        until: nil,
-        limit: 100,
-        offset: 0
-    )
-
-    static func detailLog(fileID: Int64) -> ChangeFilterSnapshot {
-        ChangeFilterSnapshot(
-            fileID: fileID,
-            category: nil,
-            action: nil,
-            since: nil,
-            until: nil,
-            limit: 100,
-            offset: 0
-        )
-    }
-}
-
-struct ChangeLogEntrySnapshot: Equatable, Identifiable {
-    var id: Int64
-    var fileID: Int64?
-    var filename: String
-    var category: String
-    var action: String
-    var detailJSON: String
-    var occurredAt: Int64
-
+extension ChangeLogEntrySnapshot {
     var actionDisplayName: String {
         switch action {
         case "imported":
@@ -107,13 +68,15 @@ extension ChangeFilter {
 
 extension ChangeLogEntrySnapshot {
     init(coreEntry: ChangeLogEntry) {
-        id = coreEntry.id
-        fileID = coreEntry.fileId
-        filename = coreEntry.filename
-        category = coreEntry.category
-        action = coreEntry.action
-        detailJSON = coreEntry.detailJson
-        occurredAt = coreEntry.occurredAt
+        self.init(
+            id: coreEntry.id,
+            fileID: coreEntry.fileId,
+            filename: coreEntry.filename,
+            category: coreEntry.category,
+            action: coreEntry.action,
+            detailJSON: coreEntry.detailJson,
+            occurredAt: coreEntry.occurredAt
+        )
     }
 }
 

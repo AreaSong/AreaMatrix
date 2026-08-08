@@ -1,214 +1,77 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
-struct AITagSuggestionRequestSnapshot: Equatable {
-    var fileID: Int64
-    var candidateTags: [String]
-    var privacyPolicyRef: String?
-}
-
-enum AITagSuggestionRouteSnapshot: Equatable {
-    case local
-    case remote
-}
-
-enum AITagSuggestionInputFieldSnapshot: Equatable {
-    case fileName
-    case repoRelativePath
-    case extractedTextExcerpt
-    case aiSummary
-    case noteSummary
-    case existingTags
-    case tagRegistry
-}
-
-enum AITagSuggestionReportStatusSnapshot: Equatable {
-    case suggested
-    case noSuggestion
-    case skipped
-    case unavailable
-}
-
-enum AITagSuggestionSkipReasonSnapshot: Equatable {
-    case aiDisabled
-    case featureDisabled
-    case providerUnavailable
-    case privacyRule
-    case noEligibleInput
-    case callLogUnavailable
-}
-
-enum AITagSuggestionCandidateStatusSnapshot: Equatable {
-    case suggested
-    case lowConfidence
-    case alreadyApplied
-    case invalid
-    case blocked
-}
-
-enum AITagSuggestionMergeActionSnapshot: Equatable {
-    case createTag
-    case useExistingTag
-    case mergeWithExistingTag
-}
-
-enum AITagSuggestionApplyStatusSnapshot: Equatable {
-    case applied
-    case alreadyAdded
-    case failed
-}
-
-struct AITagSuggestionSnapshot: Equatable {
-    var suggestionId: String
-    var slug: String
-    var displayName: String
-    var confidence: Float
-    var reason: String
-    var status: AITagSuggestionCandidateStatusSnapshot
-    var mergeAction: AITagSuggestionMergeActionSnapshot
-    var matchedExistingSlug: String?
-    var selectedByDefault: Bool
-    var disabledReason: String?
-}
-
-struct AITagSuggestionReportSnapshot: Equatable {
-    var fileId: Int64
-    var status: AITagSuggestionReportStatusSnapshot
-    var suggestions: [AITagSuggestionSnapshot]
-    var route: AITagSuggestionRouteSnapshot?
-    var modelName: String?
-    var generatedAt: Int64?
-    var usedContext: [AITagSuggestionInputFieldSnapshot]
-    var skippedReason: AITagSuggestionSkipReasonSnapshot?
-    var privacyRuleId: String?
-    var callLogId: Int64?
-    var requiresUserConfirmation: Bool
-    var confidenceThreshold: Float
-    var contentsRead: Bool
-    var aiUsed: Bool
-    var networkUsed: Bool
-}
-
-struct ApplyAITagSuggestionItemSnapshot: Equatable {
-    var suggestionId: String
-    var slug: String
-    var displayName: String
-    var confidence: Float
-    var editedByUser: Bool
-    var mergeTargetSlug: String?
-}
-
-struct ApplyAITagSuggestionsRequestSnapshot: Equatable {
-    var fileId: Int64
-    var suggestions: [ApplyAITagSuggestionItemSnapshot]
-    var callLogId: Int64?
-    var privacyRuleId: String?
-    var confirmed: Bool
-}
-
-struct AITagSuggestionApplyItemResultSnapshot: Equatable {
-    var suggestionId: String
-    var slug: String
-    var status: AITagSuggestionApplyStatusSnapshot
-    var error: String?
-}
-
-struct AITagSuggestionApplyReportSnapshot: Equatable {
-    var fileId: Int64
-    var requestedCount: Int64
-    var appliedCount: Int64
-    var skippedCount: Int64
-    var failedCount: Int64
-    var itemResults: [AITagSuggestionApplyItemResultSnapshot]
-    var tagSet: TagSetSnapshot
-    var undoToken: String?
-    var callLogId: Int64?
-    var refreshTargets: [String]
-}
-
-struct TagRecordSnapshot: Equatable, Identifiable {
-    var value: String
-    var label: String
-    var fileCount: Int64
-    var selected: Bool
-    var disabled: Bool
-    var updatedAt: Int64
-
-    var id: String {
-        value
-    }
-
-    var displayName: String {
-        label.isEmpty ? value : label
-    }
-}
-
-struct TagSetSnapshot: Equatable {
-    var fileID: Int64
-    var fileTags: [TagRecordSnapshot]
-    var availableTags: [TagRecordSnapshot]
-    var recentTags: [TagRecordSnapshot]
-    var updatedAt: Int64
-}
-
-enum BatchMutationStatusSnapshot: Equatable {
-    case added
-    case alreadyHadTag
-    case failed
-}
-
-struct BatchMutationItemResultSnapshot: Equatable, Identifiable {
-    var fileID: Int64
-    var tag: String
-    var status: BatchMutationStatusSnapshot
-    var error: String?
-
-    var id: String {
-        "\(fileID):\(tag):\(status)"
-    }
-}
-
-struct BatchMutationReportSnapshot: Equatable {
-    var requestedFileCount: Int64
-    var requestedTagCount: Int64
-    var addedCount: Int64
-    var skippedCount: Int64
-    var failedCount: Int64
-    var itemResults: [BatchMutationItemResultSnapshot]
-    var undoToken: String?
-}
+typealias AITagSuggestionRequestSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionRequestSnapshot
+typealias AITagSuggestionRouteSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionRouteSnapshot
+typealias AITagSuggestionInputFieldSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionInputFieldSnapshot
+typealias AITagSuggestionReportStatusSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionReportStatusSnapshot
+typealias AITagSuggestionSkipReasonSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionSkipReasonSnapshot
+typealias AITagSuggestionCandidateStatusSnapshot =
+    AreaMatrixCoreBridgeContract.AITagSuggestionCandidateStatusSnapshot
+typealias AITagSuggestionMergeActionSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionMergeActionSnapshot
+typealias AITagSuggestionApplyStatusSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionApplyStatusSnapshot
+typealias AITagSuggestionSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionSnapshot
+typealias AITagSuggestionReportSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionReportSnapshot
+typealias ApplyAITagSuggestionItemSnapshot = AreaMatrixCoreBridgeContract.ApplyAITagSuggestionItemSnapshot
+typealias ApplyAITagSuggestionsRequestSnapshot = AreaMatrixCoreBridgeContract.ApplyAITagSuggestionsRequestSnapshot
+typealias AITagSuggestionApplyItemResultSnapshot =
+    AreaMatrixCoreBridgeContract.AITagSuggestionApplyItemResultSnapshot
+typealias AITagSuggestionApplyReportSnapshot = AreaMatrixCoreBridgeContract.AITagSuggestionApplyReportSnapshot
+typealias TagRecordSnapshot = AreaMatrixCoreBridgeContract.TagRecordSnapshot
+typealias TagSetSnapshot = AreaMatrixCoreBridgeContract.TagSetSnapshot
+typealias BatchMutationStatusSnapshot = AreaMatrixCoreBridgeContract.BatchMutationStatusSnapshot
+typealias BatchMutationItemResultSnapshot = AreaMatrixCoreBridgeContract.BatchMutationItemResultSnapshot
+typealias BatchMutationReportSnapshot = AreaMatrixCoreBridgeContract.BatchMutationReportSnapshot
+typealias TagSuggestionContextSnapshot = AreaMatrixCoreBridgeContract.TagSuggestionContextSnapshot
+typealias TagSuggestionRequestSnapshot = AreaMatrixCoreBridgeContract.TagSuggestionRequestSnapshot
+typealias TagSuggestionSourceSnapshot = AreaMatrixCoreBridgeContract.TagSuggestionSourceSnapshot
+typealias TagSuggestionMatchSnapshot = AreaMatrixCoreBridgeContract.TagSuggestionMatchSnapshot
+typealias TagSuggestionStatusSnapshot = AreaMatrixCoreBridgeContract.TagSuggestionStatusSnapshot
+typealias TagSuggestionSnapshot = AreaMatrixCoreBridgeContract.TagSuggestionSnapshot
+typealias TagSuggestionReportSnapshot = AreaMatrixCoreBridgeContract.TagSuggestionReportSnapshot
+typealias ApplyTagSuggestionItemSnapshot = AreaMatrixCoreBridgeContract.ApplyTagSuggestionItemSnapshot
+typealias ApplyTagSuggestionsRequestSnapshot = AreaMatrixCoreBridgeContract.ApplyTagSuggestionsRequestSnapshot
+typealias TagSuggestionApplyStatusSnapshot = AreaMatrixCoreBridgeContract.TagSuggestionApplyStatusSnapshot
+typealias TagSuggestionApplyItemResultSnapshot =
+    AreaMatrixCoreBridgeContract.TagSuggestionApplyItemResultSnapshot
+typealias TagSuggestionApplyReportSnapshot = AreaMatrixCoreBridgeContract.TagSuggestionApplyReportSnapshot
 
 extension AITagSuggestionReportSnapshot {
     init(coreReport: AiTagSuggestionReport) {
-        fileId = coreReport.fileId
-        status = AITagSuggestionReportStatusSnapshot(coreStatus: coreReport.status)
-        suggestions = coreReport.suggestions.map(AITagSuggestionSnapshot.init(coreSuggestion:))
-        route = coreReport.route.map(AITagSuggestionRouteSnapshot.init(coreRoute:))
-        modelName = coreReport.modelName
-        generatedAt = coreReport.generatedAt
-        usedContext = coreReport.usedContext.map(AITagSuggestionInputFieldSnapshot.init(coreField:))
-        skippedReason = coreReport.skippedReason.map(AITagSuggestionSkipReasonSnapshot.init(coreReason:))
-        privacyRuleId = coreReport.privacyRuleId
-        callLogId = coreReport.callLogId
-        requiresUserConfirmation = coreReport.requiresUserConfirmation
-        confidenceThreshold = coreReport.confidenceThreshold
-        contentsRead = coreReport.contentsRead
-        aiUsed = coreReport.aiUsed
-        networkUsed = coreReport.networkUsed
+        self.init(
+            fileId: coreReport.fileId,
+            status: AITagSuggestionReportStatusSnapshot(coreStatus: coreReport.status),
+            suggestions: coreReport.suggestions.map(AITagSuggestionSnapshot.init(coreSuggestion:)),
+            route: coreReport.route.map(AITagSuggestionRouteSnapshot.init(coreRoute:)),
+            modelName: coreReport.modelName,
+            generatedAt: coreReport.generatedAt,
+            usedContext: coreReport.usedContext.map(AITagSuggestionInputFieldSnapshot.init(coreField:)),
+            skippedReason: coreReport.skippedReason.map(AITagSuggestionSkipReasonSnapshot.init(coreReason:)),
+            privacyRuleId: coreReport.privacyRuleId,
+            callLogId: coreReport.callLogId,
+            requiresUserConfirmation: coreReport.requiresUserConfirmation,
+            confidenceThreshold: coreReport.confidenceThreshold,
+            contentsRead: coreReport.contentsRead,
+            aiUsed: coreReport.aiUsed,
+            networkUsed: coreReport.networkUsed
+        )
     }
 }
 
 private extension AITagSuggestionSnapshot {
     init(coreSuggestion: AiTagSuggestion) {
-        suggestionId = coreSuggestion.suggestionId
-        slug = coreSuggestion.slug
-        displayName = coreSuggestion.displayName
-        confidence = coreSuggestion.confidence
-        reason = coreSuggestion.reason
-        status = AITagSuggestionCandidateStatusSnapshot(coreStatus: coreSuggestion.status)
-        mergeAction = AITagSuggestionMergeActionSnapshot(coreAction: coreSuggestion.mergeAction)
-        matchedExistingSlug = coreSuggestion.matchedExistingSlug
-        selectedByDefault = coreSuggestion.selectedByDefault
-        disabledReason = coreSuggestion.disabledReason
+        self.init(
+            suggestionId: coreSuggestion.suggestionId,
+            slug: coreSuggestion.slug,
+            displayName: coreSuggestion.displayName,
+            confidence: coreSuggestion.confidence,
+            reason: coreSuggestion.reason,
+            status: AITagSuggestionCandidateStatusSnapshot(coreStatus: coreSuggestion.status),
+            mergeAction: AITagSuggestionMergeActionSnapshot(coreAction: coreSuggestion.mergeAction),
+            matchedExistingSlug: coreSuggestion.matchedExistingSlug,
+            selectedByDefault: coreSuggestion.selectedByDefault,
+            disabledReason: coreSuggestion.disabledReason
+        )
     }
 }
 
@@ -239,25 +102,29 @@ private extension ApplyAiTagSuggestionItem {
 
 extension AITagSuggestionApplyReportSnapshot {
     init(coreReport: AiTagSuggestionApplyReport) {
-        fileId = coreReport.fileId
-        requestedCount = coreReport.requestedCount
-        appliedCount = coreReport.appliedCount
-        skippedCount = coreReport.skippedCount
-        failedCount = coreReport.failedCount
-        itemResults = coreReport.itemResults.map(AITagSuggestionApplyItemResultSnapshot.init(coreResult:))
-        tagSet = TagSetSnapshot(coreTagSet: coreReport.tagSet)
-        undoToken = coreReport.undoToken
-        callLogId = coreReport.callLogId
-        refreshTargets = coreReport.refreshTargets
+        self.init(
+            fileId: coreReport.fileId,
+            requestedCount: coreReport.requestedCount,
+            appliedCount: coreReport.appliedCount,
+            skippedCount: coreReport.skippedCount,
+            failedCount: coreReport.failedCount,
+            itemResults: coreReport.itemResults.map(AITagSuggestionApplyItemResultSnapshot.init(coreResult:)),
+            tagSet: TagSetSnapshot(coreTagSet: coreReport.tagSet),
+            undoToken: coreReport.undoToken,
+            callLogId: coreReport.callLogId,
+            refreshTargets: coreReport.refreshTargets
+        )
     }
 }
 
 private extension AITagSuggestionApplyItemResultSnapshot {
     init(coreResult: AiTagSuggestionApplyItemResult) {
-        suggestionId = coreResult.suggestionId
-        slug = coreResult.slug
-        status = AITagSuggestionApplyStatusSnapshot(coreStatus: coreResult.status)
-        error = coreResult.error
+        self.init(
+            suggestionId: coreResult.suggestionId,
+            slug: coreResult.slug,
+            status: AITagSuggestionApplyStatusSnapshot(coreStatus: coreResult.status),
+            error: coreResult.error
+        )
     }
 }
 
@@ -342,43 +209,179 @@ private extension AITagSuggestionApplyStatusSnapshot {
 
 extension TagSetSnapshot {
     init(coreTagSet: TagSet) {
-        fileID = coreTagSet.fileId
-        fileTags = coreTagSet.fileTags.map(TagRecordSnapshot.init(coreRecord:))
-        availableTags = coreTagSet.availableTags.map(TagRecordSnapshot.init(coreRecord:))
-        recentTags = coreTagSet.recentTags.map(TagRecordSnapshot.init(coreRecord:))
-        updatedAt = coreTagSet.updatedAt
+        self.init(
+            fileID: coreTagSet.fileId,
+            fileTags: coreTagSet.fileTags.map(TagRecordSnapshot.init(coreRecord:)),
+            availableTags: coreTagSet.availableTags.map(TagRecordSnapshot.init(coreRecord:)),
+            recentTags: coreTagSet.recentTags.map(TagRecordSnapshot.init(coreRecord:)),
+            updatedAt: coreTagSet.updatedAt
+        )
     }
 }
 
 private extension TagRecordSnapshot {
     init(coreRecord: TagRecord) {
-        value = coreRecord.value
-        label = coreRecord.label
-        fileCount = coreRecord.fileCount
-        selected = coreRecord.selected
-        disabled = coreRecord.disabled
-        updatedAt = coreRecord.updatedAt
+        self.init(
+            value: coreRecord.value,
+            label: coreRecord.label,
+            fileCount: coreRecord.fileCount,
+            selected: coreRecord.selected,
+            disabled: coreRecord.disabled,
+            updatedAt: coreRecord.updatedAt
+        )
     }
 }
 
 extension BatchMutationReportSnapshot {
     init(coreReport: BatchMutationReport) {
-        requestedFileCount = coreReport.requestedFileCount
-        requestedTagCount = coreReport.requestedTagCount
-        addedCount = coreReport.addedCount
-        skippedCount = coreReport.skippedCount
-        failedCount = coreReport.failedCount
-        itemResults = coreReport.itemResults.map(BatchMutationItemResultSnapshot.init(coreResult:))
-        undoToken = coreReport.undoToken
+        self.init(
+            requestedFileCount: coreReport.requestedFileCount,
+            requestedTagCount: coreReport.requestedTagCount,
+            addedCount: coreReport.addedCount,
+            skippedCount: coreReport.skippedCount,
+            failedCount: coreReport.failedCount,
+            itemResults: coreReport.itemResults.map(BatchMutationItemResultSnapshot.init(coreResult:)),
+            undoToken: coreReport.undoToken
+        )
+    }
+}
+
+extension TagSuggestionSourceSnapshot {
+    var displayName: String {
+        switch self {
+        case .fileName: L10n.string("File name")
+        case .path: L10n.string("Path")
+        case .sourceFolder: L10n.string("Source folder")
+        case .existingTagPattern: L10n.string("Existing tag pattern")
+        }
+    }
+}
+
+extension TagSuggestionMatchSnapshot {
+    var displayName: String {
+        switch self {
+        case .strong: L10n.string("Strong match")
+        case .weak: L10n.string("Weak match")
+        }
+    }
+}
+
+extension TagSuggestionStatusSnapshot {
+    var displayName: String {
+        switch self {
+        case .newTag: L10n.string("New tag")
+        case .alreadyAdded: L10n.string("Already added")
+        case .invalid: L10n.string("Invalid")
+        case .blocked: L10n.string("Blocked")
+        }
+    }
+}
+
+extension TagSuggestionContext {
+    init(snapshot: TagSuggestionContextSnapshot) {
+        self.init(sourceFolder: snapshot.sourceFolder, sourceKeywords: snapshot.sourceKeywords)
+    }
+}
+
+extension TagSuggestionRequest {
+    init(snapshot: TagSuggestionRequestSnapshot) {
+        self.init(
+            fileId: snapshot.fileID,
+            context: snapshot.context.map(TagSuggestionContext.init(snapshot:)),
+            limit: snapshot.limit
+        )
+    }
+}
+
+extension ApplyTagSuggestionItem {
+    init(snapshot: ApplyTagSuggestionItemSnapshot) {
+        self.init(
+            suggestionId: snapshot.suggestionID,
+            slug: snapshot.slug,
+            displayName: snapshot.displayName
+        )
+    }
+}
+
+extension ApplyTagSuggestionsRequest {
+    init(snapshot: ApplyTagSuggestionsRequestSnapshot) {
+        self.init(
+            fileId: snapshot.fileID,
+            suggestions: snapshot.suggestions.map(ApplyTagSuggestionItem.init(snapshot:))
+        )
+    }
+}
+
+extension TagSuggestionReportSnapshot {
+    init(coreReport: TagSuggestionReport) {
+        self.init(
+            fileID: coreReport.fileId,
+            suggestions: coreReport.suggestions.map(TagSuggestionSnapshot.init(coreSuggestion:)),
+            tagSet: TagSetSnapshot(coreTagSet: coreReport.tagSet),
+            contentsRead: coreReport.contentsRead,
+            aiUsed: coreReport.aiUsed,
+            networkUsed: coreReport.networkUsed
+        )
+    }
+}
+
+private extension TagSuggestionSnapshot {
+    init(coreSuggestion: TagSuggestion) {
+        self.init(
+            suggestionID: coreSuggestion.suggestionId,
+            slug: coreSuggestion.slug,
+            displayName: coreSuggestion.displayName,
+            reason: coreSuggestion.reason,
+            source: TagSuggestionSourceSnapshot(coreSource: coreSuggestion.source),
+            matchStrength: TagSuggestionMatchSnapshot(coreMatch: coreSuggestion.matchStrength),
+            alreadyExists: coreSuggestion.alreadyExists,
+            needsCreate: coreSuggestion.needsCreate,
+            status: TagSuggestionStatusSnapshot(coreStatus: coreSuggestion.status),
+            selectedByDefault: coreSuggestion.selectedByDefault,
+            disabledReason: coreSuggestion.disabledReason
+        )
+    }
+}
+
+private extension TagSuggestionSourceSnapshot {
+    init(coreSource: TagSuggestionSource) {
+        switch coreSource {
+        case .fileName: self = .fileName
+        case .path: self = .path
+        case .sourceFolder: self = .sourceFolder
+        case .existingTagPattern: self = .existingTagPattern
+        }
+    }
+}
+
+private extension TagSuggestionMatchSnapshot {
+    init(coreMatch: TagSuggestionMatch) {
+        switch coreMatch {
+        case .strong: self = .strong
+        case .weak: self = .weak
+        }
+    }
+}
+
+private extension TagSuggestionStatusSnapshot {
+    init(coreStatus: TagSuggestionStatus) {
+        switch coreStatus {
+        case .newTag: self = .newTag
+        case .alreadyAdded: self = .alreadyAdded
+        case .invalid: self = .invalid
+        case .blocked: self = .blocked
+        }
     }
 }
 
 private extension BatchMutationItemResultSnapshot {
     init(coreResult: BatchMutationItemResult) {
-        fileID = coreResult.fileId
-        tag = coreResult.tag
-        status = BatchMutationStatusSnapshot(coreStatus: coreResult.status)
-        error = coreResult.error
+        self.init(
+            fileID: coreResult.fileId,
+            tag: coreResult.tag,
+            status: BatchMutationStatusSnapshot(coreStatus: coreResult.status),
+            error: coreResult.error
+        )
     }
 }
 

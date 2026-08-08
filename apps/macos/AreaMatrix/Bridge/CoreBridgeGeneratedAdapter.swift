@@ -5,7 +5,7 @@ import Foundation
 /// Keeps generated UniFFI calls and their first-order conversions out of the
 /// runtime actor. This is the physical adapter boundary used during the
 /// incremental migration to a standalone CoreBridge runtime module.
-struct CoreBridgeGeneratedAdapter: Sendable {
+struct CoreBridgeGeneratedAdapter {
     private let runtimeCoordinator: CoreBridgeRuntimeCoordinator
 
     init(runtimeCoordinator: CoreBridgeRuntimeCoordinator) {
@@ -179,5 +179,22 @@ struct CoreBridgeGeneratedAdapter: Sendable {
     func listFilterFacets(repoPath: String, query: SearchFacetQuery) throws -> SearchFacets {
         try require(.listFilterFacets)
         return try AreaMatrix.listFilterFacets(repoPath: repoPath, query: query)
+    }
+
+    func listAICalls(
+        repoPath: String,
+        filter: AiCallLogFilter,
+        pagination: AiCallLogPagination
+    ) throws -> AiCallLogPage {
+        try require(.listAICalls)
+        return try AreaMatrix.listAiCalls(repoPath: repoPath, filter: filter, pagination: pagination)
+    }
+
+    func clearAICallLog(
+        repoPath: String,
+        request: AiCallLogClearRequest
+    ) throws -> AiCallLogClearReport {
+        try require(.clearAICallLog)
+        return try AreaMatrix.clearAiCallLog(repoPath: repoPath, request: request)
     }
 }

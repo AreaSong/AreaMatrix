@@ -291,7 +291,8 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
 final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
     private let nsWorkspaceOpenInventory = [
         "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/ExternalURLPolicy.swift:NSWorkspace.shared.open:1",
-        "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/LocalFileURLPolicy.swift:NSWorkspace.shared.activateFileViewerSelecting:1",
+        "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/LocalFileURLPolicy.swift:"
+            + "NSWorkspace.shared.activateFileViewerSelecting:1",
         "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/LocalFileURLPolicy.swift:NSWorkspace.shared.open:1"
     ]
 

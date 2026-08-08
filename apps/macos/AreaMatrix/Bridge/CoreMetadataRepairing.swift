@@ -264,24 +264,28 @@ private extension LocalModelFolderLocationState {
 
 extension TagSuggestionApplyReportSnapshot {
     init(coreReport: TagSuggestionApplyReport) {
-        fileID = coreReport.fileId
-        requestedCount = coreReport.requestedCount
-        appliedCount = coreReport.appliedCount
-        skippedCount = coreReport.skippedCount
-        failedCount = coreReport.failedCount
-        itemResults = coreReport.itemResults.map(TagSuggestionApplyItemResultSnapshot.init(coreResult:))
-        tagSet = TagSetSnapshot(coreTagSet: coreReport.tagSet)
-        undoToken = coreReport.undoToken
-        refreshTargets = coreReport.refreshTargets
+        self.init(
+            fileID: coreReport.fileId,
+            requestedCount: coreReport.requestedCount,
+            appliedCount: coreReport.appliedCount,
+            skippedCount: coreReport.skippedCount,
+            failedCount: coreReport.failedCount,
+            itemResults: coreReport.itemResults.map(TagSuggestionApplyItemResultSnapshot.init(coreResult:)),
+            tagSet: TagSetSnapshot(coreTagSet: coreReport.tagSet),
+            undoToken: coreReport.undoToken,
+            refreshTargets: coreReport.refreshTargets
+        )
     }
 }
 
 private extension TagSuggestionApplyItemResultSnapshot {
     init(coreResult: TagSuggestionApplyItemResult) {
-        suggestionID = coreResult.suggestionId
-        slug = coreResult.slug
-        status = TagSuggestionApplyStatusSnapshot(coreStatus: coreResult.status)
-        error = coreResult.error
+        self.init(
+            suggestionID: coreResult.suggestionId,
+            slug: coreResult.slug,
+            status: TagSuggestionApplyStatusSnapshot(coreStatus: coreResult.status),
+            error: coreResult.error
+        )
     }
 }
 

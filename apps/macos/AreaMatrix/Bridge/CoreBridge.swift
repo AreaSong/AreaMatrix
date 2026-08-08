@@ -30,7 +30,7 @@ actor CoreBridge {
         self.importObservability = importObservability
         self.remoteProviderProbePerformer = remoteProviderProbePerformer
         self.runtimeCoordinator = runtimeCoordinator
-        self.generatedAdapter = CoreBridgeGeneratedAdapter(runtimeCoordinator: runtimeCoordinator)
+        generatedAdapter = CoreBridgeGeneratedAdapter(runtimeCoordinator: runtimeCoordinator)
     }
 
     nonisolated var state: CoreBridgeRuntimeState {

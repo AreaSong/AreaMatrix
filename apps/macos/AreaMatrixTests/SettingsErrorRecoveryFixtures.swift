@@ -1,5 +1,5 @@
-import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 
 extension DiagnosticsSnapshotSnapshot {
     static func settingsErrorRecoveryFixture(repoPath: String) -> DiagnosticsSnapshotSnapshot {

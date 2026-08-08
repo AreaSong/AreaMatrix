@@ -101,13 +101,37 @@ manifest 依赖图的共享合同，统一检查重复 ID、空元数据、重�
 边界，不替代高风险写操作的 `RepositoryWriteCoordinator`、文件安全合同或 Core API。
 
 `AreaMatrixCoreBridgeContract` 与 `AreaMatrixCoreBridgeRuntime` 是已接入 Xcode target 的 Swift Package
-边界：前者持有稳定的 `CoreBridgeBoundary`、能力协议合同和 diagnostics snapshot 合同，后者负责运行时状态、可用性和 boundary inventory 协调。
+边界：前者持有稳定的 `CoreBridgeBoundary`、能力协议合同、diagnostics snapshot、change-log、classification
+、search facet、AI call-log、tag value、tag suggestion、repository lifecycle 与 undo/redo 合同，后者负责运行时状态、可用性和
+boundary inventory 协调。
 `AreaMatrixCoreContracts` 同时承载稳定的 feature manifest、平台能力 snapshot、绑定合同 snapshot 和扩展注册合同；它不依赖
 AppKit、L10n 或 UniFFI。`CoreBridge` actor、Core/UniFFI 转换和生成绑定仍集中在 `AreaMatrix/Bridge/`，
 因为它们依赖 tracked binding；Bridge 只负责把生成 DTO 转成 package snapshot，并在 App-owned 扩展中提供
 本地化显示名。Feature 只消费 `AreaMatrixCoreContracts` 的稳定合同，不接触生成类型。进程级 `CoreBridge`
 实例由 `App/CoreBridgeRuntimeAssembly.swift` 组合；后续适配迁移继续以这些 Package 和 Bridge 边界测试为锚点，
 不改变用户文件和 Core API 语义。
+
+#### App-owned Bridge 保留清单
+
+跨 Feature 的稳定 capability contract 已进入 `AreaMatrixCoreBridgeContract`；下列适配器仍留在 App target，
+因为它们携带 Feature 专属的本地化投影、SQLite recovery、凭据生命周期、事务式概览或用户文件写入语义。
+清单由 `MacOSCoreBridgePackageGovernanceTests.testRetainedAppOwnedBridgeAdaptersHaveExplicitExitConditions`
+执行校验；每一项都必须有 owner、保留理由和可验证的退出条件。退出条件满足前，不将这些适配器拆成只为目录数量服务的微型 Package。
+
+| 适配器 | Owner | 保留理由 | 退出条件 |
+|---|---|---|---|
+| `CoreAIPrivacySnapshots.swift`、`CoreRemoteProviderConfiguring.swift` | AI | 隐私、provider scope、credential lifecycle 和 fallback 语义属于 AI 边界 | 出现第二个真实消费者后再抽取非 secret value contract |
+| `CoreAISummaryMetadataReading.swift`、`CoreNoteReadingWriting.swift` | AI / Detail | SQLite summary recovery、note IO、revision 和隐私语义不可混为通用读写 | 独立 note / summary 消费者及对应 read-only / revision 门禁成立 |
+| `CoreClassifierRuleEditing.swift`、`CoreClassifierRuleSavingAndImpactPreviewing.swift` | Settings / FileActions | 本地化草稿、preview、确认和恢复动作共同构成 classifier 写入边界 | 第二个生产调用方共享合同且保留写安全测试 |
+| `CoreExternalChangesSyncing.swift` | MainList | FSEvents 归一化直接驱动 MainList refresh policy | 独立 Feature 消费同一事件合同 |
+| `CoreFileDeleting.swift`、`CoreFileListing.swift`、`CoreFileRenaming.swift` | FileActions / MainList / Detail | 删除、索引移除、缺失恢复和重命名的用户文件与 undo 语义不同 | 每个语义有独立共享调用方，且不合并高风险行为 |
+| `CoreImporting.swift`、`CoreImportConflictBatching.swift` | Import | source URL、duplicate policy、trace、冲突批处理属于导入事务 | batch / folder 之外出现第二个导入 owner 且事务门禁可复用 |
+| `CoreICloudConflictListing.swift`、`CoreSyncConflictDetecting.swift`、`CoreSyncConflictResolving.swift` | SyncConflicts | iCloud placeholder、不确定性和真实用户文件写入是高风险冲突流程 | 第二个冲突消费者、真实 placeholder 证据和独立 review 均成立 |
+| `CoreMetadataRepairing.swift`、`CoreOverviewRegenerating.swift` | RepositoryLifecycle | DB repair、staging、commit、rollback 和恢复顺序必须可见 | 另一恢复 Feature 共享同一安全合同并通过完整门禁 |
+| `CoreObservabilityBridge.swift` | Observability | callback sink、进程级 tracing 和 generated call 的生命周期耦合 | callback boundary 有独立消费者后再抽取 snapshot |
+
+该清单不是永久豁免：新增 App-owned Bridge 适配器必须先补测试清单和退出条件；删除或迁移适配器时，必须同步
+Package contract、Bridge boundary、文档和验证证据。
 
 主资料库列表使用 `MainListFeatureDependencies` 作为单一显式依赖范围，由 App 组合层创建并传入
 `MainFileListModel`；生产模型不再通过 `.live` 默认值解析 Core 或平台服务。测试便利构造只存在于测试

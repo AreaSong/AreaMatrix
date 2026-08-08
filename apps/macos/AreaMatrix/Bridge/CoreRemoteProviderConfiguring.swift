@@ -142,21 +142,6 @@ protocol CoreAIClassificationFallbackStatusReading: Sendable {
     ) async throws -> AIFallbackStatusSnapshot
 }
 
-protocol CoreAICallLogListing: Sendable {
-    func listAICalls(
-        repoPath: String,
-        filter: AICallLogFilterSnapshot,
-        pagination: AICallLogPaginationSnapshot
-    ) async throws -> AICallLogPageSnapshot
-}
-
-protocol CoreAICallLogClearing: Sendable {
-    func clearAICallLog(
-        repoPath: String,
-        request: AICallLogClearRequestSnapshot
-    ) async throws -> AICallLogClearReportSnapshot
-}
-
 extension CoreBridge: CoreRemoteProviderConfiguring {
     func loadRemoteProviderConfig(repoPath: String) async throws -> RemoteProviderConfigState {
         try await Task.detached(priority: .userInitiated) {

@@ -1,5 +1,5 @@
 import AreaMatrixCoreContracts
 
 enum AIFeatureManifestProvider: FeatureManifestProvider {
-    static let manifest = FeatureManifestCatalog.ai
+    static let manifest = FeatureManifestCatalog.aiFeature
 }

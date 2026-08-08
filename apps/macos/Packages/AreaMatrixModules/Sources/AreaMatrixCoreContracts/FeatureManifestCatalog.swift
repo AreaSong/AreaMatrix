@@ -7,10 +7,11 @@ import Foundation
 /// testable package. The App target only adapts these values to its local
 /// `FeatureManifestProvider` names.
 public enum FeatureManifestCatalog {
-    public static let ai = FeatureManifest(
+    public static let aiFeature = FeatureManifest(
         id: "AI",
         owner: "AI",
-        responsibility: "Privacy rules, provider configuration, summaries, classification, tags, and local/remote AI status.",
+        responsibility: "Privacy rules, provider configuration, summaries, classification, tags, and "
+            + "local/remote AI status.",
         riskBoundary: "User-data privacy, credentials, Keychain, network access, and probe process execution.",
         routes: ["settingsAI", "aiPrivacyRules", "aiSummary", "aiClassification", "aiTags"],
         commands: ["openAISettings", "suggestTags", "classifySelection"],
@@ -79,8 +80,10 @@ public enum FeatureManifestCatalog {
     public static let diagnostics = FeatureManifest(
         id: "Diagnostics",
         owner: "Diagnostics",
-        responsibility: "Runtime evidence, incident capture, user activity, developer console, and diagnostic package preview and inspection.",
-        riskBoundary: "Privacy-safe local evidence and explicit no-overwrite package export; business writes stay with their owning feature.",
+        responsibility: "Runtime evidence, incident capture, user activity, developer console, and "
+            + "diagnostic package preview and inspection.",
+        riskBoundary: "Privacy-safe local evidence and explicit no-overwrite package export; business writes stay "
+            + "with their owning feature.",
         routes: ["diagnostics", "incidentDetail", "traceConsole"],
         commands: ["openDiagnostics", "captureIncident", "exportDiagnostics"],
         settingsPanes: ["Diagnostics"],
@@ -122,7 +125,8 @@ public enum FeatureManifestCatalog {
         id: "Import",
         owner: "Import",
         responsibility: "Single-file, folder, batch, progress, result, conflict, duplicate, and placeholder flows.",
-        riskBoundary: "Source files, final repository state, DB consistency, iCloud placeholders, and session recovery.",
+        riskBoundary: "Source files, final repository state, DB consistency, iCloud placeholders, and "
+            + "session recovery.",
         routes: ["importEntry", "importProgress", "importResult", "importConflict"],
         commands: ["import", "retryImport", "resolveConflict"],
         settingsPanes: [],
@@ -158,7 +162,8 @@ public enum FeatureManifestCatalog {
     public static let mainList = FeatureManifest(
         id: "MainList",
         owner: "MainList",
-        responsibility: "Visible files, filtering, selection, loading, empty/error presentation, and feature entry contracts.",
+        responsibility: "Visible files, filtering, selection, loading, empty/error presentation, and "
+            + "feature entry contracts.",
         riskBoundary: "Cross-feature composition only; execution remains with Detail, FileActions, Search, or Import.",
         routes: ["mainEmpty", "mainList", "mainLoading", "mainError"],
         commands: ["openFile", "selectAll", "refresh"],
@@ -218,8 +223,10 @@ public enum FeatureManifestCatalog {
     public static let settings = FeatureManifest(
         id: "Settings",
         owner: "Settings",
-        responsibility: "General, repository, classifier, integrations, advanced, about, and platform differences settings.",
-        riskBoundary: "Configuration writes, dangerous settings, diagnostics export, iCloud state, and platform actions.",
+        responsibility: "General, repository, classifier, integrations, advanced, about, and platform "
+            + "differences settings.",
+        riskBoundary: "Configuration writes, dangerous settings, diagnostics export, iCloud state, and platform "
+            + "actions.",
         routes: ["settingsGeneral", "settingsRepository", "settingsClassifier", "settingsAdvanced", "settingsAbout"],
         commands: ["openSettings", "openDiagnostics", "changeLanguage"],
         settingsPanes: ["General", "Repository", "Classifier", "Integrations", "Advanced", "About"],
@@ -245,7 +252,8 @@ public enum FeatureManifestCatalog {
     public static let syncConflicts = FeatureManifest(
         id: "SyncConflicts",
         owner: "SyncConflicts",
-        responsibility: "iCloud and external sync conflict listing, review, preview, resolve, and replace confirmation.",
+        responsibility: "iCloud and external sync conflict listing, review, preview, resolve, and replace "
+            + "confirmation.",
         riskBoundary: "External changes, iCloud copies, conflict resolution, and user-file selection.",
         routes: ["syncConflicts", "iCloudConflict", "replaceConfirmation"],
         commands: ["reviewSyncConflict", "resolveSyncConflict"],
@@ -258,7 +266,7 @@ public enum FeatureManifestCatalog {
     )
 
     public static let all: [FeatureManifest] = [
-        ai,
+        aiFeature,
         commandPalette,
         detail,
         diagnostics,

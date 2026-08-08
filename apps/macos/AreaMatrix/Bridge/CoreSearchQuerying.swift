@@ -4,14 +4,7 @@ protocol CoreSearchQuerying: CoreSmartListRunning, Sendable {
     func searchFiles(repoPath: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot
 }
 
-enum SearchScopeSnapshot: String, CaseIterable, Equatable, Identifiable {
-    case all
-    case current
-
-    var id: String {
-        rawValue
-    }
-
+extension SearchScopeSnapshot {
     var displayName: String {
         switch self {
         case .all:

@@ -273,16 +273,18 @@ extension SearchSortSnapshot {
 
 extension SearchFilterStateSnapshot {
     init(coreFilter: SearchFilter) {
-        category = coreFilter.category
-        fileKind = coreFilter.fileKind
-        tags = coreFilter.tags
-        tagMatchMode = SearchTagMatchModeSnapshot(coreMode: coreFilter.tagMatchMode)
-        importedAfter = coreFilter.importedAfter
-        importedBefore = coreFilter.importedBefore
-        modifiedAfter = coreFilter.modifiedAfter
-        modifiedBefore = coreFilter.modifiedBefore
-        storageMode = coreFilter.storageMode.map(SearchStorageModeSnapshot.init(coreMode:))
-        includeDeleted = coreFilter.includeDeleted ?? false
+        self.init(
+            category: coreFilter.category,
+            fileKind: coreFilter.fileKind,
+            tags: coreFilter.tags,
+            tagMatchMode: SearchTagMatchModeSnapshot(coreMode: coreFilter.tagMatchMode),
+            importedAfter: coreFilter.importedAfter,
+            importedBefore: coreFilter.importedBefore,
+            modifiedAfter: coreFilter.modifiedAfter,
+            modifiedBefore: coreFilter.modifiedBefore,
+            storageMode: coreFilter.storageMode.map(SearchStorageModeSnapshot.init(coreMode:)),
+            includeDeleted: coreFilter.includeDeleted ?? false
+        )
     }
 }
 
