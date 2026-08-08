@@ -207,7 +207,9 @@ public struct AreaMatrixPrimaryButtonStyle: ButtonStyle {
             .animation(.areaMatrixQuickFade, value: isHovered)
             .onHover { hovering in
                 isHovered = hovering
-                interactionFeedback.setPointingCursor(active: hovering)
+                MainActor.assumeIsolated {
+                    interactionFeedback.setPointingCursor(active: hovering)
+                }
             }
     }
 }
@@ -232,7 +234,9 @@ public struct AreaMatrixSecondaryButtonStyle: ButtonStyle {
             .animation(.areaMatrixQuickFade, value: isHovered)
             .onHover { hovering in
                 isHovered = hovering
-                interactionFeedback.setPointingCursor(active: hovering)
+                MainActor.assumeIsolated {
+                    interactionFeedback.setPointingCursor(active: hovering)
+                }
             }
     }
 }

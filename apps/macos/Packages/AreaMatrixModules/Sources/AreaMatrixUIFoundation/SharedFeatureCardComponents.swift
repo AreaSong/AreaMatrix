@@ -128,7 +128,9 @@ public struct AreaMatrixFeatureCard: View {
             .focusEffectDisabled()
             .onChange(of: isFocused) { _, focused in
                 if focused {
-                    interactionFeedback.performHaptic(.alignment)
+                    MainActor.assumeIsolated {
+                        interactionFeedback.performHaptic(.alignment)
+                    }
                 }
                 onHoverChanged(focused)
             }
@@ -279,7 +281,9 @@ public struct AreaMatrixFeatureCard: View {
                 y: max(0, min(1, location.y / max(size.height, 1)))
             )
             if !isHovered {
-                interactionFeedback.performHaptic(.levelChange)
+                MainActor.assumeIsolated {
+                    interactionFeedback.performHaptic(.levelChange)
+                }
                 onHoverChanged(true)
             }
         case .ended:
