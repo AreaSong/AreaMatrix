@@ -815,6 +815,22 @@ private var initializationResult: InitializationResult = {
         self.assertNotIn("--SwiftUI", command)
         self.assertIn("--modern-localizable-strings", command)
 
+    def test_xcstringstool_extract_command_uses_legacy_flags_on_older_tool(self) -> None:
+        command = checks._xcstringstool_extract_command(
+            "/usr/bin/xcrun",
+            Path("/tmp/output"),
+            [Path("Sources/Example.swift")],
+            supports_swiftui=False,
+            supports_modern_localizable_strings=False,
+            supports_swiftui_text=True,
+            supports_legacy_localizable_strings=True,
+        )
+
+        self.assertIn("--legacy-localizable-strings", command)
+        self.assertIn("--SwiftUI-Text", command)
+        self.assertNotIn("--modern-localizable-strings", command)
+        self.assertNotIn("--SwiftUI", command)
+
     def test_xcstringstool_support_detection_requires_a_standalone_swiftui_option(self) -> None:
         completed = type(
             "Completed",
@@ -849,6 +865,10 @@ private var initializationResult: InitializationResult = {
 
         with patch("scripts.dev_tools.checks.subprocess.run", return_value=completed):
             self.assertTrue(checks._xcstringstool_supports_swiftui("/usr/bin/xcrun"))
+
+    def test_xcstringstool_supports_option_requires_standalone_help_entry(self) -> None:
+        self.assertTrue(checks._xcstringstool_supports_option("  --modern-localizable-strings\n", "--modern-localizable-strings"))
+        self.assertFalse(checks._xcstringstool_supports_option("  --modern-localizable-strings-legacy\n", "--modern-localizable-strings"))
 
     def test_swift_l10n_calls_extracts_multiline_descriptor_keys(self) -> None:
         source = '''

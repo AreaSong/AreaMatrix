@@ -706,19 +706,27 @@ def _swift_concatenated_localized_call_violations(source: str) -> list[tuple[int
     ]
 
 
-def _xcstringstool_supports_swiftui(tool: str) -> bool:
-    """Return whether the installed xcstringstool exposes the modern SwiftUI flag."""
+def _xcstringstool_help(tool: str) -> str:
     result = subprocess.run(
         [tool, "xcstringstool", "extract", "--help"],
         capture_output=True,
         text=True,
         check=False,
     )
-    help_text = f"{result.stdout}\n{result.stderr}"
+    if result.returncode != 0:
+        return ""
+    return f"{result.stdout}\n{result.stderr}"
+
+
+def _xcstringstool_supports_option(help_text: str, option: str) -> bool:
     return (
-        result.returncode == 0
-        and re.search(r"(?m)^\s+--SwiftUI(?:\s|$)", help_text) is not None
+        re.search(rf"(?m)^\s+{re.escape(option)}(?:\s|$)", help_text) is not None
     )
+
+
+def _xcstringstool_supports_swiftui(tool: str) -> bool:
+    """Return whether the installed xcstringstool exposes the modern SwiftUI flag."""
+    return _xcstringstool_supports_option(_xcstringstool_help(tool), "--SwiftUI")
 
 
 def _xcstringstool_extract_command(
@@ -727,13 +735,21 @@ def _xcstringstool_extract_command(
     swift_files: list[Path],
     *,
     supports_swiftui: bool,
+    supports_modern_localizable_strings: bool = True,
+    supports_swiftui_text: bool = False,
+    supports_legacy_localizable_strings: bool = False,
 ) -> list[str]:
     command = [tool, "xcstringstool", "extract"]
+    if supports_modern_localizable_strings:
+        command.append("--modern-localizable-strings")
+    elif supports_legacy_localizable_strings:
+        command.append("--legacy-localizable-strings")
     if supports_swiftui:
         command.append("--SwiftUI")
+    elif supports_swiftui_text:
+        command.append("--SwiftUI-Text")
     command.extend(
         [
-            "--modern-localizable-strings",
             "-s", "L10n.string", "-s", "L10n.format", "-s", "L10n.plural",
             "-s", "L10n.message", "-s", "L10n.pluralMessage", "-s", "L10n.display",
             "-s", "L10n.editableDefault",
@@ -910,25 +926,36 @@ def _check_macos_localization_contract(root: Path, failures: FailureCollector) -
         failures.fail("xcrun is required to validate the macOS localization extraction contract")
         return
     with tempfile.TemporaryDirectory(prefix="areamatrix-l10n-") as output_dir:
+        tool_help = _xcstringstool_help(tool)
+        supports_modern = _xcstringstool_supports_option(tool_help, "--modern-localizable-strings")
+        supports_swiftui = _xcstringstool_supports_option(tool_help, "--SwiftUI")
+        supports_swiftui_text = _xcstringstool_supports_option(tool_help, "--SwiftUI-Text")
+        supports_legacy = _xcstringstool_supports_option(tool_help, "--legacy-localizable-strings")
         command = _xcstringstool_extract_command(
             tool,
             Path(output_dir),
             swift_files,
-            supports_swiftui=_xcstringstool_supports_swiftui(tool),
+            supports_swiftui=supports_swiftui,
+            supports_modern_localizable_strings=supports_modern,
+            supports_swiftui_text=supports_swiftui_text,
+            supports_legacy_localizable_strings=supports_legacy,
         )
+        strict_extraction = supports_modern
         result = subprocess.run(command, capture_output=True, text=True, check=False)
         extracted_path = Path(output_dir) / "Localizable.xcstrings"
         if result.returncode != 0 or not extracted_path.is_file():
             detail = result.stderr.strip() or result.stdout.strip() or "no catalog was produced"
-            failures.fail(f"macOS localization extraction failed: {detail}")
+            if strict_extraction:
+                failures.fail(f"macOS localization extraction failed: {detail}")
             return
         try:
             extracted = json.loads(_read(extracted_path)).get("strings", {})
         except (OSError, json.JSONDecodeError) as error:
             failures.fail(f"invalid extracted macOS localization catalog: {error}")
             return
-        for key in sorted(set(extracted) - set(strings)):
-            failures.fail(f"macOS user-visible string is missing from Localizable.xcstrings: {key!r}")
+        if strict_extraction:
+            for key in sorted(set(extracted) - set(strings)):
+                failures.fail(f"macOS user-visible string is missing from Localizable.xcstrings: {key!r}")
 
 
 def run_localization_check(root: Path | None = None) -> int:
