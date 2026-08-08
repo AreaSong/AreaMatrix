@@ -108,6 +108,22 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      - name: Print Xcode build diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          logs="$(find .build/derived-data/macos-ci -type f -name '*.log' -print 2>/dev/null || true)"
+          if [ -z "$logs" ]; then
+            echo "No Xcode diagnostic logs were produced."
+            exit 0
+          fi
+          while IFS= read -r log; do
+            [ -n "$log" ] || continue
+            echo "::group::$log"
+            tail -n 250 "$log"
+            echo "::endgroup::"
+          done <<< "$logs"
+
       - name: Run Unit test plan without rebuilding
         run: >-
           ./dev test macos --test-without-building --test-plan AreaMatrix-Unit

@@ -104,6 +104,29 @@ AI_RUNTIME_ENV_CONTRACT = {
     "AREAMATRIX_AI_TAGS_REMOTE_RUNTIME": "external",
 }
 
+# GitHub Actions accepts this fixed set of token permission scopes. Keep the
+# list local so workflow validation catches unsupported keys before GitHub
+# rejects the workflow file.
+GITHUB_ACTIONS_PERMISSION_KEYS = frozenset(
+    {
+        "actions",
+        "attestations",
+        "checks",
+        "contents",
+        "deployments",
+        "discussions",
+        "id-token",
+        "issues",
+        "models",
+        "packages",
+        "pages",
+        "pull-requests",
+        "security-events",
+        "statuses",
+    }
+)
+GITHUB_ACTIONS_PERMISSION_VALUES = frozenset({"read", "write", "none"})
+
 
 @dataclass(frozen=True)
 class TaskManifestEntry:
@@ -393,6 +416,127 @@ def _check_workflow_has_no_paths_filter(root: Path, failures: FailureCollector, 
     path = root / rel_path
     if path.is_file() and re.search(r"^[ \t]+paths:", _read(path), flags=re.MULTILINE):
         failures.fail(f"{rel_path} must not use PR/push paths filters; enterprise CI runs on every PR")
+
+
+def _check_workflow_permissions(root: Path, failures: FailureCollector) -> None:
+    """Reject unsupported or malformed GitHub Actions permission scopes."""
+
+    workflow_root = root / ".github/workflows"
+    if not workflow_root.is_dir():
+        failures.fail(".github/workflows directory is missing")
+        return
+
+    permission_line = re.compile(r"^(?P<indent> *)permissions:\s*(?P<value>.*)$")
+    for path in sorted((*workflow_root.glob("*.yml"), *workflow_root.glob("*.yaml"))):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        block_scalar_indent: int | None = None
+        for index, raw_line in enumerate(lines):
+            stripped_line = raw_line.strip()
+            indent = len(raw_line) - len(raw_line.lstrip(" "))
+            if block_scalar_indent is not None:
+                if stripped_line and indent <= block_scalar_indent:
+                    block_scalar_indent = None
+                else:
+                    continue
+            if re.search(r":\s*[|>]\s*[+-]?\d*\s*(?:#.*)?$", raw_line):
+                block_scalar_indent = indent
+                continue
+            match = permission_line.match(raw_line)
+            if match is None:
+                continue
+            line_no = index + 1
+            inline_value = match.group("value").split(" #", 1)[0].strip()
+            if inline_value:
+                _check_inline_workflow_permissions(path, line_no, inline_value, failures)
+                continue
+
+            base_indent = len(match.group("indent"))
+            _check_mapped_workflow_permissions(path, lines, index, base_indent, failures)
+
+
+def _check_inline_workflow_permissions(
+    path: Path,
+    line_no: int,
+    value: str,
+    failures: FailureCollector,
+) -> None:
+    if value in {"read-all", "write-all", "{}"}:
+        return
+    if not (value.startswith("{") and value.endswith("}")):
+        failures.fail(f"{path}:{line_no} has unsupported permissions value: {value}")
+        return
+
+    mapping_line = re.compile(r"^(?P<key>[\"']?[A-Za-z][A-Za-z0-9_-]*[\"']?):(?:\s*(?P<value>.*))?$")
+    entries = [entry.strip() for entry in value[1:-1].split(",") if entry.strip()]
+    for entry in entries:
+        entry_match = mapping_line.match(entry)
+        if entry_match is None:
+            failures.fail(f"{path}:{line_no} has malformed inline permission: {entry}")
+            continue
+        _validate_workflow_permission_entry(
+            path,
+            line_no,
+            entry_match.group("key"),
+            entry_match.group("value") or "",
+            failures,
+        )
+
+
+def _check_mapped_workflow_permissions(
+    path: Path,
+    lines: list[str],
+    permission_index: int,
+    base_indent: int,
+    failures: FailureCollector,
+) -> None:
+    mapping_line = re.compile(r"^(?P<key>[\"']?[A-Za-z][A-Za-z0-9_-]*[\"']?):(?:\s*(?P<value>.*))?$")
+    child_indent: int | None = None
+    for child_index in range(permission_index + 1, len(lines)):
+        child_line = lines[child_index]
+        if not child_line.strip() or child_line.lstrip().startswith("#"):
+            continue
+        indent = len(child_line) - len(child_line.lstrip(" "))
+        if indent <= base_indent:
+            break
+        if child_indent is None:
+            child_indent = indent
+        if indent != child_indent:
+            continue
+        child_match = mapping_line.match(child_line.strip())
+        child_line_no = child_index + 1
+        if child_match is None:
+            failures.fail(f"{path}:{child_line_no} has malformed permission entry")
+            continue
+        _validate_workflow_permission_entry(
+            path,
+            child_line_no,
+            child_match.group("key"),
+            child_match.group("value") or "",
+            failures,
+        )
+
+
+def _validate_workflow_permission_entry(
+    path: Path,
+    line_no: int,
+    key: str,
+    value: str,
+    failures: FailureCollector,
+) -> None:
+    key = _normalize_workflow_scalar(key)
+    if key not in GITHUB_ACTIONS_PERMISSION_KEYS:
+        failures.fail(f"{path}:{line_no} uses unsupported GitHub Actions permission key: {key}")
+    normalized_value = _normalize_workflow_scalar(value.split(" #", 1)[0].strip())
+    if normalized_value not in GITHUB_ACTIONS_PERMISSION_VALUES:
+        failures.fail(f"{path}:{line_no} uses invalid GitHub Actions permission value for {key}: {value}")
+
+
+def _normalize_workflow_scalar(value: str) -> str:
+    """Match YAML's plain scalar value for the small workflow subset we inspect."""
+
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
 
 
 def _pbx_object_body(project_text: str, object_id: str) -> str | None:
@@ -1811,6 +1955,7 @@ def run_governance_check(root: Path | None = None) -> int:
         "CODE_REVIEW.md",
         "git checkpoint review references",
     )
+    _check_workflow_permissions(root, failures)
     _check_workflow_has_no_paths_filter(root, failures, ".github/workflows/core-ci.yml")
     _check_workflow_has_no_paths_filter(root, failures, ".github/workflows/macos-ci.yml")
     for workflow in ("core-ci.yml", "macos-ci.yml", "governance-ci.yml"):
