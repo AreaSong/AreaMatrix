@@ -44,7 +44,9 @@ struct AreaMatrixThemeToggleButton: View {
 
     private func toggleTheme() {
         withAnimation(.areaMatrixThemeToggle) {
-            interactionFeedback.performHaptic(.alignment)
+            MainActor.assumeIsolated {
+                interactionFeedback.performHaptic(.alignment)
+            }
             if themeOverride == nil {
                 themeOverride = colorScheme == .dark ? .light : .dark
             } else {
@@ -69,6 +71,8 @@ struct AreaMatrixThemeToggleButton: View {
         case .light: .light
         default: .system
         }
-        interactionFeedback.applyAppearance(preference)
+        MainActor.assumeIsolated {
+            interactionFeedback.applyAppearance(preference)
+        }
     }
 }
