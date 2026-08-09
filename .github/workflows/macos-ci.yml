@@ -227,7 +227,7 @@ jobs:
             log=".build/derived-data/macos-ci/xcodebuild-functional.log"
             if [ -f "$log" ]; then
               echo "### Error and failure markers"
-              markers="$(grep -Ein "error:|fatal error:|TEST EXECUTE FAILED|TEST EXECUTE SUCCEEDED|Test Case .*failed|Test Suite .*failed|Testing cancelled|coverage gate" "$log" | tail -n 120 || true)"
+              markers="$(grep -Ein "fatal|failed|failure|error|cancel|abort|signal|crash|testmanagerd|timed out|timeout|TEST EXECUTE|coverage gate" "$log" | tail -n 120 || true)"
               if [ -n "$markers" ]; then
                 printf '%s\n' "$markers"
                 functional_markers="$markers"
@@ -269,7 +269,7 @@ jobs:
           while IFS= read -r line; do
             [ -n "$line" ] || continue
             emit_annotation error "Functional test diagnostic" "$line"
-          done <<< "$functional_markers"
+          done <<< "$(printf '%s\n' "$functional_markers" | tail -n 20)"
 
           if [ -d "TestResults.xcresult" ]; then
             summary="$(xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact 2>/dev/null || true)"
