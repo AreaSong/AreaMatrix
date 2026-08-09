@@ -211,13 +211,29 @@ jobs:
         shell: bash
         run: |
           set +e
+          emit_annotation() {
+            local level="$1"
+            local title="$2"
+            local message="$3"
+            message="${message//'%'/'%25'}"
+            message="${message//$'\r'/'%0D'}"
+            message="${message//$'\n'/'%0A'}"
+            printf '::%s title=%s::%s\n' "$level" "$title" "$message"
+          }
+          functional_markers=""
           {
             echo "## macOS Functional test diagnostics"
             echo
             log=".build/derived-data/macos-ci/xcodebuild-functional.log"
             if [ -f "$log" ]; then
               echo "### Error and failure markers"
-              grep -Ein "error:|fatal error:|TEST EXECUTE FAILED|TEST EXECUTE SUCCEEDED|Test Case .*failed|Test Suite .*failed|Testing cancelled|coverage gate" "$log" | tail -n 120 || true
+              markers="$(grep -Ein "error:|fatal error:|TEST EXECUTE FAILED|TEST EXECUTE SUCCEEDED|Test Case .*failed|Test Suite .*failed|Testing cancelled|coverage gate" "$log" | tail -n 120 || true)"
+              if [ -n "$markers" ]; then
+                printf '%s\n' "$markers"
+                functional_markers="$markers"
+              else
+                echo "No standard functional test error marker found."
+              fi
               echo
               echo "### Log tail"
               tail -n 180 "$log"
@@ -227,22 +243,51 @@ jobs:
             if [ -d "TestResults.xcresult" ]; then
               echo
               echo "### xcresult summary"
-              xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact || true
+              summary_output="$(xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact 2>&1)"
+              if [ -n "$summary_output" ]; then
+                printf '%s\n' "$summary_output"
+              else
+                echo "xcresulttool returned no summary output."
+              fi
               echo
               echo "### xcresult failures"
-              xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact \
-                | jq -r '.testFailures[]? | @json' || true
+              if printf '%s' "$summary_output" | jq -e . >/dev/null 2>&1; then
+                failures="$(printf '%s' "$summary_output" | jq -r '.testFailures[]? | @json' 2>/dev/null || true)"
+                if [ -n "$failures" ]; then
+                  printf '%s\n' "$failures"
+                else
+                  echo "xcresult summary contains no structured testFailures entries."
+                fi
+              else
+                echo "xcresult summary was not valid JSON; raw output is shown above."
+              fi
             else
               echo "TestResults.xcresult was not produced."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+          while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            emit_annotation error "Functional test diagnostic" "$line"
+          done <<< "$functional_markers"
+
           if [ -d "TestResults.xcresult" ]; then
             summary="$(xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact 2>/dev/null || true)"
-            failed_count="$(printf '%s' "$summary" | jq -r '.failedTests // 0' 2>/dev/null || printf '0')"
-            result="$(printf '%s' "$summary" | jq -r '.result // "unknown"' 2>/dev/null || printf 'unknown')"
-            echo "::error title=Functional test plan failed::result=$result failed_tests=$failed_count"
-            printf '%s\n' "$summary" | jq -r '.testFailures[]? | "::error title=Functional test failure::\(.testCaseName // .message // ".")"' 2>/dev/null || true
+            if printf '%s' "$summary" | jq -e . >/dev/null 2>&1; then
+              failed_count="$(printf '%s' "$summary" | jq -r '.failedTests // 0' 2>/dev/null || printf '0')"
+              result="$(printf '%s' "$summary" | jq -r '.result // "unknown"' 2>/dev/null || printf 'unknown')"
+              emit_annotation error "Functional test plan failed" "result=$result failed_tests=$failed_count"
+              printf '%s\n' "$summary" \
+                | jq -r '.testFailures[]? | [.testCaseName // "", .message // ""] | map(select(length > 0)) | join(": ")' \
+                | while IFS= read -r failure; do
+                    [ -n "$failure" ] || continue
+                    emit_annotation error "Functional test failure" "$failure"
+                  done
+            else
+              emit_annotation error "Functional test plan failed" "xcresult summary unavailable or invalid JSON"
+            fi
+          else
+            emit_annotation error "Functional test plan failed" "TestResults.xcresult was not produced"
           fi
 
       - uses: actions/upload-artifact@v4
