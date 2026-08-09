@@ -158,7 +158,7 @@ kill / wait、stdout 上限与 stderr 丢弃策略。旧 probe shell/runtime、C
 | 本地验证与 CI | 部分完成（本地分层验证已闭合） | changed validation、CoreSDK/绑定/治理门禁、一次 `build-for-testing` 后复用 DerivedData 的 Unit / Feature / Integration / Functional coverage 分片已落地；iOS 继续消费同一 CoreSDK artifact | `./dev test changed`、macOS 全量测试、远端 CI 和 branch protection 都有新鲜证据 |
 | 正式发布与外部治理 | 未闭合（外部阻断） | residual：`v1-rl-002`、`v1-rl-003`、`v1-rl-004`、`v1-rl-006`、`v2-risk-001`、`v2-dep-003`、`v2-dep-004` | 真实 iCloud、Developer ID/公证/clean Mac、release decision、独立复核、remote CI/branch protection 证据闭合 |
 
-因此，“还缺少 54%”不是当前有效结论。准确说法是：**工程成熟度矩阵已经达到本文定义的 100%，但全量长期治理仍未达到 100%，因为模块化、依赖隔离以及外部发布/治理证据仍未闭合；这些项不能用一个未经定义的百分比相加替代。**
+因此，“还缺少 54%”不是当前有效结论。准确说法是：**工程成熟度矩阵已经达到本文定义的 100%，模块化与 Feature 依赖隔离也已有直接证据；但全量长期治理仍未达到 100%，因为正式发布、远端治理和独立外部审查证据仍未闭合。这些门禁不能用一个未经定义的百分比相加替代。**
 
 最近同步依据：
 

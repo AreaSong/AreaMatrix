@@ -45,10 +45,10 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/development/ci-governance.md'
     line_start: 1
-    line_end: 212
+    line_end: 231
     heading: ''
     excerpt: '# CI Governance'
-    sha256: '71b63ed36887662aaa40b71e3a334a79447e988b3b7406b086bf7dac08bb6421'
+    sha256: '071cbc7d8dcf595f152bae4d7ec4908842327beac191c5964b38d449a09592d3'
     source: 'discussion:exact_docs'
   - file: 'workflow/README.md'
     line_start: 1
