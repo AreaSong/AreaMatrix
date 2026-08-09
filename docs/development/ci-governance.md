@@ -97,6 +97,25 @@ dashboard 的输入。
 - required status checks 和 required pull request approvals；
 - 远端分支上的 `.github/CODEOWNERS`，以及本地 PR 模板中的 review ownership 字段。
 
+`main` 的 branch protection 必须同时要求以下稳定 job contexts，并启用 strict（分支必须先追平目标分支）：
+
+- `cargo fmt`
+- `cargo clippy`
+- `cargo test`
+- `build universal binary and bindings`
+- `coverage gate`
+- `Build reusable CoreSDK`
+- `Xcode build-for-testing & layered tests`
+- `iOS Swift package build & test`
+- `SwiftFormat lint`
+- `SwiftLint`
+- `governance, prompts, skills, and task-loop`
+
+审计还要求至少一个审批、CODEOWNERS review、stale review 失效、管理员保护、禁止 force-push/分支删除和
+conversation resolution。`prompt doctor` 不单独列入 required context，因为它是 Core/macOS job 的依赖并在
+Governance CI 中执行；重复 context 会让 GitHub classic branch protection 产生歧义。缺少任何一项时，远端
+审计返回 `BLOCKED`，不能以“有其他 required check”代替。
+
 未安装 `gh`、未登录 GitHub、网络不可用、API 权限不足、没有 branch protection 或最近 workflow 未通过时，
 命令返回 `BLOCKED` 和明确原因。该命令不创建 PR、tag、release，不修改 branch protection，不触发 workflow，
 也不关闭 `v2-dep-004` 或 `v2-risk-001`；远端结果仍需作为真实 merge/review evidence 由治理登记册和人工 review 采纳。
