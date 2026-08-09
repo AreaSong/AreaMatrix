@@ -227,7 +227,7 @@ jobs:
             log=".build/derived-data/macos-ci/xcodebuild-functional.log"
             if [ -f "$log" ]; then
               echo "### Error and failure markers"
-              markers="$(grep -Ein "fatal|failed|failure|error|cancel|abort|signal|crash|testmanagerd|timed out|timeout|TEST EXECUTE|coverage gate" "$log" | tail -n 120 || true)"
+              markers="$(grep -Ein "fatal error:|error:|BUILD FAILED|TEST BUILD FAILED|The following build commands failed|Testing cancelled|Test Case '.*' failed|Test Suite '.*' failed at|Executed [0-9]+ tests?, with [1-9][0-9]* failures|testmanagerd|timed out|timeout|signal [0-9]+|crash|TEST EXECUTE FAILED|coverage gate: FAIL|Process completed with exit code [1-9][0-9]*" "$log" | tail -n 120 || true)"
               if [ -n "$markers" ]; then
                 printf '%s\n' "$markers"
                 functional_markers="$markers"
@@ -294,7 +294,7 @@ jobs:
         if: always()
         with:
           name: xcresult
-          path: TestResults.xcresult
+          path: TestResults*.xcresult
 
   ios-package:
     name: iOS Swift package build & test
