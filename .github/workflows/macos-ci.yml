@@ -139,6 +139,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          emit_annotation() {
+            local level="$1"
+            local message="$2"
+            message="${message//'%'/'%25'}"
+            message="${message//$'\r'/'%0D'}"
+            message="${message//$'\n'/'%0A'}"
+            printf '::%s title=Xcode build diagnostic::%s\n' "$level" "$message"
+          }
+          annotations=""
           {
             echo "## macOS Xcode build diagnostics"
             echo
@@ -150,8 +159,12 @@ jobs:
               echo "### $log"
               echo
               echo "#### Error markers"
-              if ! grep -Ein "error:|fatal error:|BUILD FAILED|TEST BUILD FAILED|The following build commands failed|Unable to find module dependency|Testing cancelled" "$log" | tail -n 80; then
+              matches="$(grep -Ein "error:|fatal error:|BUILD FAILED|TEST BUILD FAILED|The following build commands failed|Unable to find module dependency|Testing cancelled" "$log" || true)"
+              if [ -z "$matches" ]; then
                 echo "No standard Xcode error marker found."
+              else
+                printf '%s\n' "$matches" | tail -n 80
+                annotations="${annotations}${matches}\n"
               fi
               echo
               echo "#### Tail"
@@ -159,6 +172,10 @@ jobs:
               echo
             done
           } >> "$GITHUB_STEP_SUMMARY"
+          while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            emit_annotation error "$line"
+          done < <(printf '%b' "$annotations" | tail -n 20)
 
       - name: Run Unit test plan without rebuilding
         run: >-
