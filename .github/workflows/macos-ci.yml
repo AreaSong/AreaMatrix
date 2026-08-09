@@ -206,6 +206,45 @@ jobs:
           --result-bundle-path TestResults.xcresult
           --disable-parallel-testing --coverage-gate
 
+      - name: Publish Functional test diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          {
+            echo "## macOS Functional test diagnostics"
+            echo
+            log=".build/derived-data/macos-ci/xcodebuild-functional.log"
+            if [ -f "$log" ]; then
+              echo "### Error and failure markers"
+              grep -Ein "error:|fatal error:|TEST EXECUTE FAILED|TEST EXECUTE SUCCEEDED|Test Case .*failed|Test Suite .*failed|Testing cancelled|coverage gate" "$log" | tail -n 120 || true
+              echo
+              echo "### Log tail"
+              tail -n 180 "$log"
+            else
+              echo "Functional test log was not produced at $log."
+            fi
+            if [ -d "TestResults.xcresult" ]; then
+              echo
+              echo "### xcresult summary"
+              xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact || true
+              echo
+              echo "### xcresult failures"
+              xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact \
+                | jq -r '.testFailures[]? | @json' || true
+            else
+              echo "TestResults.xcresult was not produced."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -d "TestResults.xcresult" ]; then
+            summary="$(xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact 2>/dev/null || true)"
+            failed_count="$(printf '%s' "$summary" | jq -r '.failedTests // 0' 2>/dev/null || printf '0')"
+            result="$(printf '%s' "$summary" | jq -r '.result // "unknown"' 2>/dev/null || printf 'unknown')"
+            echo "::error title=Functional test plan failed::result=$result failed_tests=$failed_count"
+            printf '%s\n' "$summary" | jq -r '.testFailures[]? | "::error title=Functional test failure::\(.testCaseName // .message // ".")"' 2>/dev/null || true
+          fi
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
