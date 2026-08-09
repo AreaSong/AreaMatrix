@@ -170,23 +170,29 @@ final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
     }
 
     func testGeneratedBindingDirectoriesContainOnlyGeneratedArtifacts() throws {
-        let expected = [
-            "Bridge/Generated/area_matrix.swift",
-            "Bridge/Generated/area_matrixFFI.h",
-            "Bridge/Generated/area_matrixFFI.modulemap",
-            "Bridge/Generated/libarea_matrix_core.a",
-            "Bridge/Generated/module.modulemap",
+        let trackedExpected = [
             "Bridge/UniFFI/area_matrix.swift",
             "Bridge/UniFFI/area_matrixFFI.h",
             "Bridge/UniFFI/area_matrixFFI.modulemap",
             "Bridge/UniFFI/libarea_matrix_core.a",
             "Bridge/UniFFI/module.modulemap"
         ]
+        let localGeneratedDirectory = productionDirectory()
+            .appendingPathComponent("Bridge/Generated", isDirectory: true)
+        let expected = FileManager.default.fileExists(atPath: localGeneratedDirectory.path)
+            ? trackedExpected + [
+                "Bridge/Generated/area_matrix.swift",
+                "Bridge/Generated/area_matrixFFI.h",
+                "Bridge/Generated/area_matrixFFI.modulemap",
+                "Bridge/Generated/libarea_matrix_core.a",
+                "Bridge/Generated/module.modulemap"
+            ]
+            : trackedExpected
         let actual = try generatedBindingArtifacts()
 
         XCTAssertEqual(
             actual,
-            expected,
+            expected.sorted(),
             "Bridge/Generated and Bridge/UniFFI should only contain generated UniFFI artifacts."
         )
     }

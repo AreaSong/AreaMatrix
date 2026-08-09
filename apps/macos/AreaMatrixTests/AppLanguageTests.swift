@@ -1,5 +1,6 @@
 import AppKit
 @testable import AreaMatrix
+import Combine
 import Observation
 import XCTest
 
@@ -294,7 +295,7 @@ final class AppLanguageTests: XCTestCase {
     }
 
     @MainActor
-    func testApplicationActivationReResolvesFollowSystemSelection() throws {
+    func testApplicationActivationReResolvesFollowSystemSelection() async throws {
         let defaults = try makeDefaults()
         let notifications = NotificationCenter()
         var preferred = ["en-US"]
@@ -309,12 +310,16 @@ final class AppLanguageTests: XCTestCase {
         )
         XCTAssertEqual(localizer.resourceLocaleIdentifier, "en")
 
+        let activationRefresh = expectation(description: "activation refresh")
+        let refreshObservation = store.objectWillChange.sink {
+            activationRefresh.fulfill()
+        }
         preferred = ["zh-SG"]
         notifications.post(name: NSApplication.didBecomeActiveNotification, object: nil)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.01))
+        await fulfillment(of: [activationRefresh], timeout: 1)
 
         XCTAssertEqual(localizer.resourceLocaleIdentifier, "zh-Hans")
-        withExtendedLifetime(store) {}
+        refreshObservation.cancel()
     }
 
     private func makeDefaults() throws -> UserDefaults {
