@@ -192,8 +192,8 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/development/ci-governance.md'
     line_start: 1
-    line_end: 231
+    line_end: 238
     heading: ''
     excerpt: '# CI Governance'
-    sha256: '071cbc7d8dcf595f152bae4d7ec4908842327beac191c5964b38d449a09592d3'
+    sha256: 'dc90615e6360c94837f36e083dd249638a77f93d20771fbd3a499fffdf447e45'
     source: 'discussion:exact_docs'

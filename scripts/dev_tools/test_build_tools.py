@@ -116,6 +116,33 @@ with cargo_lane_lock(root, lane="sdk", operation=operation, poll_interval=0.01):
             self.assertEqual(metadata["operation"], "second")
             self.assertEqual(metadata["state"], "released")
             self.assertGreater(metadata["wait_seconds"], 0.1)
+            metric_records = [
+                json.loads(line)
+                for line in (root / ".build/metrics/cargo-lock.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual([record["operation"] for record in metric_records], ["first", "second"])
+            self.assertGreater(metric_records[1]["wait_seconds"], 0.1)
+
+    def test_cargo_lane_metric_is_recorded_after_flock_release(self) -> None:
+        events: list[str] = []
+
+        def observe_flock(_descriptor: int, operation: int) -> None:
+            if operation == artifacts.fcntl.LOCK_UN:
+                events.append("unlock")
+
+        with tempfile.TemporaryDirectory() as temp:
+            with (
+                patch("scripts.dev_tools.artifacts.fcntl.flock", side_effect=observe_flock),
+                patch("scripts.dev_tools.artifacts._write_lock_metadata"),
+                patch(
+                    "scripts.dev_tools.artifacts.record_metric",
+                    side_effect=lambda *_args, **_kwargs: events.append("metric") or True,
+                ),
+            ):
+                with artifacts.cargo_lane_lock(Path(temp), lane="sdk", operation="order"):
+                    pass
+
+        self.assertEqual(events, ["unlock", "metric"])
 
     def test_xcode_core_build_uses_isolated_lane_and_writes_dependency_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

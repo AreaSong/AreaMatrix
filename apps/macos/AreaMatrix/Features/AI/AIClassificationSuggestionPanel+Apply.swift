@@ -1,4 +1,25 @@
+import AreaMatrixFeatureAI
 import SwiftUI
+
+extension AIClassificationSuggestionRouteState {
+    var label: String {
+        switch self {
+        case .local: L10n.string("Local")
+        case .remote: L10n.string("Remote")
+        }
+    }
+}
+
+extension AIClassificationSuggestionContextFieldState {
+    var label: String {
+        switch self {
+        case .fileName: L10n.string("filename")
+        case .extension: L10n.string("extension")
+        case .repoRelativePath: L10n.string("repo-relative path")
+        case .limitedTextSummary: L10n.string("limited text summary")
+        }
+    }
+}
 
 struct AIClassificationApplyConfirmationContext: Equatable {
     var targetCategory: String

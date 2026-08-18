@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct SmartListManagementSheet: View {
@@ -48,7 +49,7 @@ struct SmartListManagementSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: route.mode.title, pageID: "smart-list-management", content: { content })
+        AreaMatrixActionSheetContainer(title: route.mode.title, pageID: "smart-list-management", content: { content })
             .accessibilityIdentifier("smart-list-management-smart-list-management")
             .task(id: model.queryDiagnosticTaskKey) {
                 await refreshQueryDiagnostic()

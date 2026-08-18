@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureAI
 
 extension RemoteProviderConfigState {
     static func remoteProviderConfigDisabled() -> RemoteProviderConfigState {

@@ -1,4 +1,5 @@
 import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureIngestion
 import Combine
 import Foundation
 
@@ -107,23 +108,23 @@ final class OnboardingModel: ObservableObject {
     init(
         settingsReader: any AppSettingsReading = AppPlatformServices.settingsReader,
         settingsWriter: any AppSettingsWriting = AppPlatformServices.settingsWriter,
-        configLoader _: any CoreConfigurationLoading = AppCoreServices.configurationLoader,
-        pathValidator: any CoreRepositoryPathValidating = AppCoreServices.repositoryPathValidator,
+        configLoader _: any CoreConfigurationLoading = AppCoreServices().configurationLoader,
+        pathValidator: any CoreRepositoryPathValidating = AppCoreServices().repositoryPathValidator,
         initializedPathValidator: any CoreInitializedRepositoryPathValidating =
-            AppCoreServices.initializedRepositoryPathValidator,
-        repositoryInitializer: any CoreRepositoryInitializing = AppCoreServices.repositoryInitializer,
-        emptyRepositoryOpener: any CoreEmptyRepositoryOpening = AppCoreServices.emptyRepositoryOpener,
-        importProgressImporter: any CoreFileImporting = AppCoreServices.importProgressImporter,
-        importResultChangeLister: any CoreChangeLogListing = AppCoreServices.changeLogLister,
+            AppCoreServices().initializedRepositoryPathValidator,
+        repositoryInitializer: any CoreRepositoryInitializing = AppCoreServices().repositoryInitializer,
+        emptyRepositoryOpener: any CoreEmptyRepositoryOpening = AppCoreServices().emptyRepositoryOpener,
+        importProgressImporter: any CoreFileImporting = AppCoreServices().importProgressImporter,
+        importResultChangeLister: any CoreChangeLogListing = AppCoreServices().changeLogLister,
         mainLoadingTreeLister: (any CoreRepositoryTreeListing)? = nil,
-        startupRecoverer: any CoreStartupRecovering = AppCoreServices.startupRecoverer,
-        externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer,
-        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices.repositoryWriteCoordinator,
+        startupRecoverer: any CoreStartupRecovering = AppCoreServices().startupRecoverer,
+        externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices().externalChangesSyncer,
+        repositoryWriteCoordinator: RepositoryWriteCoordinator = AppCoreServices().repositoryWriteCoordinator,
         existingRepositoryMetadataReader: any ExistingRepositoryMetadataReading =
             AppPlatformServices.existingRepositoryMetadataReader,
-        scanSessionReader: any CoreScanSessionReading = AppCoreServices.scanSessionReader,
-        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices.diagnosticsCollector,
-        errorMapper: any CoreErrorMapping = AppCoreServices.errorMapper,
+        scanSessionReader: any CoreScanSessionReading = AppCoreServices().scanSessionReader,
+        diagnosticsCollector: any CoreDiagnosticsCollecting = AppCoreServices().diagnosticsCollector,
+        errorMapper: any CoreErrorMapping = AppCoreServices().errorMapper,
         finderOpener: any RepositoryFinderOpening = AppPlatformServices.finderOpener,
         fileRevealer: any RepositoryFileRevealing = AppPlatformServices.fileRevealer,
         fileOpener: any RepositoryFileOpening = AppPlatformServices.fileOpener,

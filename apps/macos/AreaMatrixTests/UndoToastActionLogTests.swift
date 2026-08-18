@@ -6,7 +6,7 @@ final class UndoToastActionLogTests: XCTestCase {
     func testUndoToastViewHistoryRequestBuildsSharedUndoHistoryPanelRoute() {
         let action = UndoActionRecordSnapshot.undoToastHistoryFixture()
         let request = UndoToastHistoryRequest(source: .viewHistory, state: .ready(action), actionLogRefreshFailure: nil)
-        let dependencies = AppDependencyContainer.live
+        let dependencies = makeTestAppDependencyContainer()
         let opening = RepositoryOpeningResult.importSingleFileFixture(repoPath: importProgressRepoPath())
         let content = makeMainRepositoryContentViewForTests(
             opening: opening,

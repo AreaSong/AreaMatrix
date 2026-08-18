@@ -25,6 +25,7 @@ final class SharedButtonComponentsTests: XCTestCase {
         _ = AreaMatrixPrimaryActionLabel(title: "Import", iconName: "plus", shortcut: "⌘I", isHovered: false)
         _ = AreaMatrixPrimaryButtonStyle()
         _ = AreaMatrixSecondaryButtonStyle()
+        _ = FilterChipButton(title: "Tag", accessibilityLabel: "Remove Tag", action: {})
     }
 
     func testSharedMotionComponentsExposeStableContracts() {

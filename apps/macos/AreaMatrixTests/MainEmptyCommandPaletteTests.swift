@@ -22,40 +22,35 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             route: "batch-delete"
         )
         let indexer = CommandPaletteCommandIndexStore(results: [.success(.commandPaletteFixture(commands: [target]))])
-        let model = MainFileListModel(
-            opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: RecordingFileDetailer(results: []),
-            searchQuerying: searcher,
+        let model = CommandPaletteModel(
+            repoPath: "/tmp/repo",
             commandIndexer: indexer,
             errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
-        await model.loadCommandIndex(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
+        await model.load(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
 
         await searcher.assertSearchRequests([])
         await indexer.assertRequestContexts([
             .commandPalette(query: " delete ", selectedFileIDs: [20, 10], currentPath: "docs")
         ])
-        XCTAssertEqual(model.commandPaletteState.snapshot?.sections[0].targets.first?.title, "Delete selected files...")
+        XCTAssertEqual(model.state.snapshot?.sections[0].targets.first?.title, "Delete selected files...")
     }
 
     @MainActor
     func testCommandPaletteCommandIndexCoreMapsCommandIndexFailureForInlineError() async {
         let mapping = CoreErrorMappingSnapshot.commandPaletteCommandDb(rawContext: "command db locked")
         let mapper = StaticCoreErrorMapper(mapping: mapping)
-        let model = MainFileListModel(
-            opening: .mainEmptyImportFixture(repoPath: "/tmp/repo"),
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: RecordingFileDetailer(results: []),
+        let model = CommandPaletteModel(
+            repoPath: "/tmp/repo",
             commandIndexer: CommandPaletteCommandIndexStore(results: [.failure(CoreError
                     .Db(message: "command db locked"))]),
             errorMapper: mapper
         )
 
-        await model.loadCommandIndex(query: "", selectedFileIDs: Set<Int64>(), currentPath: String?.none)
+        await model.load(query: "", selectedFileIDs: Set<Int64>(), currentPath: String?.none)
 
-        XCTAssertEqual(model.commandPaletteState.errorMapping, mapping)
+        XCTAssertEqual(model.state.errorMapping, mapping)
         await mapper.assertMappedCoreErrors([CoreError.Db(message: "command db locked")])
     }
 
@@ -195,30 +190,38 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             fileLister: MainListRecordingFileLister(results: []),
             fileDetailer: RecordingFileDetailer(results: []),
             searchQuerying: smartListRunner,
+            errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+        )
+        let commandPaletteModel = CommandPaletteModel(
+            repoPath: "/tmp/repo",
             commandIndexer: indexer,
             errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
         )
 
-        model.openCommandPaletteForSearch()
-        model.commandPaletteQuery = " finance "
-        await model.loadCommandIndex(query: model.commandPaletteQuery, selectedFileIDs: [20, 10], currentPath: "docs")
-        model.clearCommandPaletteState()
-        model.commandPaletteQuery = ""
-        model.clearPendingSearchDestination()
-        await model.restoreSavedSearch(saved)
+        model.searchModel.openCommandPaletteForSearch()
+        commandPaletteModel.query = " finance "
+        await commandPaletteModel.load(
+            query: commandPaletteModel.query,
+            selectedFileIDs: [20, 10],
+            currentPath: "docs"
+        )
+        commandPaletteModel.clear()
+        commandPaletteModel.query = ""
+        model.searchModel.clearPendingSearchDestination()
+        await model.searchModel.restoreSavedSearch(saved)
         let indexSnapshot = CommandTargetSnapshot.testFixture(coreTarget: indexTarget)
 
         XCTAssertEqual(indexSnapshot.executionRoute, .runSmartList(saved.id))
-        XCTAssertNil(model.pendingSearchDestination)
+        XCTAssertNil(model.searchModel.pendingSearchDestination)
         await indexer.assertRequestContexts([
             .commandPalette(query: " finance ", selectedFileIDs: [20, 10], currentPath: "docs")
         ])
         await smartListRunner.assertSmartListRunRequests(savedSearchID: saved.id)
         await smartListRunner.assertSearchRequests([])
         XCTAssertEqual(model.files, [resultFile])
-        XCTAssertEqual(model.commandPaletteState, .idle)
-        XCTAssertEqual(model.commandPaletteQuery, "")
-        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: saved.id, name: saved.name))
+        XCTAssertEqual(commandPaletteModel.state, .idle)
+        XCTAssertEqual(commandPaletteModel.query, "")
+        XCTAssertEqual(model.searchModel.lastSearchExitContext, .smartList(id: saved.id, name: saved.name))
     }
 
     @MainActor
@@ -244,22 +247,27 @@ final class MainEmptyCommandPaletteTests: XCTestCase {
             writeLockedFileIDs: model.writeLockedFileIDs
         )
         let route = BatchFileActionRouteBuilder.commandPaletteBatchDeleteRoute(context: context)
+        let commandPaletteModel = CommandPaletteModel(
+            repoPath: "/tmp/repo",
+            commandIndexer: CommandPaletteCommandIndexStore(results: []),
+            errorMapper: StaticCoreErrorMapper(mapping: .commandPaletteCommandDb(rawContext: "unused"))
+        )
 
-        model.commandPaletteState = .loaded(.testFixture(coreIndex: .commandPaletteFixture()))
-        model.commandPaletteQuery = "delete"
-        model.pendingSearchDestination = .commandPalette
-        model.clearCommandPaletteState()
-        model.commandPaletteQuery = ""
-        model.clearPendingSearchDestination()
+        commandPaletteModel.state = .loaded(.testFixture(coreIndex: .commandPaletteFixture()))
+        commandPaletteModel.query = "delete"
+        model.searchModel.pendingSearchDestination = .commandPalette
+        commandPaletteModel.clear()
+        commandPaletteModel.query = ""
+        model.searchModel.clearPendingSearchDestination()
 
         XCTAssertEqual(target.executionRoute, .batchDelete)
         XCTAssertTrue(target.requiresConfirmation)
         XCTAssertEqual(route.source, .commandPalette)
         XCTAssertEqual(route.fileIDs, [file.id])
         XCTAssertNil(route.disabledReason)
-        XCTAssertEqual(model.commandPaletteState, .idle)
-        XCTAssertEqual(model.commandPaletteQuery, "")
-        XCTAssertNil(model.pendingSearchDestination)
+        XCTAssertEqual(commandPaletteModel.state, .idle)
+        XCTAssertEqual(commandPaletteModel.query, "")
+        XCTAssertNil(model.searchModel.pendingSearchDestination)
         XCTAssertEqual(model.files, [file])
     }
 

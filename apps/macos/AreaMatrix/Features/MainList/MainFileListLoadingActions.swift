@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import Foundation
 
 extension MainFileListModel {
@@ -18,7 +19,7 @@ extension MainFileListModel {
         isLoading = true
         resetFilePagination()
         errorMapping = nil
-        clearDiagnosticsState()
+        currentListDiagnostics.clear()
         if fileID == nil {
             statusBanner = nil
             clearDetail()
@@ -28,8 +29,7 @@ extension MainFileListModel {
             let loadedFiles = try await fileLister.listFiles(repoPath: repoPath, filter: filter)
             guard generation == loadGeneration else { return }
             files = loadedFiles
-            nextFilePageOffset = Int64(loadedFiles.count)
-            hasMore = loadedFiles.count == Int(Self.fileListPageSize)
+            applyReplacedPage(itemCount: loadedFiles.count, requestedLimit: MainListPagination.defaultPageSize)
             errorMapping = nil
             isLoading = false
             focusLoadedFile(fileID: fileID)
@@ -44,7 +44,7 @@ extension MainFileListModel {
     }
 
     func loadMoreCurrentCategory() async {
-        guard !searchState.isActive, hasMore, !isLoading, !isLoadingMore else { return }
+        guard !searchModel.searchState.isActive, hasMore, !isLoading, !isLoadingMore else { return }
         let generation = loadGeneration
         let filter = currentCategoryFilter(offset: nextFilePageOffset)
 
@@ -53,23 +53,26 @@ extension MainFileListModel {
         do {
             let loadedFiles = try await fileLister.listFiles(repoPath: repoPath, filter: filter)
             guard generation == loadGeneration else { return }
-            guard !searchState.isActive else {
+            guard !searchModel.searchState.isActive else {
                 isLoadingMore = false
                 return
             }
-            files = mergedUniqueFiles(appending: loadedFiles)
-            nextFilePageOffset += Int64(loadedFiles.count)
-            hasMore = loadedFiles.count == Int(Self.fileListPageSize)
+            files = MainListPagination.mergingUnique(
+                existing: files,
+                appending: loadedFiles,
+                id: \FileEntrySnapshot.id
+            )
+            applyAppendedPage(itemCount: loadedFiles.count)
             isLoadingMore = false
         } catch {
             guard generation == loadGeneration else { return }
-            guard !searchState.isActive else {
+            guard !searchModel.searchState.isActive else {
                 isLoadingMore = false
                 return
             }
             let mappedError = await mapCoreError(error)
             guard generation == loadGeneration else { return }
-            guard !searchState.isActive else {
+            guard !searchModel.searchState.isActive else {
                 isLoadingMore = false
                 return
             }
@@ -86,35 +89,34 @@ extension MainFileListModel {
         detailErrorMapping = nil
         isDetailLoading = false
     }
-}
 
-private extension MainFileListModel {
-    func currentCategoryFilter(offset: Int64) -> FileFilterSnapshot {
+    private func currentCategoryFilter(offset: Int64) -> FileFilterSnapshot {
         var filter = FileFilterSnapshot.currentCategory(currentCategory)
-        filter.limit = Self.fileListPageSize
+        filter.limit = MainListPagination.defaultPageSize
         filter.offset = offset
         return filter
     }
 
     func resetFilePagination() {
+        var pagination = MainListPagination(initialCount: 0)
+        pagination.reset()
         hasMore = false
         isLoadingMore = false
         loadMoreErrorMapping = nil
-        nextFilePageOffset = 0
+        nextFilePageOffset = pagination.nextOffset
     }
 
-    func mergedUniqueFiles(appending loadedFiles: [FileEntrySnapshot]) -> [FileEntrySnapshot] {
-        var mergedFiles: [FileEntrySnapshot] = []
-        var indexByID: [Int64: Int] = [:]
+    private func applyReplacedPage(itemCount: Int, requestedLimit: Int64) {
+        var pagination = MainListPagination(initialCount: 0)
+        pagination.replace(itemCount: itemCount, requestedLimit: requestedLimit)
+        nextFilePageOffset = pagination.nextOffset
+        hasMore = pagination.hasMore
+    }
 
-        for file in files + loadedFiles {
-            if let index = indexByID[file.id] {
-                mergedFiles[index] = file
-            } else {
-                indexByID[file.id] = mergedFiles.count
-                mergedFiles.append(file)
-            }
-        }
-        return mergedFiles
+    private func applyAppendedPage(itemCount: Int) {
+        var pagination = MainListPagination(initialCount: Int(nextFilePageOffset))
+        pagination.append(itemCount: itemCount)
+        nextFilePageOffset = pagination.nextOffset
+        hasMore = pagination.hasMore
     }
 }

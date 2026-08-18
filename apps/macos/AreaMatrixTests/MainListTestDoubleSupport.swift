@@ -38,12 +38,74 @@ struct MainListFallbackRequestRecord: Equatable {
 
 private enum MainFileListModelTestDefaults {
     static var dependencies: MainListFeatureDependencies {
-        AppDependencyContainer.live.feature.mainList
+        makeTestAppDependencyContainer().feature.mainList
     }
 }
 
 @MainActor
 extension MainFileListModel {
+    func beginClassifierRuleHandoff(
+        fileID: Int64,
+        targetCategory: String,
+        moveFile: Bool,
+        destination: ClassifierRuleHandoffDestination
+    ) {
+        guard canPerformWriteAction(fileID: fileID), let file = actionRoutingFile(for: fileID) else { return }
+        fileActionCoordinator.beginClassifierRuleHandoff(
+            file: file,
+            targetCategory: targetCategory,
+            moveFile: moveFile,
+            destination: destination
+        )
+    }
+
+    func completeClassifierRuleSave(_ savedRule: ClassifierRuleSnapshot) {
+        fileActionCoordinator.completeClassifierRuleSave(savedRule)
+        statusBanner = .savedClassifierRule(category: savedRule.targetCategory)
+    }
+
+    func cancelClassifierRuleRoute() {
+        fileActionCoordinator.cancelClassifierRuleRoute()
+    }
+
+    func loadClassifierCorrectionContext(fileID: Int64, filename: String) async {
+        guard canPerformWriteAction(fileID: fileID) else { return }
+        await fileActionCoordinator.loadClassifierCorrectionContext(fileID: fileID, filename: filename)
+    }
+
+    func loadMoveToCategoryPreview(fileID: Int64, targetCategory: String) async {
+        guard canPerformWriteAction(fileID: fileID) else { return }
+        await fileActionCoordinator.loadMoveToCategoryPreview(fileID: fileID, targetCategory: targetCategory)
+    }
+
+    @discardableResult
+    func submitMoveToCategory(
+        fileID: Int64,
+        targetCategory: String,
+        mode: MainFileCategoryMoveMode = .moveToCategory,
+        options: MainFileCategoryMoveOptions = MainFileCategoryMoveOptions(moveFile: true, remember: false),
+        onMoved: FileActionCoordinator.MoveToCategoryCompletion? = nil
+    ) async -> Bool {
+        guard canPerformWriteAction(fileID: fileID),
+              let outcome = await fileActionCoordinator.submitMoveToCategory(
+                  fileID: fileID,
+                  targetCategory: targetCategory,
+                  mode: mode,
+                  options: options,
+                  onMoved: onMoved
+              ) else { return false }
+        await applyCategoryMoveOutcome(outcome)
+        return true
+    }
+
+    @discardableResult
+    func submitAIClassificationSuggestion(_ request: AIClassificationSuggestionApplyRequest) async -> Bool {
+        guard canPerformWriteAction(fileID: request.fileID),
+              let outcome = await fileActionCoordinator.submitAIClassificationSuggestion(request) else { return false }
+        await applyAIClassificationOutcome(outcome, request: request)
+        return true
+    }
+
     /// Keeps existing tests focused on the collaborators they override while
     /// production construction requires one explicit feature dependency scope.
     convenience init(
@@ -64,8 +126,6 @@ extension MainFileListModel {
             MainFileListModelTestDefaults.dependencies.semanticFallbackReader,
         searchFiltering: any CoreSearchFiltering =
             MainFileListModelTestDefaults.dependencies.searchFiltering,
-        commandIndexer: any CoreCommandIndexing =
-            MainFileListModelTestDefaults.dependencies.commandIndexer,
         fileRenamer: any CoreFileRenaming =
             MainFileListModelTestDefaults.dependencies.fileRenamer,
         fileDeleter: any CoreFileDeleting =
@@ -114,7 +174,6 @@ extension MainFileListModel {
                 batchDeleter: batchDeleter,
                 categoryPredictor: categoryPredictor,
                 changeLogLister: changeLogLister,
-                commandIndexer: commandIndexer,
                 externalChangesSyncer: externalChangesSyncer,
                 fileCategoryMover: fileCategoryMover,
                 fileDeleter: fileDeleter,

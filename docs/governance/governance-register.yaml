@@ -1128,6 +1128,7 @@ repo_domains:
       - target-membership-or-build-settings-changed
     paths:
       - apps/macos/AreaMatrix.xcodeproj/
+      - apps/macos/XcodeGen/
       - apps/macos/AreaMatrix-Functional.xctestplan
       - apps/macos/AreaMatrix-Unit.xctestplan
       - apps/macos/AreaMatrix-Feature.xctestplan

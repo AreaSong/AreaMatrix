@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureOperation
 import XCTest
 
 private func batchRenameUndoRepoPath() -> String {

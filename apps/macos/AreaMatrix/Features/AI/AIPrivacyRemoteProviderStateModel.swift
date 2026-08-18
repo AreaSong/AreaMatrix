@@ -1,13 +1,10 @@
+import AreaMatrixFeatureAI
+import AreaMatrixUIFoundation
 import Combine
 import Foundation
 
-enum AIPrivacyRemoteProviderLoadState: Equatable {
-    case loading, loaded, failed(AISettingsError)
-}
-
-enum AIPrivacyRulesLoadState: Equatable {
-    case loading, loaded, failed(AISettingsError)
-}
+typealias AIPrivacyRemoteProviderLoadState = AsyncPhaseState<AISettingsError>
+typealias AIPrivacyRulesLoadState = AsyncPhaseState<AISettingsError>
 
 @MainActor
 final class AIPrivacyRemoteProviderStateModel: ObservableObject {
@@ -36,7 +33,7 @@ final class AIPrivacyRemoteProviderStateModel: ObservableObject {
 
     var providerStatusText: String {
         switch loadState {
-        case .loading: L10n.string("Loading remote provider...")
+        case .idle, .loading: L10n.string("Loading remote provider...")
         case .failed: L10n.string("Remote provider state unavailable")
         case .loaded: loadedProviderStatusText
         }

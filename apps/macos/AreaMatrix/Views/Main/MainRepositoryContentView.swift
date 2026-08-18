@@ -1,13 +1,15 @@
+import AreaMatrixFeatureIngestion
+import AreaMatrixFeatureLibrary
 import AreaMatrixUIFoundation
 import SwiftUI
 import UniformTypeIdentifiers
 
-enum MainRepositoryContentState: Equatable { case empty, list }
 struct MainRepositoryContentView: View {
     @EnvironmentObject var localizer: AppLocalizer
     @ObservedObject var commandRouter: AppCommandRouter
+    @State var session: RepositorySession
     let opening: RepositoryOpeningResult
-    let state: MainRepositoryContentState
+    let state: AreaMatrixFeatureLibrary.MainRepositoryContentState
     let onImport: () -> Void
     let onDropImport: ([URL], ImportEntryDestination) -> Void
     let onOpenSettings: () -> Void
@@ -36,24 +38,17 @@ struct MainRepositoryContentView: View {
     let onPendingTagSuggestionFocusConsumed: (TagSuggestionPresentationRequest) -> Void
     let importProgressPresentation: ImportProgressListPresentation
     @StateObject var fileListModel: MainFileListModel
+    @StateObject var searchModel: SearchModel
+    @StateObject var detailTagModel: DetailTagModel
+    @StateObject var syncConflictCoordinator: SyncConflictCoordinator
+    @StateObject var fileActionCoordinator: FileActionCoordinator
+    @StateObject var commandPaletteModel: CommandPaletteModel
     @StateObject var syncConflictEntryModel: SyncConflictEntryModel
     @State var repositoryTree: RepositoryTreeNodeSnapshot
-    @State var selectedSidebarID: String = "inbox"
-    @State var selectedFileIDs: Set<Int64> = []
-    @State var pendingMovedFileFocusID: Int64?
+    @StateObject var sidebarSelectionModel: MainSidebarSelectionModel
+    @StateObject var selectionModel: MainSelectionModel
+    @StateObject var searchInputModel: MainRepositorySearchInputModel
     @State var importProgressSelectionState = ImportProgressListSelectionState()
-    @State var fileActionRoutingState = MainFileActionRoutingState()
-    @State var importConflictBatchRelayState = ImportConflictBatchRelayState()
-    @State var commandPaletteFocusRoutingState = CommandPaletteFocusRoutingState()
-    @State var filterText: String = ""
-    @State var searchScope: SearchScopeSnapshot = .all
-    @State var searchMode: SearchModeSnapshot = .normal
-    @State var searchSort: SearchSortSnapshot = .newestImported
-    @State var searchFilters: SearchFilterStateSnapshot = .empty
-    @State var searchRoutingState = MainRepositorySearchRoutingState()
-    @State var savedSearchesBySidebarID: [String: SavedSearchSnapshot] = [:]
-    @State var smartListLoadError: CoreErrorMappingSnapshot?
-    @State var syncConflictReviewRoutingState = SyncConflictReviewRoutingState()
     @FocusState var isSearchFieldFocused: Bool
     @StateObject var dropPreviewModel: ImportDropPreviewModel
     @StateObject var detailNoteModel: DetailNoteModel
@@ -61,13 +56,13 @@ struct MainRepositoryContentView: View {
     @State var tableSortOrder: [KeyPathComparator<FileEntrySnapshot>] = [
         .init(\FileEntrySnapshot.importedAt, order: .reverse)
     ]
-    @State var summarySelectionExitState = AISummarySelectionExitState()
     @State var observedInterfaceLocaleIdentifier: String?
 
     @MainActor
     init(
+        session: RepositorySession,
         opening: RepositoryOpeningResult,
-        state: MainRepositoryContentState,
+        state: AreaMatrixFeatureLibrary.MainRepositoryContentState,
         assembly: MainRepositoryContentAssembly,
         commandRouter: AppCommandRouter,
         onImport: @escaping () -> Void,
@@ -89,7 +84,7 @@ struct MainRepositoryContentView: View {
         onPendingTagSuggestionFocusConsumed: @escaping (TagSuggestionPresentationRequest) -> Void = { _ in },
         importProgressPresentation: ImportProgressListPresentation = .empty
     ) {
-        self.opening = opening; self.state = state
+        _session = State(initialValue: session); self.opening = opening; self.state = state
         _commandRouter = ObservedObject(wrappedValue: commandRouter)
         self.onImport = onImport; self.onDropImport = onDropImport
         self.onOpenSettings = onOpenSettings; self.onOpenAISettings = onOpenAISettings
@@ -116,22 +111,54 @@ struct MainRepositoryContentView: View {
         _dropPreviewModel = StateObject(wrappedValue: assembly.makeDropPreviewModel())
         _detailNoteModel = StateObject(wrappedValue: assembly.makeDetailNoteModel())
         _summaryExitController = StateObject(wrappedValue: assembly.makeSummaryExitController())
-        _fileListModel = StateObject(wrappedValue: assembly.makeFileListModel())
+        _selectionModel = StateObject(wrappedValue: MainSelectionModel())
+        let fileListModel = assembly.makeFileListModel()
+        _fileListModel = StateObject(wrappedValue: fileListModel)
+        _searchModel = StateObject(wrappedValue: fileListModel.searchModel)
+        _detailTagModel = StateObject(wrappedValue: fileListModel.detailTagModel)
+        _syncConflictCoordinator = StateObject(wrappedValue: fileListModel.syncConflictCoordinator)
+        _fileActionCoordinator = StateObject(wrappedValue: fileListModel.fileActionCoordinator)
+        _commandPaletteModel = StateObject(wrappedValue: assembly.makeCommandPaletteModel())
         _syncConflictEntryModel = StateObject(wrappedValue: assembly.makeSyncConflictEntryModel())
-        _repositoryTree = State(initialValue: opening.tree)
-        _selectedSidebarID = State(initialValue: Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows))
         let defaultSidebarID = Self.defaultSelectedSidebarID(from: opening.tree.sidebarRows)
+        _repositoryTree = State(initialValue: opening.tree)
+        _sidebarSelectionModel = StateObject(
+            wrappedValue: MainSidebarSelectionModel(selectedID: defaultSidebarID)
+        )
         let defaultRow = opening.tree.sidebarRows.first { $0.id == defaultSidebarID }
-        _searchScope = State(initialValue: defaultRow?.categoryForFileList == nil ? .all : .current)
+        let searchInputModel = MainRepositorySearchInputModel()
+        searchInputModel.searchScope = defaultRow?.categoryForFileList == nil ? .all : .current
+        _searchInputModel = StateObject(wrappedValue: searchInputModel)
     }
-}
 
-extension MainRepositoryContentView {
     var body: some View {
         VStack(spacing: 0) {
-            toolbar
+            MainRepositoryToolbar(
+                repoPath: opening.config.repoPath,
+                isReadOnly: opening.isReadOnly,
+                isEmpty: state == .empty,
+                filterText: $searchInputModel.filterText,
+                searchMode: $searchInputModel.searchMode,
+                searchScope: $searchInputModel.searchScope,
+                searchSort: $searchInputModel.searchSort,
+                isSearchFieldFocused: $isSearchFieldFocused,
+                searchFiltersButton: AnyView(searchFiltersButton),
+                onImport: onImport,
+                onOpenSettings: onOpenSettings,
+                onSearchExit: handleSearchEscape,
+                onSearchSubmit: { searchModel.enterSearch(context: .toolbar) },
+                onCommandFind: beginCommandFindSearch,
+                onCommandPalette: toggleCommandPalette,
+                onOpenUndoHistory: openUndoHistoryFromToolbar
+            )
             Divider()
-            externalSyncErrorBanner
+            if let error = fileListModel.externalSyncErrorMapping {
+                MainExternalSyncErrorBanner(
+                    error: error,
+                    fileListModel: fileListModel,
+                    recoveryActions: mainListErrorRecoveryActions
+                )
+            }
             HStack(spacing: 0) {
                 sidebar
                     .areaMatrixWorkspaceRegionShell(cornerRadius: 0)
@@ -143,7 +170,9 @@ extension MainRepositoryContentView {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .center) { dropOverlay }
+        .overlay(alignment: .center) {
+            MainRepositoryDropOverlay(presentation: dropPreviewModel.presentation)
+        }
         .overlay(alignment: .bottomTrailing) { batchTagUndoToastOverlay.padding(18) }
         .mainRepositoryContentLifecycle(self)
         .animation(.areaMatrixSceneFlow, value: state)
@@ -153,9 +182,78 @@ extension MainRepositoryContentView {
         rows.first { $0.node.slug == "inbox" }?.id ?? rows.first?.id ?? "__root__"
     }
 
+    var filterText: String {
+        get { searchInputModel.filterText }
+        nonmutating set { searchInputModel.filterText = newValue }
+    }
+
+    var searchScope: SearchScopeSnapshot {
+        get { searchInputModel.searchScope }
+        nonmutating set { searchInputModel.searchScope = newValue }
+    }
+
+    var searchMode: SearchModeSnapshot {
+        get { searchInputModel.searchMode }
+        nonmutating set { searchInputModel.searchMode = newValue }
+    }
+
+    var searchSort: SearchSortSnapshot {
+        get { searchInputModel.searchSort }
+        nonmutating set { searchInputModel.searchSort = newValue }
+    }
+
+    var searchFilters: SearchFilterStateSnapshot {
+        get { searchInputModel.searchFilters }
+        nonmutating set { searchInputModel.searchFilters = newValue }
+    }
+
+    var selectedSidebarID: String {
+        get { sidebarSelectionModel.selectedID }
+        nonmutating set { sidebarSelectionModel.selectedID = newValue }
+    }
+
+    var selectedSidebarIDBinding: Binding<String> {
+        Binding(
+            get: { sidebarSelectionModel.selectedID },
+            set: { sidebarSelectionModel.selectedID = $0 }
+        )
+    }
+
     var selectedSidebarRow: RepositorySidebarRowSnapshot {
         repositoryTree.sidebarRow(id: selectedSidebarID) ??
             repositoryTree.sidebarRows.first ??
             RepositorySidebarRowSnapshot(node: repositoryTree, depth: 0)
+    }
+
+    var mainListPresentation: MainListPresentationProjection {
+        MainListPresentationProjection.make(
+            files: fileListModel.files,
+            sidebarRow: selectedSidebarRow,
+            filterText: filterText,
+            sortOrder: tableSortOrder,
+            search: MainListSearchPresentation(
+                isActive: searchModel.searchState.isActive,
+                resultCount: searchModel.searchState.page?.totalCount
+            )
+        )
+    }
+
+    func searchMatchText(for fileID: Int64) -> String {
+        guard let result = searchModel.searchState.page?.results.first(where: { $0.file.id == fileID }) else {
+            return "-"
+        }
+        if let semantic = searchModel.searchState.page?.semanticPage?.result(for: fileID) {
+            return semanticMatchText(semantic)
+        }
+        if let noteSnippet = result.noteSnippet, !noteSnippet.isEmpty {
+            return L10n.format("mainList.searchMatch.note", noteSnippet)
+        }
+        guard let match = result.matches.first else { return L10n.string("Match") }
+        return L10n.format(
+            "mainList.searchMatch.summary",
+            match.kindDisplayName,
+            match.fieldDisplayName,
+            match.snippet
+        )
     }
 }

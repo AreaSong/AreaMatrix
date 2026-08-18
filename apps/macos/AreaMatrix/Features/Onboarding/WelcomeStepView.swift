@@ -25,7 +25,6 @@ struct WelcomeStepView: View {
     @State private var isLearnMoreHovered = false
     @State private var footerEntered = false
 
-    static var hasPlayedLaunchAnimation = false
     @State private var mouseParallax = AreaMatrixParallax.zero
     @State private var scanTerminalLines = [
         AreaMatrixTerminalLine(
@@ -61,12 +60,7 @@ struct WelcomeStepView: View {
             )
             .preferredColorScheme(themeOverride)
             .onAppear {
-                if !Self.hasPlayedLaunchAnimation {
-                    footerEntered = true
-                    Self.hasPlayedLaunchAnimation = true
-                } else {
-                    footerEntered = true
-                }
+                footerEntered = true
             }
             .onDisappear {
                 scanTask?.cancel()

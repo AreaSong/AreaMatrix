@@ -1,4 +1,6 @@
 import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureAI
+import AreaMatrixFeatureIngestion
 import Foundation
 
 /// Shared, low-level defaults used by more than one feature.
@@ -79,7 +81,6 @@ struct MainListFeatureDependencies {
     let batchDeleter: any CoreBatchDeleting
     let categoryPredictor: any CoreCategoryPredicting
     let changeLogLister: any CoreChangeLogListing
-    let commandIndexer: any CoreCommandIndexing
     let externalChangesSyncer: any CoreExternalChangesSyncing
     let fileCategoryMover: any CoreFileCategoryMoving
     let fileDeleter: any CoreFileDeleting

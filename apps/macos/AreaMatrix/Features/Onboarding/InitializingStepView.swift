@@ -1,3 +1,5 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureIngestion
 import AreaMatrixUIFoundation
 import SwiftUI
 

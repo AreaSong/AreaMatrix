@@ -76,6 +76,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Start CI feedback timer
+        run: echo "AREAMATRIX_CI_START=$(python3 -c 'import time; print(f\"{time.time():.6f}\")')" >> "$GITHUB_ENV"
+
       - name: Require macOS project
         run: test -d apps/macos/AreaMatrix.xcodeproj
 
@@ -99,6 +102,9 @@ jobs:
           xcodebuild -resolvePackageDependencies \
             -project apps/macos/AreaMatrix.xcodeproj \
             -scheme AreaMatrix
+
+      - name: Test AreaMatrixModules Swift package
+        run: swift test --package-path apps/macos/Packages/AreaMatrixModules
 
       - name: Build XCTest products once
         run: >-
@@ -295,6 +301,30 @@ jobs:
         with:
           name: xcresult
           path: TestResults*.xcresult
+
+      - name: Record macOS CI feedback metric
+        if: always()
+        run: |
+          set -euo pipefail
+          end="$(python3 -c 'import time; print(f"{time.time():.6f}")')"
+          duration="$(python3 - "$AREAMATRIX_CI_START" "$end" <<'PY'
+          import sys
+          print(f"{float(sys.argv[2]) - float(sys.argv[1]):.3f}")
+          PY
+          )"
+          ./dev metrics feedback \
+            --record ci \
+            --cohort github-macos14-xcode-build-and-layered-tests \
+            --duration "$duration" \
+            --note "workflow=macos-ci;job=build;runner=macos-14" \
+            --json | tee .build/metrics/macos-ci-feedback.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-ci-feedback
+          path: .build/metrics/macos-ci-feedback.json
+          if-no-files-found: warn
 
   ios-package:
     name: iOS Swift package build & test

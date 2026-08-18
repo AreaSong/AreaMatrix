@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct ClassifierRuleHandoffRouteView: View {
@@ -74,7 +75,7 @@ struct ClassifierRuleHandoffRouteView: View {
                 onBack: onBack
             )
         } else {
-            MainFileActionSheetContainer(title: mode.title, pageID: mode.pageID) {
+            AreaMatrixActionSheetContainer(title: mode.title, pageID: mode.pageID) {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(mode.intro).font(.callout).foregroundStyle(.secondary)
                     Text(mode.note).font(.caption).foregroundStyle(.secondary)

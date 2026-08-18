@@ -17,6 +17,10 @@ extension MacOSGovernanceTestCase {
             .filter { !relativeProductionPath(for: $0).hasPrefix("Bridge/UniFFI/") }
     }
 
+    func allProductionSwiftFiles() throws -> [URL] {
+        try productionSwiftFiles() + swiftFiles(in: packageSourcesDirectory())
+    }
+
     func handwrittenMacOSSwiftFiles() throws -> [URL] {
         try [productionDirectory(), testsDirectory()]
             .flatMap(swiftFiles)
@@ -30,8 +34,12 @@ extension MacOSGovernanceTestCase {
     }
 
     func packageSourceDirectory(_ target: String) -> URL {
+        packageSourcesDirectory().appendingPathComponent(target, isDirectory: true)
+    }
+
+    func packageSourcesDirectory() -> URL {
         testsDirectory().deletingLastPathComponent()
-            .appendingPathComponent("Packages/AreaMatrixModules/Sources/\(target)", isDirectory: true)
+            .appendingPathComponent("Packages/AreaMatrixModules/Sources", isDirectory: true)
     }
 
     func packageSwiftFiles(_ target: String) throws -> [URL] {

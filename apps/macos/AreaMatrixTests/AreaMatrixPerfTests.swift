@@ -182,7 +182,7 @@ private func measureHostlessFirstScreenFallback(repoPath: String) async throws -
     let hostingView = NSHostingView(
         rootView: MainWindow(
             model: model,
-            dependencies: .live,
+            dependencies: makeTestAppDependencyContainer(),
             observabilityRuntime: .shared,
             commandRouter: .shared
         )

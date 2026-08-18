@@ -1,12 +1,12 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
-protocol CoreFileListing: Sendable {
-    func listFiles(repoPath: String, filter: FileFilterSnapshot) async throws -> [FileEntrySnapshot]
-}
-
-protocol CoreFileDetailing: Sendable {
-    func getFile(repoPath: String, fileID: Int64) async throws -> FileEntrySnapshot
-}
+typealias CoreFileListing = AreaMatrixCoreBridgeContract.CoreFileListing
+typealias CoreFileDetailing = AreaMatrixCoreBridgeContract.CoreFileDetailing
+typealias FileFilterSnapshot = AreaMatrixCoreBridgeContract.FileFilterSnapshot
+typealias FileAvailabilitySnapshot = AreaMatrixCoreBridgeContract.FileAvailabilitySnapshot
+typealias CoreImportCommitState = AreaMatrixCoreBridgeContract.CoreImportCommitState
+typealias FileEntrySnapshot = AreaMatrixCoreBridgeContract.FileEntrySnapshot
 
 extension CoreBridge: CoreFileListing, CoreFileDetailing {}
 
@@ -82,32 +82,6 @@ enum MissingFileRecoveryStatusSnapshot: Equatable {
     case blocked
 }
 
-struct FileFilterSnapshot: Equatable {
-    var category: String?
-    var includeDeleted: Bool?
-    var importedAfter: Int64?
-    var importedBefore: Int64?
-    var limit: Int64
-    var offset: Int64
-
-    static func currentCategory(_ category: String?) -> FileFilterSnapshot {
-        FileFilterSnapshot(
-            category: category,
-            includeDeleted: false,
-            importedAfter: nil,
-            importedBefore: nil,
-            limit: 50,
-            offset: 0
-        )
-    }
-}
-
-enum FileAvailabilitySnapshot: String, Equatable {
-    case available
-    case missing
-    case iCloudPlaceholder
-}
-
 protocol FileAvailabilityChecking: Sendable {
     func availability(
         repoPath: String,
@@ -131,32 +105,6 @@ struct LocalFileAvailabilityChecker: FileAvailabilityChecking {
             coreStatus: coreStatus
         )
     }
-}
-
-enum CoreImportCommitState: String, Codable, Equatable {
-    case committed
-    case sourceRetained
-
-    var isDegraded: Bool {
-        self == .sourceRetained
-    }
-}
-
-struct FileEntrySnapshot: Equatable, Identifiable {
-    var id: Int64
-    var path: String
-    var originalName: String
-    var currentName: String
-    var category: String
-    var sizeBytes: Int64
-    var hashSha256: String
-    var storageMode: String
-    var origin: String
-    var sourcePath: String?
-    var importedAt: Int64
-    var updatedAt: Int64
-    var availability: FileAvailabilitySnapshot = .available
-    var importCommitState: CoreImportCommitState = .committed
 }
 
 extension FileEntrySnapshot {
@@ -191,19 +139,21 @@ extension FileFilter {
 
 extension FileEntrySnapshot {
     init(coreEntry: FileEntry, availabilityChecker: (String, String?) -> FileAvailabilitySnapshot) {
-        id = coreEntry.id
-        path = coreEntry.path
-        originalName = coreEntry.originalName
-        currentName = coreEntry.currentName
-        category = coreEntry.category
-        sizeBytes = coreEntry.sizeBytes
-        hashSha256 = coreEntry.hashSha256
-        storageMode = coreEntry.storageMode.fileListDisplayName
-        origin = coreEntry.origin.fileListDisplayName
-        sourcePath = coreEntry.sourcePath
-        importedAt = coreEntry.importedAt
-        updatedAt = coreEntry.updatedAt
-        availability = availabilityChecker(coreEntry.path, coreEntry.sourcePath)
+        self.init(
+            id: coreEntry.id,
+            path: coreEntry.path,
+            originalName: coreEntry.originalName,
+            currentName: coreEntry.currentName,
+            category: coreEntry.category,
+            sizeBytes: coreEntry.sizeBytes,
+            hashSha256: coreEntry.hashSha256,
+            storageMode: coreEntry.storageMode.fileListDisplayName,
+            origin: coreEntry.origin.fileListDisplayName,
+            sourcePath: coreEntry.sourcePath,
+            importedAt: coreEntry.importedAt,
+            updatedAt: coreEntry.updatedAt,
+            availability: availabilityChecker(coreEntry.path, coreEntry.sourcePath)
+        )
     }
 }
 

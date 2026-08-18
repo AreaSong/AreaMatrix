@@ -63,7 +63,7 @@ extension MainRepositoryContentView {
     }
 
     func files(for selection: Set<Int64>) -> [FileEntrySnapshot] {
-        visibleFiles.filter { selection.contains($0.id) }
+        mainListPresentation.visibleFiles.filter { selection.contains($0.id) }
     }
 
     var fileTable: some View {
@@ -72,36 +72,36 @@ extension MainRepositoryContentView {
                 rows: importProgressPresentation.rows,
                 selection: $importProgressSelectionState.selectedIDs
             )
-            if let semanticPage = fileListModel.searchState.page?.semanticPage {
+            if let semanticPage = searchModel.searchState.page?.semanticPage {
                 semanticResultsContent(semanticPage)
             } else {
                 fileTableContent
             }
         }
-        .overlay { emptyListOverlay }
+        .overlay { mainListEmptyOverlay }
     }
 
     private func semanticResultsContent(_ page: SemanticSearchResultPageSnapshot) -> some View {
         SemanticSearchResultsView(
             page: page,
-            selectedFileIDs: $selectedFileIDs,
-            showFoldedDuplicates: fileListModel.showFoldedSemanticDuplicates,
-            pagingState: fileListModel.semanticPagingState,
-            onToggleDuplicates: fileListModel.toggleFoldedSemanticDuplicates,
+            selectedFileIDs: $selectionModel.fileIDs,
+            showFoldedDuplicates: searchModel.showFoldedSemanticDuplicates,
+            pagingState: searchModel.semanticPagingState,
+            onToggleDuplicates: searchModel.toggleFoldedSemanticDuplicates,
             onLoadMoreSemantic: {
-                Task { await fileListModel.loadMoreSemanticMatches(.semantic) }
+                Task { await searchModel.loadMoreSemanticMatches(.semantic) }
             },
             onLoadMoreNormal: {
-                Task { await fileListModel.loadMoreSemanticMatches(.normal) }
+                Task { await searchModel.loadMoreSemanticMatches(.normal) }
             },
             onRetrySemanticPage: {
-                Task { await fileListModel.loadMoreSemanticMatches(.semantic) }
+                Task { await searchModel.loadMoreSemanticMatches(.semantic) }
             },
             onRetryNormalPage: {
-                Task { await fileListModel.loadMoreSemanticMatches(.normal) }
+                Task { await searchModel.loadMoreSemanticMatches(.normal) }
             },
             contextMenu: { selection in AnyView(contextMenu(for: selection)) },
-            onPrimaryAction: { selection in selectedFileIDs = selection }
+            onPrimaryAction: { selection in selectionModel.fileIDs = selection }
         )
     }
 
@@ -113,7 +113,7 @@ extension MainRepositoryContentView {
     }
 
     private var normalFileTable: some View {
-        Table(visibleFiles, selection: $selectedFileIDs, sortOrder: $tableSortOrder) {
+        Table(mainListPresentation.visibleFiles, selection: $selectionModel.fileIDs, sortOrder: $tableSortOrder) {
             TableColumn(L10n.string("Name"), sortUsing: KeyPathComparator(\FileEntrySnapshot.currentName)) { file in
                 Text(file.currentName)
                     .lineLimit(1)
@@ -147,13 +147,43 @@ extension MainRepositoryContentView {
         .contextMenu(forSelectionType: Int64.self) { selection in
             contextMenu(for: selection)
         } primaryAction: { selection in
-            selectedFileIDs = selection
+            selectionModel.fileIDs = selection
+        }
+    }
+
+    @ViewBuilder
+    private var mainListEmptyOverlay: some View {
+        if !fileListModel.isLoading,
+           mainListPresentation.visibleFiles.isEmpty,
+           importProgressPresentation.rows.isEmpty {
+            if let destination = searchModel.searchPageDestination {
+                SearchRouteStatusView(
+                    destination: destination,
+                    indexStatus: searchModel.searchState.indexStatus,
+                    onClearSearchQuery: clearSearchQuery,
+                    onClearFilters: clearSearchFiltersFromEmptyState,
+                    onRemoveFilter: removeSearchFilterFromEmptyState,
+                    onSearchAllFileTypes: searchAllFileTypesFromEmptyState,
+                    onApplyQuerySuggestion: applyQuerySuggestion,
+                    onClearSearch: clearSearch
+                )
+            } else {
+                Text(
+                    searchModel.searchState.isActive
+                        ? L10n.string("No search results")
+                        : L10n.string("No files in this category")
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .padding(16)
+                .areaMatrixGlassCard(cornerRadius: 10)
+            }
         }
     }
 
     @ViewBuilder
     private var normalListPaginationControls: some View {
-        if !fileListModel.searchState.isActive {
+        if !searchModel.searchState.isActive {
             if let error = fileListModel.loadMoreErrorMapping {
                 HStack(spacing: 10) {
                     Text(error.userMessage)

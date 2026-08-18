@@ -1,3 +1,4 @@
+import AreaMatrixFeatureIngestion
 import CryptoKit
 import Foundation
 

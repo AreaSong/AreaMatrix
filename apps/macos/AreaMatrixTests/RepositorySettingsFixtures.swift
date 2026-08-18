@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 @testable import AreaMatrixCoreContracts
 
 extension AppRepoConfigSnapshot {

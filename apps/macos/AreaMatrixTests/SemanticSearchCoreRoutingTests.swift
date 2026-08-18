@@ -22,7 +22,7 @@ final class SemanticSearchCoreRoutingTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchFailure)
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: " 上个月的发票 ",
             scope: .current,
             sort: .relevance,
@@ -33,8 +33,8 @@ final class SemanticSearchCoreRoutingTests: XCTestCase {
 
         await semantic.assertSemanticRequest(query: "上个月的发票", mode: SearchModeSnapshot.semantic)
         await normal.assertSearchRequests([])
-        XCTAssertEqual(model.searchState.page?.semanticPage?.semanticTotalCount, 1)
-        XCTAssertEqual(model.searchState.page?.semanticPage?.normalTotalCount, 1)
+        XCTAssertEqual(model.searchModel.searchState.page?.semanticPage?.semanticTotalCount, 1)
+        XCTAssertEqual(model.searchModel.searchState.page?.semanticPage?.normalTotalCount, 1)
         XCTAssertEqual(model.files.map(\.id), [semanticFile.id, normalFile.id])
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.semanticSearch))
     }
@@ -53,7 +53,7 @@ final class SemanticSearchCoreRoutingTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchFailure)
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "客户合同",
             scope: .current,
             sort: .relevance,
@@ -63,10 +63,10 @@ final class SemanticSearchCoreRoutingTests: XCTestCase {
         )
         await semantic.assertNoIndexRequests()
 
-        await model.buildSemanticIndexForCurrentSearch()
+        await model.searchModel.buildSemanticIndexForCurrentSearch()
 
         await semantic.assertIndexRequests(queries: ["客户合同"], modes: [SearchModeSnapshot.semantic])
-        XCTAssertFalse(model.semanticIndexBuildState.isBuilding)
+        XCTAssertFalse(model.searchModel.semanticIndexBuildState.isBuilding)
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.buildEmbeddingIndex))
     }
 }

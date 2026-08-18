@@ -3,7 +3,7 @@ import SwiftUI
 extension MainRepositoryContentView {
     func commandPaletteRouteView() -> some View {
         SearchCommandPaletteRouteView(
-            query: $fileListModel.commandPaletteQuery,
+            query: $commandPaletteModel.query,
             state: visibleCommandPaletteState,
             smartLists: state == .list ? sortedSavedSearches : [],
             onLoad: loadCommandPaletteIndex,
@@ -15,36 +15,36 @@ extension MainRepositoryContentView {
 
     func loadCommandPaletteIndex() {
         guard state == .list else {
-            fileListModel.commandPaletteState = .loaded(.noRepositoryCommands())
+            commandPaletteModel.state = .loaded(.noRepositoryCommands())
             return
         }
         Task { await loadCommandPaletteIndexFromCurrentState() }
     }
 
     func loadCommandPaletteIndexFromCurrentState() async {
-        await fileListModel.loadCommandIndex(
-            query: fileListModel.commandPaletteQuery,
-            selectedFileIDs: selectedFileIDs,
+        await commandPaletteModel.load(
+            query: commandPaletteModel.query,
+            selectedFileIDs: selectionModel.fileIDs,
             currentPath: selectedSidebarRow.pathFilterPrefix
         )
     }
 
     func openCommandPalette() {
-        commandPaletteFocusRoutingState.prepareForPresentation(
+        commandPaletteModel.focusRoutingState.prepareForPresentation(
             searchFieldWasFocused: isSearchFieldFocused
         )
         isSearchFieldFocused = false
-        fileListModel.commandPaletteQuery = ""
+        commandPaletteModel.query = ""
         if state == .list {
-            fileListModel.openCommandPaletteForSearch()
+            searchModel.openCommandPaletteForSearch()
         } else {
-            fileListModel.pendingSearchDestination = .commandPalette
-            fileListModel.commandPaletteState = .loaded(.noRepositoryCommands())
+            searchModel.pendingSearchDestination = .commandPalette
+            commandPaletteModel.state = .loaded(.noRepositoryCommands())
         }
     }
 
     func toggleCommandPalette() {
-        if fileListModel.pendingSearchDestination == .commandPalette {
+        if searchModel.pendingSearchDestination == .commandPalette {
             closeCommandPalette()
             return
         }
@@ -52,10 +52,10 @@ extension MainRepositoryContentView {
     }
 
     func closeCommandPalette() {
-        fileListModel.commandPaletteQuery = ""
-        fileListModel.clearCommandPaletteState()
-        fileListModel.clearPendingSearchDestination()
-        isSearchFieldFocused = commandPaletteFocusRoutingState.consumeSearchFieldFocusRestoration()
+        commandPaletteModel.query = ""
+        commandPaletteModel.clear()
+        searchModel.clearPendingSearchDestination()
+        isSearchFieldFocused = commandPaletteModel.focusRoutingState.consumeSearchFieldFocusRestoration()
     }
 
     // swiftlint:disable:next cyclomatic_complexity
@@ -94,10 +94,10 @@ extension MainRepositoryContentView {
     }
 
     var visibleCommandPaletteState: CommandPaletteLoadState {
-        if state == .empty, fileListModel.commandPaletteState.snapshot == nil {
+        if state == .empty, commandPaletteModel.state.snapshot == nil {
             return .loaded(.noRepositoryCommands())
         }
-        return fileListModel.commandPaletteState
+        return commandPaletteModel.state
     }
 
     func routeLinkedCommandPaletteTarget(_ route: CommandPaletteLinkedPageRoute) -> Bool {
@@ -107,22 +107,22 @@ extension MainRepositoryContentView {
             return false
         case .importConflictBatch:
             guard let route = activeImportConflictBatchRoute(source: route) else {
-                fileListModel.commandPaletteState = .failed(
+                commandPaletteModel.state = .failed(
                     commandPaletteContext(),
-                    fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
-                        query: fileListModel.commandPaletteQuery
+                    commandPaletteModel.state.snapshot ?? .commandRegistryRecovery(
+                        query: commandPaletteModel.query
                     ),
                     route.blockedMapping
                 )
                 return false
             }
-            importConflictBatchRelayState.enqueue(route)
+            commandPaletteModel.importConflictBatchRelayState.enqueue(route)
             return true
         case .classifierImpactPreview:
-            fileListModel.commandPaletteState = .failed(
+            commandPaletteModel.state = .failed(
                 commandPaletteContext(),
-                fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
-                    query: fileListModel.commandPaletteQuery
+                commandPaletteModel.state.snapshot ?? .commandRegistryRecovery(
+                    query: commandPaletteModel.query
                 ),
                 route.blockedMapping
             )
@@ -134,27 +134,27 @@ extension MainRepositoryContentView {
 
     func commandPaletteContext() -> CommandIndexRequestSnapshot {
         CommandIndexRequestSnapshot.commandPalette(
-            query: fileListModel.commandPaletteQuery,
-            selectedFileIDs: selectedFileIDs,
+            query: commandPaletteModel.query,
+            selectedFileIDs: selectionModel.fileIDs,
             currentPath: selectedSidebarRow.pathFilterPrefix
         )
     }
 
     private func routeSelectedFileTagSuggestions(source: CommandPaletteLinkedPageRoute) -> Bool {
-        guard let fileID = selectedFileIDs.first, selectedFileIDs.count == 1 else {
-            fileListModel.commandPaletteState = .failed(
+        guard let fileID = selectionModel.fileIDs.first, selectionModel.fileIDs.count == 1 else {
+            commandPaletteModel.state = .failed(
                 commandPaletteContext(),
-                fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
-                    query: fileListModel.commandPaletteQuery
+                commandPaletteModel.state.snapshot ?? .commandRegistryRecovery(
+                    query: commandPaletteModel.query
                 ),
                 source.blockedMapping
             )
             return false
         }
-        selectedFileIDs = [fileID]
+        selectionModel.fileIDs = [fileID]
         Task {
             await fileListModel.selectFiles([fileID])
-            fileListModel.presentSelectedFileTagSuggestions(source: .commandPalette)
+            detailTagModel.presentSelectedFileTagSuggestions(source: .commandPalette)
         }
         return true
     }
@@ -171,7 +171,7 @@ extension MainRepositoryContentView {
     private func openCommandPaletteSmartList(_ saved: SavedSearchSnapshot) {
         closeCommandPalette()
         selectedSidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
-        selectedFileIDs = []
+        selectionModel.fileIDs = []
         Task { await restoreSavedSearch(saved) }
     }
 

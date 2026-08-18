@@ -12,7 +12,7 @@ extension MainRepositoryContentView {
     @MainActor
     func refreshAfterClassifierCorrection(_ correctedFile: FileEntrySnapshot) async {
         await fileListModel.retryCurrentCategory()
-        selectedFileIDs = [correctedFile.id]
+        selectionModel.fileIDs = [correctedFile.id]
         await fileListModel.selectFiles([correctedFile.id])
         fileListModel.statusBanner = .correctedClassification(
             fileID: correctedFile.id,
@@ -32,11 +32,11 @@ extension MainRepositoryContentView {
         )
 
         repositoryTree = plan.tree
-        pendingMovedFileFocusID = movedFile.id
+        selectionModel.pendingMovedFileFocusID = movedFile.id
         selectedSidebarID = plan.selectedSidebarID
-        selectedFileIDs = [movedFile.id]
+        selectionModel.fileIDs = [movedFile.id]
         await fileListModel.loadCurrentCategory(plan.categoryForFileList, focusingOn: movedFile.id)
-        selectedFileIDs = [movedFile.id]
+        selectionModel.fileIDs = [movedFile.id]
         if refreshedTree == nil {
             fileListModel.statusBanner = .changedCategoryTreeRefreshFailed(
                 fileID: movedFile.id,

@@ -43,14 +43,14 @@ final class SavedSearchPageFeatureTests: XCTestCase {
         )
         let updatedTree = RepositoryTreeNodeSnapshot.savedSearchSavedSearchFixtureTree().insertingSavedSearch(saved)
 
-        await model.restoreSavedSearch(saved)
+        await model.searchModel.restoreSavedSearch(saved)
 
         XCTAssertEqual(
             updatedTree.sidebarRow(id: RepositoryTreeNodeSnapshot.savedSearchSidebarID(77))?.displayName,
             "Finance"
         )
-        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
-        XCTAssertEqual(model.searchState.request, .testFixture(savedSearchQuery: saved.query))
+        XCTAssertEqual(model.searchModel.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
+        XCTAssertEqual(model.searchModel.searchState.request, .testFixture(savedSearchQuery: saved.query))
         await searcher.assertSmartListRunRequests(savedSearchID: 77)
         XCTAssertEqual(model.files, [resultFile])
     }
@@ -83,11 +83,11 @@ final class SavedSearchPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .savedSearchSavedSearchDbFixture())
         )
 
-        await model.restoreSavedSearch(saved)
+        await model.searchModel.restoreSavedSearch(saved)
 
-        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
+        XCTAssertEqual(model.searchModel.lastSearchExitContext, .smartList(id: 77, name: "Finance"))
         XCTAssertEqual(
-            model.searchState.request,
+            model.searchModel.searchState.request,
             .testFixture(savedSearchQuery: saved.query)
         )
         XCTAssertEqual(model.files, [resultFile])

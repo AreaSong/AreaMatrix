@@ -1,4 +1,21 @@
+import AreaMatrixFeatureLibrary
+import AreaMatrixFeatureOperation
 import SwiftUI
+
+extension DetailPaneTab {
+    var title: String {
+        switch self {
+        case .meta:
+            L10n.string("Meta")
+        case .summary:
+            L10n.string("Summary")
+        case .log:
+            L10n.string("Log")
+        case .note:
+            L10n.string("Note")
+        }
+    }
+}
 
 struct MainRepositoryDetailPane: View {
     let selection: MainFileSelectionState

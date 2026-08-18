@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 import XCTest
 
 actor MainLoadingPausingStartupRecoverer: CoreStartupRecovering, RepoPathRequestRecording {

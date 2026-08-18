@@ -196,12 +196,12 @@ final class AITagBatchPageFeatureTests: XCTestCase {
             )
 
             await model.selectFiles([file.id])
-            await model.loadSelectedFileAITagSuggestions()
+            await model.detailTagModel.loadSelectedFileAITagSuggestions()
 
             await bridge.assertNoAITagSuggestionRequests()
             await privacy.assertEvaluationFeatures([.autoTags])
-            XCTAssertEqual(model.aiTagSuggestionState.report?.status, .skipped)
-            XCTAssertEqual(model.aiTagSuggestionState.report?.skippedReason, .providerUnavailable)
+            XCTAssertEqual(model.detailTagModel.aiSuggestionState.report?.status, .skipped)
+            XCTAssertEqual(model.detailTagModel.aiSuggestionState.report?.skippedReason, .providerUnavailable)
         }
     }
 

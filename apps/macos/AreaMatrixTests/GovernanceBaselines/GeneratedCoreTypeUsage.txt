@@ -3,6 +3,4 @@
 # Exit condition: move each row behind a Bridge-owned snapshot and delete the row when its count reaches zero.
 App/ObservabilityRuntimeAssembly.swift|CoreTraceContext=2,StorageMode=1
 App/ObservabilityTraceContextFactory.swift|CoreObservabilityAttribute=1,CoreObservabilityResourceRef=1,CoreTraceContext=3,StorageMode=2
-Features/AI/LocalModelStatusState.swift|LocalModelAvailability=1,LocalModelRecommendedAction=1
-Features/FileActions/BatchRenameSnapshots.swift|BatchRenameDateSource=1,BatchRenameItemResult=1,BatchRenameMode=1,BatchRenamePreviewItem=1,BatchRenamePreviewStatus=1,BatchRenameResultStatus=1,BatchRenameRule=1
 PlatformServices/Observability/ObservabilityResourceIdentity.swift|CoreObservabilityResourceRef=3,StorageMode=2

@@ -1,65 +1,55 @@
 import Foundation
 
-extension MainFileListModel {
-    func beginICloudConflictResolution(fileID: Int64? = nil) {
-        guard let fileID = fileID ?? selection.singleFileID,
-              let file = actionRoutingFile(for: fileID),
-              file.hasICloudConflictCopySignal,
-              canPerformWriteAction(fileID: fileID) else { return }
-        iCloudConflictResolutionState = .idle
-        pendingActionDestination = .iCloudConflict(fileID: fileID)
-    }
+struct SyncConflictResolutionRequestContext {
+    var fileID: Int64
+    var strategy: ICloudConflictResolutionStrategy
+    var originalPath: String?
+    var conflictedCopyPath: String?
+    var conflictID: String
+    var isCurrent: @MainActor () -> Bool
+}
 
-    func applyICloudConflictResolution(
-        fileID: Int64,
-        strategy: ICloudConflictResolutionStrategy,
-        originalPath: String?,
-        conflictedCopyPath: String?
-    ) async {
-        guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
-        guard !iCloudConflictResolutionState.isApplying,
-              canPerformWriteAction(fileID: fileID) else { return }
-
-        if let blocker = iCloudConflictResolver.iCloudConflictResolutionCapability.blocker {
+extension SyncConflictCoordinator {
+    func resolve(_ request: SyncConflictResolutionRequestContext) async -> ICloudConflictResolutionResult? {
+        guard !resolutionState.isApplying else { return nil }
+        if let blocker = resolver.iCloudConflictResolutionCapability.blocker {
             let mapping = await mapCoreError(blocker.error)
-            iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
-            return
+            resolutionState = .failed(fileID: request.fileID, strategy: request.strategy, mapping)
+            return nil
         }
-
-        iCloudConflictResolutionState = .applying(fileID: fileID, strategy: strategy)
-        clearDiagnosticsState()
+        resolutionState = .applying(fileID: request.fileID, strategy: request.strategy)
         do {
-            let conflictID = actionRoutingFile(for: fileID)?.path ?? conflictedCopyPath ?? "\(fileID)"
-            let result = try await iCloudConflictResolver.resolveICloudConflict(ICloudConflictResolutionRequest(
+            let result = try await resolver.resolveICloudConflict(ICloudConflictResolutionRequest(
                 repoPath: repoPath,
-                conflictID: conflictID,
-                fileID: fileID,
-                strategy: strategy,
-                originalPath: originalPath,
-                conflictedCopyPath: conflictedCopyPath
+                conflictID: request.conflictID,
+                fileID: request.fileID,
+                strategy: request.strategy,
+                originalPath: request.originalPath,
+                conflictedCopyPath: request.conflictedCopyPath
             ))
-            try validateICloudConflictResolution(result, fileID: fileID)
-            await refreshAfterICloudConflictResolution(fileID: result.focusFileID ?? fileID, strategy: strategy)
+            try validateICloudConflictResolution(result, fileID: request.fileID)
+            return result
         } catch {
             let mapping = await mapCoreError(error)
-            guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
-            iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
+            guard request.isCurrent() else { return nil }
+            resolutionState = .failed(fileID: request.fileID, strategy: request.strategy, mapping)
+            return nil
         }
     }
 
-    func completePreviewedICloudConflictResolution(
+    func validatePreviewedResolution(
         fileID: Int64,
         strategy: ICloudConflictResolutionStrategy,
         report: ICloudConflictResolveReportSnapshot
-    ) async {
-        guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
+    ) async -> Bool {
         let result = ICloudConflictResolutionResult(report: report)
         do {
             try validateICloudConflictResolution(result, fileID: fileID)
-            await refreshAfterICloudConflictResolution(fileID: fileID, strategy: strategy)
+            return true
         } catch {
             let mapping = await mapCoreError(error)
-            iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
+            resolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
+            return false
         }
     }
 
@@ -68,26 +58,18 @@ extension MainFileListModel {
         strategy: ICloudConflictResolutionStrategy,
         mapping: CoreErrorMappingSnapshot
     ) {
-        guard pendingActionDestination == .iCloudConflict(fileID: fileID) else { return }
-        iCloudConflictResolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
+        resolutionState = .failed(fileID: fileID, strategy: strategy, mapping)
     }
 
-    func applyKeepBothICloudConflict(fileID: Int64) async {
-        let versions = iCloudConflictVersions(for: fileID)
-        await applyICloudConflictResolution(
-            fileID: fileID,
-            strategy: .keepBoth,
-            originalPath: versions.original,
-            conflictedCopyPath: versions.conflictedCopy
-        )
-    }
-
-    func iCloudConflictVersions(for fileID: Int64) -> (original: String?, conflictedCopy: String?) {
-        let file = actionRoutingFile(for: fileID)
-        return (
+    func versions(for file: FileEntrySnapshot?) -> (original: String?, conflictedCopy: String?) {
+        (
             ICloudConflictVersionSnapshot.originalCandidate(repoPath: repoPath, file: file).path,
             ICloudConflictVersionSnapshot.conflictedCandidate(repoPath: repoPath, file: file).path
         )
+    }
+
+    func completeResolution() {
+        resolutionState = .idle
     }
 
     private func validateICloudConflictResolution(
@@ -104,19 +86,6 @@ extension MainFileListModel {
                 rawContext: "iCloud conflict \(fileID) did not write change_log"
             )
         }
-    }
-
-    private func refreshAfterICloudConflictResolution(
-        fileID: Int64,
-        strategy: ICloudConflictResolutionStrategy
-    ) async {
-        await loadCurrentCategory(currentCategory, focusingOn: fileID)
-        if selection.singleFileID == fileID {
-            await loadChangeLog(fileID: fileID)
-        }
-        iCloudConflictResolutionState = .idle
-        pendingActionDestination = nil
-        statusBanner = .resolvedICloudConflict(fileID: fileID, strategy: strategy)
     }
 }
 

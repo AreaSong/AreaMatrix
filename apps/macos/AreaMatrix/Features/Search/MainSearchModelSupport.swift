@@ -1,6 +1,7 @@
+import AreaMatrixFeatureLibrary
 import Foundation
 
-extension MainFileListModel {
+extension SearchModel {
     var searchPageDestination: MainSearchDestination? {
         switch searchState {
         case let .loaded(request, page):
@@ -25,7 +26,7 @@ extension MainFileListModel {
     }
 
     func enterSearch(context: MainSearchEntryContext) {
-        lastSearchExitContext = exitContext(for: context)
+        lastExitContext = exitContext(for: context)
     }
 
     var isEditingSmartListFilterDraft: Bool {
@@ -88,8 +89,8 @@ extension MainFileListModel {
 
     func clearSearch() {
         searchGeneration += 1
-        searchState = .idle
-        pendingSearchDestination = nil
+        state = .idle
+        pendingDestination = nil
         smartListFilterDraft = nil
         activeSmartListSearch = nil
         clearSearchFacets()
@@ -97,44 +98,40 @@ extension MainFileListModel {
         semanticIndexControlState = .idle
         semanticPagingState = .idle
         showFoldedSemanticDuplicates = false
-        errorMapping = nil
-        isLoading = false
-        clearDetail()
+        applyResult(.cleared)
     }
 
     func openSavedSearchSheet() {
-        guard let request = searchState.request, canSaveCurrentSearch else { return }
-        pendingSearchDestination = .savedSearchSheet(request)
+        guard let request = state.request, canSaveCurrentSearch else { return }
+        pendingDestination = .savedSearchSheet(request)
     }
 
     func openIndexingStatus() {
-        guard let request = searchState.request,
-              searchState.indexStatus == .unavailable else { return }
-        pendingSearchDestination = .indexingStatus(request)
+        guard let request = state.request,
+              state.indexStatus == .unavailable else { return }
+        pendingDestination = .indexingStatus(request)
     }
 
     func openCommandPaletteForSearch() {
-        pendingSearchDestination = .commandPalette
+        pendingDestination = .commandPalette
         enterSearch(context: .commandPalette)
     }
 
     func clearPendingSearchDestination() {
-        pendingSearchDestination = nil
+        pendingDestination = nil
     }
 
     private func loadSearch(_ request: SearchQueryRequestSnapshot) async {
         searchGeneration += 1
         let generation = searchGeneration
-        let previousPage = searchState.page
+        let previousPage = state.page
         activeSmartListSearch = nil
 
-        searchState = .loading(request: request, previousPage: previousPage)
+        state = .loading(request: request, previousPage: previousPage)
         semanticPagingState = .idle
         showFoldedSemanticDuplicates = false
-        pendingSearchDestination = nil
-        isLoading = true
-        errorMapping = nil
-        diagnosticsState = .idle
+        pendingDestination = nil
+        applyResult(.loading)
 
         do {
             let page = try await searchPage(for: request)
@@ -144,19 +141,17 @@ extension MainFileListModel {
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == searchGeneration else { return }
-            searchState = .failed(request: request, mappedError)
-            pendingSearchDestination = nil
-            isLoading = false
+            state = .failed(request: request, mappedError)
+            pendingDestination = nil
+            applyResult(.failed)
             if request.mode == .semantic { semanticFallbackState = .failed(request: request, mappedError) }
         }
     }
 
     private func applySearchPage(_ page: SearchResultPageSnapshot, request: SearchQueryRequestSnapshot) {
-        files = page.results.map(\.file)
-        searchState = .loaded(request: request, page: page)
-        pendingSearchDestination = nil
-        errorMapping = nil
-        isLoading = false
+        state = .loaded(request: request, page: page)
+        pendingDestination = nil
+        applyResult(.loaded(page.results.map(\.file)))
     }
 
     func applySemanticPage(
@@ -165,9 +160,8 @@ extension MainFileListModel {
         request: SearchQueryRequestSnapshot
     ) {
         let updatedPage = page.replacingSemanticPage(semanticPage)
-        files = updatedPage.results.map(\.file)
-        searchState = .loaded(request: request, page: updatedPage)
-        isLoading = false
+        state = .loaded(request: request, page: updatedPage)
+        applyResult(.loaded(updatedPage.results.map(\.file)))
     }
 
     func toggleFoldedSemanticDuplicates() {
@@ -220,7 +214,7 @@ extension MainFileListModel {
     }
 }
 
-extension MainFileListModel {
+extension SearchModel {
     private func exitContext(for context: MainSearchEntryContext) -> MainSearchExitContext {
         switch context {
         case .toolbar, .commandFind, .commandPalette:

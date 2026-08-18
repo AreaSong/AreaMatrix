@@ -108,35 +108,35 @@ final class DetailIntegrationVerifyTests: XCTestCase {
         let originalCategory = file.category
         let originalPath = file.path
 
-        await context.model.loadSelectedFileTags()
-        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: [])
+        await context.model.detailTagModel.loadSelectedFileTags()
+        assertLoadedTags(context.model.detailTagModel.editorState, fileID: file.id, expectedValues: [])
 
-        await context.model.addSelectedFileTag(" ClientA ")
-        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: ["clienta"])
-        XCTAssertEqual(context.model.detailTagUndoToast?.message, #"Added tag "clienta"."#)
+        await context.model.detailTagModel.addSelectedFileTag(" ClientA ")
+        assertLoadedTags(context.model.detailTagModel.editorState, fileID: file.id, expectedValues: ["clienta"])
+        XCTAssertEqual(context.model.detailTagModel.undoToast?.message, #"Added tag "clienta"."#)
 
         let addedTags = try await context.bridge.listTags(repoPath: context.repoURL.path, fileID: file.id)
         XCTAssertEqual(addedTags.fileTags.map(\.value), ["clienta"])
 
-        await context.model.undoLastDetailTagChange()
-        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: [])
-        XCTAssertNil(context.model.detailTagUndoToast)
+        await context.model.detailTagModel.undoLastDetailTagChange()
+        assertLoadedTags(context.model.detailTagModel.editorState, fileID: file.id, expectedValues: [])
+        XCTAssertNil(context.model.detailTagModel.undoToast)
         let undoneAddedTags = try await context.bridge.listTags(repoPath: context.repoURL.path, fileID: file.id)
         XCTAssertEqual(undoneAddedTags.fileTags, [])
 
-        await context.model.addSelectedFileTag("clienta")
-        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: ["clienta"])
+        await context.model.detailTagModel.addSelectedFileTag("clienta")
+        assertLoadedTags(context.model.detailTagModel.editorState, fileID: file.id, expectedValues: ["clienta"])
 
-        await context.model.removeSelectedFileTag("clienta")
-        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: [])
-        XCTAssertEqual(context.model.detailTagUndoToast?.message, #"Removed tag "clienta"."#)
+        await context.model.detailTagModel.removeSelectedFileTag("clienta")
+        assertLoadedTags(context.model.detailTagModel.editorState, fileID: file.id, expectedValues: [])
+        XCTAssertEqual(context.model.detailTagModel.undoToast?.message, #"Removed tag "clienta"."#)
 
         let removedTags = try await context.bridge.listTags(repoPath: context.repoURL.path, fileID: file.id)
         XCTAssertEqual(removedTags.fileTags, [])
 
-        await context.model.undoLastDetailTagChange()
-        assertLoadedTags(context.model.detailTagEditorState, fileID: file.id, expectedValues: ["clienta"])
-        XCTAssertNil(context.model.detailTagUndoToast)
+        await context.model.detailTagModel.undoLastDetailTagChange()
+        assertLoadedTags(context.model.detailTagModel.editorState, fileID: file.id, expectedValues: ["clienta"])
+        XCTAssertNil(context.model.detailTagModel.undoToast)
         let restoredTags = try await context.bridge.listTags(repoPath: context.repoURL.path, fileID: file.id)
         XCTAssertEqual(restoredTags.fileTags.map(\.value), ["clienta"])
         XCTAssertEqual(context.model.selectedFileDetail?.category, originalCategory)

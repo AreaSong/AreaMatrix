@@ -1,3 +1,4 @@
+import AreaMatrixFeatureAI
 import Combine
 import Foundation
 
@@ -65,7 +66,13 @@ final class RemoteProviderConfigModel: ObservableObject {
     }
 
     var enableDisabledReason: String {
-        currentDraft.enableDisabledReason(verifiedToken: verifiedToken)
+        switch currentDraft.enableDisabledReason(verifiedToken: verifiedToken) {
+        case .missingAPIKey: L10n.string("API key is required.")
+        case .missingScope: L10n.string("Select at least one usage scope.")
+        case .dataFlowUnconfirmed: L10n.string("Confirm the remote data flow.")
+        case .connectionUnverified: L10n.string("Verify the connection before enabling remote AI.")
+        case nil: ""
+        }
     }
 
     func load() async {

@@ -1,4 +1,5 @@
 import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureIngestion
 import Foundation
 
 #if DEBUG

@@ -1,13 +1,10 @@
+import AreaMatrixUIFoundation
 import Combine
 import Foundation
 
 @MainActor
 final class GeneralSettingsModel: ObservableObject {
-    enum LoadState: Equatable {
-        case loading
-        case loaded
-        case failed(GeneralSettingsSaveError)
-    }
+    typealias LoadState = AsyncPhaseState<GeneralSettingsSaveError>
 
     @Published private(set) var loadState: LoadState = .loading
     @Published private(set) var draft: GeneralSettingsDraft?

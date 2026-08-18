@@ -108,7 +108,7 @@ extension ClassifierSettingsPane {
     @ViewBuilder
     private var content: some View {
         switch model.loadState {
-        case .loading:
+        case .idle, .loading:
             loadingContent
         case .loaded:
             loadedContent

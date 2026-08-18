@@ -60,30 +60,43 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
         )
 
         await model.selectFiles([detail.id])
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "",
             scope: .all,
             sort: .newestImported,
             sidebarRow: .tagFilterIntegrationRoot,
             filters: filters
         )
-        await model.loadSearchFacets(query: "", scope: .all, sidebarRow: .tagFilterIntegrationRoot, filters: filters)
-        await model.loadTagFilterRegistry(activeFileID: detail.id)
-        model.beginSmartListFilterDraft(id: 42, name: "Tagged", filters: .empty)
-        model.updateSmartListFilterDraft(filters)
-        await model.loadSearchFacets(query: "", scope: .all, sidebarRow: .tagFilterIntegrationRoot, filters: filters)
-        await model.retrySearchFacets()
-        await model.retryTagFilterRegistry()
+        await model.searchModel.loadSearchFacets(
+            query: "",
+            scope: .all,
+            sidebarRow: .tagFilterIntegrationRoot,
+            filters: filters
+        )
+        await model.detailTagModel.loadTagFilterRegistry(activeFileID: detail.id)
+        model.searchModel.beginSmartListFilterDraft(id: 42, name: "Tagged", filters: .empty)
+        model.searchModel.updateSmartListFilterDraft(filters)
+        await model.searchModel.loadSearchFacets(
+            query: "",
+            scope: .all,
+            sidebarRow: .tagFilterIntegrationRoot,
+            filters: filters
+        )
+        await model.searchModel.retrySearchFacets()
+        await model.detailTagModel.retryTagFilterRegistry()
 
         await searcher.assertRequestFilters([filters])
         await facets.assertRequestFilters([filters, filters, filters])
-        XCTAssertEqual(model.tagFilterRegistryState.errorMapping, .tagFilterFilterFailure())
-        XCTAssertEqual(model.tagFilterRegistryState.tagSet?.availableTags.map(\.value), ["finance", "legal"])
-        XCTAssertEqual(model.searchFacetsState.facets?.tags.map(\.value), ["finance", "tax", "archive"])
-        await model.retryTagFilterRegistry()
-        XCTAssertNil(model.tagFilterRegistryState.errorMapping)
-        XCTAssertEqual(model.smartListFilterDraft?.filters, filters)
-        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 42, name: "Tagged"))
+        XCTAssertEqual(model.detailTagModel.filterRegistryState.errorMapping, .tagFilterFilterFailure())
+        XCTAssertEqual(
+            model.detailTagModel.filterRegistryState.tagSet?.availableTags.map(\.value),
+            ["finance", "legal"]
+        )
+        XCTAssertEqual(model.searchModel.searchFacetsState.facets?.tags.map(\.value), ["finance", "tax", "archive"])
+        await model.detailTagModel.retryTagFilterRegistry()
+        XCTAssertNil(model.detailTagModel.filterRegistryState.errorMapping)
+        XCTAssertEqual(model.searchModel.smartListFilterDraft?.filters, filters)
+        XCTAssertEqual(model.searchModel.lastSearchExitContext, .smartList(id: 42, name: "Tagged"))
         await tagStore.assertDetailTagListRequestFileIDs([detail.id, detail.id, detail.id])
         await tagStore.assertDetailTagAddRequests([])
         await tagStore.assertDetailTagRemoveRequests([])
@@ -105,11 +118,11 @@ final class DetailTagFilterIntegrationTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .tagFilterFilterFailure())
         )
 
-        model.enterSearch(context: .sidebar("tag-filters-sidebar-tags-filter"))
-        await model.loadTagFilterRegistry(activeFileID: detail.id)
+        model.searchModel.enterSearch(context: .sidebar("tag-filters-sidebar-tags-filter"))
+        await model.detailTagModel.loadTagFilterRegistry(activeFileID: detail.id)
 
         XCTAssertEqual(
-            model.lastSearchExitContext,
+            model.searchModel.lastSearchExitContext,
             .sidebar("tag-filters-sidebar-tags-filter")
         )
 

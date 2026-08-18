@@ -102,22 +102,21 @@ extension AppCoreServicesGovernanceTests {
     }
 
     func testFeatureManifestOwnershipIsDistributedAndComposedByApp() throws {
-        let providerByFeature: [String: (fileStem: String, typeName: String)] = [
-            "AI": ("AIFeatureManifestProvider", "AIFeatureManifestProvider"),
-            "CommandPalette": ("CommandPaletteFeatureManifestProvider", "CommandPaletteFeatureManifestProvider"),
-            "Detail": ("DetailFeatureManifestProvider", "DetailFeatureManifestProvider"),
-            "Diagnostics": ("DiagnosticsFeatureManifestProvider", "DiagnosticsFeatureManifestProvider"),
-            "FileActions": ("FileActionsFeatureManifestProvider", "FileActionsFeatureManifestProvider"),
-            "Import": ("ImportFeatureManifestProvider", "ImportFeatureManifestProvider"),
-            "MainList": ("MainListFeatureManifestProvider", "MainListFeatureManifestProvider"),
-            "Onboarding": ("OnboardingFeatureManifestProvider", "OnboardingFeatureManifestProvider"),
-            "RepositoryLifecycle": (
-                "RepositoryLifecycleFeatureManifestProvider",
-                "RepositoryLifecycleManifestProvider"
+        let packageManifestByGroup: [String: (file: String, catalogMembers: [String])] = [
+            "AreaMatrixFeatureAI": ("AIFeatureManifests.swift", ["aiFeature"]),
+            "AreaMatrixFeatureIngestion": (
+                "IngestionFeatureManifests.swift",
+                ["onboarding", "import", "repositoryLifecycle"]
             ),
-            "Search": ("SearchFeatureManifestProvider", "SearchFeatureManifestProvider"),
-            "Settings": ("SettingsFeatureManifestProvider", "SettingsFeatureManifestProvider"),
-            "SyncConflicts": ("SyncConflictsFeatureManifestProvider", "SyncConflictsFeatureManifestProvider")
+            "AreaMatrixFeatureLibrary": (
+                "LibraryFeatureManifests.swift",
+                ["mainList", "detail", "search", "commandPalette"]
+            ),
+            "AreaMatrixFeatureOperation": (
+                "OperationFeatureManifests.swift",
+                ["fileActions", "syncConflicts"]
+            ),
+            "AreaMatrixFeatureSettings": ("SettingsFeatureManifests.swift", ["settings"])
         ]
         let registryFile = try XCTUnwrap(productionSwiftFiles().first {
             relativeProductionPath(for: $0) == "App/FeatureManifest.swift"
@@ -129,14 +128,20 @@ extension AppCoreServicesGovernanceTests {
             "The App registry should compose feature-owned manifests instead of owning their metadata."
         )
 
-        for (feature, provider) in providerByFeature {
-            let providerPath = "Features/\(feature)/\(provider.fileStem).swift"
-            let providerFile = try XCTUnwrap(productionSwiftFiles().first {
-                relativeProductionPath(for: $0) == providerPath
-            })
-            let providerSource = try String(contentsOf: providerFile, encoding: .utf8)
-            XCTAssertTrue(providerSource.contains("enum \(provider.typeName): FeatureManifestProvider"))
-            XCTAssertTrue(registrySource.contains("\(provider.typeName).manifest"))
+        let packageRoot = testsDirectory().deletingLastPathComponent()
+            .appendingPathComponent("Packages/AreaMatrixModules/Sources", isDirectory: true)
+        for (module, manifest) in packageManifestByGroup {
+            let manifestFile = packageRoot.appendingPathComponent(module).appendingPathComponent(manifest.file)
+            let manifestSource = try String(contentsOf: manifestFile, encoding: .utf8)
+            XCTAssertTrue(registrySource.contains("import \(module)"))
+            for catalogMember in manifest.catalogMembers {
+                XCTAssertTrue(
+                    manifestSource.contains("FeatureManifestCatalog.\(catalogMember)"),
+                    "\(module) must own the \(catalogMember) manifest."
+                )
+            }
         }
+
+        XCTAssertTrue(registrySource.contains("DiagnosticsFeatureManifestProvider.manifest"))
     }
 }

@@ -263,6 +263,7 @@ struct AISummaryEditorIdentity: Equatable {
 @MainActor
 final class AISummaryEditorExitController: ObservableObject {
     @Published private(set) var needsConfirmation = false
+    @Published var selectionExitState = AISummarySelectionExitState()
 
     private var saveHandler: (@MainActor () async -> Bool)?
     private var discardHandler: (@MainActor () -> Void)?

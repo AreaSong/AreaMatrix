@@ -217,7 +217,7 @@ extension GeneralSettingsView {
     @ViewBuilder
     private var generalContent: some View {
         switch model.loadState {
-        case .loading:
+        case .idle, .loading:
             loadingContent
         case let .failed(error):
             loadingErrorContent(error)

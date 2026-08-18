@@ -1,9 +1,13 @@
+import AreaMatrixFeatureSettings
+import AreaMatrixUIFoundation
 import Foundation
 
 struct ClassifierSettingsLoadError: Equatable {
     var message: LocalizedMessage
     var recovery: LocalizedMessage
 }
+
+typealias ClassifierSettingsLoadState = AsyncPhaseState<ClassifierSettingsLoadError>
 
 struct ClassifierSettingsSaveError: Equatable {
     var message: LocalizedMessage
@@ -24,6 +28,8 @@ struct ClassifierSettingsValidationError: Equatable {
     var message: LocalizedMessage
     var recovery: LocalizedMessage
 }
+
+typealias ClassifierSettingsValidationState = ValidationPhaseState<ClassifierSettingsValidationError>
 
 struct ClassifierSettingsPendingSave: Equatable {
     var config: AppRepoConfigSnapshot

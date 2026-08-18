@@ -60,6 +60,22 @@ struct DetailTagUndoToast: Equatable, Identifiable {
 }
 
 extension DetailTagUndoToast {
+    static func make(
+        operation: DetailTagEditorOperation,
+        fileID: Int64,
+        previous: TagSetSnapshot?,
+        current: TagSetSnapshot
+    ) -> DetailTagUndoToast? {
+        switch operation {
+        case .load, .suggest, .applySuggestions:
+            nil
+        case .add:
+            addedTag(fileID: fileID, previous: previous, current: current)
+        case .remove:
+            removedTag(fileID: fileID, previous: previous, current: current)
+        }
+    }
+
     static func addedTag(
         fileID: Int64,
         previous: TagSetSnapshot?,

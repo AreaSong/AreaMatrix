@@ -1,3 +1,4 @@
+import AreaMatrixFeatureOperation
 import Foundation
 
 struct BatchAddTagsRoute: Identifiable, Equatable {
@@ -65,12 +66,6 @@ extension CoreErrorMappingSnapshot {
     }
 }
 
-struct BatchTagPendingState: Equatable {
-    var input: String
-    var pendingTags: [String]
-    var fieldError: String?
-}
-
 struct BatchAddTagsApplyResult: Equatable {
     var report: BatchMutationReportSnapshot?
     var failure: CoreErrorMappingSnapshot?
@@ -119,11 +114,6 @@ struct BatchPendingTagChip: Equatable {
     var value: String
     var status: BatchPendingTagStatus
     var message: String?
-}
-
-enum BatchTagApplyNormalizationResult: Equatable {
-    case success([String])
-    case failure(String)
 }
 
 enum BatchTagCatalogState: Equatable {
@@ -264,7 +254,8 @@ enum BatchTagValidation {
               eligibility.selectedCount > 0,
               eligibility.disabledReason == nil,
               !eligibility.pendingTags.isEmpty,
-              eligibility.fieldError == nil else {
+              eligibility.fieldError == nil
+        else {
             return false
         }
         guard eligibility.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }

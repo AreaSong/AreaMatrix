@@ -150,6 +150,12 @@ class CoreSDKTest(unittest.TestCase):
                     r"lock_wait_seconds=0\.000 duration_seconds=\d+\.\d{3}"
                 ),
             )
+            metric_records = [
+                json.loads(line)
+                for line in (root / ".build/metrics/core-sdk.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual(metric_records[-1]["cache"], "hit")
+            self.assertEqual(metric_records[-1]["operation"], "build")
 
     def test_cache_miss_failure_reports_standard_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

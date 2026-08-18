@@ -1,3 +1,4 @@
+import AreaMatrixFeatureAI
 import SwiftUI
 
 #if DEBUG
@@ -210,6 +211,7 @@ private struct DeveloperAISettingsScenarioAssembly {
 
 @MainActor
 private struct DeveloperAISummaryScenario: View {
+    private let dependencies = AppDependencyContainer.live(coreServices: AppCoreServices())
     private let model = AISummaryEditorModel(
         repoPath: DeveloperAIScenarioFixture.repoPath,
         fileID: DeveloperAIScenarioFixture.fileID,
@@ -223,7 +225,7 @@ private struct DeveloperAISummaryScenario: View {
         AISummaryEditor(
             repoPath: DeveloperAIScenarioFixture.repoPath,
             fileID: DeveloperAIScenarioFixture.fileID,
-            aiDependencies: AppDependencyContainer.live.feature.aiFeature,
+            aiDependencies: dependencies.feature.aiFeature,
             errorMapper: CoreErrorSnapshotMapper(),
             model: model
         )
@@ -235,11 +237,12 @@ private struct DeveloperAISummaryScenario: View {
 @MainActor
 private struct DeveloperAITagSuggestionsScenario: View {
     private let report = DeveloperAIScenarioFixture.tagReport
+    private let dependencies = AppDependencyContainer.live(coreServices: AppCoreServices())
 
     var body: some View {
         AITagSuggestionsPanel(
             repoPath: DeveloperAIScenarioFixture.repoPath,
-            aiDependencies: AppDependencyContainer.live.feature.aiFeature,
+            aiDependencies: dependencies.feature.aiFeature,
             errorMapper: CoreErrorSnapshotMapper(),
             file: DeveloperAIScenarioFixture.file,
             existingTags: DeveloperAIScenarioFixture.existingTags,

@@ -22,9 +22,12 @@ final class SemanticSearchPrivacyRulesCoreTests: XCTestCase {
             aiPrivacyRules: privacy,
             errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchPrivacyFailure)
         )
-        model.searchState = .loaded(request: request, page: .semanticSearchSemanticPrivacyPage(route: .remote))
+        model.searchModel.searchState = .loaded(
+            request: request,
+            page: .semanticSearchSemanticPrivacyPage(route: .remote)
+        )
 
-        await model.buildSemanticIndexForCurrentSearch()
+        await model.searchModel.buildSemanticIndexForCurrentSearch()
 
         await privacy.assertLoadCount(1)
         await privacy.assertEvaluation(
@@ -38,7 +41,7 @@ final class SemanticSearchPrivacyRulesCoreTests: XCTestCase {
             tags: ["confidential"]
         )
         await semantic.assertIndexRequests([request])
-        XCTAssertTrue(model.semanticPrivacyGateState.allowsIndexBuild)
+        XCTAssertTrue(model.searchModel.semanticPrivacyGateState.allowsIndexBuild)
     }
 
     @MainActor
@@ -61,12 +64,15 @@ final class SemanticSearchPrivacyRulesCoreTests: XCTestCase {
             aiPrivacyRules: privacy,
             errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchPrivacyFailure)
         )
-        model.searchState = .loaded(request: request, page: .semanticSearchSemanticPrivacyPage(route: .remote))
+        model.searchModel.searchState = .loaded(
+            request: request,
+            page: .semanticSearchSemanticPrivacyPage(route: .remote)
+        )
 
-        await model.buildSemanticIndexForCurrentSearch()
+        await model.searchModel.buildSemanticIndexForCurrentSearch()
 
         await semantic.assertNoIndexRequests()
-        XCTAssertEqual(model.semanticPrivacyGateState.matchedRuleID, "rule-confidential")
-        XCTAssertFalse(model.semanticIndexBuildState.isBuilding)
+        XCTAssertEqual(model.searchModel.semanticPrivacyGateState.matchedRuleID, "rule-confidential")
+        XCTAssertFalse(model.searchModel.semanticIndexBuildState.isBuilding)
     }
 }

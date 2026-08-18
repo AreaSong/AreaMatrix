@@ -1,28 +1,24 @@
 import Foundation
 
-extension MainFileListModel {
+extension FileActionCoordinator {
     @discardableResult
-    func submitDelete(fileID: Int64, operation: MainFileDeleteOperation) async -> Bool {
-        guard pendingActionDestination == .delete(fileID: fileID),
+    func submitDelete(fileID: Int64, operation: MainFileDeleteOperation) async -> FileActionDeleteOutcome? {
+        guard destination == .delete(fileID: fileID),
               !deleteState.isDeleting,
-              canPerformWriteAction(fileID: fileID) else { return false }
+              !Task.isCancelled else { return nil }
 
         deleteState = .deleting(fileID: fileID, operation: operation)
-        let selectionGeneration = detailGeneration
-        clearDiagnosticsState()
         do {
             try await performDelete(fileID: fileID, operation: operation)
-            await applyDeletedFile(
-                fileID: fileID,
-                operation: operation,
-                selectionGeneration: selectionGeneration
-            )
-            return true
+            guard destination == .delete(fileID: fileID) else { return nil }
+            deleteState = .idle
+            destination = nil
+            return FileActionDeleteOutcome(fileID: fileID, operation: operation)
         } catch {
             let mapping = await mapCoreError(error)
-            guard pendingActionDestination == .delete(fileID: fileID) else { return false }
+            guard destination == .delete(fileID: fileID) else { return nil }
             deleteState = .failed(fileID: fileID, operation: operation, mapping)
-            return false
+            return nil
         }
     }
 
@@ -35,17 +31,15 @@ extension MainFileListModel {
         }
     }
 
-    private func applyDeletedFile(
-        fileID: Int64,
-        operation: MainFileDeleteOperation,
-        selectionGeneration: Int
-    ) async {
-        files.removeAll { $0.id == fileID }
-        if detailGeneration == selectionGeneration, selection.singleFileID == fileID {
-            await selectFiles([])
+    static func successBanner(
+        for operation: MainFileDeleteOperation,
+        fileID: Int64
+    ) -> MainListStatusBanner {
+        switch operation {
+        case .moveToTrash:
+            .movedFileToTrash(fileID: fileID)
+        case .removeFromIndex:
+            .removedFileFromIndex(fileID: fileID)
         }
-        deleteState = .idle
-        pendingActionDestination = nil
-        statusBanner = operation.successBanner(fileID: fileID)
     }
 }

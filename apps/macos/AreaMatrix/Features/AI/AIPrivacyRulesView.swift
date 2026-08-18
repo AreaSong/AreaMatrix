@@ -128,7 +128,7 @@ struct AIPrivacyRulesView: View {
     @ViewBuilder
     private var privacyRulesContent: some View {
         switch privacyModel.loadState {
-        case .loading:
+        case .idle, .loading:
             ProgressView("Loading privacy rules...")
         case let .failed(error):
             AISettingsInlineBanner(error: error, tint: .red) {

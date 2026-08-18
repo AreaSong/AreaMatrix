@@ -1,3 +1,4 @@
+import AreaMatrixFeatureIngestion
 import Foundation
 
 extension OnboardingModel {
@@ -55,7 +56,8 @@ extension OnboardingModel {
     ) {
         let conflictIDs = route.conflictIDs.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         guard !route.importSessionID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              !conflictIDs.isEmpty else {
+              !conflictIDs.isEmpty
+        else {
             toastMessage = L10n.message("No active import conflicts to review.")
             return
         }

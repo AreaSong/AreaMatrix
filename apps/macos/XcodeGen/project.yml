@@ -1,0 +1,254 @@
+name: AreaMatrixGenerated
+
+options:
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "14.0"
+  developmentLanguage: en
+  xcodeVersion: "26.0"
+
+configs:
+  Debug: debug
+  Release: release
+
+configFiles:
+  Debug: ../Config/Debug.xcconfig
+  Release: ../Config/Release.xcconfig
+
+packages:
+  AreaMatrixModules:
+    path: ../Packages/AreaMatrixModules
+
+settings:
+  base:
+    CLANG_ANALYZER_NONNULL: YES
+    CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION: YES_AGGRESSIVE
+    CLANG_CXX_LANGUAGE_STANDARD: gnu++20
+    CLANG_ENABLE_MODULES: YES
+    CLANG_ENABLE_OBJC_ARC: YES
+    CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING: YES
+    CLANG_WARN_BOOL_CONVERSION: YES
+    CLANG_WARN_COMMA: YES
+    CLANG_WARN_CONSTANT_CONVERSION: YES
+    CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS: YES
+    CLANG_WARN_DIRECT_OBJC_ISA_USAGE: YES_ERROR
+    CLANG_WARN_DOCUMENTATION_COMMENTS: YES
+    CLANG_WARN_EMPTY_BODY: YES
+    CLANG_WARN_ENUM_CONVERSION: YES
+    CLANG_WARN_INFINITE_RECURSION: YES
+    CLANG_WARN_INT_CONVERSION: YES
+    CLANG_WARN_NON_LITERAL_NULL_CONVERSION: YES
+    CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF: YES
+    CLANG_WARN_OBJC_LITERAL_CONVERSION: YES
+    CLANG_WARN_OBJC_ROOT_CLASS: YES_ERROR
+    CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER: YES
+    CLANG_WARN_RANGE_LOOP_ANALYSIS: YES
+    CLANG_WARN_STRICT_PROTOTYPES: YES
+    CLANG_WARN_SUSPICIOUS_MOVE: YES
+    CLANG_WARN_UNGUARDED_AVAILABILITY: YES_AGGRESSIVE
+    CLANG_WARN_UNREACHABLE_CODE: YES
+    CLANG_WARN__DUPLICATE_METHOD_MATCH: YES
+    COPY_PHASE_STRIP: NO
+    ENABLE_STRICT_OBJC_MSGSEND: YES
+    GCC_C_LANGUAGE_STANDARD: gnu17
+    GCC_NO_COMMON_BLOCKS: YES
+    GCC_WARN_64_TO_32_BIT_CONVERSION: YES
+    GCC_WARN_ABOUT_RETURN_TYPE: YES_ERROR
+    GCC_WARN_UNDECLARED_SELECTOR: YES
+    GCC_WARN_UNINITIALIZED_AUTOS: YES_AGGRESSIVE
+    GCC_WARN_UNUSED_FUNCTION: YES
+    GCC_WARN_UNUSED_VARIABLE: YES
+  configs:
+    Debug:
+      DEBUG_INFORMATION_FORMAT: dwarf
+      ENABLE_TESTABILITY: YES
+      GCC_DYNAMIC_NO_PIC: NO
+      GCC_OPTIMIZATION_LEVEL: 0
+      GCC_PREPROCESSOR_DEFINITIONS:
+        - DEBUG=1
+        - $(inherited)
+      ONLY_ACTIVE_ARCH: YES
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      SWIFT_OPTIMIZATION_LEVEL: -Onone
+    Release:
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+      ENABLE_NS_ASSERTIONS: NO
+      SWIFT_COMPILATION_MODE: wholemodule
+      SWIFT_OPTIMIZATION_LEVEL: -O
+
+targets:
+  AreaMatrix:
+    type: application
+    platform: macOS
+    configFiles:
+      Debug: ../Config/Debug.xcconfig
+      Release: ../Config/Release.xcconfig
+    sources:
+      - path: ../AreaMatrix
+        excludes:
+          - App/AreaMatrixAppSmokeTests.swift
+          - Bridge/Generated
+      - path: ../../../core/resources/observability_catalog.json
+        buildPhase: resources
+        group: Core Resources
+    dependencies:
+      - framework: ../../../.build/core-sdk/current/AreaMatrixCoreFFI.xcframework
+      - package: AreaMatrixModules
+        product: AreaMatrixCoreContracts
+      - package: AreaMatrixModules
+        product: AreaMatrixCoreBridgeContract
+      - package: AreaMatrixModules
+        product: AreaMatrixCoreBridgeRuntime
+      - package: AreaMatrixModules
+        product: AreaMatrixUIFoundation
+      - package: AreaMatrixModules
+        product: AreaMatrixPlatformKit
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureLibrary
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureIngestion
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureOperation
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureSettings
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureAI
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: ""
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 202605101812
+        ENABLE_HARDENED_RUNTIME: YES
+        GENERATE_INFOPLIST_FILE: NO
+        HEADER_SEARCH_PATHS:
+          - $(inherited)
+          - $(SRCROOT)/../AreaMatrix/Bridge/UniFFI
+        INFOPLIST_FILE: ../AreaMatrix/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: AreaMatrix
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_NSPrincipalClass: NSApplication
+        LIBRARY_SEARCH_PATHS:
+          - $(inherited)
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        MARKETING_VERSION: 0.1.0
+        OTHER_LDFLAGS:
+          - $(inherited)
+        PRODUCT_BUNDLE_IDENTIFIER: app.areamatrix.AreaMatrix
+        PRODUCT_NAME: $(TARGET_NAME)
+        SDKROOT: macosx
+        SWIFT_EMIT_LOC_STRINGS: YES
+        SWIFT_INCLUDE_PATHS:
+          - $(inherited)
+          - $(SRCROOT)/../AreaMatrix/Bridge/UniFFI
+        SWIFT_OBJC_BRIDGING_HEADER: ../AreaMatrix/AreaMatrix-Bridging-Header.h
+        SWIFT_VERSION: 5.0
+      configs:
+        Debug:
+          ENABLE_DEBUG_DYLIB: YES
+    preBuildScripts:
+      - name: Prepare CoreSDK
+        basedOnDependencyAnalysis: true
+        dependencyFile: $(DERIVED_FILE_DIR)/AreaMatrixCoreSDK.d
+        inputFiles:
+          - $(SRCROOT)/../../../core/Cargo.toml
+          - $(SRCROOT)/../../../core/Cargo.lock
+          - $(SRCROOT)/../../../core/build.rs
+          - $(SRCROOT)/../../../core/area_matrix.udl
+          - $(SRCROOT)/../../../core/uniffi.toml
+          - $(SRCROOT)/../../../core/src
+          - $(SRCROOT)/../../../core/resources
+          - $(SRCROOT)/../../../scripts/dev_tools/artifacts.py
+          - $(SRCROOT)/../../../scripts/dev_tools/build.py
+          - $(SRCROOT)/../../../scripts/dev_tools/core_sdk.py
+          - $(SRCROOT)/../../../scripts/dev_tools/core_sdk_artifact.py
+        outputFiles:
+          - $(SRCROOT)/../../../.build/core-sdk/current/manifest.json
+        script: |
+          set -euo pipefail
+          export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          mkdir -p "${DERIVED_FILE_DIR}"
+          if [ "${AREAMATRIX_CORE_SDK_VERIFY_ONLY:-0}" = "1" ]; then
+            "${SRCROOT}/../../../dev" build core-sdk --verify-only --dependency-file "${DERIVED_FILE_DIR}/AreaMatrixCoreSDK.d"
+          else
+            "${SRCROOT}/../../../dev" build core-sdk --dependency-file "${DERIVED_FILE_DIR}/AreaMatrixCoreSDK.d"
+          fi
+
+  AreaMatrixTests:
+    type: bundle.unit-test
+    platform: macOS
+    configFiles:
+      Debug: ../Config/Test.xcconfig
+      Release: ../Config/Release.xcconfig
+    sources:
+      - path: ../AreaMatrixTests
+      - path: ../AreaMatrix/App/AreaMatrixAppSmokeTests.swift
+        group: AreaMatrix/App
+    dependencies:
+      - target: AreaMatrix
+      - package: AreaMatrixModules
+        product: AreaMatrixCoreContracts
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureIngestion
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureLibrary
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureOperation
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureSettings
+      - package: AreaMatrixModules
+        product: AreaMatrixFeatureAI
+    settings:
+      base:
+        BUNDLE_LOADER: $(TEST_HOST)
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 202605101812
+        GENERATE_INFOPLIST_FILE: YES
+        HEADER_SEARCH_PATHS:
+          - $(inherited)
+          - $(SRCROOT)/../AreaMatrix/Bridge/UniFFI
+        INFOPLIST_KEY_CFBundleDisplayName: AreaMatrixTests
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - "@executable_path/../Frameworks"
+          - "@loader_path/../Frameworks"
+          - $(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        MARKETING_VERSION: 0.1.0
+        PRODUCT_BUNDLE_IDENTIFIER: app.areamatrix.AreaMatrixTests
+        PRODUCT_NAME: $(TARGET_NAME)
+        SDKROOT: macosx
+        SWIFT_INCLUDE_PATHS:
+          - $(inherited)
+          - $(SRCROOT)/../AreaMatrix/Bridge/UniFFI
+        SWIFT_VERSION: 5.0
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/AreaMatrix.app/Contents/MacOS/AreaMatrix
+
+schemes:
+  AreaMatrix:
+    build:
+      targets:
+        AreaMatrix: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - AreaMatrixTests
+      environmentVariables:
+        AREAMATRIX_TEST_MODE: "1"
+      testPlans:
+        - path: ../AreaMatrix-Functional.xctestplan
+          defaultPlan: true
+        - path: ../AreaMatrix-Unit.xctestplan
+        - path: ../AreaMatrix-Feature.xctestplan
+        - path: ../AreaMatrix-Integration.xctestplan
+        - path: ../AreaMatrix-Performance.xctestplan
+        - path: ../AreaMatrix-Release.xctestplan
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

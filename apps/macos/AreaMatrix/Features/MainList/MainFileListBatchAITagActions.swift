@@ -162,7 +162,7 @@ extension MainFileListModel {
         var failures: [Int64: CoreErrorMappingSnapshot] = [:]
         for file in files {
             do {
-                reports[file.id] = try await suggestAITagsWithPrivacyGate(
+                reports[file.id] = try await detailTagModel.suggestAITagsWithPrivacyGate(
                     fileID: file.id,
                     file: file,
                     candidateTags: []

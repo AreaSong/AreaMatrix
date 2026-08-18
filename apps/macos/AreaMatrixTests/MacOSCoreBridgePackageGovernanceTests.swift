@@ -374,11 +374,16 @@ extension MacOSArchitectureBoundaryGovernanceTests {
                 "CoreClassificationContracts.swift",
                 "CoreCommandIndexContracts.swift",
                 "CoreDiagnosticsContracts.swift",
+                "CoreFileReadingContracts.swift",
                 "CoreRepositoryContracts.swift",
+                "CoreRepositoryMetadataContracts.swift",
                 "CoreSearchFacetContracts.swift",
+                "CoreSearchQueryContracts.swift",
+                "CoreStartupRecoveryContracts.swift",
                 "CoreTagContracts.swift",
                 "CoreTagSuggestionContracts.swift",
-                "CoreUndoRedoContracts.swift"
+                "CoreUndoRedoContracts.swift",
+                "CoreVersionContracts.swift"
             ],
             "The bridge contract package must remain a small, generated-binding-free contract boundary."
         )
@@ -397,6 +402,10 @@ extension MacOSArchitectureBoundaryGovernanceTests {
         XCTAssertTrue(projectSource.contains("AreaMatrixCoreBridgeContract in Frameworks"))
         XCTAssertTrue(projectSource.contains("productName = AreaMatrixCoreBridgeContract;"))
 
+        try assertRuntimePackageBoundary(projectSource: projectSource)
+    }
+
+    private func assertRuntimePackageBoundary(projectSource: String) throws {
         let runtimeSourceFiles = try packageSwiftFiles("AreaMatrixCoreBridgeRuntime")
         XCTAssertEqual(
             runtimeSourceFiles.map(\.lastPathComponent).sorted(),

@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct ChangeCategorySheet: View {
@@ -57,7 +58,7 @@ struct ChangeCategorySheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: pageTitle, pageID: pageID) {
+        AreaMatrixActionSheetContainer(title: pageTitle, pageID: pageID) {
             if let file {
                 VStack(alignment: .leading, spacing: 12) {
                     metadataRow("Name", file.currentName)
@@ -80,7 +81,11 @@ struct ChangeCategorySheet: View {
                     requestPreviewIfNeeded(for: file)
                 }
             } else {
-                MissingFileActionContext(onCancel: onCancel)
+                AreaMatrixUnavailableActionContext(
+                    message: L10n.string("The selected file context is no longer available."),
+                    cancelTitle: L10n.string("Cancel"),
+                    onCancel: onCancel
+                )
             }
         }
     }

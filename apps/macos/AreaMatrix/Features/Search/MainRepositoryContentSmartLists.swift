@@ -2,7 +2,7 @@ import SwiftUI
 
 extension MainRepositoryContentView {
     func applyMainRepositorySmartListSheet(to content: some View) -> some View {
-        content.sheet(item: $searchRoutingState.smartListManagementRoute, content: smartListManagementSheet)
+        content.sheet(item: $searchModel.routingState.smartListManagementRoute, content: smartListManagementSheet)
     }
 
     func smartListManagementSheet(_ route: SmartListManagementRoute) -> some View {
@@ -12,7 +12,7 @@ extension MainRepositoryContentView {
             savedSearches: sortedSavedSearches,
             resultCountState: savedSearchResultCountState,
             savedSearchStore: savedSearchStore,
-            searchQuerying: fileListModel.searchQuerying,
+            searchQuerying: searchModel.searchQuerying,
             errorMapper: errorMapper,
             onCancel: { cancelSmartListManagement(route) },
             onSaved: applyManagedSmartList,
@@ -22,7 +22,7 @@ extension MainRepositoryContentView {
     }
 
     var savedSearchResultCountState: SavedSearchResultCountState {
-        switch fileListModel.searchState {
+        switch searchModel.searchState {
         case let .loaded(_, page):
             .loaded(page.totalCount)
         case .failed:
@@ -38,7 +38,7 @@ extension MainRepositoryContentView {
     }
 
     var selectedSmartList: SavedSearchSnapshot? {
-        savedSearchesBySidebarID[selectedSidebarID]
+        searchModel.savedSearchesBySidebarID[selectedSidebarID]
     }
 
     @ViewBuilder
@@ -54,17 +54,17 @@ extension MainRepositoryContentView {
     }
 
     private func applyManagedSmartList(_ saved: SavedSearchSnapshot) {
-        fileListModel.cancelSmartListFilterDraft()
+        searchModel.cancelSmartListFilterDraft()
         applySavedSearchToSidebar(saved)
         if selectedSidebarID == RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id) {
             Task { await restoreSavedSearch(saved) }
         }
-        searchRoutingState.smartListManagementRoute = nil
+        searchModel.routingState.smartListManagementRoute = nil
     }
 
     private func applySavedSearchToSidebar(_ saved: SavedSearchSnapshot) {
         let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
-        savedSearchesBySidebarID[sidebarID] = saved
+        searchModel.savedSearchesBySidebarID[sidebarID] = saved
         rebuildSmartListSidebar()
     }
 
@@ -73,14 +73,14 @@ extension MainRepositoryContentView {
         searchScope = saved.query.scope
         searchSort = saved.query.sort
         searchFilters = saved.query.filter
-        fileListModel.cancelSmartListFilterDraft()
-        fileListModel.enterSearch(context: .smartList(id: saved.id, name: saved.name))
+        searchModel.cancelSmartListFilterDraft()
+        searchModel.enterSearch(context: .smartList(id: saved.id, name: saved.name))
         selectedSidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
-        selectedFileIDs = []
+        selectionModel.fileIDs = []
     }
 
     func restoreSelectedSavedSearchIfNeeded() async -> Bool {
-        guard let saved = savedSearchesBySidebarID[selectedSidebarID] else {
+        guard let saved = searchModel.savedSearchesBySidebarID[selectedSidebarID] else {
             return selectedSidebarRow.isSmartList
         }
 
@@ -93,15 +93,15 @@ extension MainRepositoryContentView {
         searchScope = saved.query.scope
         searchSort = saved.query.sort
         searchFilters = saved.query.filter
-        await fileListModel.restoreSavedSearch(saved)
+        await searchModel.restoreSavedSearch(saved)
     }
 
     func loadSmartLists() async {
         do {
             let saved = try await savedSearchStore.listSavedSearches(repoPath: opening.config.repoPath)
             await MainActor.run {
-                smartListLoadError = nil
-                savedSearchesBySidebarID = Dictionary(
+                searchModel.smartListLoadError = nil
+                searchModel.savedSearchesBySidebarID = Dictionary(
                     uniqueKeysWithValues: saved.map {
                         (RepositoryTreeNodeSnapshot.savedSearchSidebarID($0.id), $0)
                     }
@@ -111,7 +111,7 @@ extension MainRepositoryContentView {
         } catch {
             let mapped = await mapSmartListError(error)
             await MainActor.run {
-                smartListLoadError = mapped
+                searchModel.smartListLoadError = mapped
             }
         }
     }
@@ -121,7 +121,7 @@ extension MainRepositoryContentView {
         saved: SavedSearchSnapshot,
         draftFilters: SearchFilterStateSnapshot? = nil
     ) {
-        searchRoutingState.smartListManagementRoute = SmartListManagementRoute(
+        searchModel.routingState.smartListManagementRoute = SmartListManagementRoute(
             mode: mode,
             savedSearch: saved,
             draftFilters: draftFilters
@@ -130,26 +130,26 @@ extension MainRepositoryContentView {
 
     private func cancelSmartListManagement(_ route: SmartListManagementRoute) {
         if route.mode == .editQuery {
-            fileListModel.cancelSmartListFilterDraft()
+            searchModel.cancelSmartListFilterDraft()
         }
-        searchRoutingState.smartListManagementRoute = nil
+        searchModel.routingState.smartListManagementRoute = nil
     }
 
     private func deleteManagedSmartList(_ saved: SavedSearchSnapshot) {
         let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(saved.id)
-        savedSearchesBySidebarID.removeValue(forKey: sidebarID)
+        searchModel.savedSearchesBySidebarID.removeValue(forKey: sidebarID)
         repositoryTree = repositoryTree.removingSavedSearch(id: saved.id)
         if selectedSidebarID == sidebarID {
             selectedSidebarID = Self.defaultSelectedSidebarID(from: regularSidebarRows)
             clearSearch()
         }
-        searchRoutingState.smartListManagementRoute = nil
+        searchModel.routingState.smartListManagementRoute = nil
     }
 
     private func beginSmartListFilterEditing(_ saved: SavedSearchSnapshot, filters: SearchFilterStateSnapshot) {
-        fileListModel.beginSmartListFilterDraft(id: saved.id, name: saved.name, filters: filters)
-        searchRoutingState.smartListManagementRoute = nil
-        searchRoutingState.isToolbarFiltersPresented = true
+        searchModel.beginSmartListFilterDraft(id: saved.id, name: saved.name, filters: filters)
+        searchModel.routingState.smartListManagementRoute = nil
+        searchModel.routingState.isToolbarFiltersPresented = true
     }
 
     private func rebuildSmartListSidebar() {

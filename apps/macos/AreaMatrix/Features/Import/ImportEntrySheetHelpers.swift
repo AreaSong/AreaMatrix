@@ -1,3 +1,4 @@
+import AreaMatrixFeatureIngestion
 import SwiftUI
 
 enum ImportEntrySheetHelper {
@@ -22,45 +23,6 @@ enum ImportEntrySheetHelper {
             return firstURL.path
         }
         return L10n.format("import.entry.additional-files", firstURL.path, urls.count - 1)
-    }
-}
-
-struct MainFileActionSheetContainer<Content: View>: View {
-    let title: String
-    let pageID: String
-    private let content: Content
-
-    init(title: String, pageID: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.pageID = pageID
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(title)
-                .font(.headline)
-            content
-        }
-        .padding(22)
-        .frame(width: 420, alignment: .leading)
-        .accessibilityIdentifier("\(pageID)-file-action-sheet")
-    }
-}
-
-struct MissingFileActionContext: View {
-    let onCancel: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(L10n.string("The selected file context is no longer available."))
-                .foregroundStyle(.secondary)
-            HStack {
-                Spacer()
-                Button(L10n.string("Cancel"), action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-            }
-        }
     }
 }
 

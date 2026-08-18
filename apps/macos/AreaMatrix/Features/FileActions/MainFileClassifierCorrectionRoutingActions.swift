@@ -1,14 +1,14 @@
 import Foundation
 
-extension MainFileListModel {
+extension FileActionCoordinator {
     func beginClassifierRuleHandoff(
-        fileID: Int64,
+        file: FileEntrySnapshot,
         targetCategory: String,
         moveFile: Bool,
         destination: ClassifierRuleHandoffDestination
     ) {
         guard let handoff = makeClassifierRuleHandoff(
-            fileID: fileID,
+            file: file,
             targetCategory: targetCategory,
             moveFile: moveFile
         ) else {
@@ -40,12 +40,11 @@ extension MainFileListModel {
         } else {
             pendingActionDestination = nil
         }
-        statusBanner = .savedClassifierRule(category: savedRule.targetCategory)
     }
 
     func cancelClassifierRuleRoute() {
         guard let route = pendingActionDestination?.classifierRuleRoute else {
-            clearPendingActionDestination()
+            clearPendingActionDestination(canClearExternalState: true)
             return
         }
         let handoff = route.handoff
@@ -60,7 +59,7 @@ extension MainFileListModel {
             )
             return
         }
-        clearPendingActionDestination()
+        clearPendingActionDestination(canClearExternalState: true)
     }
 
     func beginClassifierRuleRoute(
@@ -69,7 +68,7 @@ extension MainFileListModel {
     ) {
         guard pendingActionDestination?.isChangeCategory(fileID: handoff.fileID) == true ||
             pendingActionDestination?.isAIClassificationSuggestion(fileID: handoff.fileID) == true,
-            canPerformWriteAction(fileID: handoff.fileID) else { return }
+            true else { return }
         pendingActionDestination = .changeCategory(
             fileID: handoff.fileID,
             initialTargetCategory: handoff.targetCategory,
@@ -79,13 +78,11 @@ extension MainFileListModel {
     }
 
     func makeClassifierRuleHandoff(
-        fileID: Int64,
+        file: FileEntrySnapshot,
         targetCategory: String,
         moveFile: Bool
     ) -> ClassifierRuleHandoff? {
-        let file = files.first { $0.id == fileID } ??
-            selectedFileDetail.flatMap { $0.id == fileID ? $0 : nil }
-        return makeClassifierRuleHandoff(
+        makeClassifierRuleHandoff(
             file: file,
             targetCategory: targetCategory,
             moveFile: moveFile,

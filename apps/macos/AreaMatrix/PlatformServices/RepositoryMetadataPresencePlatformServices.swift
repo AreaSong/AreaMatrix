@@ -1,3 +1,4 @@
+import AreaMatrixFeatureSettings
 import Foundation
 
 struct FileSystemRepoMetadataPresenceChecker: RepoMetadataPresenceChecking {

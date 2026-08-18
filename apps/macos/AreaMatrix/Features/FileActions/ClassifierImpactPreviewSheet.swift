@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct ClassifierImpactPreviewSheet: View {
@@ -27,7 +28,7 @@ struct ClassifierImpactPreviewSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: L10n.string("Preview rule impact"), pageID: "classifier-impact-preview") {
+        AreaMatrixActionSheetContainer(title: L10n.string("Preview rule impact"), pageID: "classifier-impact-preview") {
             VStack(alignment: .leading, spacing: 12) {
                 ruleSummary
                 previewState

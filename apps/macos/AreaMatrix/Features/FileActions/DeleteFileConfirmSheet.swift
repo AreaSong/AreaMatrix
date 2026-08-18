@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct DeleteFileConfirmSheet: View {
@@ -11,7 +12,7 @@ struct DeleteFileConfirmSheet: View {
     @State private var isConfirmed = false
 
     var body: some View {
-        MainFileActionSheetContainer(
+        AreaMatrixActionSheetContainer(
             title: operation?.title ?? L10n.string("Move File to Trash?"),
             pageID: "delete-file"
         ) {
@@ -32,7 +33,11 @@ struct DeleteFileConfirmSheet: View {
                     actionButtons(file: file, operation: operation)
                 }
             } else {
-                MissingFileActionContext(onCancel: onCancel)
+                AreaMatrixUnavailableActionContext(
+                    message: L10n.string("The selected file context is no longer available."),
+                    cancelTitle: L10n.string("Cancel"),
+                    onCancel: onCancel
+                )
             }
         }
     }

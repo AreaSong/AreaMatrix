@@ -124,19 +124,17 @@ final class MainEmptyBuildTreeTests: XCTestCase {
             generatedAt: 1
         )
         let mapping = CoreErrorMappingSnapshot.commandPaletteCommandDb(rawContext: "command registry locked")
-        let model = MainFileListModel(
-            opening: .commandPaletteCommandFixture(repoPath: "/tmp/repo", files: []),
-            fileLister: MainListRecordingFileLister(results: []),
-            fileDetailer: RecordingFileDetailer(results: []),
+        let model = CommandPaletteModel(
+            repoPath: "/tmp/repo",
             commandIndexer: CommandPaletteCommandIndexStore(results: [.failure(CoreError.Db(message: "locked"))]),
             errorMapper: StaticCoreErrorMapper(mapping: mapping)
         )
 
-        model.commandPaletteState = .loaded(previous)
-        await model.loadCommandIndex(query: "import", selectedFileIDs: [], currentPath: nil)
+        model.state = .loaded(previous)
+        await model.load(query: "import", selectedFileIDs: [], currentPath: nil)
 
-        XCTAssertEqual(model.commandPaletteState.errorMapping, mapping)
-        XCTAssertEqual(model.commandPaletteState.snapshot?.targetTitles, ["Import files..."])
+        XCTAssertEqual(model.state.errorMapping, mapping)
+        XCTAssertEqual(model.state.snapshot?.targetTitles, ["Import files..."])
     }
 
     @MainActor

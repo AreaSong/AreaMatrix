@@ -1,3 +1,4 @@
+import AreaMatrixFeatureAI
 import Foundation
 
 extension RemoteProviderConfigModel {

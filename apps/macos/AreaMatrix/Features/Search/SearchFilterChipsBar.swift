@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct SearchFilterChipsBar: View {
@@ -9,7 +10,7 @@ struct SearchFilterChipsBar: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(chips) { chip in
-                        SearchFilterChipButton(
+                        FilterChipButton(
                             title: chip.label,
                             accessibilityLabel: L10n.format("search.filter.remove.accessibilityLabel", chip.label)
                         ) {
@@ -35,7 +36,7 @@ struct SelectedTagChips: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(filters.tags, id: \.self) { tag in
-                        SearchFilterChipButton(
+                        FilterChipButton(
                             title: label(for: tag),
                             accessibilityLabel: L10n.format(
                                 "search.tagFilter.remove.accessibilityLabel",
@@ -56,21 +57,6 @@ struct SelectedTagChips: View {
     }
 }
 
-struct SearchFilterChipButton: View {
-    let title: String
-    let accessibilityLabel: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Label(title, systemImage: "xmark.circle")
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .accessibilityLabel(accessibilityLabel)
-    }
-}
-
 enum SearchFilterStateRouting {
     static func effective(
         searchFilters: SearchFilterStateSnapshot,
@@ -83,10 +69,10 @@ enum SearchFilterStateRouting {
     static func assign(
         _ filters: SearchFilterStateSnapshot,
         searchFilters: inout SearchFilterStateSnapshot,
-        fileListModel: MainFileListModel
+        searchModel: SearchModel
     ) {
-        if fileListModel.isEditingSmartListFilterDraft {
-            fileListModel.updateSmartListFilterDraft(filters)
+        if searchModel.isEditingSmartListFilterDraft {
+            searchModel.updateSmartListFilterDraft(filters)
             return
         }
         searchFilters = filters

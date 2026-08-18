@@ -16,6 +16,7 @@ build/
 DerivedData/
 apps/macos/.derived-data-log-*
 apps/macos/build_log*.txt
+apps/macos/XcodeGen/*.xcodeproj/
 *.xcuserstate
 xcuserdata/
 *.xccheckout

@@ -1,5 +1,6 @@
 @testable import AreaMatrix
 import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureIngestion
 import XCTest
 
 typealias ShellStaticSettingsReader = StaticSettingsReader

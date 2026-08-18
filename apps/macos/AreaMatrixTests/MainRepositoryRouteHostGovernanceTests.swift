@@ -8,8 +8,8 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
             "applyMainRepositorySearchSheets",
             "applyMainRepositoryBatchFileActionSheets",
             "applyMainRepositorySmartListSheet",
-            "applyMainRepositorySyncConflictSheet",
-            "applyMainRepositoryImportConflictBatchRelay"
+            "SyncConflictReviewHostModifier",
+            "mainRepositoryImportConflictBatchRelay"
         ]
         let featureOwnedSheetBuilders = [
             "actionRoutingSheet",
@@ -46,16 +46,22 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
             at: "Features/Import/MainRepositoryContentImportRouting.swift"
         )
 
-        XCTAssertTrue(importRoutingSource.contains("func applyMainRepositoryImportConflictBatchRelay("))
+        XCTAssertTrue(importRoutingSource.contains("struct ImportConflictBatchRelayModifier"))
+        XCTAssertTrue(importRoutingSource.contains("func mainRepositoryImportConflictBatchRelay("))
         XCTAssertTrue(importRoutingSource.contains("struct ImportConflictBatchRelayState"))
         XCTAssertTrue(importRoutingSource.contains("consumePendingRoute()"))
-        XCTAssertTrue(importRoutingSource.contains("onOpenImportConflictBatch(route)"))
+        XCTAssertTrue(importRoutingSource.contains("onOpen(route)"))
 
         let contentSource = try productionSource(at: "Views/Main/MainRepositoryContentView.swift")
+        let commandPaletteModelSource = try productionSource(
+            at: "Features/CommandPalette/CommandPaletteState.swift"
+        )
         let commandPaletteSource = try productionSource(
             at: "Features/CommandPalette/CommandPaletteRoutingSupport.swift"
         )
-        XCTAssertTrue(contentSource.contains("ImportConflictBatchRelayState()"))
+        XCTAssertTrue(contentSource.contains("@StateObject var commandPaletteModel: CommandPaletteModel"))
+        XCTAssertTrue(commandPaletteModelSource
+            .contains("importConflictBatchRelayState = ImportConflictBatchRelayState()"))
         XCTAssertFalse(contentSource.contains("@State var pendingImportConflictBatchRoute"))
         XCTAssertTrue(commandPaletteSource.contains("importConflictBatchRelayState.enqueue(route)"))
         XCTAssertFalse(commandPaletteSource.contains("pendingImportConflictBatchRoute = route"))
@@ -86,7 +92,7 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertFalse(contentSource.contains("let onRetryCurrentList:"))
         XCTAssertFalse(contentSource.contains("let onCollectDiagnostics:"))
         XCTAssertTrue(recoverySource.contains("struct MainListErrorRecoveryActions"))
-        XCTAssertTrue(recoverySource.contains("fileListModel.requestCurrentListDiagnostics()"))
+        XCTAssertTrue(recoverySource.contains("fileListModel.currentListDiagnostics.requestCollection()"))
     }
 
     func testLifecycleComposesFeatureOwnedCommandHostsInExistingModifierOrder() throws {
@@ -124,9 +130,13 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
         let commandPaletteSource = try productionSource(
             at: "Features/CommandPalette/CommandPaletteRoutingSupport.swift"
         )
+        let commandPaletteModelSource = try productionSource(
+            at: "Features/CommandPalette/CommandPaletteState.swift"
+        )
 
-        XCTAssertTrue(contentSource.contains("CommandPaletteFocusRoutingState()"))
+        XCTAssertTrue(contentSource.contains("@StateObject var commandPaletteModel: CommandPaletteModel"))
         XCTAssertFalse(contentSource.contains("restoreSearchFocusAfterPalette"))
+        XCTAssertTrue(commandPaletteModelSource.contains("focusRoutingState = CommandPaletteFocusRoutingState()"))
         XCTAssertTrue(commandPaletteSource.contains("struct CommandPaletteFocusRoutingState"))
         XCTAssertTrue(commandPaletteSource.contains("func consumeSearchFieldFocusRestoration() -> Bool"))
     }
@@ -136,9 +146,11 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
         let searchRoutingSource = try productionSource(
             at: "Features/Search/MainRepositoryContentSearchRouting.swift"
         )
+        let searchModelSource = try productionSource(at: "Features/Search/SearchModel.swift")
         let lifecycleSource = try mainRepositoryContentLifecycleSource()
 
-        XCTAssertTrue(contentSource.contains("MainRepositorySearchRoutingState()"))
+        XCTAssertTrue(contentSource.contains("@StateObject var searchModel: SearchModel"))
+        XCTAssertTrue(searchModelSource.contains("routingState = MainRepositorySearchRoutingState()"))
         XCTAssertFalse(contentSource.contains("@State var isSearchFiltersPresented"))
         XCTAssertFalse(contentSource.contains("@State var isSidebarTagsFilterPresented"))
         XCTAssertFalse(contentSource.contains("@State var smartListManagementRoute"))
@@ -159,8 +171,12 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
         let fileActionStateSource = try productionSource(
             at: "Features/FileActions/MainFileActionRoutingState.swift"
         )
+        let fileActionCoordinatorSource = try productionSource(
+            at: "Features/FileActions/FileActionCoordinator.swift"
+        )
 
-        XCTAssertTrue(contentSource.contains("MainFileActionRoutingState()"))
+        XCTAssertTrue(contentSource.contains("@StateObject var fileActionCoordinator: FileActionCoordinator"))
+        XCTAssertTrue(fileActionCoordinatorSource.contains("routingState = MainFileActionRoutingState()"))
         XCTAssertFalse(contentSource.contains("@State var pendingBatchAddTagsRoute"))
         XCTAssertFalse(contentSource.contains("@State var pendingBatchChangeCategoryRoute"))
         XCTAssertFalse(contentSource.contains("@State var pendingBatchDeleteRoute"))
@@ -180,9 +196,15 @@ final class MainRepositoryRouteHostGovernanceTests: MacOSGovernanceTestCase {
             at: "Features/Detail/MainRepositoryContentDetailSupport.swift"
         )
 
-        XCTAssertTrue(syncConflictSource.contains("func syncConflictReviewSheet("))
+        let syncCoordinatorSource = try productionSource(
+            at: "Features/SyncConflicts/SyncConflictCoordinator.swift"
+        )
+
+        XCTAssertTrue(syncConflictSource.contains("struct SyncConflictReviewHostModifier: ViewModifier"))
+        XCTAssertTrue(syncConflictSource.contains("private func reviewSheet("))
         XCTAssertTrue(syncConflictSource.contains("struct SyncConflictReviewRoutingState"))
-        XCTAssertTrue(contentSource.contains("SyncConflictReviewRoutingState()"))
+        XCTAssertTrue(contentSource.contains("@StateObject var syncConflictCoordinator: SyncConflictCoordinator"))
+        XCTAssertTrue(syncCoordinatorSource.contains("reviewRoutingState = SyncConflictReviewRoutingState()"))
         XCTAssertFalse(contentSource.contains("@State var pendingSyncConflictReviewRoute"))
         XCTAssertFalse(
             detailSource.contains("func syncConflictReviewSheet("),

@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import Combine
 import Foundation
 
@@ -26,12 +27,7 @@ enum MainDetailNoteSaveStatus: Equatable {
     }
 }
 
-enum MainDetailNoteWriteBlock: Equatable {
-    case repoReadOnly
-    case fileMissing
-    case importLocked
-    case listLoading
-
+extension MainDetailNoteWriteBlock {
     var message: String {
         switch self {
         case .repoReadOnly:

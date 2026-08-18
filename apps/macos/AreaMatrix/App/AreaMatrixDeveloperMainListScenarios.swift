@@ -1,9 +1,11 @@
+import AreaMatrixFeatureIngestion
 import SwiftUI
 
 #if DEBUG
 @MainActor
 struct DeveloperMainListScenarioView: View {
     private let opening = DeveloperMainListScenarioFixture.opening
+    private let session: RepositorySession
     private let assembly: MainRepositoryContentAssembly
 
     init() {
@@ -11,10 +13,19 @@ struct DeveloperMainListScenarioView: View {
         let search = DeveloperSearchCoreFixture()
         let actions = DeveloperFileActionCoreFixture()
         let errorMapper = CoreErrorSnapshotMapper()
+        let dependencies = AppDependencyContainer.live(coreServices: AppCoreServices())
         let supporting = Self.makeSupporting(core: core, search: search, actions: actions, errorMapper: errorMapper)
-        let list = Self.makeList(core: core, search: search, actions: actions, errorMapper: errorMapper)
-        let features = Self.makeFeatures()
+        let list = Self.makeList(
+            core: core,
+            search: search,
+            actions: actions,
+            errorMapper: errorMapper,
+            dependencies: dependencies
+        )
+        let features = Self.makeFeatures(dependencies: dependencies)
+        session = DeveloperMainListScenarioFixture.opening.makeRepositorySession()
         assembly = MainRepositoryContentAssembly.make(
+            session: session,
             opening: DeveloperMainListScenarioFixture.opening,
             supporting: supporting,
             list: list,
@@ -45,7 +56,8 @@ struct DeveloperMainListScenarioView: View {
         core: DeveloperMainListCoreFixture,
         search: DeveloperSearchCoreFixture,
         actions: DeveloperFileActionCoreFixture,
-        errorMapper: CoreErrorSnapshotMapper
+        errorMapper: CoreErrorSnapshotMapper,
+        dependencies: AppDependencyContainer
     ) -> MainRepositoryContentListDependencies {
         MainRepositoryContentListDependencies(
             fileLister: core,
@@ -75,21 +87,24 @@ struct DeveloperMainListScenarioView: View {
             repositoryWriteCoordinator: RepositoryWriteCoordinator(),
             errorMapper: errorMapper,
             diagnosticsCollector: core,
-            fileResourceAccess: AppDependencyContainer.live.feature.import.fileResourceAccess
+            fileResourceAccess: dependencies.feature.import.fileResourceAccess
         )
     }
 
-    private static func makeFeatures() -> MainRepositoryContentFeatureDependencies {
+    private static func makeFeatures(
+        dependencies: AppDependencyContainer
+    ) -> MainRepositoryContentFeatureDependencies {
         MainRepositoryContentFeatureDependencies(
-            aiFeature: AppDependencyContainer.live.feature.aiFeature,
-            fileActions: AppDependencyContainer.live.feature.fileActions,
-            settings: AppDependencyContainer.live.feature.settings,
-            syncConflicts: AppDependencyContainer.live.feature.syncConflicts
+            aiFeature: dependencies.feature.aiFeature,
+            fileActions: dependencies.feature.fileActions,
+            settings: dependencies.feature.settings,
+            syncConflicts: dependencies.feature.syncConflicts
         )
     }
 
     var body: some View {
         MainRepositoryContentView(
+            session: session,
             opening: opening,
             state: .list,
             assembly: assembly,

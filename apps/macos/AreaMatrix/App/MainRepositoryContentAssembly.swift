@@ -1,4 +1,5 @@
 import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureIngestion
 import Foundation
 
 /// Dependencies consumed by the content shell itself and its supporting routes.
@@ -66,6 +67,7 @@ struct MainRepositoryContentAssembly {
     let settingsDependencies: SettingsFeatureDependencies
     let syncConflictsDependencies: SyncConflictsFeatureDependencies
     let makeFileListModel: () -> MainFileListModel
+    let makeCommandPaletteModel: () -> CommandPaletteModel
     let makeSyncConflictEntryModel: () -> SyncConflictEntryModel
     let makeDropPreviewModel: () -> ImportDropPreviewModel
     let makeDetailNoteModel: () -> DetailNoteModel
@@ -77,6 +79,7 @@ struct MainRepositoryContentAssembly {
     /// prevents `.live` convenience calls from becoming a feature dependency
     /// escape hatch.
     static func makeForProduction(
+        session: RepositorySession,
         opening: RepositoryOpeningResult,
         dependencies: AppDependencyContainer
     ) -> Self {
@@ -128,10 +131,11 @@ struct MainRepositoryContentAssembly {
             settings: dependencies.feature.settings,
             syncConflicts: dependencies.feature.syncConflicts
         )
-        return make(opening: opening, supporting: supporting, list: list, features: features)
+        return make(session: session, opening: opening, supporting: supporting, list: list, features: features)
     }
 
     static func make(
+        session: RepositorySession,
         opening: RepositoryOpeningResult,
         supporting: MainRepositoryContentSupportDeps,
         list: MainRepositoryContentListDependencies,
@@ -148,9 +152,17 @@ struct MainRepositoryContentAssembly {
             settingsDependencies: features.settings,
             syncConflictsDependencies: features.syncConflicts,
             makeFileListModel: fileListModelFactory(
+                session: session,
                 opening: opening,
                 dependencies: list
             ),
+            makeCommandPaletteModel: {
+                CommandPaletteModel(
+                    repoPath: opening.config.repoPath,
+                    commandIndexer: list.commandIndexer,
+                    errorMapper: supporting.errorMapper
+                )
+            },
             makeSyncConflictEntryModel: {
                 SyncConflictEntryModel(
                     repoPath: opening.config.repoPath,
@@ -178,6 +190,7 @@ struct MainRepositoryContentAssembly {
     }
 
     private static func fileListModelFactory(
+        session: RepositorySession,
         opening: RepositoryOpeningResult,
         dependencies: MainRepositoryContentListDependencies
     ) -> () -> MainFileListModel {
@@ -192,7 +205,6 @@ struct MainRepositoryContentAssembly {
             batchDeleter: dependencies.batchDeleter,
             categoryPredictor: dependencies.categoryPredictor,
             changeLogLister: dependencies.changeLogLister,
-            commandIndexer: dependencies.commandIndexer,
             externalChangesSyncer: dependencies.externalChangesSyncer,
             fileCategoryMover: dependencies.fileCategoryMover,
             fileDeleter: dependencies.fileDeleter,
@@ -213,7 +225,7 @@ struct MainRepositoryContentAssembly {
         )
 
         return {
-            MainFileListModel(opening: opening, dependencies: featureDependencies)
+            MainFileListModel(session: session, opening: opening, dependencies: featureDependencies)
         }
     }
 }

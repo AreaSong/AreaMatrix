@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct BatchDeleteTrigger: View {
@@ -56,7 +57,7 @@ struct BatchDeleteConfirmSheet: View {
     @State private var undoConfirmationAccepted = false
 
     var body: some View {
-        MainFileActionSheetContainer(title: title, pageID: "batch-delete") {
+        AreaMatrixActionSheetContainer(title: title, pageID: "batch-delete") {
             if selectedCount == 0 {
                 Text(L10n.string("No items selected"))
                     .foregroundStyle(.secondary)

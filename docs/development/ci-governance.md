@@ -21,7 +21,7 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 | Workflow | 目的 | 触发 |
 |---|---|---|
 | `core-ci.yml` | Rust fmt、clippy、test、universal build、coverage | 所有 PR、main push |
-| `macos-ci.yml` | CoreSDK artifact、tracked Swift bindings drift、Xcode build/test、iOS Swift package build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
+| `macos-ci.yml` | CoreSDK artifact、tracked Swift bindings drift、AreaMatrixModules 与 iOS Swift package test、Xcode build/test、Swift Watcher / Bridge coverage、SwiftLint、SwiftFormat | 所有 PR、main push |
 | `governance-ci.yml` | governance files、文档链接与导航、skills、quality smoke、品牌资产、Codex OS、wording audit、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 | `remote-governance.yml` | 只读审计远端 Actions、Branch Protection、Required Checks、Required Reviews 与远端 CODEOWNERS | 手动触发、每周定时 |
 | `release-evidence.yml` | 只读运行发布签名/公证预检、release evidence audit 和 release status，并上传机器可读快照 | 手动触发 |
@@ -36,13 +36,18 @@ macOS 验证消费的是已验证制品，而不是在 Xcode Pre-Test Build Gate
 `swift build --package-path apps/ios` 和 `swift test --package-path apps/ios`。iOS 不得在下游 job
 重新运行 Cargo 或自行生成另一份 FFI；macOS、iOS device 和 iOS simulator 必须来自同一个
 fingerprint、manifest 和 XCFramework。
+`AreaMatrixModules` 是 macOS 共享模块的独立 Swift Package；`macos-ci.yml` 和 `./dev test changed` /
+`./dev check affected` 都运行 `swift test --package-path apps/macos/Packages/AreaMatrixModules`，防止仅依赖
+Xcode target membership 而漏掉 package tests。
 恢复后运行 `./dev build core-sdk --verify-only`，解析 manifest 并验证 fingerprint、schema、symlink
 边界，以及 macOS、iOS device、iOS simulator 三个 XCFramework slice 的 architecture 和实际文件。
 Xcode build/test job 同样安装 Rust toolchain，使 `--verify-only` 能用当前源码、Rust 与 Xcode 版本重新计算
 source/tool-bound fingerprint；下载到结构完整但来源不同的 artifact 必须失败，不能仅凭缓存目录存在通过。
 `./dev build core-sdk` 输出 status、cache hit/miss、Cargo lane 和 wall-clock duration；`./dev test macos` 输出
 持久/临时 DerivedData、结果与 wall-clock duration。GitHub Actions 保留这些标准化行和 job/step
-耗时，用于识别缓存回退、重复 Cargo 构建和 XCTest 延迟。
+耗时，用于识别缓存回退、重复 Cargo 构建和 XCTest 延迟。macOS build job 还会把从 checkout 后到分层 XCTest
+结束的 wall-clock 记录为 `github-macos14-xcode-build-and-layered-tests` cohort，并上传
+`macos-ci-feedback` artifact；只有同一 runner、event 和 cache policy 的至少 20 个成功样本才能形成正式 CI 基线。
 `./dev check governance` 还会把磁盘上的 `*GovernanceTests.swift` 和
 `MacOSGovernance*TestSupport.swift` 与 `AreaMatrixTests` target 的 Sources membership 双向核对，
 防止治理测试只有文件引用、没有进入可执行 XCTest target 时被 CI 静默漏跑。
@@ -73,7 +78,9 @@ H1 后紧跟的摘要引用、代码块语言与闭合、`## Related` 章节和�
 ./dev governance remote-audit --json  # 显式只读审计 GitHub Actions / branch protection / CODEOWNERS
 ./dev governance status --json       # 汇总本地、模块、远端和正式发布门禁
 ./dev build core-sdk
+./dev metrics build --json           # 读取最近 CoreSDK / Cargo lane 反馈指标
 ./dev bindings verify        # 只读比较当前 UDL 与 Xcode tracked Swift bindings
+swift test --package-path apps/macos/Packages/AreaMatrixModules
 swift build --package-path apps/ios
 swift test --package-path apps/ios
 python3 -m venv .brand-venv

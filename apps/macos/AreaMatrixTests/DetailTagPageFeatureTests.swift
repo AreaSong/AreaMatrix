@@ -21,24 +21,24 @@ final class DetailTagPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([detail.id])
-        await model.loadSelectedFileTags()
-        await model.addSelectedFileTag("bad/tag")
+        await model.detailTagModel.loadSelectedFileTags()
+        await model.detailTagModel.addSelectedFileTag("bad/tag")
 
         await tagStore.assertDetailTagAddRequests([
             DetailTagMutationRequest(repoPath: "/tmp/repo", fileID: detail.id, tag: "bad/tag")
         ])
-        XCTAssertEqual(model.detailTagEditorState, .failed(
+        XCTAssertEqual(model.detailTagModel.editorState, .failed(
             fileID: detail.id,
             operation: .add("bad/tag"),
             mapping,
             previous: initialTags
         ))
-        XCTAssertEqual(model.detailTagEditorState.tagSet, initialTags)
-        XCTAssertNil(model.detailTagUndoToast)
+        XCTAssertEqual(model.detailTagModel.editorState.tagSet, initialTags)
+        XCTAssertNil(model.detailTagModel.undoToast)
         await mapper.assertMappedCoreErrors([CoreError.InvalidPath(path: "bad/tag")])
         XCTAssertFalse(DetailTagInputCommitPolicy.shouldClearSubmittedQuery(
             submittedTag: "bad/tag",
-            state: model.detailTagEditorState
+            state: model.detailTagModel.editorState
         ))
     }
 
@@ -60,20 +60,20 @@ final class DetailTagPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([detail.id])
-        await model.loadSelectedFileTags()
-        await model.removeSelectedFileTag("clienta")
+        await model.detailTagModel.loadSelectedFileTags()
+        await model.detailTagModel.removeSelectedFileTag("clienta")
 
         await tagStore.assertDetailTagRemoveRequests([
             DetailTagMutationRequest(repoPath: "/tmp/repo", fileID: detail.id, tag: "clienta")
         ])
-        XCTAssertEqual(model.detailTagEditorState, .failed(
+        XCTAssertEqual(model.detailTagModel.editorState, .failed(
             fileID: detail.id,
             operation: .remove("clienta"),
             mapping,
             previous: initialTags
         ))
-        XCTAssertEqual(model.detailTagEditorState.tagSet?.fileTags.map(\.value), ["clienta"])
-        XCTAssertNil(model.detailTagUndoToast)
+        XCTAssertEqual(model.detailTagModel.editorState.tagSet?.fileTags.map(\.value), ["clienta"])
+        XCTAssertNil(model.detailTagModel.undoToast)
     }
 
     @MainActor
@@ -95,14 +95,14 @@ final class DetailTagPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([first.id])
-        await model.loadSelectedFileTags()
-        await model.addSelectedFileTag("clienta")
-        XCTAssertEqual(model.detailTagUndoToast?.fileID, first.id)
+        await model.detailTagModel.loadSelectedFileTags()
+        await model.detailTagModel.addSelectedFileTag("clienta")
+        XCTAssertEqual(model.detailTagModel.undoToast?.fileID, first.id)
 
         await model.selectFiles([second.id])
-        XCTAssertNil(model.detailTagUndoToast)
+        XCTAssertNil(model.detailTagModel.undoToast)
 
-        await model.undoLastDetailTagChange()
+        await model.detailTagModel.undoLastDetailTagChange()
         await tagStore.assertDetailTagRemoveRequests([])
     }
 
@@ -121,8 +121,8 @@ final class DetailTagPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([detail.id])
-        await model.addSelectedFileTag("clienta")
-        await model.removeSelectedFileTag("clienta")
+        await model.detailTagModel.addSelectedFileTag("clienta")
+        await model.detailTagModel.removeSelectedFileTag("clienta")
 
         await tagStore.assertDetailTagAddRequests([])
         await tagStore.assertDetailTagRemoveRequests([])
@@ -175,22 +175,22 @@ final class DetailTagPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "",
             scope: .all,
             sort: .newestImported,
             sidebarRow: .tagFilterRoot,
             filters: filters
         )
-        await model.loadSearchFacets(
+        await model.searchModel.loadSearchFacets(
             query: "",
             scope: .all,
             sidebarRow: .tagFilterRoot,
             filters: filters
         )
 
-        XCTAssertEqual(model.searchState.request?.filters.tags, ["finance", "Tax"])
-        XCTAssertEqual(model.searchFacetsState.facets?.tags.map(\.label), ["Finance", "Tax", "Archive"])
+        XCTAssertEqual(model.searchModel.searchState.request?.filters.tags, ["finance", "Tax"])
+        XCTAssertEqual(model.searchModel.searchFacetsState.facets?.tags.map(\.label), ["Finance", "Tax", "Archive"])
         await tagStore.assertNoCalls()
     }
 
@@ -210,11 +210,11 @@ final class DetailTagPageFeatureTests: XCTestCase {
         )
 
         await model.selectFiles([detail.id])
-        await model.loadSearchFacets(query: "tag", scope: .all, sidebarRow: .tagFilterRoot, filters: .empty)
-        await model.loadTagFilterRegistry(activeFileID: detail.id)
+        await model.searchModel.loadSearchFacets(query: "tag", scope: .all, sidebarRow: .tagFilterRoot, filters: .empty)
+        await model.detailTagModel.loadTagFilterRegistry(activeFileID: detail.id)
         let options = TagFilterRegistryPresentation.options(
-            registryState: model.tagFilterRegistryState,
-            facetsState: model.searchFacetsState
+            registryState: model.detailTagModel.filterRegistryState,
+            facetsState: model.searchModel.searchFacetsState
         )
 
         await tagStore.assertDetailTagListRequests([DetailTagListRequest(repoPath: "/tmp/repo", fileID: detail.id)])
@@ -242,11 +242,14 @@ final class DetailTagPageFeatureTests: XCTestCase {
             errorMapper: mapper
         )
 
-        await model.loadTagFilterRegistry(activeFileID: detail.id)
-        await model.loadTagFilterRegistry(activeFileID: detail.id)
+        await model.detailTagModel.loadTagFilterRegistry(activeFileID: detail.id)
+        await model.detailTagModel.loadTagFilterRegistry(activeFileID: detail.id)
 
-        XCTAssertEqual(model.tagFilterRegistryState, .failed(fileID: detail.id, mapping, previous: registry))
-        XCTAssertEqual(model.tagFilterRegistryState.tagSet, registry)
+        XCTAssertEqual(
+            model.detailTagModel.filterRegistryState,
+            .failed(fileID: detail.id, mapping, previous: registry)
+        )
+        XCTAssertEqual(model.detailTagModel.filterRegistryState.tagSet, registry)
         await mapper.assertMappedCoreErrors([CoreError.Db(message: "tag registry locked")])
     }
 
@@ -263,10 +266,10 @@ final class DetailTagPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .tagAddTagDb())
         )
 
-        await model.loadTagFilterRegistry(activeFileID: detail.id)
+        await model.detailTagModel.loadTagFilterRegistry(activeFileID: detail.id)
         model.clearDetail()
 
-        XCTAssertEqual(model.tagFilterRegistryState, .idle)
+        XCTAssertEqual(model.detailTagModel.filterRegistryState, .idle)
     }
 
     func testTagFilterTagsFilterEditingIsCaseInsensitiveAndDoesNotCreateTags() {

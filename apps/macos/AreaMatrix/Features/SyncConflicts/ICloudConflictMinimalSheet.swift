@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 extension ICloudConflictVersionSnapshot {
@@ -63,7 +64,7 @@ struct ICloudConflictMinimalSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(
+        AreaMatrixActionSheetContainer(
             title: L10n.string("icloud.conflict.title"),
             pageID: "icloud-conflict-review"
         ) {

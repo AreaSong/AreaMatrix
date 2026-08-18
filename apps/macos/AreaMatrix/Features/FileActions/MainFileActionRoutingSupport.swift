@@ -7,7 +7,7 @@ extension MainRepositoryContentView {
 
     var actionDestinationBinding: Binding<MainFileActionDestination?> {
         Binding(
-            get: { fileListModel.pendingActionDestination },
+            get: { fileActionCoordinator.destination },
             set: { value in
                 if value == nil {
                     fileListModel.clearPendingActionDestination()
@@ -22,12 +22,12 @@ extension MainRepositoryContentView {
             file: fileListModel.actionRoutingFile(for: destination.fileID),
             candidateFiles: fileListModel.files,
             categoryRows: repositoryTree.sidebarRows,
-            renameState: fileListModel.renameState,
-            deleteState: fileListModel.deleteState,
-            changeCategoryState: fileListModel.changeCategoryState,
-            classifierCorrectionContextState: fileListModel.classifierCorrectionContextState,
-            iCloudConflictResolutionState: fileListModel.iCloudConflictResolutionState,
-            iCloudConflictResolutionCapability: fileListModel.iCloudConflictResolver.iCloudConflictResolutionCapability,
+            renameState: fileActionCoordinator.renameState,
+            deleteState: fileActionCoordinator.deleteState,
+            changeCategoryState: fileActionCoordinator.changeCategoryState,
+            classifierCorrectionContextState: fileActionCoordinator.classifierCorrectionContextState,
+            iCloudConflictResolutionState: syncConflictCoordinator.resolutionState,
+            iCloudConflictResolutionCapability: syncConflictCoordinator.resolver.iCloudConflictResolutionCapability,
             repoPath: opening.config.repoPath,
             isTrashAvailable: systemCapabilityChecker.isTrashAvailable(),
             aiDependencies: aiDependencies,
@@ -43,20 +43,20 @@ extension MainRepositoryContentView {
             onLoadClassifierCorrectionContext: loadClassifierCorrectionContext,
             onChangeCategory: submitChangeCategory,
             onApplyAIClassificationSuggestion: submitAIClassificationSuggestion,
-            onBeginClassifierRuleHandoff: fileListModel.beginClassifierRuleHandoff,
+            onBeginClassifierRuleHandoff: beginClassifierRuleHandoff,
             onRenameFirstFromChangeCategory: { fileID, targetCategory in
                 fileListModel.beginRenameFromChangeCategory(fileID: fileID, targetCategory: targetCategory)
             },
-            onEditClassifierRule: fileListModel.beginClassifierRuleSave,
-            onPreviewClassifierRuleImpact: fileListModel.beginClassifierImpactPreview,
-            onClassifierRuleSaved: fileListModel.completeClassifierRuleSave,
+            onEditClassifierRule: fileActionCoordinator.beginClassifierRuleSave,
+            onPreviewClassifierRuleImpact: fileActionCoordinator.beginClassifierImpactPreview,
+            onClassifierRuleSaved: completeClassifierRuleSave,
             onOpenChangeCategoryPermissionRecovery: onOpenChangeCategoryPermissionRecovery,
             onBeginAIClassificationChange: fileListModel.beginAIClassificationChange,
-            onCancelClassifierRuleRoute: fileListModel.cancelClassifierRuleRoute,
+            onCancelClassifierRuleRoute: fileActionCoordinator.cancelClassifierRuleRoute,
             onOpenAIRecoverySettings: onOpenAISettings,
             onDelete: submitDelete,
             onApplyICloudConflict: applyICloudConflict,
-            onCollectDiagnostics: fileListModel.requestCurrentListDiagnostics
+            onCollectDiagnostics: fileListModel.currentListDiagnostics.requestCollection
         )
     }
 
@@ -68,17 +68,40 @@ extension MainRepositoryContentView {
     }
 
     private func showExistingFile(fileID: Int64) {
-        selectedFileIDs = [fileID]
+        selectionModel.fileIDs = [fileID]
         fileListModel.clearPendingActionDestination()
         Task { await fileListModel.selectFiles([fileID]) }
     }
 
     private func previewChangeCategory(fileID: Int64, targetCategory: String) {
-        Task { await fileListModel.loadMoveToCategoryPreview(fileID: fileID, targetCategory: targetCategory) }
+        guard fileListModel.canPerformWriteAction(fileID: fileID) else { return }
+        Task { await fileActionCoordinator.loadMoveToCategoryPreview(fileID: fileID, targetCategory: targetCategory) }
     }
 
     private func loadClassifierCorrectionContext(fileID: Int64, filename: String) {
-        Task { await fileListModel.loadClassifierCorrectionContext(fileID: fileID, filename: filename) }
+        guard fileListModel.canPerformWriteAction(fileID: fileID) else { return }
+        Task { await fileActionCoordinator.loadClassifierCorrectionContext(fileID: fileID, filename: filename) }
+    }
+
+    private func beginClassifierRuleHandoff(
+        fileID: Int64,
+        targetCategory: String,
+        moveFile: Bool,
+        destination: ClassifierRuleHandoffDestination
+    ) {
+        guard fileListModel.canPerformWriteAction(fileID: fileID),
+              let file = fileListModel.actionRoutingFile(for: fileID) else { return }
+        fileActionCoordinator.beginClassifierRuleHandoff(
+            file: file,
+            targetCategory: targetCategory,
+            moveFile: moveFile,
+            destination: destination
+        )
+    }
+
+    private func completeClassifierRuleSave(_ savedRule: ClassifierRuleSnapshot) {
+        fileActionCoordinator.completeClassifierRuleSave(savedRule)
+        fileListModel.statusBanner = .savedClassifierRule(category: savedRule.targetCategory)
     }
 
     private func submitChangeCategory(
@@ -87,8 +110,9 @@ extension MainRepositoryContentView {
         mode: MainFileCategoryMoveMode,
         options: MainFileCategoryMoveOptions
     ) {
+        guard fileListModel.canPerformWriteAction(fileID: fileID) else { return }
         Task {
-            let didMove = await fileListModel.submitMoveToCategory(
+            guard let outcome = await fileActionCoordinator.submitMoveToCategory(
                 fileID: fileID,
                 targetCategory: targetCategory,
                 mode: mode,
@@ -100,13 +124,19 @@ extension MainRepositoryContentView {
                         refreshAfterCategoryMove(changedFile)
                     }
                 }
-            )
-            if didMove { refreshLatestUndoToast() }
+            ) else { return }
+            await fileListModel.applyCategoryMoveOutcome(outcome)
+            refreshLatestUndoToast()
         }
     }
 
     private func submitAIClassificationSuggestion(_ request: AIClassificationSuggestionApplyRequest) {
-        Task { if await fileListModel.submitAIClassificationSuggestion(request) { refreshLatestUndoToast() } }
+        guard fileListModel.canPerformWriteAction(fileID: request.fileID) else { return }
+        Task {
+            guard let outcome = await fileActionCoordinator.submitAIClassificationSuggestion(request) else { return }
+            await fileListModel.applyAIClassificationOutcome(outcome, request: request)
+            refreshLatestUndoToast()
+        }
     }
 
     private func submitDelete(fileID: Int64, operation: MainFileDeleteOperation) {

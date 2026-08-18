@@ -1,32 +1,7 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
-struct SemanticSearchResultPageSnapshot: Equatable {
-    var query: String
-    var semanticTotalCount: Int64
-    var normalTotalCount: Int64
-    var semanticMatches: [SemanticSearchMatchSnapshot]
-    var normalMatches: [SemanticNormalSearchMatchSnapshot]
-    var dedupedNormalCount: Int64
-    var indexStatus: SemanticIndexStatusSnapshot
-    var route: SemanticSearchRouteSnapshot?
-    var fallbackReason: SemanticSearchFallbackReasonSnapshot?
-    var fallbackMessage: String?
-    var callLogID: Int64?
-    var privacyRuleID: String?
-    var lowConfidence: Bool
-
-    var visibleResults: [SearchFileResultSnapshot] {
-        semanticMatches.map(\.result) + normalMatches.filter { !$0.dedupedBySemantic }.map(\.result)
-    }
-
-    var visibleTotalCount: Int64 {
-        semanticTotalCount + max(0, normalTotalCount - dedupedNormalCount)
-    }
-
-    var canBuildIndex: Bool {
-        indexStatus == .notReady || fallbackReason == .semanticIndexNotReady
-    }
-
+extension SemanticSearchResultPageSnapshot {
     func result(for fileID: Int64) -> SemanticResultPresentation? {
         if let match = semanticMatches.first(where: { $0.result.file.id == fileID }) {
             return .semantic(match)
@@ -43,44 +18,7 @@ enum SemanticResultPresentation: Equatable {
     case normal(SemanticNormalSearchMatchSnapshot)
 }
 
-struct SemanticSearchMatchSnapshot: Equatable {
-    var result: SearchFileResultSnapshot
-    var relevance: Float
-    var matchedReason: String
-    var usedFields: [SemanticSearchInputFieldSnapshot]
-    var route: SemanticSearchRouteSnapshot
-    var alsoMatchedNormalSearch: Bool
-    var callLogID: Int64?
-    var privacyRuleID: String?
-}
-
-struct SemanticNormalSearchMatchSnapshot: Equatable {
-    var result: SearchFileResultSnapshot
-    var dedupedBySemantic: Bool
-}
-
-struct SemanticIndexBuildReportSnapshot: Equatable {
-    var status: SemanticIndexStatusSnapshot
-    var route: SemanticSearchRouteSnapshot?
-    var totalCount: Int64
-    var processedCount: Int64
-    var skippedCount: Int64
-    var failedCount: Int64
-    var privacySkippedCount: Int64
-    var providerName: String?
-    var callLogID: Int64?
-    var fallbackReason: SemanticSearchFallbackReasonSnapshot?
-    var message: String?
-}
-
-enum SemanticIndexStatusSnapshot: Equatable {
-    case ready, notReady, building, paused, canceled, failed, partial
-}
-
-enum SemanticSearchRouteSnapshot: String, Equatable {
-    case local = "Local"
-    case remote = "Remote"
-
+extension SemanticSearchRouteSnapshot {
     var displayName: String {
         L10n.resolve(displayNameMessage)
     }
@@ -93,14 +31,7 @@ enum SemanticSearchRouteSnapshot: String, Equatable {
     }
 }
 
-enum SemanticSearchInputFieldSnapshot: String, Equatable {
-    case fileName = "File name"
-    case repoRelativePath = "Path"
-    case category = "Category"
-    case noteSummary = "Note summary"
-    case aiSummary = "AI summary"
-    case extractedTextExcerpt = "Extracted text"
-
+extension SemanticSearchInputFieldSnapshot {
     var displayName: String {
         L10n.resolve(displayNameMessage)
     }
@@ -117,18 +48,7 @@ enum SemanticSearchInputFieldSnapshot: String, Equatable {
     }
 }
 
-enum SemanticSearchFallbackReasonSnapshot: String, Equatable {
-    case aiDisabled = "AI disabled"
-    case featureDisabled = "Semantic search disabled"
-    case providerUnavailable = "Provider unavailable"
-    case privacyRule = "Privacy rule"
-    case semanticIndexNotReady = "Semantic index not ready"
-    case callLogUnavailable = "Call log unavailable"
-    case noEligibleInput = "No eligible input"
-    case normalSearchUnavailable = "Normal search unavailable"
-    case rateLimited = "Rate limited"
-    case timeout = "Timeout"
-
+extension SemanticSearchFallbackReasonSnapshot {
     var displayName: String {
         switch self {
         case .aiDisabled: L10n.string("AI disabled")
@@ -229,19 +149,21 @@ extension SemanticSearchResultPageSnapshot {
         semanticMatches: [SemanticSearchMatchSnapshot],
         normalMatches: [SemanticNormalSearchMatchSnapshot]
     ) {
-        query = corePage.query
-        semanticTotalCount = corePage.semanticTotalCount
-        normalTotalCount = corePage.normalTotalCount
-        self.semanticMatches = semanticMatches
-        self.normalMatches = normalMatches
-        dedupedNormalCount = corePage.dedupedNormalCount
-        indexStatus = SemanticIndexStatusSnapshot(coreStatus: corePage.indexStatus)
-        route = corePage.route.map(SemanticSearchRouteSnapshot.init(coreRoute:))
-        fallbackReason = corePage.fallbackReason.map(SemanticSearchFallbackReasonSnapshot.init(coreReason:))
-        fallbackMessage = corePage.fallbackMessage
-        callLogID = corePage.callLogId
-        privacyRuleID = corePage.privacyRuleId
-        lowConfidence = corePage.lowConfidence
+        self.init(
+            query: corePage.query,
+            semanticTotalCount: corePage.semanticTotalCount,
+            normalTotalCount: corePage.normalTotalCount,
+            semanticMatches: semanticMatches,
+            normalMatches: normalMatches,
+            dedupedNormalCount: corePage.dedupedNormalCount,
+            indexStatus: SemanticIndexStatusSnapshot(coreStatus: corePage.indexStatus),
+            route: corePage.route.map(SemanticSearchRouteSnapshot.init(coreRoute:)),
+            fallbackReason: corePage.fallbackReason.map(SemanticSearchFallbackReasonSnapshot.init(coreReason:)),
+            fallbackMessage: corePage.fallbackMessage,
+            callLogID: corePage.callLogId,
+            privacyRuleID: corePage.privacyRuleId,
+            lowConfidence: corePage.lowConfidence
+        )
     }
 }
 
@@ -256,12 +178,14 @@ extension SearchResultPageSnapshot {
             semanticMatches: semanticMatches,
             normalMatches: normalMatches
         )
-        query = coreSemanticPage.query
-        totalCount = semanticPage.visibleTotalCount
-        results = semanticPage.visibleResults
-        diagnostics = []
-        indexStatus = SearchIndexStatusSnapshot(semanticStatus: semanticPage.indexStatus)
-        self.semanticPage = semanticPage
+        self.init(
+            query: coreSemanticPage.query,
+            totalCount: semanticPage.visibleTotalCount,
+            results: semanticPage.visibleResults,
+            diagnostics: [],
+            indexStatus: SearchIndexStatusSnapshot(semanticStatus: semanticPage.indexStatus),
+            semanticPage: semanticPage
+        )
     }
 }
 
@@ -291,37 +215,43 @@ extension SemanticIndexScope {
 
 extension SemanticSearchMatchSnapshot {
     init(coreMatch: SemanticSearchMatch, file: FileEntrySnapshot) {
-        result = SearchFileResultSnapshot(coreResult: coreMatch.result, file: file)
-        relevance = coreMatch.relevance
-        matchedReason = coreMatch.matchedReason
-        usedFields = coreMatch.usedFields.map(SemanticSearchInputFieldSnapshot.init(coreField:))
-        route = SemanticSearchRouteSnapshot(coreRoute: coreMatch.route)
-        alsoMatchedNormalSearch = coreMatch.alsoMatchedNormalSearch
-        callLogID = coreMatch.callLogId
-        privacyRuleID = coreMatch.privacyRuleId
+        self.init(
+            result: SearchFileResultSnapshot(coreResult: coreMatch.result, file: file),
+            relevance: coreMatch.relevance,
+            matchedReason: coreMatch.matchedReason,
+            usedFields: coreMatch.usedFields.map(SemanticSearchInputFieldSnapshot.init(coreField:)),
+            route: SemanticSearchRouteSnapshot(coreRoute: coreMatch.route),
+            alsoMatchedNormalSearch: coreMatch.alsoMatchedNormalSearch,
+            callLogID: coreMatch.callLogId,
+            privacyRuleID: coreMatch.privacyRuleId
+        )
     }
 }
 
 extension SemanticNormalSearchMatchSnapshot {
     init(coreMatch: SemanticNormalSearchMatch, file: FileEntrySnapshot) {
-        result = SearchFileResultSnapshot(coreResult: coreMatch.result, file: file)
-        dedupedBySemantic = coreMatch.dedupedBySemantic
+        self.init(
+            result: SearchFileResultSnapshot(coreResult: coreMatch.result, file: file),
+            dedupedBySemantic: coreMatch.dedupedBySemantic
+        )
     }
 }
 
 extension SemanticIndexBuildReportSnapshot {
     init(coreReport: SemanticIndexBuildReport) {
-        status = SemanticIndexStatusSnapshot(coreStatus: coreReport.status)
-        route = coreReport.route.map(SemanticSearchRouteSnapshot.init(coreRoute:))
-        totalCount = coreReport.totalCount
-        processedCount = coreReport.processedCount
-        skippedCount = coreReport.skippedCount
-        failedCount = coreReport.failedCount
-        privacySkippedCount = coreReport.privacySkippedCount
-        providerName = coreReport.providerName
-        callLogID = coreReport.callLogId
-        fallbackReason = coreReport.fallbackReason.map(SemanticSearchFallbackReasonSnapshot.init(coreReason:))
-        message = coreReport.message
+        self.init(
+            status: SemanticIndexStatusSnapshot(coreStatus: coreReport.status),
+            route: coreReport.route.map(SemanticSearchRouteSnapshot.init(coreRoute:)),
+            totalCount: coreReport.totalCount,
+            processedCount: coreReport.processedCount,
+            skippedCount: coreReport.skippedCount,
+            failedCount: coreReport.failedCount,
+            privacySkippedCount: coreReport.privacySkippedCount,
+            providerName: coreReport.providerName,
+            callLogID: coreReport.callLogId,
+            fallbackReason: coreReport.fallbackReason.map(SemanticSearchFallbackReasonSnapshot.init(coreReason:)),
+            message: coreReport.message
+        )
     }
 }
 

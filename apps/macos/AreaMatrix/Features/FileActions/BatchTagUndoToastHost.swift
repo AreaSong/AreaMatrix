@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct UndoToastHistoryRequest: Identifiable, Equatable {
@@ -232,7 +233,7 @@ struct UndoToastHistoryRouteSheet: View {
     let onClose: () -> Void
 
     var body: some View {
-        MainFileActionSheetContainer(title: title, pageID: "undo-toast") {
+        AreaMatrixActionSheetContainer(title: title, pageID: "undo-toast") {
             VStack(alignment: .leading, spacing: 12) {
                 Label(message, systemImage: systemImage)
                     .font(.callout)

@@ -25,7 +25,7 @@ extension MainRepositoryContentView {
     }
 
     var sortedSavedSearches: [SavedSearchSnapshot] {
-        savedSearchesBySidebarID.values.sorted { lhs, rhs in
+        searchModel.savedSearchesBySidebarID.values.sorted { lhs, rhs in
             if lhs.pinned != rhs.pinned { return lhs.pinned && !rhs.pinned }
             if lhs.pinned { return lhs.updatedAt > rhs.updatedAt }
             return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
@@ -33,13 +33,13 @@ extension MainRepositoryContentView {
     }
 
     var sidebar: some View {
-        List(selection: $selectedSidebarID) {
+        List(selection: selectedSidebarIDBinding) {
             ForEach(regularSidebarRows) { row in
                 sidebarRow(row)
                     .tag(row.id)
             }
             sidebarTagsFilterRow
-            if !smartListRows.isEmpty || smartListLoadError != nil {
+            if !smartListRows.isEmpty || searchModel.smartListLoadError != nil {
                 Section("Smart Lists") {
                     ForEach(smartListRows) { row in
                         sidebarRow(row)
@@ -71,30 +71,30 @@ extension MainRepositoryContentView {
         .accessibilityIdentifier(MainSidebarTagFilterEntry.id)
         .accessibilityLabel(MainSidebarTagFilterEntry.accessibilityLabel)
         .accessibilityHint(MainSidebarTagFilterEntry.accessibilityHint)
-        .popover(isPresented: $searchRoutingState.isSidebarTagsFilterPresented) {
+        .popover(isPresented: $searchModel.routingState.isSidebarTagsFilterPresented) {
             SearchFiltersPopover(
                 filters: searchFiltersBinding,
-                facetsState: fileListModel.searchFacetsState,
-                tagRegistryState: fileListModel.tagFilterRegistryState,
+                facetsState: searchModel.searchFacetsState,
+                tagRegistryState: detailTagModel.filterRegistryState,
                 tagRegistryAnchorFileID: tagRegistryAnchorFileID,
-                canSaveAsSmartList: !fileListModel.isEditingSmartListFilterDraft && fileListModel.canSaveCurrentSearch,
-                isEditingSmartListDraft: fileListModel.isEditingSmartListFilterDraft,
+                canSaveAsSmartList: !searchModel.isEditingSmartListFilterDraft && searchModel.canSaveCurrentSearch,
+                isEditingSmartListDraft: searchModel.isEditingSmartListFilterDraft,
                 saveDisabledReason: searchSaveDisabledReason,
                 onReset: {
                     resetSearchFilters()
                 },
                 onRetry: {
-                    Task { await fileListModel.retrySearchFacets() }
+                    Task { await searchModel.retrySearchFacets() }
                 },
                 onLoadTagRegistry: { fileID in
-                    Task { await fileListModel.loadTagFilterRegistry(activeFileID: fileID) }
+                    Task { await detailTagModel.loadTagFilterRegistry(activeFileID: fileID) }
                 },
                 onRetryTagRegistry: {
-                    Task { await fileListModel.retryTagFilterRegistry() }
+                    Task { await detailTagModel.retryTagFilterRegistry() }
                 },
                 onSaveAsSmartList: {
-                    searchRoutingState.isSidebarTagsFilterPresented = false
-                    fileListModel.openSavedSearchSheet()
+                    searchModel.routingState.isSidebarTagsFilterPresented = false
+                    searchModel.openSavedSearchSheet()
                 }
             )
         }
@@ -102,8 +102,8 @@ extension MainRepositoryContentView {
 
     func openSidebarTagFilter() {
         searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
-        fileListModel.enterSearch(context: .sidebar(MainSidebarTagFilterEntry.id))
-        searchRoutingState.isSidebarTagsFilterPresented = true
+        searchModel.enterSearch(context: .sidebar(MainSidebarTagFilterEntry.id))
+        searchModel.routingState.isSidebarTagsFilterPresented = true
     }
 
     private func sidebarRow(_ row: RepositorySidebarRowSnapshot) -> some View {
@@ -135,7 +135,7 @@ extension MainRepositoryContentView {
 
     @ViewBuilder
     private var smartListErrorRow: some View {
-        if let smartListLoadError {
+        if let smartListLoadError = searchModel.smartListLoadError {
             HStack(spacing: 8) {
                 Label(L10n.string("Could not load Smart Lists"), systemImage: "exclamationmark.triangle")
                 Spacer()
@@ -152,7 +152,7 @@ extension MainRepositoryContentView {
 
     @ViewBuilder
     private func smartListContextMenu(for row: RepositorySidebarRowSnapshot) -> some View {
-        if let saved = savedSearchesBySidebarID[row.id] {
+        if let saved = searchModel.savedSearchesBySidebarID[row.id] {
             Button(L10n.string("Open")) {
                 selectedSidebarID = row.id
             }
@@ -203,11 +203,11 @@ extension MainRepositoryContentView {
     }
 
     private func smartListStatus(for row: RepositorySidebarRowSnapshot) -> SmartListSidebarRowStatus {
-        let savedSearch = savedSearchesBySidebarID[row.id]
+        let savedSearch = searchModel.savedSearchesBySidebarID[row.id]
         return SmartListSidebarRowStatus.make(
             savedSearch: savedSearch,
             isCurrent: selectedSidebarID == row.id,
-            searchState: fileListModel.searchState
+            searchState: searchModel.searchState
         )
     }
 }

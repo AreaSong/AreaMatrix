@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureAI
 
 extension CoreErrorMappingSnapshot {
     static func remoteProviderConfigAIPrivacyRemoteProviderUnavailable() -> CoreErrorMappingSnapshot {

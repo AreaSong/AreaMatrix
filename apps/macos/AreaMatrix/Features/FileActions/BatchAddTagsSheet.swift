@@ -1,3 +1,5 @@
+import AreaMatrixFeatureOperation
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct BatchAddTagsTrigger: View {
@@ -53,7 +55,7 @@ struct BatchAddTagsSheet: View {
     @State private var showsDetails = false
 
     var body: some View {
-        MainFileActionSheetContainer(title: L10n.string("fileActions.batchTags.title"), pageID: "batch-add-tags") {
+        AreaMatrixActionSheetContainer(title: L10n.string("fileActions.batchTags.title"), pageID: "batch-add-tags") {
             if selectedCount == 0 {
                 Text(L10n.string("No files selected"))
                     .foregroundStyle(.secondary)

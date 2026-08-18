@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureOperation
 import XCTest
 
 // swiftlint:disable:next type_body_length

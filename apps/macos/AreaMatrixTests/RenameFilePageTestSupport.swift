@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureOperation
 
 extension BatchRenameValidation {
     static func batchRenameUndoCanApply(

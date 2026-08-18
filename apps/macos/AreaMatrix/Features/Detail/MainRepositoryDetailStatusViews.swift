@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import SwiftUI
 
 struct MainRepositoryEmptyDetailPane: View {

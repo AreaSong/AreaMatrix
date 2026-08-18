@@ -29,11 +29,28 @@ private struct MainRepositoryToolbarLogo: View {
     }
 }
 
-extension MainRepositoryContentView {
-    var toolbar: some View {
+struct MainRepositoryToolbar: View {
+    let repoPath: String
+    let isReadOnly: Bool
+    let isEmpty: Bool
+    @Binding var filterText: String
+    @Binding var searchMode: SearchModeSnapshot
+    @Binding var searchScope: SearchScopeSnapshot
+    @Binding var searchSort: SearchSortSnapshot
+    @FocusState.Binding var isSearchFieldFocused: Bool
+    let searchFiltersButton: AnyView
+    let onImport: () -> Void
+    let onOpenSettings: () -> Void
+    let onSearchExit: () -> Void
+    let onSearchSubmit: () -> Void
+    let onCommandFind: () -> Void
+    let onCommandPalette: () -> Void
+    let onOpenUndoHistory: () -> Void
+
+    var body: some View {
         HStack(spacing: 14) {
             Menu {
-                Text(opening.config.repoPath)
+                Text(repoPath)
                 Button(L10n.string("Settings"), action: onOpenSettings)
             } label: {
                 HStack(spacing: 5) {
@@ -51,10 +68,10 @@ extension MainRepositoryContentView {
                 .frame(width: 220)
                 .focused($isSearchFieldFocused)
                 .onExitCommand {
-                    handleSearchEscape()
+                    onSearchExit()
                 }
                 .onSubmit {
-                    fileListModel.enterSearch(context: .toolbar)
+                    onSearchSubmit()
                 }
                 .accessibilityIdentifier("search-index-status-search-field")
             Picker(L10n.string("Mode"), selection: $searchMode) {
@@ -79,7 +96,7 @@ extension MainRepositoryContentView {
             }
             .frame(width: 170)
             searchFiltersButton
-            Button(action: openUndoHistoryFromToolbar) {
+            Button(action: onOpenUndoHistory) {
                 Image(systemName: "clock.arrow.circlepath")
             }
             .buttonStyle(.borderless)
@@ -87,7 +104,7 @@ extension MainRepositoryContentView {
             .accessibilityLabel(L10n.string("Undo History"))
             .accessibilityIdentifier("undo-history-undo-action-log-toolbar-open-history")
             Button(L10n.string("Import..."), action: onImport)
-                .disabled(opening.isReadOnly)
+                .disabled(isReadOnly)
             Button(action: onOpenSettings) {
                 Image(systemName: "gearshape")
             }
@@ -100,17 +117,17 @@ extension MainRepositoryContentView {
         .padding(EdgeInsets(top: 12, leading: 18, bottom: 12, trailing: 18))
         .onKeyPress("f", phases: .down) { event in
             guard event.modifiers.contains(.command) else { return .ignored }
-            beginCommandFindSearch()
+            onCommandFind()
             return .handled
         }
         .onKeyPress("k", phases: .down) { event in
             guard event.modifiers.contains(.command) else { return .ignored }
-            toggleCommandPalette()
+            onCommandPalette()
             return .handled
         }
     }
 
     private var statusText: String {
-        state == .empty ? L10n.string("Idle") : L10n.string("Synced")
+        isEmpty ? L10n.string("Idle") : L10n.string("Synced")
     }
 }

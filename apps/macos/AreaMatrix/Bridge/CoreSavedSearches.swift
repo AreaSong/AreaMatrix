@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
 protocol CoreSavedSearchCRUD: Sendable {
@@ -13,15 +14,6 @@ protocol CoreSavedSearchCRUD: Sendable {
     func listSavedSearches(repoPath: String) async throws -> [SavedSearchSnapshot]
 }
 
-protocol CoreSmartListRunning: Sendable {
-    func runSmartList(
-        repoPath: String,
-        savedSearchID: Int64,
-        limit: Int64,
-        offset: Int64
-    ) async throws -> SearchResultPageSnapshot
-}
-
 extension CoreSavedSearchCRUD {
     func updateSavedSearch(
         repoPath _: String,
@@ -32,17 +24,6 @@ extension CoreSavedSearchCRUD {
 
     func deleteSavedSearch(repoPath _: String, savedSearchID _: Int64) async throws {
         throw CoreError.Internal(message: "delete_saved_search is not available in this saved search store")
-    }
-}
-
-extension CoreSearchQuerying {
-    func runSmartList(
-        repoPath _: String,
-        savedSearchID _: Int64,
-        limit _: Int64,
-        offset _: Int64
-    ) async throws -> SearchResultPageSnapshot {
-        throw CoreError.Internal(message: "run_smart_list is not available in this search store")
     }
 }
 

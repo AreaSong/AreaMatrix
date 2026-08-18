@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct SearchIndexingStatusRouteView: View {
@@ -7,7 +8,7 @@ struct SearchIndexingStatusRouteView: View {
     let onClose: () -> Void
 
     var body: some View {
-        MainFileActionSheetContainer(
+        AreaMatrixActionSheetContainer(
             title: L10n.string("Search Index Status"),
             pageID: "search-index-status-indexing-status"
         ) {

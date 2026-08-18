@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 import XCTest
 
 final class MainLoadingScanSessionTests: XCTestCase {

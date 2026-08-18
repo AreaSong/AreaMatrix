@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureIngestion
 import XCTest
 
 final class ImportBatchNamingStrategyTests: XCTestCase {

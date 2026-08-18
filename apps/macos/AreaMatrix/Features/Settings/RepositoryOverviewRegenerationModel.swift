@@ -7,8 +7,6 @@ struct RepositoryOverviewSharedOperation: Equatable {
 }
 
 final class OverviewRegenerationCoordinator: ObservableObject {
-    static let shared = OverviewRegenerationCoordinator()
-
     let objectWillChange = ObservableObjectPublisher()
     @MainActor private(set) var operations: [String: RepositoryOverviewSharedOperation] = [:]
 

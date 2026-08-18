@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct AISettingsInlineBanner<Actions: View>: View {
@@ -13,21 +14,13 @@ struct AISettingsInlineBanner<Actions: View>: View {
     }
 
     var body: some View {
-        TintedStatusBanner(tint: tint) {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(localizer.resolve(error.message), systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(tint)
-                Text(error.detail)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Text(localizer.resolve(error.recovery))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                HStack(spacing: 8) {
-                    actions
-                }
-            }
+        AreaMatrixInlineErrorBanner(
+            message: localizer.resolve(error.message),
+            detail: error.detail,
+            recovery: localizer.resolve(error.recovery),
+            tint: tint
+        ) {
+            actions
         }
-        .accessibilityElement(children: .contain)
     }
 }

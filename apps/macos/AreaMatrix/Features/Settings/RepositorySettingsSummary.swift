@@ -1,3 +1,5 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureSettings
 import Foundation
 
 struct RepositorySettingsLoadError: Equatable {
@@ -15,15 +17,7 @@ struct RepositorySettingsOverviewActionError: Equatable {
     var recovery: LocalizedMessage
 }
 
-protocol CoreVersionLoading: Sendable {
-    func coreVersion() async throws -> String
-}
-
-enum RepositorySettingsDatabaseStatus: Equatable {
-    case ok
-    case locked
-    case needsRecovery
-
+extension RepositorySettingsDatabaseStatus {
     var label: String {
         switch self {
         case .ok:
@@ -36,10 +30,7 @@ enum RepositorySettingsDatabaseStatus: Equatable {
     }
 }
 
-enum RepositorySettingsWatcherStatus: Equatable {
-    case running
-    case paused
-
+extension RepositorySettingsWatcherStatus {
     var label: String {
         switch self {
         case .running:

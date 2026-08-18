@@ -1,3 +1,5 @@
+import AreaMatrixFeatureAI
+import AreaMatrixUIFoundation
 import Combine
 import Foundation
 
@@ -90,19 +92,7 @@ struct AICallLogRowPresentation: Equatable {
     }
 }
 
-enum AICallLogDateRangePreset: Equatable {
-    case any
-    case last7Days
-    case last30Days
-    case thisYear
-}
-
-enum AICallLogPageState: Equatable {
-    case idle
-    case loading
-    case loaded(AICallLogPageSnapshot)
-    case failed(AISettingsError)
-}
+typealias AICallLogPageState = AsyncLoadState<AICallLogPageSnapshot, AISettingsError>
 
 @MainActor
 final class AICallLogModel: ObservableObject {

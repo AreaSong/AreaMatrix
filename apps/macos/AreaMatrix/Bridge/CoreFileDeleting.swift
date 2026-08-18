@@ -1,3 +1,4 @@
+import AreaMatrixFeatureAI
 import Foundation
 
 protocol CoreFileDeleting: Sendable {
@@ -44,13 +45,7 @@ enum AISettingsProviderPreference: String, CaseIterable, Equatable, Identifiable
     }
 }
 
-enum AISettingsFeatureKind: String, CaseIterable, Equatable, Identifiable {
-    case classificationSuggestions, autoSummaries, autoTags, semanticSearch
-
-    var id: String {
-        rawValue
-    }
-
+extension AISettingsFeatureKind {
     var title: String {
         switch self {
         case .classificationSuggestions: L10n.string("Classification suggestions")

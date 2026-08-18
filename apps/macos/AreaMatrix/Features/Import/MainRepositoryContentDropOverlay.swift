@@ -1,9 +1,11 @@
 import SwiftUI
 
-extension MainRepositoryContentView {
-    var dropOverlay: some View {
+struct MainRepositoryDropOverlay: View {
+    let presentation: ImportDropPreviewPresentation?
+
+    var body: some View {
         Group {
-            if let presentation = dropPreviewModel.presentation {
+            if let presentation {
                 DropZoneOverlay(presentation: presentation)
                     .padding(24)
             }

@@ -262,11 +262,28 @@ public extension View {
         modifier(AreaMatrixDelayedEntranceModifier(isVisible: isVisible, delay: delay))
     }
 
+    func areaMatrixPageContentEntrance(
+        delay: Double = AreaMatrixMotionTokens.EntranceDelay.body
+    ) -> some View {
+        modifier(AreaMatrixPageContentEntranceModifier(delay: delay))
+    }
+
     func areaMatrixScanningContent(isScanning: Bool) -> some View {
         modifier(AreaMatrixScanningContentModifier(isScanning: isScanning))
     }
 
     func areaMatrixDeepDive(isActive: Bool, scale: CGFloat) -> some View {
         modifier(AreaMatrixDeepDiveModifier(isActive: isActive, scale: scale))
+    }
+}
+
+private struct AreaMatrixPageContentEntranceModifier: ViewModifier {
+    @State private var entered = false
+    let delay: Double
+
+    func body(content: Content) -> some View {
+        content
+            .areaMatrixDelayedEntrance(isVisible: entered, delay: delay)
+            .onAppear { entered = true }
     }
 }

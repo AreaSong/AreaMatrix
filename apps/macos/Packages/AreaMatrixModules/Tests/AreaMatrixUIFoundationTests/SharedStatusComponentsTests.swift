@@ -28,9 +28,25 @@ final class SharedStatusComponentsTests: XCTestCase {
         _ = TintedCapsuleBadge(title: "badge", tint: .blue)
         _ = TintedStatusBanner(tint: .blue) { Text("banner") }
         _ = TintedOutlinedStatusBanner(tint: .blue) { Text("outlined") }
+        _ = AreaMatrixInlineErrorBanner(
+            message: "Something failed",
+            detail: "Details",
+            recovery: "Try again",
+            tint: .red
+        ) { EmptyView() }
     }
 
     func testLucideIconExposesStableConstructionContract() {
         _ = AreaMatrixLucideIcon(name: .folderOpen, lineWidth: 1.5)
+    }
+
+    func testEmptyStateExposesStableConstructionContract() {
+        _ = AreaMatrixEmptyStateView(
+            systemImage: "tray",
+            title: "Empty",
+            message: "Nothing here",
+            primaryTitle: "Add",
+            primaryAction: {}
+        )
     }
 }

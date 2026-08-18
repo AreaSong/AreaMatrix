@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureAI
 
 extension AIClassificationSuggestionState {
     static func aiCategorySuggestionSuggested(fileID: Int64) -> AIClassificationSuggestionState {

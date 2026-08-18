@@ -1,3 +1,5 @@
+import AreaMatrixFeatureOperation
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct BatchRenameSheet: View {
@@ -19,7 +21,7 @@ struct BatchRenameSheet: View {
     @State private var failure: CoreErrorMappingSnapshot?
 
     var body: some View {
-        MainFileActionSheetContainer(title: L10n.string("fileActions.batchRename.title"), pageID: "batch-rename") {
+        AreaMatrixActionSheetContainer(title: L10n.string("fileActions.batchRename.title"), pageID: "batch-rename") {
             selectedCount == 0 ? AnyView(emptyContent) : AnyView(content)
         }
         .task(id: previewTaskKey) { await refreshPreview() }

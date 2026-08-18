@@ -1,35 +1,23 @@
 import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureIngestion
+import AreaMatrixFeatureLibrary
 import Combine
 import Foundation
 
-enum MainExternalSelectionUpdate: Equatable, Identifiable {
-    case moved(FileEntrySnapshot)
-    case cleared(fileID: Int64)
-
-    var id: String {
-        switch self {
-        case let .moved(file):
-            "moved:\(file.id):\(file.path)"
-        case let .cleared(fileID):
-            "cleared:\(fileID)"
-        }
-    }
-}
-
 @MainActor
 final class MainFileListModel: ObservableObject {
-    static let fileListPageSize: Int64 = 50
-
     @Published var files: [FileEntrySnapshot]
-    @Published var isLoading = false
-    @Published var hasMore = false
-    @Published var isLoadingMore = false
+    @Published var loadingState = MainListLoadingState()
     @Published var loadMoreErrorMapping: CoreErrorMappingSnapshot?
     @Published var errorMapping: CoreErrorMappingSnapshot?
     @Published var selection = MainFileSelectionState.none {
         didSet {
-            clearStaleDetailTagUndoToast()
-            clearStaleDetailTagSuggestions()
+            detailTagModel.clearStaleDetailTagUndoToast()
+            detailTagModel.clearStaleDetailTagSuggestions()
+            let selectedBatchFileIDs = selection.multipleFileIDs
+            if selectedBatchFileIDs.isEmpty || aiTagBatchSuggestionState.fileIDs != selectedBatchFileIDs {
+                aiTagBatchSuggestionState = .idle
+            }
         }
     }
 
@@ -45,63 +33,41 @@ final class MainFileListModel: ObservableObject {
     @Published private(set) var isExternalSyncPlaceholderDownloading = false
     @Published private(set) var externalSyncRecoveryMessage: LocalizedMessage?
     @Published private(set) var pendingExternalSelectionUpdate: MainExternalSelectionUpdate?
-    @Published var detailTagEditorState = DetailTagEditorState.notLoaded
-    @Published var detailTagSuggestionState = DetailTagSuggestionState.idle
-    @Published var aiTagSuggestionState = AITagSuggestionState.idle
     @Published var aiTagBatchSuggestionState = AITagBatchSuggestionState.idle
-    @Published var tagSuggestionPresentationRequest: TagSuggestionPresentationRequest?
-    @Published var detailTagUndoToast: DetailTagUndoToast?
-    @Published var searchState = MainSearchState.idle {
-        didSet {
-            if !semanticPrivacyGateState.isCurrent(for: searchState.request) {
-                semanticPrivacyGateState = .idle
-            }
-            if !semanticFallbackState.isCurrent(for: searchState.request) { semanticFallbackState = .idle }
-            if !semanticIndexControlState.isCurrent(for: searchState.request) { semanticIndexControlState = .idle }
-        }
-    }
-
-    @Published var semanticIndexBuildState = SemanticIndexBuildState.idle
-    @Published var semanticPrivacyGateState = SemanticPrivacyGateState.idle
-    @Published var semanticFallbackState = SemanticFallbackState.idle
-    @Published var semanticIndexControlState = SemanticIndexBuildControlState.idle
-    @Published var semanticPagingState = SemanticSearchPagingState.idle
-    @Published var showFoldedSemanticDuplicates = false
-    @Published var searchFacetsState = MainSearchFacetsState.idle
-    @Published var tagFilterRegistryState = TagFilterRegistryState.idle
     @Published var selectedFileNoteWriteBlock: MainDetailNoteWriteBlock?
     @Published var detailTabRequest: MainDetailTabRequest?
-    @Published var pendingActionDestination: MainFileActionDestination?
     @Published var statusBanner: MainListStatusBanner?
-    @Published var diagnosticsState = MainListDiagnosticsState.idle
-    @Published var renameState = MainFileRenameState.idle
-    @Published var deleteState = MainFileDeleteState.idle
-    @Published var changeCategoryState = MainFileCategoryMoveState.idle
-    @Published var classifierCorrectionContextState = ClassifierCorrectionContextState.idle
-    @Published var classifierCorrectionResult: ClassifierCorrectionResultSnapshot?
-    @Published var iCloudConflictResolutionState = ICloudConflictResolutionState.idle
-    @Published var pendingSearchDestination: MainSearchDestination?
-    @Published var commandPaletteState = CommandPaletteLoadState.idle
-    @Published var commandPaletteQuery = ""
-    @Published var lastSearchExitContext: MainSearchExitContext?
-    @Published var smartListFilterDraft: SmartListFilterDraft?
-    var activeSmartListSearch: SavedSearchSnapshot?
 
-    let repoPath: String
-    let isReadOnly: Bool
-    let writeLockedFileIDs: Set<Int64>
+    let repositorySession: RepositorySession
+    let currentListDiagnostics: MainListDiagnosticsModel
+    let searchModel: SearchModel
+    let detailTagModel: DetailTagModel
+    let syncConflictCoordinator: SyncConflictCoordinator
+    let fileActionCoordinator: FileActionCoordinator
+
+    var operationContext: RepositoryOperationContext {
+        repositorySession.makeOperationContext()
+    }
+
+    var repoPath: String {
+        operationContext.repoPath
+    }
+
+    var isReadOnly: Bool {
+        operationContext.access.isReadOnly
+    }
+
+    var writeLockedFileIDs: Set<Int64> {
+        operationContext.access.writeLockedFileIDs
+    }
+
     let fileResourceAccess: any ImportFileResourceAccessing
     let fileLister: any CoreFileListing
     let fileDetailer: any CoreFileDetailing
     let missingFileRecoverer: any CoreMissingFileRecovering
     let missingFilePicker: any RepositoryMissingFilePicking
-    let fileRenamer: any CoreFileRenaming
-    let fileDeleter: any CoreFileDeleting
-    let fileCategoryMover: any CoreFileCategoryMoving
-    let categoryPredictor: any CoreCategoryPredicting
     let batchDeleter: any CoreBatchDeleting
     let batchCategoryChanger: any CoreBatchCategoryChanging
-    let iCloudConflictResolver: any ICloudConflictResolving
     let tagStore: any CoreTagCRUD
     let aiSettingsLoader: any CoreAISettingsLoading
     let aiTagSuggestionStore: any CoreAITagSuggestionManaging
@@ -112,56 +78,64 @@ final class MainFileListModel: ObservableObject {
     let externalChangesSyncer: any CoreExternalChangesSyncing
     let repositoryWriteCoordinator: RepositoryWriteCoordinator
     let errorMapper: any CoreErrorMapping
-    let searchQuerying: any CoreSearchQuerying
-    let semanticSearching: any CoreSemanticSearching
-    let semanticFallbackReader: any CoreSemanticFallbackStatusReading
-    let searchFiltering: any CoreSearchFiltering
-    let commandIndexer: any CoreCommandIndexing
     let diagnosticsCollector: any CoreDiagnosticsCollecting
     var currentCategory: String?
     var loadGeneration = 0
-    var diagnosticsGeneration = 0
+    var currentListDiagnosticsObservation: AnyCancellable?
+    var fileActionCoordinatorObservation: AnyCancellable?
+    var detailTagModelObservation: AnyCancellable?
     var detailGeneration = 0
     var detailLogGeneration = 0
     var tagSuggestionPresentationSequence = 0
-    var tagFilterRegistryGeneration = 0
-    var searchGeneration = 0
-    var searchFacetsGeneration = 0
-    var semanticIndexBuildGeneration = 0
-    var semanticIndexBuildTask: Task<SemanticIndexBuildReportSnapshot, Error>?
     var externalSyncDrainTask: Task<Void, Never>?
     var failedExternalSyncWindowID: String?
     var failedExternalSyncRelativePath: String?
-    var nextFilePageOffset: Int64 = 0
+    var isLoading: Bool {
+        get { loadingState.isLoading }
+        set { loadingState.isLoading = newValue }
+    }
+
+    var hasMore: Bool {
+        get { loadingState.hasMore }
+        set { loadingState.hasMore = newValue }
+    }
+
+    var isLoadingMore: Bool {
+        get { loadingState.isLoadingMore }
+        set { loadingState.isLoadingMore = newValue }
+    }
+
+    var nextFilePageOffset: Int64 {
+        get { loadingState.nextOffset }
+        set { loadingState.nextOffset = newValue }
+    }
 
     init(
+        session: RepositorySession,
         opening: RepositoryOpeningResult,
         dependencies: MainListFeatureDependencies
     ) {
-        repoPath = opening.config.repoPath
-        isReadOnly = opening.isReadOnly
-        writeLockedFileIDs = opening.writeLockedFileIDs
+        repositorySession = session
+        let ownedModels = MainFileListOwnedModels(repoPath: session.repoPath, dependencies: dependencies)
+        currentListDiagnostics = ownedModels.diagnostics
+        searchModel = ownedModels.search
+        detailTagModel = ownedModels.detailTag
+        syncConflictCoordinator = ownedModels.syncConflict
+        fileActionCoordinator = ownedModels.fileAction
         fileResourceAccess = dependencies.fileResourceAccess
         files = opening.currentCategoryFiles
-        nextFilePageOffset = Int64(opening.currentCategoryFiles.count)
-        hasMore = opening.currentCategoryFiles.count == Int(Self.fileListPageSize)
+        let pagination = MainListPagination(initialCount: opening.currentCategoryFiles.count)
+        loadingState = MainListLoadingState(
+            hasMore: pagination.hasMore,
+            nextOffset: pagination.nextOffset
+        )
         errorMapping = opening.currentCategoryListError
         fileLister = dependencies.fileLister
         fileDetailer = dependencies.fileDetailer
         missingFileRecoverer = dependencies.missingFileRecoverer
         missingFilePicker = dependencies.missingFilePicker
-        searchQuerying = dependencies.searchQuerying
-        semanticSearching = dependencies.semanticSearching
-        semanticFallbackReader = dependencies.semanticFallbackReader
-        searchFiltering = dependencies.searchFiltering
-        commandIndexer = dependencies.commandIndexer
-        fileRenamer = dependencies.fileRenamer
-        fileDeleter = dependencies.fileDeleter
-        fileCategoryMover = dependencies.fileCategoryMover
-        categoryPredictor = dependencies.categoryPredictor
         batchDeleter = dependencies.batchDeleter
         batchCategoryChanger = dependencies.batchCategoryChanger
-        iCloudConflictResolver = dependencies.iCloudConflictResolver
         tagStore = dependencies.tagStore
         aiSettingsLoader = dependencies.aiSettingsLoader
         aiTagSuggestionStore = dependencies.aiTagSuggestionStore
@@ -173,10 +147,75 @@ final class MainFileListModel: ObservableObject {
         repositoryWriteCoordinator = dependencies.repositoryWriteCoordinator
         errorMapper = dependencies.errorMapper
         diagnosticsCollector = dependencies.diagnosticsCollector
+        configureOwnedModels()
+    }
+
+    private func configureOwnedModels() {
+        currentListDiagnosticsObservation = currentListDiagnostics.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        fileActionCoordinatorObservation = fileActionCoordinator.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        detailTagModelObservation = detailTagModel.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        detailTagModel.setContext(.init(
+            selectedFileID: { [weak self] in self?.selection.singleFileID },
+            selectedFile: { [weak self] fileID in
+                self?.selectedFileDetail.flatMap { $0.id == fileID ? $0 : nil } ?? self?.cachedFile(id: fileID)
+            },
+            writeDisabledMessage: { [weak self] message in
+                guard let self else { return message }
+                return selectedWriteActionDisabledMessage(noSelectionMessage: message)
+            },
+            writableFileID: { [weak self] fileID in self?.writableActionFileID(fileID) },
+            loadChangeLog: { [weak self] fileID in await self?.loadChangeLog(fileID: fileID) },
+            requestDetailTab: { [weak self] tab in self?.detailTabRequest = .automatic(tab) }
+        ))
+        searchModel.setResultHandler { [weak self] result in
+            self?.applySearchResult(result)
+        }
+    }
+
+    convenience init(
+        opening: RepositoryOpeningResult,
+        dependencies: MainListFeatureDependencies
+    ) {
+        self.init(session: opening.makeRepositorySession(), opening: opening, dependencies: dependencies)
     }
 }
 
 extension MainFileListModel {
+    func noteWriteBlock(for file: FileEntrySnapshot) -> MainDetailNoteWriteBlock? {
+        if isReadOnly { return .repoReadOnly }
+        if file.availability == .missing { return .fileMissing }
+        if writeLockedFileIDs.contains(file.id) { return .importLocked }
+        if isLoading { return .listLoading }
+        return nil
+    }
+
+    var loadingStatusText: String? {
+        guard isLoading else { return nil }
+        if searchModel.searchState.isActive { return L10n.string("Searching...") }
+        return L10n.format("detail.log.loadingCategory", currentCategoryDisplayName)
+    }
+
+    var loadingAccessibilityText: String? {
+        guard let loadingStatusText else { return nil }
+        return L10n.format("detail.log.loadingFilesStatus", loadingStatusText)
+    }
+
+    func canApplyDetailLogDiagnosticsResult(fileID: Int64) -> Bool {
+        guard selection.singleFileID == fileID,
+              case let .failed(failedFileID, _) = detailLogState else { return false }
+        return failedFileID == fileID
+    }
+
+    func canApplyMultiSelectionDetailResult(generation: Int, ids: Set<Int64>) -> Bool {
+        generation == detailGeneration && selection.multipleFileIDs == ids
+    }
+
     var hasRetryableExternalSyncFailure: Bool {
         failedExternalSyncWindowID != nil
     }

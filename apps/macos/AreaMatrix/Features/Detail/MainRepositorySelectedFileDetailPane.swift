@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import SwiftUI
 
 struct MainRepositorySelectedFileDetailPane: View {
@@ -150,7 +151,7 @@ struct MainRepositorySelectedFileDetailPane: View {
             disabledReason: writeActionDisabledReason(detail.id),
             tagActions: tagActions
         )
-        DetailMetadataRows(detail: detail)
+        DetailMetadataRows(rows: detailMetaMetadataRows(for: detail))
     }
 
     @ViewBuilder

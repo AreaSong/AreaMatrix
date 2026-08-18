@@ -12,6 +12,7 @@ from .checks import run_docs_check, run_governance_check, run_localization_check
 from .common import ToolError, fail, require_command, run_step
 from .core_sdk_artifact import verify_core_sdk_pointer
 from .macos import run_macos_tests
+from .metrics import build_metrics_summary
 
 DEVELOPER_SCENARIOS = (
     "launcher",
@@ -104,6 +105,7 @@ PYTHON_DEVELOPER_TEST_MODULES = (
     "scripts.dev_tools.test_build_tools",
     "scripts.dev_tools.test_core_sdk",
     "scripts.dev_tools.test_developer",
+    "scripts.dev_tools.test_metrics",
     "scripts.dev_tools.test_macos_runner",
     "scripts.dev_tools.test_release_tools",
 )
@@ -165,7 +167,7 @@ def _print_changed_plan(paths: list[str], layers: list[str]) -> None:
     if "rust-core" in layers:
         print("- rust-core: cargo test --workspace in validation lane")
     if "macos-client" in layers:
-        print("- macos-client: localization contract + persistent-DerivedData XCTest")
+        print("- macos-client: AreaMatrixModules SwiftPM tests + localization contract + persistent-DerivedData XCTest")
     if "ios-client" in layers:
         print("- ios-client: Swift Package build")
     if "docs-governance" in layers:
@@ -201,6 +203,13 @@ def run_changed_tests(root: Path, *, list_only: bool = False) -> int:
         if proc.returncode != 0:
             return proc.returncode
     if "macos-client" in layers:
+        proc = run_step(
+            ["swift", "test", "--package-path", "apps/macos/Packages/AreaMatrixModules"],
+            cwd=root,
+            check=False,
+        )
+        if proc.returncode != 0:
+            return proc.returncode
         localization_rc = run_localization_check(root)
         if localization_rc != 0:
             return localization_rc
@@ -275,9 +284,30 @@ def run_build_doctor(root: Path) -> int:
     else:
         print("Build doctor: CoreSDK pointer is absent; it will be created on the first SDK build.")
 
+    metrics = build_metrics_summary(root)
+    core_metrics = metrics["core_sdk"]
+    lock_metrics = metrics["cargo_lock"]
+    if metrics["invalid_record_count"]:
+        print(
+            "Build doctor: WARNING build metrics contain invalid records: "
+            f"{metrics['invalid_record_count']}"
+        )
+
     print("Cargo artifact lanes")
     for lane, path in lane_paths.items():
         print(f"- {lane}: {path}")
+    print(
+        "Build metrics: "
+        f"CoreSDK samples={core_metrics['sample_count']} "
+        f"cache_hit_rate={core_metrics['cache_hit_rate_percent'] if core_metrics['cache_hit_rate_percent'] is not None else 'n/a'}% "
+        f"lock_wait_seconds={core_metrics['lock_wait_seconds_total']:.3f}"
+    )
+    print(
+        "Cargo lock metrics: "
+        f"samples={lock_metrics['sample_count']} "
+        f"contention_rate={lock_metrics['contention_rate_percent'] if lock_metrics['contention_rate_percent'] is not None else 'n/a'}% "
+        f"wait_seconds_max={lock_metrics['wait_seconds_max']:.3f}"
+    )
     if issues:
         print("Build doctor: FAILED")
         for issue in issues:

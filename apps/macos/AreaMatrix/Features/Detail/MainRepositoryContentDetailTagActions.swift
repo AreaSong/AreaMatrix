@@ -4,58 +4,58 @@ import SwiftUI
 extension MainRepositoryContentView {
     var detailTagActions: MainRepositoryDetailPaneTagActions {
         MainRepositoryDetailPaneTagActions(
-            aiSuggestionState: fileListModel.aiTagSuggestionState,
+            aiSuggestionState: detailTagModel.aiSuggestionState,
             aiBatchSuggestionState: fileListModel.aiTagBatchSuggestionState,
-            onLoadTags: { Task { await fileListModel.loadSelectedFileTags() } },
-            onRetryTags: { Task { await fileListModel.retrySelectedFileTags() } },
-            onAddTag: { tag in Task { await fileListModel.addSelectedFileTag(tag) } },
-            onRemoveTag: { tag in Task { await fileListModel.removeSelectedFileTag(tag) } },
-            onLoadSuggestions: { Task { await fileListModel.loadSelectedFileTagSuggestions() } },
-            onRetrySuggestions: { Task { await fileListModel.retrySelectedFileTagSuggestions() } },
-            onToggleSuggestion: fileListModel.toggleSelectedFileTagSuggestion,
-            onSelectAllSuggestions: fileListModel.selectAllSelectedFileTagSuggestions,
-            onClearSuggestions: fileListModel.clearSelectedFileTagSuggestions,
-            onStartEditingSuggestions: fileListModel.startEditingSelectedFileTagSuggestions,
-            onCancelEditingSuggestions: fileListModel.cancelEditingSelectedFileTagSuggestions,
-            onEditSuggestionDisplayName: fileListModel.updateSelectedFileTagSuggestionDisplayName,
-            onEditSuggestionSlug: fileListModel.updateSelectedFileTagSuggestionSlug,
-            onRegenerateSuggestionSlug: fileListModel.regenerateSelectedFileTagSuggestionSlug,
+            onLoadTags: { Task { await detailTagModel.loadSelectedFileTags() } },
+            onRetryTags: { Task { await detailTagModel.retrySelectedFileTags() } },
+            onAddTag: { tag in Task { await detailTagModel.addSelectedFileTag(tag) } },
+            onRemoveTag: { tag in Task { await detailTagModel.removeSelectedFileTag(tag) } },
+            onLoadSuggestions: { Task { await detailTagModel.loadSelectedFileTagSuggestions() } },
+            onRetrySuggestions: { Task { await detailTagModel.retrySelectedFileTagSuggestions() } },
+            onToggleSuggestion: detailTagModel.toggleSelectedFileTagSuggestion,
+            onSelectAllSuggestions: detailTagModel.selectAllSelectedFileTagSuggestions,
+            onClearSuggestions: detailTagModel.clearSelectedFileTagSuggestions,
+            onStartEditingSuggestions: detailTagModel.startEditingSelectedFileTagSuggestions,
+            onCancelEditingSuggestions: detailTagModel.cancelEditingSelectedFileTagSuggestions,
+            onEditSuggestionDisplayName: detailTagModel.updateSelectedFileTagSuggestionDisplayName,
+            onEditSuggestionSlug: detailTagModel.updateSelectedFileTagSuggestionSlug,
+            onRegenerateSuggestionSlug: detailTagModel.regenerateSelectedFileTagSuggestionSlug,
             onApplySuggestions: {
-                applyTagSuggestionUndo { await fileListModel.applySelectedFileTagSuggestions() }
+                applyTagSuggestionUndo { await detailTagModel.applySelectedFileTagSuggestions() }
             },
             onApplyEditedSuggestions: {
-                applyTagSuggestionUndo { await fileListModel.applyEditedSelectedFileTagSuggestions() }
+                applyTagSuggestionUndo { await detailTagModel.applyEditedSelectedFileTagSuggestions() }
             },
             onRetryFailedSuggestions: {
-                applyTagSuggestionUndo { await fileListModel.retryFailedSelectedFileTagSuggestions() }
+                applyTagSuggestionUndo { await detailTagModel.retryFailedSelectedFileTagSuggestions() }
             },
-            onLoadAISuggestions: { Task { await fileListModel.loadSelectedFileAITagSuggestions() } },
-            onRetryAISuggestions: { Task { await fileListModel.retrySelectedFileAITagSuggestions() } },
-            onToggleAISuggestion: fileListModel.toggleSelectedFileAITagSuggestion,
+            onLoadAISuggestions: { Task { await detailTagModel.loadSelectedFileAITagSuggestions() } },
+            onRetryAISuggestions: { Task { await detailTagModel.retrySelectedFileAITagSuggestions() } },
+            onToggleAISuggestion: detailTagModel.toggleSelectedFileAITagSuggestion,
             onApplySingleAISuggestion: { suggestionID in
-                applyTagSuggestionUndo { await fileListModel.applySelectedFileAITagSuggestion(suggestionID) }
+                applyTagSuggestionUndo { await detailTagModel.applySelectedFileAITagSuggestion(suggestionID) }
             },
-            onSelectHighConfidenceAISuggestions: fileListModel.selectHighConfidenceAITagSuggestions,
-            onClearAISuggestions: fileListModel.clearSelectedFileAITagSuggestions,
-            onStartEditingAISuggestions: fileListModel.startEditingSelectedFileAITagSuggestions,
-            onCancelEditingAISuggestions: fileListModel.cancelEditingSelectedFileAITagSuggestions,
-            onEditAISuggestionDisplayName: fileListModel.updateSelectedFileAITagSuggestionDisplayName,
-            onEditAISuggestionSlug: fileListModel.updateSelectedFileAITagSuggestionSlug,
-            onRegenerateAISuggestionSlug: fileListModel.regenerateSelectedFileAITagSuggestionSlug,
+            onSelectHighConfidenceAISuggestions: detailTagModel.selectHighConfidenceAITagSuggestions,
+            onClearAISuggestions: detailTagModel.clearSelectedFileAITagSuggestions,
+            onStartEditingAISuggestions: detailTagModel.startEditingSelectedFileAITagSuggestions,
+            onCancelEditingAISuggestions: detailTagModel.cancelEditingSelectedFileAITagSuggestions,
+            onEditAISuggestionDisplayName: detailTagModel.updateSelectedFileAITagSuggestionDisplayName,
+            onEditAISuggestionSlug: detailTagModel.updateSelectedFileAITagSuggestionSlug,
+            onRegenerateAISuggestionSlug: detailTagModel.regenerateSelectedFileAITagSuggestionSlug,
             onApplyAISuggestions: {
-                applyTagSuggestionUndo { await fileListModel.applySelectedFileAITagSuggestions() }
+                applyTagSuggestionUndo { await detailTagModel.applySelectedFileAITagSuggestions() }
             },
             onApplyEditedAISuggestions: {
-                applyTagSuggestionUndo { await fileListModel.applyEditedSelectedFileAITagSuggestions() }
+                applyTagSuggestionUndo { await detailTagModel.applyEditedSelectedFileAITagSuggestions() }
             },
             onRetryFailedAISuggestions: {
-                applyTagSuggestionUndo { await fileListModel.retryFailedSelectedFileAITagSuggestions() }
+                applyTagSuggestionUndo { await detailTagModel.retryFailedSelectedFileAITagSuggestions() }
             },
             aiBatchActions: fileListModel.aiTagBatchSuggestionActions,
             onOpenAISettings: onOpenAISettings,
-            onSuggestionPresentationConsumed: fileListModel.consumeTagSuggestionPresentationRequest,
-            onUndoTagChange: { Task { await fileListModel.undoLastDetailTagChange() } },
-            onDismissTagUndoToast: fileListModel.dismissDetailTagUndoToast,
+            onSuggestionPresentationConsumed: detailTagModel.consumeTagSuggestionPresentationRequest,
+            onUndoTagChange: { Task { await detailTagModel.undoLastDetailTagChange() } },
+            onDismissTagUndoToast: detailTagModel.dismissDetailTagUndoToast,
             onBatchTagUndoStateChange: updateBatchTagUndoState
         )
     }

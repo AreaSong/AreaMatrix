@@ -1,110 +1,110 @@
 import Foundation
 
-extension MainFileListModel {
+extension DetailTagModel {
     func loadSelectedFileTagSuggestions() async {
-        guard let fileID = selection.singleFileID else { return }
+        guard let fileID = currentSelectedFileID else { return }
         await loadTagSuggestions(fileID: fileID)
     }
 
     func retrySelectedFileTagSuggestions() async {
-        guard let fileID = selection.singleFileID else { return }
+        guard let fileID = currentSelectedFileID else { return }
         await loadTagSuggestions(fileID: fileID)
     }
 
     func presentSelectedFileTagSuggestions(source: TagSuggestionPresentationSource) {
-        guard let fileID = selection.singleFileID else { return }
-        tagSuggestionPresentationSequence += 1
-        detailTabRequest = .automatic(.meta)
-        tagSuggestionPresentationRequest = TagSuggestionPresentationRequest(
+        guard let fileID = currentSelectedFileID else { return }
+        presentationSequence += 1
+        showDetailTab(.meta)
+        presentationRequest = TagSuggestionPresentationRequest(
             fileID: fileID,
             source: source,
-            sequence: tagSuggestionPresentationSequence
+            sequence: presentationSequence
         )
     }
 
     func consumeTagSuggestionPresentationRequest(_ request: TagSuggestionPresentationRequest) {
-        if tagSuggestionPresentationRequest == request {
-            tagSuggestionPresentationRequest = nil
+        if presentationRequest == request {
+            presentationRequest = nil
         }
     }
 
     func toggleSelectedFileTagSuggestion(_ suggestionID: String) {
-        detailTagSuggestionState = DetailTagSuggestionAction.togglingSelection(
+        suggestionState = DetailTagSuggestionAction.togglingSelection(
             suggestionID: suggestionID,
-            in: detailTagSuggestionState
+            in: suggestionState
         )
     }
 
     func selectAllSelectedFileTagSuggestions() {
-        detailTagSuggestionState = DetailTagSuggestionAction.selectingAll(in: detailTagSuggestionState)
+        suggestionState = DetailTagSuggestionAction.selectingAll(in: suggestionState)
     }
 
     func clearSelectedFileTagSuggestions() {
-        detailTagSuggestionState = DetailTagSuggestionAction.clearingSelection(in: detailTagSuggestionState)
+        suggestionState = DetailTagSuggestionAction.clearingSelection(in: suggestionState)
     }
 
     func startEditingSelectedFileTagSuggestions() {
-        detailTagSuggestionState = DetailTagSuggestionAction.startingEdit(
-            in: detailTagSuggestionState,
+        suggestionState = DetailTagSuggestionAction.startingEdit(
+            in: suggestionState,
             disabledReason: selectedTagSuggestionDisabledReason()
         )
     }
 
     func cancelEditingSelectedFileTagSuggestions() {
-        detailTagSuggestionState = DetailTagSuggestionAction.cancelingEdit(in: detailTagSuggestionState)
+        suggestionState = DetailTagSuggestionAction.cancelingEdit(in: suggestionState)
     }
 
     func updateSelectedFileTagSuggestionDisplayName(suggestionID: String, displayName: String) {
-        detailTagSuggestionState = DetailTagSuggestionAction.updatingDisplayName(
+        suggestionState = DetailTagSuggestionAction.updatingDisplayName(
             suggestionID: suggestionID,
             displayName: displayName,
-            in: detailTagSuggestionState,
+            in: suggestionState,
             disabledReason: selectedTagSuggestionDisabledReason()
         )
     }
 
     func updateSelectedFileTagSuggestionSlug(suggestionID: String, slug: String) {
-        detailTagSuggestionState = DetailTagSuggestionAction.updatingSlug(
+        suggestionState = DetailTagSuggestionAction.updatingSlug(
             suggestionID: suggestionID,
             slug: slug,
-            in: detailTagSuggestionState,
+            in: suggestionState,
             disabledReason: selectedTagSuggestionDisabledReason()
         )
     }
 
     func regenerateSelectedFileTagSuggestionSlug(suggestionID: String) {
-        detailTagSuggestionState = DetailTagSuggestionAction.regeneratingSlug(
+        suggestionState = DetailTagSuggestionAction.regeneratingSlug(
             suggestionID: suggestionID,
-            in: detailTagSuggestionState,
+            in: suggestionState,
             disabledReason: selectedTagSuggestionDisabledReason()
         )
     }
 
     func applySelectedFileTagSuggestions() async -> BatchTagUndoState? {
         guard let fileID = writableActionFileID(),
-              let report = detailTagSuggestionState.report else { return nil }
-        let suggestions = DetailTagSuggestionAction.selectedApplyItems(in: detailTagSuggestionState)
+              let report = suggestionState.report else { return nil }
+        let suggestions = DetailTagSuggestionAction.selectedApplyItems(in: suggestionState)
         guard !suggestions.isEmpty else { return nil }
 
-        let previousTagSet = detailTagEditorState.tagSet
-        let selectedIDs = detailTagSuggestionState.selectedIDs
-        detailTagSuggestionState = .applying(fileID: fileID, report: report, selectedIDs: selectedIDs)
-        detailTagEditorState = .loading(fileID: fileID, previous: previousTagSet)
+        let previousTagSet = editorState.tagSet
+        let selectedIDs = suggestionState.selectedIDs
+        suggestionState = .applying(fileID: fileID, report: report, selectedIDs: selectedIDs)
+        editorState = .loading(fileID: fileID, previous: previousTagSet)
         do {
             let applyReport = try await tagStore.applyTagSuggestions(
                 repoPath: repoPath,
                 request: ApplyTagSuggestionsRequestSnapshot(fileID: fileID, suggestions: suggestions)
             )
-            guard selection.singleFileID == fileID else { return nil }
-            detailTagSuggestionState = .applied(fileID: fileID, report, applyReport, selectedIDs)
-            detailTagEditorState = .loaded(fileID: fileID, applyReport.tagSet)
-            await loadChangeLog(fileID: fileID)
+            guard currentSelectedFileID == fileID else { return nil }
+            suggestionState = .applied(fileID: fileID, report, applyReport, selectedIDs)
+            editorState = .loaded(fileID: fileID, applyReport.tagSet)
+            await refreshChangeLog(fileID: fileID)
             return await loadSuggestionUndoState(undoToken: applyReport.undoToken)
         } catch {
             let mapping = await mapCoreError(error)
-            guard selection.singleFileID == fileID else { return nil }
-            detailTagSuggestionState = .failed(fileID: fileID, mapping, previous: report)
-            detailTagEditorState = .failed(
+            guard currentSelectedFileID == fileID else { return nil }
+            suggestionState = .failed(fileID: fileID, mapping, previous: report)
+            editorState = .failed(
                 fileID: fileID,
                 operation: .applySuggestions(suggestions.map(\.slug)),
                 mapping,
@@ -116,31 +116,31 @@ extension MainFileListModel {
 
     func applyEditedSelectedFileTagSuggestions() async -> BatchTagUndoState? {
         guard let fileID = writableActionFileID(),
-              let report = detailTagSuggestionState.report,
-              let session = detailTagSuggestionState.editSession,
+              let report = suggestionState.report,
+              let session = suggestionState.editSession,
               session.canApply else { return nil }
-        let suggestions = DetailTagSuggestionAction.editedItems(in: detailTagSuggestionState)
+        let suggestions = DetailTagSuggestionAction.editedItems(in: suggestionState)
         guard !suggestions.isEmpty else { return nil }
 
-        let previousTagSet = detailTagEditorState.tagSet
-        detailTagSuggestionState = DetailTagSuggestionAction.applyingEdited(in: detailTagSuggestionState)
-        detailTagEditorState = .loading(fileID: fileID, previous: previousTagSet)
+        let previousTagSet = editorState.tagSet
+        suggestionState = DetailTagSuggestionAction.applyingEdited(in: suggestionState)
+        editorState = .loading(fileID: fileID, previous: previousTagSet)
         do {
             let applyReport = try await tagStore.applyTagSuggestions(
                 repoPath: repoPath,
                 request: ApplyTagSuggestionsRequestSnapshot(fileID: fileID, suggestions: suggestions)
             )
-            guard selection.singleFileID == fileID else { return nil }
+            guard currentSelectedFileID == fileID else { return nil }
             let recovered = editedSessionAfterApply(session, report: applyReport)
-            detailTagSuggestionState = .editApplied(fileID: fileID, report, applyReport, recovered)
-            detailTagEditorState = .loaded(fileID: fileID, applyReport.tagSet)
-            await loadChangeLog(fileID: fileID)
+            suggestionState = .editApplied(fileID: fileID, report, applyReport, recovered)
+            editorState = .loaded(fileID: fileID, applyReport.tagSet)
+            await refreshChangeLog(fileID: fileID)
             return await loadSuggestionUndoState(undoToken: applyReport.undoToken)
         } catch {
             let mapping = await mapCoreError(error)
-            guard selection.singleFileID == fileID else { return nil }
-            detailTagSuggestionState = .editing(fileID: fileID, report, session)
-            detailTagEditorState = .failed(
+            guard currentSelectedFileID == fileID else { return nil }
+            suggestionState = .editing(fileID: fileID, report, session)
+            editorState = .failed(
                 fileID: fileID,
                 operation: .applySuggestions(suggestions.map(\.slug)),
                 mapping,
@@ -152,30 +152,30 @@ extension MainFileListModel {
 
     func retryFailedSelectedFileTagSuggestions() async -> BatchTagUndoState? {
         guard let fileID = writableActionFileID(),
-              let report = detailTagSuggestionState.report,
-              let session = detailTagSuggestionState.editSession else { return nil }
-        let suggestions = DetailTagSuggestionAction.retryFailedItems(in: detailTagSuggestionState)
+              let report = suggestionState.report,
+              let session = suggestionState.editSession else { return nil }
+        let suggestions = DetailTagSuggestionAction.retryFailedItems(in: suggestionState)
         guard !suggestions.isEmpty else { return nil }
 
-        let previousTagSet = detailTagEditorState.tagSet
-        detailTagSuggestionState = DetailTagSuggestionAction.applyingEdited(in: detailTagSuggestionState)
-        detailTagEditorState = .loading(fileID: fileID, previous: previousTagSet)
+        let previousTagSet = editorState.tagSet
+        suggestionState = DetailTagSuggestionAction.applyingEdited(in: suggestionState)
+        editorState = .loading(fileID: fileID, previous: previousTagSet)
         do {
             let applyReport = try await tagStore.applyTagSuggestions(
                 repoPath: repoPath,
                 request: ApplyTagSuggestionsRequestSnapshot(fileID: fileID, suggestions: suggestions)
             )
-            guard selection.singleFileID == fileID else { return nil }
+            guard currentSelectedFileID == fileID else { return nil }
             let recovered = editedSessionAfterApply(session, report: applyReport)
-            detailTagSuggestionState = .editApplied(fileID: fileID, report, applyReport, recovered)
-            detailTagEditorState = .loaded(fileID: fileID, applyReport.tagSet)
-            await loadChangeLog(fileID: fileID)
+            suggestionState = .editApplied(fileID: fileID, report, applyReport, recovered)
+            editorState = .loaded(fileID: fileID, applyReport.tagSet)
+            await refreshChangeLog(fileID: fileID)
             return await loadSuggestionUndoState(undoToken: applyReport.undoToken)
         } catch {
             let mapping = await mapCoreError(error)
-            guard selection.singleFileID == fileID else { return nil }
-            detailTagSuggestionState = .editing(fileID: fileID, report, session)
-            detailTagEditorState = .failed(
+            guard currentSelectedFileID == fileID else { return nil }
+            suggestionState = .editing(fileID: fileID, report, session)
+            editorState = .failed(
                 fileID: fileID,
                 operation: .applySuggestions(suggestions.map(\.slug)),
                 mapping,
@@ -186,23 +186,19 @@ extension MainFileListModel {
     }
 
     func clearStaleDetailTagSuggestions() {
-        let selectedFileID = selection.singleFileID
-        if detailTagSuggestionState.fileID != selectedFileID {
-            detailTagSuggestionState = .idle
-            tagSuggestionPresentationRequest = nil
+        let selectedFileID = currentSelectedFileID
+        if suggestionState.fileID != selectedFileID {
+            suggestionState = .idle
+            presentationRequest = nil
         }
-        if aiTagSuggestionState.fileID != selectedFileID {
-            aiTagSuggestionState = .idle
-        }
-        let selectedBatchFileIDs = selection.multipleFileIDs
-        if selectedBatchFileIDs.isEmpty || aiTagBatchSuggestionState.fileIDs != selectedBatchFileIDs {
-            aiTagBatchSuggestionState = .idle
+        if aiSuggestionState.fileID != selectedFileID {
+            aiSuggestionState = .idle
         }
     }
 
     private func loadTagSuggestions(fileID: Int64) async {
-        let previous = detailTagSuggestionState.report
-        detailTagSuggestionState = .loading(fileID: fileID, previous: previous)
+        let previous = suggestionState.report
+        suggestionState = .loading(fileID: fileID, previous: previous)
         do {
             let report = try await tagStore.suggestTagsForFile(
                 repoPath: repoPath,
@@ -212,17 +208,17 @@ extension MainFileListModel {
                     limit: DetailTagSuggestionAction.defaultLimit
                 )
             )
-            guard selection.singleFileID == fileID else { return }
-            detailTagEditorState = .loaded(fileID: fileID, report.tagSet)
-            detailTagSuggestionState = .loaded(
+            guard currentSelectedFileID == fileID else { return }
+            editorState = .loaded(fileID: fileID, report.tagSet)
+            suggestionState = .loaded(
                 fileID: fileID,
                 report,
                 DetailTagSuggestionAction.initialSelection(in: report)
             )
         } catch {
             let mapping = await mapCoreError(error)
-            guard selection.singleFileID == fileID else { return }
-            detailTagSuggestionState = .failed(fileID: fileID, mapping, previous: previous)
+            guard currentSelectedFileID == fileID else { return }
+            suggestionState = .failed(fileID: fileID, mapping, previous: previous)
         }
     }
 

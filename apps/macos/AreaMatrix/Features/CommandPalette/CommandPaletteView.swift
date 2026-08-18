@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct CommandPaletteView: View {
@@ -12,7 +13,7 @@ struct CommandPaletteView: View {
     @State private var selectedTargetID: String?
 
     var body: some View {
-        MainFileActionSheetContainer(title: L10n.string("Command Palette"), pageID: "command-palette") {
+        AreaMatrixActionSheetContainer(title: L10n.string("Command Palette"), pageID: "command-palette") {
             commandSearchField
             commandStatus
             commandSections

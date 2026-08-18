@@ -1,12 +1,12 @@
-extension MainRepositoryContentView {
+enum MainRepositoryNoteDraftRouting {
     @MainActor
-    func showFailedNoteDraftBannerIfNeeded(leaving previousSelection: Set<Int64>) {
+    static func showFailedDraftBannerIfNeeded(
+        leaving previousSelection: Set<Int64>,
+        noteModel: DetailNoteModel,
+        listModel: MainFileListModel
+    ) {
         guard previousSelection.count == 1, let fileID = previousSelection.first else { return }
-        guard let failedFileID = detailNoteModel.failedDraftFileIDLeaving(fileID: fileID) else { return }
-        fileListModel.showUnsavedNoteDraftPreserved(fileID: failedFileID)
-    }
-
-    func showUnsavedNoteDraftPreserved(fileID: Int64) {
-        fileListModel.showUnsavedNoteDraftPreserved(fileID: fileID)
+        guard let failedFileID = noteModel.failedDraftFileIDLeaving(fileID: fileID) else { return }
+        listModel.showUnsavedNoteDraftPreserved(fileID: failedFileID)
     }
 }

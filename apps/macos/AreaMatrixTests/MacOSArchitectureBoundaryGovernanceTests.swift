@@ -1,442 +1,187 @@
+import Foundation
 import XCTest
 
 final class MacOSArchitectureBoundaryGovernanceTests: MacOSGovernanceTestCase {
-    private let featurePlatformCapabilityPatterns = [
-        #"FileManager(?:\.default|\s*=\s*\.default)"#,
-        "startDownloadingUbiquitousItem",
-        #"Task\.detached"#,
-        "SecItemCopyMatching",
-        "SecItemUpdate",
-        "SecItemAdd",
-        "SecItemDelete",
-        "NSWorkspace[A-Za-z0-9_]*",
-        "NSPasteboard[A-Za-z0-9_]*",
-        "NSOpenPanel[A-Za-z0-9_]*",
-        "NSSavePanel[A-Za-z0-9_]*",
-        "FSEventStream",
-        "URLSession",
-        "NSFileCoordinator",
-        #"Process\("#,
-        "FileHandle",
-        "resourceValues",
-        #"Data\(contentsOf:"#,
-        #"write\(to:"#,
-        #"setenv\("#,
-        #"getenv\("#,
-        #"unsetenv\("#,
-        #"\blstat\("#,
-        #"\bstat\("#,
-        #"\bgeteuid\("#
-    ]
-
-    private let nonBridgeCoreErrorInventory: [String] = []
-
-    func testSwiftUIViewFilesDoNotOwnPlatformIO() throws {
-        let platformIOTerms = [
-            "FileManager.default",
-            "NSApplication.shared",
-            "NSApp.appearance", "NSCursor.", "NSHapticFeedbackManager", "NotificationCenter.default.post",
-            "startDownloadingUbiquitousItem",
-            "NSFileCoordinator",
-            "FSEventStream",
-            "URLSession",
-            "Task.detached"
-        ]
-        let violations = try productionSwiftFiles()
-            .filter(isViewLikeProductionFile)
-            .flatMap { try sourceTermViolations(in: $0, terms: platformIOTerms) }
-            .sorted()
-        XCTAssertEqual(
-            violations,
-            [],
-            "SwiftUI view files should delegate platform IO to models, Bridge, or PlatformServices."
-        )
-    }
-
-    func testFeatureAndViewInteractionFeedbackUsesEnvironmentDependency() throws {
-        let environmentDeclarationPath =
-            "Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/InteractionFeedbackEnvironment.swift"
-        let violations = try productionSwiftFiles()
-            .filter { fileURL in
-                let path = relativeProductionPath(for: fileURL)
-                return (path.hasPrefix("Features/") || path.hasPrefix("Views/")) &&
-                    path != environmentDeclarationPath
-            }
-            .flatMap {
-                try sourceRegexViolations(
-                    in: $0,
-                    pattern: #"\bAppPlatformServices\.interactionFeedback\b"#
-                )
-            }
-            .sorted()
-        XCTAssertEqual(
-            violations,
-            [],
-            "Feature and view code should consume interaction feedback through SwiftUI Environment " +
-                "so previews and tests can inject a controlled platform double."
-        )
-
-        let environmentSourceFiles = try productionSwiftFiles() + packageSwiftFiles("AreaMatrixUIFoundation")
-        let environmentSource = try String(
-            contentsOf: XCTUnwrap(environmentSourceFiles.first {
-                relativeProductionPath(for: $0) == environmentDeclarationPath
-            }),
+    func testFeatureRoutingStateCannotReturnToMainRepositoryContentView() throws {
+        let contentViewSource = try String(
+            contentsOf: productionDirectory().appendingPathComponent("Views/Main/MainRepositoryContentView.swift"),
             encoding: .utf8
         )
-        XCTAssertTrue(
-            environmentSource.contains(
-                "static let defaultValue: any AreaMatrixInteractionFeedbackPerforming = " +
-                    "AreaMatrixNoopInteractionFeedback()"
+        let owners = [
+            ("Features/Search/SearchModel.swift", "@Published var routingState = MainRepositorySearchRoutingState()"),
+            ("Features/Search/SearchModel.swift", "@Published var savedSearchesBySidebarID"),
+            (
+                "Features/FileActions/FileActionCoordinator.swift",
+                "@Published var routingState = MainFileActionRoutingState()"
             ),
-            "The Environment default must be side-effect free; production AppKit feedback " +
-                "must be injected by App composition."
-        )
-    }
-
-    func testFeaturePlatformCapabilityUseStaysInventoried() throws {
-        let expected = [
-            "Features/AI/RemoteProviderCredentialStore.swift:SecItemAdd:1",
-            "Features/AI/RemoteProviderCredentialStore.swift:SecItemCopyMatching:1",
-            "Features/AI/RemoteProviderCredentialStore.swift:SecItemDelete:1",
-            "Features/AI/RemoteProviderCredentialStore.swift:SecItemUpdate:1"
+            ("Features/SyncConflicts/SyncConflictCoordinator.swift", "@Published var reviewRoutingState"),
+            ("Features/CommandPalette/CommandPaletteState.swift", "@Published var focusRoutingState"),
+            ("Features/CommandPalette/CommandPaletteState.swift", "@Published var importConflictBatchRelayState")
         ]
-        let actual = try countedRegexMatches(
-            in: productionSwiftFiles().filter { relativeProductionPath(for: $0).hasPrefix("Features/") },
-            pattern: featurePlatformCapabilityPatterns.joined(separator: "|")
-        )
-        XCTAssertEqual(
-            actual,
-            expected,
-            "Feature-layer platform capability usage must stay explicitly inventoried until migrated " +
-                "to PlatformServices."
-        )
-    }
 
-    func testRemoteProviderProbeServiceImplementationStaysInPlatformServices() throws {
-        let implementationFiles = try productionSwiftFiles().filter {
-            relativeProductionPath(for: $0) == "PlatformServices/RemoteProviderProbeService.swift"
+        for (path, declaration) in owners {
+            let source = try String(
+                contentsOf: productionDirectory().appendingPathComponent(path),
+                encoding: .utf8
+            )
+            XCTAssertTrue(source.contains(declaration), "Missing Feature-owned route state: \(declaration)")
         }
-        let actual = try countedRegexMatches(
-            in: implementationFiles,
-            pattern: #"\bactor RemoteProviderProbeService\b"#
-        )
-
-        XCTAssertEqual(
-            actual,
-            ["PlatformServices/RemoteProviderProbeService.swift:actor RemoteProviderProbeService:1"],
-            "Remote provider Keychain and URLSession execution must stay outside the AI feature implementation."
-        )
-    }
-
-    func testRemoteProviderProbeServiceKeepsCredentialAndNetworkLimitsExplicit() throws {
-        let implementationFiles = try productionSwiftFiles().filter {
-            relativeProductionPath(for: $0) == "PlatformServices/RemoteProviderProbeService.swift"
+        for forbidden in [
+            "@State var fileActionRoutingState",
+            "@State var importConflictBatchRelayState",
+            "@State var commandPaletteFocusRoutingState",
+            "@State var searchRoutingState",
+            "@State var savedSearchesBySidebarID",
+            "@State var smartListLoadError",
+            "@State var syncConflictReviewRoutingState"
+        ] {
+            XCTAssertFalse(contentViewSource.contains(forbidden), "Route state returned to content View: \(forbidden)")
         }
-        let source = try String(contentsOf: XCTUnwrap(implementationFiles.first), encoding: .utf8)
-        let requiredTerms = [
-            "static let shared = RemoteProviderProbeService()",
-            "KeychainProbeCredentialReader",
-            "URLSessionRemoteProviderProbeTransport",
-            "URLSessionConfiguration.ephemeral",
-            "maximumResponseBodyBytes == 0",
-            "!plan.followRedirects",
-            "completionHandler(nil)",
-            "kSecReturnData"
-        ]
+    }
 
-        let missing = requiredTerms.filter { !source.contains($0) }
+    func testSelectionAndSummaryExitStateStayWithTheirOwners() throws {
+        let contentViewSource = try String(
+            contentsOf: productionDirectory().appendingPathComponent("Views/Main/MainRepositoryContentView.swift"),
+            encoding: .utf8
+        )
+        let selectionSource = try String(
+            contentsOf: testsDirectory().deletingLastPathComponent().appendingPathComponent(
+                "Packages/AreaMatrixModules/Sources/AreaMatrixFeatureLibrary/LibrarySelectionModel.swift"
+            ),
+            encoding: .utf8
+        )
+        let summarySource = try String(
+            contentsOf: productionDirectory().appendingPathComponent("Features/AI/AISummaryEditorSupport.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(contentViewSource.contains("@StateObject var selectionModel: MainSelectionModel"))
+        XCTAssertFalse(contentViewSource.contains("@State var selectedFileIDs"))
+        XCTAssertFalse(contentViewSource.contains("@State var pendingMovedFileFocusID"))
+        XCTAssertFalse(contentViewSource.contains("@State var summarySelectionExitState"))
+        XCTAssertTrue(selectionSource.contains("public final class MainSelectionModel: ObservableObject"))
+        XCTAssertTrue(summarySource.contains("@Published var selectionExitState = AISummarySelectionExitState()"))
+    }
+
+    func testSyncConflictSheetStaysWithItsFeatureHost() throws {
+        let source = try String(
+            contentsOf: productionDirectory()
+                .appendingPathComponent("Features/SyncConflicts/SyncConflictReviewSupportViews.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("struct SyncConflictReviewHostModifier: ViewModifier"))
+        XCTAssertFalse(source.contains("extension MainRepositoryContentView"))
+    }
+
+    func testProductionCodeDoesNotAddMutableStaticStoredState() throws {
+        let expression = try NSRegularExpression(
+            pattern: #"(?m)\bstatic\s+var\s+([A-Za-z_][A-Za-z0-9_]*)[^\n{]*="#
+        )
+        let violations = try productionSwiftFiles()
+            .filter { relativeProductionPath(for: $0) != "Bridge/UniFFI/area_matrix.swift" }
+            .flatMap { file -> [String] in
+                let source = try String(contentsOf: file, encoding: .utf8)
+                let range = NSRange(source.startIndex ..< source.endIndex, in: source)
+                return expression.matches(in: source, range: range).compactMap { match in
+                    guard let nameRange = Range(match.range(at: 1), in: source) else { return nil }
+                    return "\(relativeProductionPath(for: file)):\(source[nameRange])"
+                }
+            }
+
         XCTAssertEqual(
-            missing,
+            violations,
             [],
-            "Remote provider platform execution must keep Keychain isolation and headers-only network limits."
+            "Mutable process-wide storage must have an explicit actor/runtime owner; computed adapters are allowed."
         )
     }
 
-    func testImportSessionPersistenceImplementationStaysInPlatformServices() throws {
-        let implementationFiles = try productionSwiftFiles().filter {
-            relativeProductionPath(for: $0) == "PlatformServices/ImportBatchSessionPlatformServices.swift"
+    func testRepositorySessionRemainsOwnedByIngestionPackage() throws {
+        let appSession = productionDirectory()
+            .appendingPathComponent("Features/RepositoryLifecycle/RepositorySession.swift")
+        let packageSession = testsDirectory().deletingLastPathComponent().appendingPathComponent(
+            "Packages/AreaMatrixModules/Sources/AreaMatrixFeatureIngestion/RepositorySessionContracts.swift"
+        )
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: appSession.path))
+        let source = try String(contentsOf: packageSession, encoding: .utf8)
+        XCTAssertTrue(source.contains("public final class RepositorySession"))
+        XCTAssertTrue(source.contains("public func makeOperationContext() -> RepositoryOperationContext"))
+        XCTAssertTrue(source.contains("case repositoryIdentityMismatch"))
+    }
+
+    func testRemoteProviderContractsCannotReturnToAppFeatureOwnership() throws {
+        let featureSources = try productionSwiftFiles()
+            .filter { $0.path.contains("/Features/") }
+            .map { try String(contentsOf: $0, encoding: .utf8) }
+            .joined(separator: "\n")
+        for type in [
+            "AISettingsFeatureKind", "RemoteProviderKindState", "RemoteProviderTestRequestState",
+            "RemoteProviderEnableRequestState", "RemoteProviderConfigState", "RemoteProviderTestResultState",
+            "RemotePrivacyGateAction", "RemoteProviderConfigDraft", "RemoteProviderDraftFingerprint"
+        ] {
+            let pattern = #"(?m)^(?:public\s+|internal\s+|private\s+|fileprivate\s+)?(?:struct|enum|class)\s+"# +
+                NSRegularExpression.escapedPattern(for: type) + #"\b"#
+            let declaration = try NSRegularExpression(pattern: pattern)
+            let range = NSRange(featureSources.startIndex ..< featureSources.endIndex, in: featureSources)
+            XCTAssertEqual(declaration.numberOfMatches(in: featureSources, range: range), 0, "\(type) returned to App.")
         }
-        let actual = try countedRegexMatches(
-            in: implementationFiles,
-            pattern: #"\bFileImportBatchSessionStore\b"#
-        )
+    }
 
-        XCTAssertEqual(
-            actual,
-            ["PlatformServices/ImportBatchSessionPlatformServices.swift:FileImportBatchSessionStore:1"],
-            "Import session file persistence should stay in PlatformServices; the Import feature owns only " +
-                "session semantics and recovery state."
+    func testBatchRenameContractsCannotReturnToAppFeatureOwnership() throws {
+        let featureSources = try productionSwiftFiles()
+            .filter { $0.path.contains("/Features/") }
+            .map { try String(contentsOf: $0, encoding: .utf8) }
+            .joined(separator: "\n")
+        for type in [
+            "BatchRenameModeSnapshot", "BatchRenameDateSourceSnapshot", "BatchRenameRuleSnapshot",
+            "BatchRenamePreviewStatusSnapshot", "BatchRenamePreviewItemSnapshot",
+            "BatchRenamePreviewReportSnapshot", "BatchRenameResultStatusSnapshot",
+            "BatchRenameItemResultSnapshot"
+        ] {
+            let pattern = #"(?m)^(?:public\s+|internal\s+|private\s+|fileprivate\s+)?(?:struct|enum|class)\s+"# +
+                NSRegularExpression.escapedPattern(for: type) + #"\b"#
+            let declaration = try NSRegularExpression(pattern: pattern)
+            let range = NSRange(featureSources.startIndex ..< featureSources.endIndex, in: featureSources)
+            XCTAssertEqual(declaration.numberOfMatches(in: featureSources, range: range), 0, "\(type) returned to App.")
+        }
+
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: productionDirectory()
+                    .appendingPathComponent("Features/FileActions/BatchRenameSnapshots.swift").path
+            )
         )
     }
 
-    func testGeneratedBindingDirectoriesContainOnlyGeneratedArtifacts() throws {
-        let trackedExpected = [
-            "Bridge/UniFFI/area_matrix.swift",
-            "Bridge/UniFFI/area_matrixFFI.h",
-            "Bridge/UniFFI/area_matrixFFI.modulemap",
-            "Bridge/UniFFI/libarea_matrix_core.a",
-            "Bridge/UniFFI/module.modulemap"
-        ]
-        let localGeneratedDirectory = productionDirectory()
-            .appendingPathComponent("Bridge/Generated", isDirectory: true)
-        let expected = FileManager.default.fileExists(atPath: localGeneratedDirectory.path)
-            ? trackedExpected + [
-                "Bridge/Generated/area_matrix.swift",
-                "Bridge/Generated/area_matrixFFI.h",
-                "Bridge/Generated/area_matrixFFI.modulemap",
-                "Bridge/Generated/libarea_matrix_core.a",
-                "Bridge/Generated/module.modulemap"
-            ]
-            : trackedExpected
-        let actual = try generatedBindingArtifacts()
+    func testStartupRecoveryContractsCannotReturnToAppFeatureOwnership() throws {
+        let featureSources = try productionSwiftFiles()
+            .filter { $0.path.contains("/Features/") }
+            .map { try String(contentsOf: $0, encoding: .utf8) }
+            .joined(separator: "\n")
+        for declaration in [
+            "protocol CoreStartupRecovering",
+            "struct RecoveryReportSnapshot",
+            "struct RepositoryInitializationResult"
+        ] {
+            XCTAssertFalse(featureSources.contains(declaration), "\(declaration) returned to App Feature ownership.")
+        }
 
-        XCTAssertEqual(
-            actual,
-            expected.sorted(),
-            "Bridge/Generated and Bridge/UniFFI should only contain generated UniFFI artifacts."
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: productionDirectory()
+                    .appendingPathComponent("Features/Onboarding/StartupRecoveryModels.swift").path
+            )
         )
     }
 
-    func testSQLiteAccessStaysInBridgeOrPlatformServices() throws {
-        let violations = try productionSwiftFiles()
-            .filter { fileURL in
-                let path = relativeProductionPath(for: fileURL)
-                return !path.hasPrefix("Bridge/") && !path.hasPrefix("PlatformServices/")
-            }
-            .flatMap {
-                try sourceRegexViolations(
-                    in: $0,
-                    pattern: #"\bsqlite3_[A-Za-z0-9_]+\b|\bSQLITE_[A-Z0-9_]+\b"#
-                )
-            }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "SQLite direct access should stay behind Bridge or PlatformServices, not feature, view, or model code."
-        )
-    }
-
-    func testNonBridgeCoreErrorUsageStaysInventoried() throws {
-        let actual = try countedRegexMatches(
-            in: productionSwiftFiles().filter { fileURL in
-                let path = relativeProductionPath(for: fileURL)
-                return !path.hasPrefix("Bridge/") && !path.hasPrefix("PlatformServices/")
-            },
-            pattern: #"\bCoreError(?:\.[A-Za-z]+)?\b"#
-        )
-
-        XCTAssertEqual(
-            actual,
-            nonBridgeCoreErrorInventory,
-            "Non-Bridge CoreError usage must stay explicitly inventoried until migrated to app semantic errors."
-        )
-    }
-
-    func testAppErrorMappingProviderStaysCentralizedInBridgeSnapshots() throws {
-        let violations = try productionSwiftFiles()
-            .filter { relativeProductionPath(for: $0) != "Bridge/CoreErrorMappingSnapshots.swift" }
-            .flatMap {
-                try sourceRegexViolations(
-                    in: $0,
-                    pattern: #"\bAppErrorMappingProviding\b"#
-                )
-            }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "App semantic error mapping providers should stay centralized in Bridge snapshots; " +
-                "feature code should use AppSemanticError."
-        )
-    }
-
-    func testGeneratedErrorMappingTypesStayInsideBridge() throws {
-        let violations = try productionSwiftFiles()
-            .filter { !relativeProductionPath(for: $0).hasPrefix("Bridge/") }
-            .flatMap {
-                try sourceRegexViolations(
-                    in: $0,
-                    pattern: [
-                        #"\bErrorMappingInput\b"#,
-                        #"\bErrorMapping\b"#,
-                        #"\bErrorSeverity\b"#,
-                        #"\bErrorRecoverability\b"#,
-                        #"\bmapCoreError\s*\(\s*input\s*:"#
-                    ].joined(separator: "|")
-                )
-            }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "Generated Core error mapping DTOs and functions should stay behind Bridge; " +
-                "feature code should consume CoreErrorMappingSnapshot or AppSemanticError."
-        )
-    }
-
-    func testGeneratedReindexReportStaysInsideBridge() throws {
-        let violations = try productionSwiftFiles()
-            .filter { !relativeProductionPath(for: $0).hasPrefix("Bridge/") }
-            .flatMap {
-                try sourceRegexViolations(in: $0, pattern: #"\bReindexReport\b"#)
-            }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "Generated ReindexReport must be converted to ReindexReportSnapshot inside Bridge."
-        )
-    }
-}
-
-final class MacOSPlatformAdapterGovernanceTests: MacOSGovernanceTestCase {
-    private let nsWorkspaceOpenInventory = [
-        "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/ExternalURLPolicy.swift:NSWorkspace.shared.open:1",
-        "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/LocalFileURLPolicy.swift:"
-            + "NSWorkspace.shared.activateFileViewerSelecting:1",
-        "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/LocalFileURLPolicy.swift:NSWorkspace.shared.open:1"
-    ]
-
-    func testAppPlatformDefaultAdaptersStayCentralized() throws {
-        let violations = try productionSwiftFiles()
-            .filter { !appPlatformServiceFiles.contains(relativeProductionPath(for: $0)) }
-            .flatMap {
-                try sourceRegexViolations(
-                    in: $0,
-                    pattern: [
-                        #"\bAppKitInteractionFeedbackPerformer\s*\("#,
-                        #"\bBundleAppVersionReader\s*\("#,
-                        #"\bFileImportBatchSessionStore\s*\("#,
-                        #"\bWelcomeHelpOpener\s*\("#,
-                        #"\bLocalRootOverviewFileInspector\s*\("#,
-                        #"\bLocalSystemCapabilities\s*\("#,
-                        #"\bNSApplicationKeyWindowCloser\s*\("#,
-                        #"\bNSOpenPanelRepositoryDirectoryPicker\s*\("#,
-                        #"\bNSOpenPanelRepositoryImportPicker\s*\("#,
-                        #"\bNSPasteboardRepositoryPathCopier\s*\("#,
-                        #"\bNSPasteboardStringWriter\s*\("#,
-                        #"\bNSSavePanelImportResultDetailsExporter\s*\("#,
-                        #"\bSQLiteExistingRepositoryMetadataReader\s*\("#,
-                        #"\bVoiceOverAccessibilityAnnouncer\s*\("#,
-                        #"\bNSWorkspaceRepositoryFileOpener\s*\("#,
-                        #"\bNSWorkspaceRepositoryFileRevealer\s*\("#,
-                        #"\bNSWorkspaceRepositoryFinderOpener\s*\("#
-                    ].joined(separator: "|")
-                )
-            }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "App-wide platform default adapters should be constructed through AppPlatformServices."
-        )
-    }
-
-    func testFeaturePlatformDefaultAdaptersStayInPlatformServices() throws {
-        let violations = try productionSwiftFiles()
-            .filter { fileURL in
-                let path = relativeProductionPath(for: fileURL)
-                return !path.hasPrefix("PlatformServices/")
-            }
-            .flatMap {
-                try sourceRegexViolations(
-                    in: $0,
-                    pattern: [
-                        #"\bLocalICloudStatusDetector\s*\("#,
-                        #"\bLocalImportFolderScanner\s*\("#,
-                        #"\bLocalModelStorageProvider\s*\("#,
-                        #"\bLocalSourcePreflightInspector\s*\("#,
-                        #"\bNSPasteboardLocalModelDiagnosticsCopier\s*\("#,
-                        #"\bNSWorkspaceLocalModelFolderOpener\s*\("#,
-                        #"\bNSWorkspaceLocalModelInstallHelpOpener\s*\("#,
-                        #"\bNSWorkspaceRepositoryIgnoreRulesManager\s*\("#
-                    ].joined(separator: "|")
-                )
-            }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "Feature platform default adapters should be constructed through PlatformServices."
-        )
-    }
-
-    func testNSWorkspaceOpeningSideEffectsStayBehindPlatformAdapters() throws {
-        let violations = try productionSwiftFiles()
-            .filter { fileURL in
-                let path = relativeProductionPath(for: fileURL)
-                return !path.hasPrefix("App/") && !path.hasPrefix("PlatformServices/")
-            }
-            .flatMap {
-                try sourceRegexViolations(
-                    in: $0,
-                    pattern: #"\bNSWorkspace\.shared\.(?:open|activateFileViewerSelecting)\s*\("#
-                )
-            }
-            .sorted()
-
-        XCTAssertEqual(
-            violations,
-            [],
-            "Opening URLs, files, folders, or Finder selections through NSWorkspace should stay " +
-                "behind App or PlatformServices adapters."
-        )
-    }
-
-    func testNSWorkspaceOpeningSideEffectsStayInventoried() throws {
-        let actual = try countedRegexMatches(
-            in: productionSwiftFiles() + packageSwiftFiles("AreaMatrixPlatformKit"),
-            pattern: #"\bNSWorkspace\.shared\.(?:open|activateFileViewerSelecting)\b"#
-        )
-
-        XCTAssertEqual(
-            actual,
-            nsWorkspaceOpenInventory,
-            "Direct NSWorkspace open/reveal calls should stay behind reviewed shared adapters; " +
-                "new call sites must either reuse LocalFileURLOpening or be explicitly inventoried."
-        )
-    }
-
-    func testExternalURLStringParsingStaysCentralizedInPolicy() throws {
-        let expected = [
-            "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/ExternalURLPolicy.swift:URL(string::1",
-            "PlatformServices/RemoteProviderProbeService.swift:URL(string::1"
-        ]
-        let actual = try countedRegexMatches(
-            in: productionSwiftFiles() + packageSwiftFiles("AreaMatrixPlatformKit"),
-            pattern: #"\bURL\s*\(\s*string\s*:"#
-        )
-
-        XCTAssertEqual(
-            actual,
-            expected,
-            "External links stay behind ExternalURLPolicy; remote provider probe URLs are a separately reviewed " +
-                "network boundary in PlatformServices."
-        )
-    }
-
-    func testExternalURLPolicyUseStaysBehindSharedOpener() throws {
-        let expected = [
-            "Packages/AreaMatrixModules/Sources/AreaMatrixPlatformKit/ExternalURLPolicy.swift:" +
-                "ExternalURLPolicy.validatedHTTPSURL:1"
-        ]
-        let actual = try countedRegexMatches(
-            in: productionSwiftFiles() + packageSwiftFiles("AreaMatrixPlatformKit"),
-            pattern: #"\bExternalURLPolicy\.validatedHTTPSURL\b"#
-        )
-
-        XCTAssertEqual(
-            actual,
-            expected,
-            "Remote link validation should stay behind the shared ExternalURLStringOpening adapter " +
-                "instead of being repeated in feature-specific platform services."
-        )
+    func testCoreVersionContractsCannotReturnToAppFeatureOwnership() throws {
+        let featureSources = try productionSwiftFiles()
+            .filter { $0.path.contains("/Features/") }
+            .map { try String(contentsOf: $0, encoding: .utf8) }
+            .joined(separator: "\n")
+        for declaration in ["protocol CoreVersionReading", "protocol CoreVersionLoading"] {
+            XCTAssertFalse(featureSources.contains(declaration), "\(declaration) returned to App Feature ownership.")
+        }
     }
 }

@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureLibrary
 import SwiftUI
 import XCTest
 
@@ -201,15 +202,15 @@ final class MainRepoExternalRemovalTests: XCTestCase {
             )
         )
 
-        model.beginSmartListFilterDraft(id: 42, name: "最近合同", filters: baseFilters)
-        model.updateSmartListFilterDraft(draftFilters)
-        model.openSavedSearchSheet()
+        model.searchModel.beginSmartListFilterDraft(id: 42, name: "最近合同", filters: baseFilters)
+        model.searchModel.updateSmartListFilterDraft(draftFilters)
+        model.searchModel.openSavedSearchSheet()
 
-        XCTAssertEqual(model.smartListFilterDraft?.id, 42)
-        XCTAssertEqual(model.smartListFilterDraft?.filters.tags, ["finance", "tax"])
-        XCTAssertEqual(model.smartListFilterDraft?.filters.tagMatchMode, .all)
-        XCTAssertEqual(model.lastSearchExitContext, MainSearchExitContext.smartList(id: 42, name: "最近合同"))
-        XCTAssertNil(model.pendingSearchDestination)
+        XCTAssertEqual(model.searchModel.smartListFilterDraft?.id, 42)
+        XCTAssertEqual(model.searchModel.smartListFilterDraft?.filters.tags, ["finance", "tax"])
+        XCTAssertEqual(model.searchModel.smartListFilterDraft?.filters.tagMatchMode, .all)
+        XCTAssertEqual(model.searchModel.lastSearchExitContext, MainSearchExitContext.smartList(id: 42, name: "最近合同"))
+        XCTAssertNil(model.searchModel.pendingSearchDestination)
     }
 
     @MainActor
@@ -230,17 +231,20 @@ final class MainRepoExternalRemovalTests: XCTestCase {
         )
         let draftFilters = SearchFilterStateSnapshot.mainRepoSearchFiltersFixture(tag: "draft")
 
-        model.beginSmartListFilterDraft(id: 42, name: "最近合同", filters: draftFilters)
+        model.searchModel.beginSmartListFilterDraft(id: 42, name: "最近合同", filters: draftFilters)
         let updated = SearchFilterEditing.removing(
             .tags,
-            from: SearchFilterStateRouting.effective(searchFilters: searchFilters, draft: model.smartListFilterDraft)
+            from: SearchFilterStateRouting.effective(
+                searchFilters: searchFilters,
+                draft: model.searchModel.smartListFilterDraft
+            )
         )
-        SearchFilterStateRouting.assign(updated, searchFilters: &searchFilters, fileListModel: model)
+        SearchFilterStateRouting.assign(updated, searchFilters: &searchFilters, searchModel: model.searchModel)
 
         XCTAssertEqual(searchFilters.tags, ["ordinary"])
-        XCTAssertEqual(model.smartListFilterDraft?.filters.tags, [])
-        XCTAssertEqual(model.smartListFilterDraft?.filters.tagMatchMode, .any)
-        XCTAssertEqual(model.smartListFilterDraft?.filters.modifiedAfter, 1_700_000_000)
+        XCTAssertEqual(model.searchModel.smartListFilterDraft?.filters.tags, [])
+        XCTAssertEqual(model.searchModel.smartListFilterDraft?.filters.tagMatchMode, .any)
+        XCTAssertEqual(model.searchModel.smartListFilterDraft?.filters.modifiedAfter, 1_700_000_000)
     }
 
     @MainActor

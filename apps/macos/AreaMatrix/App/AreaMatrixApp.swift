@@ -7,10 +7,14 @@ struct AreaMatrixApp: App {
     @StateObject private var localizer: AppLocalizer
     @StateObject private var languageStore: AppLanguageStore
     @StateObject private var commandRouter = AppCommandRouter.shared
-    private let dependencies = AppDependencyContainer.live
+    private let coreServices: AppCoreServices
+    private let dependencies: AppDependencyContainer
     private let observabilityRuntime = ObservabilityRuntimeAssembly.shared
 
     init() {
+        let coreServices = AppCoreServices()
+        self.coreServices = coreServices
+        dependencies = AppDependencyContainer.live(coreServices: coreServices)
         let commandRouter = AppCommandRouter.shared
         commandRouter.installFeatureExtensionRegistry(
             FeatureManifestRegistry.makeRuntimeRegistry(commandRouter: commandRouter)

@@ -1774,7 +1774,15 @@ def _check_developer_workflow_contract(root: Path, failures: FailureCollector) -
         r'doctor_sub\.add_parser\("build"',
         "build doctor entry",
     )
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/cli.py",
+        r"metrics_sub\.add_parser\(\s*['\"]build['\"]",
+        "build metrics entry",
+    )
     _require_text(root, failures, "docs/development/build.md", r"\./dev doctor build", "build doctor docs")
+    _require_text(root, failures, "docs/development/build.md", r"\./dev metrics build", "build metrics docs")
     _require_text(root, failures, "docs/development/testing.md", r"\./dev test changed", "changed-path test docs")
     for scenario_id in python_ids:
         _require_text(
@@ -2112,6 +2120,20 @@ def run_governance_check(root: Path | None = None) -> int:
         ".github/workflows/macos-ci.yml",
         r"run: test -d apps/macos/AreaMatrix$",
         "required macOS source gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"swift test --package-path apps/macos/Packages/AreaMatrixModules",
+        "AreaMatrixModules Swift package test gate",
+    )
+    _require_text(
+        root,
+        failures,
+        "scripts/dev_tools/developer.py",
+        r"swift.*test.*--package-path.*apps/macos/Packages/AreaMatrixModules",
+        "changed-path AreaMatrixModules Swift package test gate",
     )
     _require_text(root, failures, ".github/workflows/macos-ci.yml", r"\./dev test macos", "macOS test gate")
     _require_text(
