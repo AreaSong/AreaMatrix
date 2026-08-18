@@ -304,20 +304,23 @@ jobs:
 
       - name: Record macOS CI feedback metric
         if: always()
+        continue-on-error: true
         run: |
-          set -euo pipefail
+          set -uo pipefail
           end="$(python3 -c 'import time; print(f"{time.time():.6f}")')"
           duration="$(python3 - "$AREAMATRIX_CI_START" "$end" <<'PY'
           import sys
           print(f"{float(sys.argv[2]) - float(sys.argv[1]):.3f}")
           PY
           )"
-          ./dev metrics feedback \
+          if ! ./dev metrics feedback \
             --record ci \
             --cohort github-macos14-xcode-build-and-layered-tests \
             --duration "$duration" \
             --note "workflow=macos-ci;job=build;runner=macos-14" \
-            --json | tee .build/metrics/macos-ci-feedback.json
+            --json | tee .build/metrics/macos-ci-feedback.json; then
+            echo "::warning title=CI feedback metric unavailable::Product build and tests remain authoritative; feedback metric recording failed."
+          fi
 
       - uses: actions/upload-artifact@v4
         if: always()
