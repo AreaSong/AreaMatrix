@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -42,14 +43,17 @@ public sealed partial class RepositoryAdoptConfirmDialog : UserControl
         }
     }
 
-    public async Task OpenRouteAsync(WindowsRepositoryRoute route)
+    public async Task OpenRouteAsync(
+        WindowsRepositoryRoute route,
+        CancellationToken cancellationToken = default)
     {
         if (ViewModel is null)
         {
             return;
         }
 
-        await ViewModel.OpenRouteAsync(route);
+        await ViewModel.OpenRouteAsync(route, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         RefreshState();
     }
 

@@ -2,12 +2,18 @@
 
 import CoreGraphics
 import CoreText
+import CryptoKit
 import Foundation
 
 struct Outline: Codable {
     let family: String
+    let fontSha256: String
     let postScriptName: String
     let fontSize: Double
+    let fontVersion: String
+    let licenseExpression: String
+    let licenseFile: String
+    let source: String
     let baseline: Double
     let areaWidth: Double
     let matrixWidth: Double
@@ -15,12 +21,17 @@ struct Outline: Codable {
     let matrixPath: String
 }
 
-guard CommandLine.arguments.count == 3 else {
-    fputs("usage: generate_wordmark_outlines.swift FONT_FILE OUTPUT_JSON\n", stderr)
+guard CommandLine.arguments.count == 7 else {
+    fputs(
+        "usage: generate_wordmark_outlines.swift FONT_FILE OUTPUT_JSON FONT_VERSION SOURCE_URL LICENSE_EXPRESSION LICENSE_FILE\n",
+        stderr
+    )
     exit(2)
 }
 
 let fontURL = URL(fileURLWithPath: CommandLine.arguments[1]) as CFURL
+let fontData = try Data(contentsOf: fontURL as URL)
+let fontSha256 = SHA256.hash(data: fontData).map { String(format: "%02x", $0) }.joined()
 var registrationError: Unmanaged<CFError>?
 guard CTFontManagerRegisterFontsForURL(fontURL, .process, &registrationError) else {
     let message = registrationError?.takeRetainedValue().localizedDescription ?? "unknown error"
@@ -99,8 +110,13 @@ let area = outline("Area")
 let matrix = outline("Matrix")
 let result = Outline(
     family: CTFontCopyFamilyName(font) as String,
+    fontSha256: fontSha256,
     postScriptName: CTFontCopyPostScriptName(font) as String,
     fontSize: Double(fontSize),
+    fontVersion: CommandLine.arguments[3],
+    licenseExpression: CommandLine.arguments[5],
+    licenseFile: CommandLine.arguments[6],
+    source: CommandLine.arguments[4],
     baseline: Double(baseline),
     areaWidth: Double(area.width),
     matrixWidth: Double(matrix.width),

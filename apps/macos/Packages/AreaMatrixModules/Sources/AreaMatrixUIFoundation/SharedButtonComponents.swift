@@ -7,6 +7,8 @@ public struct AreaMatrixCapsuleButton<Label: View>: View {
     private let action: () -> Void
     private let label: () -> Label
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public init(
         accent: Color = AreaMatrixTheme.Colors.teal,
         isHovered: Bool,
@@ -40,10 +42,12 @@ public struct AreaMatrixCapsuleButton<Label: View>: View {
                 )
                 .scaleEffect(isHovered ? 1.02 : 1)
                 .animation(
-                    .spring(
-                        response: AreaMatrixMotionTokens.Spring.hoverResponse,
-                        dampingFraction: AreaMatrixMotionTokens.Spring.hoverDamping
-                    ),
+                    reduceMotion
+                        ? nil
+                        : .spring(
+                            response: AreaMatrixMotionTokens.Spring.hoverResponse,
+                            dampingFraction: AreaMatrixMotionTokens.Spring.hoverDamping
+                        ),
                     value: isHovered
                 )
         }
@@ -56,6 +60,8 @@ public struct AreaMatrixGhostButton<Label: View>: View {
     public let isHovered: Bool
     private let action: () -> Void
     private let label: () -> Label
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         isHovered: Bool,
@@ -76,7 +82,10 @@ public struct AreaMatrixGhostButton<Label: View>: View {
                 .padding(.horizontal, 12)
                 .foregroundStyle(isHovered ? .primary : .secondary)
                 .background(Color.primary.opacity(isHovered ? 0.08 : 0), in: Capsule())
-                .animation(.easeOut(duration: AreaMatrixMotionTokens.Duration.quickFade), value: isHovered)
+                .animation(
+                    reduceMotion ? nil : .easeOut(duration: AreaMatrixMotionTokens.Duration.quickFade),
+                    value: isHovered
+                )
         }
         .buttonStyle(.plain)
     }

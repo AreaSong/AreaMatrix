@@ -60,6 +60,29 @@ internal sealed class UniFfiReader
         return value;
     }
 
+    public string ReadStringOrRemainingUtf8()
+    {
+        if (CanReadLengthPrefixedString())
+        {
+            return ReadString();
+        }
+
+        string value = Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
+        offset = bytes.Length;
+        return value;
+    }
+
+    private bool CanReadLengthPrefixedString()
+    {
+        if (bytes.Length - offset < 4)
+        {
+            return false;
+        }
+
+        int length = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(offset, 4));
+        return length >= 0 && offset + 4 + length == bytes.Length;
+    }
+
     private void EnsureAvailable(int length)
     {
         if (length < 0 || offset + length > bytes.Length)

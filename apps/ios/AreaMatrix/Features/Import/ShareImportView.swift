@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ShareImportView: View {
     @StateObject private var model: ShareImportModel
+    @State private var didNotifySaved = false
     private let onCancel: () -> Void
     private let onOpenAreaMatrix: () -> Void
     private let onSaved: (ShareImportResult) -> Void
@@ -29,11 +30,14 @@ struct ShareImportView: View {
             .navigationTitle("Save to AreaMatrix")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", action: onCancel)
+                    Button("Cancel") {
+                        model.cancelSave()
+                        onCancel()
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(model.saveButtonTitle) {
-                        Task { await model.save() }
+                        model.startSave()
                     }
                     .disabled(!model.canSave)
                 }
@@ -42,9 +46,13 @@ struct ShareImportView: View {
                 await model.prepare()
             }
             .onChange(of: model.result) { _, result in
-                if let result {
+                if let result, !didNotifySaved {
+                    didNotifySaved = true
                     onSaved(result)
                 }
+            }
+            .onDisappear {
+                model.cancelSave()
             }
         }
     }

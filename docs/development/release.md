@@ -41,6 +41,8 @@ AreaMatrix 使用 SemVer：`MAJOR.MINOR.PATCH`。
 - [ ] 手工冒烟覆盖首次启动、资料库、导入、搜索、整理、设置、恢复和退出重启。
 - [ ] 性能基线没有不可接受回退。
 - [ ] Developer ID 签名、公证、staple、Gatekeeper 和干净 Mac 首启证据齐全。
+- [ ] 精确发布制品已生成 artifact-specific SBOM、THIRD_PARTY_NOTICES、source offer 和 release manifest。
+- [ ] 合格外部 reviewer 已对许可证、归属和 source offer 完成与该制品及 `release-manifest.json` SHA-256 绑定的复核。
 - [ ] 安装产物 checksum、发布说明、已知问题和回滚负责人明确。
 
 仓库内的发布状态工具可以聚合或审计证据，但只读检查不能替代真实签名、公证、iCloud 环境、干净 Mac 或外部测试。历史发布记录和未关闭外部条件从 [workflow versions](../../workflow/versions/README.md) 与 [residual ledger](../../workflow/residuals/README.md) 查阅。
@@ -49,6 +51,51 @@ AreaMatrix 使用 SemVer：`MAJOR.MINOR.PATCH`。
 `./dev release preflight`、`./dev release evidence-audit` 和 `./dev release status`，上传脱敏后的机器可读快照，
 并在任一门禁未通过时保持 workflow 失败。该 workflow 不创建 tag、GitHub Release、签名产物或公告；它的作用是
 让签名、公证、iCloud、clean Mac 和发布决策的缺口在远端持续可见，不能把预检快照当成正式分发证据。
+
+`Release Supply-Chain Gate` workflow 接收精确的 release ID、HTTPS artifact URL、文件名和预期 SHA-256，随后
+生成 CycloneDX 1.5 `sbom.cdx.json`、artifact-specific `THIRD_PARTY_NOTICES.md`、`source-offer.json` 和
+`release-manifest.json`。manifest 绑定制品 hash、当前 checkout 的 `cargo metadata --locked --filter-platform`
+结果、材料 hash、`Cargo.lock` 及品牌 provenance。Windows target 还必须从仓库内
+`packages.lock.json` 纳入完整 NuGet 组件、直接/传递关系、TFM/RID 和 `contentHash` 对应的 SHA-512；锁文件
+不包含许可证表达式的包写为 `NOASSERTION`，必须由远端 package metadata 与合格许可证 reviewer 补齐，不能把
+hash 锁定误当成许可证批准。生成步骤始终记录 `legalReviewComplete: false`，不能自行批准分发。
+
+当 `--cargo-target` 包含受支持的 Windows 或 Linux target 时，生成器会在创建输出目录前检查对应
+`native-core.manifest.json`。manifest 必须为 `approved`，绑定当前 checkout commit、非占位构建命令、仓库
+`LICENSE`、实际存在的 SBOM，以及目标 RID 下真实 DLL / `.so` 的 SHA-256；缺少制品、hash 漂移或仍为
+`blocked-external-artifact` / `fixture-only` 时直接失败。该门禁防止占位客户端进入发布材料，但不替代平台代码
+签名、最终 package inspection、独立许可证复核或真实 Windows/Linux runner 证据。
+
+该 workflow 使用受保护的 `release-legal-review` environment，并从其中读取外部复核记录。复核记录必须是
+`approved`，scope 精确等于 `licenses`、`notices`、`source-offer`，匹配 release、制品 SHA-256 与
+`release-manifest.json` SHA-256，并包含 reviewer、不早于 manifest `generatedAt` 的 `reviewedAt` 和 HTTPS
+evidence URL。缺少复核、仍为 pending、hash/scope 不匹配、材料或品牌 provenance 漂移时必须失败。
+
+manifest 的 `generatedAt` 在该 workflow 中固定为 checkout commit 时间，使同一 commit、制品和输入可以确定性
+重建。第一次运行可生成并上传待复核材料但保持失败；外部 reviewer 完成复核并更新 environment secret 后，应
+重跑原 workflow run，避免主分支推进后产生另一份 manifest。review record 的最小结构如下：
+
+```json
+{
+  "status": "approved",
+  "release": "vX.Y.Z",
+  "artifactSha256": "<64 lowercase hex>",
+  "manifestSha256": "<release-manifest.json SHA-256>",
+  "scope": ["licenses", "notices", "source-offer"],
+  "reviewer": "<qualified reviewer identity>",
+  "reviewedAt": "2026-08-21T00:00:00Z",
+  "evidenceUrl": "https://example.invalid/reviews/<record>"
+}
+```
+
+下载使用 1 GiB 暂定操作上限并在下载后重新检查实际文件大小；该数值不是产品制品大小规范。仓库内只能证明
+workflow 引用了 `release-legal-review` 且仅允许 `main` ref，不能证明远端 environment reviewer、branch/tag
+protection 或 secret 配置真实存在；缺少远端 settings readback 时该项保持 BLOCKED。
+
+生成材料不是实际 package inspection。Cargo 清单来自当前 checkout，而不是制品内容扫描，因此不能证明制品由
+记录 commit 构建、没有额外组件、未打包 `assets/brand/archive/`、已经签名/公证，或 source offer 与许可证判断
+充分。environment 批准、最终 package inspection、artifact-to-commit provenance、法律判断、签名和公证仍由
+对应负责人完成；workflow 成功只证明仓库定义的材料 hash 与外部 review record 技术绑定成立。
 
 发布负责人可以使用以下只读入口检查仓库记录：
 

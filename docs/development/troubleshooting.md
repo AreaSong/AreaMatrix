@@ -45,7 +45,7 @@ macOS universal build需要 `aarch64-apple-darwin` 和 `x86_64-apple-darwin`。�
 ```bash
 cd core
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
+cargo clippy --locked --all-targets --all-features -- -D warnings
 cargo test --all-features --workspace
 ```
 

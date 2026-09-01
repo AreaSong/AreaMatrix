@@ -10,9 +10,12 @@
 
 CI 是合并前的最低共同质量线。它不能替代 review，但可以阻止明显不完整、不可复现或不可追溯的改动进入主线。
 
-所有 workflow 都显式声明 `contents: read`，并以 workflow/ref 为键启用并发取消；同一分支的新提交会取消
-仍在排队或执行的旧构建，减少重复的 Cargo、Xcode 和测试消耗。只有 Governance CI 的 secret scan job
-额外声明 `security-events: write`，用于上传 gitleaks 结果；其他 job 不获得写权限。
+所有 workflow 都显式声明最小读取权限，并以 workflow/ref 为键启用并发控制；同一分支的新提交会取消仍在排队
+或执行的普通 CI，减少重复的 Cargo、Xcode 和测试消耗。Governance CI 把 secret scan 隔离在
+`ubuntu-24.04` job 中，该 job 仅声明 `contents: read`，也不向 gitleaks action 显式传入 token。
+
+workflow 中的 GitHub Actions 使用完整 40 位 commit SHA，并保留对应 release 注释；Rust 固定为 `1.88.0`。
+SwiftLint、SwiftFormat 使用固定 release archive 和仓库内 SHA-256 校验，不通过 Homebrew 获取浮动版本。
 
 企业治理检查同时验证 `ASW-EWF-001@1.0.0` 的 AreaMatrix 适配基线、G0-G8、L0-L4、治理登记册和 authoring-only 权限边界。CI 不能把外部签名、公证、独立复核、测试参与者或 AreaFlow execution 标记为完成。
 
@@ -25,6 +28,7 @@ CI 是合并前的最低共同质量线。它不能替代 review，但可以阻�
 | `governance-ci.yml` | governance files、文档链接与导航、skills、quality smoke、品牌资产、Codex OS、wording audit、task-loop、prompt doctor、diff check、secret scan | 所有 PR、main push |
 | `remote-governance.yml` | 只读审计远端 Actions、Branch Protection、Required Checks、Required Reviews 与远端 CODEOWNERS | 手动触发、每周定时 |
 | `release-evidence.yml` | 只读运行发布签名/公证预检、release evidence audit 和 release status，并上传机器可读快照 | 手动触发 |
+| `release-supply-chain.yml` | 下载并核对精确发布制品，生成 artifact-specific SBOM、notices、source offer 和 manifest，并验证材料与外部许可证复核记录的技术绑定 | 手动触发，仅 `main` ref |
 
 macOS app 与 `AreaMatrix.xcodeproj` 已是仓库必需组成部分。`macos-ci.yml` 必须先显式检查工程和源码目录；
 任一目录缺失都应立即失败，不得通过条件表达式跳过 build/test、SwiftLint 或 SwiftFormat。
@@ -60,6 +64,19 @@ H1 后紧跟的摘要引用、代码块语言与闭合、`## Related` 章节和�
 校验；`./dev check diff` 同时检查 unstaged、staged 和 merge-base 到 HEAD 的 committed diff，避免只检查
 当前工作区而漏掉已提交空白错误。
 
+`release-supply-chain.yml` 将下载限制在 HTTPS，并使用 1 GiB 暂定操作上限、连接/总时限与下载后 `stat`
+复核；该大小上限不是产品规范。review record secret 只注入解码 step，解码前设置 `umask 077`。生成的 Cargo
+组件表来自当前 checkout 的 `cargo metadata --locked --filter-platform`，不是对实际制品的内容扫描，不能证明
+artifact-to-commit provenance、无额外组件、archive 未入包、签名、公证或法律完成。
+Windows/Linux target 还会在材料生成前校验平台 `native-core.manifest.json`：只有当前 commit、SBOM、RID、真实
+native binary 和 SHA-256 全部闭合且 status 为 `approved` 才能继续；仓库中的
+`blocked-external-artifact` / `fixture-only` manifest 必须保持发布阻断。该检查不把 macOS release 与未请求的
+平台绑定，也不能代替真实平台 runner、签名或 package inspection。
+
+仓库治理只能检查 workflow 使用 `release-legal-review` environment、固定 action SHA 和 `main` ref 条件。
+environment required reviewers、deployment branch/tag rules、secret 可用范围等远端设置必须通过只读 remote audit
+或 GitHub settings readback 单独取证；没有该证据时不能把供应链 workflow 视为发布 PASS。
+
 ## 本地等价检查
 
 提交前至少运行与改动范围匹配的检查：
@@ -84,11 +101,16 @@ swift test --package-path apps/macos/Packages/AreaMatrixModules
 swift build --package-path apps/ios
 swift test --package-path apps/ios
 python3 -m venv .brand-venv
-.brand-venv/bin/pip install --requirement scripts/brand/requirements.txt
+.brand-venv/bin/pip install --only-binary=:all: --require-hashes \
+  --requirement scripts/brand/requirements.txt
 .brand-venv/bin/python scripts/brand/validate_assets.py
 ```
 
-发布状态、证据审计、签名、公证、DMG 和外部测试属于发布门禁，不是普通 PR 的 CI 结果。CI 不安装或替换 `/Applications/AreaMatrix.app`，也不能把只读产物探针当作分发证据；正式发布统一遵循 [发布流程](release.md)。
+发布状态、证据审计、签名、公证、DMG、artifact-specific 供应链材料和外部测试属于发布门禁，不是普通 PR
+的 CI 结果。`release-supply-chain.yml` 使用受保护的 `release-legal-review` environment；缺少 review record、
+状态不是 `approved`、制品哈希或复核范围不匹配时都必须失败。CI 不安装或替换
+`/Applications/AreaMatrix.app`，也不能把生成的清单或只读产物探针当作法律签核或分发证据；正式发布统一遵循
+[发布流程](release.md)。
 
 ### Remote governance audit
 
@@ -148,8 +170,8 @@ Rust 改动：
 
 ```bash
 cd core && cargo fmt --all -- --check
-cd core && cargo clippy --all-targets --all-features -- -D warnings
-cd core && cargo test --workspace
+cd core && cargo clippy --locked --all-targets --all-features -- -D warnings
+cd core && cargo test --locked --workspace
 ```
 
 Swift 改动：

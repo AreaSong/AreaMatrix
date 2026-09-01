@@ -1,6 +1,9 @@
 #[path = "support/ai_classification_suggestion_common.rs"]
 mod ai_common;
 
+#[path = "support/ai_persisted_privacy.rs"]
+mod persisted_privacy;
+
 #[path = "support/remote_provider_config_common.rs"]
 mod remote_common;
 
@@ -15,6 +18,7 @@ use area_matrix_core::{
     DuplicateStrategy, FileFilter, ImportDestination, ImportOptions, OverviewOutput, RepoInitMode,
     RepoInitOptions, StorageMode,
 };
+use persisted_privacy::{allow_remote_ai, install_blocking_rule};
 use pretty_assertions::assert_eq;
 use remote_common::{
     enable_request_for_endpoint, successful_provider_test, test_request_for_endpoint,
@@ -187,6 +191,7 @@ fn enable_remote_classification_provider(repo: &Path, endpoint_url: &str) {
     let mut request = enable_request_for_endpoint(token, endpoint_url);
     request.feature_scope = vec![AiFeatureKind::ClassificationSuggestions];
     enable_remote_ai_provider(path_string(repo), request).expect("enable remote provider");
+    allow_remote_ai(repo);
 }
 
 #[test]
@@ -368,11 +373,15 @@ fn ai_classification_suggestion_implementation_skips_privacy_without_sent_fields
     let file_id = import_fixture(repo.path(), "invoice-2026.pdf", "inbox");
     update_ai_config(repo_path.clone(), ai_config(repo_path.clone(), true))
         .expect("enable AI classification");
-    let mut blocked = request(file_id);
-    blocked.privacy_policy_ref = Some("private-folder".to_owned());
+    install_blocking_rule(
+        repo.path(),
+        "rule:private-folder",
+        area_matrix_core::AiPrivacyRuleKind::Category,
+        "inbox",
+    );
 
     let suggestion =
-        suggest_category_with_ai(repo_path, blocked).expect("privacy skip is structured");
+        suggest_category_with_ai(repo_path, request(file_id)).expect("privacy skip is structured");
 
     assert_eq!(suggestion.status, AiCategorySuggestionStatus::Skipped);
     assert_eq!(

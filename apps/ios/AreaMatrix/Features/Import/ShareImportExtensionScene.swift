@@ -7,17 +7,20 @@ public struct ShareImportExtensionScene: View {
     private let onCancel: () -> Void
     private let onOpenAreaMatrix: () -> Void
     private let onRequestComplete: () -> Void
+    private let lifecycle: ShareImportExtensionLifecycle?
 
     public init(
         inputItems: [NSExtensionItem],
         onCancel: @escaping () -> Void,
         onOpenAreaMatrix: @escaping () -> Void,
-        onRequestComplete: @escaping () -> Void
+        onRequestComplete: @escaping () -> Void,
+        lifecycle: ShareImportExtensionLifecycle? = nil
     ) {
         _loader = StateObject(wrappedValue: ShareImportExtensionLoader(inputItems: inputItems))
         self.onCancel = onCancel
         self.onOpenAreaMatrix = onOpenAreaMatrix
         self.onRequestComplete = onRequestComplete
+        self.lifecycle = lifecycle
     }
 
     public var body: some View {
@@ -29,6 +32,9 @@ public struct ShareImportExtensionScene: View {
                     onOpenAreaMatrix: onOpenAreaMatrix,
                     onSaved: { _ in onRequestComplete() }
                 )
+                .onAppear {
+                    lifecycle?.attach(model: model)
+                }
             } else {
                 ShareImportExtensionLoadingView(
                     statusText: loader.statusText,
@@ -122,7 +128,8 @@ struct ShareImportExtensionItemReader {
     func payload(from inputItems: [NSExtensionItem]) async throws -> ShareImportPayload {
         var items: [ShareImportItem] = []
         for item in inputItems {
-            items.append(contentsOf: await attachments(from: item))
+            let attachments = await attachments(from: item)
+            items.append(contentsOf: attachments)
         }
         return ShareImportPayload(items: items)
     }
@@ -132,10 +139,11 @@ struct ShareImportExtensionItemReader {
         let providers = item.attachments ?? []
         var items: [ShareImportItem] = []
         for provider in providers {
-            items.append(await self.item(
+            let importedItem = await self.item(
                 from: provider,
                 sourceApp: sourceApp?.isEmpty == false ? sourceApp ?? "Share Sheet" : "Share Sheet"
-            ))
+            )
+            items.append(importedItem)
         }
         return items
     }

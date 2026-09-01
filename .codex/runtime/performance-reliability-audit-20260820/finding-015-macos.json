@@ -1,0 +1,21 @@
+{
+  "id": "PERF-MAC-015",
+  "severity": "P1",
+  "confidence": "MEDIUM",
+  "status": "CONFIRMED_STATIC",
+  "domain": "macOS/iCloud-import",
+  "locations": [
+    {"file": "apps/macos/AreaMatrix/Features/Import/ImportBatchICloudPlaceholderActions.swift", "line": "27-35", "symbol": "downloadAllICloudPlaceholdersAndRetry", "role": "caller"},
+    {"file": "apps/macos/AreaMatrix/Features/Import/ImportBatchICloudPlaceholderActions.swift", "line": "4-24", "symbol": "downloadICloudPlaceholderAndRetry", "role": "callee"},
+    {"file": "apps/macos/AreaMatrix/Features/Import/ImportBatchConflictSection.swift", "line": "60-74", "symbol": "retry batch action", "role": "caller"},
+    {"file": "apps/macos/AreaMatrix/PlatformServices/ICloudPlaceholderDownloader.swift", "line": "18-72", "symbol": "LocalICloudPlaceholderDownloader.downloadPlaceholder", "role": "callee"}
+  ],
+  "trigger": "批量导入冲突界面重试 N 个 iCloud placeholder",
+  "scale": "N 个占位文件；每项下载受 iCloud 状态和单项超时影响",
+  "concurrency": "for 循环逐项 await，没有 TaskGroup、批次上限或外层结构化取消；状态查找/更新还可能逐项线性扫描 rows",
+  "complexity": "下载 wall time 为各项延迟之和 O(N)，若 rows 查找与 setStatus 均为 O(N)，最坏状态开销 O(N²)",
+  "impact": "大批量重试长时间占用 UI 任务，延迟导入并放大网络/iCloud 抖动；快速重复触发可能增加重复下载压力",
+  "why_checks_miss": "现有测试为单项或小 fixture，macOS CI 不执行真实 iCloud 大批量、慢网络和取消 soak",
+  "minimal_fix": "按 ID 建索引，引入有界并发/分批背压和结构化取消，明确部分成功与重试策略",
+  "validation": "仅用隔离 fixture 或获准 macOS iCloud 环境验证 1/100/1000 placeholders、取消、慢网络和重复触发；本轮未接触真实 iCloud"
+}

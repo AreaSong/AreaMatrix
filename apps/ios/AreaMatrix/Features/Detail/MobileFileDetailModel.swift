@@ -64,6 +64,9 @@ final class MobileFileDetailViewModel: ObservableObject {
     let fileID: Int64
 
     private let bridge: any MobileFileDetailCoreBridge
+    private var metadataGeneration = 0
+    private var changeLogGeneration = 0
+    private var noteGeneration = 0
 
     init(repoPath: String, fileID: Int64, bridge: any MobileFileDetailCoreBridge) {
         self.repoPath = repoPath
@@ -98,11 +101,16 @@ final class MobileFileDetailViewModel: ObservableObject {
     }
 
     func reloadMetadata() async {
+        metadataGeneration &+= 1
+        let requestGeneration = metadataGeneration
         metadataState = .loading
         missingRecoveryRouteFileID = nil
         do {
-            metadataState = .loaded(try await bridge.getFile(repoPath: repoPath, fileID: fileID))
+            let value = try await bridge.getFile(repoPath: repoPath, fileID: fileID)
+            guard requestGeneration == metadataGeneration, !Task.isCancelled else { return }
+            metadataState = .loaded(value)
         } catch {
+            guard requestGeneration == metadataGeneration, !Task.isCancelled else { return }
             metadataState = .failed(MobileFileDetailError.map(error))
         }
     }
@@ -124,11 +132,16 @@ final class MobileFileDetailViewModel: ObservableObject {
     }
 
     func reloadChangeLog() async {
+        changeLogGeneration &+= 1
+        let requestGeneration = changeLogGeneration
         changeLogState = .loading
         let filter = MobileFileDetailChangeFilter.detail(fileID: fileID)
         do {
-            changeLogState = .loaded(try await bridge.listChanges(repoPath: repoPath, filter: filter))
+            let value = try await bridge.listChanges(repoPath: repoPath, filter: filter)
+            guard requestGeneration == changeLogGeneration, !Task.isCancelled else { return }
+            changeLogState = .loaded(value)
         } catch {
+            guard requestGeneration == changeLogGeneration, !Task.isCancelled else { return }
             changeLogState = .failed(MobileFileDetailError.map(error))
         }
     }
@@ -139,10 +152,15 @@ final class MobileFileDetailViewModel: ObservableObject {
     }
 
     func reloadNote() async {
+        noteGeneration &+= 1
+        let requestGeneration = noteGeneration
         noteState = .loading
         do {
-            noteState = .loaded(try await bridge.readNote(repoPath: repoPath, fileID: fileID))
+            let value = try await bridge.readNote(repoPath: repoPath, fileID: fileID)
+            guard requestGeneration == noteGeneration, !Task.isCancelled else { return }
+            noteState = .loaded(value)
         } catch {
+            guard requestGeneration == noteGeneration, !Task.isCancelled else { return }
             noteState = .failed(MobileFileDetailError.map(error))
         }
     }

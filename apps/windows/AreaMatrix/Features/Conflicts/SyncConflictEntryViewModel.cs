@@ -271,7 +271,7 @@ public sealed class SyncConflictEntryViewModel : INotifyPropertyChanged
     {
         repoPath = repositoryPath;
         IsBannerDismissed = false;
-        await RefreshAsync(cancellationToken).ConfigureAwait(false);
+        await RefreshAsync(cancellationToken);
     }
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
@@ -286,8 +286,7 @@ public sealed class SyncConflictEntryViewModel : INotifyPropertyChanged
         try
         {
             IReadOnlyList<SyncConflictEntryConflict> loaded = await coreBridge
-                .DetectSyncConflictsAsync(repoPath, cancellationToken)
-                .ConfigureAwait(false);
+                .DetectSyncConflictsAsync(repoPath, cancellationToken);
             Conflicts = loaded
                 .Where(conflict => conflict.Status == SyncConflictEntryStatus.NeedsReview)
                 .OrderByDescending(conflict => conflict.Severity)
@@ -338,8 +337,7 @@ public sealed class SyncConflictEntryViewModel : INotifyPropertyChanged
                     route.RepoPath,
                     route.ConflictId,
                     SyncConflictResolutionStrategy.UseIncoming,
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -393,8 +391,7 @@ public sealed class SyncConflictEntryViewModel : INotifyPropertyChanged
                         confirmation.PreviewToken,
                         true,
                         confirmation.ConfirmationId),
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    cancellationToken);
             Conflicts = Conflicts
                 .Where(conflict => !string.Equals(
                     conflict.ConflictId,

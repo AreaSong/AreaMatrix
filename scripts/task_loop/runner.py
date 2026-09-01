@@ -32,6 +32,14 @@ from scripts.dev_tools.execution_paths import (
 
 DEFAULT_PHASES = ("phase-0", "phase-1", "phase-2", "phase-3", "phase-4")
 PHASE_RE = re.compile(r"^phase-\d+$")
+RISK_LEVELS = frozenset({"Low", "Medium", "High", "Mission-Critical"})
+RISK_INLINE_RE = re.compile(
+    r"^\s*-\s*(?:风险等级|Risk)\s*[：:]\s*(?P<level>[^\r\n]+?)\s*$",
+    re.MULTILINE,
+)
+RISK_SECTION_RE = re.compile(
+    r"(?ms)^###\s+Risk Level\s*$\n(?:\s*\n)?\s*-\s*(?P<level>[^\r\n]+?)\s*$"
+)
 RUNTIME_ROOT = Path(".codex/runtime")
 TASK_LOOP_RUNTIME_ROOT = RUNTIME_ROOT / "task-loop"
 CODEX_SANDBOX_MODES = {"read-only", "workspace-write", "danger-full-access"}
@@ -1032,7 +1040,46 @@ class TaskLoopRunner:
                         risk=self.task_risk(copy_file),
                     )
                 )
+                self.validate_prompt_pair(tasks[-1])
+                verify_risk = self.task_risk(verify_file)
+                if tasks[-1].risk != verify_risk:
+                    raise TaskLoopError(
+                        f"risk field mismatch for {tasks[-1].label}: copy={tasks[-1].risk} verify={verify_risk}"
+                    )
         return tasks
+
+    def validate_prompt_pair(self, task: TaskFile) -> None:
+        """Ensure verify execution cannot silently fall back to implementation text."""
+
+        try:
+            if task.copy_file.resolve() == task.verify_file.resolve():
+                raise TaskLoopError(f"copy-ready and verify-ready resolve to the same file for {task.label}")
+        except OSError as exc:
+            raise TaskLoopError(f"unable to resolve prompt pair for {task.label}: {exc}") from exc
+        try:
+            copy_text = task.copy_file.read_text(encoding="utf-8", errors="replace")
+            verify_text = task.verify_file.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            raise TaskLoopError(f"unable to read prompt pair for {task.label}: {exc}") from exc
+        if copy_text == verify_text:
+            raise TaskLoopError(f"copy-ready and verify-ready content is identical for {task.label}")
+        if "禁止修改文件" not in verify_text or "VERIFY_RESULT:" not in verify_text:
+            raise TaskLoopError(f"verify-ready prompt is not read-only for {task.label}")
+        # Historical verify-ready prompts retain the shared risk metadata field
+        # (with a negative value).  Only reject an explicit affirmative write
+        # permission, not a section title or the metadata key itself.
+        affirmative_write = re.search(
+            r"(?m)^\s*[-*]?\s*是否允许修改文件\s*[:：]\s*(?:是|yes|true)\b",
+            verify_text,
+            flags=re.IGNORECASE,
+        )
+        explicit_source_edit = re.search(
+            r"(?m)^\s*[-*]?\s*(?:允许|可以)修改(?:源代码|文件)\s*[:：]?\s*(?:是|yes|true)?\b",
+            verify_text,
+            flags=re.IGNORECASE,
+        )
+        if affirmative_write or explicit_source_edit:
+            raise TaskLoopError(f"verify-ready prompt contains copy-ready implementation instructions for {task.label}")
 
     def bootstrap_counts(self) -> None:
         self.total_tasks = len(self.task_files())
@@ -1041,8 +1088,19 @@ class TaskLoopRunner:
 
     def task_risk(self, prompt_file: Path) -> str:
         text = prompt_file.read_text(encoding="utf-8", errors="replace")
-        match = re.search(r"风险等级：`([^`]+)`", text)
-        return match.group(1) if match else "Unspecified"
+        matches = [value.strip().strip("`") for value in [
+            *RISK_INLINE_RE.findall(text),
+            *RISK_SECTION_RE.findall(text),
+        ]]
+        invalid = [value for value in matches if value not in RISK_LEVELS]
+        distinct = set(matches)
+        if not matches or invalid or len(distinct) != 1:
+            found = ", ".join(matches) if matches else "missing"
+            raise TaskLoopError(
+                f"{prompt_file}: risk fields must agree on one allowed level "
+                f"(Low, Medium, High, Mission-Critical); found {found!r}"
+            )
+        return matches[0]
 
     def risk_matches_gate(self, risk: str) -> bool:
         if self.cfg.risk_gate == "none":
@@ -1654,6 +1712,7 @@ class TaskLoopRunner:
             try:
                 self.run_codex(task.copy_file, copy_log, "copy", self.build_copy_context_prompt(task, attempt, previous_verify_log), task, attempt)
                 log_event("TASK", f"verify prompt -> {verify_log}")
+                self.validate_prompt_pair(task)
                 self.run_codex(task.verify_file, verify_log, "verify", self.verify_suffix(), task, attempt)
             except CodexNoOutputTimeoutLimit as exc:
                 note = f"codex exec no-output timeout：{exc}"

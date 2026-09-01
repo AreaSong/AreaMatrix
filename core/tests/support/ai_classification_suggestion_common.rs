@@ -6,6 +6,11 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
+#[path = "external_runtime_harness.rs"]
+mod external_runtime_harness;
+
+use external_runtime_harness::{install_runtime_script, InstalledRuntime};
+
 static LOCAL_RUNTIME_LOCK: Mutex<()> = Mutex::new(());
 static REMOTE_RUNTIME_LOCK: Mutex<()> = Mutex::new(());
 
@@ -15,6 +20,7 @@ pub fn path_string(path: &Path) -> String {
 
 pub struct AiRuntime {
     _lock: MutexGuard<'static, ()>,
+    _runtime: InstalledRuntime,
     output: tempfile::TempDir,
     payload_path: PathBuf,
     env_name: &'static str,
@@ -70,11 +76,15 @@ impl AiRuntime {
             payload_path.display(),
             response.replace('\'', "'\\''")
         );
-        fs::write(&script_path, script).expect("write AI runtime script");
-        make_executable(&script_path);
-        std::env::set_var(env_name, script_path.to_string_lossy().into_owned());
+        let runtime = install_runtime_script(
+            env_name,
+            runtime_capability(env_name),
+            &script_path,
+            &script,
+        );
         Self {
             _lock: guard,
+            _runtime: runtime,
             output,
             payload_path,
             env_name,
@@ -87,11 +97,15 @@ impl AiRuntime {
         let script_path = output.path().join("ai-classification-runtime.sh");
         let payload_path = output.path().join("payload.json");
         let script = format!("#!/bin/sh\ncat > \"{}\"\nexit 42\n", payload_path.display());
-        fs::write(&script_path, script).expect("write failing AI runtime script");
-        make_executable(&script_path);
-        std::env::set_var(env_name, script_path.to_string_lossy().into_owned());
+        let runtime = install_runtime_script(
+            env_name,
+            runtime_capability(env_name),
+            &script_path,
+            &script,
+        );
         Self {
             _lock: guard,
+            _runtime: runtime,
             output,
             payload_path,
             env_name,
@@ -112,6 +126,7 @@ impl Drop for AiRuntime {
 
 pub struct RemoteRuntimeProbe {
     _guard: MutexGuard<'static, ()>,
+    _runtime: InstalledRuntime,
     output: tempfile::TempDir,
     marker_path: PathBuf,
 }
@@ -128,14 +143,15 @@ impl RemoteRuntimeProbe {
             "#!/bin/sh\nprintf invoked > \"{}\"\nexit 33\n",
             marker_path.display()
         );
-        fs::write(&script_path, script).expect("write remote runtime probe script");
-        make_executable(&script_path);
-        std::env::set_var(
+        let runtime = install_runtime_script(
             "AREAMATRIX_AI_CLASSIFICATION_REMOTE_RUNTIME",
-            script_path.to_string_lossy().into_owned(),
+            "ai-classification-remote",
+            &script_path,
+            &script,
         );
         Self {
             _guard: guard,
+            _runtime: runtime,
             output,
             marker_path,
         }
@@ -153,14 +169,10 @@ impl Drop for RemoteRuntimeProbe {
     }
 }
 
-fn make_executable(path: &Path) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut permissions = fs::metadata(path)
-            .expect("read AI runtime metadata")
-            .permissions();
-        permissions.set_mode(0o700);
-        fs::set_permissions(path, permissions).expect("mark AI runtime executable");
+fn runtime_capability(env_name: &str) -> &'static str {
+    match env_name {
+        "AREAMATRIX_AI_CLASSIFICATION_LOCAL_RUNTIME" => "ai-classification-local",
+        "AREAMATRIX_AI_CLASSIFICATION_REMOTE_RUNTIME" => "ai-classification-remote",
+        _ => panic!("unsupported AI classification runtime environment"),
     }
 }

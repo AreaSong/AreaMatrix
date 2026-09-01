@@ -129,6 +129,40 @@ def _parallel_xcodebuild_retry_allowed(log_path: Path) -> bool:
     return ("Testing started" in text or "Test Suite '" in text) and not _has_real_test_or_build_failure(text)
 
 
+def _xcode_result_bundles(derived_data_dir: Path) -> set[Path]:
+    return set((derived_data_dir / "Logs/Test").glob("*.xcresult"))
+
+
+def _xcresult_test_failure_count(result_bundles: Sequence[Path]) -> int:
+    failures = 0
+    for result_bundle in result_bundles:
+        proc = subprocess.run(
+            [
+                "xcrun",
+                "xcresulttool",
+                "get",
+                "test-results",
+                "summary",
+                "--path",
+                str(result_bundle),
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if proc.returncode != 0:
+            continue
+        try:
+            summary = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            continue
+        failed_tests = summary.get("failedTests", 0)
+        if isinstance(failed_tests, int):
+            failures += failed_tests
+    return failures
+
+
 def _preserve_failed_result_bundle_for_retry(result_bundle: str | Path) -> bool:
     """Keep an incomplete xcresult out of the path used by a controlled retry."""
     path = Path(result_bundle)
@@ -681,7 +715,15 @@ def _run_macos_tests_inner(
 
     xcode_action = "test-without-building" if test_without_building else "test"
     print(f"==> xcodebuild {xcode_action}")
+    result_bundles_before = _xcode_result_bundles(derived_data_dir)
     rc = _run_and_tee(["xcodebuild", xcode_action, *base], test_log_path, env=_xcode_test_env(only_testing, test_plan))
+    current_result_bundles = _xcode_result_bundles(derived_data_dir) - result_bundles_before
+    if result_bundle is not None:
+        current_result_bundles.add(Path(result_bundle))
+    test_failure_count = _xcresult_test_failure_count(sorted(current_result_bundles))
+    if test_failure_count:
+        print(f"macOS tests: xcresult records {test_failure_count} test failure(s); not retrying.")
+        return rc if rc != 0 else 1
     if rc == 0:
         performance_rc = _run_explicit_performance_tests(
             derived_data_dir,

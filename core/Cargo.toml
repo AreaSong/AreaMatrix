@@ -2,7 +2,7 @@
 name = "area_matrix_core"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.88"
 license = "PolyForm-Noncommercial-1.0.0"
 publish = false
 
@@ -14,11 +14,11 @@ name = "area_matrix_core"
 crate-type = ["rlib", "staticlib", "cdylib"]
 
 [dependencies]
-uniffi = { version = "0.28", features = ["build"] }
+uniffi = { version = "0.28", default-features = false }
 rusqlite = { version = "0.31", features = ["bundled", "chrono", "serde_json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-serde_yaml = "0.9"
+serde_yaml = { package = "serde_yaml_ng", version = "0.10" }
 thiserror = "1"
 sha2 = "0.10"
 walkdir = "2"
@@ -28,13 +28,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unicode-normalization = "0.1"
 regex = "1"
 uuid = { version = "1", features = ["v4"] }
-tracing-appender = "0.2.5"
-
-[target.'cfg(any(target_os = "macos", target_os = "windows", target_os = "linux", target_os = "freebsd"))'.dependencies]
-trash = "5"
+libc = "0.2"
 
 [build-dependencies]
-uniffi = { version = "0.28", features = ["build"] }
+uniffi = { version = "0.28", default-features = false, features = ["build"] }
 
 [dev-dependencies]
 tempfile = "3"

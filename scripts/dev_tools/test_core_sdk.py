@@ -16,56 +16,12 @@ from unittest.mock import patch
 
 from scripts.dev_tools import core_sdk
 from scripts.dev_tools.common import ToolError
+from scripts.dev_tools.test_core_sdk_support import write_core_sdk_artifact
 
 
 class CoreSDKTest(unittest.TestCase):
     def write_artifact(self, root: Path, fingerprint: str) -> Path:
-        artifact = root / ".build/core-sdk" / fingerprint
-        (artifact / "Sources/AreaMatrixCoreSDK").mkdir(parents=True)
-        (artifact / "Sources/AreaMatrixCoreSDK/area_matrix.swift").write_text(
-            "// binding\n", encoding="utf-8"
-        )
-        (artifact / "Package.swift").write_text("// package\n", encoding="utf-8")
-        (artifact / "manifest.json").write_text(
-            json.dumps(
-                {
-                    "schema_version": core_sdk.CORE_SDK_SCHEMA_VERSION,
-                    "fingerprint": fingerprint,
-                    "xcframework": core_sdk.CORE_SDK_NAME,
-                }
-            ),
-            encoding="utf-8",
-        )
-        xcframework = artifact / core_sdk.CORE_SDK_NAME
-        libraries = [
-            ("macos-arm64_x86_64", "macos", None, ["arm64", "x86_64"], "libmacos.a"),
-            ("ios-arm64", "ios", None, ["arm64"], "libios.a"),
-            (
-                "ios-arm64_x86_64-simulator",
-                "ios",
-                "simulator",
-                ["arm64", "x86_64"],
-                "libsimulator.a",
-            ),
-        ]
-        plist_entries = []
-        for identifier, platform, variant, architectures, library_name in libraries:
-            slice_root = xcframework / identifier
-            (slice_root / "Headers").mkdir(parents=True)
-            (slice_root / library_name).write_bytes(b"archive")
-            entry = {
-                "LibraryIdentifier": identifier,
-                "LibraryPath": library_name,
-                "HeadersPath": "Headers",
-                "SupportedArchitectures": architectures,
-                "SupportedPlatform": platform,
-            }
-            if variant:
-                entry["SupportedPlatformVariant"] = variant
-            plist_entries.append(entry)
-        with (xcframework / "Info.plist").open("wb") as handle:
-            plistlib.dump({"AvailableLibraries": plist_entries}, handle)
-        return artifact
+        return write_core_sdk_artifact(root, fingerprint)
 
     def test_fingerprint_changes_when_core_source_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

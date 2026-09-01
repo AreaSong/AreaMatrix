@@ -22,7 +22,7 @@ pub(super) fn apply_batch_category_plan(
     let (report, mut fs_moves) = crate::db::with_batch_category_transaction(repo, |tx| {
         let mut report = BatchCategoryExecution::new(&plan);
         for item in plan.items {
-            report.push(apply_item(tx, item)?);
+            report.push(apply_item(repo, tx, item)?);
         }
         if report.has_successful_write() {
             report.undo_token = Some(crate::db::insert_batch_category_undo_action_in_tx(
@@ -120,12 +120,13 @@ struct AppliedBatchCategoryItem {
 }
 
 fn apply_item(
+    repo: &Path,
     tx: &mut rusqlite::Transaction<'_>,
     item: BatchCategoryPlanItem,
 ) -> CoreResult<AppliedBatchCategoryItem> {
     match item {
-        BatchCategoryPlanItem::WillMove(change) => apply_change(tx, change, false),
-        BatchCategoryPlanItem::MetadataOnly(change) => apply_change(tx, change, true),
+        BatchCategoryPlanItem::WillMove(change) => apply_change(repo, tx, change, false),
+        BatchCategoryPlanItem::MetadataOnly(change) => apply_change(repo, tx, change, true),
         BatchCategoryPlanItem::Unchanged(change) => Ok(unchanged_result(change)),
         BatchCategoryPlanItem::Skipped(change) => Ok(AppliedBatchCategoryItem {
             report: BatchCategoryChangeItemResult {
@@ -157,6 +158,7 @@ fn apply_item(
 }
 
 fn apply_change(
+    repo: &Path,
     tx: &mut rusqlite::Transaction<'_>,
     change: PlannedCategoryChange,
     metadata_only: bool,
@@ -164,7 +166,7 @@ fn apply_change(
     let savepoint = tx
         .savepoint()
         .map_err(|error| CoreError::db(error.to_string()))?;
-    match try_apply_change(&savepoint, &change, metadata_only) {
+    match try_apply_change(repo, &savepoint, &change, metadata_only) {
         Ok((updated, undo_item, fs_move)) => match savepoint.commit() {
             Ok(()) => Ok(successful_change_result(
                 change,
@@ -237,6 +239,7 @@ fn failed_change_result(
 }
 
 fn try_apply_change(
+    repo: &Path,
     connection: &rusqlite::Connection,
     change: &PlannedCategoryChange,
     metadata_only: bool,
@@ -254,17 +257,59 @@ fn try_apply_change(
             &move_detail(change, true),
         )?;
     } else {
-        let directory_guard = CategoryDirectoryGuard::ensure(
-            change
-                .final_path
-                .parent()
-                .ok_or_else(|| CoreError::invalid_path("invalid path"))?
-                .to_path_buf(),
-        )?;
+        let target_directory = change
+            .final_path
+            .parent()
+            .ok_or_else(|| CoreError::invalid_path("invalid path"))?
+            .to_path_buf();
+        let file_hash = crate::batch_journal::file_hash(&change.current_path)
+            .map_err(|error| CoreError::io(error.to_string()))?;
+        let journal_spec = crate::batch_journal::BatchJournal::for_paths(
+            repo,
+            crate::batch_journal::BatchJournalInput {
+                operation: "batch_change_category",
+                file_id: change.entry.id,
+                original: &change.current_path,
+                current: &change.final_path,
+                original_db_path: &change.entry.path,
+                current_db_path: &change.final_relative_path,
+                original_name: &change.entry.current_name,
+                current_name: &change.final_name,
+                original_category: &change.entry.category,
+                current_category: &change.target_category,
+                file_hash_sha256: &file_hash,
+                sidecar: change
+                    .note_sidecar
+                    .as_ref()
+                    .map(|sidecar| (sidecar.current_path.as_path(), sidecar.final_path.as_path())),
+                planned_directory: Some(&target_directory),
+            },
+        )
+        .map_err(|e| CoreError::io(e.to_string()))?;
+        let sidecar_hash = journal_spec
+            .sidecar
+            .as_ref()
+            .map(|sidecar| sidecar.hash_sha256.clone());
+        let journal = crate::batch_journal::create(repo, &journal_spec)
+            .map_err(|e| CoreError::io(e.to_string()))?;
+        let directory_guard = CategoryDirectoryGuard::ensure(target_directory)?;
+        crate::batch_journal::set_created_directory(
+            &journal,
+            directory_guard
+                .created_path()
+                .map(crate::batch_journal::directory_identity)
+                .transpose()
+                .map_err(|error| CoreError::io(error.to_string()))?,
+        )
+        .map_err(|error| CoreError::io(error.to_string()))?;
         move_recoverable_file(&change.current_path, &change.final_path)?;
-        let mut file_guard =
-            MoveRollbackGuard::new(change.final_path.clone(), change.current_path.clone());
-        let mut note_guard = move_note_sidecar(change, &mut file_guard)?;
+        let mut file_guard = MoveRollbackGuard::new(
+            change.final_path.clone(),
+            change.current_path.clone(),
+            Some(journal),
+            Some(file_hash),
+        );
+        let mut note_guard = move_note_sidecar(change, &mut file_guard, sidecar_hash)?;
         if let Err(error) = crate::db::batch_update_category_repo_owned_in_tx(
             connection,
             change.entry.id,
@@ -327,6 +372,7 @@ fn move_detail(change: &PlannedCategoryChange, index_only: bool) -> Value {
 fn move_note_sidecar(
     change: &PlannedCategoryChange,
     file_guard: &mut MoveRollbackGuard,
+    sidecar_hash: Option<String>,
 ) -> CoreResult<Option<MoveRollbackGuard>> {
     let Some(sidecar) = &change.note_sidecar else {
         return Ok(None);
@@ -335,6 +381,8 @@ fn move_note_sidecar(
         Ok(()) => Ok(Some(MoveRollbackGuard::new(
             sidecar.final_path.clone(),
             sidecar.current_path.clone(),
+            None,
+            sidecar_hash,
         ))),
         Err(error) => {
             file_guard.rollback()?;
@@ -347,10 +395,18 @@ fn rollback_filesystem_move(
     file_guard: &mut MoveRollbackGuard,
     note_guard: &mut Option<MoveRollbackGuard>,
 ) -> CoreResult<()> {
-    if let Some(note_guard) = note_guard.as_mut() {
-        note_guard.rollback()?;
+    let note_result = note_guard
+        .as_mut()
+        .map(MoveRollbackGuard::rollback)
+        .unwrap_or(Ok(()));
+    let file_result = file_guard.rollback();
+    match (note_result, file_result) {
+        (Ok(()), Ok(())) => {
+            file_guard.clear_journal();
+            Ok(())
+        }
+        (Err(error), _) | (_, Err(error)) => Err(error),
     }
-    file_guard.rollback()
 }
 
 fn storage_mode_detail(mode: &crate::StorageMode) -> &'static str {

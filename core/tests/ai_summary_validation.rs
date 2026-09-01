@@ -9,6 +9,7 @@ use area_matrix_core::{
     AiSummaryGenerationRequest, AiSummaryInputField, AiSummaryProviderScope, AiSummaryRoute,
     AiSummarySaveRequest, AiSummarySkipReason, CoreError, CoreResult,
 };
+use common::ai_persisted_privacy::install_blocking_rule;
 use common::{
     ai_summary_row, change_log_kinds, enable_local_summaries, enable_remote_summaries,
     import_fixture, initialized_repo, path_string, AiSummaryRuntime, RemoteRuntimeProbe,
@@ -282,11 +283,16 @@ fn ai_summary_validation_blocks_remote_generation_before_privacy_leakage() {
         "original file body with summary-provider-secret should never be sent",
     );
     enable_remote_summaries(repo.path(), "https://provider.example.test/summary");
+    install_blocking_rule(
+        repo.path(),
+        "rule:private-folder",
+        area_matrix_core::AiPrivacyRuleKind::Keyword,
+        "private-remote",
+    );
     let remote_runtime = RemoteRuntimeProbe::new();
     let before = snapshot(repo.path(), file_id);
     let mut request = generation_request(file_id);
     request.provider_scope = AiSummaryProviderScope::RemoteAllowed;
-    request.privacy_policy_ref = Some("private-folder".to_owned());
 
     let draft = generate_ai_summary(repo_path, request).expect("privacy skip draft");
 

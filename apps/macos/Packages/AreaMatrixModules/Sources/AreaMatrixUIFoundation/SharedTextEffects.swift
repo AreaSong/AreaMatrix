@@ -6,6 +6,7 @@ public struct AreaMatrixDecodedText: View {
     public var gradient: LinearGradient?
 
     @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var displayText: String = ""
     @State private var timerTask: Task<Void, Never>?
 
@@ -27,12 +28,17 @@ public struct AreaMatrixDecodedText: View {
         }
         .onAppear { startDecode() }
         .onChange(of: text) { _, _ in startDecode() }
+        .onChange(of: reduceMotion) { _, _ in startDecode() }
         .onDisappear { timerTask?.cancel() }
     }
 
     private func startDecode() {
         timerTask?.cancel()
         displayText = text
+        guard !reduceMotion else {
+            timerTask = nil
+            return
+        }
 
         timerTask = Task { @MainActor in
             let targetCharacters = Array(text)

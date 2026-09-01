@@ -34,6 +34,8 @@ struct AreaMatrixLaunchBrandVisual: View {
     var shadowColor = AreaMatrixTheme.Colors.teal
 
     @State private var logoEntered = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         AreaMatrixCrossfadeAssetImage(
@@ -42,10 +44,17 @@ struct AreaMatrixLaunchBrandVisual: View {
             width: nil,
             height: height
         )
-        .shadow(color: shadowColor.opacity(0.4), radius: 16, y: 12)
-        .offset(y: logoEntered ? 0 : -20)
-        .scaleEffect(logoEntered ? 1 : 0.85)
-        .animation(.spring(response: 0.75, dampingFraction: 0.55).delay(0.2), value: logoEntered)
+        .shadow(
+            color: shadowColor.opacity(reduceTransparency ? 0 : 0.4),
+            radius: reduceTransparency ? 0 : 16,
+            y: reduceTransparency ? 0 : 12
+        )
+        .offset(y: reduceMotion || logoEntered ? 0 : -20)
+        .scaleEffect(reduceMotion || logoEntered ? 1 : 0.85)
+        .animation(
+            reduceMotion ? nil : .spring(response: 0.75, dampingFraction: 0.55).delay(0.2),
+            value: logoEntered
+        )
         .frame(height: frameHeight)
         .areaMatrixSceneVisualMotion()
         .onAppear { logoEntered = true }
@@ -59,6 +68,8 @@ struct AreaMatrixLaunchCopyText: View {
     var maxWidth: CGFloat = 560
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var subtitleBreathing = false
 
     var body: some View {
@@ -76,12 +87,34 @@ struct AreaMatrixLaunchCopyText: View {
                 .lineSpacing(6)
                 .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
-                .opacity(subtitleBreathing ? 0.72 : 1.0)
-                .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: subtitleBreathing)
+                .opacity(reduceMotion || reduceTransparency ? 1.0 : (subtitleBreathing ? 0.72 : 1.0))
+                .animation(
+                    reduceMotion || !subtitleBreathing
+                        ? nil
+                        : .easeInOut(duration: 3).repeatForever(autoreverses: true),
+                    value: subtitleBreathing
+                )
                 .areaMatrixSceneTextMotion(delay: 0.15)
         }
         .frame(maxWidth: maxWidth)
-        .onAppear { subtitleBreathing = true }
+        .onAppear(perform: updateSubtitleMotion)
+        .onChange(of: reduceMotion) { _, _ in updateSubtitleMotion() }
+        .onChange(of: reduceTransparency) { _, _ in updateSubtitleMotion() }
+        .onDisappear(perform: stopSubtitleMotion)
+    }
+
+    private func updateSubtitleMotion() {
+        stopSubtitleMotion()
+        guard !reduceMotion, !reduceTransparency else { return }
+        subtitleBreathing = true
+    }
+
+    private func stopSubtitleMotion() {
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            subtitleBreathing = false
+        }
     }
 }
 
@@ -125,6 +158,8 @@ struct AreaMatrixFolderLaunchVisual: View {
     var symbols = AreaMatrixFloatingSymbolSpec.documentCluster
 
     @State private var isAnimating = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         ZStack {
@@ -138,7 +173,10 @@ struct AreaMatrixFolderLaunchVisual: View {
         }
         .frame(height: 220)
         .areaMatrixSceneVisualMotion()
-        .onAppear { isAnimating = true }
+        .onAppear { isAnimating = !reduceMotion }
+        .onChange(of: reduceMotion) { _, reduced in
+            isAnimating = !reduced
+        }
     }
 
     private var pulsePlate: some View {
@@ -150,7 +188,7 @@ struct AreaMatrixFolderLaunchVisual: View {
 
     private var folderShape: some View {
         AreaMatrixFolderShape(tabWidth: 64, tabHeight: 24, cornerRadius: 16)
-            .fill(fillColor)
+            .fill(reduceTransparency ? AreaMatrixTheme.Colors.emerald : fillColor)
             .overlay(
                 AreaMatrixFolderShape(tabWidth: 64, tabHeight: 24, cornerRadius: 16)
                     .stroke(strokeColor, lineWidth: 3)
@@ -160,7 +198,12 @@ struct AreaMatrixFolderLaunchVisual: View {
             .offset(y: -12)
             .shadow(color: glowColor.opacity(isAnimating ? 0.6 : 0.3), radius: isAnimating ? 40 : 20)
             .scaleEffect(isAnimating ? 1.05 : 1.0)
-            .animation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true), value: isAnimating)
+            .animation(
+                reduceMotion || !isAnimating
+                    ? nil
+                    : .easeInOut(duration: 1.25).repeatForever(autoreverses: true),
+                value: isAnimating
+            )
     }
 
     private var folderPlus: some View {
@@ -168,19 +211,26 @@ struct AreaMatrixFolderLaunchVisual: View {
             .font(.system(size: 36, weight: .semibold))
             .foregroundColor(.white)
             .shadow(color: .white.opacity(0.9), radius: isAnimating ? 28 : 8)
-            .animation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true), value: isAnimating)
+            .animation(
+                reduceMotion || !isAnimating
+                    ? nil
+                    : .easeInOut(duration: 1.25).repeatForever(autoreverses: true),
+                value: isAnimating
+            )
             .offset(y: 12)
     }
 
     private func floatingSymbol(_ spec: AreaMatrixFloatingSymbolSpec) -> some View {
         Image(systemName: spec.name)
             .font(.system(size: spec.size))
-            .foregroundColor(strokeColor.opacity(0.5))
+            .foregroundColor(strokeColor.opacity(reduceTransparency ? 1 : 0.5))
             .offset(spec.offset)
             .offset(y: isAnimating ? -6 : 6)
-            .opacity(isAnimating ? 0.7 : 0.2)
+            .opacity(reduceTransparency ? 1 : (isAnimating ? 0.7 : 0.2))
             .animation(
-                .easeInOut(duration: spec.duration)
+                reduceMotion || !isAnimating
+                    ? nil
+                    : .easeInOut(duration: spec.duration)
                     .repeatForever(autoreverses: true)
                     .delay(spec.delay),
                 value: isAnimating

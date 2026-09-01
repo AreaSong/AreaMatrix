@@ -193,16 +193,16 @@ struct DeveloperImportScenarioServices: CoreCategoryPredicting, CoreFileImportin
 actor DeveloperImportScenarioSessionStore: ImportBatchSessionPersisting {
     private var session: ImportBatchSessionSnapshot?
 
-    func saveSession(_ session: ImportBatchSessionSnapshot) async {
+    func saveSession(_ session: ImportBatchSessionSnapshot) async throws {
         self.session = session
     }
 
-    func loadSession(repoPath: String) async -> ImportBatchSessionSnapshot? {
+    func loadSession(repoPath: String) async throws -> ImportBatchSessionSnapshot? {
         guard session?.repoPath == repoPath else { return nil }
         return session
     }
 
-    func clearSession(repoPath: String) async {
+    func clearSession(repoPath: String) async throws {
         guard session?.repoPath == repoPath else { return }
         session = nil
     }

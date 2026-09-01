@@ -114,7 +114,7 @@ enum MobileCloudStorageCoreSDKMapping {
             return connectionError
         }
         guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
-            return .unavailable(error.localizedDescription)
+            return .unavailable("Cloud storage status could not be checked. Try again.")
         }
         switch coreError {
         case let .InvalidPath(path):
@@ -126,7 +126,7 @@ enum MobileCloudStorageCoreSDKMapping {
         case let .RepoNotInitialized(path):
             return .invalidRepository(path)
         default:
-            return .unavailable(String(describing: coreError))
+            return .unavailable("Cloud storage status could not be checked. Try again.")
         }
     }
 }

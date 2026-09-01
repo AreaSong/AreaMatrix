@@ -1,0 +1,18 @@
+scripts/README.md	PASS	1-74	semantic-read	脚本目录导航与边界说明全文审阅；不执行控制流，且明确 runner/检查/发布工具的权威入口与安全前置条件。
+scripts/brand/generate_wordmark_outlines.swift	PASS	1-115	semantic-read	一次性品牌构建工具全文审阅；仅处理固定字符串 Area/Matrix，按字形和路径元素线性构建命令，输入规模固定，Foundation/CoreText 对象由作用域管理；无长期运行或无界重试风险。
+scripts/brand/requirements.txt	NOT_APPLICABLE	1-1	semantic-read	单项依赖声明 Pillow==11.3.0；不是可执行逻辑，实际资源生成路径在 scripts/brand/export_assets.py，依赖锁定/供应链另属依赖审计。
+scripts/check-secrets.sh	FINDING	1-73	semantic-read	归入 PERF-XPLAT-006：scan_history/scan_diff 直接调用 git 与 gitleaks，无任何 deadline；损坏仓库、慢文件系统或挂起 gitleaks 可无限阻塞本地/CI secret gate。成功/失败退出码传播正确，但不能解决挂死。
+scripts/dev_tools/macos_launch_probe.swift	PASS	1-285	semantic-read	macOS 启动性能探针全文审阅；launch callback 与首屏轮询均由 timeoutSeconds 限制，轮询按 50ms sleep，有超时清理 terminate，失败非零退出且阈值超标返回 1；无无界 observer/task。
+scripts/dev_tools/swiftformat.conf	NOT_APPLICABLE	1-10	semantic-read	SwiftFormat 声明式配置；不含运行时逻辑，执行器为外部 swiftformat/./dev check。
+scripts/dev_tools/swiftlint.yml	NOT_APPLICABLE	1-25	semantic-read	SwiftLint 声明式规则配置；不含运行时逻辑，执行器为外部 swiftlint/./dev check。
+scripts/dev_tools/test_governance_status.py	PASS	1-44	semantic-read	固定六维治理聚合单元测试全文审阅；常数规模 fixture，无循环/线程/外部 IO，断言失败由 unittest 非零退出。
+scripts/dev_tools/test_workflow_permissions.py	PASS	1-74	semantic-read	权限解析回归测试全文审阅；每例使用 TemporaryDirectory 自动清理，固定小 YAML，断言失败由 unittest 非零退出，无资源泄漏。
+scripts/dev_tools/wording.py	PASS	1-338	semantic-read	全文审阅；会对受控文本路径做一次 rglob 和逐行正则扫描，时间 O(总文本字节)，结果完整收集可能占 O(hit_count)，但这是显式全仓审计工具且单次有界、失败非零退出；未发现独立稳定性缺陷。
+scripts/dev_tools/test_metrics.py	PASS	1-227	semantic-read	指标工具回归测试全文审阅；仅临时目录/固定小 fixture 与输出断言，资源由 context manager 清理，失败非零退出。
+scripts/dev_tools/test_remote_governance.py	PASS	1-272	semantic-read	远端治理回归测试全文审阅；通过 mock/临时目录验证有限分支，不调用真实远端，临时资源自动释放，失败非零退出。
+scripts/dev_tools/test_tasks_tools.py	PASS	1-472	semantic-read	只读 tasks 工具回归测试全文审阅；固定临时 fixture，递归快照仅覆盖每个测试的小目录，TemporaryDirectory 释放完整，断言非零退出；未形成生产热路径。
+scripts/dev_tools/test_backlog_tools.py	PASS	1-348	semantic-read	只读 backlog 工具回归测试全文审阅；固定小临时树、显式只读/forbidden-state 断言，临时目录自动清理，失败非零退出。
+scripts/task_loop.md	PASS	1-400	semantic-read	task-loop 操作手册全文审阅；明确默认 MAX_RETRIES=1、idle timeout/restart limit、验证子进程例外及 MAX_RETRIES=0 的显式无限模式，不直接执行逻辑。文档与 runner 的无限重试语义已作为已排除候选记录。
+scripts/task_loop/actions.py	PASS	1-317	semantic-read	Dev Console 固定 ActionSpec/MenuSpec 注册表与校验全文审阅；规模为编译期固定列表，导入时构建两个小 map，校验 O(A+catalog keys)，无 IO/线程/无界集合。
+scripts/task_loop/cli.py	PASS	1-6	semantic-read	薄 CLI 入口，仅委派 runner.main 并传播退出码，无独立资源生命周期。
+scripts/task_loop/dev_config.py	PASS	1-40	semantic-read	固定 JSON 配置读写 helper 全文审阅；单个小配置文件，写入前建目录并原子性风险由调用场景限定，无循环/长期句柄。

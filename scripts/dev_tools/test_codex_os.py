@@ -12,8 +12,10 @@ import sqlite3
 import stat
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.dev_tools.cli import _build_parser, _normalize_codex_os_common_args
 from scripts.dev_tools.codex_os import (
@@ -21,6 +23,7 @@ from scripts.dev_tools.codex_os import (
     classify_thread,
     run_codex_os_command,
 )
+from scripts.dev_tools import codex_os_automation
 
 
 def create_state_db(path: Path) -> None:
@@ -1084,6 +1087,51 @@ class CodexOsToolsTest(unittest.TestCase):
             self.assertEqual(len(compileall_results), 1)
             self.assertEqual(compileall_results[0]["result"], "PASS")
 
+    @unittest.skipUnless(os.name != "nt", "POSIX process-group test")
+    def test_validation_timeout_terminates_descendant_processes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pid_file = root / "child.pid"
+            (root / "spawn_timeout_test.py").write_text(
+                "\n".join(
+                    [
+                        "import os",
+                        "import subprocess",
+                        "import sys",
+                        "import time",
+                        "import unittest",
+                        "",
+                        "class TimeoutProcessTest(unittest.TestCase):",
+                        "    def test_wait_for_timeout(self):",
+                        "        child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])",
+                        "        with open(os.environ['CODEX_TEST_CHILD_PID_FILE'], 'w', encoding='utf-8') as handle:",
+                        "            handle.write(str(child.pid))",
+                        "        time.sleep(30)",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with patch.dict(os.environ, {"CODEX_TEST_CHILD_PID_FILE": str(pid_file)}):
+                result = codex_os_automation._execute_validation_command(
+                    root,
+                    "python3 -m unittest -q spawn_timeout_test",
+                    timeout_seconds=1,
+                )
+
+            self.assertEqual(result["result"], "BLOCKED")
+            self.assertIn("terminated validation process tree", result["note"])
+            child_pid = int(pid_file.read_text(encoding="utf-8"))
+            for _ in range(20):
+                try:
+                    os.kill(child_pid, 0)
+                except ProcessLookupError:
+                    break
+                time.sleep(0.1)
+            else:
+                self.fail(f"descendant process {child_pid} survived validation timeout")
+
     def test_run_validation_reports_unrelated_dirty_paths_when_explicit_paths_are_supplied(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -1221,6 +1269,17 @@ class CodexOsToolsTest(unittest.TestCase):
             knowledge = json.loads((runtime / "failure-knowledge.json").read_text(encoding="utf-8"))
             self.assertTrue(knowledge["records"])
             self.assertEqual(knowledge["records"][-1]["result"], "BLOCKED")
+
+    def test_validation_allowlist_uses_structured_core_argv_and_rejects_shell_operators(self) -> None:
+        allowed, reason = codex_os_automation._is_allowed_validation_command("cd core && cargo test & touch injected")
+        self.assertFalse(allowed)
+        self.assertIn("shell", reason)
+
+        allowed, reason = codex_os_automation._is_allowed_validation_command("cd core && cargo test")
+        self.assertTrue(allowed, reason)
+        argv = codex_os_automation._command_argv("cd core && cargo test")
+        self.assertEqual(argv, ["cargo", "test"])
+        self.assertNotIn("bash", argv)
 
     def test_flow_aggregates_start_and_validation_without_closing_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -18,15 +18,21 @@ jobs:
     name: prompt doctor
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - run: ./dev check prompts
 
   core-sdk:
     name: Build reusable CoreSDK
     runs-on: macos-14
     needs: prompt-doctor
+    outputs:
+      archive_sha256: ${{ steps.package.outputs.archive_sha256 }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -39,11 +45,12 @@ jobs:
           xcode-select -p
           xcodebuild -showsdks | sed -n '/macOS SDKs:/,/iOS SDKs:/p'
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin,aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@bc2d2e71bd35c5549942babaa51a89c586b981d1 # v2.8.1
         with:
           workspaces: core
           shared-key: core-sdk
@@ -55,17 +62,32 @@ jobs:
         run: ./dev bindings verify
 
       - name: Verify generated Swift package
-        run: swift build --package-path .build/core-sdk/current
+        run: >-
+          swift build
+          --package-path .build/core-sdk/current
+          --scratch-path "$RUNNER_TEMP/areamatrix-core-sdk-swiftpm"
 
       - name: Package CoreSDK cache entry
-        run: tar -czf core-sdk.tar.gz -C .build core-sdk
+        id: package
+        run: |
+          set -euo pipefail
+          tar -czf core-sdk.tar.gz -C .build core-sdk
+          archive_sha256="$(shasum -a 256 core-sdk.tar.gz | awk '{print $1}')"
+          printf 'archive_sha256=%s\n' "$archive_sha256" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: core-sdk
           path: core-sdk.tar.gz
           if-no-files-found: error
           retention-days: 7
+
+      - name: Verify packaged CoreSDK remained immutable during upload
+        env:
+          CORE_SDK_ARCHIVE_SHA256: ${{ steps.package.outputs.archive_sha256 }}
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' "$CORE_SDK_ARCHIVE_SHA256" core-sdk.tar.gz | shasum -a 256 --check
 
   build:
     name: Xcode build-for-testing & layered tests
@@ -74,7 +96,9 @@ jobs:
     env:
       AREAMATRIX_CORE_SDK_VERIFY_ONLY: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Start CI feedback timer
         run: echo "AREAMATRIX_CI_START=$(python3 -c 'import time; print(f\"{time.time():.6f}\")')" >> "$GITHUB_ENV"
@@ -85,15 +109,21 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: core-sdk
           path: .build/artifacts
 
       - name: Restore reusable CoreSDK
+        env:
+          CORE_SDK_ARCHIVE_SHA256: ${{ needs.core-sdk.outputs.archive_sha256 }}
         run: |
+          set -euo pipefail
+          test -n "$CORE_SDK_ARCHIVE_SHA256"
+          printf '%s  %s\n' "$CORE_SDK_ARCHIVE_SHA256" .build/artifacts/core-sdk.tar.gz | shasum -a 256 --check
           tar -xzf .build/artifacts/core-sdk.tar.gz -C .build
           ./dev build core-sdk --verify-only
 
@@ -117,7 +147,7 @@ jobs:
 
       - name: Upload Xcode build diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-xcode-build-diagnostics
           path: .build/derived-data/macos-ci/**/*.log
@@ -296,7 +326,7 @@ jobs:
             emit_annotation error "Functional test plan failed" "TestResults.xcresult was not produced"
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: xcresult
@@ -322,7 +352,7 @@ jobs:
             echo "::warning title=CI feedback metric unavailable::Product build and tests remain authoritative; feedback metric recording failed."
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: macos-ci-feedback
@@ -334,7 +364,9 @@ jobs:
     runs-on: macos-14
     needs: [prompt-doctor, core-sdk]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -342,15 +374,21 @@ jobs:
       - name: Require iOS package
         run: test -f apps/ios/Package.swift
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: core-sdk
           path: .build/artifacts
 
       - name: Restore and verify reusable CoreSDK
+        env:
+          CORE_SDK_ARCHIVE_SHA256: ${{ needs.core-sdk.outputs.archive_sha256 }}
         run: |
+          set -euo pipefail
+          test -n "$CORE_SDK_ARCHIVE_SHA256"
+          printf '%s  %s\n' "$CORE_SDK_ARCHIVE_SHA256" .build/artifacts/core-sdk.tar.gz | shasum -a 256 --check
           tar -xzf .build/artifacts/core-sdk.tar.gz -C .build
           ./dev build core-sdk --verify-only
 
@@ -368,11 +406,24 @@ jobs:
     runs-on: macos-14
     needs: prompt-doctor
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Require macOS sources
         run: test -d apps/macos/AreaMatrix
       - name: Install SwiftLint
-        run: brew install swiftlint
+        env:
+          SWIFTLINT_SHA256: d6cb0aa7a2f5f1ef306fc9e37bcb54dc9a26facc8f7784ac0c3dd3eccf5c6ba6
+          SWIFTLINT_URL: https://github.com/realm/SwiftLint/releases/download/0.65.0/portable_swiftlint.zip
+        run: |
+          set -euo pipefail
+          tool_dir="$RUNNER_TEMP/areamatrix-swiftlint"
+          mkdir -p "$tool_dir/bin"
+          curl --fail --location --proto '=https' --tlsv1.2 "$SWIFTLINT_URL" --output "$tool_dir/swiftlint.zip"
+          printf '%s  %s\n' "$SWIFTLINT_SHA256" "$tool_dir/swiftlint.zip" | shasum -a 256 --check
+          unzip -q "$tool_dir/swiftlint.zip" -d "$tool_dir/bin"
+          chmod 0755 "$tool_dir/bin/swiftlint"
+          printf '%s\n' "$tool_dir/bin" >> "$GITHUB_PATH"
       - name: Run SwiftLint
         run: swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache
         working-directory: apps/macos
@@ -382,11 +433,24 @@ jobs:
     runs-on: macos-14
     needs: prompt-doctor
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Require macOS sources
         run: test -d apps/macos/AreaMatrix
       - name: Install SwiftFormat
-        run: brew install swiftformat
+        env:
+          SWIFTFORMAT_SHA256: 7cb1cb1fae04932047c7015441c543848e8e60e1572d808d080e0a1f1661114a
+          SWIFTFORMAT_URL: https://github.com/nicklockwood/SwiftFormat/releases/download/0.62.1/swiftformat.zip
+        run: |
+          set -euo pipefail
+          tool_dir="$RUNNER_TEMP/areamatrix-swiftformat"
+          mkdir -p "$tool_dir/bin"
+          curl --fail --location --proto '=https' --tlsv1.2 "$SWIFTFORMAT_URL" --output "$tool_dir/swiftformat.zip"
+          printf '%s  %s\n' "$SWIFTFORMAT_SHA256" "$tool_dir/swiftformat.zip" | shasum -a 256 --check
+          unzip -q "$tool_dir/swiftformat.zip" -d "$tool_dir/bin"
+          chmod 0755 "$tool_dir/bin/swiftformat"
+          printf '%s\n' "$tool_dir/bin" >> "$GITHUB_PATH"
       - name: Run SwiftFormat (check)
         run: swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore
         working-directory: apps/macos

@@ -9,6 +9,7 @@ struct ImportBatchCopyCycleResult {
     var lastImportedPath: String?
     var stoppedForDuplicate: Bool
     var stoppedForQueue: Bool
+    var sessionPersistenceFailure: ImportBatchSessionStoreError?
 
     var progress: ImportBatchProgressSnapshot {
         ImportBatchProgressSnapshot(
@@ -35,7 +36,8 @@ struct ImportBatchCopyCycleResult {
             currentPath: currentPath,
             lastImportedPath: entry.path,
             stoppedForDuplicate: false,
-            stoppedForQueue: false
+            stoppedForQueue: false,
+            sessionPersistenceFailure: nil
         )
     }
 
@@ -54,7 +56,8 @@ struct ImportBatchCopyCycleResult {
             currentPath: currentPath,
             lastImportedPath: nil,
             stoppedForDuplicate: false,
-            stoppedForQueue: stoppedForQueue
+            stoppedForQueue: stoppedForQueue,
+            sessionPersistenceFailure: nil
         )
     }
 
@@ -72,7 +75,8 @@ struct ImportBatchCopyCycleResult {
             currentPath: currentPath,
             lastImportedPath: nil,
             stoppedForDuplicate: true,
-            stoppedForQueue: true
+            stoppedForQueue: true,
+            sessionPersistenceFailure: nil
         )
     }
 }
@@ -113,6 +117,7 @@ struct ImportBatchCopyRunState {
     var stoppedForDuplicate = false
     var didStopAfterCurrentFile = false
     var fatalRetryContext: ImportProgressRetryContext?
+    var sessionPersistenceFailure: ImportBatchSessionStoreError?
 }
 
 struct ImportBatchCopyRunInput {
@@ -162,8 +167,8 @@ extension ImportBatchCopyImportModel {
     func saveImportSession(
         from result: ImportBatchCopyCycleResult,
         request: ImportEntryRequest
-    ) async {
-        await saveImportSession(
+    ) async throws {
+        try await saveImportSession(
             request: request,
             completed: result.completed,
             failed: result.failed,
@@ -178,7 +183,7 @@ extension ImportBatchCopyImportModel {
         failed: Int,
         total: Int,
         currentPath: String
-    ) async {
+    ) async throws {
         guard selectedStorageMode == .copy else { return }
         let session = ImportBatchSessionSnapshot(
             repoPath: request.repoPath,
@@ -189,6 +194,45 @@ extension ImportBatchCopyImportModel {
             currentPath: currentPath,
             items: progressItems()
         )
-        await sessionStore.saveSession(session)
+        try await sessionStore.saveSession(session)
+    }
+
+    func initialImportSessionFailure(
+        request: ImportEntryRequest,
+        total: Int,
+        currentPath: String
+    ) async -> ImportBatchSessionStoreError? {
+        do {
+            try await saveImportSession(
+                request: request,
+                completed: 0,
+                failed: 0,
+                total: total,
+                currentPath: currentPath
+            )
+            return nil
+        } catch {
+            return normalizedImportSessionError(error, operation: .save)
+        }
+    }
+
+    func clearImportSessionFailure(
+        shouldClear: Bool,
+        repoPath: String
+    ) async -> ImportBatchSessionStoreError? {
+        guard shouldClear else { return nil }
+        do {
+            try await sessionStore.clearSession(repoPath: repoPath)
+            return nil
+        } catch {
+            return normalizedImportSessionError(error, operation: .clear)
+        }
+    }
+
+    private func normalizedImportSessionError(
+        _ error: Error,
+        operation: ImportBatchSessionStoreError.Operation
+    ) -> ImportBatchSessionStoreError {
+        (error as? ImportBatchSessionStoreError) ?? .io(operation: operation, code: 0)
     }
 }

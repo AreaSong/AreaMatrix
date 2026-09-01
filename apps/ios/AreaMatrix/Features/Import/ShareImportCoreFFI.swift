@@ -42,7 +42,7 @@ enum ShareImportCoreSDKMapping {
             return shareError
         }
         guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
-            return .unavailable(error.localizedDescription)
+            return .unavailable("Share import is unavailable.")
         }
         switch coreError {
         case let .Io(message):
@@ -58,7 +58,7 @@ enum ShareImportCoreSDKMapping {
         case let .ExpiredAction(path):
             return .permissionExpired(path)
         default:
-            return .unavailable(String(describing: coreError))
+            return .unavailable("Share import is unavailable.")
         }
     }
 }

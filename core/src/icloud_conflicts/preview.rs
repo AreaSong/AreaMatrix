@@ -10,6 +10,7 @@ use super::{paths::map_io_error, types::VersionState};
 
 pub(super) fn preview_report(
     conflict_id: String,
+    preview_token: String,
     versions: Vec<VersionState>,
     trash_available: bool,
 ) -> ICloudConflictPreviewReport {
@@ -17,6 +18,7 @@ pub(super) fn preview_report(
     let can_resolve_destructive = metadata_complete && trash_available;
     ICloudConflictPreviewReport {
         conflict_id,
+        preview_token,
         versions: versions.into_iter().map(version_metadata).collect(),
         default_resolution: ICloudConflictResolution::KeepBoth,
         resolution_options: resolution_options(metadata_complete, trash_available),

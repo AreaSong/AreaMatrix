@@ -146,8 +146,7 @@ public sealed class RescanConfirmViewModel : INotifyPropertyChanged
         try
         {
             Result = await coreBridge
-                .ReindexFromFilesystemAsync(Request.Route.RepoPath, cancellationToken)
-                .ConfigureAwait(false);
+                .ReindexFromFilesystemAsync(Request.Route.RepoPath, cancellationToken);
             return true;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

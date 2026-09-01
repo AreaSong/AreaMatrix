@@ -195,9 +195,14 @@ final class ICloudConflictMinimalModel: ObservableObject {
         }
 
         do {
+            guard let preview = previewState.preview,
+                  !preview.previewToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw AppSemanticError.conflict(rawContext: "missing iCloud conflict preview token")
+            }
             let result = try await reviewer.resolvePreviewedICloudConflict(ICloudConflictResolutionRequest(
                 repoPath: repoPath,
                 conflictID: conflictID,
+                previewToken: preview.previewToken,
                 fileID: -1,
                 strategy: strategy,
                 originalPath: originalVersion.path,

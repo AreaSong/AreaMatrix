@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import stat
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -30,6 +31,7 @@ ICLOUD_MDLS_FIELDS = [
     "kMDItemFSName",
 ]
 DISTRIBUTION_ARTIFACT_PROBE_GATE = "probe_only_blocked_until_formal_distribution_evidence"
+_NOTARY_PROFILE_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 @dataclass(frozen=True)
@@ -90,6 +92,13 @@ def check_developer_id_identity() -> PreflightCheck:
 
 
 def check_notary_profile(profile: str) -> PreflightCheck:
+    if not _NOTARY_PROFILE_PATTERN.fullmatch(profile):
+        return PreflightCheck(
+            "notarytool keychain profile",
+            "BLOCKED",
+            "profile must contain only letters, numbers, '.', '_', or '-'; shell metacharacters are not allowed",
+        )
+
     require_command("xcrun")
     argv = ["xcrun", "notarytool", "history", "--keychain-profile", profile]
     proc = _run_capture(argv)
@@ -1067,29 +1076,60 @@ def _install_app_bundle(app_path: Path, applications_dir: Path) -> Path:
     _quit_area_matrix_for_install()
 
     destination = applications_dir / "AreaMatrix.app"
-    temp_destination = applications_dir / f".AreaMatrix.app.readiness-{os.getpid()}"
-    backup_destination = applications_dir / f".AreaMatrix.app.previous-{os.getpid()}"
+    # Reserve both names atomically.  A PID is not an ownership boundary: a
+    # previous process (or another user) may have left a sibling with the same
+    # suffix, so never remove a predictable path before using it.
+    temp_root = _reserve_install_root(applications_dir, ".AreaMatrix.app.readiness-")
+    backup_root: Path | None = None
+    try:
+        backup_root = _reserve_install_root(applications_dir, ".AreaMatrix.app.previous-")
+        temp_destination = temp_root / destination.name
+        backup_destination = backup_root / destination.name
 
-    shutil.rmtree(temp_destination, ignore_errors=True)
-    shutil.rmtree(backup_destination, ignore_errors=True)
+        proc = _run_capture(["ditto", app_path, temp_destination])
+        if proc.returncode != 0:
+            fail(f"unable to copy app bundle to temporary install path: {(proc.stdout or '').strip()}", proc.returncode)
 
-    proc = _run_capture(["ditto", app_path, temp_destination])
-    if proc.returncode != 0:
-        fail(f"unable to copy app bundle to temporary install path: {(proc.stdout or '').strip()}", proc.returncode)
+        moved_to_backup = False
+        try:
+            if destination.exists():
+                if backup_destination.exists():
+                    fail(f"refusing to overwrite an unexpected backup path: {backup_destination}")
+                destination.rename(backup_destination)
+                moved_to_backup = True
+            temp_destination.rename(destination)
+        except OSError as exc:
+            if moved_to_backup and backup_destination.exists() and not destination.exists():
+                backup_destination.rename(destination)
+            fail(f"unable to install {destination}: {exc}")
+        finally:
+            _remove_owned_install_path(temp_root)
+
+        _remove_owned_install_path(backup_root)
+        backup_root = None
+        return destination
+    finally:
+        _remove_owned_install_path(temp_root)
+        if backup_root is not None and not (backup_root / destination.name).exists():
+            _remove_owned_install_path(backup_root)
+
+
+def _reserve_install_root(applications_dir: Path, prefix: str) -> Path:
+    """Create a private unique directory; its contents are owned by this call."""
+
+    return Path(tempfile.mkdtemp(prefix=prefix, dir=applications_dir))
+
+
+def _remove_owned_install_path(path: Path) -> None:
+    """Remove only the path reserved by this invocation, if it still exists."""
 
     try:
-        if destination.exists():
-            destination.rename(backup_destination)
-        temp_destination.rename(destination)
-    except OSError as exc:
-        if backup_destination.exists() and not destination.exists():
-            backup_destination.rename(destination)
-        fail(f"unable to install {destination}: {exc}")
-    finally:
-        shutil.rmtree(temp_destination, ignore_errors=True)
-
-    shutil.rmtree(backup_destination, ignore_errors=True)
-    return destination
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+    except FileNotFoundError:
+        pass
 
 
 def _require_readiness_install_confirmation(install: bool, applications_dir: str | Path, install_confirm: str | None) -> None:

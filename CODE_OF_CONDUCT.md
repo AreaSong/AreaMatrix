@@ -38,7 +38,7 @@
 
 辱骂、骚扰或其他不可接受的行为可以通过以下方式向负责执行的社区领导者报告：
 
-`conduct@<your-domain>` *（占位，请部署时替换为实际邮箱）*
+`song80184@gmail.com`
 
 所有投诉将被及时和公正地审查和调查。
 
@@ -74,10 +74,17 @@
 
 ## 出处
 
-本行为准则改编自 [Contributor Covenant][homepage] 2.1 版本，可在 [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html][v2.1] 查看。
+本行为准则是 [Contributor Covenant][homepage] 2.1 的中文改编，固定上游版本为 tag `2.1`
+（commit `8a3be1350b07f38b53bbc7073f765a48c4c53ce1`）。上游文本按
+[Creative Commons Attribution 4.0 International][cc-by-4.0] 提供。
 
-社区影响准则参考自 [Mozilla 的行为准则执行阶梯][Mozilla CoC]。
+相较上游英文文本，本文件进行了中文翻译、项目联系信息替换和排版调整；它不是 Contributor Covenant
+发布的官方中文译本。社区影响执行阶梯还参考了 Mozilla inclusion 仓库 commit
+`5e612f24d537b5e7b80ae0aa730c32e499b68db4` 的
+[`code-of-conduct-enforcement/consequence-ladder.md`][mozilla-ladder]。该仓库在同一 commit 的
+[`LICENSE`][mozilla-license] 中声明 MPL-2.0；具体再分发义务仍需合格许可证 reviewer 确认。
 
 [homepage]: https://www.contributor-covenant.org
-[v2.1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
-[Mozilla CoC]: https://github.com/mozilla/diversity
+[cc-by-4.0]: https://github.com/ContributorCovenant/contributor_covenant/blob/8a3be1350b07f38b53bbc7073f765a48c4c53ce1/LICENSE.md
+[mozilla-ladder]: https://github.com/mozilla/inclusion/blob/5e612f24d537b5e7b80ae0aa730c32e499b68db4/code-of-conduct-enforcement/consequence-ladder.md
+[mozilla-license]: https://github.com/mozilla/inclusion/blob/5e612f24d537b5e7b80ae0aa730c32e499b68db4/LICENSE

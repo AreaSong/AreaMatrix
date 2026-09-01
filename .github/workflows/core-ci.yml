@@ -23,7 +23,9 @@ jobs:
     name: prompt doctor
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - run: ./dev check prompts
 
   fmt:
@@ -31,10 +33,13 @@ jobs:
     runs-on: macos-14
     needs: prompt-doctor
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
         with:
           components: rustfmt
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
       - run: cargo fmt --all -- --check
         working-directory: core
 
@@ -43,14 +48,17 @@ jobs:
     runs-on: macos-14
     needs: prompt-doctor
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v2
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
+      - uses: Swatinem/rust-cache@bc2d2e71bd35c5549942babaa51a89c586b981d1 # v2.8.1
         with:
           workspaces: core
-      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
         working-directory: core
 
   test:
@@ -58,12 +66,15 @@ jobs:
     runs-on: macos-14
     needs: prompt-doctor
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
+      - uses: Swatinem/rust-cache@bc2d2e71bd35c5549942babaa51a89c586b981d1 # v2.8.1
         with:
           workspaces: core
-      - run: cargo test --all-features --workspace
+      - run: cargo test --locked --all-features --workspace
         working-directory: core
 
   build-universal:
@@ -71,11 +82,14 @@ jobs:
     runs-on: macos-14
     needs: prompt-doctor
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
-      - uses: Swatinem/rust-cache@v2
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
+      - uses: Swatinem/rust-cache@bc2d2e71bd35c5549942babaa51a89c586b981d1 # v2.8.1
         with:
           workspaces: core
       - name: Build core
@@ -86,19 +100,22 @@ jobs:
     runs-on: macos-14
     needs: prompt-doctor
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
         with:
           components: llvm-tools-preview
-      - uses: Swatinem/rust-cache@v2
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
+      - uses: Swatinem/rust-cache@bc2d2e71bd35c5549942babaa51a89c586b981d1 # v2.8.1
         with:
           workspaces: core
       - name: Install cargo-llvm-cov
-        run: cargo install cargo-llvm-cov --locked
+        run: cargo install cargo-llvm-cov --version 0.9.0 --locked
       - name: Run coverage
         working-directory: core
-        run: cargo llvm-cov --workspace --lcov --output-path lcov.info --fail-under-lines 70
-      - uses: actions/upload-artifact@v4
+        run: cargo llvm-cov --locked --workspace --lcov --output-path lcov.info --fail-under-lines 70
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-lcov
           path: core/lcov.info

@@ -6,9 +6,9 @@ use std::{
 
 use area_matrix_core::{
     init_repo, list_icloud_conflicts, list_undo_actions, preview_conflict_versions,
-    resolve_icloud_conflict, ICloudConflictPreviewStatus, ICloudConflictResolution,
-    ICloudConflictStatus, ICloudConflictVersionRole, OverviewOutput, RepoInitMode, RepoInitOptions,
-    UndoActionStatus,
+    resolve_icloud_conflict as core_resolve_icloud_conflict, ICloudConflictPreviewStatus,
+    ICloudConflictResolution, ICloudConflictStatus, ICloudConflictVersionRole, OverviewOutput,
+    RepoInitMode, RepoInitOptions, UndoActionStatus,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -16,6 +16,16 @@ use rusqlite::Connection;
 mod support;
 
 use support::system_trash_home::with_test_system_trash;
+
+// Keep the historical test call shape while exercising the real preview/apply token contract.
+fn resolve_icloud_conflict(
+    repo_path: String,
+    conflict_id: String,
+    resolution: ICloudConflictResolution,
+) -> area_matrix_core::CoreResult<area_matrix_core::ICloudConflictResolveReport> {
+    let preview = preview_conflict_versions(repo_path.clone(), conflict_id.clone())?;
+    core_resolve_icloud_conflict(repo_path, conflict_id, resolution, preview.preview_token)
+}
 
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
@@ -154,7 +164,6 @@ fn icloud_conflict_visual_implementation_keep_both_records_resolved_without_movi
             "docs/report (Alice's conflicted copy).pdf",
             b"conflicted",
         );
-
         let report = resolve_icloud_conflict(
             path_string(repo.path()),
             "docs/report (Alice's conflicted copy).pdf".to_owned(),
@@ -202,7 +211,6 @@ fn icloud_conflict_visual_implementation_destructive_resolution_uses_trash() {
             "docs/report (Alice's conflicted copy).pdf",
             b"conflicted",
         );
-
         let report = resolve_icloud_conflict(
             path_string(repo.path()),
             "docs/report (Alice's conflicted copy).pdf".to_owned(),

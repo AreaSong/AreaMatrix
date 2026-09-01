@@ -47,7 +47,8 @@ public static class RepositoryAdoptConfirmViewSmokeTests
         XElement window = LoadXml(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml"));
         AssertNamedElement(window, "RepositoryAdoptConfirmDialog", "RepositoryAdoptConfirmPage");
 
-        string codeBehind = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"));
+        string codeBehind = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"))
+            + File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.RouteTransitions.cs"));
         TestAssert.Contains(
             "new RepositoryAdoptConfirmViewModel(repositoryBridge)",
             codeBehind,
@@ -57,7 +58,7 @@ public static class RepositoryAdoptConfirmViewSmokeTests
             codeBehind,
             "adopt confirm route handling");
         TestAssert.Contains(
-            "RepositoryAdoptConfirmPage.OpenRouteAsync(route)",
+            "RepositoryAdoptConfirmPage.OpenRouteAsync(route, transition.Token)",
             codeBehind,
             "open route handoff");
         TestAssert.Contains(

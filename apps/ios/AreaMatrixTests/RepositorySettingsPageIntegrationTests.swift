@@ -71,6 +71,73 @@ final class RepositorySettingsPageIntegrationTests: XCTestCase {
     }
 
     @MainActor
+    func testRepositorySettingsDiagnosticsRejectsSymlinkedGeneratedDirectoryAndRedactsPath() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("areamatrix-ios-diagnostics-\(UUID().uuidString)", isDirectory: true)
+        let external = FileManager.default.temporaryDirectory
+            .appendingPathComponent("areamatrix-ios-diagnostics-external-\(UUID().uuidString)", isDirectory: true)
+        let metadata = root.appendingPathComponent(".areamatrix", isDirectory: true)
+        let generated = metadata.appendingPathComponent("generated", isDirectory: true)
+        let sentinel = external.appendingPathComponent("sentinel.txt")
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: external)
+        }
+
+        try FileManager.default.createDirectory(at: metadata, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: external, withIntermediateDirectories: true)
+        try Data("external-sentinel".utf8).write(to: sentinel)
+        try FileManager.default.createSymbolicLink(at: generated, withDestinationURL: external)
+
+        let bridge = FakeMobileRepositoryCoreBridge(validation: .initialized(path: root.path))
+        let model = RepositorySettingsViewModel(
+            repoPath: root.path,
+            bridge: bridge,
+            capabilityLoader: RecordingRepositorySettingsCapabilityLoader(capabilities: .repositorySettingsFixture())
+        )
+        await model.load()
+        guard case let .loaded(snapshot) = model.state else {
+            XCTFail("Expected loaded repository settings state.")
+            return
+        }
+
+        do {
+            _ = try await FileRepositorySettingsDiagnosticsExporter().export(snapshot: snapshot)
+            XCTFail("Symlinked generated directory must fail closed.")
+        } catch {
+            XCTAssertTrue(error is MobileRepositoryConnectionError)
+        }
+        XCTAssertEqual(try Data(contentsOf: sentinel), Data("external-sentinel".utf8))
+    }
+
+    @MainActor
+    func testRepositorySettingsDiagnosticsUsesRelativeResultAndRedactsAbsolutePath() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("areamatrix-ios-diagnostics-\(UUID().uuidString)", isDirectory: true)
+        let metadata = root.appendingPathComponent(".areamatrix", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: metadata, withIntermediateDirectories: true)
+
+        let bridge = FakeMobileRepositoryCoreBridge(validation: .initialized(path: root.path))
+        let model = RepositorySettingsViewModel(
+            repoPath: root.path,
+            bridge: bridge,
+            capabilityLoader: RecordingRepositorySettingsCapabilityLoader(capabilities: .repositorySettingsFixture())
+        )
+        await model.load()
+        guard case let .loaded(snapshot) = model.state else {
+            XCTFail("Expected loaded repository settings state.")
+            return
+        }
+
+        let result = try await FileRepositorySettingsDiagnosticsExporter().export(snapshot: snapshot)
+        let outputURL = root.appendingPathComponent(result)
+        let contents = try String(contentsOf: outputURL, encoding: .utf8)
+        XCTAssertFalse(result.contains(root.path))
+        XCTAssertFalse(contents.contains(root.path))
+    }
+
+    @MainActor
     func testRepositorySettingsCrossPlatformShowsNoRepositoryConnectedEmptyState() async {
         let model = RepositorySettingsViewModel(
             repoPath: nil,

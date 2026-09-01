@@ -6,9 +6,10 @@ use std::{
 
 use area_matrix_core::{
     init_repo, list_icloud_conflicts, list_undo_actions, preview_conflict_versions,
-    resolve_icloud_conflict, CoreError, CoreResult, ICloudConflictPreviewReport,
-    ICloudConflictResolution, ICloudConflictResolveReport, ICloudConflictStatus,
-    ICloudConflictVersionRole, OverviewOutput, RepoInitMode, RepoInitOptions, UndoActionStatus,
+    resolve_icloud_conflict as core_resolve_icloud_conflict, CoreError, CoreResult,
+    ICloudConflictPreviewReport, ICloudConflictResolution, ICloudConflictResolveReport,
+    ICloudConflictStatus, ICloudConflictVersionRole, OverviewOutput, RepoInitMode, RepoInitOptions,
+    UndoActionStatus,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -30,6 +31,16 @@ use domain_contract_source::DOMAIN_RS;
 const ICLOUD_CONFLICTS_RS: &str = include_str!("../src/icloud_conflicts.rs");
 const UDL: &str = include_str!("../area_matrix.udl");
 const CONFLICT_ID: &str = "docs/report (Alice's conflicted copy).pdf";
+
+// Keep existing scenario readability while forcing every successful path through preview token.
+fn resolve_icloud_conflict(
+    repo_path: String,
+    conflict_id: String,
+    resolution: ICloudConflictResolution,
+) -> CoreResult<ICloudConflictResolveReport> {
+    let preview = preview_conflict_versions(repo_path.clone(), conflict_id.clone())?;
+    core_resolve_icloud_conflict(repo_path, conflict_id, resolution, preview.preview_token)
+}
 
 #[derive(Debug, Eq, PartialEq)]
 struct ConflictValidationSnapshot {
@@ -234,7 +245,6 @@ fn icloud_conflict_visual_validation_keep_both_marks_resolved_without_moving_ver
     with_test_system_trash(|_trash_dir| {
         let repo = initialized_repo();
         let (original, conflicted) = seed_complete_conflict(repo.path());
-
         let report = resolve_icloud_conflict(
             path_string(repo.path()),
             CONFLICT_ID.to_owned(),
@@ -321,7 +331,6 @@ fn icloud_conflict_visual_validation_db_failure_rolls_back_and_stays_unresolved(
         let (original, conflicted) = seed_complete_conflict(repo.path());
         install_resolution_log_failure(repo.path());
         let before = snapshot(repo.path());
-
         let result = resolve_icloud_conflict(
             path_string(repo.path()),
             CONFLICT_ID.to_owned(),
@@ -370,11 +379,16 @@ fn icloud_conflict_visual_validation_incomplete_metadata_blocks_destructive_reso
 fn icloud_conflict_visual_validation_core_api_udl_and_rust_stay_aligned() {
     fn assert_preview_signature(_: fn(String, String) -> CoreResult<ICloudConflictPreviewReport>) {}
     fn assert_resolve_signature(
-        _: fn(String, String, ICloudConflictResolution) -> CoreResult<ICloudConflictResolveReport>,
+        _: fn(
+            String,
+            String,
+            ICloudConflictResolution,
+            String,
+        ) -> CoreResult<ICloudConflictResolveReport>,
     ) {
     }
     assert_preview_signature(preview_conflict_versions);
-    assert_resolve_signature(resolve_icloud_conflict);
+    assert_resolve_signature(core_resolve_icloud_conflict);
 
     assert_capability_and_control_docs_alignment();
     assert_core_api_and_udl_alignment();

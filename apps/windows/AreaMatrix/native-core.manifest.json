@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "status": "blocked-external-artifact",
+  "sourceCommit": "unavailable",
+  "buildCommand": "unavailable",
+  "license": "../../../LICENSE",
+  "sbom": "unavailable",
+  "artifacts": []
+}

@@ -21,5 +21,5 @@ pub(crate) use move_to_category::{
     correct_repo_owned_file_category, move_to_category, preview_move_to_category,
 };
 pub(crate) use rename::rename_file;
-pub(crate) use replacement_trash::move_to_user_trash;
-pub(crate) use safe_move::move_recoverable_file;
+pub(crate) use replacement_trash::{move_to_user_trash, move_to_user_trash_checked};
+pub(crate) use safe_move::{move_recoverable_file, move_recoverable_file_with_hash};

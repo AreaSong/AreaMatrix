@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -42,14 +43,17 @@ public sealed partial class OneDriveNoticeDialog : UserControl
         }
     }
 
-    public async Task OpenRouteAsync(WindowsRepositoryRoute route)
+    public async Task OpenRouteAsync(
+        WindowsRepositoryRoute route,
+        CancellationToken cancellationToken = default)
     {
         if (ViewModel is null)
         {
             return;
         }
 
-        await ViewModel.LoadRouteAsync(route);
+        await ViewModel.LoadRouteAsync(route, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         UpdateOneDriveRiskStateCoreVisibility();
     }
 

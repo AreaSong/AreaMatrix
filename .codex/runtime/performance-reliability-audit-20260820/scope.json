@@ -1,0 +1,75 @@
+{
+  "audit_id": "performance-reliability-audit-20260820",
+  "repository_root": "/Users/as/Ai-Project/project/AreaMatrix",
+  "frozen_at": "2026-08-20T04:23:57+08:00",
+  "snapshot_commit": "cf3647378d64885e8e6a44a2a5b60d8926668982",
+  "branch": "codex/long-term-governance-bridge-contracts",
+  "file_count": 5062,
+  "inclusion_rule": "git tracked files plus non-ignored untracked files present at audit initialization",
+  "exclusions": [
+    {
+      "pattern": ".git/**",
+      "reason": "Git internal database, not repository content"
+    },
+    {
+      "pattern": "Git-ignored files",
+      "reason": "local build products, caches, runtime state, credentials, and other ignored workspace artifacts"
+    },
+    {
+      "pattern": ".codex/runtime/performance-reliability-audit-20260820/**",
+      "reason": "current audit outputs are excluded to avoid a self-referential moving scope"
+    }
+  ],
+  "dirty_paths_at_start": [
+    ".codex/runtime/dependency-supply-chain-audit-20260820/_inventory.py",
+    ".codex/runtime/dependency-supply-chain-audit-20260820/coverage.jsonl",
+    ".codex/runtime/dependency-supply-chain-audit-20260820/dependency-ledger.jsonl",
+    ".codex/runtime/dependency-supply-chain-audit-20260820/final-report.md",
+    ".codex/runtime/dependency-supply-chain-audit-20260820/findings.jsonl",
+    ".codex/runtime/dependency-supply-chain-audit-20260820/inventory.jsonl",
+    ".codex/runtime/dependency-supply-chain-audit-20260820/license-ledger.jsonl",
+    ".codex/runtime/dependency-supply-chain-audit-20260820/review-notes.md",
+    ".codex/runtime/dependency-supply-chain-audit-20260820/scope.json",
+    ".codex/runtime/performance-reliability-audit-20260820/final-report.md",
+    ".codex/runtime/performance-reliability-audit-20260820/findings.jsonl",
+    ".codex/runtime/performance-reliability-audit-20260820/ledger.rb",
+    ".codex/runtime/performance-reliability-audit-20260820/review-notes.md",
+    ".github/workflows/release-evidence.yml",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeAssemblyTests.swift",
+    "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeSchedulingTests.swift",
+    "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeTestSupport.swift",
+    "apps/windows/AreaMatrix/Features/Conflicts/SyncConflictEntryViewModel.cs",
+    "apps/windows/AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs",
+    "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.Replace.cs",
+    "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.Results.cs",
+    "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.cs",
+    "apps/windows/AreaMatrix/Features/Library/RescanConfirmViewModel.cs",
+    "apps/windows/AreaMatrix/Features/Library/WatcherStatusPlatformActions.cs",
+    "apps/windows/AreaMatrix/Features/Library/WatcherStatusViewModel.cs",
+    "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs",
+    "apps/windows/AreaMatrix/Features/Recovery/MissingFileRecoveryViewModel.cs",
+    "apps/windows/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs",
+    "apps/windows/AreaMatrixTests/Architecture/ViewModelSynchronizationContextTests.cs",
+    "apps/windows/AreaMatrixTests/Program.cs",
+    "apps/windows/AreaMatrixTests/WatcherStatus/WatcherStatusViewModelTests.cs",
+    "scripts/dev_tools/checks.py",
+    "scripts/dev_tools/codex_os_automation.py",
+    "scripts/dev_tools/macos.py",
+    "scripts/dev_tools/release.py",
+    "scripts/dev_tools/test_codex_os.py",
+    "scripts/dev_tools/test_macos_runner.py",
+    "scripts/dev_tools/test_release_tools.py"
+  ],
+  "allowed_statuses": [
+    "PENDING",
+    "IN_PROGRESS",
+    "PASS",
+    "FINDING",
+    "NOT_APPLICABLE",
+    "BLOCKED"
+  ],
+  "coverage_semantics": "append-only events; the last event for each inventory path is the current state"
+}

@@ -8,6 +8,7 @@ public struct AreaMatrixCrossfadeAssetImage: View {
     public let height: CGFloat?
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(darkName: String, lightName: String, width: CGFloat?, height: CGFloat?) {
         self.darkName = darkName
@@ -23,7 +24,10 @@ public struct AreaMatrixCrossfadeAssetImage: View {
             assetImage(darkName)
                 .opacity(colorScheme == .dark ? 1 : 0)
         }
-        .animation(.easeInOut(duration: AreaMatrixMotionTokens.Duration.sceneEnterExit), value: colorScheme)
+        .animation(
+            reduceMotion ? nil : .easeInOut(duration: AreaMatrixMotionTokens.Duration.sceneEnterExit),
+            value: colorScheme
+        )
     }
 
     private func assetImage(_ name: String) -> some View {

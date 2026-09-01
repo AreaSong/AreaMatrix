@@ -9,34 +9,116 @@ protocol SharedContainerImportQueuing: Sendable {
 protocol SharedContainerImportTicketConsuming: Sendable {
     func pendingTickets(forRepoPath repoPath: String) async throws -> [ShareImportQueueTicket]
     func stagedFileURL(for item: ShareImportQueuedItem) async throws -> URL
+    func updateTicket(_ ticket: ShareImportQueueTicket) async throws
     func markTicketCompleted(_ ticket: ShareImportQueueTicket) async throws
 }
 
-struct ShareImportQueueRequest: Equatable, Sendable {
+extension SharedContainerImportTicketConsuming {
+    func updateTicket(_: ShareImportQueueTicket) async throws {}
+}
+
+struct ShareImportQueueRequest: Equatable {
     var repoPath: String
     var category: String
     var items: [ShareImportItem]
     var needsConflictReview: Bool
 }
 
-struct ShareImportImmediateStagedItem: Equatable, Sendable {
+struct ShareImportImmediateStagedItem: Equatable {
     var fileURL: URL
 }
 
-struct ShareImportQueueTicket: Codable, Equatable, Identifiable, Sendable {
+enum ShareImportQueueTicketState: String, Codable, Equatable {
+    case committed
+    case completed
+}
+
+enum ShareImportQueuedItemState: String, Codable, Equatable {
+    case pending
+    case importing
+    case imported
+}
+
+struct ShareImportQueueTicket: Codable, Equatable, Identifiable {
     var id: String
     var repoPath: String
     var category: String
     var items: [ShareImportQueuedItem]
     var needsConflictReview: Bool
     var createdAt: Date
+    var state: ShareImportQueueTicketState
+
+    init(
+        id: String,
+        repoPath: String,
+        category: String,
+        items: [ShareImportQueuedItem],
+        needsConflictReview: Bool,
+        createdAt: Date,
+        state: ShareImportQueueTicketState = .committed
+    ) {
+        self.id = id
+        self.repoPath = repoPath
+        self.category = category
+        self.items = items
+        self.needsConflictReview = needsConflictReview
+        self.createdAt = createdAt
+        self.state = state
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, repoPath, category, items, needsConflictReview, createdAt, state
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        repoPath = try container.decode(String.self, forKey: .repoPath)
+        category = try container.decode(String.self, forKey: .category)
+        items = try container.decode([ShareImportQueuedItem].self, forKey: .items)
+        needsConflictReview = try container.decode(Bool.self, forKey: .needsConflictReview)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        state = try container.decodeIfPresent(ShareImportQueueTicketState.self, forKey: .state) ?? .committed
+    }
 }
 
-struct ShareImportQueuedItem: Codable, Equatable, Sendable {
+struct ShareImportQueuedItem: Codable, Equatable {
+    var id: String
     var displayName: String
     var stagedRelativePath: String
     var sourceApp: String
     var sizeBytes: Int64?
+    var state: ShareImportQueuedItemState
+
+    init(
+        id: String = UUID().uuidString,
+        displayName: String,
+        stagedRelativePath: String,
+        sourceApp: String,
+        sizeBytes: Int64?,
+        state: ShareImportQueuedItemState = .pending
+    ) {
+        self.id = id
+        self.displayName = displayName
+        self.stagedRelativePath = stagedRelativePath
+        self.sourceApp = sourceApp
+        self.sizeBytes = sizeBytes
+        self.state = state
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, displayName, stagedRelativePath, sourceApp, sizeBytes, state
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(String.self, forKey: .id) ?? "legacy-\(UUID().uuidString)"
+        displayName = try container.decode(String.self, forKey: .displayName)
+        stagedRelativePath = try container.decode(String.self, forKey: .stagedRelativePath)
+        sourceApp = try container.decode(String.self, forKey: .sourceApp)
+        sizeBytes = try container.decodeIfPresent(Int64.self, forKey: .sizeBytes)
+        state = try container.decodeIfPresent(ShareImportQueuedItemState.self, forKey: .state) ?? .pending
+    }
 }
 
 actor SharedContainerImportQueue: SharedContainerImportQueuing, SharedContainerImportTicketConsuming {
@@ -56,24 +138,36 @@ actor SharedContainerImportQueue: SharedContainerImportQueuing, SharedContainerI
         let payloadRoot = rootURL.appendingPathComponent("payloads", isDirectory: true)
         let payloadDir = payloadRoot.appendingPathComponent(ticketID, isDirectory: true)
         let ticketDir = rootURL.appendingPathComponent("tickets", isDirectory: true)
-        try createQueueDirectories(payloadDir: payloadDir, ticketDir: ticketDir)
-        var queuedItems: [ShareImportQueuedItem] = []
-        for item in request.items {
-            queuedItems.append(try await stageItem(item, in: payloadDir, ticketID: ticketID))
+        let ticketURL = ticketDir.appendingPathComponent("\(ticketID).json")
+        do {
+            try createQueueDirectories(payloadDir: payloadDir, ticketDir: ticketDir)
+            var queuedItems: [ShareImportQueuedItem] = []
+            for item in request.items {
+                try Task.checkCancellation()
+                let queuedItem = try await stageItem(item, in: payloadDir, ticketID: ticketID)
+                queuedItems.append(queuedItem)
+            }
+            guard !queuedItems.isEmpty else {
+                throw ShareImportError.unsupportedItem("No supported items to import.")
+            }
+            try Task.checkCancellation()
+            let ticket = ShareImportQueueTicket(
+                id: ticketID,
+                repoPath: request.repoPath,
+                category: request.category,
+                items: queuedItems,
+                needsConflictReview: request.needsConflictReview,
+                createdAt: Date()
+            )
+            try writeTicket(ticket, to: ticketURL)
+            return ticket
+        } catch {
+            // Cancellation/failure must not leave an unreferenced payload in
+            // the shared container.
+            try? fileManager.removeItem(at: ticketURL)
+            try? fileManager.removeItem(at: payloadDir)
+            throw error
         }
-        guard !queuedItems.isEmpty else {
-            throw ShareImportError.unsupportedItem("No supported items to import.")
-        }
-        let ticket = ShareImportQueueTicket(
-            id: ticketID,
-            repoPath: request.repoPath,
-            category: request.category,
-            items: queuedItems,
-            needsConflictReview: request.needsConflictReview,
-            createdAt: Date()
-        )
-        try writeTicket(ticket, to: ticketDir.appendingPathComponent("\(ticketID).json"))
-        return ticket
     }
 
     func stageItemForImmediateImport(_ item: ShareImportItem) async throws -> ShareImportImmediateStagedItem {
@@ -81,9 +175,18 @@ actor SharedContainerImportQueue: SharedContainerImportQueuing, SharedContainerI
         let payloadDir = rootURL
             .appendingPathComponent("payloads", isDirectory: true)
             .appendingPathComponent(ticketID, isDirectory: true)
-        try createDirectory(at: payloadDir)
-        let queuedItem = try await stageItem(item, in: payloadDir, ticketID: ticketID)
-        return ShareImportImmediateStagedItem(fileURL: rootURL.appendingPathComponent(queuedItem.stagedRelativePath))
+        do {
+            try createDirectory(at: payloadDir)
+            try Task.checkCancellation()
+            let queuedItem = try await stageItem(item, in: payloadDir, ticketID: ticketID)
+            try Task.checkCancellation()
+            return ShareImportImmediateStagedItem(
+                fileURL: rootURL.appendingPathComponent(queuedItem.stagedRelativePath)
+            )
+        } catch {
+            try? fileManager.removeItem(at: payloadDir)
+            throw error
+        }
     }
 
     func removeImmediateStagedItem(_ item: ShareImportImmediateStagedItem) async throws {
@@ -154,6 +257,16 @@ actor SharedContainerImportQueue: SharedContainerImportQueuing, SharedContainerI
         }
     }
 
+    func updateTicket(_ ticket: ShareImportQueueTicket) async throws {
+        let ticketURL = rootURL
+            .appendingPathComponent("tickets", isDirectory: true)
+            .appendingPathComponent("\(ticket.id).json")
+        guard fileManager.fileExists(atPath: ticketURL.path) else {
+            throw ShareImportError.invalidPath(ticketURL.path)
+        }
+        try writeTicket(ticket, to: ticketURL)
+    }
+
     private func createQueueDirectories(payloadDir: URL, ticketDir: URL) throws {
         try createDirectory(at: payloadDir)
         try createDirectory(at: ticketDir)
@@ -188,10 +301,10 @@ actor SharedContainerImportQueue: SharedContainerImportQueuing, SharedContainerI
     private func materialize(_ item: ShareImportItem, to destination: URL) async throws {
         do {
             if let deferredProvider = item.deferredProvider {
-                let sourceURL = try await deferredProvider.itemProvider.loadDeferredFileRepresentation(
-                    typeIdentifier: deferredProvider.typeIdentifier
+                try await deferredProvider.itemProvider.copyDeferredFileRepresentation(
+                    typeIdentifier: deferredProvider.typeIdentifier,
+                    to: destination
                 )
-                try fileManager.copyItem(at: sourceURL, to: destination)
                 return
             }
             switch item.kind {
@@ -259,8 +372,11 @@ actor SharedContainerImportQueue: SharedContainerImportQueuing, SharedContainerI
 }
 
 private extension NSItemProvider {
-    func loadDeferredFileRepresentation(typeIdentifier: String) async throws -> URL {
-        try await withCheckedThrowingContinuation { continuation in
+    func copyDeferredFileRepresentation(
+        typeIdentifier: String,
+        to destination: URL
+    ) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             loadFileRepresentation(forTypeIdentifier: typeIdentifier) { url, error in
                 if let error {
                     continuation.resume(throwing: error)
@@ -270,7 +386,14 @@ private extension NSItemProvider {
                     continuation.resume(throwing: ShareImportError.invalidPath(typeIdentifier))
                     return
                 }
-                continuation.resume(returning: url)
+                do {
+                    // NSItemProvider only guarantees this URL during the
+                    // callback, so copy it before returning to async code.
+                    try FileManager.default.copyItem(at: url, to: destination)
+                    continuation.resume(returning: ())
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
         }
     }

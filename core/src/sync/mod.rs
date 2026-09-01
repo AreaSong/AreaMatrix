@@ -39,7 +39,7 @@ pub(crate) fn sync_external_changes(
     let persisted_cursor = db::get_fs_event_cursor(&repo)?;
     let normalized_events = normalized_events
         .into_iter()
-        .filter(|event| !persisted_cursor.is_some_and(|cursor| event.fs_event_id <= cursor))
+        .filter(|event| persisted_cursor.is_none_or(|cursor| event.fs_event_id > cursor))
         .collect::<Vec<_>>();
     let receipt_keys = normalized_events
         .iter()

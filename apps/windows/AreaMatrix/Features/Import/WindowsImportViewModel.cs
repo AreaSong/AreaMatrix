@@ -383,8 +383,7 @@ public sealed partial class WindowsImportViewModel : INotifyPropertyChanged
             foreach (DesktopImportSource source in SourcesForPreview())
             {
                 DesktopImportPreviewItem item = await coreBridge
-                    .PredictImportAsync(RepoPath, source.SourcePath, cancellationToken)
-                    .ConfigureAwait(false);
+                    .PredictImportAsync(RepoPath, source.SourcePath, cancellationToken);
                 items.Add(item with
                 {
                     ImportSessionId = source.ImportSessionId,
@@ -420,7 +419,7 @@ public sealed partial class WindowsImportViewModel : INotifyPropertyChanged
             List<DesktopImportResult> imported = [];
             foreach (DesktopImportPreviewItem item in PreviewItems.Where(CanImportPreviewItem))
             {
-                imported.Add(await ImportPreviewItemAsync(item, cancellationToken).ConfigureAwait(false));
+                imported.Add(await ImportPreviewItemAsync(item, cancellationToken));
             }
 
             CurrentStep = Mode == DesktopImportMode.Move

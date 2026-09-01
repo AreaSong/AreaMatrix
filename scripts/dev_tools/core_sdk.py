@@ -18,6 +18,7 @@ from .core_sdk_artifact import (
     CORE_SDK_NAME,
     CORE_SDK_PACKAGE_NAME,
     CORE_SDK_SCHEMA_VERSION,
+    core_sdk_output_records,
     sdk_artifact_complete as _sdk_artifact_complete,
     sdk_artifact_errors as _sdk_artifact_errors,
     verify_core_sdk_pointer,
@@ -112,7 +113,7 @@ def _build_ios_slices(
     }
     for target in APPLE_TARGETS[2:]:
         proc = run_step(
-            ["cargo", "build", *profile_args, "--target", target],
+            ["cargo", "build", "--locked", *profile_args, "--target", target],
             cwd=root / "core",
             env=env,
             check=False,
@@ -438,6 +439,10 @@ def _run_core_sdk_build_inner(
         )
         metadata["fingerprint"] = fingerprint
         metadata["xcframework"] = CORE_SDK_NAME
+        output_records, output_errors = core_sdk_output_records(package)
+        if output_errors:
+            fail("unable to inventory staged CoreSDK outputs:\n- " + "\n- ".join(output_errors))
+        metadata["outputs"] = output_records
         (package / "manifest.json").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",

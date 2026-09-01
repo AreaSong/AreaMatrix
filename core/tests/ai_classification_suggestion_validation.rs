@@ -1,5 +1,7 @@
 #[path = "support/ai_classification_suggestion_common.rs"]
 mod ai_common;
+#[path = "support/ai_persisted_privacy.rs"]
+mod persisted_privacy;
 
 use std::{fs, path::Path};
 
@@ -12,6 +14,7 @@ use area_matrix_core::{
     CoreError, CoreResult, DuplicateStrategy, ErrorKind, FileFilter, ImportDestination,
     ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
 };
+use persisted_privacy::{allow_remote_ai, install_blocking_rule};
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
@@ -267,6 +270,7 @@ fn ai_classification_suggestion_validation_blocks_remote_runtime_when_call_log_g
     let mut enable_request = enable_request_for_endpoint(token, endpoint_url);
     enable_request.feature_scope = vec![AiFeatureKind::ClassificationSuggestions];
     enable_remote_ai_provider(repo_path.clone(), enable_request).expect("enable remote provider");
+    allow_remote_ai(repo.path());
     install_broken_ai_call_log_schema(repo.path());
     let remote_runtime = ai_common::RemoteRuntimeProbe::new();
     let before = snapshot(repo.path(), file_id);
@@ -365,10 +369,14 @@ fn ai_classification_suggestion_validation_covers_failure_and_privacy_boundaries
     );
     assert_eq!(snapshot(repo.path(), file_id), before);
 
-    let mut blocked_request = request(file_id);
-    blocked_request.privacy_policy_ref = Some("private-folder".to_owned());
+    install_blocking_rule(
+        repo.path(),
+        "rule:private-folder",
+        area_matrix_core::AiPrivacyRuleKind::Category,
+        "inbox",
+    );
     let skipped =
-        suggest_category_with_ai(repo_path, blocked_request).expect("privacy skip is structured");
+        suggest_category_with_ai(repo_path, request(file_id)).expect("privacy skip is structured");
 
     assert_eq!(skipped.status, AiCategorySuggestionStatus::Skipped);
     assert_eq!(
@@ -419,7 +427,7 @@ fn ai_classification_suggestion_validation_locks_api_udl_rust_and_docs_alignment
         "Core 测试位于：",
         "`core/tests/**` 合同、实现、失败恢复和集成测试。",
         "文件安全能力至少覆盖正常路径、DB 失败、文件系统失败、重复执行、边界路径和用户文件不变量。",
-        "cargo test --all-features --workspace",
+        "cargo test --locked --all-features --workspace",
     ] {
         assert_contains(TESTING_DOC, fragment);
     }

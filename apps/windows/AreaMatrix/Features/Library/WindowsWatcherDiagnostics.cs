@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AreaMatrix.Features.Onboarding;
+using AreaMatrix.Features.Settings;
 
 namespace AreaMatrix.Features.Library;
 
@@ -72,35 +73,28 @@ public sealed class WindowsWatcherDiagnostics : IWindowsWatcherDiagnostics, IDis
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (string.IsNullOrWhiteSpace(repoPath))
+        try
+        {
+            return await WindowsRepositoryMetadataFileSafety.WriteDiagnosticsAsync(
+                repoPath,
+                "watcher-status",
+                DiagnosticLines(snapshot),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (WindowsRepositoryCoreException error)
         {
             throw new WatcherStatusCoreException(
-                WindowsRepositoryErrorKind.InvalidPath,
-                "Repository path is required before exporting watcher diagnostics.",
+                error.Kind,
+                error.Message,
                 repoPath);
         }
-
-        if (!Directory.Exists(repoPath))
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             throw new WatcherStatusCoreException(
-                WindowsRepositoryErrorKind.FileNotFound,
-                "Repository folder was not found.",
+                WindowsRepositoryErrorKind.PermissionDenied,
+                "Repository metadata path is unavailable or unsafe.",
                 repoPath);
         }
-
-        string diagnosticsDirectory = Path.Combine(repoPath, ".areamatrix", "generated", "diagnostics");
-        Directory.CreateDirectory(diagnosticsDirectory);
-        string outputPath = DiagnosticOutputPath(diagnosticsDirectory);
-
-        await using FileStream stream = new(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        await using StreamWriter writer = new(stream);
-        foreach (string line in DiagnosticLines(snapshot))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            await writer.WriteLineAsync(line).ConfigureAwait(false);
-        }
-
-        return outputPath;
     }
 
     public Task OpenRepositoryFolderAsync(
@@ -355,7 +349,7 @@ public sealed class WindowsWatcherDiagnostics : IWindowsWatcherDiagnostics, IDis
             "AreaMatrix watcher diagnostics",
             $"Status: {snapshot.Status}",
             $"Backend: {snapshot.Backend}",
-            $"Watched path: {snapshot.WatchedPath}",
+            "Watched path: [redacted]",
             $"Pending events: {snapshot.PendingEventCount}",
             $"Last event id: {snapshot.LastEventId?.ToString() ?? "Unknown"}",
             $"Last event at: {snapshot.LastEventAt?.ToString() ?? "Unknown"}",
@@ -363,13 +357,27 @@ public sealed class WindowsWatcherDiagnostics : IWindowsWatcherDiagnostics, IDis
             $"Last sync at: {snapshot.LastSyncAt?.ToString() ?? "Unknown"}",
             $"Last rescan at: {snapshot.LastRescanAt?.ToString() ?? "Unknown"}",
             $"Watch count: {snapshot.WatchCount?.ToString() ?? "Unknown"}",
-            $"Error summary: {snapshot.ErrorSummary ?? "None"}",
+            $"Error summary: {(snapshot.ErrorSummary is null ? "None" : "[redacted]")}",
             $"Health reasons: {string.Join(", ", snapshot.HealthReasons)}",
             "Recent events are relative paths only; file contents are not exported."
         ];
 
         lines.AddRange(snapshot.RecentEvents.Select(eventSample =>
-            $"- {eventSample.Kind}: {eventSample.Path} ({eventSample.EventId})"));
+            $"- {eventSample.Kind}: {RedactedRelativePath(eventSample.Path)} ({eventSample.EventId})"));
         return lines;
+    }
+
+    private static string RedactedRelativePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || Path.IsPathRooted(path))
+        {
+            return "[redacted]";
+        }
+
+        string normalized = path.Replace('\\', '/');
+        return normalized.StartsWith("../", StringComparison.Ordinal)
+            || string.Equals(normalized, "..", StringComparison.Ordinal)
+            ? "[redacted]"
+            : normalized;
     }
 }

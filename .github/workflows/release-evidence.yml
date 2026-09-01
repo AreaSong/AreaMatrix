@@ -25,32 +25,69 @@ jobs:
   evidence:
     name: release evidence audit
     runs-on: macos-14
+    env:
+      EXPECTED_REPOSITORY: AreaSong/AreaMatrix
+      EXPECTED_REF: refs/heads/main
+      RELEASE_ID: ${{ inputs.release }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Verify trusted main invocation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          test "$GITHUB_REF" = "$EXPECTED_REF"
+          case "$RELEASE_ID" in
+            ""|*[!A-Za-z0-9._-]*)
+              echo "release must contain only letters, numbers, '.', '_', or '-'; received an invalid value" >&2
+              exit 2
+              ;;
+          esac
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checked out revision
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
 
       - name: Release preflight
         id: preflight
         continue-on-error: true
+        env:
+          NOTARY_PROFILE: ${{ inputs.notary_profile }}
         run: |
+          set -euo pipefail
+          case "$NOTARY_PROFILE" in
+            ""|*[!A-Za-z0-9._-]*)
+              echo "notary_profile must contain only letters, numbers, '.', '_', or '-'" >&2
+              exit 2
+              ;;
+          esac
           ./dev release preflight \
-            --notary-profile "${{ inputs.notary_profile }}" \
+            --notary-profile "$NOTARY_PROFILE" \
             --json | tee release-preflight.json
 
       - name: Release evidence audit
         id: evidence_audit
         continue-on-error: true
-        run: ./dev release evidence-audit --json | tee release-evidence-audit.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./dev release evidence-audit --json | tee release-evidence-audit.json
 
       - name: Release status snapshot
         id: release_status
         continue-on-error: true
-        run: ./dev release status --json | tee release-status.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./dev release status --json | tee release-status.json
 
       - name: Upload release evidence snapshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-evidence-${{ inputs.release }}
           path: |

@@ -4,6 +4,8 @@ mod evaluation;
 mod persistence;
 mod validation;
 
+use std::path::Path;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{AiFeatureKind, CoreResult};
@@ -363,4 +365,85 @@ pub fn evaluate_ai_privacy(
     validate_repo_path(&repo_path)?;
     validate_evaluation_request(&request)?;
     Ok(evaluation::evaluate(request))
+}
+
+/// Evaluates one producer attempt against the repository's current persisted
+/// privacy and provider state. Producers must use this entry point instead of
+/// trusting request-supplied gate snapshots.
+pub(crate) fn evaluate_persisted_ai_privacy(
+    repo: &Path,
+    feature: AiFeatureKind,
+    route: AiPrivacyEvaluationRoute,
+    requested_fields: Vec<AiPrivacyInputField>,
+    context: AiPrivacyEvaluationContext,
+) -> CoreResult<AiPrivacyEvaluationReport> {
+    let repo_path = repo.to_string_lossy().into_owned();
+    let snapshot = persistence::load_snapshot(&repo_path)?;
+    let request = AiPrivacyEvaluationRequest {
+        feature,
+        route,
+        requested_fields,
+        privacy_gate_enabled: snapshot.privacy_gate_enabled,
+        provider_scope: snapshot.provider_scope,
+        rules: snapshot
+            .rules
+            .into_iter()
+            .map(rule_input_from_record)
+            .collect(),
+        remote_allowed_fields: snapshot
+            .remote_allowed_fields
+            .into_iter()
+            .map(field_rule_from_state)
+            .collect(),
+        context,
+    };
+    validate_evaluation_request(&request)?;
+    Ok(evaluation::evaluate(request))
+}
+
+/// Builds the stable metadata context shared by every AI producer. Runtime
+/// payload builders consume the evaluator's `sent_fields`; this helper only
+/// supplies metadata needed to match persisted folder/category/extension/tag
+/// rules before any optional file content is read.
+pub(crate) fn evaluation_context_for_file(
+    repo: &Path,
+    file: &crate::FileEntry,
+) -> CoreResult<AiPrivacyEvaluationContext> {
+    let tags = crate::db::list_tag_set(repo, file.id)?
+        .file_tags
+        .into_iter()
+        .map(|record| record.value)
+        .collect();
+    let extension = Path::new(&file.current_name)
+        .extension()
+        .and_then(|value| value.to_str())
+        .filter(|value| !value.is_empty())
+        .map(|value| value.to_ascii_lowercase());
+    Ok(AiPrivacyEvaluationContext {
+        file_id: Some(file.id),
+        repo_relative_path: Some(file.path.clone()),
+        file_name: Some(file.current_name.clone()),
+        category: Some(file.category.clone()),
+        extension,
+        tags,
+    })
+}
+
+fn rule_input_from_record(record: AiPrivacyRuleRecord) -> AiPrivacyRuleInput {
+    AiPrivacyRuleInput {
+        rule_id: Some(record.rule_id),
+        name: record.name,
+        kind: record.kind,
+        pattern: record.pattern,
+        applies_to: record.applies_to,
+        enabled: record.enabled,
+        description: record.description,
+    }
+}
+
+fn field_rule_from_state(state: AiPrivacyFieldState) -> AiPrivacyFieldRule {
+    AiPrivacyFieldRule {
+        field: state.field,
+        allow_remote: state.allow_remote,
+    }
 }

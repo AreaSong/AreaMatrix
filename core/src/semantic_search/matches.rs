@@ -215,10 +215,7 @@ fn matched_reason(matches: &[SemanticFieldMatch], relevance: f32) -> String {
         .into_iter()
         .collect::<Vec<_>>()
         .join(", ");
-    format!(
-        "Matched {fields} with terms {terms}; relevance {:.2}",
-        relevance
-    )
+    format!("Matched {fields} with terms {terms}; relevance {relevance:.2}")
 }
 
 fn search_field(field: &SemanticSearchInputField) -> SearchMatchField {

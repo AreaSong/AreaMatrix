@@ -1,9 +1,8 @@
 using System.Runtime.InteropServices;
-using AreaMatrix.Linux.Features.Onboarding;
 
 namespace AreaMatrix.Linux.Core;
 
-internal sealed class NativeCoreLibrary : IDisposable
+internal sealed partial class NativeCoreLibrary : IDisposable
 {
     private readonly IntPtr handle;
 
@@ -13,8 +12,8 @@ internal sealed class NativeCoreLibrary : IDisposable
         GetVersion = LoadFunction<GetVersionDelegate>("uniffi_area_matrix_core_fn_func_get_version");
         ValidateRepoPath = LoadFunction<ValidateRepoPathDelegate>(
             "uniffi_area_matrix_core_fn_func_validate_repo_path");
-        LoadConfig = LoadFunction<LoadConfigDelegate>("uniffi_area_matrix_core_fn_func_load_config");
-        UpdateConfig = LoadFunction<UpdateConfigDelegate>("uniffi_area_matrix_core_fn_func_update_config");
+        LoadConfig = LoadFunction<LoadConfigDelegate>("uniffi_area_matrix_core_fn_func_load_repo_config");
+        UpdateConfig = LoadFunction<UpdateConfigDelegate>("uniffi_area_matrix_core_fn_func_update_repo_config");
         InitRepo = LoadFunction<InitRepoDelegate>("uniffi_area_matrix_core_fn_func_init_repo");
         PredictCategory = LoadFunction<PredictCategoryDelegate>(
             "uniffi_area_matrix_core_fn_func_predict_category");
@@ -62,9 +61,9 @@ internal sealed class NativeCoreLibrary : IDisposable
         ValidateRepoPathChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_validate_repo_path");
         LoadConfigChecksum = LoadFunction<ChecksumDelegate>(
-            "uniffi_area_matrix_core_checksum_func_load_config");
+            "uniffi_area_matrix_core_checksum_func_load_repo_config");
         UpdateConfigChecksum = LoadFunction<ChecksumDelegate>(
-            "uniffi_area_matrix_core_checksum_func_update_config");
+            "uniffi_area_matrix_core_checksum_func_update_repo_config");
         InitRepoChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_init_repo");
         PredictCategoryChecksum = LoadFunction<ChecksumDelegate>(
@@ -219,29 +218,6 @@ internal sealed class NativeCoreLibrary : IDisposable
 
     public ChecksumDelegate ResumeScanSessionChecksum { get; }
 
-    public static NativeCoreLibrary LoadDefault()
-    {
-        string? configuredPath = Environment.GetEnvironmentVariable("AREAMATRIX_CORE_LIBRARY");
-        if (!string.IsNullOrWhiteSpace(configuredPath))
-        {
-            return Load(configuredPath);
-        }
-
-        return new NativeCoreLibrary(NativeLibrary.Load("area_matrix_core"));
-    }
-
-    public static NativeCoreLibrary Load(string libraryPath)
-    {
-        if (string.IsNullOrWhiteSpace(libraryPath) || !File.Exists(libraryPath))
-        {
-            throw new LinuxRepositoryCoreException(
-                LinuxRepositoryErrorKind.Unavailable,
-                $"AreaMatrix Core library was not found at `{libraryPath}`.");
-        }
-
-        return new NativeCoreLibrary(NativeLibrary.Load(libraryPath));
-    }
-
     public void Dispose()
     {
         NativeLibrary.Free(handle);
@@ -253,4 +229,5 @@ internal sealed class NativeCoreLibrary : IDisposable
         IntPtr export = NativeLibrary.GetExport(handle, name);
         return Marshal.GetDelegateForFunctionPointer<T>(export);
     }
+
 }

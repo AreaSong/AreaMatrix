@@ -12,6 +12,7 @@ public static class RepositorySettingsViewModelTests
         await LoadsRepositoryConfigCapabilitiesAndCoreVersion();
         await SavesRepositoryConfigThroughUpdateConfig();
         await ExportsDiagnosticsFromLoadedSnapshot();
+        await RealDiagnosticsExporterRejectsReparseDirectoryAndRedactsPath();
         await EmptyRepositoryShowsNoConnectedState();
         WindowsSettingsPageDeclaresPlatformCapabilitiesCoreAndRepositorySettingsCoreClosure();
     }
@@ -81,6 +82,41 @@ public static class RepositorySettingsViewModelTests
         TestAssert.Equal(RepositorySettingsStatus.Empty, model.Status, nameof(model.Status));
         TestAssert.False(model.CanExportDiagnostics, nameof(model.CanExportDiagnostics));
         TestAssert.Empty(bridge.LoadedConfigPaths, nameof(bridge.LoadedConfigPaths));
+    }
+
+    private static async Task RealDiagnosticsExporterRejectsReparseDirectoryAndRedactsPath()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"areamatrix-windows-diagnostics-{Guid.NewGuid():N}");
+        string external = Path.Combine(Path.GetTempPath(), $"areamatrix-windows-diagnostics-external-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, ".areamatrix"));
+        Directory.CreateDirectory(external);
+        string sentinel = Path.Combine(external, "sentinel.txt");
+        await File.WriteAllTextAsync(sentinel, "external-sentinel");
+        try
+        {
+            Directory.CreateSymbolicLink(Path.Combine(root, ".areamatrix", "generated"), external);
+            RecordingRepositorySettingsBridge bridge = new();
+            RepositorySettingsViewModel model = new(bridge, root);
+            await model.LoadAsync();
+
+            bool rejected = false;
+            try
+            {
+                await new WindowsRepositorySettingsDiagnosticsExporter().ExportAsync(model.Snapshot!);
+            }
+            catch (WindowsRepositoryCoreException)
+            {
+                rejected = true;
+            }
+
+            TestAssert.True(rejected, "reparse generated directory must fail closed");
+            TestAssert.Equal("external-sentinel", await File.ReadAllTextAsync(sentinel), "external sentinel");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+            Directory.Delete(external, recursive: true);
+        }
     }
 
     private static void WindowsSettingsPageDeclaresPlatformCapabilitiesCoreAndRepositorySettingsCoreClosure()

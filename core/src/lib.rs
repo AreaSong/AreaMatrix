@@ -16,6 +16,7 @@ mod ai_tags_suggestion;
 pub mod api;
 mod batch_category;
 mod batch_delete;
+mod batch_journal;
 mod batch_rename;
 mod classifier_correction;
 mod classifier_impact;
@@ -147,6 +148,9 @@ pub use error::{
     map_core_error, CoreError, CoreResult, ErrorArgument, ErrorKind, ErrorMapping,
     ErrorMappingInput, ErrorRecoverability, ErrorSeverity,
 };
+#[cfg(debug_assertions)]
+#[doc(hidden)]
+pub use external_runtime::{enable_external_runtime_test_harness, ExternalRuntimeTestHarnessGuard};
 pub use import_conflict_batch::{
     apply_import_conflict_batch, preview_import_conflict_batch, ImportConflictBatchApplyReport,
     ImportConflictBatchApplyRequest, ImportConflictBatchConflictType,

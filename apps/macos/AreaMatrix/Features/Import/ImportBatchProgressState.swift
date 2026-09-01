@@ -115,6 +115,7 @@ struct ImportBatchImportResult: Equatable {
     var pendingICloudCount: Int
     var didStopAfterCurrentFile = false
     var fatalRetryContext: ImportProgressRetryContext?
+    var sessionPersistenceFailure: ImportBatchSessionStoreError?
 
     var needsResultSummary: Bool {
         didStopAfterCurrentFile
@@ -122,6 +123,7 @@ struct ImportBatchImportResult: Equatable {
             || previewErrorCount > 0
             || skippedDuplicateCount > 0
             || pendingICloudCount > 0
+            || sessionPersistenceFailure != nil
             || succeededEntries.contains { $0.importCommitState.isDegraded }
     }
 

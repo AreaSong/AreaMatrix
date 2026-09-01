@@ -21,6 +21,7 @@ if str(ROOT_HINT) not in sys.path:
     sys.path.insert(0, str(ROOT_HINT))
 
 from scripts.brand.assets import ROOT, load_manifest, package_root, raster_jobs
+from scripts.brand.image_safety import open_image
 
 
 def main() -> int:
@@ -63,7 +64,7 @@ def render_svg(
             check=True,
             stdout=subprocess.DEVNULL,
         )
-        with Image.open(rendered) as image:
+        with open_image(rendered, "PNG") as image:
             image.load()
             image = image.convert("RGBA")
             if not alpha:
@@ -135,7 +136,7 @@ def export_android(root: Path, manifest: dict, refresh: bool) -> None:
     for directory in (drawable, values, mipmap):
         directory.mkdir(parents=True, exist_ok=True)
     source = root / manifest["native"]["androidForegroundSource"]
-    with Image.open(source) as image:
+    with open_image(source, "PNG") as image:
         symbol = image.convert("RGBA").resize((286, 286), Image.Resampling.LANCZOS)
     canvas = Image.new("RGBA", (432, 432), (0, 0, 0, 0))
     canvas.alpha_composite(symbol, (73, 73))
@@ -167,7 +168,7 @@ def export_windows(root: Path, manifest: dict, refresh: bool) -> None:
     source = root / manifest["native"]["windowsSource"]
     images = []
     for size in sizes:
-        with Image.open(source) as image:
+        with open_image(source, "PNG") as image:
             buffer = io.BytesIO()
             image.convert("RGBA").resize((size, size), Image.Resampling.LANCZOS).save(buffer, format="PNG")
             images.append(buffer.getvalue())
@@ -207,7 +208,7 @@ def export_print(root: Path, manifest: dict, refresh: bool) -> None:
             with tempfile.TemporaryDirectory(prefix="areamatrix-print-") as temporary:
                 png = Path(temporary) / "print.png"
                 render_svg(source, png, 3600, 1170, True, manifest)
-                with Image.open(png) as image:
+                with open_image(png, "PNG") as image:
                     rgba = image.convert("RGBA")
                     flattened = Image.new("RGB", rgba.size, background)
                     flattened.paste(rgba, mask=rgba.getchannel("A"))
@@ -246,7 +247,7 @@ def export_overview(root: Path, manifest: dict, refresh: bool) -> None:
         ("social/areamatrix-social-preview-dark.png", (920, 850), (520, 273)),
     )
     for relative, position, size in composites:
-        with Image.open(root / relative) as image:
+        with open_image(root / relative, "PNG") as image:
             item = image.convert("RGBA")
             item.thumbnail(size, Image.Resampling.LANCZOS)
             canvas.paste(item, position, item)
@@ -255,7 +256,7 @@ def export_overview(root: Path, manifest: dict, refresh: bool) -> None:
 
 def resize_png(source: Path, output: Path, size: int, alpha: bool, manifest: dict) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
-    with Image.open(source) as image:
+    with open_image(source, "PNG") as image:
         image = image.convert("RGBA").resize((size, size), Image.Resampling.LANCZOS)
         if not alpha:
             background = Image.new("RGB", image.size, manifest["native"]["androidBackground"])

@@ -209,7 +209,7 @@ enum PlatformDifferencesBindingSDKMapping {
             return contractError
         }
         guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
-            return .unavailable(error.localizedDescription)
+            return .unavailable("Platform capability details are unavailable.")
         }
         switch coreError {
         case let .Config(reason), let .Validation(reason):
@@ -217,7 +217,7 @@ enum PlatformDifferencesBindingSDKMapping {
         case let .Internal(message):
             return .internalFailure(message)
         default:
-            return .unavailable(String(describing: coreError))
+            return .unavailable("Platform capability details are unavailable.")
         }
     }
 }

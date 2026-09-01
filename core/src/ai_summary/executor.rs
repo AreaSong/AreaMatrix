@@ -1,9 +1,9 @@
-use std::{env, ffi::OsString, path::Path, process::Command, time::Duration};
+use std::{path::Path, time::Duration};
 
 use serde::Serialize;
 
 use crate::{
-    external_runtime::{ExternalRuntimeError, ExternalRuntimeLimits},
+    external_runtime::{ExternalRuntimeError, ExternalRuntimeLimits, VerifiedExternalRuntime},
     remote_provider_config::{RemoteAiProviderKind, StoredRemoteProviderConfig},
     AiFeatureKind, CoreError, CoreResult,
 };
@@ -13,6 +13,8 @@ use super::{context::AiSummaryContext, AiSummaryInputField, AiSummaryRoute};
 const LOCAL_MODEL_ID: &str = "areamatrix-local-summary";
 const LOCAL_RUNTIME_ENV: &str = "AREAMATRIX_AI_SUMMARY_LOCAL_RUNTIME";
 const REMOTE_RUNTIME_ENV: &str = "AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME";
+const LOCAL_RUNTIME_CAPABILITY: &str = "ai-summary-local";
+const REMOTE_RUNTIME_CAPABILITY: &str = "ai-summary-remote";
 const MAX_SUMMARY_CHARS: usize = 1_200;
 const RUNTIME_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_RUNTIME_OUTPUT_BYTES: usize = 1024 * 1024;
@@ -29,9 +31,12 @@ pub(super) fn execute_local(
     context: &AiSummaryContext,
     content_locale: &str,
 ) -> CoreResult<AiSummaryRuntimeDraft> {
-    if let Some(runtime_path) = runtime_path(LOCAL_RUNTIME_ENV) {
+    if let Some(runtime) =
+        crate::external_runtime::resolve(LOCAL_RUNTIME_ENV, LOCAL_RUNTIME_CAPABILITY)
+            .map_err(map_runtime_error)?
+    {
         return execute_external_runtime(
-            runtime_path,
+            runtime,
             RuntimePayload::local(context, content_locale),
             AiSummaryRoute::Local,
             LOCAL_MODEL_ID.to_owned(),
@@ -52,11 +57,14 @@ pub(super) fn execute_remote(
     )?
     .ok_or_else(|| CoreError::config("AI summary remote provider is unavailable"))?;
     let model = config.model_id.clone();
-    let Some(runtime_path) = runtime_path(REMOTE_RUNTIME_ENV) else {
+    let Some(runtime) =
+        crate::external_runtime::resolve(REMOTE_RUNTIME_ENV, REMOTE_RUNTIME_CAPABILITY)
+            .map_err(map_runtime_error)?
+    else {
         return Err(CoreError::internal("AI summary remote runtime unavailable"));
     };
     execute_external_runtime(
-        runtime_path,
+        runtime,
         RuntimePayload::remote(context, &config, content_locale),
         AiSummaryRoute::Remote,
         model,
@@ -64,12 +72,8 @@ pub(super) fn execute_remote(
     )
 }
 
-fn runtime_path(env_name: &str) -> Option<OsString> {
-    env::var_os(env_name).filter(|value| !value.is_empty())
-}
-
 fn execute_external_runtime(
-    runtime_path: OsString,
+    runtime: VerifiedExternalRuntime,
     payload: RuntimePayload<'_>,
     route: AiSummaryRoute,
     model: String,
@@ -77,9 +81,8 @@ fn execute_external_runtime(
 ) -> CoreResult<AiSummaryRuntimeDraft> {
     let payload = serde_json::to_vec(&payload)
         .map_err(|_| CoreError::internal("AI summary request is invalid"))?;
-    let mut command = Command::new(runtime_path);
     let output = crate::external_runtime::run(
-        &mut command,
+        &runtime,
         &payload,
         ExternalRuntimeLimits {
             timeout: RUNTIME_TIMEOUT,

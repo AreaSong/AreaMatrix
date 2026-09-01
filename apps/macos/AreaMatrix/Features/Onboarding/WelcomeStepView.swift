@@ -14,6 +14,8 @@ struct WelcomeStepView: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @EnvironmentObject private var localizer: AppLocalizer
     @State private var activeScene: WelcomeScene = .default
     @State private var hoverScene: WelcomeScene?
@@ -66,6 +68,11 @@ struct WelcomeStepView: View {
                 scanTask?.cancel()
                 hoverResetTask?.cancel()
             }
+            .onChange(of: reduceMotion) { _, reduced in
+                if reduced, isScanning {
+                    finishScanningSequence()
+                }
+            }
             .focusable()
             .focusEffectDisabled()
             .onKeyPress(.leftArrow) {
@@ -80,9 +87,9 @@ struct WelcomeStepView: View {
 
     private var welcomeSurface: some View {
         ZStack {
-            AreaMatrixAmbientBackground(scene: displayScene.ambientScene, parallax: mouseParallax)
-                .blur(radius: isScanning ? 16 : 0)
-                .animation(.areaMatrixOverlayFade, value: isScanning)
+            AreaMatrixAmbientBackground(scene: displayScene.ambientScene, parallax: effectiveParallax)
+                .blur(radius: reduceMotion || reduceTransparency ? 0 : (isScanning ? 16 : 0))
+                .animation(reduceMotion ? nil : .areaMatrixOverlayFade, value: isScanning)
 
             welcomeContent
                 .areaMatrixScanningContent(isScanning: isScanning)
@@ -92,13 +99,13 @@ struct WelcomeStepView: View {
         .overlay(
             RoundedRectangle(cornerRadius: WelcomeWindowMetrics.cornerRadius, style: .continuous)
                 .stroke(windowBorderColor, lineWidth: 1)
-                .animation(.areaMatrixOverlayFade, value: displayScene)
+                .animation(reduceMotion ? nil : .areaMatrixOverlayFade, value: displayScene)
         )
         .shadow(
             color: isDeepDiving ? .clear : AreaMatrixTheme.Surfaces.windowShadow(colorScheme: colorScheme),
             radius: isDeepDiving ? 0 : 60,
-            x: mouseParallax.horizontal * -10,
-            y: mouseParallax.vertical * -10 + 30
+            x: effectiveParallax.horizontal * -10,
+            y: effectiveParallax.vertical * -10 + 30
         )
         .ignoresSafeArea(.container, edges: .all)
         .overlay {
@@ -137,7 +144,7 @@ struct WelcomeStepView: View {
 
             Spacer()
 
-            WelcomeSceneSwitcher(scene: displayScene, parallax: mouseParallax)
+            WelcomeSceneSwitcher(scene: displayScene, parallax: effectiveParallax)
                 .frame(height: 340)
                 .padding(.horizontal, 60)
 
@@ -157,6 +164,10 @@ struct WelcomeStepView: View {
     private var windowBorderColor: Color {
         let accent = displayScene.accentColor
         return AreaMatrixTheme.Surfaces.windowBorder(accent: accent, colorScheme: colorScheme)
+    }
+
+    private var effectiveParallax: AreaMatrixParallax {
+        reduceMotion ? .zero : mouseParallax
     }
 }
 
@@ -263,12 +274,17 @@ private extension WelcomeStepView {
         }
         guard scenes[next] != activeScene else { return }
         interactionFeedback.performHaptic(.alignment)
-        withAnimation(.areaMatrixSceneEnterExit) {
+        withAnimation(reduceMotion ? nil : .areaMatrixSceneEnterExit) {
             activeScene = scenes[next]
         }
     }
 
     private func startScanningSequence() {
+        if reduceMotion {
+            finishScanningSequence()
+            return
+        }
+
         guard !isScanning else { return }
         scanTask?.cancel()
         scanTerminalLines = []
@@ -316,12 +332,23 @@ private extension WelcomeStepView {
             try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled else { return }
 
-            onContinue()
+            finishScanningSequence()
+        }
+    }
+
+    private func finishScanningSequence() {
+        scanTask?.cancel()
+        scanTask = nil
+
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
             isScanning = false
             isDeepDiving = false
             whiteFlash = false
             scanProgressFraction = 0
         }
+        onContinue()
     }
 
     private func typeScanLog(_ message: LocalizedMessage, colorToken: AreaMatrixColorToken) async -> Bool {

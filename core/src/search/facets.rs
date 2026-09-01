@@ -259,16 +259,14 @@ fn matches_optional_text(enabled: bool, expected: Option<&str>, actual: &str) ->
     if !enabled {
         return true;
     }
-    expected.map_or(true, |expected| {
-        normalized_text(expected) == normalized_text(actual)
-    })
+    expected.is_none_or(|expected| normalized_text(expected) == normalized_text(actual))
 }
 
 fn matches_file_kind(enabled: bool, expected: Option<&str>, filename: &str) -> bool {
     if !enabled {
         return true;
     }
-    expected.map_or(true, |expected| {
+    expected.is_none_or(|expected| {
         file_kind_value(filename)
             .as_deref()
             .is_some_and(|actual| normalized_text(expected) == actual)
@@ -304,7 +302,7 @@ fn matches_range(enabled: bool, value: i64, after: Option<i64>, before: Option<i
     if !enabled {
         return true;
     }
-    after.map_or(true, |after| value >= after) && before.map_or(true, |before| value < before)
+    after.is_none_or(|after| value >= after) && before.is_none_or(|before| value < before)
 }
 
 fn matches_storage_mode(
@@ -312,7 +310,7 @@ fn matches_storage_mode(
     expected: Option<&StorageMode>,
     actual: &StorageMode,
 ) -> bool {
-    !enabled || expected.map_or(true, |expected| expected == actual)
+    !enabled || expected.is_none_or(|expected| expected == actual)
 }
 
 fn string_facets(counts: BTreeMap<String, i64>, selected: Option<&str>) -> Vec<SearchFacetCount> {

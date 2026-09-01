@@ -8,7 +8,6 @@ using AreaMatrix.Features.Recovery;
 using AreaMatrix.Features.Settings;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
-using System.ComponentModel;
 
 namespace AreaMatrix;
 
@@ -75,81 +74,9 @@ public sealed partial class MainWindow : Window
         Closed += MainWindow_Closed;
     }
 
-    private async void ChooseRepositoryViewModel_PropertyChanged(
-        object? sender,
-        PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName != nameof(ChooseRepositoryViewModel.Route)
-            || ChooseRepositoryPage.ViewModel?.Route is not { } route)
-        {
-            return;
-        }
-
-        if (route.Kind == WindowsRepositoryRouteKind.OneDriveNotice)
-        {
-            oneDriveNoticeOpenedFromMainWindow = false;
-            ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-            RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
-            RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
-            WindowsMainWindowPage.Visibility = Visibility.Collapsed;
-            WindowsImportPage.Visibility = Visibility.Collapsed;
-            WatcherStatusPage.Visibility = Visibility.Collapsed;
-            RescanConfirmPage.Visibility = Visibility.Collapsed;
-            PlatformDifferencesPage.Visibility = Visibility.Collapsed;
-            OneDriveNoticePage.Visibility = Visibility.Visible;
-            await OneDriveNoticePage.OpenRouteAsync(route);
-            return;
-        }
-
-        if (route.Kind == WindowsRepositoryRouteKind.RepositoryInitConfirm)
-        {
-            ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-            OneDriveNoticePage.Visibility = Visibility.Collapsed;
-            RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
-            WindowsMainWindowPage.Visibility = Visibility.Collapsed;
-            WindowsImportPage.Visibility = Visibility.Collapsed;
-            WatcherStatusPage.Visibility = Visibility.Collapsed;
-            RescanConfirmPage.Visibility = Visibility.Collapsed;
-            PlatformDifferencesPage.Visibility = Visibility.Collapsed;
-            RepositoryInitConfirmPage.Visibility = Visibility.Visible;
-            await RepositoryInitConfirmPage.OpenRouteAsync(route);
-            return;
-        }
-
-        if (route.Kind == WindowsRepositoryRouteKind.RepositoryAdoptConfirm)
-        {
-            ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-            OneDriveNoticePage.Visibility = Visibility.Collapsed;
-            RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
-            WindowsMainWindowPage.Visibility = Visibility.Collapsed;
-            WindowsImportPage.Visibility = Visibility.Collapsed;
-            WatcherStatusPage.Visibility = Visibility.Collapsed;
-            RescanConfirmPage.Visibility = Visibility.Collapsed;
-            PlatformDifferencesPage.Visibility = Visibility.Collapsed;
-            RepositoryAdoptConfirmPage.Visibility = Visibility.Visible;
-            await RepositoryAdoptConfirmPage.OpenRouteAsync(route);
-            return;
-        }
-
-        if (route.Kind != WindowsRepositoryRouteKind.MainWindow)
-        {
-            return;
-        }
-
-        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-        OneDriveNoticePage.Visibility = Visibility.Collapsed;
-        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
-        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
-        WindowsImportPage.Visibility = Visibility.Collapsed;
-        WatcherStatusPage.Visibility = Visibility.Collapsed;
-        RescanConfirmPage.Visibility = Visibility.Collapsed;
-        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
-        WindowsMainWindowPage.Visibility = Visibility.Visible;
-        await WindowsMainWindowPage.OpenRepositoryAsync(route);
-    }
-
     private void OneDriveNoticePage_ChooseLocalFolderRequested()
     {
+        CancelRouteTransition();
         oneDriveNoticeOpenedFromMainWindow = false;
         ChooseRepositoryPage.ViewModel?.ResetRoute();
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
@@ -165,6 +92,7 @@ public sealed partial class MainWindow : Window
 
     private void OneDriveNoticePage_CloseRequested()
     {
+        CancelRouteTransition();
         if (!oneDriveNoticeOpenedFromMainWindow)
         {
             OneDriveNoticePage_ChooseLocalFolderRequested();
@@ -202,35 +130,6 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void WindowsMainWindowPage_OpenOneDriveStatusRequested(WindowsRepositoryRoute route)
-    {
-        oneDriveNoticeOpenedFromMainWindow = true;
-        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
-        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
-        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
-        WindowsImportPage.Visibility = Visibility.Collapsed;
-        WatcherStatusPage.Visibility = Visibility.Collapsed;
-        RescanConfirmPage.Visibility = Visibility.Collapsed;
-        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
-        OneDriveNoticePage.Visibility = Visibility.Visible;
-        await OneDriveNoticePage.OpenRouteAsync(route);
-    }
-
-    private async void WindowsMainWindowPage_OpenWatcherStatusRequested(WindowsRepositoryRoute route)
-    {
-        OneDriveNoticePage.Visibility = Visibility.Collapsed;
-        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
-        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
-        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
-        WindowsImportPage.Visibility = Visibility.Collapsed;
-        RescanConfirmPage.Visibility = Visibility.Collapsed;
-        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
-        WatcherStatusPage.Visibility = Visibility.Visible;
-        await WatcherStatusPage.OpenRouteAsync(route);
-    }
-
     private void WindowsMainWindowPage_OpenImportRequested(WindowsRepositoryRoute route)
     {
         ShowImportPage();
@@ -249,12 +148,6 @@ public sealed partial class MainWindow : Window
     {
         ShowImportPage();
         await WindowsImportPage.OpenRepositoryWithSourcesAsync(route.RepoPath, sourcePaths);
-    }
-
-    private async void WindowsMainWindowPage_OpenMissingFileRecoveryRequested(MissingFileRecoveryRoute route)
-    {
-        ShowMissingFileRecoveryPage();
-        await MissingFileRecoveryPage.OpenRouteAsync(route);
     }
 
     private async void WindowsImportPage_CloseRequested(WindowsImportCloseRequest request)
@@ -294,32 +187,9 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void OneDriveNoticePage_OpenWatcherStatusRequested()
-    {
-        WindowsRepositoryRoute route = OneDriveNoticePage.ViewModel is { } model
-            ? new WindowsRepositoryRoute(
-                WindowsRepositoryRouteKind.WatcherStatus,
-                model.RepositoryPath,
-                null,
-                null,
-                model.CloudState)
-            : WindowsRepositoryRoute.None;
-
-        OneDriveNoticePage.Visibility = Visibility.Collapsed;
-        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
-        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
-        WindowsMainWindowPage.Visibility = Visibility.Collapsed;
-        WindowsImportPage.Visibility = Visibility.Collapsed;
-        RescanConfirmPage.Visibility = Visibility.Collapsed;
-        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
-        RepositorySettingsPage.Visibility = Visibility.Collapsed;
-        WatcherStatusPage.Visibility = Visibility.Visible;
-        await WatcherStatusPage.OpenRouteAsync(route);
-    }
-
     private void WatcherStatusPage_CloseRequested()
     {
+        CancelRouteTransition();
         WatcherStatusPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
         RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
@@ -419,6 +289,7 @@ public sealed partial class MainWindow : Window
 
     private void RepositoryInitConfirmPage_CloseRequested()
     {
+        CancelRouteTransition();
         RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
@@ -430,25 +301,11 @@ public sealed partial class MainWindow : Window
         RepositorySettingsPage.Visibility = Visibility.Collapsed;
         ChooseRepositoryPage.ViewModel?.ResetRoute();
         ChooseRepositoryPage.Visibility = Visibility.Visible;
-    }
-
-    private async Task RepositoryInitConfirmPage_RepositoryOpenedRequested(WindowsRepositoryRoute route)
-    {
-        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
-        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
-        OneDriveNoticePage.Visibility = Visibility.Collapsed;
-        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-        WindowsImportPage.Visibility = Visibility.Collapsed;
-        WatcherStatusPage.Visibility = Visibility.Collapsed;
-        RescanConfirmPage.Visibility = Visibility.Collapsed;
-        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
-        RepositorySettingsPage.Visibility = Visibility.Collapsed;
-        WindowsMainWindowPage.Visibility = Visibility.Visible;
-        await WindowsMainWindowPage.OpenRepositoryAsync(route);
     }
 
     private void RepositoryAdoptConfirmPage_CloseRequested()
     {
+        CancelRouteTransition();
         RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
         RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
         OneDriveNoticePage.Visibility = Visibility.Collapsed;
@@ -462,23 +319,9 @@ public sealed partial class MainWindow : Window
         ChooseRepositoryPage.Visibility = Visibility.Visible;
     }
 
-    private async Task RepositoryAdoptConfirmPage_RepositoryOpenedRequested(WindowsRepositoryRoute route)
-    {
-        RepositoryAdoptConfirmPage.Visibility = Visibility.Collapsed;
-        RepositoryInitConfirmPage.Visibility = Visibility.Collapsed;
-        OneDriveNoticePage.Visibility = Visibility.Collapsed;
-        ChooseRepositoryPage.Visibility = Visibility.Collapsed;
-        WindowsImportPage.Visibility = Visibility.Collapsed;
-        WatcherStatusPage.Visibility = Visibility.Collapsed;
-        RescanConfirmPage.Visibility = Visibility.Collapsed;
-        PlatformDifferencesPage.Visibility = Visibility.Collapsed;
-        RepositorySettingsPage.Visibility = Visibility.Collapsed;
-        WindowsMainWindowPage.Visibility = Visibility.Visible;
-        await WindowsMainWindowPage.OpenRepositoryAsync(route);
-    }
-
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
+        CancelRouteTransition();
         if (ChooseRepositoryPage.ViewModel is { } viewModel)
         {
             viewModel.PropertyChanged -= ChooseRepositoryViewModel_PropertyChanged;

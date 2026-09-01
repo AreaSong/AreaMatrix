@@ -20,10 +20,14 @@ public static class DesktopMainQuerySmokeTests
         AssertNamedElement(window, "ChooseRepositoryView", "ChooseRepositoryPage");
         AssertNamedElement(window, "WindowsMainWindow", "WindowsMainWindowPage");
 
-        string codeBehind = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"));
+        string codeBehind = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"))
+            + File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.RouteTransitions.cs"));
         TestAssert.Contains("new DesktopMainQueryCoreBridge(coreClient)", codeBehind, "desktop query bridge");
         TestAssert.Contains("WindowsRepositoryRouteKind.MainWindow", codeBehind, "main window route");
-        TestAssert.Contains("OpenRepositoryAsync(route)", codeBehind, "open repository handoff");
+        TestAssert.Contains(
+            "OpenRepositoryAsync(route, transition.Token)",
+            codeBehind,
+            "open repository handoff");
     }
 
     private static void WindowsMainWindowExposesDesktopMainQueryCoreUserTriggers()

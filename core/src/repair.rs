@@ -408,7 +408,7 @@ fn ensure_locale_observation_matches(
     let matches = match preflight.locale_state {
         RepairMetadataLocaleState::LocaleMissing => raw_locale
             .as_deref()
-            .map_or(true, |value| value.trim().is_empty()),
+            .is_none_or(|value| value.trim().is_empty()),
         RepairMetadataLocaleState::LocaleUnsupported => {
             raw_locale.as_deref() == preflight.unsupported_locale.as_deref()
         }
@@ -584,10 +584,8 @@ fn retire_sqlite_files(area_matrix: &Path, index_db: &Path) -> CoreResult<Vec<(P
                 "repository not initialized",
             ));
         }
-        let destination = area_matrix.join(format!(
-            "{}{suffix}.replaced-{retirement_id}",
-            INDEX_DB_FILE
-        ));
+        let destination =
+            area_matrix.join(format!("{INDEX_DB_FILE}{suffix}.replaced-{retirement_id}"));
         if let Err(error) = fs::rename(&source, &destination) {
             restore_retired_sqlite_files(&retired)?;
             return Err(map_io_error(error));

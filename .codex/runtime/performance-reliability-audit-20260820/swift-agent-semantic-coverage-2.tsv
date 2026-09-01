@@ -1,0 +1,9 @@
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/AboutSettingsPlatformServices.swift	PASS	1-56	semantic-reviewed	platform side-effect isolation
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/AdvancedSettingsPlatformServices.swift	PASS	1-141	semantic-reviewed	platform side-effect isolation
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/ExternalURLPolicy.swift	PASS	1-8	semantic-reviewed	pure URL policy
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/GeneralSettingsPlatformServices.swift	PASS	1-10	semantic-reviewed	platform side-effect isolation
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/ImportBatchSessionPlatformServices.swift	FINDING	1-174	semantic-reviewed	PERF-MAC-005 synchronous session file IO in async API
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/IntegrationsSettingsPlatformServices.swift	PASS	1-111	semantic-reviewed	platform side-effect isolation
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/LocalModelPlatformServices.swift	PASS	1-120	semantic-reviewed	platform side-effect isolation
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/OnboardingPlatformServices.swift	PASS	1-12	semantic-reviewed	platform side-effect isolation
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/RepositoryMetadataPresencePlatformServices.swift	PASS	1-23	semantic-reviewed	platform side-effect isolation

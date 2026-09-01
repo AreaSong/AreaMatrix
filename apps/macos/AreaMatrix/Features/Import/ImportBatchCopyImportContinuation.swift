@@ -136,7 +136,7 @@ extension ImportBatchCopyImportModel {
                 traceContext: traceContext
             )
             reportProgress(cycle.progress.withItems(progressItems()))
-            if cycle.stoppedForDuplicate || cycle.stoppedForQueue {
+            if cycle.stoppedForDuplicate || cycle.stoppedForQueue || cycle.sessionPersistenceFailure != nil {
                 return continuedImportResult(from: state, total: total)
             }
             if controlState.isStopAfterCurrentFileRequested {
@@ -172,6 +172,7 @@ extension ImportBatchCopyImportModel {
                 traceContext: traceContext
             )
         }
+        state.sessionPersistenceFailure = cycle.sessionPersistenceFailure
     }
 
     private func progressSnapshotAfterRetry(
@@ -195,7 +196,8 @@ extension ImportBatchCopyImportModel {
         total: Int,
         lastImportedPath: String,
         didStopAfterCurrentFile: Bool,
-        fatalRetryContext: ImportProgressRetryContext? = nil
+        fatalRetryContext: ImportProgressRetryContext? = nil,
+        sessionPersistenceFailure: ImportBatchSessionStoreError? = nil
     ) -> ImportBatchImportResult {
         ImportBatchImportResult(
             succeededEntries: entries,
@@ -207,7 +209,8 @@ extension ImportBatchCopyImportModel {
             skippedDuplicateCount: skippedDuplicateCount,
             pendingICloudCount: pendingICloudCount,
             didStopAfterCurrentFile: didStopAfterCurrentFile,
-            fatalRetryContext: fatalRetryContext
+            fatalRetryContext: fatalRetryContext,
+            sessionPersistenceFailure: sessionPersistenceFailure
         )
     }
 
@@ -221,7 +224,8 @@ extension ImportBatchCopyImportModel {
             total: total,
             lastImportedPath: state.lastImportedPath,
             didStopAfterCurrentFile: state.didStopAfterCurrentFile,
-            fatalRetryContext: state.fatalRetryContext
+            fatalRetryContext: state.fatalRetryContext,
+            sessionPersistenceFailure: state.sessionPersistenceFailure
         )
     }
 

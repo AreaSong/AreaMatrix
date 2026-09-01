@@ -1,11 +1,9 @@
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
-using AreaMatrix.Features.Onboarding;
 
 namespace AreaMatrix.Core;
 
-internal sealed class NativeCoreLibrary : IDisposable
+internal sealed partial class NativeCoreLibrary : IDisposable
 {
     private readonly IntPtr handle;
 
@@ -24,8 +22,8 @@ internal sealed class NativeCoreLibrary : IDisposable
         AcknowledgeOneDriveRiskNotice = LoadFunction<AcknowledgeOneDriveRiskNoticeDelegate>(
             "uniffi_area_matrix_core_fn_func_acknowledge_onedrive_risk_notice");
         InitRepo = LoadFunction<InitRepoDelegate>("uniffi_area_matrix_core_fn_func_init_repo");
-        LoadConfig = LoadFunction<LoadConfigDelegate>("uniffi_area_matrix_core_fn_func_load_config");
-        UpdateConfig = LoadFunction<UpdateConfigDelegate>("uniffi_area_matrix_core_fn_func_update_config");
+        LoadConfig = LoadFunction<LoadConfigDelegate>("uniffi_area_matrix_core_fn_func_load_repo_config");
+        UpdateConfig = LoadFunction<UpdateConfigDelegate>("uniffi_area_matrix_core_fn_func_update_repo_config");
         PredictCategory = LoadFunction<PredictCategoryDelegate>(
             "uniffi_area_matrix_core_fn_func_predict_category");
         ImportFileWithResult = LoadFunction<ImportFileWithResultDelegate>(
@@ -78,9 +76,9 @@ internal sealed class NativeCoreLibrary : IDisposable
         InitRepoChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_init_repo");
         LoadConfigChecksum = LoadFunction<ChecksumDelegate>(
-            "uniffi_area_matrix_core_checksum_func_load_config");
+            "uniffi_area_matrix_core_checksum_func_load_repo_config");
         UpdateConfigChecksum = LoadFunction<ChecksumDelegate>(
-            "uniffi_area_matrix_core_checksum_func_update_config");
+            "uniffi_area_matrix_core_checksum_func_update_repo_config");
         PredictCategoryChecksum = LoadFunction<ChecksumDelegate>(
             "uniffi_area_matrix_core_checksum_func_predict_category");
         ImportFileWithResultChecksum = LoadFunction<ChecksumDelegate>(
@@ -237,29 +235,6 @@ internal sealed class NativeCoreLibrary : IDisposable
 
     public ChecksumDelegate ResumeScanSessionChecksum { get; }
 
-    public static NativeCoreLibrary LoadDefault()
-    {
-        string? configuredPath = Environment.GetEnvironmentVariable("AREAMATRIX_CORE_LIBRARY");
-        if (!string.IsNullOrWhiteSpace(configuredPath))
-        {
-            return Load(configuredPath);
-        }
-
-        return new NativeCoreLibrary(NativeLibrary.Load("area_matrix_core"));
-    }
-
-    public static NativeCoreLibrary Load(string libraryPath)
-    {
-        if (string.IsNullOrWhiteSpace(libraryPath) || !File.Exists(libraryPath))
-        {
-            throw new WindowsRepositoryCoreException(
-                WindowsRepositoryErrorKind.Unavailable,
-                $"AreaMatrix Core library was not found at `{libraryPath}`.");
-        }
-
-        return new NativeCoreLibrary(NativeLibrary.Load(libraryPath));
-    }
-
     public void Dispose()
     {
         NativeLibrary.Free(handle);
@@ -271,4 +246,5 @@ internal sealed class NativeCoreLibrary : IDisposable
         IntPtr export = NativeLibrary.GetExport(handle, name);
         return Marshal.GetDelegateForFunctionPointer<T>(export);
     }
+
 }

@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::{db, CoreResult, FileEntry};
+use crate::{db, AiPrivacyInputField, CoreResult, FileEntry};
 
 use super::AiTagSuggestionInputField;
 
@@ -67,6 +67,57 @@ pub(super) fn has_eligible_input(context: &AiTagSuggestionContext) -> bool {
         || context.ai_summary.is_some()
         || !context.existing_tags.is_empty()
         || !context.tag_registry.is_empty()
+}
+
+pub(super) fn filter_context(
+    mut context: AiTagSuggestionContext,
+    allowed_fields: &[AiPrivacyInputField],
+) -> AiTagSuggestionContext {
+    context
+        .fields
+        .retain(|field| allowed_fields.contains(&privacy_field(field)));
+    if !allowed_fields.contains(&AiPrivacyInputField::FileName) {
+        context.filename.clear();
+    }
+    if !allowed_fields.contains(&AiPrivacyInputField::RepoRelativePath) {
+        context.repo_relative_path = None;
+    }
+    if !allowed_fields.contains(&AiPrivacyInputField::AiSummary) {
+        context.ai_summary = None;
+    }
+    if !allowed_fields.contains(&AiPrivacyInputField::TagCategoryContext) {
+        context.existing_tags.clear();
+        context.tag_registry.clear();
+    }
+    context
+}
+
+pub(super) fn requested_privacy_fields(
+    context: &AiTagSuggestionContext,
+) -> Vec<AiPrivacyInputField> {
+    let mut fields = Vec::new();
+    for field in &context.fields {
+        let field = privacy_field(field);
+        if !fields.contains(&field) {
+            fields.push(field);
+        }
+    }
+    fields
+}
+
+fn privacy_field(field: &AiTagSuggestionInputField) -> AiPrivacyInputField {
+    match field {
+        AiTagSuggestionInputField::FileName => AiPrivacyInputField::FileName,
+        AiTagSuggestionInputField::RepoRelativePath => AiPrivacyInputField::RepoRelativePath,
+        AiTagSuggestionInputField::ExtractedTextExcerpt => {
+            AiPrivacyInputField::ExtractedTextExcerpt
+        }
+        AiTagSuggestionInputField::AiSummary => AiPrivacyInputField::AiSummary,
+        AiTagSuggestionInputField::NoteSummary => AiPrivacyInputField::NoteSummary,
+        AiTagSuggestionInputField::ExistingTags | AiTagSuggestionInputField::TagRegistry => {
+            AiPrivacyInputField::TagCategoryContext
+        }
+    }
 }
 
 fn registry_tags(records: &[crate::TagRecord], candidate_tags: &[String]) -> Vec<String> {

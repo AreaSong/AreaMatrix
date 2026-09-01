@@ -9,6 +9,8 @@ struct ValidatePathSatelliteRadar: View {
 
     @State private var rotation: Double = 0
     @State private var pulse: CGFloat = 1.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         HStack(alignment: .center, spacing: 64) {
@@ -24,18 +26,18 @@ struct ValidatePathSatelliteRadar: View {
             ZStack {
                 Circle()
                     .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 8]))
-                    .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.2))
+                    .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(reduceTransparency ? 0.8 : 0.2))
                     .frame(width: 280, height: 280)
-                    .rotationEffect(.degrees(rotation * 0.5))
+                    .rotationEffect(.degrees(reduceMotion ? 0 : rotation * 0.5))
 
                 Circle()
                     .stroke(style: StrokeStyle(lineWidth: 0.5, dash: [2, 4]))
-                    .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.15))
+                    .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(reduceTransparency ? 0.7 : 0.15))
                     .frame(width: 220, height: 220)
-                    .rotationEffect(.degrees(-rotation * 0.8))
+                    .rotationEffect(.degrees(reduceMotion ? 0 : -rotation * 0.8))
 
                 Circle()
-                    .strokeBorder(AreaMatrixTheme.Colors.teal.opacity(0.1), lineWidth: 1)
+                    .strokeBorder(AreaMatrixTheme.Colors.teal.opacity(reduceTransparency ? 0.6 : 0.1), lineWidth: 1)
                     .frame(width: 160, height: 160)
 
                 if isValidating {
@@ -52,19 +54,19 @@ struct ValidatePathSatelliteRadar: View {
                             )
                         )
                         .frame(width: 280, height: 280)
-                        .rotationEffect(.degrees(rotation * 1.5))
+                        .rotationEffect(.degrees(reduceMotion ? 0 : rotation * 1.5))
                 }
 
                 Circle()
-                    .fill(AreaMatrixTheme.Colors.teal.opacity(0.06))
-                    .frame(width: 120 * pulse, height: 120 * pulse)
+                    .fill(AreaMatrixTheme.Colors.teal.opacity(reduceTransparency ? 0.45 : 0.06))
+                    .frame(width: 120 * effectivePulse, height: 120 * effectivePulse)
 
                 Group {
                     if isValidating {
                         AreaMatrixLucideIcon(name: .refreshCcw, lineWidth: 1.5)
                             .frame(width: 52, height: 52)
                             .foregroundStyle(AreaMatrixTheme.Colors.teal)
-                            .rotationEffect(.degrees(rotation * 2))
+                            .rotationEffect(.degrees(reduceMotion ? 0 : rotation * 2))
                     } else if validation?.isInitialized == true {
                         AreaMatrixLucideIcon(name: .checkCircle, lineWidth: 2)
                             .frame(width: 64, height: 64)
@@ -79,17 +81,11 @@ struct ValidatePathSatelliteRadar: View {
                             .foregroundStyle(AreaMatrixTheme.Colors.teal.opacity(0.5))
                     }
                 }
-                .scaleEffect(pulse)
+                .scaleEffect(effectivePulse)
             }
             .frame(width: 280, height: 280)
-            .onAppear {
-                withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
-                    rotation = 360
-                }
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                    pulse = 1.05
-                }
-            }
+            .onAppear(perform: updateMotionState)
+            .onChange(of: reduceMotion) { _, _ in updateMotionState() }
 
             // ================= 右翼 4 颗伴星 =================
             VStack(alignment: .leading, spacing: 32) {
@@ -175,6 +171,26 @@ struct ValidatePathSatelliteRadar: View {
         ]
     }
 
+    private var effectivePulse: CGFloat {
+        reduceMotion ? 1 : pulse
+    }
+
+    private func updateMotionState() {
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            rotation = 0
+            pulse = 1
+        }
+        guard !reduceMotion else { return }
+        withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
+            rotation = 360
+        }
+        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+            pulse = 1.05
+        }
+    }
+
     private var waitingForCore: String {
         L10n.string("onboarding.validate.check.waitingCore")
     }
@@ -239,6 +255,7 @@ private struct ValidatePathSatelliteNode: View {
 
     @State private var isVisible = false
     @State private var floatOffset: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 12) {
@@ -267,14 +284,27 @@ private struct ValidatePathSatelliteNode: View {
             }
         }
         .opacity(isVisible ? 1 : 0)
-        .offset(x: isVisible ? 0 : (alignment == .leading ? -10 : 10), y: floatOffset)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.5).delay(Double(index) * 0.1)) {
-                isVisible = true
-            }
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(Double(index) * 0.15)) {
-                floatOffset = (index % 2 == 0) ? -3 : 3
-            }
+        .offset(
+            x: reduceMotion || isVisible ? 0 : (alignment == .leading ? -10 : 10),
+            y: reduceMotion ? 0 : floatOffset
+        )
+        .onAppear(perform: updateMotionState)
+        .onChange(of: reduceMotion) { _, _ in updateMotionState() }
+    }
+
+    private func updateMotionState() {
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            isVisible = reduceMotion
+            floatOffset = 0
+        }
+        guard !reduceMotion else { return }
+        withAnimation(.easeOut(duration: 0.5).delay(Double(index) * 0.1)) {
+            isVisible = true
+        }
+        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(Double(index) * 0.15)) {
+            floatOffset = (index % 2 == 0) ? -3 : 3
         }
     }
 }

@@ -6,6 +6,14 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
+#[path = "ai_persisted_privacy.rs"]
+pub(crate) mod ai_persisted_privacy;
+#[path = "external_runtime_harness.rs"]
+mod external_runtime_harness;
+
+use ai_persisted_privacy::allow_remote_ai;
+use external_runtime_harness::{install_runtime_script, InstalledRuntime};
+
 use area_matrix_core::{
     complete_remote_ai_provider_probe, enable_remote_ai_provider, import_file, init_repo,
     prepare_remote_ai_provider_probe, update_ai_config, AiFeatureConfig, AiFeatureKind,
@@ -77,6 +85,7 @@ pub fn enable_remote_summaries(repo: &Path, endpoint_url: &str) {
         .expect("successful test returns token");
     enable_remote_ai_provider(repo_path, enable_request(token, endpoint_url))
         .expect("enable remote summaries provider");
+    allow_remote_ai(repo);
 }
 
 pub fn ai_summary_row(repo: &Path, file_id: i64) -> Option<String> {
@@ -195,6 +204,7 @@ fn enable_request(token: String, endpoint_url: &str) -> RemoteProviderEnableRequ
 
 pub struct AiSummaryRuntime {
     _lock: MutexGuard<'static, ()>,
+    _runtime: InstalledRuntime,
     output: tempfile::TempDir,
     payload_path: PathBuf,
     env_name: &'static str,
@@ -236,11 +246,15 @@ impl AiSummaryRuntime {
             payload_path.display(),
             response.replace('\'', "'\\''")
         );
-        fs::write(&script_path, script).expect("write summary runtime script");
-        make_executable(&script_path);
-        std::env::set_var(env_name, script_path.to_string_lossy().into_owned());
+        let runtime = install_runtime_script(
+            env_name,
+            runtime_capability(env_name),
+            &script_path,
+            &script,
+        );
         Self {
             _lock: guard,
+            _runtime: runtime,
             output,
             payload_path,
             env_name,
@@ -253,11 +267,15 @@ impl AiSummaryRuntime {
         let script_path = output.path().join("ai-summary-runtime.sh");
         let payload_path = output.path().join("payload.json");
         let script = format!("#!/bin/sh\ncat > \"{}\"\nexit 42\n", payload_path.display());
-        fs::write(&script_path, script).expect("write failing summary runtime script");
-        make_executable(&script_path);
-        std::env::set_var(env_name, script_path.to_string_lossy().into_owned());
+        let runtime = install_runtime_script(
+            env_name,
+            runtime_capability(env_name),
+            &script_path,
+            &script,
+        );
         Self {
             _lock: guard,
+            _runtime: runtime,
             output,
             payload_path,
             env_name,
@@ -274,6 +292,7 @@ impl Drop for AiSummaryRuntime {
 
 pub struct RemoteRuntimeProbe {
     _guard: MutexGuard<'static, ()>,
+    _runtime: InstalledRuntime,
     output: tempfile::TempDir,
     marker_path: PathBuf,
 }
@@ -290,14 +309,15 @@ impl RemoteRuntimeProbe {
             "#!/bin/sh\nprintf invoked > \"{}\"\nexit 33\n",
             marker_path.display()
         );
-        fs::write(&script_path, script).expect("write remote runtime probe script");
-        make_executable(&script_path);
-        std::env::set_var(
+        let runtime = install_runtime_script(
             "AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME",
-            script_path.to_string_lossy().into_owned(),
+            "ai-summary-remote",
+            &script_path,
+            &script,
         );
         Self {
             _guard: guard,
+            _runtime: runtime,
             output,
             marker_path,
         }
@@ -315,14 +335,10 @@ impl Drop for RemoteRuntimeProbe {
     }
 }
 
-fn make_executable(path: &Path) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut permissions = fs::metadata(path)
-            .expect("read script metadata")
-            .permissions();
-        permissions.set_mode(0o700);
-        fs::set_permissions(path, permissions).expect("mark script executable");
+fn runtime_capability(env_name: &str) -> &'static str {
+    match env_name {
+        "AREAMATRIX_AI_SUMMARY_LOCAL_RUNTIME" => "ai-summary-local",
+        "AREAMATRIX_AI_SUMMARY_REMOTE_RUNTIME" => "ai-summary-remote",
+        _ => panic!("unsupported AI summary runtime environment"),
     }
 }

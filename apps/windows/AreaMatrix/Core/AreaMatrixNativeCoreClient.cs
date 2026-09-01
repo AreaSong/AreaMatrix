@@ -79,10 +79,12 @@ public sealed partial class AreaMatrixNativeCoreClient :
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        CallVoid((ref RustCallStatus status) => native.UpdateConfig(
-            LowerString(repoPath),
-            LowerRepoConfig(newConfig),
-            ref status));
+        _ = CallWithResult(
+            (ref RustCallStatus status) => native.UpdateConfig(
+                LowerString(repoPath),
+                LowerRepoConfigPatch(newConfig),
+                ref status),
+            ReadRepoConfig);
         return Task.CompletedTask;
     }
 
@@ -150,7 +152,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
                 throw new WindowsRepositoryCoreException(
                     WindowsRepositoryErrorKind.Unavailable,
                     status.ErrorBuffer.Length > 0
-                        ? Lift(status.ErrorBuffer, reader => reader.ReadString())
+                        ? Lift(status.ErrorBuffer, reader => reader.ReadStringOrRemainingUtf8())
                         : "AreaMatrix Core failed unexpectedly.");
             default:
                 FreeRustBuffer(status.ErrorBuffer);
@@ -205,9 +207,11 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private CoreRepoConfig ReadRepoConfig(UniFfiReader reader)
     {
         string repoPath = reader.ReadString();
+        long revision = reader.ReadInt64();
         string defaultMode = ReadStorageMode(reader);
         string overviewOutput = ReadOverviewOutput(reader);
         bool aiEnabled = reader.ReadBool();
+        string localePolicyState = ReadRepositoryLocalePolicyState(reader);
         string locale = reader.ReadString();
         bool iCloudWarn = reader.ReadBool();
         bool enableExtensionRules = reader.ReadBool();
@@ -224,7 +228,9 @@ public sealed partial class AreaMatrixNativeCoreClient :
             enableExtensionRules,
             enableKeywordRules,
             fallbackToInbox,
-            allowReplaceDuringImport);
+            allowReplaceDuringImport,
+            revision,
+            localePolicyState);
     }
 
     private CoreCloudStorageState ReadCloudStorageState(UniFfiReader reader)
@@ -244,26 +250,65 @@ public sealed partial class AreaMatrixNativeCoreClient :
             reader.ReadBool());
     }
 
-    private WindowsRepositoryCoreException ReadCoreError(UniFfiReader reader)
+    private static WindowsRepositoryCoreException ReadCoreError(UniFfiReader reader)
     {
         int variant = reader.ReadInt32();
-        string payload = reader.ReadString();
-        WindowsRepositoryErrorKind kind = variant switch
+        if (variant == 9)
         {
-            1 => WindowsRepositoryErrorKind.DiskUnavailable,
-            2 => WindowsRepositoryErrorKind.Db,
-            3 => WindowsRepositoryErrorKind.Config,
-            6 => WindowsRepositoryErrorKind.Conflict,
-            7 => WindowsRepositoryErrorKind.DuplicateFile,
-            8 => WindowsRepositoryErrorKind.FileNotFound,
-            10 => WindowsRepositoryErrorKind.InvalidRepository,
-            11 => WindowsRepositoryErrorKind.InvalidPath,
-            12 => WindowsRepositoryErrorKind.DiskUnavailable,
-            13 => WindowsRepositoryErrorKind.Unavailable,
-            14 => WindowsRepositoryErrorKind.PermissionDenied,
-            _ => WindowsRepositoryErrorKind.Unavailable
+            string resource = reader.ReadString();
+            long expectedRevision = reader.ReadInt64();
+            long currentRevision = reader.ReadInt64();
+            return new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.RevisionConflict,
+                $"Repository configuration revision conflict for `{resource}`.",
+                resource,
+                "RevisionConflict",
+                expectedRevision,
+                currentRevision);
+        }
+
+        string payload = reader.ReadString();
+        return variant switch
+        {
+            1 => CoreError(WindowsRepositoryErrorKind.DiskUnavailable, "Io", payload),
+            2 => CoreError(WindowsRepositoryErrorKind.Db, "Db", payload),
+            3 => CoreError(WindowsRepositoryErrorKind.DbLocked, "DbLocked", payload),
+            4 => CoreError(WindowsRepositoryErrorKind.DbCorrupted, "DbCorrupted", payload),
+            5 => CoreError(WindowsRepositoryErrorKind.Config, "Config", payload),
+            6 => CoreError(WindowsRepositoryErrorKind.Validation, "Validation", payload),
+            7 => CoreError(WindowsRepositoryErrorKind.Classify, "Classify", payload),
+            8 => CoreError(WindowsRepositoryErrorKind.Conflict, "Conflict", payload, payload),
+            10 => CoreError(WindowsRepositoryErrorKind.DuplicateFile, "DuplicateFile", payload, payload),
+            11 => CoreError(WindowsRepositoryErrorKind.FileNotFound, "FileNotFound", payload, payload),
+            12 => CoreError(WindowsRepositoryErrorKind.ExpiredAction, "ExpiredAction", payload),
+            13 => CoreError(WindowsRepositoryErrorKind.RepoNotInitialized, "RepoNotInitialized", payload, payload),
+            14 => CoreError(WindowsRepositoryErrorKind.InvalidPath, "InvalidPath", payload, payload),
+            15 => CoreError(WindowsRepositoryErrorKind.ICloudPlaceholder, "ICloudPlaceholder", payload, payload),
+            16 => CoreError(
+                WindowsRepositoryErrorKind.StagingRecoveryRequired,
+                "StagingRecoveryRequired",
+                payload,
+                payload),
+            17 => CoreError(WindowsRepositoryErrorKind.PermissionDenied, "PermissionDenied", payload, payload),
+            18 => CoreError(WindowsRepositoryErrorKind.Internal, "Internal", payload),
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"AreaMatrix Core returned unknown CoreError variant `{variant}`.")
         };
-        return new WindowsRepositoryCoreException(kind, payload, payload);
+    }
+
+    internal static WindowsRepositoryCoreException DecodeCoreErrorForTest(byte[] bytes)
+    {
+        UniFfiReader reader = new(bytes);
+        WindowsRepositoryCoreException error = ReadCoreError(reader);
+        if (!reader.IsAtEnd)
+        {
+            throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                "AreaMatrix Core returned extra CoreError binding data.");
+        }
+
+        return error;
     }
 
     private RustBuffer LowerString(string value)
@@ -292,38 +337,106 @@ public sealed partial class AreaMatrixNativeCoreClient :
                 WindowsRepositoryErrorKind.Config,
                 $"Unsupported overview output `{options.OverviewOutput}`.")
         });
+        WriteEnum(bytes, options.LocalePolicy switch
+        {
+            "FollowInterface" => 1,
+            "ZhHans" => 2,
+            "En" => 3,
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"Unsupported repository locale policy `{options.LocalePolicy}`.")
+        });
+        WriteEnum(bytes, options.ContentLocale switch
+        {
+            "ZhHans" => 1,
+            "En" => 2,
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                $"Unsupported content locale `{options.ContentLocale}`.")
+        });
         return RustBufferFromBytes(bytes.ToArray());
     }
 
-    private RustBuffer LowerRepoConfig(CoreRepoConfig config)
+    private RustBuffer LowerRepoConfigPatch(CoreRepoConfig config)
     {
         List<byte> bytes = [];
-        WriteString(bytes, config.RepoPath);
-        WriteEnum(bytes, config.DefaultMode switch
-        {
-            "Moved" => 1,
-            "Copied" => 2,
-            "Indexed" => 3,
-            _ => throw new WindowsRepositoryCoreException(
-                WindowsRepositoryErrorKind.Config,
-                $"Unsupported storage mode `{config.DefaultMode}`.")
-        });
-        WriteEnum(bytes, config.OverviewOutput switch
+        WriteInt64(bytes, config.Revision);
+        WriteOptionalString(bytes, config.RepoPath);
+        WriteOptionalStorageMode(bytes, config.DefaultMode);
+        WriteOptionalOverviewOutput(bytes, config.OverviewOutput);
+        WriteOptionalBool(bytes, config.AiEnabled);
+        WriteOptionalRepositoryLocalePolicy(bytes, config.Locale, config.LocalePolicyState);
+        WriteOptionalBool(bytes, config.ICloudWarn);
+        WriteOptionalBool(bytes, config.EnableExtensionRules);
+        WriteOptionalBool(bytes, config.EnableKeywordRules);
+        WriteOptionalBool(bytes, config.FallbackToInbox);
+        WriteOptionalBool(bytes, config.AllowReplaceDuringImport);
+        return RustBufferFromBytes(bytes.ToArray());
+    }
+
+    private static void WriteOptionalOverviewOutput(List<byte> bytes, string value)
+    {
+        bytes.Add(1);
+        WriteEnum(bytes, value switch
         {
             "GeneratedOnly" => 1,
             "RootAreaMatrixFile" => 2,
             _ => throw new WindowsRepositoryCoreException(
                 WindowsRepositoryErrorKind.Config,
-                $"Unsupported overview output `{config.OverviewOutput}`.")
+                $"Unsupported overview output `{value}`.")
         });
-        WriteBool(bytes, config.AiEnabled);
-        WriteString(bytes, config.Locale);
-        WriteBool(bytes, config.ICloudWarn);
-        WriteBool(bytes, config.EnableExtensionRules);
-        WriteBool(bytes, config.EnableKeywordRules);
-        WriteBool(bytes, config.FallbackToInbox);
-        WriteBool(bytes, config.AllowReplaceDuringImport);
-        return RustBufferFromBytes(bytes.ToArray());
+    }
+
+    private static void WriteOptionalRepositoryLocalePolicy(
+        List<byte> bytes,
+        string rawValue,
+        string state)
+    {
+        int? tag = state switch
+        {
+            "FollowInterface" => 1,
+            "ZhHans" => 2,
+            "En" => 3,
+            _ => rawValue switch
+            {
+                "system" => 1,
+                "zh-Hans" => 2,
+                "en" => 3,
+                _ => null
+            }
+        };
+        if (tag is null)
+        {
+            bytes.Add(0);
+            return;
+        }
+
+        bytes.Add(1);
+        WriteEnum(bytes, tag.Value);
+    }
+
+    private static WindowsRepositoryCoreException CoreError(
+        WindowsRepositoryErrorKind kind,
+        string variant,
+        string message,
+        string? path = null)
+    {
+        return new WindowsRepositoryCoreException(kind, message, path, variant);
+    }
+
+    private static string ReadRepositoryLocalePolicyState(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "Unknown",
+            2 => "FollowInterface",
+            3 => "ZhHans",
+            4 => "En",
+            5 => "Unsupported",
+            _ => throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.Config,
+                "AreaMatrix Core returned an unknown repository locale policy state.")
+        };
     }
 
     private RustBuffer RustBufferFromBytes(byte[] bytes)

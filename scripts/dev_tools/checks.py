@@ -454,6 +454,110 @@ def _check_workflow_permissions(root: Path, failures: FailureCollector) -> None:
             _check_mapped_workflow_permissions(path, lines, index, base_indent, failures)
 
 
+def _check_workflow_action_pins(root: Path, failures: FailureCollector) -> None:
+    """Require every repository action reference to use an immutable commit SHA."""
+    workflow_root = root / ".github/workflows"
+    action_line = re.compile(r"^\s*(?:-\s*)?uses:\s*(?P<value>[^#]+?)(?:\s+#.*)?$")
+    pinned_action = re.compile(r"[^@\s]+@[0-9a-f]{40}")
+    for path in sorted((*workflow_root.glob("*.yml"), *workflow_root.glob("*.yaml"))):
+        for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            match = action_line.match(line)
+            if match is None:
+                continue
+            value = _normalize_workflow_scalar(match.group("value").strip())
+            if value.startswith("./"):
+                continue
+            if pinned_action.fullmatch(value) is None:
+                failures.fail(f"{path}:{line_no} remote action is not pinned to a full 40-character SHA: {value}")
+
+
+def _check_workflow_checkout_credentials(root: Path, failures: FailureCollector) -> None:
+    """Keep the checkout token out of repository Git configuration."""
+
+    workflow_root = root / ".github/workflows"
+    checkout_line = re.compile(r"^(?P<indent>\s*)(?:-\s*)?uses:\s*actions/checkout@[0-9a-f]{40}(?:\s+#.*)?$")
+    persisted_false = re.compile(r"^\s+persist-credentials:\s*false\s*(?:#.*)?$")
+    for path in sorted((*workflow_root.glob("*.yml"), *workflow_root.glob("*.yaml"))):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        for index, line in enumerate(lines):
+            match = checkout_line.match(line)
+            if match is None:
+                continue
+            step_indent = len(match.group("indent"))
+            if "-" not in line[: line.index("uses:")]:
+                for previous in reversed(lines[:index]):
+                    if not previous.strip():
+                        continue
+                    previous_indent = len(previous) - len(previous.lstrip(" "))
+                    if previous_indent < step_indent and previous.lstrip().startswith("-"):
+                        step_indent = previous_indent
+                        break
+            block: list[str] = []
+            for following in lines[index + 1 :]:
+                if following.strip():
+                    following_indent = len(following) - len(following.lstrip(" "))
+                    if following_indent <= step_indent:
+                        break
+                block.append(following)
+            if not any(persisted_false.match(item) for item in block):
+                failures.fail(
+                    f"{path}:{index + 1} actions/checkout must set persist-credentials: false"
+                )
+
+
+def _workflow_job_blocks(source: str) -> list[tuple[str, str]]:
+    jobs_match = re.search(r"(?m)^jobs:\s*$", source)
+    if jobs_match is None:
+        return []
+    jobs_source = source[jobs_match.end():]
+    matches = list(re.finditer(r"(?m)^  (?P<name>[A-Za-z0-9_-]+):\s*$", jobs_source))
+    blocks = []
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(jobs_source)
+        blocks.append((match.group("name"), jobs_source[match.start():end]))
+    return blocks
+
+
+def _check_rust_toolchain_governance(root: Path, failures: FailureCollector) -> None:
+    """Keep the repository toolchain declaration and every Rust action job aligned."""
+    toolchain_path = root / "rust-toolchain.toml"
+    try:
+        toolchain_source = toolchain_path.read_text(encoding="utf-8")
+    except OSError as error:
+        failures.fail(f"rust-toolchain.toml is missing or invalid: {error}")
+        return
+    channel = re.search(r'^channel\s*=\s*"([^"]+)"\s*$', toolchain_source, flags=re.MULTILINE)
+    profile = re.search(r'^profile\s*=\s*"([^"]+)"\s*$', toolchain_source, flags=re.MULTILINE)
+    components_match = re.search(r"^components\s*=\s*\[(?P<values>[^\]]*)\]\s*$", toolchain_source, flags=re.MULTILINE)
+    components = re.findall(r'"([^"]+)"', components_match.group("values")) if components_match else []
+    if channel is None or channel.group(1) != "1.88.0":
+        failures.fail("rust-toolchain.toml must pin channel 1.88.0")
+    if profile is None or profile.group(1) != "minimal":
+        failures.fail("rust-toolchain.toml must use the minimal profile")
+    if len(components) != 2 or set(components) != {"rustfmt", "clippy"}:
+        failures.fail("rust-toolchain.toml must declare exactly rustfmt and clippy")
+
+    expected_action = (
+        "uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b "
+        "# 1.88.0, reviewed 2026-08-21"
+    )
+    version_assertion = "test \"$(rustc --version | awk '{print $2}')\" = \"1.88.0\""
+    rust_jobs = 0
+    workflow_root = root / ".github/workflows"
+    for path in sorted((*workflow_root.glob("*.yml"), *workflow_root.glob("*.yaml"))):
+        source = path.read_text(encoding="utf-8")
+        for job_name, block in _workflow_job_blocks(source):
+            if "dtolnay/rust-toolchain@" not in block:
+                continue
+            rust_jobs += 1
+            if expected_action not in block:
+                failures.fail(f"{path} job {job_name} does not use the reviewed Rust 1.88.0 action SHA")
+            if version_assertion not in block:
+                failures.fail(f"{path} job {job_name} lacks the rustc 1.88.0 runtime assertion")
+    if rust_jobs == 0:
+        failures.fail("no GitHub Actions job installs the governed Rust toolchain")
+
+
 def _check_inline_workflow_permissions(
     path: Path,
     line_no: int,
@@ -1816,6 +1920,7 @@ def run_governance_check(root: Path | None = None) -> int:
     failures = FailureCollector()
     required_files = [
         "CODE_REVIEW.md",
+        "CODE_OF_CONDUCT.md",
         "SECURITY.md",
         "CONTRIBUTING.md",
         ".cargo/config.toml",
@@ -1826,6 +1931,8 @@ def run_governance_check(root: Path | None = None) -> int:
         ".github/workflows/core-ci.yml",
         ".github/workflows/macos-ci.yml",
         ".github/workflows/governance-ci.yml",
+        ".github/workflows/release-supply-chain.yml",
+        "rust-toolchain.toml",
         "docs/development/coding-standards.md",
         "docs/development/testing.md",
         "docs/development/git-workflow.md",
@@ -1856,9 +1963,12 @@ def run_governance_check(root: Path | None = None) -> int:
     _check_ios_core_sdk_package_contract(root, failures)
     _check_core_api_contract_sync(root, failures)
     _check_data_model_schema_sync(root, failures)
+    _check_workflow_action_pins(root, failures)
+    _check_rust_toolchain_governance(root, failures)
 
     _require_text(root, failures, "SECURITY.md", "GitHub Security Advisory", "private security advisory reporting")
     _forbid_text(root, failures, "SECURITY.md", "security@<your-domain>", "placeholder security email")
+    _forbid_text(root, failures, "CODE_OF_CONDUCT.md", r"conduct@<your-domain>", "placeholder conduct email")
     _require_text(root, failures, ".github/CODEOWNERS", "@AreaSong", "AreaSong repository owner")
     placeholder_owner_pattern = "|".join((r"<your" r"-org>", r"@" r"AreaMatrix/[A-Za-z0-9_.-]+"))
     _forbid_text(root, failures, ".github/CODEOWNERS", placeholder_owner_pattern, "placeholder owner")
@@ -1964,6 +2074,7 @@ def run_governance_check(root: Path | None = None) -> int:
         "git checkpoint review references",
     )
     _check_workflow_permissions(root, failures)
+    _check_workflow_checkout_credentials(root, failures)
     _check_workflow_has_no_paths_filter(root, failures, ".github/workflows/core-ci.yml")
     _check_workflow_has_no_paths_filter(root, failures, ".github/workflows/macos-ci.yml")
     for workflow in ("core-ci.yml", "macos-ci.yml", "governance-ci.yml"):
@@ -1984,9 +2095,72 @@ def run_governance_check(root: Path | None = None) -> int:
     _require_text(
         root,
         failures,
+        ".github/workflows/release-supply-chain.yml",
+        r"(?s)^  ref-gate:\n.*?EXPECTED_REPOSITORY: AreaSong/AreaMatrix.*?EXPECTED_REF: refs/heads/main.*?Reject non-main invocation",
+        "release supply-chain trusted main ref gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/release-supply-chain.yml",
+        r"(?s)^  materials:\n.*?needs: ref-gate\n.*?if: github\.ref == 'refs/heads/main'",
+        "release supply-chain materials depend on the trusted ref gate",
+    )
+    _forbid_text(
+        root,
+        failures,
+        ".github/workflows/release-supply-chain.yml",
+        r"github\.event_name",
+        "redundant release supply-chain event bypass expression",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/release-supply-chain.yml",
+        r"^    environment: release-legal-review$",
+        "release legal review environment",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/release-supply-chain.yml",
+        r"max_artifact_bytes=1073741824",
+        "temporary release artifact download size cap",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/release-supply-chain.yml",
+        r"stat -c '%s'",
+        "post-download release artifact size check",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/release-supply-chain.yml",
+        r"export SOURCE_DATE_EPOCH=\"\$\(git show -s --format=%ct HEAD\)\"",
+        "deterministic release material timestamp",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/release-supply-chain.yml",
+        r"(?s)name: Decode external review record.*?env:\n\s+REVIEW_RECORD_B64: \$\{\{ secrets\.SUPPLY_CHAIN_REVIEW_RECORD_B64 \}\}.*?umask 077",
+        "step-scoped protected review record with restrictive file permissions",
+    )
+    _require_text(
+        root,
+        failures,
         ".github/workflows/governance-ci.yml",
-        r"(?s)^  governance:\n.*?^    permissions:\n\s+contents:\s+read\n\s+security-events:\s+write",
-        "gitleaks security-events permission is scoped to the governance job",
+        r"(?s)^  secret-scan:\n.*?^    runs-on:\s+ubuntu-24\.04\n.*?^    permissions:\n\s+contents:\s+read",
+        "secret scan runs in an isolated read-only Ubuntu job",
+    )
+    _forbid_text(
+        root,
+        failures,
+        ".github/workflows/governance-ci.yml",
+        r"security-events:\s+write|GITHUB_TOKEN|github\.token",
+        "secret scan write permission or explicit token exposure",
     )
     _require_text(
         root,
@@ -2006,14 +2180,14 @@ def run_governance_check(root: Path | None = None) -> int:
         root,
         failures,
         ".github/workflows/macos-ci.yml",
-        r"actions/upload-artifact@v4",
+        r"actions/upload-artifact@[0-9a-f]{40}\s+#\s+v4\.",
         "CoreSDK artifact upload gate",
     )
     _require_text(
         root,
         failures,
         ".github/workflows/macos-ci.yml",
-        r"actions/download-artifact@v4",
+        r"actions/download-artifact@[0-9a-f]{40}\s+#\s+v4\.",
         "CoreSDK artifact reuse gate",
     )
     _require_text(
@@ -2022,6 +2196,34 @@ def run_governance_check(root: Path | None = None) -> int:
         ".github/workflows/macos-ci.yml",
         r"tar -czf core-sdk\.tar\.gz -C \.build core-sdk",
         "CoreSDK artifact archive gate",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"archive_sha256=\"\$\(shasum -a 256 core-sdk\.tar\.gz",
+        "CoreSDK producer archive digest",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"CORE_SDK_ARCHIVE_SHA256.*?shasum -a 256 --check",
+        "CoreSDK consumer archive digest verification",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"Verify packaged CoreSDK remained immutable during upload",
+        "CoreSDK post-upload archive digest verification",
+    )
+    _require_text(
+        root,
+        failures,
+        ".github/workflows/macos-ci.yml",
+        r"--scratch-path \"\$RUNNER_TEMP/areamatrix-core-sdk-swiftpm\"",
+        "CoreSDK SwiftPM external scratch path",
     )
     _require_text(
         root,
@@ -2076,7 +2278,7 @@ def run_governance_check(root: Path | None = None) -> int:
         root,
         failures,
         ".github/workflows/macos-ci.yml",
-        r"(?s)^  build:\n(?:(?!^  [A-Za-z0-9_-]+:).)*?^      - uses: dtolnay/rust-toolchain@stable$",
+        r"(?s)^  build:\n(?:(?!^  [A-Za-z0-9_-]+:).)*?^      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1\.88\.0, reviewed 2026-08-21$",
         "Xcode job Rust toolchain for source-bound CoreSDK verification",
     )
     _require_text(
@@ -2887,7 +3089,7 @@ def _run_core_task_checks(root: Path, text: str, entry: TaskManifestEntry | None
         print("==> ./dev check task: widened Core quality gate (fmt + clippy)", flush=True)
         for argv in [
             ["cargo", "fmt", "--all", "--", "--check"],
-            ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+            ["cargo", "clippy", "--locked", "--all-targets", "--all-features", "--", "-D", "warnings"],
         ]:
             proc = run_step(argv, cwd=core_dir, check=False)
             if proc.returncode != 0:
@@ -2902,10 +3104,10 @@ def _run_core_task_checks(root: Path, text: str, entry: TaskManifestEntry | None
         if os.environ.get(ALLOW_FULL_TASK_FALLBACK_ENV) == "1":
             print(
                 "==> ./dev check task: no targeted Core tests mapped; "
-                f"{ALLOW_FULL_TASK_FALLBACK_ENV}=1 so using cargo test --workspace",
+                f"{ALLOW_FULL_TASK_FALLBACK_ENV}=1 so using cargo test --locked --workspace",
                 flush=True,
             )
-            commands = [["cargo", "test", "--workspace"]]
+            commands = [["cargo", "test", "--locked", "--workspace"]]
         else:
             capabilities = ", ".join(_task_capabilities(text)) or "unknown"
             print(
@@ -2934,7 +3136,7 @@ def _core_task_test_commands(text: str, root: Path | None = None) -> list[list[s
     commands: list[list[str]] = []
     for capability in _task_capabilities(text):
         for target in _capability_test_targets(capability, root):
-            commands.append(["cargo", "test", "--test", target, "--", "--nocapture"])
+            commands.append(["cargo", "test", "--locked", "--test", target, "--", "--nocapture"])
     return _unique_commands(commands)
 
 
@@ -3059,8 +3261,8 @@ def _run_core_checks(root: Path) -> int:
         fail(f"core Cargo manifest not found at {core_dir / 'Cargo.toml'}.")
     for argv in [
         ["cargo", "fmt", "--all", "--", "--check"],
-        ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
-        ["cargo", "test", "--workspace"],
+        ["cargo", "clippy", "--locked", "--all-targets", "--all-features", "--", "-D", "warnings"],
+        ["cargo", "test", "--locked", "--workspace"],
     ]:
         proc = run_step(argv, cwd=core_dir, check=False)
         if proc.returncode != 0:

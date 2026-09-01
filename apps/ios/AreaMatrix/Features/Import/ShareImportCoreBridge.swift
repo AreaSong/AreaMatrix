@@ -71,7 +71,7 @@ enum ShareImportError: Error, Equatable, Sendable {
         if let shareError = error as? ShareImportError {
             return shareError
         }
-        return .unavailable(error.localizedDescription)
+        return .unavailable("Share import is unavailable.")
     }
 }
 

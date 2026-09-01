@@ -2,6 +2,9 @@ using AreaMatrix.Linux.Core;
 using AreaMatrix.Linux.Features.Import;
 using AreaMatrix.Linux.Features.Library;
 using AreaMatrix.Linux.Features.Onboarding;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace AreaMatrix.Linux.Tests.ChooseRepository;
 
@@ -9,15 +12,15 @@ public static class LinuxNativeCoreBridgeSmokeTests
 {
     public static async Task RunAllAsync()
     {
-        await NativeClientLoadsCoreAndValidatesRepositoryPath();
-        await NativeClientReadsLinuxPlatformCapabilities();
-        await NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge();
-        await NativeClientCommitsDesktopImportThroughImportFileWithResult();
+        using NativeLibraryFixture fixture = ResolveNativeLibraryFixture();
+        await NativeClientLoadsCoreAndValidatesRepositoryPath(fixture.LibraryPath);
+        await NativeClientReadsLinuxPlatformCapabilities(fixture.LibraryPath);
+        await NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge(fixture.LibraryPath);
+        await NativeClientCommitsDesktopImportThroughImportFileWithResult(fixture.LibraryPath);
     }
 
-    private static async Task NativeClientLoadsCoreAndValidatesRepositoryPath()
+    private static async Task NativeClientLoadsCoreAndValidatesRepositoryPath(string libraryPath)
     {
-        string libraryPath = ResolveNativeLibraryPath();
         string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-linuxRepoConnectCore-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempRoot);
         try
@@ -40,9 +43,8 @@ public static class LinuxNativeCoreBridgeSmokeTests
         }
     }
 
-    private static async Task NativeClientReadsLinuxPlatformCapabilities()
+    private static async Task NativeClientReadsLinuxPlatformCapabilities(string libraryPath)
     {
-        string libraryPath = ResolveNativeLibraryPath();
         using AreaMatrixNativeCoreClient client = new(libraryPath);
 
         CorePlatformCapabilities capabilities = await client.GetPlatformCapabilitiesAsync(
@@ -57,9 +59,9 @@ public static class LinuxNativeCoreBridgeSmokeTests
         TestAssert.False(capabilities.CloudPlaceholder.UiEnabled, "cloud placeholder disabled");
     }
 
-    private static async Task NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge()
+    private static async Task NativeClientOpensInitializedRepositoryThroughDesktopMainQueryBridge(
+        string libraryPath)
     {
-        string libraryPath = ResolveNativeLibraryPath();
         string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-desktopMainQueryCore-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempRoot);
         try
@@ -92,9 +94,9 @@ public static class LinuxNativeCoreBridgeSmokeTests
         }
     }
 
-    private static async Task NativeClientCommitsDesktopImportThroughImportFileWithResult()
+    private static async Task NativeClientCommitsDesktopImportThroughImportFileWithResult(
+        string libraryPath)
     {
-        string libraryPath = ResolveNativeLibraryPath();
         string tempRoot = Path.Combine(Path.GetTempPath(), $"areamatrix-lnx-desktopImportFlowCore-{Guid.NewGuid():N}");
         string repo = Path.Combine(tempRoot, "repo");
         string sourceDirectory = Path.Combine(tempRoot, "source");
@@ -143,16 +145,24 @@ public static class LinuxNativeCoreBridgeSmokeTests
         }
     }
 
-    private static string ResolveNativeLibraryPath()
+    private static NativeLibraryFixture ResolveNativeLibraryFixture()
     {
-        string? configured = Environment.GetEnvironmentVariable("AREAMATRIX_CORE_LIBRARY");
+        string? configured = Environment.GetEnvironmentVariable(NativeCoreLibrary.LibraryOverride);
         if (!string.IsNullOrWhiteSpace(configured) && File.Exists(configured))
         {
-            return configured;
+            return NativeLibraryFixture.Create(configured);
         }
 
         string[] candidates =
         [
+            ".build/cargo/validation/debug/deps/libarea_matrix_core.dylib",
+            ".build/cargo/validation/debug/libarea_matrix_core.dylib",
+            ".build/cargo/validation/release/deps/libarea_matrix_core.dylib",
+            ".build/cargo/validation/release/libarea_matrix_core.dylib",
+            ".build/cargo/validation/debug/deps/libarea_matrix_core.so",
+            ".build/cargo/validation/debug/libarea_matrix_core.so",
+            ".build/cargo/validation/release/deps/libarea_matrix_core.so",
+            ".build/cargo/validation/release/libarea_matrix_core.so",
             "core/target/debug/deps/libarea_matrix_core.dylib",
             "core/target/debug/libarea_matrix_core.dylib",
             "core/target/release/deps/libarea_matrix_core.dylib",
@@ -167,7 +177,7 @@ public static class LinuxNativeCoreBridgeSmokeTests
         {
             if (File.Exists(candidate))
             {
-                return candidate;
+                return NativeLibraryFixture.Create(candidate);
             }
         }
 
@@ -190,5 +200,86 @@ public static class LinuxNativeCoreBridgeSmokeTests
         }
 
         return Path.GetFullPath(relativePath);
+    }
+
+    private sealed class NativeLibraryFixture : IDisposable
+    {
+        private readonly string directoryPath;
+        private readonly string? previousManifest;
+        private readonly string? previousOptIn;
+
+        private NativeLibraryFixture(string directoryPath, string libraryPath, string manifestPath)
+        {
+            this.directoryPath = directoryPath;
+            LibraryPath = libraryPath;
+            previousManifest = Environment.GetEnvironmentVariable(NativeCoreLibrary.ManifestOverride);
+            previousOptIn = Environment.GetEnvironmentVariable(NativeCoreLibrary.DevelopmentOverrideOptIn);
+            Environment.SetEnvironmentVariable(NativeCoreLibrary.DevelopmentOverrideOptIn, "1");
+            Environment.SetEnvironmentVariable(NativeCoreLibrary.ManifestOverride, manifestPath);
+        }
+
+        public string LibraryPath { get; }
+
+        public static NativeLibraryFixture Create(string sourceLibraryPath)
+        {
+            string directory = Path.Combine(
+                Path.GetTempPath(),
+                $"areamatrix-linux-native-smoke-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(directory);
+            string library = Path.Combine(directory, Path.GetFileName(sourceLibraryPath));
+            File.Copy(sourceLibraryPath, library);
+            string manifest = WriteManifest(directory, library);
+            return new NativeLibraryFixture(directory, library, manifest);
+        }
+
+        public void Dispose()
+        {
+            Environment.SetEnvironmentVariable(NativeCoreLibrary.ManifestOverride, previousManifest);
+            Environment.SetEnvironmentVariable(NativeCoreLibrary.DevelopmentOverrideOptIn, previousOptIn);
+            Directory.Delete(directoryPath, recursive: true);
+        }
+
+        private static string WriteManifest(string directory, string libraryPath)
+        {
+            (string rid, string architecture) = RuntimeIdentity();
+            using FileStream stream = File.OpenRead(libraryPath);
+            string hash = Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
+            string manifest = Path.Combine(directory, NativeCoreLibrary.ManifestFileName);
+            File.WriteAllText(
+                manifest,
+                JsonSerializer.Serialize(
+                    new
+                    {
+                        schemaVersion = 1,
+                        status = "development",
+                        sourceCommit = "local-test-fixture",
+                        buildCommand = "cargo build --locked --manifest-path core/Cargo.toml",
+                        license = "LICENSE",
+                        sbom = "local-test-fixture",
+                        artifacts = new[]
+                        {
+                            new
+                            {
+                                rid,
+                                architecture,
+                                fileName = Path.GetFileName(libraryPath),
+                                sha256 = hash
+                            }
+                        }
+                    }));
+            return manifest;
+        }
+
+        private static (string Rid, string Architecture) RuntimeIdentity()
+        {
+            string ridPrefix = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" : "osx";
+            string architecture = RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X64 => "x64",
+                Architecture.Arm64 => "arm64",
+                _ => throw new InvalidOperationException("Unsupported native fixture architecture.")
+            };
+            return ($"{ridPrefix}-{architecture}", architecture);
+        }
     }
 }

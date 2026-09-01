@@ -7,6 +7,7 @@
 ```text
 assets/brand/
 ├── brand-manifest.json       # 机器可读交付矩阵
+├── provenance.json           # 字体输入、派生 hash、archive 证据状态与发布边界
 ├── wordmark-outlines.json    # Inter Bold 字标轮廓数据
 ├── final/
 │   ├── *.svg                 # canonical 矢量源文件
@@ -71,10 +72,20 @@ python3 scripts/brand/export_assets.py --refresh
 python3 scripts/brand/validate_assets.py
 ```
 
-补充 SVG 源由 `scripts/brand/build_source_assets.py` 从 canonical 几何和固化的字标轮廓生成。重新定稿字形时，才需要使用 `generate_wordmark_outlines.swift` 和明确授权的字体文件。
+补充 SVG 源由 `scripts/brand/build_source_assets.py` 从 canonical 几何和固化的字标轮廓生成。重新定稿字形时，
+才需要使用 `generate_wordmark_outlines.swift` 和明确授权的字体文件。当前轮廓来自 Inter Bold
+`Version 3.019;git-0a5106e0b`。精确输入对象固定为
+`linagora/tmail-flutter@0e6c107f63e4fd35615605b718963ffa6b2897a4:assets/fonts/Inter/Inter-Bold.ttf`，
+`rsms/inter@0a5106e0bde18df09374066bf3a7998e3546307d` 只表示上游谱系；两者、输入 SHA-256、OFL-1.1
+文本和确定性生成命令均记录在 `provenance.json`，许可证文本位于 `licenses/OFL-1.1-Inter.txt`。
+
+`validate_assets.py` 会验证 manifest 与 provenance 的发布边界、轮廓 hash，以及 16 个 archive 文件的逐项 hash
+和 `evidence-blocked` 状态。该技术校验不等于许可证批准；`provenance.json` 的 `releaseEligible` 在合格外部复核
+完成前保持 `false`。
 
 ## 使用规范
 
 完整颜色、字体、留白、最小尺寸、背景选择、禁止用法和授权边界见 [品牌视觉规范](../../docs/ux/brand-assets.md)。跨环境使用横向 Logo 时优先选择 `outlined` 文件，避免字体替换。
 
-`archive/` 中的任何文件不得被 README、UI、CI 或发布流程引用。
+`archive/` 中的任何文件不得被 README、UI、CI 或发布流程引用。其 owner、原始来源和授权尚不能由仓库证明，
+因此必须排除在发布包之外；正式打包只能从 `final/` 复制资产。

@@ -3,7 +3,7 @@ use std::{
     path::{Component, Path},
 };
 
-use crate::{CoreError, CoreResult, FileEntry, StorageMode};
+use crate::{AiPrivacyInputField, CoreError, CoreResult, FileEntry, StorageMode};
 
 use super::{AiSummaryContextPolicy, AiSummaryInputField};
 
@@ -28,18 +28,35 @@ pub(super) fn build_context(
     file: &FileEntry,
     existing_summary: Option<&str>,
     policy: &AiSummaryContextPolicy,
+    allowed_fields: &[AiPrivacyInputField],
 ) -> CoreResult<AiSummaryContext> {
-    let mut fields = vec![
-        AiSummaryInputField::FileName,
-        AiSummaryInputField::RepoRelativePath,
-    ];
-    let existing_ai_summary =
-        existing_summary.and_then(|summary| sanitized_excerpt(summary, MAX_EXISTING_SUMMARY_CHARS));
+    let mut fields = Vec::new();
+    let filename = if allowed_fields.contains(&AiPrivacyInputField::FileName) {
+        fields.push(AiSummaryInputField::FileName);
+        file.current_name.clone()
+    } else {
+        String::new()
+    };
+    let repo_relative_path = allowed_fields
+        .contains(&AiPrivacyInputField::RepoRelativePath)
+        .then(|| {
+            fields.push(AiSummaryInputField::RepoRelativePath);
+            file.path.clone()
+        });
+    let existing_ai_summary = allowed_fields
+        .contains(&AiPrivacyInputField::AiSummary)
+        .then(|| {
+            existing_summary
+                .and_then(|summary| sanitized_excerpt(summary, MAX_EXISTING_SUMMARY_CHARS))
+        })
+        .flatten();
     if existing_ai_summary.is_some() {
         fields.push(AiSummaryInputField::ExistingAiSummary);
     }
 
-    let extracted_text_excerpt = if allows_text(policy) {
+    let extracted_text_excerpt = if allows_text(policy)
+        && allowed_fields.contains(&AiPrivacyInputField::ExtractedTextExcerpt)
+    {
         let excerpt = extracted_text_excerpt(repo, file)?;
         if excerpt.is_some() {
             fields.push(AiSummaryInputField::ExtractedTextExcerpt);
@@ -49,19 +66,22 @@ pub(super) fn build_context(
         None
     };
 
-    let note_summary = if allows_notes(policy) {
-        let summary = crate::db::read_note_content(repo, file.id)?
-            .as_deref()
-            .and_then(|note| sanitized_excerpt(note, MAX_NOTE_CHARS));
-        if summary.is_some() {
-            fields.push(AiSummaryInputField::NoteSummary);
-        }
-        summary
-    } else {
-        None
-    };
+    let note_summary =
+        if allows_notes(policy) && allowed_fields.contains(&AiPrivacyInputField::NoteSummary) {
+            let summary = crate::db::read_note_content(repo, file.id)?
+                .as_deref()
+                .and_then(|note| sanitized_excerpt(note, MAX_NOTE_CHARS));
+            if summary.is_some() {
+                fields.push(AiSummaryInputField::NoteSummary);
+            }
+            summary
+        } else {
+            None
+        };
 
-    let tag_category_context = if allows_notes(policy) {
+    let tag_category_context = if allows_notes(policy)
+        && allowed_fields.contains(&AiPrivacyInputField::TagCategoryContext)
+    {
         let context = tag_category_context(file);
         fields.push(AiSummaryInputField::TagCategoryContext);
         Some(context)
@@ -71,8 +91,8 @@ pub(super) fn build_context(
 
     Ok(AiSummaryContext {
         fields,
-        filename: file.current_name.clone(),
-        repo_relative_path: Some(file.path.clone()),
+        filename,
+        repo_relative_path,
         extracted_text_excerpt,
         existing_ai_summary,
         note_summary,

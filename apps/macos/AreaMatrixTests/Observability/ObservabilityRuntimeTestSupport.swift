@@ -294,6 +294,11 @@ final class ObservabilityRuntimeFixture {
         removeTestTemporaryItems(rootURL)
     }
 
+    func startRuntime() async {
+        runtime.start()
+        _ = await runtime.configurationSnapshot()
+    }
+
     func readSessionMarker() throws -> ObservabilitySessionMarker {
         let url = sessionRootURL.appendingPathComponent("session-marker.json", isDirectory: false)
         return try JSONDecoder().decode(ObservabilitySessionMarker.self, from: Data(contentsOf: url))
@@ -302,13 +307,44 @@ final class ObservabilityRuntimeFixture {
 
 @MainActor
 func waitForRuntimeCondition(
-    iterations: Int = 2000,
+    _ description: String = "runtime condition",
+    timeout: Duration = .seconds(5),
+    pollInterval: Duration = .milliseconds(10),
+    file: StaticString = #filePath,
+    line: UInt = #line,
     _ condition: () async -> Bool
 ) async -> Bool {
-    for _ in 0 ..< iterations {
+    let clock = ContinuousClock()
+    let deadline = clock.now.advanced(by: timeout)
+    let interval = max(pollInterval, .milliseconds(1))
+
+    while !Task.isCancelled {
         if await condition() { return true }
-        await Task.yield()
+
+        let remaining = clock.now.duration(to: deadline)
+        guard remaining > .zero else {
+            XCTFail(
+                "Timed out waiting for \(description) after \(timeout).",
+                file: file,
+                line: line
+            )
+            return false
+        }
+
+        do {
+            try await Task.sleep(for: min(interval, remaining))
+        } catch is CancellationError {
+            return false
+        } catch {
+            XCTFail(
+                "Polling \(description) failed: \(error)",
+                file: file,
+                line: line
+            )
+            return false
+        }
     }
+
     return false
 }
 

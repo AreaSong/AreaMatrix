@@ -141,7 +141,11 @@ pub fn preview_conflict_versions(
 
 /// Resolves one iCloud conflict after explicit user confirmation.
 ///
-/// `resolution` is limited to the previewed iCloud conflict resolution choices. `KeepBoth` must keep
+/// `preview_token` must be the non-empty opaque token returned by the immediately preceding
+/// `preview_conflict_versions` call for the same repository and conflict. Core binds the token to
+/// both version identities and rejects stale, cross-repository, replayed, or empty tokens before
+/// any filesystem or database mutation. `resolution` is limited to the previewed iCloud conflict
+/// resolution choices. `KeepBoth` must keep
 /// every version and only mark the conflict resolved or acknowledged. `KeepOriginal`
 /// and `KeepConflictedCopy` may move only the unkept paired version to system
 /// Trash after the UI completed destructive confirmation. A successful write
@@ -166,8 +170,9 @@ pub fn resolve_icloud_conflict(
     repo_path: String,
     conflict_id: String,
     resolution: ICloudConflictResolution,
+    preview_token: String,
 ) -> CoreResult<ICloudConflictResolveReport> {
-    icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution)
+    icloud_conflicts::resolve_icloud_conflict(repo_path, conflict_id, resolution, preview_token)
 }
 
 /// Detects cloud storage provider state and OneDrive risk state.

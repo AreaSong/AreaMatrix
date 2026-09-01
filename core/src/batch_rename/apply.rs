@@ -16,7 +16,7 @@ pub(super) fn apply_batch_rename_plan(
     let (report, mut fs_renames) = crate::db::with_batch_rename_transaction(repo, |tx| {
         let mut execution = BatchRenameExecution::new(&plan);
         for item in plan.items {
-            execution.push(apply_item(tx, item)?);
+            execution.push(apply_item(repo, tx, item)?);
         }
         if execution.has_successful_write() {
             execution.undo_token = Some(crate::db::insert_batch_rename_undo_action_in_tx(
@@ -111,12 +111,13 @@ struct AppliedBatchRenameItem {
 }
 
 fn apply_item(
+    repo: &Path,
     tx: &mut rusqlite::Transaction<'_>,
     item: BatchRenamePlanItem,
 ) -> CoreResult<AppliedBatchRenameItem> {
     match item {
-        BatchRenamePlanItem::Rename(change) => apply_change(tx, change, false),
-        BatchRenamePlanItem::DisplayOnly(change) => apply_change(tx, change, true),
+        BatchRenamePlanItem::Rename(change) => apply_change(repo, tx, change, false),
+        BatchRenamePlanItem::DisplayOnly(change) => apply_change(repo, tx, change, true),
         BatchRenamePlanItem::Unchanged(change) => Ok(unchanged_result(change)),
         BatchRenamePlanItem::Blocked(change) => Ok(AppliedBatchRenameItem {
             report: BatchRenameItemResult {
@@ -135,6 +136,7 @@ fn apply_item(
 }
 
 fn apply_change(
+    repo: &Path,
     tx: &mut rusqlite::Transaction<'_>,
     change: PlannedRenameChange,
     index_only: bool,
@@ -142,7 +144,7 @@ fn apply_change(
     let savepoint = tx
         .savepoint()
         .map_err(|error| CoreError::db(error.to_string()))?;
-    match try_apply_change(&savepoint, &change, index_only) {
+    match try_apply_change(repo, &savepoint, &change, index_only) {
         Ok((updated, undo_item, fs_rename)) => match savepoint.commit() {
             Ok(()) => Ok(successful_change_result(
                 change, index_only, updated, undo_item, fs_rename,
@@ -166,6 +168,7 @@ fn apply_change(
 }
 
 fn try_apply_change(
+    repo: &Path,
     connection: &rusqlite::Connection,
     change: &PlannedRenameChange,
     index_only: bool,
@@ -187,10 +190,47 @@ fn try_apply_change(
             .final_path
             .as_ref()
             .ok_or_else(|| CoreError::invalid_path("invalid path"))?;
+        let file_hash = crate::batch_journal::file_hash(&change.current_path)
+            .map_err(|error| CoreError::io(error.to_string()))?;
+        let journal_spec = crate::batch_journal::BatchJournal::for_paths(
+            repo,
+            crate::batch_journal::BatchJournalInput {
+                operation: "batch_rename",
+                file_id: change.entry.id,
+                original: &change.current_path,
+                current: final_path,
+                original_db_path: &change.entry.path,
+                current_db_path: change
+                    .final_relative_path
+                    .as_deref()
+                    .ok_or_else(|| CoreError::invalid_path("invalid path"))?,
+                original_name: &change.entry.current_name,
+                current_name: &change.new_name,
+                original_category: &change.entry.category,
+                current_category: &change.entry.category,
+                file_hash_sha256: &file_hash,
+                sidecar: change
+                    .note_sidecar
+                    .as_ref()
+                    .map(|sidecar| (sidecar.current_path.as_path(), sidecar.final_path.as_path())),
+                planned_directory: None,
+            },
+        )
+        .map_err(|e| CoreError::io(e.to_string()))?;
+        let sidecar_hash = journal_spec
+            .sidecar
+            .as_ref()
+            .map(|sidecar| sidecar.hash_sha256.clone());
+        let journal = crate::batch_journal::create(repo, &journal_spec)
+            .map_err(|e| CoreError::io(e.to_string()))?;
         move_checked_file(&change.current_path, final_path)?;
-        let mut file_guard =
-            RenameRollbackGuard::new(final_path.clone(), change.current_path.clone());
-        let mut note_guard = move_note_sidecar(change, &mut file_guard)?;
+        let mut file_guard = RenameRollbackGuard::new(
+            final_path.clone(),
+            change.current_path.clone(),
+            Some(journal),
+            Some(file_hash),
+        );
+        let mut note_guard = move_note_sidecar(change, &mut file_guard, sidecar_hash)?;
         if let Err(error) = crate::db::batch_update_rename_repo_owned_in_tx(
             connection,
             change.entry.id,
@@ -306,10 +346,21 @@ impl AppliedFsRename {
 
 impl Drop for AppliedFsRename {
     fn drop(&mut self) {
-        if let Some(note_guard) = self.note_guard.as_mut() {
-            let _rollback_result = note_guard.rollback();
+        let note_result = self
+            .note_guard
+            .as_mut()
+            .map(RenameRollbackGuard::rollback)
+            .unwrap_or(Ok(()));
+        let file_result = self.file_guard.rollback();
+        if note_result.is_ok() && file_result.is_ok() {
+            self.file_guard.clear_journal();
         }
-        let _rollback_result = self.file_guard.rollback();
+        if let Err(error) = note_result {
+            tracing::warn!(error = %error, "batch rename sidecar rollback deferred");
+        }
+        if let Err(error) = file_result {
+            tracing::warn!(error = %error, "batch rename file rollback deferred");
+        }
     }
 }
 
@@ -317,24 +368,71 @@ struct RenameRollbackGuard {
     current_path: PathBuf,
     original_path: PathBuf,
     armed: bool,
+    journal: Option<PathBuf>,
+    expected_hash: Option<String>,
 }
 
 impl RenameRollbackGuard {
-    fn new(current_path: PathBuf, original_path: PathBuf) -> Self {
+    fn new(
+        current_path: PathBuf,
+        original_path: PathBuf,
+        journal: Option<PathBuf>,
+        expected_hash: Option<String>,
+    ) -> Self {
         Self {
             current_path,
             original_path,
             armed: true,
+            journal,
+            expected_hash,
         }
     }
 
     fn disarm(&mut self) {
         self.armed = false;
+        if let Some(path) = self.journal.as_ref() {
+            if let Err(error) = crate::batch_journal::remove(path) {
+                tracing::warn!(error = %error, "batch rename journal cleanup deferred");
+            } else {
+                self.journal = None;
+            }
+        }
+    }
+
+    fn clear_journal(&mut self) {
+        let Some(path) = self.journal.as_ref() else {
+            return;
+        };
+        if let Err(error) = crate::batch_journal::remove(path) {
+            tracing::warn!(error = %error, "batch rename journal cleanup deferred");
+        } else {
+            self.journal = None;
+        }
     }
 
     fn rollback(&mut self) -> CoreResult<()> {
-        if self.armed && self.current_path.exists() && !self.original_path.exists() {
-            crate::storage::move_recoverable_file(&self.current_path, &self.original_path)?;
+        if self.armed {
+            match (
+                safe_regular_file(&self.current_path),
+                safe_regular_file(&self.original_path),
+            ) {
+                (true, false) => match self.expected_hash.as_deref() {
+                    Some(hash) => crate::storage::move_recoverable_file_with_hash(
+                        &self.current_path,
+                        &self.original_path,
+                        hash,
+                    )?,
+                    None => crate::storage::move_recoverable_file(
+                        &self.current_path,
+                        &self.original_path,
+                    )?,
+                },
+                (false, true) => {}
+                (false, false) => {
+                    return Err(CoreError::io("batch rename rollback paths are unavailable"))
+                }
+                (true, true) => return Err(CoreError::conflict("batch rename rollback conflict")),
+            }
         }
         self.armed = false;
         Ok(())
@@ -343,16 +441,37 @@ impl RenameRollbackGuard {
 
 impl Drop for RenameRollbackGuard {
     fn drop(&mut self) {
-        if self.armed && self.current_path.exists() && !self.original_path.exists() {
-            let _restore_result =
-                crate::storage::move_recoverable_file(&self.current_path, &self.original_path);
+        if self.armed
+            && safe_regular_file(&self.current_path)
+            && !safe_regular_file(&self.original_path)
+        {
+            let result = match self.expected_hash.as_deref() {
+                Some(hash) => crate::storage::move_recoverable_file_with_hash(
+                    &self.current_path,
+                    &self.original_path,
+                    hash,
+                ),
+                None => {
+                    crate::storage::move_recoverable_file(&self.current_path, &self.original_path)
+                }
+            };
+            if let Err(error) = result {
+                tracing::warn!(error = %error, "batch rename rollback deferred");
+            }
         }
     }
+}
+
+fn safe_regular_file(path: &Path) -> bool {
+    std::fs::symlink_metadata(path)
+        .map(|metadata| !metadata.file_type().is_symlink() && metadata.is_file())
+        .unwrap_or(false)
 }
 
 fn move_note_sidecar(
     change: &PlannedRenameChange,
     file_guard: &mut RenameRollbackGuard,
+    sidecar_hash: Option<String>,
 ) -> CoreResult<Option<RenameRollbackGuard>> {
     let Some(sidecar) = &change.note_sidecar else {
         return Ok(None);
@@ -361,6 +480,8 @@ fn move_note_sidecar(
         Ok(()) => Ok(Some(RenameRollbackGuard::new(
             sidecar.final_path.clone(),
             sidecar.current_path.clone(),
+            None,
+            sidecar_hash,
         ))),
         Err(error) => {
             file_guard.rollback()?;
@@ -373,10 +494,18 @@ fn rollback_filesystem_rename(
     file_guard: &mut RenameRollbackGuard,
     note_guard: &mut Option<RenameRollbackGuard>,
 ) -> CoreResult<()> {
-    if let Some(note_guard) = note_guard.as_mut() {
-        note_guard.rollback()?;
+    let note_result = note_guard
+        .as_mut()
+        .map(RenameRollbackGuard::rollback)
+        .unwrap_or(Ok(()));
+    let file_result = file_guard.rollback();
+    match (note_result, file_result) {
+        (Ok(()), Ok(())) => {
+            file_guard.clear_journal();
+            Ok(())
+        }
+        (Err(error), _) | (_, Err(error)) => Err(error),
     }
-    file_guard.rollback()
 }
 
 fn move_checked_file(current_path: &Path, destination: &Path) -> CoreResult<()> {

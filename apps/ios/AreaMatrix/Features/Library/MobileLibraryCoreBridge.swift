@@ -141,10 +141,10 @@ enum MobileLibraryQueryError: Error, Equatable {
         switch self {
         case .repoNotInitialized:
             "This folder is not an initialized AreaMatrix repository."
-        case let .database(message):
-            message.isEmpty ? "Repository metadata could not be read." : message
-        case let .unavailable(message):
-            message.isEmpty ? "Repository data is unavailable." : message
+        case .database:
+            "Repository metadata could not be read."
+        case .unavailable:
+            "Repository data is unavailable."
         }
     }
 
@@ -155,7 +155,7 @@ enum MobileLibraryQueryError: Error, Equatable {
         if let connectionError = error as? MobileRepositoryConnectionError {
             return mapConnectionError(connectionError)
         }
-        return .unavailable(error.localizedDescription)
+        return .unavailable("Repository data is unavailable.")
     }
 
     private static func mapConnectionError(_ error: MobileRepositoryConnectionError) -> MobileLibraryQueryError {

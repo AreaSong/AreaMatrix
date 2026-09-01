@@ -3,10 +3,14 @@ import SwiftUI
 
 struct AreaMatrixProtectionDiorama: View {
     @State private var isAnimating = false
+    @State private var animationStartTask: Task<Void, Never>?
+    @State private var animationGeneration = 0
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.areaMatrixSceneParallax) private var parallax
     @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         ZStack {
@@ -24,15 +28,44 @@ struct AreaMatrixProtectionDiorama: View {
             if newPhase.isVisible {
                 restartAnimation()
             } else {
-                isAnimating = false
+                stopAnimations()
             }
         }
+        .onChange(of: reduceMotion) { _, _ in
+            if sceneVisibility.isVisible {
+                restartAnimation()
+            } else {
+                stopAnimations()
+            }
+        }
+        .onDisappear(perform: stopAnimations)
     }
 
     private func restartAnimation() {
-        isAnimating = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        stopAnimations()
+        guard accessibilityPolicy.allowsContinuousMotion, sceneVisibility.isVisible else { return }
+        let generation = animationGeneration
+        animationStartTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            guard !Task.isCancelled,
+                  accessibilityPolicy.allowsDelayedAnimationCommit(
+                      generation: generation,
+                      currentGeneration: animationGeneration,
+                      isVisible: sceneVisibility.isVisible
+                  )
+            else { return }
             isAnimating = true
+        }
+    }
+
+    private func stopAnimations() {
+        animationGeneration += 1
+        animationStartTask?.cancel()
+        animationStartTask = nil
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            isAnimating = false
         }
     }
 
@@ -100,19 +133,28 @@ struct AreaMatrixProtectionDiorama: View {
                     color: AreaMatrixTheme.Colors.gold.opacity(isAnimating ? 0.5 : 0.2),
                     radius: isAnimating ? 20 : 10
                 )
-                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
+                .animation(
+                    reduceMotion || !isAnimating
+                        ? nil
+                        : .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
+                    value: isAnimating
+                )
             lockCore
             Image(systemName: "checkmark.shield.fill")
                 .font(.system(size: 40))
                 .foregroundColor(AreaMatrixTheme.Colors.gold)
                 .shadow(color: AreaMatrixTheme.Colors.gold.opacity(0.4), radius: 20)
         }
-        .offset(x: parallax.horizontal * 25, y: parallax.vertical * 25)
+        .offset(x: effectiveParallax.horizontal * 25, y: effectiveParallax.vertical * 25)
     }
 
     private var lockCore: some View {
         Circle()
-            .fill(.ultraThinMaterial)
+            .fill(
+                reduceTransparency
+                    ? AnyShapeStyle(colorScheme == .dark ? Color.black : Color.white)
+                    : AnyShapeStyle(.ultraThinMaterial)
+            )
             .frame(width: 28, height: 28)
             .overlay(Circle().stroke(AreaMatrixTheme.Colors.gold, lineWidth: 1))
             .overlay(
@@ -122,7 +164,12 @@ struct AreaMatrixProtectionDiorama: View {
                     .symbolEffect(.pulse, value: isAnimating)
             )
             .scaleEffect(isAnimating ? 1.08 : 1.0)
-            .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.3), value: isAnimating)
+            .animation(
+                reduceMotion || !isAnimating
+                    ? nil
+                    : .easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.3),
+                value: isAnimating
+            )
     }
 
     private var dataStreams: some View {
@@ -133,7 +180,10 @@ struct AreaMatrixProtectionDiorama: View {
                     .frame(width: 2, height: 40)
                     .offset(x: impactOffsets[index], y: isAnimating ? -35 : 35)
                     .opacity(isAnimating ? 0 : 1)
-                    .animation(streamAnimation(index: index), value: isAnimating)
+                    .animation(
+                        reduceMotion || !isAnimating ? nil : streamAnimation(index: index),
+                        value: isAnimating
+                    )
             }
         }
     }
@@ -148,7 +198,10 @@ struct AreaMatrixProtectionDiorama: View {
                     .offset(x: impactOffsets[index])
                     .scaleEffect(isAnimating ? 2.5 : 0.5)
                     .opacity(isAnimating ? 0 : 0.8)
-                    .animation(sparkAnimation(index: index), value: isAnimating)
+                    .animation(
+                        reduceMotion || !isAnimating ? nil : sparkAnimation(index: index),
+                        value: isAnimating
+                    )
             }
         }
     }
@@ -162,7 +215,10 @@ struct AreaMatrixProtectionDiorama: View {
                     .offset(x: impactOffsets[index])
                     .scaleEffect(isAnimating ? 3.0 : 0.5)
                     .opacity(isAnimating ? 0 : 0.6)
-                    .animation(rippleAnimation(index: index), value: isAnimating)
+                    .animation(
+                        reduceMotion || !isAnimating ? nil : rippleAnimation(index: index),
+                        value: isAnimating
+                    )
             }
         }
     }
@@ -203,5 +259,16 @@ struct AreaMatrixProtectionDiorama: View {
 
     private var impactDelays: [Double] {
         [0, 1.5, 0.7]
+    }
+
+    private var effectiveParallax: AreaMatrixParallax {
+        accessibilityPolicy.allowsParallax ? parallax : .zero
+    }
+
+    private var accessibilityPolicy: AreaMatrixAccessibilityMotionPolicy {
+        AreaMatrixAccessibilityMotionPolicy(
+            reduceMotion: reduceMotion,
+            reduceTransparency: reduceTransparency
+        )
     }
 }

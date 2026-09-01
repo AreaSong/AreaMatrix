@@ -127,6 +127,8 @@ enum ICloudConflictResolutionCapability: Equatable {
 struct ICloudConflictResolutionRequest: Equatable {
     var repoPath: String
     var conflictID: String
+    /// Token returned by the matching Core preview; empty requests must be rejected by Core.
+    var previewToken: String = ""
     var fileID: Int64
     var strategy: ICloudConflictResolutionStrategy
     var originalPath: String?

@@ -42,13 +42,13 @@ enum CameraImportCoreSDKMapping {
             return importError
         }
         guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
-            return .unavailable(error.localizedDescription)
+            return .unavailable("Photo import is unavailable.")
         }
         switch coreError {
         case let .Io(message):
             return .unreadableSource(message)
-        case let .Db(message), let .DbLocked(message), let .DbCorrupted(message):
-            return .database(message)
+        case .Db, .DbLocked, .DbCorrupted:
+            return .database("")
         case let .Conflict(path), let .RevisionConflict(path, _, _):
             return .nameConflict(path)
         case let .DuplicateFile(path):
@@ -58,7 +58,7 @@ enum CameraImportCoreSDKMapping {
         case let .PermissionDenied(path):
             return .permissionDenied(path)
         default:
-            return .unavailable(String(describing: coreError))
+            return .unavailable("Photo import is unavailable.")
         }
     }
 }

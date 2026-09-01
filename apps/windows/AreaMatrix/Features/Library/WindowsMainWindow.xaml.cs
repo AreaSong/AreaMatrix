@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AreaMatrix.Features.Conflicts;
 using AreaMatrix.Features.Onboarding;
@@ -59,14 +60,17 @@ public sealed partial class WindowsMainWindow : UserControl
         }
     }
 
-    public async Task OpenRepositoryAsync(WindowsRepositoryRoute route)
+    public async Task OpenRepositoryAsync(
+        WindowsRepositoryRoute route,
+        CancellationToken cancellationToken = default)
     {
         if (ViewModel is null)
         {
             return;
         }
 
-        await ViewModel.OpenRepositoryAsync(route);
+        await ViewModel.OpenRepositoryAsync(route, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         RefreshState();
     }
 

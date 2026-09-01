@@ -211,6 +211,71 @@ final class ImportBatchCopyImportModelTests: XCTestCase {
     }
 
     @MainActor
+    func testBatchCopyImportBlocksBeforeCoreWhenInitialSessionSaveFails() async {
+        let fixture = importBatchStandardBatchFixture()
+        let store = RecordingImportBatchSessionStore(failingSaveCalls: [1])
+        let importer = ImportBatchRecordingBatchImporter()
+        let model = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
+            sessionStore: store
+        )
+
+        model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
+        let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
+
+        XCTAssertNil(outcome)
+        XCTAssertEqual(model.sessionPersistenceFailure, .io(operation: .save, code: 5))
+        await importer.assertNoImportedBatchFiles()
+        assertImportRowStatusTags(model.rows, ["OK", "OK"])
+    }
+
+    @MainActor
+    func testBatchCopyImportPreservesCoreSuccessAndStopsQueueWhenCheckpointSaveFails() async {
+        let fixture = importBatchStandardBatchFixture()
+        let store = RecordingImportBatchSessionStore(failingSaveCalls: [2])
+        let importer = ImportBatchRecordingBatchImporter()
+        let model = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
+            sessionStore: store
+        )
+
+        model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
+        let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
+
+        XCTAssertEqual(outcome?.succeededEntries.count, 1)
+        XCTAssertEqual(outcome?.failedCount, 0)
+        XCTAssertEqual(outcome?.sessionPersistenceFailure, .io(operation: .save, code: 5))
+        XCTAssertNil(outcome?.fatalRetryContext)
+        XCTAssertEqual(model.sessionPersistenceFailure, .io(operation: .save, code: 5))
+        assertImportRowStatusTags(model.rows, ["IMPORTED", "OK"])
+        await importer.assertImportedBatchFiles([importBatchExpectedInvoiceRequest()])
+        await store.assertClearedRepoPaths([])
+    }
+
+    @MainActor
+    func testBatchCopyImportReportsClearFailureWithoutReplayingCoreSuccess() async {
+        let fixture = importBatchStandardBatchFixture()
+        let clearFailure = ImportBatchSessionStoreError.permission(operation: .clear)
+        let store = RecordingImportBatchSessionStore(clearFailure: clearFailure)
+        let importer = ImportBatchRecordingBatchImporter()
+        let model = ImportBatchCopyImportModel(
+            importer: importer,
+            errorMapper: RecordingCoreErrorMapper.importSingleFile(),
+            sessionStore: store
+        )
+
+        model.applyPreviewRows(fixture.rows, request: fixture.request, selectedDestination: .autoClassify)
+        let outcome = await model.importReadyFiles(selectedDestination: .autoClassify)
+
+        XCTAssertEqual(outcome?.succeededEntries.count, 2)
+        XCTAssertEqual(outcome?.sessionPersistenceFailure, clearFailure)
+        XCTAssertEqual(model.sessionPersistenceFailure, clearFailure)
+        await importer.assertImportedBatchFiles(importBatchExpectedAutoClassifyRequests())
+    }
+
+    @MainActor
     func testBatchCopyImportKeepsUnfinishedSessionAfterFatalStop() async {
         let fixture = importBatchStandardBatchFixture()
         let pendingURL = URL(fileURLWithPath: "/tmp/Pending.pdf")

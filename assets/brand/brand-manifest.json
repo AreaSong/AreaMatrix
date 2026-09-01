@@ -2,6 +2,12 @@
   "schemaVersion": 1,
   "brand": "AreaMatrix",
   "packageRoot": "assets/brand/final",
+  "provenance": {
+    "path": "assets/brand/provenance.json",
+    "releaseEligible": false,
+    "includedRoot": "assets/brand/final",
+    "excludedRoots": ["assets/brand/archive"]
+  },
   "themes": ["dark", "light"],
   "themedSquareFamilies": [
     {

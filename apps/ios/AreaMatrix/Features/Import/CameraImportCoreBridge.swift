@@ -56,7 +56,7 @@ enum CameraImportError: Error, Equatable, Sendable {
         if let importError = error as? CameraImportError {
             return importError
         }
-        return .unavailable(error.localizedDescription)
+        return .unavailable("Photo import is unavailable.")
     }
 }
 

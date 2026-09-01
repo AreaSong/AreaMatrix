@@ -296,7 +296,7 @@ public sealed partial class WatcherStatusViewModel : INotifyPropertyChanged
         RescanPreview = null;
         LatestScanSession = null;
         Error = null;
-        await RefreshAsync(cancellationToken).ConfigureAwait(false);
+        await RefreshAsync(cancellationToken);
     }
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
@@ -314,14 +314,11 @@ public sealed partial class WatcherStatusViewModel : INotifyPropertyChanged
         try
         {
             WatcherStatusHealthSignal signal = await diagnostics
-                .CaptureSnapshotAsync(RepoPath, cancellationToken)
-                .ConfigureAwait(false);
+                .CaptureSnapshotAsync(RepoPath, cancellationToken);
             Snapshot = await coreBridge
-                .RecordWatcherHealthAsync(RepoPath, signal, cancellationToken)
-                .ConfigureAwait(false);
+                .RecordWatcherHealthAsync(RepoPath, signal, cancellationToken);
             LatestScanSession = await coreBridge
-                .GetLatestScanSessionAsync(RepoPath, cancellationToken)
-                .ConfigureAwait(false);
+                .GetLatestScanSessionAsync(RepoPath, cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -345,14 +342,11 @@ public sealed partial class WatcherStatusViewModel : INotifyPropertyChanged
         try
         {
             WatcherStatusHealthSignal signal = await diagnostics
-                .RestartWatcherAsync(RepoPath, cancellationToken)
-                .ConfigureAwait(false);
+                .RestartWatcherAsync(RepoPath, cancellationToken);
             Snapshot = await coreBridge
-                .RecordWatcherHealthAsync(RepoPath, signal, cancellationToken)
-                .ConfigureAwait(false);
+                .RecordWatcherHealthAsync(RepoPath, signal, cancellationToken);
             LatestScanSession = await coreBridge
-                .GetLatestScanSessionAsync(RepoPath, cancellationToken)
-                .ConfigureAwait(false);
+                .GetLatestScanSessionAsync(RepoPath, cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -376,16 +370,14 @@ public sealed partial class WatcherStatusViewModel : INotifyPropertyChanged
         try
         {
             LatestScanSession = await coreBridge
-                .GetLatestScanSessionAsync(RepoPath, cancellationToken)
-                .ConfigureAwait(false);
+                .GetLatestScanSessionAsync(RepoPath, cancellationToken);
             if (IsRescanRunning)
             {
                 return false;
             }
 
             RescanPreview = await coreBridge
-                .PreviewManualRescanAsync(RepoPath, cancellationToken)
-                .ConfigureAwait(false);
+                .PreviewManualRescanAsync(RepoPath, cancellationToken);
             return true;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

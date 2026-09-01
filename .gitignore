@@ -49,6 +49,10 @@ AreaMatrix-dev/
 # macOS / IDE
 .DS_Store
 .idea/
+# Gemini/Antigravity skills are machine-local external capabilities, not repo adapters.
+.gemini/
+# Codex-installed personal skills are machine-local; repo skills live in .codex/skills-src/.
+.codex/skills/
 # Cursor adapter layer is tracked; session-local plans stay untracked.
 .cursor/plans/
 .vscode/*

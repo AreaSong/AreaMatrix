@@ -127,9 +127,7 @@ fn contains_embedded_absolute_path(value: &str) -> bool {
 }
 
 fn is_locator_boundary(previous: Option<char>) -> bool {
-    previous.map_or(true, |character| {
-        character.is_whitespace() || !character.is_ascii_alphanumeric()
-    })
+    previous.is_none_or(|character| character.is_whitespace() || !character.is_ascii_alphanumeric())
 }
 
 fn contains_filename_token(value: &str) -> bool {

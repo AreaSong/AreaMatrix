@@ -26,9 +26,47 @@ struct ImportBatchSessionSnapshot: Equatable {
 }
 
 protocol ImportBatchSessionPersisting {
-    func saveSession(_ session: ImportBatchSessionSnapshot) async
-    func loadSession(repoPath: String) async -> ImportBatchSessionSnapshot?
-    func clearSession(repoPath: String) async
+    func saveSession(_ session: ImportBatchSessionSnapshot) async throws
+    func loadSession(repoPath: String) async throws -> ImportBatchSessionSnapshot?
+    func clearSession(repoPath: String) async throws
+}
+
+enum ImportBatchSessionStoreError: Error, Equatable {
+    enum Operation: String, Equatable {
+        case save
+        case load
+        case clear
+    }
+
+    case missing(operation: Operation)
+    case corrupt
+    case permission(operation: Operation)
+    case unsafePath(operation: Operation)
+    case io(operation: Operation, code: Int32)
+
+    var operation: Operation {
+        switch self {
+        case let .missing(operation), let .permission(operation), let .unsafePath(operation), let .io(operation, _):
+            operation
+        case .corrupt:
+            .load
+        }
+    }
+
+    var userMessage: LocalizedMessage {
+        switch self {
+        case .missing:
+            L10n.message("import.session.missing")
+        case .corrupt:
+            L10n.message("import.session.corrupt")
+        case .permission:
+            L10n.message("import.session.permission")
+        case .unsafePath:
+            L10n.message("import.session.unsafePath")
+        case .io:
+            L10n.message("import.session.io")
+        }
+    }
 }
 
 /// Stable recovery data for an import failure. The catalog key is deliberately

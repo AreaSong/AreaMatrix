@@ -8,7 +8,7 @@
 
 - macOS 14 Sonoma 或更高版本。
 - Xcode 15 或更高版本，并已安装命令行工具。
-- Rust stable 1.75 或更高版本。
+- Rust 1.88 或更高版本；仓库与 CI 构建固定使用 Rust 1.88.0。
 - Apple Silicon 或 Intel Mac。
 
 ## 获取源码

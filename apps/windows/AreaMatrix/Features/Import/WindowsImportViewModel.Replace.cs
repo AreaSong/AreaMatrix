@@ -131,8 +131,7 @@ public sealed partial class WindowsImportViewModel
         try
         {
             DesktopImportPreviewItem item = FirstReplaceConflict();
-            PendingReplaceConfirmation = await PreviewCoreSessionReplaceAsync(item, cancellationToken)
-                .ConfigureAwait(false);
+            PendingReplaceConfirmation = await PreviewCoreSessionReplaceAsync(item, cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -169,8 +168,7 @@ public sealed partial class WindowsImportViewModel
                     RepoPath,
                     ReplaceApplyRequest(confirmation.Item),
                     preview.PreviewToken,
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    cancellationToken);
             ReplaceResult = report;
             Results = ResultsFromReplaceReport(report, confirmation.Item);
 
@@ -235,8 +233,7 @@ public sealed partial class WindowsImportViewModel
         CancellationToken cancellationToken)
     {
         DesktopImportConflictBatchPreviewReport preview = await coreBridge
-            .PreviewReplaceConflictAsync(RepoPath, ReplacePreviewRequest(item), cancellationToken)
-            .ConfigureAwait(false);
+            .PreviewReplaceConflictAsync(RepoPath, ReplacePreviewRequest(item), cancellationToken);
         DesktopImportPreviewItem updatedItem = item with
         {
             ReplacePreview = preview.Items.FirstOrDefault(previewItem =>

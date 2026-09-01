@@ -3,8 +3,9 @@ use std::path::{Path, PathBuf};
 use serde_json::json;
 
 use crate::{
-    db, AiCapabilityState, AiFeatureKind, CoreError, CoreResult, RecoverableOperationContext,
-    RecoverableOperationStatus,
+    db, AiCapabilityState, AiFeatureKind, AiPrivacyEvaluationReport, AiPrivacyEvaluationRoute,
+    AiPrivacyInputField, AiPrivacySkippedReason, CoreError, CoreResult,
+    RecoverableOperationContext, RecoverableOperationStatus,
 };
 
 use super::{
@@ -20,7 +21,7 @@ use super::{
         draft_result, skipped, unavailable_after_runtime_error, unavailable_provider,
         SummaryDraftContext,
     },
-    privacy::{privacy_blocks, privacy_rule_id},
+    privacy::{matched_rule_id, privacy_blocks},
     route::select_route,
 };
 
@@ -79,30 +80,9 @@ fn generate_after_context(
             None,
         );
     }
-    if privacy_blocks(&config.privacy_policy_ref, request) {
-        return skipped(
-            &draft_context,
-            AiSummarySkipReason::PrivacyRule,
-            "Skipped by privacy rule",
-            true,
-            privacy_rule_id(request),
-        );
-    }
-
     let existing = db::load_ai_summary_metadata(repo, file.id)?
         .map(|row| row.summary_text)
         .filter(|summary| request.regenerate_existing || summary.trim().is_empty());
-    let context = build_context(repo, file, existing.as_deref(), &request.context_policy)?;
-    if !has_eligible_input(&context) {
-        return skipped(
-            &draft_context,
-            AiSummarySkipReason::NoEligibleInput,
-            "No eligible AI summary input is available",
-            true,
-            None,
-        );
-    }
-
     let Some(route) = select_route(capability, &config.provider_preference, request, repo)? else {
         return unavailable_provider(
             repo,
@@ -112,6 +92,26 @@ fn generate_after_context(
             AI_SUMMARY_FORMAT_VERSION,
         );
     };
+    let privacy = evaluate_privacy(repo, file, &route, request, existing.as_deref())?;
+    if privacy_blocks(&privacy) {
+        return skipped_by_privacy(&draft_context, privacy);
+    }
+    let context = build_context(
+        repo,
+        file,
+        existing.as_deref(),
+        &request.context_policy,
+        &privacy.sent_fields,
+    )?;
+    if !has_eligible_input(&context) {
+        return skipped(
+            &draft_context,
+            AiSummarySkipReason::NoEligibleInput,
+            "No eligible AI summary input is available after privacy filtering",
+            true,
+            None,
+        );
+    }
     ensure_summary_call_log_gate(repo)?;
     let route_for_error = route.clone();
     let draft = match execute_summary(route, repo, &context, request.content_locale.as_str()) {
@@ -133,6 +133,68 @@ fn generate_after_context(
         AI_SUMMARY_FORMAT_VERSION,
         draft,
     )
+}
+
+fn evaluate_privacy(
+    repo: &Path,
+    file: &crate::FileEntry,
+    route: &AiSummaryRoute,
+    request: &AiSummaryGenerationRequest,
+    existing_summary: Option<&str>,
+) -> CoreResult<AiPrivacyEvaluationReport> {
+    crate::ai_privacy_rules::evaluate_persisted_ai_privacy(
+        repo,
+        AiFeatureKind::AutoSummaries,
+        match route {
+            AiSummaryRoute::Local => AiPrivacyEvaluationRoute::Local,
+            AiSummaryRoute::Remote => AiPrivacyEvaluationRoute::Remote,
+        },
+        requested_privacy_fields(request, existing_summary),
+        crate::ai_privacy_rules::evaluation_context_for_file(repo, file)?,
+    )
+}
+
+fn requested_privacy_fields(
+    request: &AiSummaryGenerationRequest,
+    existing_summary: Option<&str>,
+) -> Vec<AiPrivacyInputField> {
+    let mut fields = vec![
+        AiPrivacyInputField::FileName,
+        AiPrivacyInputField::RepoRelativePath,
+    ];
+    if existing_summary.is_some_and(|summary| !summary.trim().is_empty()) {
+        fields.push(AiPrivacyInputField::AiSummary);
+    }
+    if matches!(
+        request.context_policy,
+        super::super::AiSummaryContextPolicy::MetadataAndExtractedText
+            | super::super::AiSummaryContextPolicy::MetadataTextAndNotes
+    ) {
+        fields.push(AiPrivacyInputField::ExtractedTextExcerpt);
+    }
+    if matches!(
+        request.context_policy,
+        super::super::AiSummaryContextPolicy::MetadataTextAndNotes
+    ) {
+        fields.push(AiPrivacyInputField::NoteSummary);
+        fields.push(AiPrivacyInputField::TagCategoryContext);
+    }
+    fields
+}
+
+fn skipped_by_privacy(
+    context: &SummaryDraftContext<'_>,
+    report: AiPrivacyEvaluationReport,
+) -> CoreResult<AiSummaryDraft> {
+    let rule_id = matched_rule_id(&report);
+    let reason = if report.skipped_reason == Some(AiPrivacySkippedReason::NoEligibleInput) {
+        AiSummarySkipReason::NoEligibleInput
+    } else if report.provider_gate_reason.is_some() {
+        AiSummarySkipReason::ProviderUnavailable
+    } else {
+        AiSummarySkipReason::PrivacyRule
+    };
+    skipped(context, reason, &report.message, true, rule_id)
 }
 
 fn persist_operation_context(repo: &Path, request: &AiSummaryGenerationRequest) -> CoreResult<()> {

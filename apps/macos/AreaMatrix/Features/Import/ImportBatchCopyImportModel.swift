@@ -11,6 +11,7 @@ final class ImportBatchCopyImportModel: ObservableObject, ImportProgressQueueCon
     @Published var isICloudDownloading = false
     @Published private(set) var replaceConfirmationErrorMessage: LocalizedMessage?
     @Published private(set) var replaceConfirmationDiagnosticsMessage: LocalizedMessage?
+    @Published private(set) var sessionPersistenceFailure: ImportBatchSessionStoreError?
     @Published var conflictBatchPreviewState: ImportConflictBatchPreviewState = .idle
     @Published var conflictBatchApplyResult: ImportConflictBatchApplyResult?
     @Published var conflictBatchUndoState: BatchTagUndoState = .idle
@@ -100,6 +101,7 @@ extension ImportBatchCopyImportModel {
             selectedStorageMode = request?.defaultStorageMode ?? .copy
         }
         lastFailureMapping = nil
+        sessionPersistenceFailure = nil
         clearReplaceConfirmationRecovery()
         if case .imported = status {
             return
@@ -126,15 +128,17 @@ extension ImportBatchCopyImportModel {
             componentID: "macos.import.batch"
         )
         lastFailureMapping = nil
+        sessionPersistenceFailure = nil
         await actionLogger.recordUIAction(traceContext: actionContext)
-        await saveImportSession(
+        if let failure = await initialImportSessionFailure(
             request: request,
-            completed: 0,
-            failed: 0,
             total: total,
             currentPath: currentImportPath ?? request.sheetTitle
-        )
-        let runState = await importReadyRows(
+        ) {
+            recordSessionPersistenceFailure(failure)
+            return nil
+        }
+        var runState = await importReadyRows(
             input: ImportBatchCopyRunInput(
                 readyRowIDs: readyRowIDs,
                 request: request,
@@ -152,8 +156,12 @@ extension ImportBatchCopyImportModel {
         } else {
             status = .idle
         }
-        if shouldClearImportSession(runState: runState, total: total) {
-            await sessionStore.clearSession(repoPath: request.repoPath)
+        if let failure = await clearImportSessionFailure(
+            shouldClear: shouldClearImportSession(runState: runState, total: total),
+            repoPath: request.repoPath
+        ) {
+            recordSessionPersistenceFailure(failure)
+            runState.sessionPersistenceFailure = failure
         }
         return importResult(
             runState: runState,
@@ -177,7 +185,8 @@ extension ImportBatchCopyImportModel {
             skippedDuplicateCount: skippedDuplicateCount,
             pendingICloudCount: pendingICloudCount,
             didStopAfterCurrentFile: runState.didStopAfterCurrentFile,
-            fatalRetryContext: runState.fatalRetryContext
+            fatalRetryContext: runState.fatalRetryContext,
+            sessionPersistenceFailure: runState.sessionPersistenceFailure
         )
     }
 
@@ -231,6 +240,7 @@ extension ImportBatchCopyImportModel {
         state.failed = cycle.failed
         state.lastImportedPath = cycle.lastImportedPath ?? state.lastImportedPath
         state.stoppedForDuplicate = cycle.stoppedForDuplicate
+        state.sessionPersistenceFailure = cycle.sessionPersistenceFailure
         if let entry = cycle.entry {
             state.succeededEntries.append(entry)
         }
@@ -245,6 +255,7 @@ extension ImportBatchCopyImportModel {
 
     private func shouldClearImportSession(runState: ImportBatchCopyRunState, total: Int) -> Bool {
         !runState.stoppedForDuplicate
+            && runState.sessionPersistenceFailure == nil
             && (runState.didStopAfterCurrentFile || runState.completed + runState.failed >= total)
     }
 
@@ -253,7 +264,9 @@ extension ImportBatchCopyImportModel {
         controlState: ImportProgressControlState?,
         reportProgress: @escaping @MainActor (ImportBatchProgressSnapshot) -> Void
     ) -> Bool {
-        if state.stoppedForDuplicate || state.fatalRetryContext != nil { return true }
+        if state.stoppedForDuplicate || state.fatalRetryContext != nil || state.sessionPersistenceFailure != nil {
+            return true
+        }
         guard controlState?.isStopAfterCurrentFileRequested == true else { return false }
         controlState?.markStoppedAfterCurrentFile()
         state.didStopAfterCurrentFile = true
@@ -309,14 +322,20 @@ extension ImportBatchCopyImportModel {
         )
         rows[rowIndex].status = .imported
         rows[rowIndex].importCommitState = entry.importCommitState
-        let result = ImportBatchCopyCycleResult.success(
+        var result = ImportBatchCopyCycleResult.success(
             entry: entry,
             completed: input.completed + 1,
             failed: input.failed,
             total: input.total,
             currentPath: currentPath
         )
-        await saveImportSession(from: result, request: input.request)
+        do {
+            try await saveImportSession(from: result, request: input.request)
+        } catch {
+            let failure = normalizedSessionStoreError(error, operation: .save)
+            recordSessionPersistenceFailure(failure)
+            result.sessionPersistenceFailure = failure
+        }
         return result
     }
 
@@ -337,14 +356,20 @@ extension ImportBatchCopyImportModel {
         let mapping = await mapImportError(error)
         lastFailureMapping = mapping
         rows[rowIndex].status = .error(.localized(mapping.userMessageDescriptor))
-        let result = ImportBatchCopyCycleResult.failure(
+        var result = ImportBatchCopyCycleResult.failure(
             completed: input.completed,
             failed: input.failed + 1,
             total: input.total,
             currentPath: currentPath,
             stoppedForQueue: mapping.recoverability == .fatal
         )
-        await saveImportSession(from: result, request: input.request)
+        do {
+            try await saveImportSession(from: result, request: input.request)
+        } catch {
+            let failure = normalizedSessionStoreError(error, operation: .save)
+            recordSessionPersistenceFailure(failure)
+            result.sessionPersistenceFailure = failure
+        }
         return result
     }
 
@@ -421,6 +446,35 @@ extension ImportBatchCopyImportModel {
 
     func clearLastFailureMapping() {
         lastFailureMapping = nil
+    }
+
+    func sessionFailureMapping(_ failure: ImportBatchSessionStoreError) -> CoreErrorMappingSnapshot {
+        CoreErrorMappingSnapshot(
+            kind: .io,
+            userMessage: failure.userMessage,
+            severity: .critical,
+            suggestedAction: L10n.message("import.session.retryAction"),
+            recoverability: .fatal,
+            rawContext: "import-session-\(failure.operation.rawValue)"
+        )
+    }
+
+    private func recordSessionPersistenceFailure(
+        _ error: Error,
+        operation: ImportBatchSessionStoreError.Operation
+    ) {
+        recordSessionPersistenceFailure(normalizedSessionStoreError(error, operation: operation))
+    }
+
+    private func recordSessionPersistenceFailure(_ failure: ImportBatchSessionStoreError) {
+        sessionPersistenceFailure = failure
+    }
+
+    private func normalizedSessionStoreError(
+        _ error: Error,
+        operation: ImportBatchSessionStoreError.Operation
+    ) -> ImportBatchSessionStoreError {
+        (error as? ImportBatchSessionStoreError) ?? .io(operation: operation, code: 0)
     }
 
     func finishImportedStatus(successful: Int, failed: Int) {

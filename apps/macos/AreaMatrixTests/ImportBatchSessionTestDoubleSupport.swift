@@ -25,20 +25,30 @@ struct ImportBatchSavedSessionExpectation {
 
 actor StaticImportBatchSessionStore: ImportBatchSessionPersisting {
     private let session: ImportBatchSessionSnapshot?
+    private let loadFailure: ImportBatchSessionStoreError?
+    private let clearFailure: ImportBatchSessionStoreError?
     private var cleared: [String] = []
 
-    init(session: ImportBatchSessionSnapshot?) {
+    init(
+        session: ImportBatchSessionSnapshot?,
+        loadFailure: ImportBatchSessionStoreError? = nil,
+        clearFailure: ImportBatchSessionStoreError? = nil
+    ) {
         self.session = session
+        self.loadFailure = loadFailure
+        self.clearFailure = clearFailure
     }
 
-    func saveSession(_: ImportBatchSessionSnapshot) async {}
+    func saveSession(_: ImportBatchSessionSnapshot) async throws {}
 
-    func loadSession(repoPath: String) async -> ImportBatchSessionSnapshot? {
+    func loadSession(repoPath: String) async throws -> ImportBatchSessionSnapshot? {
+        if let loadFailure { throw loadFailure }
         guard session?.repoPath == repoPath else { return nil }
         return session
     }
 
-    func clearSession(repoPath: String) {
+    func clearSession(repoPath: String) async throws {
+        if let clearFailure { throw clearFailure }
         cleared.append(repoPath)
     }
 
@@ -58,17 +68,33 @@ actor RecordingImportBatchSessionStore: ImportBatchSessionPersisting {
     private var saved: [ImportBatchSessionSnapshot] = []
     private var cleared: [String] = []
     private var sessionsByRepoPath: [String: ImportBatchSessionSnapshot] = [:]
+    private let failingSaveCalls: Set<Int>
+    private let clearFailure: ImportBatchSessionStoreError?
+    private var saveCallCount = 0
 
-    func saveSession(_ session: ImportBatchSessionSnapshot) async {
+    init(
+        failingSaveCalls: Set<Int> = [],
+        clearFailure: ImportBatchSessionStoreError? = nil
+    ) {
+        self.failingSaveCalls = failingSaveCalls
+        self.clearFailure = clearFailure
+    }
+
+    func saveSession(_ session: ImportBatchSessionSnapshot) async throws {
+        saveCallCount += 1
+        if failingSaveCalls.contains(saveCallCount) {
+            throw ImportBatchSessionStoreError.io(operation: .save, code: 5)
+        }
         saved.append(session)
         sessionsByRepoPath[session.repoPath] = session
     }
 
-    func loadSession(repoPath: String) async -> ImportBatchSessionSnapshot? {
+    func loadSession(repoPath: String) async throws -> ImportBatchSessionSnapshot? {
         sessionsByRepoPath[repoPath]
     }
 
-    func clearSession(repoPath: String) async {
+    func clearSession(repoPath: String) async throws {
+        if let clearFailure { throw clearFailure }
         cleared.append(repoPath)
         sessionsByRepoPath[repoPath] = nil
     }

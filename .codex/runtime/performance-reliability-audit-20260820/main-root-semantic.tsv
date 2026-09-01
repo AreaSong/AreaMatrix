@@ -1,0 +1,11 @@
+.gitignore	PASS	1-80	semantic-reviewer	冻结 SHA 匹配；全文审阅。仅定义本地构建产物、缓存、凭据和生成物排除范围，未引入运行时代码、扫描循环或性能门禁漂移。
+.gitleaks.toml	PASS	1-29	semantic-reviewer	冻结 SHA 匹配；全文审阅。仅包含 secret scan 规则与逐项 allowlist；未发现会掩盖性能门禁、导致无界扫描或长期资源占用的配置。
+CHANGELOG.md	PASS	1-135	semantic-reviewer	冻结 SHA 匹配；全文审阅。历史版本记录不含可执行路径；性能、CI、平台与稳定性描述未发现可形成独立 finding 的当前错误声明。
+CODE_OF_CONDUCT.md	NOT_APPLICABLE	1-83	semantic-reviewer	冻结 SHA 匹配；全文审阅。社区行为准则和执法流程不定义产品运行时、构建、benchmark、并发或资源生命周期行为。
+CODE_REVIEW.md	PASS	1-96	semantic-reviewer	冻结 SHA 匹配；全文审阅。评审门禁明确覆盖正确性、性能、并发、资源释放、测试和平台缺口；未发现与当前性能规范冲突的声明。
+COMMERCIAL_LICENSE.md	NOT_APPLICABLE	1-149	semantic-reviewer	冻结 SHA 匹配；全文审阅。商业许可条款不定义产品运行时、构建、benchmark、并发或资源生命周期行为。
+CONTRIBUTING.md	PASS	1-178	semantic-reviewer	冻结 SHA 匹配；全文审阅。贡献流程正确区分普通检查和显式性能门禁；未发现把 lint/测试成功误当性能通过的声明。
+LICENSE	NOT_APPLICABLE	1-114	semantic-reviewer	冻结 SHA 匹配；全文审阅。Apache-2.0 法律许可文本不定义产品运行时、构建、benchmark、并发或资源生命周期行为。
+README.md	PASS	1-113	semantic-reviewer	冻结 SHA 匹配；全文审阅。项目入口、平台成熟度与验证导航未作超出现有文档和门禁的性能通过声明。
+README.zh-CN.md	PASS	1-113	semantic-reviewer	冻结 SHA 匹配；全文审阅。中文项目入口、平台成熟度与验证导航未作超出现有文档和门禁的性能通过声明。
+SECURITY.md	PASS	1-167	semantic-reviewer	冻结 SHA 匹配；全文审阅。安全报告、隐私与供应链门禁未引入运行时热路径；对凭据、外部服务及证据边界的描述未发现性能/稳定性漂移。

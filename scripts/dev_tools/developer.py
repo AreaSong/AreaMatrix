@@ -165,7 +165,7 @@ def _print_changed_plan(paths: list[str], layers: list[str]) -> None:
     if "developer-tools" in layers:
         print("- developer-tools: Python developer-tool regression suite")
     if "rust-core" in layers:
-        print("- rust-core: cargo test --workspace in validation lane")
+        print("- rust-core: cargo test --locked --workspace in validation lane")
     if "macos-client" in layers:
         print("- macos-client: AreaMatrixModules SwiftPM tests + localization contract + persistent-DerivedData XCTest")
     if "ios-client" in layers:
@@ -195,7 +195,7 @@ def run_changed_tests(root: Path, *, list_only: bool = False) -> int:
     if "rust-core" in layers:
         with cargo_lane_lock(root, lane="validation", operation="changed-tests"):
             proc = run_step(
-                ["cargo", "test", "--manifest-path", "core/Cargo.toml", "--workspace"],
+                ["cargo", "test", "--locked", "--manifest-path", "core/Cargo.toml", "--workspace"],
                 cwd=root,
                 check=False,
                 env={"CARGO_TARGET_DIR": str(cargo_target_dir(root, lane="validation"))},

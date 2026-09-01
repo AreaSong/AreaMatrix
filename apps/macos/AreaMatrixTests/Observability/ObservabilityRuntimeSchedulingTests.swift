@@ -3,6 +3,25 @@ import XCTest
 
 final class ObservabilityRuntimeSchedulingTests: XCTestCase {
     @MainActor
+    func testWaitForRuntimeConditionStopsPromptlyWhenCancelled() async {
+        let waiter = Task { @MainActor in
+            await waitForRuntimeCondition(
+                "cancelled runtime condition",
+                timeout: .seconds(30),
+                pollInterval: .seconds(1)
+            ) {
+                false
+            }
+        }
+
+        try? await Task.sleep(for: .milliseconds(20))
+        waiter.cancel()
+
+        let result = await waiter.value
+        XCTAssertFalse(result)
+    }
+
+    @MainActor
     func testTimedLeaseRevertsAtExactExpiryWithoutRealSleep() async throws {
         let core = ObservabilityRuntimeCoreSpy()
         let scheduler = TestObservabilityRuntimeScheduler(wallMilliseconds: 1000)
@@ -16,14 +35,14 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
         )
         await fixture.hub.configure(.runtimeMode(.diagnostic, lease: lease))
 
-        fixture.runtime.start()
-        let didScheduleLease = await waitForRuntimeCondition {
-            fixture.runtime.state == .running && scheduler.pendingSleepMilliseconds() == [1000]
+        await fixture.startRuntime()
+        let didScheduleLease = await waitForRuntimeCondition("timed lease scheduling") {
+            scheduler.pendingSleepMilliseconds() == [1000]
         }
         XCTAssertTrue(didScheduleLease)
         scheduler.setTime(wallMilliseconds: 2000)
         XCTAssertTrue(scheduler.resumeFirstSleep(milliseconds: 1000))
-        let didRevert = await waitForRuntimeCondition {
+        let didRevert = await waitForRuntimeCondition("timed lease reversion") {
             await (fixture.hub.configurationSnapshot()).mode == .standard
         }
         let updatedModes = await core.updatedModes()
@@ -38,9 +57,8 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler(wallMilliseconds: 1000)
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
         let firstLease = AppObservabilityModeLease(
             policy: .timed,
             activatedAtMilliseconds: 1000,
@@ -55,12 +73,12 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
         )
 
         try await fixture.runtime.update(.runtimeMode(.diagnostic, lease: firstLease))
-        let didScheduleFirstLease = await waitForRuntimeCondition {
+        let didScheduleFirstLease = await waitForRuntimeCondition("first timed lease scheduling") {
             scheduler.pendingSleepMilliseconds() == [1000]
         }
         XCTAssertTrue(didScheduleFirstLease)
         try await fixture.runtime.update(.runtimeMode(.developer, lease: secondLease))
-        let didReplaceLease = await waitForRuntimeCondition {
+        let didReplaceLease = await waitForRuntimeCondition("replacement timed lease scheduling") {
             scheduler.pendingSleepMilliseconds() == [2000]
         }
         XCTAssertTrue(didReplaceLease)
@@ -69,7 +87,7 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
 
         scheduler.setTime(wallMilliseconds: 3000)
         XCTAssertTrue(scheduler.resumeFirstSleep(milliseconds: 2000))
-        let didRevert = await waitForRuntimeCondition {
+        let didRevert = await waitForRuntimeCondition("replacement lease reversion") {
             await (fixture.hub.configurationSnapshot()).mode == .standard
         }
         let updatedModes = await core.updatedModes()
@@ -84,9 +102,8 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler()
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
         let manual = AppObservabilityModeLease(
             policy: .manual,
             activatedAtMilliseconds: 1000,
@@ -113,9 +130,8 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler(wallMilliseconds: 1000)
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
         let lease = AppObservabilityModeLease(
             policy: .timed,
             activatedAtMilliseconds: 1000,
@@ -123,7 +139,7 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
             expiresAtMilliseconds: 2000
         )
         try await fixture.runtime.update(.runtimeMode(.diagnostic, lease: lease))
-        let didScheduleLease = await waitForRuntimeCondition {
+        let didScheduleLease = await waitForRuntimeCondition("pending lease before stop") {
             scheduler.pendingSleepMilliseconds() == [1000]
         }
         XCTAssertTrue(didScheduleLease)
@@ -147,9 +163,8 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler(wallMilliseconds: 1000)
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
         let lease = AppObservabilityModeLease(
             policy: .timed,
             activatedAtMilliseconds: 1000,
@@ -157,13 +172,13 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
             expiresAtMilliseconds: 2000
         )
         try await fixture.runtime.update(.runtimeMode(.developer, lease: lease))
-        let didScheduleLease = await waitForRuntimeCondition {
+        let didScheduleLease = await waitForRuntimeCondition("failing lease reversion scheduling") {
             scheduler.pendingSleepMilliseconds() == [1000]
         }
         XCTAssertTrue(didScheduleLease)
         scheduler.setTime(wallMilliseconds: 2000)
         XCTAssertTrue(scheduler.resumeFirstSleep(milliseconds: 1000))
-        let didReportFailure = await waitForRuntimeCondition {
+        let didReportFailure = await waitForRuntimeCondition("stable lease failure health issue") {
             let health = await fixture.runtime.health()
             return health.issues.contains(ObservabilityHealthIssue(
                 source: .runtime,
@@ -190,13 +205,12 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler(uptimeNanoseconds: 1_000_000)
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
 
         let stopTask = Task { await fixture.runtime.stop(deadline: .milliseconds(50)) }
         await core.waitUntilFlushEntered()
-        let didScheduleTimeout = await waitForRuntimeCondition {
+        let didScheduleTimeout = await waitForRuntimeCondition("stop deadline scheduling") {
             scheduler.pendingSleepMilliseconds().contains(50)
         }
         XCTAssertTrue(didScheduleTimeout)
@@ -232,9 +246,8 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler(uptimeNanoseconds: 1)
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
         let report = await fixture.runtime.stop(deadline: .milliseconds(Int64.max))
         let flushDeadlines = await core.recordedFlushDeadlines()
         let deadline = try XCTUnwrap(flushDeadlines.first)
@@ -253,9 +266,8 @@ final class ObservabilityRuntimeSchedulingTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler(uptimeNanoseconds: 1_000_000)
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
         let report = await fixture.runtime.stop(deadline: deadline)
 
         XCTAssertTrue(report.succeeded)

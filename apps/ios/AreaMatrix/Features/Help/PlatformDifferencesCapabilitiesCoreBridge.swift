@@ -174,13 +174,13 @@ enum PlatformDifferencesCapabilitiesSDKMapping {
             return capabilityError
         }
         guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
-            return .unavailable(error.localizedDescription)
+            return .unavailable("Capability snapshot is unavailable.")
         }
         switch coreError {
         case let .Config(reason), let .Validation(reason):
             return .config(reason)
         default:
-            return .unavailable(String(describing: coreError))
+            return .unavailable("Capability snapshot is unavailable.")
         }
     }
 }

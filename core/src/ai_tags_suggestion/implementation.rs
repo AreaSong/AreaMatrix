@@ -1,13 +1,17 @@
 use std::path::{Path, PathBuf};
 
 use crate::{
-    db, AiCapabilityState, AiFeatureKind, AiProviderPreference, CoreError, CoreResult, FileEntry,
-    RemoteProviderConfigSnapshot,
+    db, AiCapabilityState, AiFeatureKind, AiPrivacyDecision, AiPrivacyEvaluationReport,
+    AiPrivacyEvaluationRoute, AiPrivacySkippedReason, AiProviderPreference, CoreError, CoreResult,
+    FileEntry, RemoteProviderConfigSnapshot,
 };
 
 use super::{
     call_log::{ensure_tag_call_log_gate, insert_tag_call_log, TagCallLogDraft},
-    context::{build_context, has_eligible_input, AiTagSuggestionContext},
+    context::{
+        build_context, filter_context, has_eligible_input, requested_privacy_fields,
+        AiTagSuggestionContext,
+    },
     executor::{execute_local, execute_remote, AiTagRuntimeDraft},
     normalize_tag_slug,
     report::{base_report, build_suggestions, TagReportBuilder},
@@ -51,17 +55,6 @@ pub(super) fn suggest_tags_with_ai(
             None,
         );
     }
-    if privacy_blocks(&ai_config.config.privacy_policy_ref, &request) {
-        return skipped(
-            &repo,
-            &file,
-            AiTagSuggestionSkipReason::PrivacyRule,
-            "Skipped by privacy rule",
-            true,
-            privacy_rule_id(&request),
-        );
-    }
-
     let context =
         build_context(&repo, &file, &request.candidate_tags).map_err(map_metadata_error)?;
     if !has_eligible_input(&context) {
@@ -79,6 +72,21 @@ pub(super) fn suggest_tags_with_ai(
     else {
         return unavailable_provider(&repo, &file);
     };
+    let privacy = evaluate_privacy(&repo, &file, &route, &context, &request.candidate_tags)?;
+    if privacy.decision != AiPrivacyDecision::Allowed {
+        return skipped_by_privacy(&repo, &file, privacy);
+    }
+    let context = filter_context(context, &privacy.sent_fields);
+    if !has_eligible_input(&context) {
+        return skipped(
+            &repo,
+            &file,
+            AiTagSuggestionSkipReason::NoEligibleInput,
+            "No eligible AI tag input is available after privacy filtering",
+            true,
+            None,
+        );
+    }
     ensure_tag_call_log_gate(&repo)?;
     let route_for_error = route.clone();
     let draft = match execute_tags(route, &repo, &context, request.content_locale.as_str()) {
@@ -117,21 +125,48 @@ fn tag_capability(capabilities: &[AiCapabilityState]) -> CoreResult<&AiCapabilit
         .ok_or_else(|| CoreError::config("AI tag capability is not configured"))
 }
 
-fn privacy_blocks(config_ref: &Option<String>, request: &AiTagSuggestionRequest) -> bool {
-    let reference = request.privacy_policy_ref.as_ref().or(config_ref.as_ref());
-    reference.is_some_and(|value| {
-        let normalized = value.to_ascii_lowercase();
-        normalized.contains("block")
-            || normalized.contains("deny")
-            || normalized.contains("private")
-    })
+fn evaluate_privacy(
+    repo: &Path,
+    file: &FileEntry,
+    route: &AiTagSuggestionRoute,
+    context: &AiTagSuggestionContext,
+    candidate_tags: &[String],
+) -> CoreResult<AiPrivacyEvaluationReport> {
+    let mut evaluation_context = crate::ai_privacy_rules::evaluation_context_for_file(repo, file)?;
+    for tag in candidate_tags {
+        if !evaluation_context.tags.contains(tag) {
+            evaluation_context.tags.push(tag.clone());
+        }
+    }
+    crate::ai_privacy_rules::evaluate_persisted_ai_privacy(
+        repo,
+        AiFeatureKind::AutoTags,
+        match route {
+            AiTagSuggestionRoute::Local => AiPrivacyEvaluationRoute::Local,
+            AiTagSuggestionRoute::Remote => AiPrivacyEvaluationRoute::Remote,
+        },
+        requested_privacy_fields(context),
+        evaluation_context,
+    )
 }
 
-fn privacy_rule_id(request: &AiTagSuggestionRequest) -> Option<String> {
-    request
-        .privacy_policy_ref
-        .as_ref()
-        .map(|value| format!("rule:{value}"))
+fn skipped_by_privacy(
+    repo: &Path,
+    file: &FileEntry,
+    report: AiPrivacyEvaluationReport,
+) -> CoreResult<AiTagSuggestionReport> {
+    let rule_id = report
+        .matched_rules
+        .first()
+        .map(|rule| rule.rule_id.clone());
+    let reason = if report.skipped_reason == Some(AiPrivacySkippedReason::NoEligibleInput) {
+        AiTagSuggestionSkipReason::NoEligibleInput
+    } else if report.provider_gate_reason.is_some() {
+        AiTagSuggestionSkipReason::ProviderUnavailable
+    } else {
+        AiTagSuggestionSkipReason::PrivacyRule
+    };
+    skipped(repo, file, reason, &report.message, true, rule_id)
 }
 
 fn select_route(
@@ -263,7 +298,7 @@ fn unavailable_provider(repo: &Path, file: &FileEntry) -> CoreResult<AiTagSugges
             route: None,
             status: "unavailable",
             sent_fields: &[],
-            privacy_rules_checked: true,
+            privacy_rules_checked: false,
             privacy_rule_id: None,
             result_summary: "AI tag provider is unavailable",
             error_code: Some("ProviderUnavailable"),

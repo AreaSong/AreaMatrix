@@ -13,6 +13,8 @@ public static class RepositorySettingsViewModelTests
         await PageSaveActionTriggersUpdateConfig();
         await SavesRepositoryConfigThroughUpdateConfig();
         await PageExportDiagnosticsUsesRepositorySettingsSnapshot();
+        await RealDiagnosticsExporterRejectsSymlinkedGeneratedDirectoryAndRedactsPath();
+        await RealDiagnosticsExporterUsesRelativeResultAndRedactsAbsolutePath();
         await EmptyRepositoryShowsNoConnectedState();
         LinuxSettingsPageDeclaresPlatformCapabilitiesCoreAndRepositorySettingsCoreClosure();
     }
@@ -154,6 +156,69 @@ public static class RepositorySettingsViewModelTests
         TestAssert.Equal(RepositorySettingsStatus.Empty, model.Status, nameof(model.Status));
         TestAssert.False(model.CanExportDiagnostics, nameof(model.CanExportDiagnostics));
         TestAssert.Empty(bridge.LoadedConfigPaths, nameof(bridge.LoadedConfigPaths));
+    }
+
+    private static async Task RealDiagnosticsExporterRejectsSymlinkedGeneratedDirectoryAndRedactsPath()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"areamatrix-linux-diagnostics-{Guid.NewGuid():N}");
+        string external = Path.Combine(Path.GetTempPath(), $"areamatrix-linux-diagnostics-external-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, ".areamatrix"));
+        Directory.CreateDirectory(external);
+        string sentinel = Path.Combine(external, "sentinel.txt");
+        await File.WriteAllTextAsync(sentinel, "external-sentinel");
+        try
+        {
+            Directory.CreateSymbolicLink(Path.Combine(root, ".areamatrix", "generated"), external);
+            FakeLinuxRepositoryCoreBridge bridge = new(
+                LinuxRepositoryValidationSamples.Initialized(root),
+                LinuxDiagnosticsCapabilities());
+            RepositorySettingsViewModel model = new(bridge, bridge, root);
+            await model.LoadAsync();
+            RepositorySettingsSnapshot snapshot = model.Snapshot!;
+
+            bool rejected = false;
+            try
+            {
+                await new LinuxRepositorySettingsDiagnosticsExporter().ExportAsync(snapshot);
+            }
+            catch (LinuxRepositoryCoreException)
+            {
+                rejected = true;
+            }
+
+            TestAssert.True(rejected, "symlinked generated directory must fail closed");
+            TestAssert.Equal("external-sentinel", await File.ReadAllTextAsync(sentinel), "external sentinel");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+            Directory.Delete(external, recursive: true);
+        }
+    }
+
+    private static async Task RealDiagnosticsExporterUsesRelativeResultAndRedactsAbsolutePath()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"areamatrix-linux-diagnostics-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, ".areamatrix"));
+        try
+        {
+            FakeLinuxRepositoryCoreBridge bridge = new(
+                LinuxRepositoryValidationSamples.Initialized(root),
+                LinuxDiagnosticsCapabilities());
+            RepositorySettingsViewModel model = new(bridge, bridge, root);
+            await model.LoadAsync();
+            RepositorySettingsSnapshot snapshot = model.Snapshot!;
+
+            string result = await new LinuxRepositorySettingsDiagnosticsExporter().ExportAsync(snapshot);
+            string outputPath = Path.Combine(root, result);
+            string contents = await File.ReadAllTextAsync(outputPath);
+            TestAssert.False(result.Contains(root, StringComparison.Ordinal), "diagnostics result path redaction");
+            TestAssert.False(contents.Contains(root, StringComparison.Ordinal), "diagnostics content path redaction");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     private static void LinuxSettingsPageDeclaresPlatformCapabilitiesCoreAndRepositorySettingsCoreClosure()

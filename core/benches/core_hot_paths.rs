@@ -82,8 +82,7 @@ fn core_observability_one_hundred_thousand_events_bench() {
     assert_eq!(health.redaction_rejected, 0);
     assert!(health.callback_connected);
     eprintln!(
-        "CORE_HOT_PATH_BENCH name=\"observability 100k delivery accounting\" submitted={} delivered={} dropped={}",
-        EVENT_COUNT, delivered_count, dropped_count
+        "CORE_HOT_PATH_BENCH name=\"observability 100k delivery accounting\" submitted={EVENT_COUNT} delivered={delivered_count} dropped={dropped_count}"
     );
     report_ms(
         "observability 100k submit + delivery",

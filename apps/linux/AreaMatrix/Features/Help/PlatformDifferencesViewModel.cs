@@ -188,6 +188,10 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
                 .GetPlatformCapabilitiesAsync(HostPlatform, AppVersion, cancellationToken)
                 .ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception error)
         {
             Capabilities = PlatformDifferencesCapabilitiesDisplay.UnknownSnapshot(
@@ -214,6 +218,11 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
                 .InspectBindingContractAsync(SelectedTargetPlatform, BindingVersion, cancellationToken)
                 .ConfigureAwait(false);
             Status = PlatformDifferencesContractStatus.Loaded;
+        }
+        catch (OperationCanceledException)
+        {
+            Status = PlatformDifferencesContractStatus.Idle;
+            throw;
         }
         catch (Exception error)
         {

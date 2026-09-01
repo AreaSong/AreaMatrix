@@ -293,7 +293,7 @@ fn validate_filter(filter: &SearchFilter) -> CoreResult<()> {
         && filter
             .current_path
             .as_deref()
-            .map_or(true, |path| path.trim().is_empty() || path.contains('\0'))
+            .is_none_or(|path| path.trim().is_empty() || path.contains('\0'))
     {
         return Err(CoreError::config(
             "semantic search current path is required for current-node scope",

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Darwin
 
 enum RepositorySettingsState: Equatable, Sendable {
     case loading
@@ -46,33 +47,25 @@ protocol RepositorySettingsDiagnosticsExporting: Sendable {
 
 actor FileRepositorySettingsDiagnosticsExporter: RepositorySettingsDiagnosticsExporting {
     func export(snapshot: RepositorySettingsSnapshot) async throws -> String {
-        let repositoryURL = URL(fileURLWithPath: snapshot.location, isDirectory: true)
-        guard FileManager.default.fileExists(atPath: repositoryURL.path) else {
-            throw MobileRepositoryConnectionError.invalidPath(snapshot.location)
+        do {
+            return try MobileDiagnosticsFileSafety.write(
+                repoPath: snapshot.location,
+                prefix: "repository-settings",
+                lines: Self.diagnosticLines(for: snapshot)
+            )
+        } catch let error as MobileRepositoryConnectionError {
+            throw error
+        } catch {
+            throw MobileRepositoryConnectionError.permissionDenied(snapshot.location)
         }
-
-        let diagnosticsURL = repositoryURL
-            .appendingPathComponent(".areamatrix", isDirectory: true)
-            .appendingPathComponent("generated", isDirectory: true)
-            .appendingPathComponent("diagnostics", isDirectory: true)
-        try FileManager.default.createDirectory(at: diagnosticsURL, withIntermediateDirectories: true)
-
-        let outputURL = diagnosticsURL.appendingPathComponent(outputFilename())
-        let contents = Self.diagnosticLines(for: snapshot).joined(separator: "\n") + "\n"
-        try contents.write(to: outputURL, atomically: true, encoding: .utf8)
-        return outputURL.path
-    }
-
-    private func outputFilename() -> String {
-        "repository-settings-\(Int(Date().timeIntervalSince1970 * 1000)).txt"
     }
 
     private static func diagnosticLines(for snapshot: RepositorySettingsSnapshot) -> [String] {
         [
             "AreaMatrix repository settings diagnostics",
             "No user file contents are included.",
-            "Name: \(snapshot.name)",
-            "Location: \(snapshot.location)",
+            "Name: [redacted]",
+            "Location: [redacted]",
             "Type: \(snapshot.locationType)",
             "Last opened: \(snapshot.lastOpened)",
             "Core version: \(snapshot.coreVersion)",
@@ -84,6 +77,113 @@ actor FileRepositorySettingsDiagnosticsExporter: RepositorySettingsDiagnosticsEx
             "Platform: \(snapshot.capabilities.platform.rawValue)",
             "App version: \(snapshot.capabilities.appVersion)"
         ]
+    }
+}
+
+private enum MobileDiagnosticsFileSafety {
+    static func write(repoPath: String, prefix: String, lines: [String]) throws -> String {
+        guard !repoPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw MobileRepositoryConnectionError.invalidPath(repoPath)
+        }
+
+        let rootPath = URL(fileURLWithPath: repoPath, isDirectory: true).standardizedFileURL.path
+        let rootFD = try openDirectory(path: rootPath)
+        defer { close(rootFD) }
+        let metadataFD = try openChild(parentFD: rootFD, name: ".areamatrix", create: true)
+        defer { close(metadataFD) }
+        let generatedFD = try openChild(parentFD: metadataFD, name: "generated", create: true)
+        defer { close(generatedFD) }
+        let diagnosticsFD = try openChild(parentFD: generatedFD, name: "diagnostics", create: true)
+        defer { close(diagnosticsFD) }
+
+        let filename = "\(prefix)-\(UUID().uuidString)-\(Int(Date().timeIntervalSince1970 * 1000)).txt"
+        let fd = filename.withCString { name in
+            openat(
+                diagnosticsFD,
+                name,
+                O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+                S_IRUSR | S_IWUSR
+            )
+        }
+        guard fd >= 0 else { throw POSIXDiagnosticsError(errno: errno) }
+
+        let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+        var completed = false
+        do {
+            let contents = Data((lines.joined(separator: "\n") + "\n").utf8)
+            guard contents.count <= 128 * 1024 else {
+                throw POSIXDiagnosticsError(errno: EFBIG)
+            }
+            try handle.write(contentsOf: contents)
+            try handle.synchronize()
+            try handle.close()
+            completed = true
+        } catch {
+            try? handle.close()
+            if !completed {
+                _ = filename.withCString { name in unlinkat(diagnosticsFD, name, 0) }
+            }
+            throw error
+        }
+
+        // Return only a repository-relative display token. The absolute output
+        // path is sensitive and is not part of the standalone diagnostics contract.
+        return ".areamatrix/generated/diagnostics/\(filename)"
+    }
+
+    private static func openDirectory(path: String) throws -> Int32 {
+        guard path.hasPrefix("/") else { throw POSIXDiagnosticsError(errno: EINVAL) }
+        try rejectUntrustedSymlinkAncestors(path)
+        let fd = path.withCString { pointer in
+            open(pointer, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        }
+        guard fd >= 0 else { throw POSIXDiagnosticsError(errno: errno) }
+        return fd
+    }
+
+    private static func rejectUntrustedSymlinkAncestors(_ path: String) throws {
+        var current = URL(fileURLWithPath: "/", isDirectory: true)
+        for component in path.split(separator: "/") {
+            current.appendPathComponent(String(component), isDirectory: true)
+            var info = stat()
+            let result = current.path.withCString { pointer in
+                lstat(pointer, &info)
+            }
+            if result != 0 {
+                if errno == ENOENT { continue }
+                throw POSIXDiagnosticsError(errno: errno)
+            }
+            let isSymlink = (info.st_mode & S_IFMT) == S_IFLNK
+            let isAllowedAlias = current.path == "/tmp" || current.path == "/var"
+            if isSymlink && !isAllowedAlias {
+                throw POSIXDiagnosticsError(errno: ELOOP)
+            }
+        }
+    }
+
+    private static func openChild(parentFD: Int32, name: String, create: Bool) throws -> Int32 {
+        var fd = name.withCString { component in
+            openat(parentFD, component, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        }
+        if fd < 0, errno == ENOENT, create {
+            let created = name.withCString { component in mkdirat(parentFD, component, 0o700) }
+            guard created == 0 || errno == EEXIST else {
+                throw POSIXDiagnosticsError(errno: errno)
+            }
+            fd = name.withCString { component in
+                openat(parentFD, component, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+            }
+        }
+        guard fd >= 0 else { throw POSIXDiagnosticsError(errno: errno) }
+        return fd
+    }
+}
+
+private struct POSIXDiagnosticsError: Error {
+    let code: Int32
+
+    init(errno: Int32) {
+        code = errno
     }
 }
 

@@ -1,0 +1,86 @@
+{
+  "audit_id": "ci-governance-release-recovery-audit-20260820",
+  "started_at": "2026-08-20T04:46:21+08:00",
+  "finalized_at": "2026-08-20T05:50:00+08:00",
+  "mode": "read-only-audit",
+  "status": "BLOCKED",
+  "repository": "/Users/as/Ai-Project/project/AreaMatrix",
+  "scope_definition": "Tracked repository files plus untracked user files under repository root, classified individually; build caches and binary/generated artifacts are inventoried and individually marked NOT_APPLICABLE with provenance checks.",
+  "manual_review_requirement": "Every in-scope text file requires a recorded exact line interval; binary, screenshot, archive, xcresult, generated JSON and historical logs require individual provenance classification.",
+  "remote_write_policy": "forbidden",
+  "external_side_effect_policy": "forbidden",
+  "status_enum": ["PENDING", "IN_PROGRESS", "PASS", "FINDING", "NOT_APPLICABLE", "BLOCKED"],
+  "existing_worktree_changes_preserved": true,
+  "inventory_snapshot": {
+    "captured_at": "2026-08-20T05:00:00+08:00",
+    "included_files": 5109,
+    "tracked_files": 5052,
+    "untracked_nonignored_files": 57,
+    "text_files": 4947,
+    "binary_or_opaque_files": 152,
+    "symlinks": 10,
+    "counted_text_lines": 1554494,
+    "audit_output_directory_excluded_from_repository_count": true,
+    "audit_output_files_are_not_product_or_release_evidence": true
+  },
+  "scope_drift_at_finalize": {
+    "captured_at": "2026-08-20T05:50:00+08:00",
+    "initial_paths_excluding_audit_output": 5109,
+    "current_paths_excluding_audit_output": 5114,
+    "added_paths": 5,
+    "removed_paths": 0,
+    "content_changed_paths": 44,
+    "audit_output_directory_excluded": true,
+    "classification": "BLOCKED",
+    "reason": "Other audit workspaces and user/subagent edits changed the working tree after the fixed snapshot; current files cannot be claimed as fully line-reviewed.",
+    "added_path_examples": [
+      ".codex/runtime/dependency-supply-chain-audit-20260820/_synthesize.py",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/close_ledger.py",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/record_review.py",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/review-decisions.jsonl",
+      ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-next5-reviewed.tsv"
+    ],
+    "changed_path_classes": [
+      "user_or_subagent_product_source_edits",
+      "other_audit_workspace_records"
+    ]
+  },
+  "manual_review_complete": false,
+  "external_evidence_status": {
+    "remote_governance": "BLOCKED",
+    "independent_reviewer": "BLOCKED",
+    "formal_release": "BLOCKED",
+    "recovery_closed_loop": "BLOCKED"
+  },
+  "ignored_workspace_artifacts": {
+    "captured_at": "2026-08-20T05:00:00+08:00",
+    "count": 791088,
+    "top_level_counts": {
+      ".build": 697418,
+      ".codex": 134,
+      ".cursor": 2,
+      "TestResults.xcresult": 3491,
+      "apps": 85156,
+      "core": 4840,
+      "scripts": 47
+    },
+    "classification": "Workspace-generated or ignored artifacts, not repository files under the tracked-plus-untracked-nonignored conservation equation. Their existence is recorded so they cannot be silently used as formal evidence."
+  },
+  "latest_scope_observation": {
+    "captured_at": "2026-08-20T06:09:50+08:00",
+    "initial_paths_excluding_audit_output": 5109,
+    "current_paths_excluding_audit_output": 5129,
+    "added_count": 20,
+    "removed_count": 0,
+    "changed_count": 89,
+    "hash_missing_count": 0,
+    "status": "BLOCKED",
+    "blocked_by": [
+      "parallel_audit_outputs",
+      "user_or_subagent_edits_after_snapshot"
+    ],
+    "evidence_record": "blocked-evidence.jsonl:latest scope_drift_observation",
+    "unblock_condition": "Freeze the worktree, capture a new immutable snapshot, and re-review every added/changed text file before claiming current-tree coverage."
+  },
+  "notes": "This directory is the requested audit evidence workspace. It must not be treated as product, release, CI, or remote governance evidence. The conservation equation is scoped to git tracked plus untracked nonignored files; ignored build/cache artifacts are separately counted and provenance-gated."
+}

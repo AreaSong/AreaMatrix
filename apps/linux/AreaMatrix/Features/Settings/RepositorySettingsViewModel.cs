@@ -1,5 +1,8 @@
 using System.ComponentModel;
+using System.Text;
 using System.Runtime.CompilerServices;
+using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
 using AreaMatrix.Linux.Features.Onboarding;
 
 namespace AreaMatrix.Linux.Features.Settings;
@@ -40,36 +43,33 @@ public sealed class LinuxRepositorySettingsDiagnosticsExporter : ILinuxRepositor
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (string.IsNullOrWhiteSpace(snapshot.Location) || !Directory.Exists(snapshot.Location))
+        try
+        {
+            return await LinuxRepositoryMetadataFileSafety.WriteDiagnosticsAsync(
+                snapshot.Location,
+                "repository-settings",
+                DiagnosticLines(snapshot),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (LinuxRepositoryCoreException)
+        {
+            throw;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             throw new LinuxRepositoryCoreException(
-                LinuxRepositoryErrorKind.FileNotFound,
-                "Repository folder was not found.",
+                LinuxRepositoryErrorKind.PermissionDenied,
+                "Repository metadata path is unavailable or unsafe.",
                 snapshot.Location);
         }
-
-        string diagnosticsDirectory = Path.Combine(
-            snapshot.Location,
-            ".areamatrix",
-            "generated",
-            "diagnostics");
-        Directory.CreateDirectory(diagnosticsDirectory);
-        string outputPath = Path.Combine(
-            diagnosticsDirectory,
-            $"repository-settings-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.txt");
-        await File.WriteAllLinesAsync(
-            outputPath,
-            DiagnosticLines(snapshot),
-            cancellationToken).ConfigureAwait(false);
-        return outputPath;
     }
 
     private static IEnumerable<string> DiagnosticLines(RepositorySettingsSnapshot snapshot)
     {
         yield return "AreaMatrix Linux repository settings diagnostics";
         yield return "No user file contents are included.";
-        yield return $"Name: {snapshot.Name}";
-        yield return $"Location: {snapshot.Location}";
+        yield return "Name: [redacted]";
+        yield return "Location: [redacted]";
         yield return $"Type: {snapshot.LocationType}";
         yield return $"Last opened: {snapshot.LastOpened}";
         yield return $"Core version: {snapshot.CoreVersion}";
@@ -81,6 +81,153 @@ public sealed class LinuxRepositorySettingsDiagnosticsExporter : ILinuxRepositor
         yield return $"Platform: {snapshot.Capabilities.Platform}";
         yield return $"App version: {snapshot.Capabilities.AppVersion}";
     }
+}
+
+internal static class LinuxRepositoryMetadataFileSafety
+{
+    private const int O_RDONLY = 0;
+    private const int O_WRONLY = 1;
+    private const int O_CREAT = 64;
+    private const int O_EXCL = 128;
+    private const int O_CLOEXEC = 524288;
+    private const int O_DIRECTORY = 65536;
+    private const int O_NOFOLLOW = 131072;
+    // POSIX modes are decimal in C# (0o600 == 384, 0o700 == 448).
+    private const int UserReadWriteFileMode = 384;
+    private const int UserDirectoryMode = 448;
+
+    public static async Task<string> WriteDiagnosticsAsync(
+        string repoPath,
+        string prefix,
+        IEnumerable<string> lines,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(repoPath))
+        {
+            throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.InvalidPath,
+                "Repository path is required before exporting diagnostics.",
+                repoPath);
+        }
+
+        using SafeFileHandle repository = OpenDirectory(repoPath, create: false);
+        using SafeFileHandle metadata = OpenChild(repository, ".areamatrix", create: true);
+        using SafeFileHandle generated = OpenChild(metadata, "generated", create: true);
+        using SafeFileHandle diagnostics = OpenChild(generated, "diagnostics", create: true);
+
+        string fileName = $"{prefix}-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss-fff}-{Guid.NewGuid():N}.txt";
+        int fd = OpenAt(
+            diagnostics,
+            fileName,
+            O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+            UserReadWriteFileMode);
+        if (fd < 0)
+        {
+            throw new IOException($"Could not create diagnostics file (errno {Marshal.GetLastWin32Error()}).");
+        }
+
+        using SafeFileHandle output = new((IntPtr)fd, ownsHandle: true);
+        bool completed = false;
+        try
+        {
+            string content = string.Join("\n", lines) + "\n";
+            byte[] bytes = Encoding.UTF8.GetBytes(content);
+            if (bytes.Length > 128 * 1024)
+            {
+                throw new IOException("Diagnostics output exceeds the bounded size limit.");
+            }
+
+            await using FileStream stream = new(output, FileAccess.Write, 4096, isAsync: true);
+            await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            stream.Flush(flushToDisk: true);
+            completed = true;
+        }
+        finally
+        {
+            if (!completed)
+            {
+                // unlinkat is relative to the already-open, no-follow directory
+                // descriptor; it cannot follow a replaced parent or escape repo.
+                _ = UnlinkAt(diagnostics, fileName);
+            }
+        }
+
+        // The caller only needs a stable display token. Returning the absolute
+        // repository path would turn a local text export into a path disclosure.
+        return Path.Combine(".areamatrix", "generated", "diagnostics", fileName);
+    }
+
+    private static SafeFileHandle OpenDirectory(string path, bool create)
+    {
+        string fullPath = Path.GetFullPath(path);
+        int fd = Open(fullPath, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC, 0);
+        if (fd < 0 && create && Marshal.GetLastWin32Error() == 2)
+        {
+            throw new DirectoryNotFoundException("Repository directory is missing.");
+        }
+
+        if (fd < 0)
+        {
+            throw new IOException($"Repository directory is unavailable or unsafe (errno {Marshal.GetLastWin32Error()}).");
+        }
+
+        return new SafeFileHandle((IntPtr)fd, ownsHandle: true);
+    }
+
+    private static SafeFileHandle OpenChild(SafeFileHandle parent, string name, bool create)
+    {
+        int fd = OpenAt(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC, 0);
+        if (fd < 0 && create && Marshal.GetLastWin32Error() == 2)
+        {
+            if (MkdirAt(parent, name, UserDirectoryMode) != 0 && Marshal.GetLastWin32Error() != 17)
+            {
+                throw new IOException($"Could not create metadata directory (errno {Marshal.GetLastWin32Error()}).");
+            }
+
+            fd = OpenAt(parent, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC, 0);
+        }
+
+        if (fd < 0)
+        {
+            throw new IOException($"Metadata directory is unavailable or unsafe (errno {Marshal.GetLastWin32Error()}).");
+        }
+
+        return new SafeFileHandle((IntPtr)fd, ownsHandle: true);
+    }
+
+    private static int Open(string path, int flags, int mode)
+    {
+        return open(path, flags, mode);
+    }
+
+    private static int OpenAt(SafeFileHandle parent, string name, int flags, int mode)
+    {
+        return openat(parent.DangerousGetHandle().ToInt32(), name, flags, mode);
+    }
+
+    private static int MkdirAt(SafeFileHandle parent, string name, int mode)
+    {
+        return mkdirat(parent.DangerousGetHandle().ToInt32(), name, mode);
+    }
+
+    private static int UnlinkAt(SafeFileHandle parent, string name)
+    {
+        return unlinkat(parent.DangerousGetHandle().ToInt32(), name, 0);
+    }
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "open")]
+    private static extern int open(string path, int flags, int mode);
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "openat")]
+    private static extern int openat(int directoryFD, string path, int flags, int mode);
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "mkdirat")]
+    private static extern int mkdirat(int directoryFD, string path, int mode);
+
+    [DllImport("libc", SetLastError = true, EntryPoint = "unlinkat")]
+    private static extern int unlinkat(int directoryFD, string path, int flags);
 }
 
 public sealed class RepositorySettingsViewModel : INotifyPropertyChanged

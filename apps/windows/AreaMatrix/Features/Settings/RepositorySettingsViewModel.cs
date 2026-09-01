@@ -1,6 +1,9 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
 using AreaMatrix.Features.Help;
 using AreaMatrix.Features.Onboarding;
 
@@ -42,36 +45,33 @@ public sealed class WindowsRepositorySettingsDiagnosticsExporter : IWindowsRepos
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (string.IsNullOrWhiteSpace(snapshot.Location) || !Directory.Exists(snapshot.Location))
+        try
+        {
+            return await WindowsRepositoryMetadataFileSafety.WriteDiagnosticsAsync(
+                snapshot.Location,
+                "repository-settings",
+                DiagnosticLines(snapshot),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (WindowsRepositoryCoreException)
+        {
+            throw;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             throw new WindowsRepositoryCoreException(
-                WindowsRepositoryErrorKind.FileNotFound,
-                "Repository folder was not found.",
+                WindowsRepositoryErrorKind.PermissionDenied,
+                "Repository metadata path is unavailable or unsafe.",
                 snapshot.Location);
         }
-
-        string diagnosticsDirectory = Path.Combine(
-            snapshot.Location,
-            ".areamatrix",
-            "generated",
-            "diagnostics");
-        Directory.CreateDirectory(diagnosticsDirectory);
-        string outputPath = Path.Combine(
-            diagnosticsDirectory,
-            $"repository-settings-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.txt");
-        await File.WriteAllLinesAsync(
-            outputPath,
-            DiagnosticLines(snapshot),
-            cancellationToken).ConfigureAwait(false);
-        return outputPath;
     }
 
     private static IEnumerable<string> DiagnosticLines(RepositorySettingsSnapshot snapshot)
     {
         yield return "AreaMatrix repository settings diagnostics";
         yield return "No user file contents are included.";
-        yield return $"Name: {snapshot.Name}";
-        yield return $"Location: {snapshot.Location}";
+        yield return "Name: [redacted]";
+        yield return "Location: [redacted]";
         yield return $"Type: {snapshot.LocationType}";
         yield return $"Last opened: {snapshot.LastOpened}";
         yield return $"Core version: {snapshot.CoreVersion}";
@@ -83,6 +83,264 @@ public sealed class WindowsRepositorySettingsDiagnosticsExporter : IWindowsRepos
         yield return $"Platform: {snapshot.Capabilities.Platform}";
         yield return $"App version: {snapshot.Capabilities.AppVersion}";
     }
+}
+
+internal static class WindowsRepositoryMetadataFileSafety
+{
+    private const int MaxDiagnosticsBytes = 128 * 1024;
+    private const uint GenericRead = 0x80000000;
+    private const uint FileShareRead = 0x00000001;
+    private const uint FileShareWrite = 0x00000002;
+    private const uint OpenExisting = 3;
+    private const uint FileFlagBackupSemantics = 0x02000000;
+    private const uint FileFlagOpenReparsePoint = 0x00200000;
+    private const uint FileAttributeReparsePoint = 0x00000400;
+    private const uint FileAttributeDirectory = 0x00000010;
+    private const int FileAttributeTagInfo = 9;
+
+    public static async Task<string> WriteDiagnosticsAsync(
+        string repoPath,
+        string prefix,
+        IEnumerable<string> lines,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(repoPath))
+        {
+            throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.InvalidPath,
+                "Repository path is required before exporting diagnostics.",
+                repoPath);
+        }
+
+        using SafeDirectoryChain directoryChain = OpenDirectoryChain(
+            repoPath,
+            [".areamatrix", "generated", "diagnostics"],
+            create: true);
+        string diagnostics = directoryChain.FinalPath;
+        string fileName = $"{prefix}-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss-fff}-{Guid.NewGuid():N}.txt";
+        string outputPath = Path.Combine(diagnostics, fileName);
+        byte[] bytes = Encoding.UTF8.GetBytes(string.Join("\n", lines) + "\n");
+        if (bytes.Length > MaxDiagnosticsBytes)
+        {
+            throw new IOException("Diagnostics output exceeds the bounded size limit.");
+        }
+
+        bool createdOutput = false;
+        bool completed = false;
+        try
+        {
+            await using FileStream stream = new(
+                outputPath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 4096,
+                options: FileOptions.WriteThrough | FileOptions.SequentialScan);
+            createdOutput = true;
+            await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            completed = true;
+        }
+        finally
+        {
+            if (!completed && createdOutput)
+            {
+                try
+                {
+                    File.Delete(outputPath);
+                }
+                catch (IOException)
+                {
+                    // Leave an uncertain path untouched rather than risking an
+                    // external file after a parent replacement.
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Same fail-closed cleanup policy as above.
+                }
+            }
+        }
+
+        // Keep the UI result relative; an absolute repository path is sensitive
+        // and is not needed to confirm that the export succeeded.
+        return Path.Combine(".areamatrix", "generated", "diagnostics", fileName);
+    }
+
+    private static SafeDirectoryChain OpenDirectoryChain(
+        string path,
+        IReadOnlyList<string> children,
+        bool create)
+    {
+        string fullPath;
+        try
+        {
+            fullPath = Path.GetFullPath(path);
+        }
+        catch (Exception error) when (error is ArgumentException or NotSupportedException)
+        {
+            throw new WindowsRepositoryCoreException(
+                WindowsRepositoryErrorKind.InvalidPath,
+                "Repository path is invalid.",
+                path);
+        }
+
+        return SafeDirectoryChain.Open(fullPath, children, create);
+    }
+
+    private sealed class SafeDirectoryChain : IDisposable
+    {
+        private readonly List<SafeFileHandle> handles;
+
+        private SafeDirectoryChain(string finalPath, List<SafeFileHandle> handles)
+        {
+            FinalPath = finalPath;
+            this.handles = handles;
+        }
+
+        public string FinalPath { get; }
+
+        public static SafeDirectoryChain Open(
+            string fullPath,
+            IReadOnlyList<string> children,
+            bool create)
+        {
+            string? current = Path.GetPathRoot(fullPath);
+            if (string.IsNullOrWhiteSpace(current))
+            {
+                throw new IOException("Repository path has no stable root.");
+            }
+
+            List<SafeFileHandle> handles = [];
+            try
+            {
+                handles.Add(OpenDirectoryHandle(current));
+                string remainder = fullPath[current.Length..];
+                foreach (string component in remainder.Split(
+                    [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+                    StringSplitOptions.RemoveEmptyEntries))
+                {
+                    current = Path.Combine(current, component);
+                    handles.Add(OpenOrCreateChild(handles[^1], current, component, create));
+                }
+
+                foreach (string child in children)
+                {
+                    current = Path.Combine(current, child);
+                    handles.Add(OpenOrCreateChild(handles[^1], current, child, create));
+                }
+
+                return new SafeDirectoryChain(current, handles);
+            }
+            catch
+            {
+                foreach (SafeFileHandle handle in handles.AsEnumerable().Reverse())
+                {
+                    handle.Dispose();
+                }
+
+                throw;
+            }
+        }
+
+        private static SafeFileHandle OpenOrCreateChild(
+            SafeFileHandle parent,
+            string path,
+            string component,
+            bool create)
+        {
+            SafeFileHandle handle = TryOpenDirectoryHandle(path, out int error);
+            if (!handle.IsInvalid)
+            {
+                return handle;
+            }
+
+            handle.Dispose();
+            if (!create || error != 2)
+            {
+                throw new IOException($"Repository metadata path is unavailable or unsafe (errno {error}).");
+            }
+
+            Directory.CreateDirectory(path);
+            return OpenDirectoryHandle(path);
+        }
+
+        private static SafeFileHandle OpenDirectoryHandle(string path)
+        {
+            SafeFileHandle handle = TryOpenDirectoryHandle(path, out int error);
+            if (handle.IsInvalid)
+            {
+                handle.Dispose();
+                throw new IOException($"Repository directory is unavailable or unsafe (errno {error}).");
+            }
+
+            return handle;
+        }
+
+        private static SafeFileHandle TryOpenDirectoryHandle(string path, out int error)
+        {
+            SafeFileHandle handle = CreateFileW(
+                path,
+                GenericRead,
+                FileShareRead | FileShareWrite,
+                IntPtr.Zero,
+                OpenExisting,
+                FileFlagBackupSemantics | FileFlagOpenReparsePoint,
+                IntPtr.Zero);
+            if (handle.IsInvalid)
+            {
+                error = Marshal.GetLastWin32Error();
+                return handle;
+            }
+
+            if (!GetFileInformationByHandleEx(
+                    handle,
+                    FileAttributeTagInfo,
+                    out FileAttributeTagInfoData info,
+                    (uint)Marshal.SizeOf<FileAttributeTagInfoData>())
+                || (info.FileAttributes & FileAttributeDirectory) == 0
+                || (info.FileAttributes & FileAttributeReparsePoint) != 0)
+            {
+                handle.Dispose();
+                throw new IOException("Repository metadata path contains a reparse point or is not a directory.");
+            }
+
+            error = 0;
+            return handle;
+        }
+
+        public void Dispose()
+        {
+            foreach (SafeFileHandle handle in handles.AsEnumerable().Reverse())
+            {
+                handle.Dispose();
+            }
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FileAttributeTagInfoData
+    {
+        public uint FileAttributes;
+        public uint ReparseTag;
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern SafeFileHandle CreateFileW(
+        string fileName,
+        uint desiredAccess,
+        uint shareMode,
+        IntPtr securityAttributes,
+        uint creationDisposition,
+        uint flagsAndAttributes,
+        IntPtr templateFile);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetFileInformationByHandleEx(
+        SafeFileHandle file,
+        int fileInformationClass,
+        out FileAttributeTagInfoData fileInformation,
+        uint bufferSize);
 }
 
 public interface IWindowsRepositorySettingsBridge
@@ -286,13 +544,13 @@ public sealed class RepositorySettingsViewModel : INotifyPropertyChanged
                 AppVersion,
                 cancellationToken);
             Task<string> versionTask = bridge.GetCoreVersionAsync(cancellationToken);
-            await Task.WhenAll(configTask, capabilitiesTask, versionTask).ConfigureAwait(false);
+            await Task.WhenAll(configTask, capabilitiesTask, versionTask);
 
             Snapshot = BuildSnapshot(
                 RepositoryPath!,
-                await configTask.ConfigureAwait(false),
-                await capabilitiesTask.ConfigureAwait(false),
-                await versionTask.ConfigureAwait(false));
+                await configTask,
+                await capabilitiesTask,
+                await versionTask);
             Status = RepositorySettingsStatus.Loaded;
         }
         catch (Exception error)
@@ -322,8 +580,8 @@ public sealed class RepositorySettingsViewModel : INotifyPropertyChanged
         try
         {
             WindowsRepositoryConfig updated = Snapshot.Config with { FallbackToInbox = enabled };
-            await bridge.UpdateConfigAsync(RepositoryPath!, updated, cancellationToken).ConfigureAwait(false);
-            await LoadAsync(cancellationToken).ConfigureAwait(false);
+            await bridge.UpdateConfigAsync(RepositoryPath!, updated, cancellationToken);
+            await LoadAsync(cancellationToken);
         }
         catch (Exception error)
         {
@@ -348,8 +606,7 @@ public sealed class RepositorySettingsViewModel : INotifyPropertyChanged
         try
         {
             LastDiagnosticsExportPath = await diagnosticsExporter
-                .ExportAsync(Snapshot, cancellationToken)
-                .ConfigureAwait(false);
+                .ExportAsync(Snapshot, cancellationToken);
             return true;
         }
         catch (Exception error) when (error is not OperationCanceledException)

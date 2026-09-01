@@ -92,8 +92,8 @@ regeneration 也各自有独立 session、确认和 rollback 单元：
 ```bash
 cd core
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --workspace
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --workspace
 ```
 
 涉及 repair/reindex 时，还应覆盖 diagnostics snapshot、DB install failure、用户文件不变和重复运行。

@@ -1,0 +1,131 @@
+cf3647378d64885e8e6a44a2a5b60d8926668982
+ M .github/workflows/release-evidence.yml
+ M CODE_OF_CONDUCT.md
+ M CONTRIBUTING.md
+ M LICENSE
+ M apps/ios/AreaMatrix/Features/Detail/MobileFileDetailCoreBridge.swift
+ M apps/ios/AreaMatrix/Features/Detail/MobileFileDetailCoreFFI.swift
+ M apps/ios/AreaMatrix/Features/Detail/MobileFileDetailModel.swift
+ M apps/ios/AreaMatrix/Features/Import/ShareImportExtensionScene.swift
+ M apps/ios/AreaMatrix/Features/Import/ShareImportModel.swift
+ M apps/ios/AreaMatrix/Features/Import/ShareImportQueue.swift
+ M apps/ios/AreaMatrix/Features/Import/ShareImportView.swift
+ M apps/ios/AreaMatrix/Features/Library/MobileLibraryCoreBridge.swift
+ M apps/ios/AreaMatrix/Features/Library/MobileLibraryCoreFFI.swift
+ M apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryModel.swift
+ M apps/ios/AreaMatrix/Features/Settings/RepositorySettingsView.swift
+ M apps/ios/AreaMatrixShareExtension/ShareImportViewController.swift
+ M apps/ios/AreaMatrixTests/RepositorySettingsPageIntegrationTests.swift
+ M apps/ios/AreaMatrixTests/ShareImportModelTests.swift
+ M apps/linux/AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs
+ M apps/linux/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs
+ M apps/linux/AreaMatrix/Features/System/LinuxWatcherDiagnostics.cs
+ M apps/linux/AreaMatrixTests/ChooseRepository/TestAssert.cs
+ M apps/linux/AreaMatrixTests/Help/PlatformDifferencesTests.cs
+ M apps/linux/AreaMatrixTests/Settings/RepositorySettingsViewModelTests.cs
+ M apps/macos/AreaMatrix/App/RepositoryIgnoreRulesManager.swift
+ M apps/macos/AreaMatrix/Bridge/CoreICloudConflictListing.swift
+ M apps/macos/AreaMatrix/Features/Import/ImportBatchConflictSection.swift
+ M apps/macos/AreaMatrix/Features/Onboarding/ValidatePathChecklistSection.swift
+ M apps/macos/AreaMatrix/Features/Onboarding/WelcomeStepView.swift
+ M apps/macos/AreaMatrix/Features/Settings/RepositoryOverviewRegenerationModel.swift
+ M apps/macos/AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalResolution.swift
+ M apps/macos/AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalValidation.swift
+ M apps/macos/AreaMatrix/PlatformServices/ImportBatchSessionPlatformServices.swift
+ M apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixAmbientBackground.swift
+ M apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixClassificationDiorama.swift
+ M apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixOverlays.swift
+ M apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixProtectionDiorama.swift
+ M apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixSceneComponents.swift
+ M apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixTimelineDiorama.swift
+ M apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixWorkflowDiorama.swift
+ M apps/macos/AreaMatrixTests/ImportBatchDuplicateResolutionTests.swift
+ M apps/macos/AreaMatrixTests/ImportProgressInterruptedSessionTests.swift
+ M apps/macos/AreaMatrixTests/LocalFileURLOpenerTests.swift
+ M apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeAssemblyTests.swift
+ M apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeSchedulingTests.swift
+ M apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeTestSupport.swift
+ M apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SceneMotionComponents.swift
+ M apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedActionComponents.swift
+ M apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedFeatureCardComponents.swift
+ M apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedMotionComponents.swift
+ M apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedTextEffects.swift
+ M apps/macos/Packages/AreaMatrixModules/Tests/AreaMatrixUIFoundationTests/SharedButtonComponentsTests.swift
+ M apps/windows/AreaMatrix/Features/Conflicts/SyncConflictEntryViewModel.cs
+ M apps/windows/AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs
+ M apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.Replace.cs
+ M apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.Results.cs
+ M apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.cs
+ M apps/windows/AreaMatrix/Features/Library/RescanConfirmViewModel.cs
+ M apps/windows/AreaMatrix/Features/Library/WatcherStatusPlatformActions.cs
+ M apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml.cs
+ M apps/windows/AreaMatrix/Features/Library/WatcherStatusViewModel.cs
+ M apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml.cs
+ M apps/windows/AreaMatrix/Features/Library/WindowsMainWindowViewModel.Snapshot.cs
+ M apps/windows/AreaMatrix/Features/Library/WindowsMainWindowViewModel.cs
+ M apps/windows/AreaMatrix/Features/Library/WindowsWatcherDiagnostics.cs
+ M apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryView.xaml
+ M apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeDialog.xaml.cs
+ M apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs
+ M apps/windows/AreaMatrix/Features/Onboarding/RepositoryAdoptConfirmDialog.xaml.cs
+ M apps/windows/AreaMatrix/Features/Onboarding/RepositoryInitConfirmDialog.xaml.cs
+ M apps/windows/AreaMatrix/Features/Recovery/MissingFileRecoveryDialog.xaml.cs
+ M apps/windows/AreaMatrix/Features/Recovery/MissingFileRecoveryViewModel.cs
+ M apps/windows/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs
+ M apps/windows/AreaMatrix/MainWindow.xaml.cs
+ M apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj
+ M apps/windows/AreaMatrixTests/ChooseRepository/ChooseRepositoryViewModelTests.cs
+ M apps/windows/AreaMatrixTests/ChooseRepository/ChooseRepositoryViewSmokeTests.cs
+ M apps/windows/AreaMatrixTests/ChooseRepository/OneDriveNoticeViewSmokeTests.cs
+ M apps/windows/AreaMatrixTests/ChooseRepository/RepositoryAdoptConfirmViewSmokeTests.cs
+ M apps/windows/AreaMatrixTests/ChooseRepository/RepositoryInitConfirmViewSmokeTests.cs
+ M apps/windows/AreaMatrixTests/DesktopMainQuery/DesktopMainQuerySmokeTests.cs
+ M apps/windows/AreaMatrixTests/DesktopMainQuery/DesktopMainQueryViewModelTests.cs
+ M apps/windows/AreaMatrixTests/Help/PlatformDifferencesTests.cs
+ M apps/windows/AreaMatrixTests/Program.cs
+ M apps/windows/AreaMatrixTests/Settings/RepositorySettingsViewModelTests.cs
+ M apps/windows/AreaMatrixTests/WatcherStatus/WatcherStatusViewModelTests.cs
+ M core/area_matrix.udl
+ M core/src/api/conflicts.rs
+ M core/src/domain/icloud.rs
+ M core/src/icloud_conflicts.rs
+ M core/src/icloud_conflicts/paths.rs
+ M core/src/icloud_conflicts/preview.rs
+ M core/src/icloud_conflicts/resolve.rs
+ M core/src/icloud_conflicts/types.rs
+ M core/src/overview/atomic_write.rs
+ M core/src/overview/mod.rs
+ M core/src/repo_init.rs
+ M core/src/storage/mod.rs
+ M core/src/storage/replacement_trash.rs
+ M core/src/storage/safe_move.rs
+ M core/tests/icloud_conflict_visual_contract_api.rs
+ M core/tests/icloud_conflict_visual_failure_recovery.rs
+ M core/tests/icloud_conflict_visual_implementation.rs
+ M core/tests/icloud_conflict_visual_validation.rs
+ M docs/api/core-api.md
+ M docs/product/current-implementation-inventory.md
+ M scripts/dev_tools/checks.py
+ M scripts/dev_tools/codex_os_automation.py
+ M scripts/dev_tools/macos.py
+ M scripts/dev_tools/promotion.py
+ M scripts/dev_tools/release.py
+ M scripts/dev_tools/test_codex_os.py
+ M scripts/dev_tools/test_macos_runner.py
+ M scripts/dev_tools/test_release_tools.py
+ M scripts/dev_tools/test_workflow_hardening.py
+ M scripts/task_loop/runner.py
+?? .codex/runtime/ci-governance-release-recovery-audit-20260820/
+?? .codex/runtime/cross-platform-e2e-audit-20260820/
+?? .codex/runtime/dependency-supply-chain-audit-20260820/
+?? .codex/runtime/dependency-supply-chain-remediation-20260820/
+?? .codex/runtime/docs-api-bridge-drift-audit-20260820/
+?? .codex/runtime/error-concurrency-lifecycle-audit-20260820/
+?? .codex/runtime/performance-reliability-audit-20260820/
+?? apps/ios/AreaMatrix/Features/Import/ShareImportExtensionLifecycle.swift
+?? apps/ios/AreaMatrix/Features/Import/ShareImportRepositoryAccess.swift
+?? apps/ios/AreaMatrixTests/ShareImportModelTestSupport.swift
+?? apps/windows/AreaMatrix/Features/Library/WindowsMainWindowViewModel.RepositoryLoad.cs
+?? apps/windows/AreaMatrix/MainWindow.RouteTransitions.cs
+?? apps/windows/AreaMatrixTests/Architecture/
+?? core/src/icloud_conflicts/token.rs

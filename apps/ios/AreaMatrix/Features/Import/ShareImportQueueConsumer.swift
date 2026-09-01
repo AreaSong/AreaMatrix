@@ -72,20 +72,32 @@ actor ShareImportQueueConsumer: ShareImportQueueConsuming {
         report: inout ShareImportQueueTakeoverReport
     ) async {
         var imported: [MobileLibraryFile] = []
-        for item in ticket.items {
+        var workingTicket = ticket
+        for index in workingTicket.items.indices {
+            if workingTicket.items[index].state == .imported {
+                continue
+            }
             do {
-                let request = try await coreRequest(for: item, ticket: ticket, repoPath: repoPath)
+                workingTicket.items[index].state = .importing
+                try await queue.updateTicket(workingTicket)
+                let item = workingTicket.items[index]
+                let request = try await coreRequest(for: item, ticket: workingTicket, repoPath: repoPath)
                 imported.append(try await bridge.importSharedItem(request: request))
+                workingTicket.items[index].state = .imported
+                try await queue.updateTicket(workingTicket)
             } catch {
-                report.failed.append(failure(for: item, ticket: ticket, error: error))
+                let item = workingTicket.items[index]
+                report.failed.append(failure(for: item, ticket: workingTicket, error: error))
                 return
             }
         }
         do {
-            try await queue.markTicketCompleted(ticket)
+            workingTicket.state = .completed
+            try await queue.updateTicket(workingTicket)
+            try await queue.markTicketCompleted(workingTicket)
             report.imported.append(contentsOf: imported)
         } catch {
-            report.failed.append(failure(for: ticket, error: error))
+            report.failed.append(failure(for: workingTicket, error: error))
         }
     }
 

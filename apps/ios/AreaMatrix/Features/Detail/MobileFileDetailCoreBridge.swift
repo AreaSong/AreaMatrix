@@ -118,12 +118,12 @@ enum MobileFileDetailError: Error, Equatable, Sendable {
         switch self {
         case .fileNotFound:
             "This file is no longer in the repository."
-        case let .database(message):
-            message.isEmpty ? "Repository metadata could not be read." : message
+        case .database:
+            "Repository metadata could not be read."
         case .permissionDenied:
             "AreaMatrix does not have permission to read this file detail."
-        case let .unavailable(message):
-            message.isEmpty ? "File detail is unavailable." : message
+        case .unavailable:
+            "File detail is unavailable."
         }
     }
 
@@ -134,7 +134,7 @@ enum MobileFileDetailError: Error, Equatable, Sendable {
         if let libraryError = error as? MobileLibraryQueryError {
             return .unavailable(libraryError.message)
         }
-        return .unavailable(error.localizedDescription)
+        return .unavailable("File detail is unavailable.")
     }
 }
 

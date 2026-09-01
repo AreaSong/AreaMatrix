@@ -538,7 +538,8 @@ namespace area_matrix {
     ICloudConflictResolveReport resolve_icloud_conflict(
         string repo_path,
         string conflict_id,
-        ICloudConflictResolution resolution
+        ICloudConflictResolution resolution,
+        string preview_token
     );
 
     [Throws=CoreError]
@@ -2129,6 +2130,7 @@ dictionary ICloudConflictResolutionOption {
 
 dictionary ICloudConflictPreviewReport {
     string conflict_id;
+    string preview_token;
     sequence<ICloudConflictVersionMetadata> versions;
     ICloudConflictResolution default_resolution;
     sequence<ICloudConflictResolutionOption> resolution_options;

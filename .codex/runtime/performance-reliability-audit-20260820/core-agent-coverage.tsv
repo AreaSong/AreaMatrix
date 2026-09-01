@@ -1,0 +1,37 @@
+COVERAGE	core/src/search/engine.rs	FINDING	1-55	semantic-read	PERF-RUST-001 search entry and full result materialization
+COVERAGE	core/src/search/repo.rs	FINDING	1-229	semantic-read	PERF-RUST-001 unpaged joins and materialization
+COVERAGE	core/src/search/ranking.rs	FINDING	1-466	semantic-read	PERF-RUST-001 full ranking/sort before limit
+COVERAGE	core/src/search/facets.rs	FINDING	1-449	semantic-read	PERF-RUST-001 repeated in-memory facet scans
+COVERAGE	core/src/repo_scan/runner.rs	FINDING	1-138	semantic-read	PERF-RUST-002 scan orchestration and retained plan
+COVERAGE	core/src/repo_scan/files.rs	FINDING	1-162	semantic-read	PERF-RUST-002 per-file hashing; bounded buffer exclusion
+COVERAGE	core/src/db/scan/files.rs	FINDING	1-311	semantic-read	PERF-RUST-002 per-file connection/transaction
+COVERAGE	core/src/db/scan/session.rs	FINDING	1-218	semantic-read	PERF-RUST-002 per-file progress writes
+COVERAGE	core/benches/core_hot_paths.rs	FINDING	1-297	semantic-read	PERF-RUST-003 print-only threshold result
+COVERAGE	core/src/sync/mod.rs	FINDING	1-486	semantic-read	PERF-RUST-004 multi-pass event planning
+COVERAGE	core/src/sync/events.rs	FINDING	1-273	semantic-read	PERF-RUST-004 per-event DB/read-note work
+COVERAGE	core/src/sync/plans.rs	PASS	1-409	semantic-read	Called by sync planning; no additional confirmed performance finding
+COVERAGE	core/src/sync/snapshots.rs	PASS	1-158	semantic-read	Stable read retry bounded at three attempts
+COVERAGE	core/src/db/sync.rs	FINDING	1-434	semantic-read	PERF-RUST-004 receipt existence queries
+COVERAGE	core/src/db/sync/receipts.rs	FINDING	1-556	semantic-read	PERF-RUST-004 per-key receipt claim queries
+COVERAGE	core/src/storage/import.rs	PASS	1-364	semantic-read	Import orchestration reviewed with guards
+COVERAGE	core/src/storage/import/flow.rs	PASS	1-426	semantic-read	Import flow and compensation reviewed
+COVERAGE	core/src/storage/hash.rs	PASS	1-103	semantic-read	Bounded streaming hash; full-file memory candidate excluded
+COVERAGE	core/src/storage/dedup.rs	FINDING	1-109	semantic-read	PERF-RUST-005 up to 999 collision syscalls
+COVERAGE	core/src/storage/destination.rs	PASS	1-402	semantic-read	Destination resolution reviewed; no separate confirmed finding
+COVERAGE	core/src/storage/staging_row.rs	PASS	1-32	semantic-read	Staging row guard reviewed
+COVERAGE	core/src/storage/safe_move.rs	PASS	1-193	semantic-read	No-replace move and cleanup reviewed
+COVERAGE	core/src/storage/import_source_removal.rs	PASS	1-58	semantic-read	Source removal failure retention reviewed
+COVERAGE	core/src/storage/import_target.rs	PASS	1-72	semantic-read	Target path validation reviewed
+COVERAGE	core/src/repo_scan/preview.rs	FINDING	1-270	semantic-read	PERF-RUST-006 O(N^2) duplicate hash preview candidate
+COVERAGE	core/src/repo_scan/report.rs	PASS	1-29	semantic-read	Report projection reviewed
+COVERAGE	core/src/repo_scan/session.rs	PASS	1-98	semantic-read	Scan session lifecycle reviewed
+COVERAGE	core/src/repo_scan/types.rs	PASS	1-79	semantic-read	Scan types reviewed
+COVERAGE	core/src/db/connection.rs	PASS	1-147	semantic-read	Bounded SQLite configuration and timeout
+COVERAGE	core/src/db/read_models.rs	PASS	1-147	semantic-read	Read models and bounded limits
+COVERAGE	core/src/db/change_log.rs	PASS	1-108	semantic-read	Change log operations reviewed
+COVERAGE	core/src/db/command_index.rs	PASS	1-163	semantic-read	Command index operations reviewed
+COVERAGE	core/src/db/scan.rs	PASS	1-21	semantic-read	Scan DB module boundary
+COVERAGE	core/src/db/scan/codec.rs	PASS	1-65	semantic-read	Scan codec reviewed
+COVERAGE	core/src/db/scan/types.rs	PASS	1-35	semantic-read	Scan DB types reviewed
+COVERAGE	core/src/db/staging_recovery.rs	PASS	1-79	semantic-read	Recovery DB boundary reviewed
+COVERAGE	core/src/repo_scan/ignore.rs	PASS	1-96	semantic-read	Ignore rules and bounded traversal reviewed

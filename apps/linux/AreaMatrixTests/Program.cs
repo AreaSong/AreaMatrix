@@ -6,7 +6,16 @@ using AreaMatrix.Linux.Tests.Recovery;
 using AreaMatrix.Linux.Tests.Settings;
 using AreaMatrix.Linux.Tests.System;
 
+if (args is ["native-loader-security"])
+{
+    LinuxNativeCoreLibrarySecurityTests.RunAll();
+    Console.WriteLine("AreaMatrix Linux native loader security tests passed.");
+    return;
+}
+
 await LinuxChooseRepositoryViewModelTests.RunAllAsync();
+LinuxNativeCoreLibrarySecurityTests.RunAll();
+LinuxNativeCoreContractGoldenVectorTests.RunAll();
 await LinuxNativeCoreBridgeSmokeTests.RunAllAsync();
 LinuxChooseRepositorySmokeTests.RunAll();
 await LocalFolderNoticeViewModelTests.RunAllAsync();

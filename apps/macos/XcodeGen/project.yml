@@ -88,6 +88,9 @@ targets:
         excludes:
           - App/AreaMatrixAppSmokeTests.swift
           - Bridge/Generated
+          # Historical evidence only. Product linking must use the canonical CoreSDK dependency below.
+          - Bridge/UniFFI/libarea_matrix_core.a
+          - Bridge/UniFFI/libarea_matrix_core.a.provenance.json
       - path: ../../../core/resources/observability_catalog.json
         buildPhase: resources
         group: Core Resources

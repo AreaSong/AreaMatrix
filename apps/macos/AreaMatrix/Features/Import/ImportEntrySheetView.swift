@@ -374,7 +374,11 @@ extension ImportEntrySheetView {
                     .controlSize(.small)
             }
 
-            if let message = batchImportModel.status.message ?? batchPreviewModel.status.message {
+            if let failure = batchImportModel.sessionPersistenceFailure {
+                Text(L10n.resolve(failure.userMessage))
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            } else if let message = batchImportModel.status.message ?? batchPreviewModel.status.message {
                 Text(message)
                     .font(.callout)
                     .foregroundStyle(batchPreviewStatusStyle)

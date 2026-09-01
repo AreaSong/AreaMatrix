@@ -1,0 +1,13 @@
+COVERAGE	workflow/versions/v-template/promotion/promotion.yaml	FINDING	1-72	semantic-read	PERF-WF-001 missing phase-5 manifest reference
+COVERAGE	workflow/versions/v-template/promotion/promotion.md	PASS	1-439	semantic-read	promotion artifact semantics reviewed
+COVERAGE	assets/prototypes/landing/index.html	FINDING	1-3533	semantic-read	PERF-WF-002 recursive timers while hidden
+COVERAGE	assets/prototypes/workspace/index.html	PASS	1-478	semantic-read	workspace prototype lifecycle reviewed
+COVERAGE	AGENTS.md	PASS	1-98	semantic-read	governance scope and validation rules
+COVERAGE	workflow/AGENTS.md	PASS	1-59	semantic-read	workflow lifecycle and archive boundaries
+COVERAGE	docs/development/performance.md	FINDING	1-140	semantic-read	benchmark exit-code and CI gate gap documented; PERF-XPLAT-003
+COVERAGE	docs/development/testing.md	PASS	1-270	semantic-read	validation boundaries and performance evidence
+COVERAGE	docs/development/ci-governance.md	PASS	1-238	semantic-read	CI and explicit performance gate semantics
+COVERAGE	workflow/versions/v1-mvp/execution/README.md	PASS	1-265	semantic-read	historical prompt runner lifecycle and retry boundaries
+COVERAGE	workflow/execution.md	PASS	1-172	semantic-read	runaway retry stop and triage semantics
+COVERAGE	workflow/README.md	PASS	1-112	semantic-read	workflow source-of-truth boundaries
+COVERAGE	workflow/versions/v1-mvp/evidence/performance-baseline.md	PASS	1-143	semantic-read	baseline evidence and limitations

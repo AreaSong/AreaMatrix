@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import shutil
 import subprocess
+import tarfile
 import tempfile
 from pathlib import Path
 
 from .artifacts import cargo_lane_lock, cargo_target_dir
-from .common import fail, project_root, require_command, require_file, resolve_project_path, run_step
+from .common import ToolError, fail, project_root, require_command, require_file, resolve_project_path, run_step
 
 UNIFFI_BINDGEN_WRAPPER = "areamatrix_uniffi_bindgen_wrapper"
 UNIFFI_BINDGEN_CRATE = "uniffi_bindgen"
@@ -70,6 +72,134 @@ def _locked_crate_version(core_dir: Path, crate_name: str) -> str | None:
     return None
 
 
+def _locked_crate_checksum(core_dir: Path, crate_name: str) -> str | None:
+    lockfile = core_dir / "Cargo.lock"
+    if not lockfile.is_file():
+        return None
+
+    current_name: str | None = None
+    for raw_line in lockfile.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw_line.strip()
+        if line == "[[package]]":
+            current_name = None
+            continue
+        if line.startswith("name = "):
+            current_name = line.split("=", 1)[1].strip().strip('"')
+            continue
+        if current_name == crate_name and line.startswith("checksum = "):
+            return line.split("=", 1)[1].strip().strip('"')
+    return None
+
+
+def _lock_package_records(lockfile: Path) -> dict[tuple[str, str, str | None, str | None], tuple[str, ...]]:
+    """Read the generated Cargo.lock package graph without adding a TOML dependency."""
+
+    if not lockfile.is_file():
+        return {}
+
+    records: dict[tuple[str, str, str | None, str | None], tuple[str, ...]] = {}
+    current: dict[str, str | None] | None = None
+    dependencies: list[str] = []
+    in_dependencies = False
+
+    def flush() -> None:
+        if current is None or current.get("name") is None or current.get("version") is None:
+            return
+        key = (
+            str(current["name"]),
+            str(current["version"]),
+            current.get("source"),
+            current.get("checksum"),
+        )
+        records[key] = tuple(dependencies)
+
+    for raw_line in lockfile.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw_line.strip()
+        if line == "[[package]]":
+            flush()
+            current = {}
+            dependencies = []
+            in_dependencies = False
+            continue
+        if current is None:
+            continue
+        if line == "dependencies = [":
+            in_dependencies = True
+            continue
+        if in_dependencies:
+            if line == "]":
+                in_dependencies = False
+            elif line.startswith('"') and line.endswith('",'):
+                dependencies.append(line[1:-2])
+            continue
+        match = re.match(r'^(name|version|source|checksum) = "([^"]+)"$', line)
+        if match:
+            current[match.group(1)] = match.group(2)
+    flush()
+    return records
+
+
+def _verify_wrapper_lock(wrapper_dir: Path, core_dir: Path) -> None:
+    core_records = _lock_package_records(core_dir / "Cargo.lock")
+    wrapper_records = _lock_package_records(wrapper_dir / "Cargo.lock")
+    if not core_records or not wrapper_records:
+        fail("unable to read generated Cargo.lock package records for the UniFFI wrapper.")
+
+    for key, dependencies in wrapper_records.items():
+        if key[0] == UNIFFI_BINDGEN_WRAPPER:
+            continue
+        if key not in core_records:
+            fail(
+                "UniFFI wrapper selected a package outside core/Cargo.lock: "
+                f"{key[0]} {key[1]} ({key[3] or 'path/source package'})."
+            )
+        if dependencies != core_records[key]:
+            fail(f"UniFFI wrapper package graph differs from core/Cargo.lock: {key[0]} {key[1]}.")
+
+
+def _wrapper_registry_closure(core_dir: Path) -> list[tuple[str, str, str | None, str | None]]:
+    """Return the registry packages reachable from the synthetic wrapper roots."""
+
+    records = _lock_package_records(core_dir / "Cargo.lock")
+    if not records:
+        fail("unable to read core/Cargo.lock package records for the UniFFI wrapper.")
+
+    by_name: dict[str, list[tuple[str, str, str | None, str | None]]] = {}
+    for key in records:
+        if key[2] is not None:
+            by_name.setdefault(key[0], []).append(key)
+
+    pending: list[tuple[str, str, str | None, str | None]] = []
+    for root_name in ("camino", UNIFFI_BINDGEN_CRATE):
+        root_version = _locked_crate_version(core_dir, root_name)
+        roots = [key for key in by_name.get(root_name, []) if key[1] == root_version]
+        if len(roots) != 1:
+            fail(f"core/Cargo.lock has no registry package for wrapper dependency '{root_name}'.")
+        pending.extend(roots)
+
+    seen: set[tuple[str, str, str | None, str | None]] = set()
+    closure: list[tuple[str, str, str | None, str | None]] = []
+    while pending:
+        key = pending.pop()
+        if key in seen:
+            continue
+        seen.add(key)
+        dependencies = records[key]
+        closure.append(key)
+        for dependency in dependencies:
+            name, separator, version = dependency.partition(" ")
+            candidates = by_name.get(name, [])
+            if separator:
+                candidates = [candidate for candidate in candidates if candidate[1] == version]
+            if len(candidates) != 1:
+                fail(
+                    "core/Cargo.lock has an ambiguous wrapper dependency: "
+                    f"{dependency} required by {key[0]} {key[1]}."
+                )
+            pending.append(candidates[0])
+    return closure
+
+
 def _locked_uniffi_bindgen_version(core_dir: Path) -> str | None:
     return _locked_crate_version(core_dir, UNIFFI_BINDGEN_CRATE) or _locked_crate_version(core_dir, "uniffi")
 
@@ -97,11 +227,140 @@ def _find_crate_source(crate_name: str, version: str) -> Path | None:
     return None
 
 
+def _find_crate_archive(cargo_home: Path, crate_name: str, version: str) -> Path | None:
+    matches = sorted((cargo_home / "registry/cache").glob(f"*/{crate_name}-{version}.crate"))
+    return matches[0] if len(matches) == 1 else None
+
+
+def _find_verified_registry_package(
+    crate_name: str,
+    version: str,
+    checksum: str,
+    preferred_home: Path | None = None,
+) -> tuple[Path, Path] | None:
+    """Find a source/archive pair that both match Cargo.lock's checksum."""
+
+    homes = [preferred_home] if preferred_home is not None else []
+    homes.extend(home for home in _candidate_cargo_homes() if home not in homes)
+    package_name = f"{crate_name}-{version}"
+    for cargo_home in homes:
+        registry_src = cargo_home / "registry/src"
+        if (
+            cargo_home.is_symlink()
+            or _symlink_ancestor(registry_src, cargo_home) is not None
+            or not registry_src.is_dir()
+        ):
+            continue
+        for source in sorted(registry_src.glob(f"*/{package_name}")):
+            archive = cargo_home / "registry/cache" / source.parent.name / f"{package_name}.crate"
+            if (
+                _symlink_ancestor(source, cargo_home) is not None
+                or _symlink_ancestor(archive, cargo_home) is not None
+                or not (source / "Cargo.toml").is_file()
+            ):
+                continue
+            registry_id = source.parent.name
+            if not archive.is_file() or _sha256(archive) != checksum:
+                continue
+            try:
+                _verify_registry_source(source, archive, checksum)
+            except (OSError, tarfile.TarError, ToolError):
+                continue
+            return source, archive
+    return None
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(64 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _verify_registry_source(source: Path, archive: Path, expected_checksum: str) -> None:
+    """Verify the cached unpacked crate against Cargo.lock's archive checksum."""
+
+    if _sha256(archive) != expected_checksum:
+        fail(f"Cargo registry archive checksum mismatch: {archive}.")
+    if archive.stat().st_nlink > 1:
+        fail(f"Cargo registry archive must not be multiply linked: {archive}.")
+    if source.is_symlink() or not source.is_dir():
+        fail(f"Cargo registry source is not a regular directory: {source}.")
+
+    archive_files: dict[str, str] = {}
+    archive_root: str | None = None
+    with tarfile.open(archive, mode="r:*") as tar:
+        for member in tar.getmembers():
+            member_path = Path(member.name)
+            if member_path.is_absolute() or ".." in member_path.parts:
+                fail(f"unsafe path in Cargo registry archive: {member.name}")
+            if not member_path.parts:
+                fail(f"invalid Cargo registry archive member: {member.name}")
+            if archive_root is None:
+                archive_root = member_path.parts[0]
+            elif archive_root != member_path.parts[0]:
+                fail(f"multiple roots in Cargo registry archive: {member.name}")
+            if archive_root != source.name:
+                fail(f"unexpected Cargo registry archive root: {archive_root}")
+            if member.issym() or member.islnk():
+                fail(f"links are not accepted in Cargo registry archive: {member.name}")
+            if not member.isfile() and not member.isdir():
+                fail(f"unsupported entry in Cargo registry archive: {member.name}")
+            if member.isfile():
+                relative = "/".join(member_path.parts[1:])
+                if not relative:
+                    fail(f"invalid Cargo registry archive member: {member.name}")
+                if relative in archive_files:
+                    fail(f"duplicate Cargo registry archive member: {member.name}")
+                extracted = tar.extractfile(member)
+                if extracted is None:
+                    fail(f"unable to read Cargo registry archive member: {member.name}")
+                archive_files[relative] = hashlib.sha256(extracted.read()).hexdigest()
+
+    source_files: dict[str, str] = {}
+    for path in source.rglob("*"):
+        if path.is_symlink():
+            fail(f"links are not accepted in Cargo registry source: {path}")
+        if not path.is_file() and not path.is_dir():
+            fail(f"unsupported entry in Cargo registry source: {path}")
+        if path.is_file():
+            if path.stat().st_nlink > 1:
+                fail(f"Cargo registry source file must not be multiply linked: {path}")
+            relative = path.relative_to(source).as_posix()
+            if relative == ".cargo-ok":
+                continue
+            source_files[relative] = _sha256(path)
+    if source_files != archive_files:
+        fail(f"Cargo registry source does not match its locked archive: {source}")
+
+
 def _find_registry_cache_home() -> Path | None:
     for cargo_home in _candidate_cargo_homes():
-        if (cargo_home / "registry/cache").is_dir() and (cargo_home / "registry/index").is_dir():
+        cache = cargo_home / "registry/cache"
+        index = cargo_home / "registry/index"
+        if cargo_home.is_symlink() or _symlink_ancestor(cache, cargo_home) is not None:
+            continue
+        if cargo_home.is_symlink() or _symlink_ancestor(index, cargo_home) is not None:
+            continue
+        if cache.is_symlink() or index.is_symlink():
+            continue
+        if cache.is_dir() and index.is_dir():
             return cargo_home
     return None
+
+
+def _symlink_ancestor(path: Path, stop: Path | None = None) -> Path | None:
+    current = path
+    while True:
+        if current.is_symlink():
+            return current
+        if stop is not None and current == stop:
+            return None
+        parent = current.parent
+        if parent == current:
+            return None
+        current = parent
 
 
 def _replace_symlink(link: Path, target: Path) -> None:
@@ -117,15 +376,86 @@ def _replace_symlink(link: Path, target: Path) -> None:
 def _prepare_temp_cargo_home(tool_root: Path, source_home: Path) -> Path:
     cargo_home = tool_root / "cargo-home"
     registry = cargo_home / "registry"
+    if tool_root.is_symlink():
+        fail(f"temporary Cargo home path must not be a symlink: {tool_root}")
+    for path in (cargo_home, registry):
+        link = _symlink_ancestor(path, tool_root)
+        if link is not None:
+            fail(f"temporary Cargo home path must not contain a symlink: {link}")
     registry.mkdir(parents=True, exist_ok=True)
     (registry / "src").mkdir(parents=True, exist_ok=True)
-    _replace_symlink(registry / "cache", source_home / "registry/cache")
-    _replace_symlink(registry / "index", source_home / "registry/index")
+    for directory in (registry / "cache", registry / "index"):
+        if directory.is_symlink():
+            fail(f"temporary Cargo registry path must not be a symlink: {directory}")
+        elif directory.exists() and not directory.is_dir():
+            fail(f"temporary Cargo registry path is not a directory: {directory}")
+        directory.mkdir(parents=True, exist_ok=True)
+        link = _symlink_ancestor(directory, tool_root)
+        if link is not None:
+            fail(f"temporary Cargo registry path must not contain a symlink: {link}")
+
+    if source_home.is_symlink():
+        fail(f"Cargo registry home must not be a symlink: {source_home}")
+    source_index = source_home / "registry/index"
+    if _symlink_ancestor(source_index, source_home) is not None or source_index.is_symlink() or not source_index.is_dir():
+        fail(f"Cargo registry index is not a regular directory: {source_index}")
+    if any(path.is_symlink() for path in source_index.rglob("*")):
+        fail(f"Cargo registry index contains an unsupported link: {source_index}")
+    destination_index = registry / "index"
+    if any(path.is_symlink() for path in destination_index.rglob("*")):
+        fail(f"temporary Cargo registry index contains an unsupported link: {destination_index}")
+    shutil.copytree(source_index, destination_index, dirs_exist_ok=True, symlinks=False)
     return cargo_home
 
 
-def _write_uniffi_wrapper_crate(wrapper_dir: Path, uniffi_bindgen_source: Path) -> None:
-    source_path = str(uniffi_bindgen_source).replace("\\", "\\\\")
+def _copy_verified_crate_source(cargo_home: Path, source: Path, archive: Path, checksum: str) -> Path:
+    """Place a verified source and archive at the exact registry paths Cargo will use."""
+
+    registry_id = source.parent.name
+    destination = cargo_home / "registry/src" / registry_id / source.name
+    link = _symlink_ancestor(destination.parent, cargo_home)
+    if link is not None:
+        fail(f"temporary Cargo source path must not contain a symlink: {link}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.is_symlink():
+        fail(f"temporary Cargo source path must not be a symlink: {destination}")
+    if destination.exists():
+        _verify_registry_source(destination, archive, checksum)
+    else:
+        shutil.copytree(source, destination, symlinks=False)
+        _verify_registry_source(destination, archive, checksum)
+
+    archive_destination = cargo_home / "registry/cache" / registry_id / archive.name
+    link = _symlink_ancestor(archive_destination.parent, cargo_home)
+    if link is not None:
+        fail(f"temporary Cargo archive path must not contain a symlink: {link}")
+    archive_destination.parent.mkdir(parents=True, exist_ok=True)
+    if archive_destination.is_symlink() or (archive_destination.exists() and not archive_destination.is_file()):
+        fail(f"temporary Cargo archive path is not a regular file: {archive_destination}")
+    if archive_destination.exists():
+        if _sha256(archive_destination) != checksum:
+            fail(f"temporary Cargo archive checksum mismatch: {archive_destination}")
+    else:
+        shutil.copy2(archive, archive_destination)
+    return destination
+
+
+def _copy_verified_registry_closure(cargo_home: Path, core_dir: Path, source_home: Path) -> None:
+    """Copy and verify every registry package used by the synthetic wrapper."""
+
+    for key in _wrapper_registry_closure(core_dir):
+        crate_name, version, source, checksum = key
+        if source is None or checksum is None:
+            fail(f"wrapper dependency is not a checksummed registry package: {crate_name} {version}.")
+        package = _find_verified_registry_package(crate_name, version, checksum, source_home)
+        if package is None:
+            fail(f"missing verified Cargo registry package: {crate_name} {version}.")
+        _copy_verified_crate_source(cargo_home, package[0], package[1], checksum)
+
+
+def _write_uniffi_wrapper_crate(
+    wrapper_dir: Path, uniffi_bindgen_version: str, camino_version: str
+) -> None:
     src_dir = wrapper_dir / "src"
     src_dir.mkdir(parents=True, exist_ok=True)
     (wrapper_dir / "Cargo.toml").write_text(
@@ -137,8 +467,8 @@ def _write_uniffi_wrapper_crate(wrapper_dir: Path, uniffi_bindgen_source: Path) 
                 'edition = "2021"',
                 "",
                 "[dependencies]",
-                'camino = "1.0.8"',
-                f'uniffi_bindgen = {{ path = "{source_path}" }}',
+                f'camino = "={camino_version}"',
+                f'uniffi_bindgen = {{ version = "={uniffi_bindgen_version}", default-features = false }}',
                 "",
             ]
         ),
@@ -217,6 +547,62 @@ def _write_uniffi_wrapper_crate(wrapper_dir: Path, uniffi_bindgen_source: Path) 
     )
 
 
+def _write_wrapper_lock(wrapper_dir: Path, core_dir: Path, cargo_home: Path) -> None:
+    source = (core_dir / "Cargo.lock").read_text(encoding="utf-8")
+    sections = re.split(r"(?m)(?=^\[\[package\]\]$)", source)
+    if not sections or re.search(r"(?m)^version\s*=\s*\d+\s*$", sections[0]) is None:
+        fail("core/Cargo.lock has an invalid package table.")
+    closure = set(_wrapper_registry_closure(core_dir))
+    selected: list[str] = []
+    for section in sections[1:]:
+        fields: dict[str, str] = {}
+        for field in ("name", "version", "source", "checksum"):
+            match = re.search(rf"^\s*{field}\s*=\s*\"([^\"]+)\"", section, re.MULTILINE)
+            if match:
+                fields[field] = match.group(1)
+        key = (fields.get("name"), fields.get("version"), fields.get("source"), fields.get("checksum"))
+        if key in closure:
+            selected.append(section.strip())
+    if len(selected) != len(closure):
+        fail("core/Cargo.lock is missing a package required by the UniFFI wrapper.")
+    root_entry = '''[[package]]
+name = "areamatrix_uniffi_bindgen_wrapper"
+version = "0.1.0"
+dependencies = [
+ "camino",
+ "uniffi_bindgen",
+]
+'''
+    lock_text = sections[0].rstrip() + "\n\n" + root_entry.rstrip() + "\n\n" + "\n\n".join(selected) + "\n"
+    (wrapper_dir / "Cargo.lock").write_text(lock_text, encoding="utf-8")
+    metadata_command = [
+        "cargo",
+        "metadata",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        wrapper_dir / "Cargo.toml",
+        "--format-version",
+        "1",
+    ]
+    metadata_env = os.environ.copy()
+    metadata_env.update({"CARGO_HOME": str(cargo_home), "CARGO_NET_OFFLINE": "true"})
+    proc = subprocess.run(
+        [str(part) for part in metadata_command],
+        cwd=wrapper_dir,
+        env=metadata_env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or "").strip()
+        suffix = f": {detail}" if detail else ""
+        fail(f"unable to derive a locked UniFFI wrapper graph from core/Cargo.lock{suffix}", proc.returncode)
+    _verify_wrapper_lock(wrapper_dir, core_dir)
+
+
 def _fetch_locked_cargo_dependencies(core_dir: Path) -> None:
     print()
     print("==> Fetching locked Cargo dependencies for UniFFI bindgen fallback")
@@ -230,31 +616,42 @@ def _build_cached_uniffi_bindgen(core_dir: Path) -> list[str]:
     if version is None:
         fail("unable to determine locked UniFFI bindgen version from core/Cargo.lock.")
 
-    uniffi_bindgen_source = _find_crate_source(UNIFFI_BINDGEN_CRATE, version)
     source_home = _find_registry_cache_home()
-    if uniffi_bindgen_source is None or source_home is None:
+    if source_home is None:
         _fetch_locked_cargo_dependencies(core_dir)
-        uniffi_bindgen_source = _find_crate_source(UNIFFI_BINDGEN_CRATE, version)
         source_home = _find_registry_cache_home()
-    if uniffi_bindgen_source is None or source_home is None:
+    if source_home is None:
         fail(
-            "missing 'uniffi-bindgen' and no locked Cargo cache is available for the fallback. "
+            "missing locked Cargo registry cache for the fallback. "
             "Run `cd core && cargo fetch --locked`, then retry.",
             127,
         )
+    camino_version = _locked_crate_version(core_dir, "camino")
+    if camino_version is None:
+        fail("unable to determine locked camino version from core/Cargo.lock.")
 
     tool_root = Path(os.environ.get("AREAMATRIX_UNIFFI_BINDGEN_TOOL_ROOT", "/private/tmp/areamatrix-uniffi-bindgen"))
     wrapper_dir = tool_root / f"wrapper-{version}"
     target_dir = tool_root / "target"
     cargo_home = _prepare_temp_cargo_home(tool_root, source_home)
-    _write_uniffi_wrapper_crate(wrapper_dir, uniffi_bindgen_source)
+    _copy_verified_registry_closure(cargo_home, core_dir, source_home)
+    _write_uniffi_wrapper_crate(wrapper_dir, version, camino_version)
+    _write_wrapper_lock(wrapper_dir, core_dir, cargo_home)
 
     print()
     print("==> Preparing cached UniFFI bindgen fallback")
     print(f"    version: {version}")
     print(f"    wrapper: {wrapper_dir}")
     proc = run_step(
-        ["cargo", "build", "--manifest-path", wrapper_dir / "Cargo.toml", "--quiet"],
+        [
+            "cargo",
+            "build",
+            "--locked",
+            "--offline",
+            "--manifest-path",
+            wrapper_dir / "Cargo.toml",
+            "--quiet",
+        ],
         env={
             "CARGO_HOME": str(cargo_home),
             "CARGO_NET_OFFLINE": "true",
@@ -275,7 +672,10 @@ def _build_cached_uniffi_bindgen(core_dir: Path) -> list[str]:
 def _uniffi_bindgen_command(core_dir: Path) -> list[str]:
     configured = os.environ.get("UNIFFI_BINDGEN") or os.environ.get("AREAMATRIX_UNIFFI_BINDGEN")
     if configured:
-        return [configured]
+        fail(
+            "UNIFFI_BINDGEN/AREAMATRIX_UNIFFI_BINDGEN overrides are disabled; "
+            "use the locked registry wrapper generated by ./dev build core."
+        )
     return _build_cached_uniffi_bindgen(core_dir)
 
 
@@ -310,7 +710,12 @@ def _macos_rust_host() -> str | None:
 
 def _build_core_targets(core_dir: Path, cargo_profile_args: list[str], env: dict[str, str]) -> int:
     for target in ["aarch64-apple-darwin", "x86_64-apple-darwin"]:
-        proc = run_step(["cargo", "build", *cargo_profile_args, "--target", target], cwd=core_dir, env=env, check=False)
+        proc = run_step(
+            ["cargo", "build", "--locked", *cargo_profile_args, "--target", target],
+            cwd=core_dir,
+            env=env,
+            check=False,
+        )
         if proc.returncode != 0:
             return proc.returncode
     return 0
@@ -752,7 +1157,7 @@ def _run_xcode_core_build_unlocked(
     print(f"==> Building AreaMatrix core for Xcode ({build_profile}, {target})")
     print(f"    target dir: {resolved_target_dir}")
     proc = run_step(
-        ["cargo", "build", *cargo_profile_args, "--target", target],
+        ["cargo", "build", "--locked", *cargo_profile_args, "--target", target],
         cwd=core_dir,
         env=env,
         check=False,

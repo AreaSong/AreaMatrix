@@ -10898,6 +10898,7 @@ public func FfiConverterTypeICloudConflictPair_lower(_ value: ICloudConflictPair
 
 public struct ICloudConflictPreviewReport {
     public var conflictId: String
+    public var previewToken: String
     public var versions: [ICloudConflictVersionMetadata]
     public var defaultResolution: ICloudConflictResolution
     public var resolutionOptions: [ICloudConflictResolutionOption]
@@ -10909,8 +10910,9 @@ public struct ICloudConflictPreviewReport {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(conflictId: String, versions: [ICloudConflictVersionMetadata], defaultResolution: ICloudConflictResolution, resolutionOptions: [ICloudConflictResolutionOption], metadataComplete: Bool, trashAvailable: Bool, canKeepBoth: Bool, canResolveDestructive: Bool, blockedReason: String?) {
+    public init(conflictId: String, previewToken: String, versions: [ICloudConflictVersionMetadata], defaultResolution: ICloudConflictResolution, resolutionOptions: [ICloudConflictResolutionOption], metadataComplete: Bool, trashAvailable: Bool, canKeepBoth: Bool, canResolveDestructive: Bool, blockedReason: String?) {
         self.conflictId = conflictId
+        self.previewToken = previewToken
         self.versions = versions
         self.defaultResolution = defaultResolution
         self.resolutionOptions = resolutionOptions
@@ -10927,6 +10929,9 @@ extension ICloudConflictPreviewReport: Sendable {}
 extension ICloudConflictPreviewReport: Equatable, Hashable {
     public static func ==(lhs: ICloudConflictPreviewReport, rhs: ICloudConflictPreviewReport) -> Bool {
         if lhs.conflictId != rhs.conflictId {
+            return false
+        }
+        if lhs.previewToken != rhs.previewToken {
             return false
         }
         if lhs.versions != rhs.versions {
@@ -10958,6 +10963,7 @@ extension ICloudConflictPreviewReport: Equatable, Hashable {
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(conflictId)
+        hasher.combine(previewToken)
         hasher.combine(versions)
         hasher.combine(defaultResolution)
         hasher.combine(resolutionOptions)
@@ -10978,6 +10984,7 @@ public struct FfiConverterTypeICloudConflictPreviewReport: FfiConverterRustBuffe
         return
             try ICloudConflictPreviewReport(
                 conflictId: FfiConverterString.read(from: &buf),
+                previewToken: FfiConverterString.read(from: &buf),
                 versions: FfiConverterSequenceTypeICloudConflictVersionMetadata.read(from: &buf),
                 defaultResolution: FfiConverterTypeICloudConflictResolution.read(from: &buf),
                 resolutionOptions: FfiConverterSequenceTypeICloudConflictResolutionOption.read(from: &buf),
@@ -10991,6 +10998,7 @@ public struct FfiConverterTypeICloudConflictPreviewReport: FfiConverterRustBuffe
 
     public static func write(_ value: ICloudConflictPreviewReport, into buf: inout [UInt8]) {
         FfiConverterString.write(value.conflictId, into: &buf)
+        FfiConverterString.write(value.previewToken, into: &buf)
         FfiConverterSequenceTypeICloudConflictVersionMetadata.write(value.versions, into: &buf)
         FfiConverterTypeICloudConflictResolution.write(value.defaultResolution, into: &buf)
         FfiConverterSequenceTypeICloudConflictResolutionOption.write(value.resolutionOptions, into: &buf)
@@ -37117,12 +37125,13 @@ public func resolveExternalSyncLocaleRecovery(repoPath: String, recoveryToken: S
     )
 })
 }
-public func resolveIcloudConflict(repoPath: String, conflictId: String, resolution: ICloudConflictResolution)throws  -> ICloudConflictResolveReport {
+public func resolveIcloudConflict(repoPath: String, conflictId: String, resolution: ICloudConflictResolution, previewToken: String)throws  -> ICloudConflictResolveReport {
     return try  FfiConverterTypeICloudConflictResolveReport.lift(try rustCallWithError(FfiConverterTypeCoreError.lift) {
     uniffi_area_matrix_core_fn_func_resolve_icloud_conflict(
         FfiConverterString.lower(repoPath),
         FfiConverterString.lower(conflictId),
-        FfiConverterTypeICloudConflictResolution.lower(resolution),$0
+        FfiConverterTypeICloudConflictResolution.lower(resolution),
+        FfiConverterString.lower(previewToken),$0
     )
 })
 }
@@ -37652,7 +37661,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_area_matrix_core_checksum_func_resolve_external_sync_locale_recovery() != 48925) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_area_matrix_core_checksum_func_resolve_icloud_conflict() != 23819) {
+    if (uniffi_area_matrix_core_checksum_func_resolve_icloud_conflict() != 30786) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_area_matrix_core_checksum_func_resolve_sync_conflict() != 50056) {

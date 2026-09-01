@@ -10,7 +10,9 @@
 
 可对外引用的品牌资产统一位于 `assets/brand/final/`。SVG 是可缩放源文件，PNG、ICO、ICNS、PDF 和 TIFF 是由 SVG 派生的交付文件。历史探索稿位于 `assets/brand/archive/`，不得用于产品、文档、发布或宣传。
 
-机器可读的交付矩阵位于 `assets/brand/brand-manifest.json`。修改 SVG 后运行：
+机器可读的交付矩阵位于 `assets/brand/brand-manifest.json`，字体输入、派生 hash 和 archive 证据状态位于
+`assets/brand/provenance.json`。manifest 明确只允许 `assets/brand/final/` 进入产品或发布包，并排除
+`assets/brand/archive/`。修改 SVG 后运行：
 
 ```bash
 python3 scripts/brand/export_assets.py --refresh
@@ -24,7 +26,10 @@ AreaMatrix 标志由矩阵面板、归档轨迹和四个节点构成：
 - 矩阵面板表达可扫描、可导航的资料结构。
 - 青绿色轨迹表达文件进入资料库后的可追踪路径。
 - 琥珀和珊瑚节点表达分类、确认与最终落位。
-- `AreaMatrix` 字标采用 Inter Bold 轮廓字形；跨环境分发应使用 `outlined` 文件。
+- `AreaMatrix` 字标采用 Inter Bold `Version 3.019;git-0a5106e0b` 的轮廓字形；精确输入对象固定到
+  `linagora/tmail-flutter@0e6c107f63e4fd35615605b718963ffa6b2897a4:assets/fonts/Inter/Inter-Bold.ttf`，
+  `rsms/inter@0a5106e0bde18df09374066bf3a7998e3546307d` 是上游谱系。许可证为 OFL-1.1，跨环境分发应使用
+  `outlined` 文件。
 
 ## 标准颜色
 
@@ -95,10 +100,14 @@ Pillow 版本固定在 `scripts/brand/requirements.txt`。新环境可通过以�
 
 ```bash
 python3 -m venv .brand-venv
-.brand-venv/bin/pip install --requirement scripts/brand/requirements.txt
+.brand-venv/bin/pip install --only-binary=:all: --require-hashes \
+  --requirement scripts/brand/requirements.txt
 ```
 
-`scripts/brand/generate_wordmark_outlines.swift` 只用于品牌字形重新定稿。日常导出不需要字体文件，因为最终 SVG 已经保存为路径。
+`scripts/brand/generate_wordmark_outlines.swift` 只用于品牌字形重新定稿。日常导出不需要字体文件，因为最终 SVG
+已经保存为路径。`assets/brand/provenance.json` 的技术证据不能替代合格许可证复核；在复核字体分发义务和最终
+发布包之前，品牌 provenance 必须保持 `releaseEligible: false`。archive 资产因来源和授权未建立而保持
+`evidence-blocked`，不得通过复制、改名或重新导出进入 `final/`。
 
 ## Related
 

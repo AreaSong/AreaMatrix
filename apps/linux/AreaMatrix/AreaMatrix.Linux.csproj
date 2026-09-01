@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="AreaMatrix.Linux.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Features/Onboarding/ChooseRepositoryView.ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Features/Onboarding/LocalFolderNoticeView.ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Features/Onboarding/RepositoryInitConfirmView.ui" CopyToOutputDirectory="PreserveNewest" />
@@ -17,5 +21,7 @@
     <None Include="Features/System/WatcherStatusView.ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Features/System/RescanConfirmView.ui" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Features/Settings/RepositorySettingsView.ui" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="native-core.manifest.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="native-core.manifest.json" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

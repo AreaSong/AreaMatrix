@@ -47,7 +47,7 @@ Requirements:
 
 - macOS 14 Sonoma or later
 - Xcode 15 or later
-- Rust stable 1.75 or later
+- Rust 1.88 or later; repository and CI builds are pinned to Rust 1.88.0
 
 ```bash
 ./dev build core

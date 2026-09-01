@@ -281,7 +281,7 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
 
         if (CloudState is null)
         {
-            await RetryStatusCheckAsync(cancellationToken).ConfigureAwait(false);
+            await RetryStatusCheckAsync(cancellationToken);
             return;
         }
 
@@ -303,8 +303,7 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         try
         {
             WindowsCloudStorageState state = await coreBridge
-                .DetectCloudStorageStateAsync(RepositoryPath, cancellationToken)
-                .ConfigureAwait(false);
+                .DetectCloudStorageStateAsync(RepositoryPath, cancellationToken);
 
             IsRiskNoticeConfirmed = false;
             CloudState = state;
@@ -351,8 +350,7 @@ public sealed class OneDriveNoticeViewModel : INotifyPropertyChanged
         try
         {
             WindowsCloudStorageState state = await coreBridge
-                .AcknowledgeOneDriveRiskNoticeAsync(RepositoryPath, cancellationToken)
-                .ConfigureAwait(false);
+                .AcknowledgeOneDriveRiskNoticeAsync(RepositoryPath, cancellationToken);
 
             CloudState = state;
             ApplyStateError(state);

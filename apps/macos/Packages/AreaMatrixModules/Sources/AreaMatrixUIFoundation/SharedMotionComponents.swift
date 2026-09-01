@@ -1,5 +1,43 @@
 import SwiftUI
 
+/// Accessibility policy shared by motion and surface components.
+///
+/// The system values are read at each view boundary so setting changes stop
+/// continuous effects without changing any public view initializer.
+public struct AreaMatrixAccessibilityMotionPolicy: Equatable, Sendable {
+    public let reduceMotion: Bool
+    public let reduceTransparency: Bool
+
+    public init(reduceMotion: Bool = false, reduceTransparency: Bool = false) {
+        self.reduceMotion = reduceMotion
+        self.reduceTransparency = reduceTransparency
+    }
+
+    public var allowsContinuousMotion: Bool {
+        !reduceMotion
+    }
+
+    public var allowsParallax: Bool {
+        !reduceMotion
+    }
+
+    public var allowsBlur: Bool {
+        !reduceTransparency
+    }
+
+    public var usesOpaqueSurfaces: Bool {
+        reduceTransparency
+    }
+
+    public func allowsDelayedAnimationCommit(
+        generation: Int,
+        currentGeneration: Int,
+        isVisible: Bool
+    ) -> Bool {
+        allowsContinuousMotion && isVisible && generation == currentGeneration
+    }
+}
+
 public extension Animation {
     static var areaMatrixSpring: Animation {
         .spring(
@@ -71,14 +109,15 @@ public extension Animation {
 private struct AreaMatrixFeatureCardFocusModifier: ViewModifier {
     let isHovered: Bool
     let anyCardHovered: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         content
             .opacity(anyCardHovered ? (isHovered ? 1.0 : 0.4) : 1.0)
             .saturation(anyCardHovered ? (isHovered ? 1.0 : 0.4) : 1.0)
-            .animation(.areaMatrixHover, value: isHovered)
+            .animation(reduceMotion ? nil : .areaMatrixHover, value: isHovered)
             .animation(
-                .easeOut(duration: AreaMatrixMotionTokens.Duration.hoverSettle),
+                reduceMotion ? nil : .easeOut(duration: AreaMatrixMotionTokens.Duration.hoverSettle),
                 value: anyCardHovered
             )
     }
@@ -89,25 +128,69 @@ private struct AreaMatrixTextShimmerModifier: ViewModifier {
     let primaryColor: Color
     let highlightColor: Color
     let duration: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
-        content
-            .foregroundStyle(
-                LinearGradient(
-                    stops: [
-                        .init(color: primaryColor, location: shimmerOffset),
-                        .init(color: highlightColor, location: shimmerOffset + 0.5),
-                        .init(color: primaryColor, location: shimmerOffset + 1.0)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
+        Group {
+            if reduceTransparency {
+                content.foregroundStyle(primaryColor)
+            } else {
+                content.foregroundStyle(
+                    LinearGradient(
+                        stops: [
+                            .init(color: primaryColor, location: effectiveShimmerOffset),
+                            .init(color: highlightColor, location: effectiveShimmerOffset + 0.5),
+                            .init(color: primaryColor, location: effectiveShimmerOffset + 1.0)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
                 )
-            )
-            .onAppear {
-                withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
-                    shimmerOffset = 1.0
-                }
             }
+        }
+        .onAppear(perform: startShimmer)
+        .onChange(of: reduceMotion) { _, _ in
+            updateShimmerState()
+        }
+        .onChange(of: reduceTransparency) { _, _ in updateShimmerState() }
+        .onDisappear(perform: stopShimmer)
+    }
+
+    private var effectiveShimmerOffset: CGFloat {
+        reduceMotion || reduceTransparency ? 0 : shimmerOffset
+    }
+
+    private func updateShimmerState() {
+        if reduceMotion || reduceTransparency {
+            stopShimmer()
+        } else {
+            startShimmer()
+        }
+    }
+
+    private func startShimmer() {
+        guard !reduceMotion, !reduceTransparency else {
+            stopShimmer()
+            return
+        }
+
+        resetShimmer(to: -1.0)
+        withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
+            shimmerOffset = 1.0
+        }
+    }
+
+    private func stopShimmer() {
+        resetShimmer(to: 0)
+    }
+
+    private func resetShimmer(to offset: CGFloat) {
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            shimmerOffset = offset
+        }
     }
 }
 
@@ -117,47 +200,73 @@ private struct AreaMatrixPulseAuraModifier: ViewModifier {
     let duration: Double
     let maxScale: CGFloat
     let cornerRadius: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
         content
             .background(
-                ZStack {
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(color.opacity(0.6), lineWidth: 2)
-                        .scaleEffect(isAnimating ? maxScale : 0.9)
-                        .opacity(isAnimating ? 0 : 1)
-                        .animation(
-                            .easeOut(duration: duration).repeatForever(autoreverses: false),
-                            value: isAnimating
-                        )
+                Group {
+                    if reduceMotion || reduceTransparency {
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(color, lineWidth: 2)
+                            .opacity(reduceTransparency ? 1 : 0.8)
+                    } else {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: cornerRadius)
+                                .stroke(color.opacity(0.6), lineWidth: 2)
+                                .scaleEffect(isAnimating ? maxScale : 0.9)
+                                .opacity(isAnimating ? 0 : 1)
+                                .animation(
+                                    .easeOut(duration: duration).repeatForever(autoreverses: false),
+                                    value: isAnimating
+                                )
 
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(color.opacity(0.3), lineWidth: 1)
-                        .scaleEffect(isAnimating ? maxScale : 0.9)
-                        .opacity(isAnimating ? 0 : 1)
-                        .animation(
-                            .easeOut(duration: duration)
-                                .repeatForever(autoreverses: false)
-                                .delay(duration * 0.4),
-                            value: isAnimating
-                        )
+                            RoundedRectangle(cornerRadius: cornerRadius)
+                                .stroke(color.opacity(0.3), lineWidth: 1)
+                                .scaleEffect(isAnimating ? maxScale : 0.9)
+                                .opacity(isAnimating ? 0 : 1)
+                                .animation(
+                                    .easeOut(duration: duration)
+                                        .repeatForever(autoreverses: false)
+                                        .delay(duration * 0.4),
+                                    value: isAnimating
+                                )
+                        }
+                    }
                 }
             )
-            .onAppear {
-                isAnimating = true
-            }
+            .onAppear(perform: updateAnimationState)
+            .onChange(of: reduceMotion) { _, _ in updateAnimationState() }
+            .onChange(of: reduceTransparency) { _, _ in updateAnimationState() }
+            .onDisappear(perform: stopAnimation)
+    }
+
+    private func updateAnimationState() {
+        stopAnimation()
+        guard !reduceMotion, !reduceTransparency else { return }
+        isAnimating = true
+    }
+
+    private func stopAnimation() {
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            isAnimating = false
+        }
     }
 }
 
 private struct AreaMatrixMagneticHoverModifier: ViewModifier {
     @State private var offset: CGSize = .zero
     let intensity: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         content
-            .offset(x: offset.width, y: offset.height)
+            .offset(x: reduceMotion ? 0 : offset.width, y: reduceMotion ? 0 : offset.height)
             .animation(
-                .interpolatingSpring(
+                reduceMotion ? nil : .interpolatingSpring(
                     stiffness: AreaMatrixMotionTokens.Spring.magneticStiffness,
                     damping: AreaMatrixMotionTokens.Spring.magneticDamping
                 ),
@@ -171,9 +280,19 @@ private struct AreaMatrixMagneticHoverModifier: ViewModifier {
                         }
                 }
             )
+            .onChange(of: reduceMotion) { _, reduced in
+                if reduced {
+                    offset = .zero
+                }
+            }
     }
 
     private func updateOffset(for phase: HoverPhase, size: CGSize) {
+        guard !reduceMotion else {
+            offset = .zero
+            return
+        }
+
         switch phase {
         case let .active(location):
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
@@ -190,35 +309,42 @@ private struct AreaMatrixMagneticHoverModifier: ViewModifier {
 private struct AreaMatrixDelayedEntranceModifier: ViewModifier {
     let isVisible: Bool
     let delay: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         content
             .opacity(isVisible ? 1 : 0)
-            .offset(y: isVisible ? 0 : AreaMatrixMotionTokens.Intensity.entranceOffsetY)
-            .animation(.areaMatrixEntrance.delay(delay), value: isVisible)
+            .offset(y: reduceMotion || isVisible ? 0 : AreaMatrixMotionTokens.Intensity.entranceOffsetY)
+            .animation(
+                reduceMotion ? nil : .areaMatrixEntrance.delay(delay),
+                value: isVisible
+            )
     }
 }
 
 private struct AreaMatrixScanningContentModifier: ViewModifier {
     let isScanning: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
         content
-            .blur(radius: isScanning ? 12 : 0)
-            .scaleEffect(isScanning ? 0.92 : 1)
+            .blur(radius: reduceMotion || reduceTransparency ? 0 : (isScanning ? 12 : 0))
+            .scaleEffect(reduceMotion ? 1 : (isScanning ? 0.92 : 1))
             .opacity(isScanning ? 0 : 1)
-            .animation(.areaMatrixSpring, value: isScanning)
+            .animation(reduceMotion ? nil : .areaMatrixSpring, value: isScanning)
     }
 }
 
 private struct AreaMatrixDeepDiveModifier: ViewModifier {
     let isActive: Bool
     let scale: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         content
-            .scaleEffect(isActive ? scale : 1.0)
-            .animation(.areaMatrixDeepDive, value: isActive)
+            .scaleEffect(reduceMotion ? 1.0 : (isActive ? scale : 1.0))
+            .animation(reduceMotion ? nil : .areaMatrixDeepDive, value: isActive)
     }
 }
 
@@ -280,10 +406,16 @@ public extension View {
 private struct AreaMatrixPageContentEntranceModifier: ViewModifier {
     @State private var entered = false
     let delay: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         content
             .areaMatrixDelayedEntrance(isVisible: entered, delay: delay)
             .onAppear { entered = true }
+            .onChange(of: reduceMotion) { _, reduced in
+                if reduced {
+                    entered = true
+                }
+            }
     }
 }

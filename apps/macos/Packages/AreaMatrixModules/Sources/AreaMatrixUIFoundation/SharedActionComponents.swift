@@ -8,6 +8,8 @@ public struct AreaMatrixPrimaryGlowButton<Label: View>: View {
     @Binding private var shimmerPhase: CGFloat
     private let label: () -> Label
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var isGlowing = false
 
     public init(
@@ -47,33 +49,54 @@ public struct AreaMatrixPrimaryGlowButton<Label: View>: View {
             )
             .scaleEffect(isHovered ? AreaMatrixMotionTokens.Intensity.hoverScale : 1.0)
             .offset(y: isHovered ? -2 : 0)
-            .animation(.areaMatrixQuickFade, value: isHovered)
+            .animation(reduceMotion ? nil : .areaMatrixQuickFade, value: isHovered)
             .areaMatrixMagneticHover(intensity: AreaMatrixMotionTokens.Intensity.magneticCTA)
             .onAppear {
-                withAnimation(.areaMatrixGlowBreath) {
-                    isGlowing = true
-                }
-                withAnimation(
-                    .linear(duration: AreaMatrixMotionTokens.Duration.shimmerSweep)
-                        .repeatForever(autoreverses: false)
-                        .delay(1)
-                ) {
-                    shimmerPhase = 1.5
-                }
+                updateGlowAndShimmer()
             }
+            .onChange(of: reduceMotion) { _, _ in updateGlowAndShimmer() }
+            .onChange(of: reduceTransparency) { _, _ in updateGlowAndShimmer() }
+            .onDisappear(perform: stopGlowAndShimmer)
     }
 
     private var background: some View {
         ZStack {
             AreaMatrixTheme.Gradients.primaryAction(accent: accent)
 
-            LinearGradient(
-                colors: [.clear, .white.opacity(0.4), .clear],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .offset(x: shimmerPhase * 200)
-            .mask(RoundedRectangle(cornerRadius: cornerRadius))
+            if !reduceTransparency {
+                LinearGradient(
+                    colors: [.clear, .white.opacity(0.4), .clear],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .offset(x: shimmerPhase * 200)
+                .mask(RoundedRectangle(cornerRadius: cornerRadius))
+            }
+        }
+    }
+
+    private func updateGlowAndShimmer() {
+        stopGlowAndShimmer()
+        guard !reduceMotion, !reduceTransparency else { return }
+
+        withAnimation(.areaMatrixGlowBreath) {
+            isGlowing = true
+        }
+        withAnimation(
+            .linear(duration: AreaMatrixMotionTokens.Duration.shimmerSweep)
+                .repeatForever(autoreverses: false)
+                .delay(1)
+        ) {
+            shimmerPhase = 1.5
+        }
+    }
+
+    private func stopGlowAndShimmer() {
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            isGlowing = false
+            shimmerPhase = -1.5
         }
     }
 }

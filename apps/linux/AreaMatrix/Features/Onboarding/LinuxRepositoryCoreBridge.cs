@@ -254,7 +254,9 @@ internal static class LinuxPlatformPathClassifier
 public sealed record CoreRepoInitOptions(
     string Mode,
     bool CreateDefaultCategories,
-    string OverviewOutput)
+    string OverviewOutput,
+    string LocalePolicy = "FollowInterface",
+    string ContentLocale = "En")
 {
     public static CoreRepoInitOptions CreateEmptyGeneratedOnly { get; } = new(
         "CreateEmpty",
@@ -277,7 +279,9 @@ public sealed record LinuxRepositoryConfig(
     bool EnableExtensionRules = true,
     bool EnableKeywordRules = true,
     bool FallbackToInbox = true,
-    bool AllowReplaceDuringImport = false)
+    bool AllowReplaceDuringImport = false,
+    long Revision = 0,
+    string LocalePolicyState = "Unknown")
 {
     public CoreRepoConfig ToCoreConfig()
     {
@@ -291,7 +295,9 @@ public sealed record LinuxRepositoryConfig(
             EnableExtensionRules,
             EnableKeywordRules,
             FallbackToInbox,
-            AllowReplaceDuringImport);
+            AllowReplaceDuringImport,
+            Revision,
+            LocalePolicyState);
     }
 }
 
@@ -305,7 +311,9 @@ public sealed record CoreRepoConfig(
     bool EnableExtensionRules = true,
     bool EnableKeywordRules = true,
     bool FallbackToInbox = true,
-    bool AllowReplaceDuringImport = false)
+    bool AllowReplaceDuringImport = false,
+    long Revision = 0,
+    string LocalePolicyState = "Unknown")
 {
     public LinuxRepositoryConfig ToLinuxConfig()
     {
@@ -319,7 +327,9 @@ public sealed record CoreRepoConfig(
             EnableExtensionRules,
             EnableKeywordRules,
             FallbackToInbox,
-            AllowReplaceDuringImport);
+            AllowReplaceDuringImport,
+            Revision,
+            LocalePolicyState);
     }
 }
 

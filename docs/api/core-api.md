@@ -561,7 +561,8 @@ namespace area_matrix {
     ICloudConflictResolveReport resolve_icloud_conflict(
         string repo_path,
         string conflict_id,
-        ICloudConflictResolution resolution
+        ICloudConflictResolution resolution,
+        string preview_token
     );
 
     [Throws=CoreError]
@@ -2152,6 +2153,7 @@ dictionary ICloudConflictResolutionOption {
 
 dictionary ICloudConflictPreviewReport {
     string conflict_id;
+    string preview_token;
     sequence<ICloudConflictVersionMetadata> versions;
     ICloudConflictResolution default_resolution;
     sequence<ICloudConflictResolutionOption> resolution_options;
@@ -3172,7 +3174,7 @@ unknown field/code、非法 locale 或缺失必需字段均 fail closed。legacy
 | `resolve_sync_conflict(repo, conflict_id, resolution)` | sync/conflict | √ | Conflict / PermissionDenied / Io / Db |
 | `list_icloud_conflicts(repo)` | query | √ | ICloudPlaceholder / PermissionDenied / Io / Db |
 | `preview_conflict_versions(repo, conflict_id)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
-| `resolve_icloud_conflict(repo, conflict_id, resolution)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
+| `resolve_icloud_conflict(repo, conflict_id, resolution, preview_token)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |
 | `detect_cloud_storage_state(repo)` | cloud | √ | ICloudPlaceholder / PermissionDenied / Io |
 | `acknowledge_onedrive_risk_notice(repo)` | cloud | √ | ICloudPlaceholder / PermissionDenied / Io |
 | `preview_import_conflict_batch(repo, request)` | conflict | √ | Conflict / FileNotFound / PermissionDenied / StagingRecoveryRequired / Io / Db |
@@ -4810,7 +4812,7 @@ scope 和分页与普通搜索保持同一合同。
 - `deduped_normal_count`：被语义组折叠的普通搜索重复数量。
 - `index_status`：`Ready`、`NotReady`、`Building`、`Paused`、`Canceled`、`Failed` 或
   `Partial`。
-- `route`：`Local` 或 `Remote`；未进入 AI 路线时为 `nil`。远程路线在 remote provider 已配置且 privacy / call-log 门禁均通过时执行外部 runtime；`RateLimited` / `Timeout` 由远程 runtime 映射为稳定 fallback。
+- `route`：`Local` 或 `Remote`；未进入 AI 路线时为 `nil`。远程路线在 remote provider 已配置且 privacy / call-log 门禁均通过后请求获批外部 runtime；当前产品构建没有获批 runtime，因此普通 debug / release 执行 fail closed。`RateLimited` / `Timeout` 由测试或未来获批 runtime 映射为稳定 fallback。
 - `fallback_reason` / `fallback_message`：`AiDisabled`、`FeatureDisabled`、
   `ProviderUnavailable`、`PrivacyRule`、`SemanticIndexNotReady`、`CallLogUnavailable`、
   `NoEligibleInput`、`NormalSearchUnavailable`、`RateLimited` 或 `Timeout`。
@@ -4886,8 +4888,9 @@ semantic search 的 embedding index 构建入口，服务 semantic search surfac
   AI call log；不得移动、删除、重命名、覆盖、Trash、导入或改写任何用户文件。
 - 远程 embedding 只在远程 AI 显式启用、SemanticSearch scope 允许、测试连接成功、隐私规则通过且
   call-log gate 可用后进入；隐私命中文件不得进入远程队列，sent fields 必须为 none。
-  远程路线通过 `AREAMATRIX_AI_SEMANTIC_REMOTE_RUNTIME` 外部 runtime 执行；`RateLimited` / `Timeout`
-  映射为稳定 fallback，不泄漏 provider 原始输出。
+  `AREAMATRIX_AI_SEMANTIC_REMOTE_RUNTIME` 当前只在已知 Rust 测试二进制持有显式 test-harness capability 时
+  解析固定身份的 fixture；普通 debug 和 release build 拒绝环境提供的可执行程序。未来获批 runtime 的
+  `RateLimited` / `Timeout` 映射为稳定 fallback，不泄漏 provider 原始输出。
 - 取消、暂停、清理未提交 index batch 和远程队列停止语义由独立的 semantic search
   recovery / queue-management 合同承载；本合同只定义启动和报告形状。
 
@@ -7518,6 +7521,7 @@ let defaultChoice = preview.defaultResolution // .keepBoth
 `conflict_id`；输出为 `ICloudConflictPreviewReport`：
 
 - `conflict_id`：回显稳定冲突 ID，供 Resolve 绑定同一冲突。
+- `preview_token`：非空不透明 token，绑定资料库身份、冲突 ID、两个版本的路径和文件身份快照；Resolve 必须原样回传。
 - `versions`：每个版本的 metadata 和预览摘要，字段包括 `version_id`、
   `role`、`path`、`modified_at`、`size_bytes`、`hash_sha256`、
   `preview_summary` 和 `preview_status`。
@@ -7552,20 +7556,23 @@ iCloud conflict review surface 可以从本合同得到两个或多个版本的 
 二次确认所需的“另一版本会进入 Trash”边界。iCloud conflict review surface 不能从本合同得到
 QuickLook 视图对象、平台 iCloud 下载进度、Undo 执行结果或跨设备同步冲突处理。
 
-### `resolve_icloud_conflict(repoPath, conflictId, resolution) throws -> ICloudConflictResolveReport`
+### `resolve_icloud_conflict(repoPath, conflictId, resolution, previewToken) throws -> ICloudConflictResolveReport`
 
 ```swift
 let report = try await Task.detached(priority: .userInitiated) {
     try AreaMatrix.resolveIcloudConflict(
         repoPath: repoPath,
         conflictId: conflict.conflictId,
-        resolution: .keepBoth
+        resolution: .keepBoth,
+        previewToken: preview.previewToken
     )
 }.value
 ```
 
 `resolve_icloud_conflict` 是 iCloud conflict resolution 的单项解决入口，只能在用户完成 iCloud conflict review surface
-确认后调用。`resolution` 取值：
+确认后调用。`previewToken` 必须来自同一资料库、同一冲突的最新 preview；空 token、错误 token、跨资料库 token、
+版本路径或文件身份变化、重复/过期 apply 都必须返回 `Conflict`，并且在任何文件移动或数据库写入前失败。
+`resolution` 取值：
 
 - `KeepBoth`：保留所有版本，只把冲突状态写为 resolved / acknowledged。
 - `KeepOriginal`：保留原始版本，将 conflicted copy 移到系统 Trash。
